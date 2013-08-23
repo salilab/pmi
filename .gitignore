@@ -1,0 +1,11 @@
+*.pyc
+*~
+~.orig
+*~
+.*.sw?
+CMakeLists.txt
+benchmark/CMakeLists.txt
+bin/CMakeLists.txt
+examples/CMakeLists.txt
+test/CMakeLists.txt
+CMakeModules

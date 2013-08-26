@@ -1,50 +1,42 @@
 #!/usr/bin/env python
-import random
-import os
-import inspect
-from numpy import *
-from math import cos
-from math import sqrt
 import IMP
-import IMP.em
 import IMP.algebra
-import cPickle
-import time
-from numpy import *
-from scipy.spatial.distance import cdist
-import tools
-from copy import deepcopy
 
-kB= (1.381 * 6.02214) / 4184.0
 
 class Stopwatch():
 
     def __init__(self,isdelta=True):
+        global time
+        import time
+
         self.starttime=time.clock()
         self.label="None"
         self.isdelta=isdelta
-    
+
     def set_label(self,labelstr):
         self.label=labelstr
-        
+
     def get_output(self):
         output={}
         if self.isdelta:
-           newtime=time.clock()
-           output["Stopwatch_"+self.label+"_delta_seconds"]=str(newtime-self.starttime)
-           self.starttime=newtime
+            newtime=time.clock()
+            output["Stopwatch_"+self.label+"_delta_seconds"]=str(newtime-self.starttime)
+            self.starttime=newtime
         else:
-           output["Stopwatch_"+self.label+"_elapsed_seconds"]=str(time.clock()-self.starttime)           
+            output["Stopwatch_"+self.label+"_elapsed_seconds"]=str(time.clock()-self.starttime)
         return output
 
 
 class SetupNuisance():
     def __init__(self,m,initialvalue,minvalue,maxvalue,isoptimized=True):
-        nuisance=IMP.isd2.Scale.setup_particle(IMP.Particle(m),initialvalue)
+        global impisd2
+        import IMP.isd2 as impisd2
+        
+        nuisance=impisd2.Scale.setup_particle(IMP.Particle(m),initialvalue)
         nuisance.set_lower(minvalue)
         nuisance.set_upper(maxvalue)
 
-        m.add_score_state(IMP.core.SingletonConstraint(IMP.isd2.NuisanceRangeModifier(),None,nuisance))
+        m.add_score_state(IMP.core.SingletonConstraint(impisd2.NuisanceRangeModifier(),None,nuisance))
         nuisance.set_is_optimized(nuisance.get_nuisance_key(),isoptimized)
         self.nuisance=nuisance
 
@@ -52,10 +44,12 @@ class SetupNuisance():
         return self.nuisance
 
 class SetupWeight():
-    import IMP.isd2
+
     def __init__(self,m,isoptimized=True):
+        global impisd2
+        import IMP.isd2 as impisd2    
         pw=IMP.Particle(m)
-        self.weight=IMP.isd2.Weight.setup_particle(pw)
+        self.weight=impisd2.Weight.setup_particle(pw)
         self.weight.set_weights_are_optimized(True)
 
     def get_particle(self):
@@ -65,47 +59,58 @@ class SetupWeight():
 
 class ParticleToSampleList():
 
-    
+
     def __init__(self,label="None"):
-     
+
         self.dictionary_particle_type={}
         self.dictionary_particle_transformation={}
-        self.dictionary_particle_name={}        
+        self.dictionary_particle_name={}
         self.label=label
-        
+
     def add_particle(self,particle,particle_type,particle_transformation,name):
         if not particle_type in ["Rigid_Bodies","Floppy_Bodies","Nuisances","X_coord","Weights"]:
-           print "ParticleToSampleList: not the right particle type"
-           exit()
+            print "ParticleToSampleList: not the right particle type"
+            exit()
         else:
-           self.dictionary_particle_type[particle]=particle_type
-           if particle_type=="Rigid_Bodies":
-              if type(particle_transformation)==tuple and len(particle_transformation)==2 and type(particle_transformation[0])==float and type(particle_transformation[1])==float:
-                 self.dictionary_particle_transformation[particle]=particle_transformation
-                 self.dictionary_particle_name[particle]=name
-              else:
-                 print "ParticleToSampleList: not the right transformation format for Rigid_Bodies, should be a tuple a floats"
-                 exit()                 
-           else:
-              if type(particle_transformation)==float: 
-                 self.dictionary_particle_transformation[particle]=particle_transformation
-                 self.dictionary_particle_name[particle]=name                 
-              else:
-                 print "ParticleToSampleList: not the right transformation format sould be a float"
-                 exit()     
+            self.dictionary_particle_type[particle]=particle_type
+            if particle_type=="Rigid_Bodies":
+                if type(particle_transformation)==tuple and len(particle_transformation)==2 and type(particle_transformation[0])==float and type(particle_transformation[1])==float:
+                    self.dictionary_particle_transformation[particle]=particle_transformation
+                    self.dictionary_particle_name[particle]=name
+                else:
+                    print "ParticleToSampleList: not the right transformation format for Rigid_Bodies, should be a tuple a floats"
+                    exit()
+            else:
+                if type(particle_transformation)==float:
+                    self.dictionary_particle_transformation[particle]=particle_transformation
+                    self.dictionary_particle_name[particle]=name
+                else:
+                    print "ParticleToSampleList: not the right transformation format sould be a float"
+                    exit()
 
     def get_particles_to_sample(self):
         ps={}
         for particle in self.dictionary_particle_type:
-           key=self.dictionary_particle_type[particle]+"ParticleToSampleList_"+self.dictionary_particle_name[particle]+"_"+self.label
-           value=([particle],self.dictionary_particle_transformation[particle])
-           ps[key]=value
-        return ps   
+            key=self.dictionary_particle_type[particle]+"ParticleToSampleList_"+self.dictionary_particle_name[particle]+"_"+self.label
+            value=([particle],self.dictionary_particle_transformation[particle])
+            ps[key]=value
+        return ps
 
 
 class Output():
 
     def __init__(self,ascii=True):
+        global os,RMF,imprmf,cPickle
+        import cPickle as cPickle
+        import os
+        try:
+            import RMF
+            import IMP.rmf as imprmf
+            self.rmf_library=True
+        except ImportError:
+            self.rmf_library=False
+
+
         self.dictionary_pdbs={}
         self.dictionary_rmfs={}
         self.dictionary_stats={}
@@ -148,65 +153,61 @@ class Output():
         self.suffix=suffix
         self.nbestscoring=nbestscoring
         for i in range(self.nbestscoring):
-          name=suffix+"."+str(i)+".pdb"
-          flpdb=open(name,'w')
-          flpdb.close()
-          self.dictionary_pdbs[name]=prot
+            name=suffix+"."+str(i)+".pdb"
+            flpdb=open(name,'w')
+            flpdb.close()
+            self.dictionary_pdbs[name]=prot
 
     def write_pdb_best_scoring(self,score):
         if self.nbestscoring==None:
-           print "Output.write_pdb_best_scoring: init_pdb_best_scoring not run"
-        
+            print "Output.write_pdb_best_scoring: init_pdb_best_scoring not run"
+
         #update the score list
         if len(self.best_score_list)<self.nbestscoring:
-           self.best_score_list.append(score)
-           self.best_score_list.sort()
-           index=self.best_score_list.index(score)
-           for i in range(len(self.best_score_list)-2,index-1,-1):
-               oldname=self.suffix+"."+str(i)+".pdb"
-               newname=self.suffix+"."+str(i+1)+".pdb"
-               os.rename(oldname, newname)
-           filetoadd=self.suffix+"."+str(index)+".pdb"
-           self.write_pdb(filetoadd,appendmode=False)
-           
+            self.best_score_list.append(score)
+            self.best_score_list.sort()
+            index=self.best_score_list.index(score)
+            for i in range(len(self.best_score_list)-2,index-1,-1):
+                oldname=self.suffix+"."+str(i)+".pdb"
+                newname=self.suffix+"."+str(i+1)+".pdb"
+                os.rename(oldname, newname)
+            filetoadd=self.suffix+"."+str(index)+".pdb"
+            self.write_pdb(filetoadd,appendmode=False)
+
         else:
-           if score<self.best_score_list[-1]:
-              self.best_score_list.append(score)
-              self.best_score_list.sort()
-              self.best_score_list.pop(-1)
-              index=self.best_score_list.index(score)
-              for i in range(len(self.best_score_list)-1,index-1,-1):
-                 oldname=self.suffix+"."+str(i)+".pdb"
-                 newname=self.suffix+"."+str(i+1)+".pdb"
-                 os.rename(oldname, newname)      
-              filenametoremove=self.suffix+"."+str(self.nbestscoring)+".pdb"
-              os.remove(filenametoremove)              
-              filetoadd=self.suffix+"."+str(index)+".pdb"                   
-              self.write_pdb(filetoadd,appendmode=False)              
+            if score<self.best_score_list[-1]:
+                self.best_score_list.append(score)
+                self.best_score_list.sort()
+                self.best_score_list.pop(-1)
+                index=self.best_score_list.index(score)
+                for i in range(len(self.best_score_list)-1,index-1,-1):
+                    oldname=self.suffix+"."+str(i)+".pdb"
+                    newname=self.suffix+"."+str(i+1)+".pdb"
+                    os.rename(oldname, newname)
+                filenametoremove=self.suffix+"."+str(self.nbestscoring)+".pdb"
+                os.remove(filenametoremove)
+                filetoadd=self.suffix+"."+str(index)+".pdb"
+                self.write_pdb(filetoadd,appendmode=False)
 
     def init_rmf(self,name,prot):
-        import RMF
-        import IMP.rmf
+        if not self.rmf_library:
+            print "Output error: neet rmf library to init rmf"
+            exit()
+
         rh = RMF.create_rmf_file(name)
-        IMP.rmf.add_hierarchy(rh, prot)
+        imprmf.add_hierarchy(rh, prot)
         self.dictionary_rmfs[name]=rh
 
     def add_restraints_to_rmf(self,name,objectlist):
-        import RMF
-        import IMP.rmf
         for o in objectlist:
             rs=o.get_restraint()
-            IMP.rmf.add_restraints(self.dictionary_rmfs[name],rs.get_restraints())
+            imprmf.add_restraints(self.dictionary_rmfs[name],rs.get_restraints())
 
     def write_rmf(self,name,nframe):
-        import RMF
-        import IMP.rmf
-        IMP.rmf.save_frame(self.dictionary_rmfs[name],nframe)
+        imprmf.save_frame(self.dictionary_rmfs[name],nframe)
         self.dictionary_rmfs[name].flush()
 
     def write_rmfs(self,nframe):
-        import RMF
-        import IMP.rmf
         for rmf in self.dictionary_rmfs.keys():
             self.write_rmf(rmf,nframe)
 
@@ -225,7 +226,7 @@ class Output():
                 print "Output: object ", l, " doesn't have get_output() method"
                 exit()
         self.dictionary_stats[name]=listofobjects
-    
+
     def set_output_entry(self,dictionary):
         self.initoutput.update(dictionary)
 
@@ -235,10 +236,10 @@ class Output():
             output.update(obj.get_output())
 
         if appendmode:
-           writeflag='a'
+            writeflag='a'
         else:
-           writeflag='w'
-           
+            writeflag='w'
+
         if self.ascii:
             flstat=open(name,writeflag)
             flstat.write("%s \n" % output)
@@ -255,12 +256,17 @@ class Output():
     def get_stat(self,name):
         output={}
         for obj in self.dictionary_stats[name]:
-            output.update(obj.get_output())   
-        return output  
+            output.update(obj.get_output())
+        return output
 
 
 class Variance():
     def __init__(self, model, tau, niter, prot, th_profile, write_data=False):
+        global sqrt,os,random
+        from math import sqrt
+        import os
+        import random
+
         self.model = model
         self.write_data=write_data
         self.tau = tau
@@ -429,7 +435,9 @@ def get_cross_link_data(directory,filename,(distmin,distmax,ndist),
                                              (omegamin,omegamax,nomega),
                                             (sigmamin,sigmamax,nsigma),
                                             don=None,doff=None,prior=0,type_of_profile="gofr"):
-
+    
+    import IMP.isd2
+    
     filen=IMP.isd2.get_data_path("CrossLinkPMFs.dict")
     xlpot=open(filen)
 
@@ -440,14 +448,14 @@ def get_cross_link_data(directory,filename,(distmin,distmax,ndist),
     xpot=dictionary[directory][filename]["distance"]
     pot=dictionary[directory][filename][type_of_profile]
 
-    dist_grid=tools.get_grid(distmin, distmax, ndist, False)
-    omega_grid=tools.get_log_grid(omegamin, omegamax, nomega)
-    sigma_grid=tools.get_log_grid(sigmamin, sigmamax, nsigma)
-    
+    dist_grid=get_grid(distmin, distmax, ndist, False)
+    omega_grid=get_log_grid(omegamin, omegamax, nomega)
+    sigma_grid=get_log_grid(sigmamin, sigmamax, nsigma)
+
     if don!=None and doff!=None:
-       xlmsdata=IMP.isd2.CrossLinkData(dist_grid,omega_grid,sigma_grid,xpot,pot,don,doff,prior)
+        xlmsdata=IMP.isd2.CrossLinkData(dist_grid,omega_grid,sigma_grid,xpot,pot,don,doff,prior)
     else:
-       xlmsdata=IMP.isd2.CrossLinkData(dist_grid,omega_grid,sigma_grid,xpot,pot)       
+        xlmsdata=IMP.isd2.CrossLinkData(dist_grid,omega_grid,sigma_grid,xpot,pot)
     return xlmsdata
 
     #-------------------------------
@@ -456,10 +464,11 @@ def get_cross_link_data(directory,filename,(distmin,distmax,ndist),
 def get_cross_link_data_from_length(length,(distmin,distmax,ndist),
                                (omegamin,omegamax,nomega),
                                (sigmamin,sigmamax,nsigma)):
-
-    dist_grid=tools.get_grid(distmin, distmax, ndist, False)
-    omega_grid=tools.get_log_grid(omegamin, omegamax, nomega)
-    sigma_grid=tools.get_log_grid(sigmamin, sigmamax, nsigma)
+    import IMP.isd2
+    
+    dist_grid=get_grid(distmin, distmax, ndist, False)
+    omega_grid=get_log_grid(omegamin, omegamax, nomega)
+    sigma_grid=get_log_grid(sigmamin, sigmamax, nsigma)
 
     xlmsdata=IMP.isd2.CrossLinkData(dist_grid,omega_grid,sigma_grid,length)
     return xlmsdata
@@ -509,36 +518,36 @@ def set_floppy_body(p):
         rb.set_is_rigid_member(p.get_index(),False)
 
     #-------------------------------
-    
+
 def select_calpha_or_residue(prot,chain,resid,ObjectName="None:",SelectResidue=False):
-                    #use calphas
-                    p=None
-                    s=IMP.atom.Selection(prot, chains=chain,
-                         residue_index=resid, atom_type=IMP.atom.AT_CA)
-                    
-                    ps=s.get_selected_particles()
-                    #check if the calpha selection is empty
-                    if ps:
-                      if len(ps)==1: 
-                        p=ps[0] 
-                      else:
-                        print ObjectName+" multiple residues selected for selection residue %s chain %s " % (resid,chain) 
-                    else:
-                       #use the residue, in case of simplified representation
-                       s=IMP.atom.Selection(prot, chains=chain,
-                           residue_index=resid)
-                       ps=s.get_selected_particles()  
-                       #check if the residue selection is empty                       
-                       if ps:
-                          if len(ps)==1: 
-                             p=ps[0] 
-                          else:
-                             print ObjectName+" multiple residues selected for selection residue %s chain %s " % (resid,chain) 
-                       
-                       else:
-                          print ObjectName+" residue %s chain %s does not exist" % (resid,chain) 
-                    return p
-                          
+    #use calphas
+    p=None
+    s=IMP.atom.Selection(prot, chains=chain,
+         residue_index=resid, atom_type=IMP.atom.AT_CA)
+
+    ps=s.get_selected_particles()
+    #check if the calpha selection is empty
+    if ps:
+        if len(ps)==1:
+            p=ps[0]
+        else:
+            print ObjectName+" multiple residues selected for selection residue %s chain %s " % (resid,chain)
+    else:
+        #use the residue, in case of simplified representation
+        s=IMP.atom.Selection(prot, chains=chain,
+            residue_index=resid)
+        ps=s.get_selected_particles()
+        #check if the residue selection is empty
+        if ps:
+            if len(ps)==1:
+                p=ps[0]
+            else:
+                print ObjectName+" multiple residues selected for selection residue %s chain %s " % (resid,chain)
+
+        else:
+            print ObjectName+" residue %s chain %s does not exist" % (resid,chain)
+    return p
+
 
 ########################
 ### Tools to simulate data
@@ -551,72 +560,73 @@ def log_normal_density_function(expected_value,sigma,x):
     return 1/math.sqrt(2*math.pi)/sigma/x*math.exp(-(math.log(x/expected_value)**2/2/sigma/sigma))
 
 def get_random_data_point(expected_value,ntrials,sensitivity,sigma,outlierprob,begin_end_nbins_tuple,log=False,loggrid=False):
-    
+    import random
+
     begin=begin_end_nbins_tuple[0]
-    end=begin_end_nbins_tuple[1]    
-    nbins=begin_end_nbins_tuple[2]  
-        
+    end=begin_end_nbins_tuple[1]
+    nbins=begin_end_nbins_tuple[2]
+
     if not loggrid:
-       fmod_grid=get_grid(begin,end,nbins,True)    
+        fmod_grid=get_grid(begin,end,nbins,True)
     else:
-       fmod_grid=get_log_grid(begin,end,nbins)
-   
-    
+        fmod_grid=get_log_grid(begin,end,nbins)
+
+
     norm=0
     cumul=[]
     cumul.append(0)
-    
+
     a=[]
     for i in range(0,ntrials):
-        a.append([random.random(),True])    
-    
+        a.append([random.random(),True])
+
     if sigma != 0.0:
-      for j in range(1,len(fmod_grid)):
-        fj=fmod_grid[j]                                                    
-        fjm1=fmod_grid[j-1]                                                
-        df = fj - fjm1                                                     
-        
-        if not log:                                                          
-           pj=normal_density_function(expected_value,sigma,fj)                                    
-           pjm1=normal_density_function(expected_value,sigma,fjm1)
-        else:
-           pj=log_normal_density_function(expected_value,sigma,fj)                                    
-           pjm1=log_normal_density_function(expected_value,sigma,fjm1)           
-                                                                                 
-        norm+= (pj+pjm1)/2.0*df;  
-        cumul.append(norm)  
-        #print fj, pj
-           
-      random_points=[] 
-        
-      for i in range(len(cumul)):
-        #print i,a, cumul[i], norm
-        for aa in a: 
-            if (aa[0]<=cumul[i]/norm and aa[1]): 
-               random_points.append(int(fmod_grid[i]/sensitivity)*sensitivity)
-               aa[1]=False 
+        for j in range(1,len(fmod_grid)):
+            fj=fmod_grid[j]
+            fjm1=fmod_grid[j-1]
+            df = fj - fjm1
+
+            if not log:
+                pj=normal_density_function(expected_value,sigma,fj)
+                pjm1=normal_density_function(expected_value,sigma,fjm1)
+            else:
+                pj=log_normal_density_function(expected_value,sigma,fj)
+                pjm1=log_normal_density_function(expected_value,sigma,fjm1)
+
+            norm+= (pj+pjm1)/2.0*df;
+            cumul.append(norm)
+            #print fj, pj
+
+        random_points=[]
+
+        for i in range(len(cumul)):
+            #print i,a, cumul[i], norm
+            for aa in a:
+                if (aa[0]<=cumul[i]/norm and aa[1]):
+                    random_points.append(int(fmod_grid[i]/sensitivity)*sensitivity)
+                    aa[1]=False
 
     else:
-      random_points=[expected_value]*ntrials 
-      
-      
-         
+        random_points=[expected_value]*ntrials
+
+
+
 
     for i in range(len(random_points)):
-      if random.random() < outlierprob:       
-         a=random.uniform(begin,end)
-         random_points[i]=int(a/sensitivity)*sensitivity
+        if random.random() < outlierprob:
+            a=random.uniform(begin,end)
+            random_points[i]=int(a/sensitivity)*sensitivity
     print random_points
-    '''     
+    '''
     for i in range(ntrials):
       if random.random() > OUTLIERPROB_:
         r=truncnorm.rvs(0.0,1.0,expected_value,BETA_)
         if r>1.0: print r,expected_value,BETA_
       else:
         r=random.random()
-      random_points.append(int(r/sensitivity)*sensitivity)  
+      random_points.append(int(r/sensitivity)*sensitivity)
     '''
-    
+
     rmean=0.; rmean2=0.
     for r in random_points:
         rmean+=r
@@ -634,6 +644,11 @@ def get_random_data_point(expected_value,ntrials,sensitivity,sigma,outlierprob,b
 # ----------------------------------
 class GetModelDensity():
     def __init__(self, prot, dens_thresh=0.1, margin=20., voxel=5.):
+        global impem,deepcopy,cdist
+        import IMP.em as impem
+        from copy import deepcopy
+        from scipy.spatial.distance import cdist
+
         self.prot= prot
         self.dens_thresh= dens_thresh
         self.margin= margin
@@ -665,7 +680,7 @@ class GetModelDensity():
         return self.mgr
 
     def set_mgr(self,mgr): self.mgr = mgr
-        
+
     def get_subunit_density(self,name):
         coords= []
         radii= []
@@ -703,10 +718,10 @@ class GetModelDensity():
                           self.mgr[:,0].min(),self.mgr[:,1].min(),self.mgr[:,2].min()),\
                           IMP.algebra.Vector3D(\
                           self.mgr[:,0].max(),self.mgr[:,1].max(),self.mgr[:,2].max()))
-            dheader = IMP.em.create_density_header(bbox,apix)
+            dheader = impem.create_density_header(bbox,apix)
             dheader.set_resolution(resolution)
 
-            dmap = IMP.em.SampledDensityMap(dheader)        
+            dmap = impem.SampledDensityMap(dheader)
             ps = []
             freqs= self.densities[subunit]
             for x,i in enumerate(self.mgr):
@@ -721,7 +736,7 @@ class GetModelDensity():
             dmap.resample()
             dmap.calcRMS() # computes statistic stuff about the map and insert it in the header
             #print subunit, len(ps)
-            IMP.em.write_map(dmap,outname+"_"+subunit+".mrc",IMP.em.MRCReaderWriter())
+            impem.write_map(dmap,outname+"_"+subunit+".mrc",impem.MRCReaderWriter())
 
 
 
@@ -729,10 +744,11 @@ class GetModelDensity():
 class Clustering():
 
     def __init__(self):
+        from math import sqrt
         self.all_coords = {}
 
     def set_prot(self, prot):
-        self.prot = prot    
+        self.prot = prot
 
     def get_subunit_coords(self,frame, align=0):
         coords= []
@@ -741,8 +757,8 @@ class Clustering():
             #coords.append(array([p.get_x(),p.get_y(),p.get_z()]))
             coords.append(p.get_coordinates())
         #coords= array(coords)
-	self.all_coords[frame]= coords
-        
+        self.all_coords[frame]= coords
+
     def rmsd(self,mtr1,mtr2):
         return sqrt(sum(diagonal(cdist(mtr1,mtr2)**2)) / len(mtr1))
         #return IMP.atom.get_rmsd(mtr1,mtr2)
@@ -767,7 +783,7 @@ class Clustering():
                 r= self.rmsd(self.all_coords[K[f1]], self.all_coords[K[f2]])
                 M[f1,f2]= r
                 M[f2,f1]= r
-                
+
         print M.max()
         from scipy.cluster import hierarchy as hrc
         import pylab as pl
@@ -831,13 +847,13 @@ class GetModelDensity2():
         self.get_subunits_densities(prot, transformation)
 
     def only_add(self, coords, prot):
-       transformation = '' 
-       self.get_subunits_densities(prot, transformation)
+        transformation = ''
+        self.get_subunits_densities(prot, transformation)
 
     def get_subunit_density(self,name, prot, transformation):
         crds= []
         radii= []
-        
+
         for part in [IMP.atom.get_leaves(c) for c in prot.get_children()\
                      if c.get_name()==name][-1]:
             p= IMP.core.XYZR(part)
@@ -848,11 +864,11 @@ class GetModelDensity2():
         for subunit in prot.get_children():
             for sbu in subunit.get_children():
                 subname= sbu.get_name()
-                if subname==name: 
+                if subname==name:
                     for part in IMP.atom.get_leaves(sbu):
                         p= IMP.core.XYZR(part)
                         crds.append(array(list(transformation.get_transformed((p.get_x(),p.get_y(),p.get_z())))))
-                        radii.append(p.get_radius())                    
+                        radii.append(p.get_radius())
         '''
         crds= array(crds)
         radii= array(radii)
@@ -880,10 +896,10 @@ class GetModelDensity2():
                           self.grid[:,0].min(),self.grid[:,1].min(),self.grid[:,2].min()),\
                           IMP.algebra.Vector3D(\
                           self.grid[:,0].max(),self.grid[:,1].max(),self.grid[:,2].max()))
-            dheader = IMP.em.create_density_header(bbox,apix)
+            dheader = impem.create_density_header(bbox,apix)
             dheader.set_resolution(resolution)
 
-            dmap = IMP.em.SampledDensityMap(dheader)        
+            dmap = impem.SampledDensityMap(dheader)
             ps = []
             freqs= self.densities[subunit]
             for x,i in enumerate(self.grid):
@@ -898,19 +914,22 @@ class GetModelDensity2():
             dmap.resample()
             dmap.calcRMS() # computes statistic stuff about the map and insert it in the header
             #print subunit, len(ps)
-            IMP.em.write_map(dmap,outname+"_"+subunit+".mrc",IMP.em.MRCReaderWriter())
+            impem.write_map(dmap,outname+"_"+subunit+".mrc",impem.MRCReaderWriter())
 
 
 # ----------------------------------
-from operator import itemgetter
+
 class GetContactMap():
     def __init__(self, distance=15.):
+        global itemgetter
+        from operator import itemgetter
+        
         self.distance = distance
         self.contactmap = ''
         self.namelist = []
 
     def set_prot(self, prot):
-        self.prot = prot    
+        self.prot = prot
 
     def get_subunit_coords(self,frame, align=0):
         coords= []
@@ -927,24 +946,24 @@ class GetContactMap():
             SortedSegments = sorted(SortedSegments, key=itemgetter(1))
             for sgmnt in SortedSegments:
                 for leaf in IMP.atom.get_leaves(sgmnt[0]):
-                    p= IMP.core.XYZR(leaf) 
+                    p= IMP.core.XYZR(leaf)
                     coords.append(array([p.get_x(),p.get_y(),p.get_z()]))
                     namelist.append(part.get_name()+'_'+sgmnt[0].get_name()+\
                                     '_'+str(IMP.atom.Fragment(leaf).get_residue_indexes()[0]))
-	coords = array(coords)
-        if len(self.namelist)==0: 
+        coords = array(coords)
+        if len(self.namelist)==0:
             self.namelist = namelist
             self.contactmap = zeros((len(coords), len(coords)))
         distances = cdist(coords, coords)<=self.distance
         self.contactmap += distances
-        
+
     def dist_matrix(self):
         K= self.namelist
         M= self.contactmap
         C,R = [],[]
         for x,k in enumerate(K):
             if x==0: continue
-            else: 
+            else:
                 sb = k.split('_')[0]
                 sbp= K[x-1].split('_')[0]
                 if sb!=sbp:
@@ -966,7 +985,7 @@ class GetContactMap():
                        width_ratios=W,
                        height_ratios=W
                        )
- 
+
         cnt = 0
         for x1,r1 in enumerate(R):
             if x1==0: s1=0
@@ -975,13 +994,13 @@ class GetContactMap():
                 if x2==0: s2=0
                 else: s2 = R[x2-1]
 
-	        ax = plt.subplot(gs[cnt])
+                ax = plt.subplot(gs[cnt])
                 ax.set_yticks([])
                 ax.set_xticks([])
                 cax = ax.imshow(log(M[s1:r1,s2:r2]), interpolation='nearest')
                 cnt+=1
         plt.show()
- 
+
         '''
         fig = pl.figure()
         ax = fig.add_subplot(111)
@@ -992,5 +1011,3 @@ class GetContactMap():
         fig.colorbar(cax)
         pl.show()
         '''
-
-

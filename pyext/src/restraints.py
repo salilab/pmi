@@ -5,19 +5,6 @@ import IMP.base
 import IMP.algebra
 import IMP.atom
 import IMP.container
-import IMP.isd2
-import IMP.saxs
-import random
-import os
-import inspect
-
-from numpy import *
-
-from math import cos
-from math import sqrt
-import IMP.isd2.tools as tools
-
-kB= (1.381 * 6.02214) / 4184.0
 
 
 class LinkDomains():
@@ -106,8 +93,8 @@ class LinkDomains():
             #        IMP.core.PairRestraint.get_from(rst).get_name()+
             #           "_"+self.label]=IMP.core.PairRestraint.get_from(rst).evaluate(False)
             output["LinkDomains_"+rst.get_name()+
-                       "_"+self.label]=rst.unprotected_evaluate(None)           
- 
+                       "_"+self.label]=rst.unprotected_evaluate(None)
+
         for i in range(len(self.pairs)):
 
             p0=self.pairs[i][0]
@@ -388,6 +375,10 @@ class TemplateRestraint():
 class MarginalChi3Restraint():
 
     def __init__(self,part1,part2):
+        global impisd2, tools
+        import IMP.isd2 as impisd2
+        import IMP.pmi.tools as tools
+
         self.m=part1.get_model()
         self.label="None"
         self.rs=IMP.RestraintSet('chi3_restraint')
@@ -398,7 +389,7 @@ class MarginalChi3Restraint():
         self.sigma=tools.SetupNuisance(self.m,1.0,0.1,100.0,True).get_particle()
 
         for i in range(len(self.ps1)):
-            mc=IMP.isd2.MarginalChi3Restraint(self.ps1[i],self.ps2[i],self.sigma)
+            mc=impisd2.MarginalChi3Restraint(self.ps1[i],self.ps2[i],self.sigma)
             self.rs.add_restraint(mc)
 
     def set_label(self,label):
@@ -476,6 +467,9 @@ class CrossLinkMS():
     '''
     def __init__(self,prots,
                  listofxlinkertypes=["BS3","BS2G","EGS"],map_between_protein_names_and_chains={},sigmamin=1.0,sigmamax=1.0,sigmagrid=1,sigmaissampled=False,typeofprofile="gofr"):
+        global impisd2,tools
+        import IMP.isd2 as impisd2
+        import IMP.pmi.tools as tools
 
         self.rs=IMP.RestraintSet('data')
         self.rs2=IMP.RestraintSet('prior')
@@ -487,7 +481,7 @@ class CrossLinkMS():
         self.sigmamax=sigmamax
         self.sigmagrid=sigmagrid
         self.sigmaissampled=sigmaissampled
-        
+
         self.sigmatrans=0.1
         self.sigmaglobal=tools.SetupNuisance(self.m,self.sigmamin,
                  self.sigmamin,self.sigmamax,self.sigmaissampled).get_particle()
@@ -549,7 +543,7 @@ class CrossLinkMS():
             restraint_list = f.readlines()
 
         self.index=0
-            
+
 
         self.added_pairs_list=[]
         self.missing_residues=[]
@@ -581,14 +575,14 @@ class CrossLinkMS():
 
                 #force restraint even if it belong to the same rigid body, use it for ambiguous restraints
                 if (tokens[len(tokens)-1]=="F"): force_restraint=True
-            
+
             else:
                 #read with the new file parser
                 totallist=eval(line)
                 self.add_crosslink_according_to_new_file(totallist)
                 #skip the rest
                 continue
-            
+
 
             print '''CrossLinkMS: attempting to add restraint between
                      residue %d of chain %s and residue %d of chain %s''' % (r1,c1,r2,c2)
@@ -638,7 +632,7 @@ class CrossLinkMS():
 
             rs_name='restraint_'+str(index)
 
-            ln=IMP.isd2.CrossLinkMSRestraint(self.sigmaglobal,self.crosslinker_dict[crosslinker])
+            ln=impisd2.CrossLinkMSRestraint(self.sigmaglobal,self.crosslinker_dict[crosslinker])
             for i in range(len(p1s)):
                 ln.add_contribution(p1s[i],p2s[i])
 
@@ -649,10 +643,10 @@ class CrossLinkMS():
                                    crosslinker, i, ln))
 
             self.rs.add_restraint(ln)
-            
-            
-        #self.rs2.add_restraint(IMP.isd2.JeffreysRestraint(self.sigmaglobal))
-        self.rs2.add_restraint(IMP.isd2.UniformPrior(self.sigmaglobal,1000.0,self.sigmaglobal.get_upper()-1.0,self.sigmaglobal.get_lower()+0.1))        
+
+
+        #self.rs2.add_restraint(impisd2.JeffreysRestraint(self.sigmaglobal))
+        self.rs2.add_restraint(impisd2.UniformPrior(self.sigmaglobal,1000.0,self.sigmaglobal.get_upper()-1.0,self.sigmaglobal.get_lower()+0.1))
         print "CrossLinkMS: missing residues"
         for ms in self.missing_residues:
             print "CrossLinkMS:missing "+str(ms)
@@ -677,23 +671,23 @@ class CrossLinkMS():
         r2s=[]
         c1s=[]
         c2s=[]
-        self.index+=1 
+        self.index+=1
         for pair in ambiguous_list:
             error=False
-            
+
             try:
-               c1=self.mbpnc[pair[0][0]]
+                c1=self.mbpnc[pair[0][0]]
             except:
-               "CrossLinkMS: WARNING> protein name "+pair[0][0]+" was not defined"
-               continue 
-            try:                         
-               c2=self.mbpnc[pair[1][0]]   
+                "CrossLinkMS: WARNING> protein name "+pair[0][0]+" was not defined"
+                continue
+            try:
+                c2=self.mbpnc[pair[1][0]]
             except:
-               "CrossLinkMS: WARNING> protein name "+pair[1][0]+" was not defined"
-               continue                         
+                "CrossLinkMS: WARNING> protein name "+pair[1][0]+" was not defined"
+                continue
             r1=int(pair[0][1])
             r2=int(pair[1][1])
-            
+
             print '''CrossLinkMS: attempting to add restraint between
                      residue %d of chain %s and residue %d of chain %s''' % (r1,c1,r2,c2)
 
@@ -711,7 +705,7 @@ class CrossLinkMS():
             except:
                 print "CrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2,c2)
                 error=True
-                self.missing_residues.append((r2,c2))            
+                self.missing_residues.append((r2,c2))
             if error: continue
 
 
@@ -744,14 +738,14 @@ class CrossLinkMS():
             c2s.append(c2)
 
             print "CrossLinkMS: added pair %d %s %d %s" % (r1,c1,r2,c2)
-                       
+
             self.added_pairs_list.append((p1,p2,crosslinker))
 
 
         if len(p1s)>0:
             rs_name= '{:05}'.format(self.index % 100000)
 
-            ln=IMP.isd2.CrossLinkMSRestraint(self.sigmaglobal,self.crosslinker_dict[crosslinker])
+            ln=impisd2.CrossLinkMSRestraint(self.sigmaglobal,self.crosslinker_dict[crosslinker])
             for i in range(len(p1s)):
                 print rs_name,i
                 ln.add_contribution(p1s[i],p2s[i])
@@ -813,7 +807,7 @@ class CrossLinkMS():
                                       chains=c2, atom_type=IMP.atom.AT_CA)
                 p2s.append(s2.get_selected_particles()[0])
 
-            ln=IMP.isd2.CrossLinkMSRestraint(self.sigmaglobal,self.crosslinker_dict[crosslinker])
+            ln=impisd2.CrossLinkMSRestraint(self.sigmaglobal,self.crosslinker_dict[crosslinker])
             for i in range(len(p1s)):
                 ln.add_contribution(p1s[i],p2s[i])
                 d1=IMP.core.XYZ(p1s[i])
@@ -985,8 +979,8 @@ class CrossLinkMS():
     def get_particles_to_sample(self):
         ps={}
         if self.sigmaissampled:
-           ps["Nuisances_CrossLinkMS_Sigma_"+self.label]=([self.sigmaglobal],self.sigmatrans)
-        return ps 
+            ps["Nuisances_CrossLinkMS_Sigma_"+self.label]=([self.sigmaglobal],self.sigmatrans)
+        return ps
 
     def get_output(self):
         #content of the crosslink database pairs
@@ -1152,7 +1146,7 @@ class SimplifiedPEMAP():
             c1=tokens[0]
             r2=int(tokens[3])
             c2=tokens[1]
-            pcc=float(tokens[4]) 
+            pcc=float(tokens[4])
 
             try:
                 #hrc1 = [h for h in self.prot.get_children() if h.get_name()==c1][0]
@@ -1180,7 +1174,7 @@ class SimplifiedPEMAP():
 
             #This is harmonic for the X-link
             #hub= IMP.core.TruncatedHarmonicBound(17.0,self.strength,upperdist+15,limit)
-            
+
             df= IMP.core.SphereDistancePairScore(hub)
             dr= IMP.core.PairRestraint(df, (p1, p2))
             self.rs.add_restraint(dr)
@@ -1193,7 +1187,7 @@ class SimplifiedPEMAP():
 
             #This is harmonic for the X-link
             #hub2= IMP.core.TruncatedHarmonicBound(17.0,self.strength,upperdist+15,limit)
-            
+
             df2= IMP.core.SphereDistancePairScore(hub2)
             dr2= IMP.core.PairRestraint(df2, (p1, p2))
             self.rs.add_restraint(dr2)
@@ -1403,18 +1397,21 @@ class CrossLinkMSSimple():
 
 
 class SecondaryStructure():
-    import IMP.isd2
+    
 
     def __init__(self,prot,resrangetuple,ssstring,mixture=False,nativeness=1.0,kt_caff=0.1):
         #check that the secondary structure string
         #is compatible with the ssstring
+        global impisd2
+        import IMP.isd2 as impisd2
+        
         self.prot=prot
         self.m=self.prot.get_model()
         self.dihe_dict={}
         self.ang_dict={}
         self.do_mix={}
-        self.anglfilename=IMP.isd2.get_data_path("CAAngleRestraint.dat")
-        self.dihefilename=IMP.isd2.get_data_path("CADihedralRestraint.dat")
+        self.anglfilename=impisd2.get_data_path("CAAngleRestraint.dat")
+        self.dihefilename=impisd2.get_data_path("CADihedralRestraint.dat")
         self.nativeness=nativeness
         self.kt_caff=kt_caff
         self.anglrs=IMP.RestraintSet("Angles")
@@ -1488,7 +1485,7 @@ class SecondaryStructure():
             pairslist.append(IMP.ParticlePair(ps[3],ps[0]))
             pairslist.append(IMP.ParticlePair(ps[1],ps[4]))
             pairslist.append(IMP.ParticlePair(ps[4],ps[1]))
-            dr=IMP.isd2.CADihedralRestraint(ps[0],ps[1],ps[2],ps[3],ps[4],phi0,phi1,score_dih)
+            dr=impisd2.CADihedralRestraint(ps[0],ps[1],ps[2],ps[3],ps[4],phi0,phi1,score_dih)
             dr.set_name('Dihedral restraint')
             diherslist.append(dr)
         # add angles
@@ -1508,7 +1505,7 @@ class SecondaryStructure():
             [psi,score_ang]=self.read_potential_angle(ssstring,self.do_mix[(res,resrange[2])])
             pairslist.append(IMP.ParticlePair(ps[0],ps[2]))
             pairslist.append(IMP.ParticlePair(ps[2],ps[0]))
-            dr=IMP.isd2.CAAngleRestraint(ps[0],ps[1],ps[2],psi,score_ang)
+            dr=impisd2.CAAngleRestraint(ps[0],ps[1],ps[2],psi,score_ang)
             dr.set_name('Angle restraint')
             anglrslist.append(dr)
         return (bondrslist,anglrslist,diherslist,pairslist)
@@ -1618,6 +1615,9 @@ class SecondaryStructure():
 
 class WeightRestraint():
     def __init__(self,weight,lower,upper,kappa):
+        global impisd2
+        import IMP.isd2 as impisd2
+
         self.weight=weight
         self.m=self.weight.get_model()
         self.label="None"
@@ -1625,7 +1625,7 @@ class WeightRestraint():
         self.lower =lower
         self.upper=upper
         self.kappa=kappa
-        self.rs.add_restraint(IMP.isd2.WeightRestraint(self.weight,self.lower,self.upper,self.kappa))
+        self.rs.add_restraint(impisd2.WeightRestraint(self.weight,self.lower,self.upper,self.kappa))
 
     def get_restraint(self,label):
         return self.rs
@@ -1645,22 +1645,25 @@ class WeightRestraint():
 
 class JeffreysPrior():
     def __init__(self,nuisance):
+        global impisd2
+        import IMP.isd2 as impisd2
+
         self.m=nuisance.get_model()
         self.label="None"
-        self.rs = IMP.RestraintSet('jeffrey_prior')            
-        jp=IMP.isd2.JeffreysRestraint(nuisance)
+        self.rs = IMP.RestraintSet('jeffrey_prior')
+        jp=impisd2.JeffreysRestraint(nuisance)
         self.rs.add_restraint(jp)
-        
+
     def add_to_model(self):
-        self.m.add_restraint(self.rs)        
+        self.m.add_restraint(self.rs)
 
     def set_label(self,label):
         self.label=label
-        
+
     def get_output(self):
         output={}
         output["JeffreyPrior_"+self.label]=str(self.rs.evaluate(False))
-        return output    
+        return output
 
 ###########################################################################
 
@@ -1669,6 +1672,11 @@ class SAXSISDRestraint():
 
 
     def __init__(self,prot,profile,weight=1):
+        global impsaxs, impisd2, tools
+        import IMP.saxs as impsaxs
+        import IMP.isd2 as impisd2
+        import IMP.pmi.tools as tools
+
         self.prot=prot
         self.m=self.prot.get_model()
         self.label="None"
@@ -1676,13 +1684,13 @@ class SAXSISDRestraint():
 
         self.sigmamaxtrans=0.05
         self.gammamaxtrans=0.05
-        self.prof = IMP.saxs.Profile(profile)
+        self.prof = impsaxs.Profile(profile)
 
         atoms = IMP.atom.get_by_type(self.prot, IMP.atom.ATOM_TYPE)
 
         self.sigma = tools.SetupNuisance(self.m,10.0,0.00001,100,True).get_particle()
 
-        self.th = IMP.saxs.Profile(self.prof.get_min_q(),
+        self.th = impsaxs.Profile(self.prof.get_min_q(),
                 self.prof.get_max_q(), self.prof.get_delta_q())
 
         self.th.calculate_profile(atoms)
@@ -1693,8 +1701,8 @@ class SAXSISDRestraint():
 
         self.cov = eye(self.prof.size()).tolist()
 
-        self.saxs = IMP.isd2.SAXSRestraint(atoms, self.prof, self.sigma,
-                                        self.gamma, self.cov, IMP.saxs.CA_ATOMS)
+        self.saxs = impisd2.SAXSRestraint(atoms, self.prof, self.sigma,
+                                        self.gamma, self.cov, impsaxs.CA_ATOMS)
 
         self.rs.add_restraint(self.saxs)
         self.rs.set_weight(weight)
@@ -1703,9 +1711,9 @@ class SAXSISDRestraint():
         #        'exp':prof,'th':tmp}
 
         self.rs2 = IMP.RestraintSet('jeffreys')
-        j1 = IMP.isd2.JeffreysRestraint(self.sigma)
+        j1 = impisd2.JeffreysRestraint(self.sigma)
         self.rs2.add_restraint(j1)
-        j2 = IMP.isd2.JeffreysRestraint(self.gamma)
+        j2 = impisd2.JeffreysRestraint(self.gamma)
         self.rs2.add_restraint(j2)
 
     def gen_covariance_matrices(self, tau, nsigma):
@@ -1753,7 +1761,7 @@ class SAXSISDRestraint():
 
 class CysteineCrossLinkRestraint():
     def __init__(self,prots,filename,cbeta=False,
-                    betatuple=(0.03, 0.1),    
+                    betatuple=(0.03, 0.1),
                     disttuple=(0.0,25.0, 1000),
                     omegatuple=(1.0, 1000.0, 50),
                     sigmatuple=(0.3,0.3,1),
@@ -1765,6 +1773,9 @@ class CysteineCrossLinkRestraint():
     #the file must have residue1 chain1 residue2 chain2 fractionvalue epsilonname
     #epsilonname is a name for the epsilon particle that must be used for that particular
     #residue pair, eg, "Epsilon-Intra-Solvent", or "Epsilon-Solvent-Membrane", etc.
+        global impisd2, tools
+        import IMP.isd2 as impisd2
+        import IMP.pmi.tools as tools
 
         self.prots=prots
         self.rs=IMP.RestraintSet('Cysteine_Crosslink')
@@ -1847,9 +1858,9 @@ class CysteineCrossLinkRestraint():
 
             # CysteineCrossLinkData
 
-            ccldata=IMP.isd2.CysteineCrossLinkData(fexp,fmod_grid,omega2_grid,beta_grid)
+            ccldata=impisd2.CysteineCrossLinkData(fexp,fmod_grid,omega2_grid,beta_grid)
 
-            ccl=IMP.isd2.CysteineCrossLinkRestraint(self.beta,self.sigma,self.epsilons[epslabel],self.weight,crossdata,ccldata)
+            ccl=impisd2.CysteineCrossLinkRestraint(self.beta,self.sigma,self.epsilons[epslabel],self.weight,crossdata,ccldata)
 
             failed=False
             for i,prot in enumerate(self.prots):
@@ -1857,8 +1868,8 @@ class CysteineCrossLinkRestraint():
                 if not self.cbeta:
                     p1=None
                     p2=None
-                    
-                    
+
+
                     p1=tools.select_calpha_or_residue(prot=prot,chain=chain1,
                                     resid=resid1,ObjectName="CysteineCrossLink:",SelectResidue=True)
                     if p1==None: failed=True
@@ -1866,32 +1877,32 @@ class CysteineCrossLinkRestraint():
                     p2=tools.select_calpha_or_residue(prot=prot,chain=chain2,
                                     resid=resid2,ObjectName="CysteineCrossLink:",SelectResidue=True)
                     if p2==None: failed=True
-                    
+
                 else:
                     #use cbetas
                     p1=[]
                     p2=[]
                     for t in range(-1,2):
                         p=tools.select_calpha_or_residue(prot=prot,chain=chain1,
-                                    resid=resid1+t,ObjectName="CysteineCrossLink:",SelectResidue=False)  
+                                    resid=resid1+t,ObjectName="CysteineCrossLink:",SelectResidue=False)
                         if p!=None:
-                           p1.append(p)
+                            p1.append(p)
                         else:
-                           failed=True
-                                                        
+                            failed=True
+
                         p=tools.select_calpha_or_residue(prot=prot,chain=chain2,
-                                    resid=resid2+t,ObjectName="CysteineCrossLink:",SelectResidue=False)  
+                                    resid=resid2+t,ObjectName="CysteineCrossLink:",SelectResidue=False)
                         if p!=None:
-                           p2.append(p)
+                            p2.append(p)
                         else:
-                           failed=True
+                            failed=True
 
                 if not self.cbeta:
                     if (p1!=None and p2!=None):
                         ccl.add_contribution(p1,p2)
                         d1=IMP.core.XYZ(p1)
                         d2=IMP.core.XYZ(p2)
-                        
+
                         print "Distance_"+str(resid1)+"_"+chain1+":"+str(resid2)+"_"+chain2, IMP.core.get_distance(d1,d2)
 
                 else:
@@ -1901,7 +1912,7 @@ class CysteineCrossLinkRestraint():
             if not failed:
                 self.rs.add_restraint(ccl)
                 ccl.set_name("CysteineCrossLink_"+str(resid1)+"_"+chain1+":"+str(resid2)+"_"+chain2)
-                
+
 
 
     def set_label(self,label):
@@ -1913,14 +1924,14 @@ class CysteineCrossLinkRestraint():
     def get_particles_to_sample(self):
         ps={}
         if self.epsilonissampled:
-          for eps in self.epsilons.keys():
-            ps["Nuisances_CysteineCrossLinkRestraint_epsilon_"+eps+"_"+self.label]=([self.epsilons[eps]],self.epsilonmaxtrans)
+            for eps in self.epsilons.keys():
+                ps["Nuisances_CysteineCrossLinkRestraint_epsilon_"+eps+"_"+self.label]=([self.epsilons[eps]],self.epsilonmaxtrans)
         if self.betaissampled:
-           ps["Nuisances_CysteineCrossLinkRestraint_beta_"+self.label]=([self.beta],self.betamaxtrans)
+            ps["Nuisances_CysteineCrossLinkRestraint_beta_"+self.label]=([self.beta],self.betamaxtrans)
         if self.weightissampled:
-           ps["Weights_CysteineCrossLinkRestraint_"+self.label]=([self.weight],self.weightmaxtrans)
+            ps["Weights_CysteineCrossLinkRestraint_"+self.label]=([self.weight],self.weightmaxtrans)
         if self.sigmaissampled:
-           ps["Nuisances_CysteineCrossLinkRestraint_"+self.label]=([self.sigma],self.sigmamaxtrans)
+            ps["Nuisances_CysteineCrossLinkRestraint_"+self.label]=([self.sigma],self.sigmamaxtrans)
         return ps
 
     def set_output_level(self,level="low"):
@@ -1942,21 +1953,21 @@ class CysteineCrossLinkRestraint():
             output["CysteineCrossLinkRestraint_epsilon_"+eps+"_"+self.label]=str(self.epsilons[eps].get_scale())
         output["CysteineCrossLinkRestraint_beta_"+self.label]=str(self.beta.get_scale())
         for n in range(self.weight.get_number_of_states()):
-           output["CysteineCrossLinkRestraint_weights_"+str(n)+"_"+self.label]=str(self.weight.get_weight(n))
+            output["CysteineCrossLinkRestraint_weights_"+str(n)+"_"+self.label]=str(self.weight.get_weight(n))
 
         if self.outputlevel=="high":
             for rst in self.rs.get_restraints():
                 output["CysteineCrossLinkRestraint_Total_Frequency_"+
-                       IMP.isd2.CysteineCrossLinkRestraint.get_from(rst).get_name()+
-                       "_"+self.label]=IMP.isd2.CysteineCrossLinkRestraint.get_from(rst).get_model_frequency()
+                       impisd2.CysteineCrossLinkRestraint.get_from(rst).get_name()+
+                       "_"+self.label]=impisd2.CysteineCrossLinkRestraint.get_from(rst).get_model_frequency()
                 output["CysteineCrossLinkRestraint_Standard_Error_"+
-                       IMP.isd2.CysteineCrossLinkRestraint.get_from(rst).get_name()+"_"
-                       +self.label]=IMP.isd2.CysteineCrossLinkRestraint.get_from(rst).get_standard_error()
+                       impisd2.CysteineCrossLinkRestraint.get_from(rst).get_name()+"_"
+                       +self.label]=impisd2.CysteineCrossLinkRestraint.get_from(rst).get_standard_error()
                 if len(self.prots)>1:
                     for i in range(len(self.prots)):
                         output["CysteineCrossLinkRestraint_Frequency_Contribution_"+
-                        IMP.isd2.CysteineCrossLinkRestraint.get_from(rst).get_name()+
-                        "_State_"+str(i)+"_"+self.label]=IMP.isd2.CysteineCrossLinkRestraint.get_from(rst).get_frequencies()[i]
+                        impisd2.CysteineCrossLinkRestraint.get_from(rst).get_name()+
+                        "_State_"+str(i)+"_"+self.label]=impisd2.CysteineCrossLinkRestraint.get_from(rst).get_frequencies()[i]
 
         return output
 
@@ -1964,8 +1975,10 @@ class GaussianEMRestraint():
 
     def __init__(self,prot,map_anchors_fn,segment_anchors=[],segment_parts=[],rigid=True):
         #import IMP.multifit
-	import sys
-        # read in some data
+        global sys, impisd2, tools
+        import sys
+        import IMP.isd2 as impisd2
+        import IMP.pmi.tools as tools
         #dcoords=IMP.multifit.read_anchors_data(map_anchors_fn).points_
         self.prot=prot
         sel=IMP.atom.Selection(self.prot)
@@ -1974,7 +1987,7 @@ class GaussianEMRestraint():
 
 
         self.m=self.prot.get_model()
-        
+
         data = open(map_anchors_fn)
         D = data.readlines()
         data.close()
@@ -1999,7 +2012,7 @@ class GaussianEMRestraint():
         self.segment_anchors=segment_anchors
         self.segment_parts=segment_parts
         self.tabexp=True
-        
+
 
         self.density_anchors=[]
         for d in dcoords:
@@ -2015,7 +2028,7 @@ class GaussianEMRestraint():
                     self.density_anchors.append(p)
                     IMP.core.XYZR.setup_particle(p,\
                                          IMP.algebra.Sphere3D(dcoords[d],\
-                                         self.density_sigmas[0]*1.5))        
+                                         self.density_sigmas[0]*1.5))
 
         for np,p in enumerate(self.model_anchors):
             self.model_sigmas[np]=IMP.core.XYZR(p).get_radius()/1.5
@@ -2024,7 +2037,7 @@ class GaussianEMRestraint():
                  self.sigmamin,self.sigmamax,True).get_particle()
         print 'setting up restraint'
 
-        self.gaussianEM_restraint=IMP.isd2.GaussianEMRestraint(
+        self.gaussianEM_restraint=impisd2.GaussianEMRestraint(
             self.model_anchors,self.model_sigmas,self.model_weights,
             self.density_anchors,self.density_sigmas,self.density_weights,
             self.sigmaglobal.get_particle(),self.cutoff_dist_for_container,

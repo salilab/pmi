@@ -1,14 +1,21 @@
 import IMP
 import IMP.core
-import IMP.isd2
-from math import exp
-import random
 
 class MonteCarlo():
     def __init__(self,m,objects,temp):
+        
+        #check that isd2 is installed
+        try:
+            global impisd2
+            import IMP.isd2 as impisd2 
+            self.isd2_available = True
+        except ImportError:
+            self.isd2_available = False
+
+
         #check that the objects containts get_particles_to_sample methods
         #and the particle type is supported
-        #list of samplable particles:
+        #list of particles to sample:
         self.losp=["Rigid_Bodies","Floppy_Bodies","Nuisances","X_coord","Weights"]
         self.simulated_annealing=False
         self.selfadaptive=False
@@ -47,11 +54,17 @@ class MonteCarlo():
                     self.mvs+=mvs
 
                 if "Nuisances" in k:
+                    if not self.isd2_available:
+                        print "MonteCarlo: isd2 module needed to use nuisances"
+                        exit()
                     mvs=self.get_nuisance_movers(pts[k][0],pts[k][1])
                     for mv in mvs: mv.set_name(k)
                     self.mvs+=mvs
 
                 if "Weights" in k:
+                    if not self.isd2_available:
+                        print "MonteCarlo: isd2 module needed to use weights"
+                        exit()
                     mvs=self.get_weight_movers(pts[k][0],pts[k][1])
                     for mv in mvs: mv.set_name(k)
                     self.mvs+=mvs
@@ -80,7 +93,7 @@ class MonteCarlo():
         self.tempmax=tempmax
         self.timemin=timemin
         self.timemax=timemax
-    
+
     def set_self_adaptive(self,isselfadaptive=True):
         self.selfadaptive=isselfadaptive
 
@@ -98,10 +111,10 @@ class MonteCarlo():
 
     def get_number_of_movers(self):
         return self.smv.get_number_of_movers()
-    
+
     def get_particle_types():
         return self.losp
-    
+
     def run(self,nstep):
         self.nframe+=1
         self.mc.optimize(nstep*self.get_number_of_movers())
@@ -123,7 +136,7 @@ class MonteCarlo():
                     accept=float(mvacc)/float(mvprp)
                     nmv=IMP.core.NormalMover.get_from(mv)
                     stepsize = nmv.get_sigma()
-                    
+
                     if 0.4 > accept or accept > 0.6:
                         nmv.set_sigma(stepsize*2*accept)
                     if accept < 0.05:
@@ -134,12 +147,13 @@ class MonteCarlo():
                         nmv.set_sigma(stepsize*2*accept)
 
                 if "Weights" in name:
+
                     mvacc=mv.get_number_of_accepted()
                     mvprp=mv.get_number_of_proposed()
                     accept=float(mvacc)/float(mvprp)
-                    wmv=IMP.isd2.WeightMover.get_from(mv)
+                    wmv=impisd2.WeightMover.get_from(mv)
                     stepsize = wmv.get_radius()
-                    
+
                     if 0.4 > accept or accept > 0.6:
                         wmv.set_radius(stepsize*2*accept)
                     if accept < 0.05:
@@ -195,7 +209,7 @@ class MonteCarlo():
     def get_weight_movers(self,weights,maxstep):
         mvs=[]
         for weight in weights:
-            if(weight.get_number_of_states()>1): mvs.append(IMP.isd2.WeightMover(weight,maxstep))
+            if(weight.get_number_of_states()>1): mvs.append(impisd2.WeightMover(weight,maxstep))
         return mvs
 
     def temp_simulated_annealing(self):
@@ -220,14 +234,14 @@ class MonteCarlo():
             mvacc=mv.get_number_of_accepted()
             mvprp=mv.get_number_of_proposed()
             try:
-              mvacr=float(mvacc)/float(mvprp)
+                mvacr=float(mvacc)/float(mvprp)
             except:
-              mvacr=0.0
+                mvacr=0.0
             output["MonteCarlo_Acceptance_"+mvname+"_"+str(i)]=str(mvacr)
             if "Nuisances" in mvname:
-                 output["MonteCarlo_StepSize_"+mvname+"_"+str(i)]=str(IMP.core.NormalMover.get_from(mv).get_sigma()) 
+                output["MonteCarlo_StepSize_"+mvname+"_"+str(i)]=str(IMP.core.NormalMover.get_from(mv).get_sigma())
             if "Weights" in mvname:
-                 output["MonteCarlo_StepSize_"+mvname+"_"+str(i)]=str(IMP.isd2.WeightMover.get_from(mv).get_radius())                  
+                output["MonteCarlo_StepSize_"+mvname+"_"+str(i)]=str(impisd2.WeightMover.get_from(mv).get_radius())
         output["MonteCarlo_Temperature"]=str(self.mc.get_kt())
         output["MonteCarlo_Nframe"]=str(self.nframe)
         return output
@@ -276,8 +290,8 @@ class PyMCMover():
     #only works if the sampled particles are rigid bodies
     def __init__(self, representation, mcchild, n_mc_steps):
 
-        #mcchild must be IMP.isd2.samplers.MonteCarlo
-        #representation must be IMP.isd2.representation
+        #mcchild must be pmi.samplers.MonteCarlo
+        #representation must be pmi.representation
 
         self.rbs = representation.get_rigid_bodies()
 
@@ -312,6 +326,9 @@ class PyMCMover():
 class PyMC():
 
     def __init__(self,model):
+        from math import exp
+        import random
+
         self.m=model
         self.restraints=None
         self.first_call=True
@@ -379,7 +396,7 @@ class PyMC():
         self.restraints=restraints
 
     def set_scoring_function(self,objects):
-        #objects should be IMP.isd2.restraints
+        #objects should be pmi.restraints
         rs = IMP.RestraintSet(self.m,1.0,'sfo')
         for ob in  objects:
             rs.add_restraint(ob.get_restraint())

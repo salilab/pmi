@@ -589,8 +589,10 @@ class SimplifiedModel():
 
 
 
-    def add_component(self,name,chainnames, length, pdbs, init_coords=(),simplepdb=1,ds=[],colors=[]):
-
+    def add_component(self,name,chainnames, length, pdbs, init_coords=(),simplepdb=1,ds=None,colors=[]):
+        
+        if ds==None: ds=[]
+        
         protein_h = IMP.atom.Molecule.setup_particle(IMP.Particle(self.m))
         protein_h.set_name(name)
         bb=IMP.algebra.BoundingBox3D(IMP.algebra.Vector3D(-self.bblenght,-self.bblenght,-self.bblenght),
@@ -609,7 +611,7 @@ class SimplifiedModel():
             for pdb_part_count,pdb in enumerate(pdbs):
                 sls=IMP.base.SetLogState(IMP.NONE)
                 t=IMP.atom.read_pdb( pdb, self.m, 
-                  IMP.atom.AndPDBselector(IMP.atom.ChainPDBSelector(chainnames[pdb_part_count]), 
+                  IMP.atom.AndPDBSelector(IMP.atom.ChainPDBSelector(chainnames[pdb_part_count]), 
                                                                       IMP.atom.ATOMPDBSelector()))
                             
                 del sls

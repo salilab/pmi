@@ -1085,6 +1085,9 @@ class SimplifiedCrossLinkMS():
 
     def get_restraint_sets(self):
         return self.rs
+        
+    def get_restraint(self):
+        return self.rs        
 
     def set_output_level(self,level="low"):
             #this might be "low" or "high"

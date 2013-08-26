@@ -608,7 +608,9 @@ class SimplifiedModel():
             bounds = []
             for pdb_part_count,pdb in enumerate(pdbs):
                 sls=IMP.base.SetLogState(IMP.NONE)
-                t=IMP.atom.read_pdb( pdb, self.m, IMP.atom.ChainPDBSelector(chainnames[pdb_part_count]))      
+                t=IMP.atom.read_pdb( pdb, self.m, 
+                  IMP.atom.AndPDBselector(IMP.atom.ChainPDBSelector(chainnames[pdb_part_count]), 
+                                                                      IMP.atom.ATOMPDBSelector()))
                             
                 del sls
 

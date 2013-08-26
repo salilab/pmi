@@ -1976,12 +1976,17 @@ class CysteineCrossLinkRestraint():
 
 class GaussianEMRestraint():
 
-    def __init__(self,prot,map_anchors_fn,segment_anchors=[],segment_parts=[],rigid=True):
-        #import IMP.multifit
+    def __init__(self,prot,map_anchors_fn,segment_anchors=None,segment_parts=None,rigid=True):
+
         global sys, impisd2, tools
         import sys
         import IMP.isd2 as impisd2
         import IMP.pmi.tools as tools
+        #import IMP.multifit
+        
+        if segment_anchors==None: segment_anchors=[]
+        if segment_parts==None: segment_parts=[]        
+        
         #dcoords=IMP.multifit.read_anchors_data(map_anchors_fn).points_
         self.prot=prot
         sel=IMP.atom.Selection(self.prot)

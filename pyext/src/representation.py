@@ -589,9 +589,12 @@ class SimplifiedModel():
 
 
 
-    def add_component(self,name,chainnames, length, pdbs, init_coords=(),simplepdb=1,ds=None,colors=[]):
+    def add_component(self,name,chainnames, length, pdbs, init_coords=None,simplepdb=1,ds=None,colors=None):
         
         if ds==None: ds=[]
+        if colors==None: colors=[]
+        if init_coords==None: init_coords=()
+        
         
         protein_h = IMP.atom.Molecule.setup_particle(IMP.Particle(self.m))
         protein_h.set_name(name)

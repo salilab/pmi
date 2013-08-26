@@ -4,20 +4,7 @@ import IMP.core
 import IMP.base
 import IMP.algebra
 import IMP.atom
-import IMP.container
-import random
-import os
-import inspect
-from numpy import *
-
-from math import cos
-from math import sqrt
-from random import uniform
-from operator import itemgetter
-
-import itertools
-import IMP.isd2.tools as tools
-import IMP.isd2.restraints as restraints
+import IMP.display
 
 class Beads():
     def __init__(self,m):
@@ -28,17 +15,17 @@ class Beads():
         self.floppy_bodies=[]
         self.maxtrans_fb=0.2
         self.particle_database={}
-    
+
     def add_bead(self,radius,label="None"):
-        
+
         p=IMP.Particle(self.m)
         p.set_name(label)
         self.particle_database[label]=p
         self.floppy_bodies.append(p)
         #set default coordinates 0,0,0
         d=IMP.core.XYZ.setup_particle(p)
-        IMP.core.XYZR.setup_particle(p,radius)                    
-        d.set_coordinates_are_optimized(True)        
+        IMP.core.XYZR.setup_particle(p,radius)
+        d.set_coordinates_are_optimized(True)
         a=IMP.atom.Atom.setup_particle(p,IMP.atom.AT_CA)
         p=IMP.Particle(self.m)
         self.nresidues+=1
@@ -46,29 +33,33 @@ class Beads():
         r.add_child(a)
         self.hier.add_child(r)
         return self.particle_database[label]
-        
+
     def set_floppy_bodies_max_trans(self,maxtrans):
-        self.maxtrans_fb=maxtrans        
+        self.maxtrans_fb=maxtrans
 
     def get_hierarchy(self):
         return self.hier
-    
+
     def get_bead(self,label):
         return self.particle_database[label]
-    
+
     def set_maxtrans_fb(self,maxtrans_fb):
         self.maxtrans_fb=maxtrans_fb
-    
+
     def get_particles_to_sample(self):
         #get the list of samplable particles with their type
         #and the mover displacement. Everything wrapped in a dictionary,
         #to be used by samplers modules
         ps={}
         ps["Floppy_Bodies_Beads"]=(self.floppy_bodies,self.maxtrans_fb)
-        return ps        
+        return ps
 
 class MultipleStates():
     def __init__(self,nstates,m):
+        import itertools
+        import IMP.pmi.tools as tools
+        import IMP.pmi.restraints as restraints
+
         self.floppy_bodies=[]
         self.rigid_bodies=[]
         for ncopy in range(nstates):
@@ -130,18 +121,18 @@ class MultipleStates():
                         IMP.atom.destroy(r)
                         #IMP.atom.destroy(a)
                         #IMP.atom.destroy(p)
-            IMP.atom.show_molecular_hierarchy(prot)                        
+            IMP.atom.show_molecular_hierarchy(prot)
 
     def add_residues_to_chains(self,residuechainlist,residue_type=IMP.atom.LYS):
         #add a list of residues to the corresponding list
         #for instance residuechainlist=[(35,"A"),(100,"B")] will add
         #residue 35 to chain A and residue 100 to chain B
         for rc in residuechainlist:
-            
-            
-            
+
+
+
             s=IMP.atom.Selection(self.prot[0],chains=rc[1],residue_index=rc[0],atom_type=IMP.atom.AT_CA)
-            
+
             print s.get_selected_particles()
             if len(s.get_selected_particles())==0:
                 for prot in self.prot:
@@ -149,7 +140,7 @@ class MultipleStates():
                     p=IMP.Particle(self.m)
                     #set default coordinates 0,0,0
                     d=IMP.core.XYZ.setup_particle(p)
-                    IMP.core.XYZR.setup_particle(p,0.0)                    
+                    IMP.core.XYZR.setup_particle(p,0.0)
                     d.set_coordinates_are_optimized(True)
                     a=IMP.atom.Atom.setup_particle(p,IMP.atom.AT_CA)
                     p=IMP.Particle(self.m)
@@ -163,17 +154,17 @@ class MultipleStates():
 
 
             else:
-              p=s.get_selected_particles()[0]
-              print rc, s.get_selected_particles()[0] #, tools.get_residue_index_and_chain_from_particle(s.get_selected_particles()[0])
-            
-       
- 
+                p=s.get_selected_particles()[0]
+                print rc, s.get_selected_particles()[0] #, tools.get_residue_index_and_chain_from_particle(s.get_selected_particles()[0])
+
+
+
             #test that that was indeed added:
-            
+
             s=IMP.atom.Selection(self.prot[0],chains=rc[1],residue_index=rc[0],atom_type=IMP.atom.AT_CA)
 
             print s.get_selected_particles()
-              
+
 
     def destroy_everything_but_the_residues(self,segments):
         #segments are defined as a list of tuples ex [(res1,res2,chain),....]
@@ -309,17 +300,17 @@ class MultipleStates():
                         s=IMP.atom.Selection(prot,chains=interval[2],residue_indexes=rinterval)
                     for p in s.get_selected_particles():
                         atoms.append(IMP.core.XYZR(p))
-                    
+
                     #add low resolution representation to the rigid bodies
                     for key in self.prot_lowres:
                         if (interval[0]==-1 or interval[1]==-1):
-                           s=IMP.atom.Selection(self.prot_lowres[key][ncopy],chains=interval[2])
+                            s=IMP.atom.Selection(self.prot_lowres[key][ncopy],chains=interval[2])
                         else:
-                           s=IMP.atom.Selection(self.prot_lowres[key][ncopy],chains=interval[2],residue_indexes=rinterval)
+                            s=IMP.atom.Selection(self.prot_lowres[key][ncopy],chains=interval[2],residue_indexes=rinterval)
                         for p in s.get_selected_particles():
-                           atoms.append(IMP.core.XYZR(p))                        
-                    
-                    
+                            atoms.append(IMP.core.XYZR(p))
+
+
                 if len(atoms)>0:
                     prb=IMP.Particle(self.m)
                     rb=IMP.core.RigidBody.setup_particle(prb,atoms)
@@ -409,7 +400,7 @@ class MultipleStates():
                     IMP.core.XYZ.setup_particle(r,coor)
                     IMP.atom.destroy(p)
                 '''
-                
+
                 cps=IMP.atom.get_by_type(h, IMP.atom.CHAIN_TYPE)
 
                 '''
@@ -431,14 +422,14 @@ class MultipleStates():
                 h=IMP.atom.read_pdb(pdb[0], self.m,IMP.atom.CAlphaPDBSelector())
 
                 '''
-                #destroy CA atoms, for the future                
+                #destroy CA atoms, for the future
                 for p in IMP.atom.get_leaves(h):
                     coor=IMP.core.XYZ(p).get_coordinates()
                     r=IMP.atom.Hierarchy(p).get_parent()
                     IMP.core.XYZ.setup_particle(r,coor)
                     IMP.atom.destroy(p)
                 '''
-                
+
                 cps=IMP.atom.get_by_type(h, IMP.atom.CHAIN_TYPE)
                 for cp in cps:
                     IMP.atom.Chain(cp).set_id(pdb[1])
@@ -451,16 +442,16 @@ class MultipleStates():
         ps=IMP.atom.get_leaves(prot)
         center = IMP.algebra.get_zero_vector_3d()
         for l in ps:
-          center += IMP.core.XYZ(l).get_coordinates()
+            center += IMP.core.XYZ(l).get_coordinates()
         center /= len(ps)
         for l in ps:
-          d = IMP.core.XYZ(l)
-          d.set_coordinates(d.get_coordinates() - center)
-          d.set_coordinates_are_optimized(True)
-        
+            d = IMP.core.XYZ(l)
+            d.set_coordinates(d.get_coordinates() - center)
+            d.set_coordinates_are_optimized(True)
+
         '''
         # bug generating code: keeping it for history
-        
+
         rb=IMP.atom.create_rigid_body(prot)
         rbcoord=rb.get_coordinates()
         rot=IMP.algebra.get_identity_rotation_3d()
@@ -470,8 +461,8 @@ class MultipleStates():
         IMP.core.RigidBody.teardown_particle(rb)
         self.m.remove_particle(rb)
         '''
-        
-        
+
+
     def shuffle_configuration(self,bounding_box_length):
         "shuffle configuration, used to restart the optimization"
         "it only works if rigid bodies were initialized"
@@ -492,15 +483,15 @@ class MultipleStates():
         #generate a new multistate hierarchy
         self.prot_lowres[nres]=[]
         for prot in self.prot:
-           sh=IMP.atom.create_simplified_along_backbone(prot, nres, True)
-           print IMP.atom.get_leaves(sh)
-           #for p in IMP.atom.get_leaves(sh):
-           #    IMP.atom.Atom.setup_particle(p,IMP.atom.AT_CA)
-           #s=IMP.atom.Selection(sh, chains="A",
-           #              residue_index=958)
-           #print s.get_selected_particles()[0]
-           self.prot_lowres[nres].append(sh)
-           
+            sh=IMP.atom.create_simplified_along_backbone(prot, nres, True)
+            print IMP.atom.get_leaves(sh)
+            #for p in IMP.atom.get_leaves(sh):
+            #    IMP.atom.Atom.setup_particle(p,IMP.atom.AT_CA)
+            #s=IMP.atom.Selection(sh, chains="A",
+            #              residue_index=958)
+            #print s.get_selected_particles()[0]
+            self.prot_lowres[nres].append(sh)
+
 
     def get_simplified_hierarchy(self,nres):
         return self.prot_lowres[nres]
@@ -551,6 +542,13 @@ class SimplifiedModel():
     '''
 
     def __init__(self,m):
+        global random, itemgetter,tools,nrrand,array
+        import random
+        from operator import itemgetter
+        import IMP.pmi.tools as tools
+        from numpy.random import rand as nrrand
+        from numpy import array
+        
         self.rigid_bodies=[]
         self.floppy_bodies=[]
 
@@ -610,9 +608,10 @@ class SimplifiedModel():
             bounds = []
             for pdb_part_count,pdb in enumerate(pdbs):
                 sls=IMP.base.SetLogState(IMP.NONE)
-                t=IMP.atom.read_pdb( pdb, self.m, IMP.atom.ChainPDBSelector(chainnames[pdb_part_count]))
+                t=IMP.atom.read_pdb( pdb, self.m, IMP.atom.ChainPDBSelector(chainnames[pdb_part_count]))      
+                            
                 del sls
-                
+
                 #find start and end indeces
                 start = IMP.atom.Residue(t.get_children()[0].get_children()[0]).get_index()
                 end   = IMP.atom.Residue(t.get_children()[0].get_children()[-1]).get_index()
@@ -631,7 +630,7 @@ class SimplifiedModel():
                 IMP.atom.destroy(t)
                 '''
                 # make the simplified structure rigid
-                if init_coords!=() and rbo==0: 
+                if init_coords!=() and rbo==0:
                     print name,pdb
                     rb=IMP.atom.create_rigid_body(s)
                     rb.set_coordinates(init_coords)
@@ -640,6 +639,15 @@ class SimplifiedModel():
                 #if rbo==1: rb.set_coordinates_are_optimized(False)
                 '''
                 protein_h.add_child(s)
+                
+                for prt in IMP.atom.get_leaves(s):
+                    #setting up color for each particle in the hierarchy, if colors missing in the colors list set it to red
+                    try:
+                       clr=IMP.display.get_rgb_color(colors[pdb_part_count])
+                    except:
+                       clr=IMP.display.get_rgb_color(1.0)
+                    IMP.display.Colored.setup_particle(prt,clr)  
+                
                 s.set_name(pdb)
 
 
@@ -656,7 +664,7 @@ class SimplifiedModel():
 
         print ds
         #work on un-modelled regions
-        randomize_coords = lambda c: tuple(10.*(random.rand(3)-0.5)+array(c))
+        randomize_coords = lambda c: tuple(10.*(nrrand(3)-0.5)+array(c))
 
         for n,ds_frag in enumerate(ds):
             if ds_frag[1]-ds_frag[0]==0: ds_frag=(ds_frag[0],ds_frag[1]+1)
@@ -665,12 +673,12 @@ class SimplifiedModel():
             for prt in IMP.atom.get_leaves(h):
                 #setting up color for the particle, if colors missing in the colors list set it to red
                 try:
-                   clr=IMP.display.get_rgb_color(colors[n])
+                    clr=IMP.display.get_rgb_color(colors[n])
                 except:
-                   clr=IMP.display.get_rgb_color(1.0)                   
+                    clr=IMP.display.get_rgb_color(1.0)
                 IMP.display.Colored.setup_particle(prt,clr)
 
-                
+
                 ptem= prt.get_as_xyzr()
                 ptem.set_radius(ptem.get_radius()*0.8)
 
@@ -739,14 +747,14 @@ class SimplifiedModel():
     def set_rigid_bodies(self,subunits,coords=()):
         #sometimes, we know about structure of an interaction
         #and here we make such PPIs rigid
-        randomize_coords = lambda c: tuple(1.*(random.rand(3)-0.5)+array(c))
+        randomize_coords = lambda c: tuple(1.*(nrrand(3)-0.5)+array(c))
 
         rigid_parts = []
         for prt in self.prot.get_children():
             if prt.get_name() in subunits:
-                for frag in prt.get_children(): 
+                for frag in prt.get_children():
                     rigid_parts += IMP.atom.get_leaves(frag)
-                    print prt.get_name(),IMP.atom.get_leaves(frag)                    
+                    print prt.get_name(),IMP.atom.get_leaves(frag)
                     print
                     rb=IMP.atom.create_rigid_body(IMP.atom.get_leaves(frag))
                     rb.set_coordinates_are_optimized(True)
@@ -754,12 +762,12 @@ class SimplifiedModel():
                         rb.set_coordinates(randomize_coords(coords))
                     else:
                         rb.set_coordinates(randomize_coords((0.,0.,0.)))
-                    self.rigid_bodies.append(rb)                  
+                    self.rigid_bodies.append(rb)
 
         '''
         rb=IMP.atom.create_rigid_body(rigid_parts)
         rb.set_coordinates_are_optimized(True)
-        if coords!=(): 
+        if coords!=():
             rb.set_coordinates(randomize_coords(coords))
         else:
             rb.set_coordinates(randomize_coords((0.,0.,0.)))
@@ -769,7 +777,7 @@ class SimplifiedModel():
     def set_floppy_bodies(self):
         for p in self.floppy_bodies:
             tools.set_floppy_body(p)
-        
+
 
     def set_rigid_bodies_max_trans(self,maxtrans):
         self.maxtrans_rb=maxtrans

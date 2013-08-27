@@ -486,6 +486,7 @@ def get_grid(gmin,gmax,ngrid,boundaries):
     #-------------------------------
 
 def get_log_grid(gmin,gmax,ngrid):
+    from math import exp, log
     grid=[]
     for i in range(0,ngrid+1):
         grid.append( gmin*exp(float(i)/ngrid*log(gmax/gmin)) )

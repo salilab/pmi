@@ -56,6 +56,8 @@ class Beads():
 
 class MultipleStates():
     def __init__(self,nstates,m):
+        global itertools, tools, restraints
+        
         import itertools
         import IMP.pmi.tools as tools
         import IMP.pmi.restraints as restraints

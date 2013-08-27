@@ -1038,8 +1038,9 @@ class BinomialXLMSRestraint():
         if map_between_protein_names_and_chains==None:
            map_between_protein_names_and_chains={}
         
-        global impisd2
+        global impisd2, tools, exp
         import IMP.isd2 as impisd2
+        import IMP.pmi.tools as tools
               
            
         self.label="None"
@@ -1085,7 +1086,7 @@ class BinomialXLMSRestraint():
         
         self.epsilon=0.01
         self.psi_dictionary={}
-        self.psiintervals={"LowC":(0.0,22.0),"LowMedC":(22,26),"HighMedC":(26.0,28.0),"HighC":(28.0,10000.0}
+        self.psiintervals={"LowC":(0.0,22.0),"LowMedC":(22,26),"HighMedC":(26.0,28.0),"HighC":(28.0,10000.0)}
 
         self.sigma=tools.SetupNuisance(self.m,self.sigmainit,
              self.sigmaminnuis,self.sigmamaxnuis,self.sigmaissampled).get_particle()
@@ -1394,12 +1395,12 @@ class BinomialXLMSRestraint():
                 if copy1==0:
                     label=str(resid1)+":"+chain1+"_"+str(resid2)+":"+chain2
                     #output["CrossLinkMS_Combined_Probability_"+str(rsname)+"_"+crosslinker+"_"+label]=str(ln.get_probability())
-                    output["CrossLinkMS_Score_"+str(rsname)+"_"+index+"_"+crosslinker+"_"+label]=str(ln.unprotected_evaluate(None))
+                    output["CrossLinkMS_Score_"+str(rsname)+"_"+str(index)+"_"+crosslinker+"_"+label]=str(ln.unprotected_evaluate(None))
 
 
                 d0=IMP.core.XYZ(p0)
                 d1=IMP.core.XYZ(p1)
-                output["CrossLinkMS_Distance_"+index+"_"+label_copy]=str(IMP.core.get_distance(d0,d1))
+                output["CrossLinkMS_Distance_"+str(index)+"_"+label_copy]=str(IMP.core.get_distance(d0,d1))
         
         output["CrossLinkMS_Sigma_"+self.label]=str(self.sigma.get_scale())
         output["CrossLinkMS_Delta_"+self.label]=str(self.delta.get_scale())

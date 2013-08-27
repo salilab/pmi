@@ -114,6 +114,7 @@ class Output():
         self.dictionary_pdbs={}
         self.dictionary_rmfs={}
         self.dictionary_stats={}
+        self.dictionary_stats2={}
         self.best_score_list=None
         self.nbestscoring=None
         self.suffix=None
@@ -259,6 +260,53 @@ class Output():
             output.update(obj.get_output())
         return output
 
+#-------------------
+      
+    def init_stat2(self,name,listofobjects):
+        #this is a new stat file that should be less 
+        #space greedy!
+        flstat=open(name,'w')
+        output={}
+        stat2_keywords={"STAT2HEADER":"STAT2HEADER"}
+        stat2_inverse={}
+        
+        for l in listofobjects:
+            if not "get_output" in dir(l):
+                print "Output: object ", l, " doesn't have get_output() method"
+                exit()
+            else:
+                output.update(l.get_output())
+        
+        for n,k in enumerate(output):
+            stat2_keywords.update({n:k})
+            stat2_inverse.update({k:n})
+        
+        flstat.write("%s \n" % stat2_keywords)
+        flstat.close()
+        self.dictionary_stats2[name]=(listofobjects,stat2_inverse)
+
+    def write_stat2(self,name,appendmode=True):
+        output={}
+        (listofobjects,stat2_inverse)=self.dictionary_stats2[name]
+
+        for obj in listofobjects:
+            od=obj.get_output()
+            for k in od: 
+               output.update({stat2_inverse[k]:od[k]})
+
+        if appendmode:
+            writeflag='a'
+        else:
+            writeflag='w'
+
+        flstat=open(name,writeflag)
+        flstat.write("%s \n" % output)
+        flstat.close()
+
+    def write_stats2(self):
+        for stat in self.dictionary_stats2.keys():
+            self.write_stat2(stat)
+        
 
 class Variance():
     def __init__(self, model, tau, niter, prot, th_profile, write_data=False):

@@ -12,6 +12,8 @@
 #include "pmi_config.h"
 #include <IMP/Restraint.h>
 #include <IMP/restraint_macros.h>
+#include <IMP/base/tuple_macros.h>
+#include <IMP/base/map.h>
 //#include <IMP/container/CloseBipartitePairContainer.h>
 
 IMPPMI_BEGIN_NAMESPACE
@@ -27,8 +29,20 @@ class IMPPMIEXPORT  CompositeRestraint : public Restraint
     IMP::kernel::ParticleIndex handle_particle_index_;
     double coffd_;
     double l_;
+    IMP_NAMED_TUPLE_2(CacheKey, CacheKeys,
+                  Int, ipart, Ints, excluded, );
+
+    IMP_NAMED_TUPLE_2(CacheKeyPot, CacheKeyPots,
+                  Int, ipart, Int, kpart, );
+
+    typedef base::map<CacheKey, double> Cache;
+    typedef base::map<CacheKeyPot, double> CachePot;    
     //base::map<std::tuple<unsigned int,unsigned int>,
     //          base::Pointer<container::CloseBipartitePairContainer>> map_cont_;
+
+  /* call for probability */
+  double get_probability_per_particle_excluding(unsigned int ipart, 
+                                    Ints excluded_ps, Cache& cache, CachePot& cachepot) const;
 
 public:
 
@@ -48,9 +62,7 @@ public:
         
   unsigned int get_number_of_particles() const {return pis_.size();}  
 
-  /* call for probability */
-  double get_probability_per_particle_excluding(unsigned int ipart, 
-                                    std::vector<unsigned int> excluded_ps ) const;
+
   
   //double get_probability() const {return 0.0;}
 

@@ -376,6 +376,37 @@ class TemplateRestraint():
         output["TemplateRestraint_"+self.label]=str(self.rs.unprotected_evaluate(None))
         return output
 
+
+###########################################################################
+
+class CompositeRestraint():
+
+    def __init__(self,m,handleparticle,compositeparticles,cut_off=10.0,lam=10.0,label="None"):
+        global imppmi
+        import IMP.pmi as imppmi 
+        #composite particles: all particles beside the handle
+        self.label=label
+        self.rs = IMP.RestraintSet('cr')
+        self.m=m       
+        
+        ln=imppmi.CompositeRestraint(self.m,handleparticle,cut_off,lam)
+        for p in compositeparticles:
+            ln.add_composite_particle(p)
+        
+        self.rs.add_restraint(ln)
+      
+    def set_label(self,label):
+        self.label=label
+
+    def add_to_model(self):
+        self.m.add_restraint(self.rs)
+
+    def get_output(self):
+        self.m.update()
+        output={}
+        output["CompositeRestraint_"+self.label]=str(self.rs.unprotected_evaluate(None))
+        return output
+
 ###########################################################################
 
 class MarginalChi3Restraint():
@@ -1511,7 +1542,15 @@ class SimplifiedCrossLinkMS():
         for r in self.rs.get_restraints():
             rlist.append(IMP.core.PairRestraint.get_from(r))
         return rlist
-
+    
+    def get_particle_pairs(self):
+        ppairs=[]
+        for i in range(len(self.pairs)):        
+            p0=self.pairs[i][0]
+            p1=self.pairs[i][1]
+            ppairs.append((p0,p1))
+        return ppairs            
+            
     def set_output_level(self,level="low"):
             #this might be "low" or "high"
         self.outputlevel=level

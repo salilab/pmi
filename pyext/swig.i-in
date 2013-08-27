@@ -2,5 +2,7 @@
 //IMP_SWIG_DECORATOR(IMP::example, ExampleDecorator, ExampleDecorators);
 //IMP_SWIG_VALUE_TEMPLATE(IMP::example, ExampleTemplateClassD)
 
+IMP_SWIG_OBJECT(IMP::pmi, CompositeRestraint, CompositeRestraints);
 
 //%include "IMP/example/ExampleRestraint.h"
+%include "IMP/pmi/CompositeRestraint.h"

@@ -16,7 +16,7 @@ class Beads():
         self.maxtrans_fb=0.2
         self.particle_database={}
 
-    def add_bead(self,radius,label="None"):
+    def add_bead(self,radius,label="None",color=None):
 
         p=IMP.Particle(self.m)
         p.set_name(label)
@@ -24,16 +24,23 @@ class Beads():
         self.floppy_bodies.append(p)
         #set default coordinates 0,0,0
         d=IMP.core.XYZ.setup_particle(p)
-        IMP.core.XYZR.setup_particle(p,radius)
+        d=IMP.core.XYZR.setup_particle(p,radius)
         d.set_coordinates_are_optimized(True)
-        a=IMP.atom.Atom.setup_particle(p,IMP.atom.AT_CA)
-        p=IMP.Particle(self.m)
+        #a=IMP.atom.Atom.setup_particle(p,IMP.atom.AT_CA)
+        #p=IMP.Particle(self.m)
         self.nresidues+=1
-        r=IMP.atom.Residue.setup_particle(p,IMP.atom.ALA,self.nresidues)
-        r.add_child(a)
-        self.hier.add_child(r)
+        #r=IMP.atom.Residue.setup_particle(p,IMP.atom.ALA,self.nresidues)
+        #r.add_child(a)
+        #self.hier.add_child(r)
+        self.hier.add_child(p)
+        if color!=None: self.set_color(label,color)
         return self.particle_database[label]
-
+    
+    def set_color(self,label,value):
+        p=self.particle_database[label]
+        clr=IMP.display.get_rgb_color(value)
+        IMP.display.Colored.setup_particle(p,clr) 
+    
     def set_floppy_bodies_max_trans(self,maxtrans):
         self.maxtrans_fb=maxtrans
 

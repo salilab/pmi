@@ -466,10 +466,14 @@ class CrossLinkMS():
     If restraint_file=None, it will proceed creating simulated data
     '''
     def __init__(self,prots,
-                 listofxlinkertypes=["BS3","BS2G","EGS"],map_between_protein_names_and_chains={},sigmamin=1.0,sigmamax=1.0,sigmagrid=1,sigmaissampled=False,typeofprofile="gofr"):
+                 listofxlinkertypes=["BS3","BS2G","EGS"],map_between_protein_names_and_chains=None,
+                 sigmamin=1.0,sigmamax=1.0,sigmagrid=1,sigmaissampled=False,typeofprofile="gofr"):
         global impisd2,tools
         import IMP.isd2 as impisd2
         import IMP.pmi.tools as tools
+        
+        if map_between_protein_names_and_chains==None:
+           map_between_protein_names_and_chains={}
 
         self.rs=IMP.RestraintSet('data')
         self.rs2=IMP.RestraintSet('prior')
@@ -1021,6 +1025,412 @@ class CrossLinkMS():
                 output["CrossLinkMS_Distance_"+label_copy]=str(IMP.core.get_distance(d0,d1))
 
         return output
+
+###############################################################
+
+class BinomialXLMSRestraint():
+
+
+
+    def __init__(self,m,prots,
+                 listofxlinkertypes=["BS3","BS2G","EGS"],map_between_protein_names_and_chains=None,typeofprofile='pfes'):
+        
+        if map_between_protein_names_and_chains==None:
+           map_between_protein_names_and_chains={}
+        
+        global impisd2
+        import IMP.isd2 as impisd2
+              
+           
+        self.label="None"
+        self.rs = IMP.RestraintSet('xlms')
+        self.rs2 = IMP.RestraintSet('jeffreys') 
+        self.m=m       
+        self.prots=prots
+        self.pairs=[]
+        
+
+
+        self.weightmaxtrans=0.05
+        self.weightissampled=False
+       
+        self.sigmainit=5.0
+        self.sigmamin=1.0
+        self.sigmaminnuis=0.0
+        self.sigmamax=10.0
+        self.sigmamaxnuis=11.0 
+        self.nsigma=100
+        self.sigmaissampled=True
+        self.sigmamaxtrans=0.1
+        
+        self.betainit=1.0
+        self.betamin=1.0
+        self.betamax=4.0
+        self.betaissampled=False     
+        self.betamaxtrans=0.01
+        
+        self.deltainit=0.001
+        self.deltamin=0.001
+        self.deltamax=0.1
+        self.deltaissampled=False
+        self.deltamaxtrans=0.001
+        
+        self.laminit=5.0
+        self.lammin=0.01
+        self.lamminnuis=0.00001
+        self.lammax=10.0
+        self.lammaxnuis=100.0
+        self.lamissampled=False        
+        self.lammaxtrans=0.1        
+        
+        self.epsilon=0.01
+        self.psi_dictionary={}
+        self.psiintervals={"LowC":(0.0,22.0),"LowMedC":(22,26),"HighMedC":(26.0,28.0),"HighC":(28.0,10000.0}
+
+        self.sigma=tools.SetupNuisance(self.m,self.sigmainit,
+             self.sigmaminnuis,self.sigmamaxnuis,self.sigmaissampled).get_particle()
+
+        self.beta=tools.SetupNuisance(self.m,self.betainit,
+             self.betamin,self.betamax,self.betaissampled).get_particle()    
+    
+        self.delta=tools.SetupNuisance(self.m,self.deltainit,
+             self.deltamin,self.deltamax,self.deltaissampled).get_particle()
+
+        self.lam=tools.SetupNuisance(self.m,self.laminit,
+             self.lamminnuis,self.lammaxnuis,self.lamissampled).get_particle()
+
+        self.weight=tools.SetupWeight(m,False).get_particle()
+        
+        for n in range(len(self.prots)):
+            self.weight.add_weight()
+
+        self.outputlevel="low"
+        self.listofxlinkertypes=listofxlinkertypes
+        #simulated reaction rates
+        self.reaction_rates=None
+        self.allpairs_database=None
+        self.residue_list=None
+
+        self.crosslinker_dict=self.get_crosslinker_dict(typeofprofile)
+        #this map is used in the new cross-link file reader
+        #{"Nsp1":"A","Nup82":"B"} etc.
+        self.mbpnc=map_between_protein_names_and_chains
+        #check whther the file was initialized
+    
+    def create_psi(self,index):
+        self.psiinit=0.01
+        self.psiminnuis=0.0000001
+        self.psimaxnuis=0.4999999
+        self.psimin=0.01
+        self.psimax=0.49   
+        self.psiissampled=True
+        self.psitrans=0.01    
+        self.psi=tools.SetupNuisance(self.m,self.psiinit,
+             self.psiminnuis,self.psimaxnuis,self.psiissampled).get_particle()
+        self.psi_dictionary[index]=(self.psi,self.psitrans,self.psiissampled)
+        
+    def get_psi(self,index):
+        if not index in self.psi_dictionary:
+           self.create_psi(index)
+        return self.psi_dictionary[index]
+
+    def get_crosslinker_dict(self,typeofprofile):
+        #fill the cross-linker pmfs
+        #to accelerate the init the list listofxlinkertypes might contain only yht needed crosslinks
+
+        disttuple=(0.0, 200.0, 1000)
+        omegatuple=(1.0, 1000.0, 30)
+        sigmatuple=(self.sigmamin, self.sigmamax, self.nsigma)
+
+        crosslinker_dict={}
+        if "BS3" in self.listofxlinkertypes:
+            crosslinker_dict["BS3"]=tools.get_cross_link_data("bs3l",
+               "pmf_bs3l_tip3p.txt.standard",disttuple,omegatuple,sigmatuple,don=None,doff=None,prior=1,type_of_profile=typeofprofile)
+        if "BS2G" in self.listofxlinkertypes:
+            crosslinker_dict["BS2G"]=tools.get_cross_link_data("bs2gl",
+              "pmf_bs2gl_tip3p.txt.standard",disttuple,omegatuple,sigmatuple,don=None,doff=None,prior=1,type_of_profile=typeofprofile)
+        if "EGS" in self.listofxlinkertypes:
+            crosslinker_dict["EGS"]=tools.get_cross_link_data("egl",
+              "pmf_egl_tip3p.txt.standard",disttuple,omegatuple,sigmatuple,don=None,doff=None,prior=1,type_of_profile=typeofprofile)
+        if "Short" in self.listofxlinkertypes:
+            #setup a "short" xl with an half length of 10 Ang
+            crosslinker_dict["Short"]=tools.get_cross_link_data_from_length(10.0,disttuple,omegatuple,sigmatuple)
+        return crosslinker_dict        
+
+    def add_restraints(self,restraint_file=None,oldfile=False):
+
+        #get the restraints from external file
+        f = open(restraint_file)
+        restraint_list = f.readlines()
+
+        self.index=0
+            
+        self.added_pairs_list=[]
+        self.missing_residues=[]
+        for line in restraint_list:
+            #force_restraint=True makes all intra rigid body restraint to be accepted
+            force_restraint=False
+
+            #read with the new file parser
+            totallist=eval(line)
+            self.add_crosslink_according_to_new_file(totallist)
+            print totallist
+
+        self.rs2.add_restraint(impisd2.UniformPrior(self.sigma,1000000000.0,self.sigmamax,self.sigmamin))
+        
+        print "CICCIO", self.rs2.unprotected_evaluate(None)
+        
+        for psiindex in self.psi_dictionary:
+          print psiindex
+          if self.psi_dictionary[psiindex][2]:
+            psip=self.psi_dictionary[psiindex][0]
+            self.rs2.add_restraint(impisd2.BinomialJeffreysPrior(psip))
+            self.rs2.add_restraint(impisd2.UniformPrior(psip,1000000000.0,self.psimax,self.psimin))
+        
+    def add_crosslink_according_to_new_file(self,totallist,constructor=0):
+        #the constructor variable specify what constroctor to use in 
+        #the restraint   0: use predetermined f.p.r. (psi) 
+        #1: infer the f.p.r. defining a psi nuisance defined by a class
+        force_restraint=False
+        ambiguous_list=totallist[0]
+        crosslinker=totallist[1]
+        if (totallist[2]=="F"): force_restraint=True
+
+        p1s=[]
+        p2s=[]
+        r1s=[]
+        r2s=[]
+        c1s=[]
+        c2s=[]
+        psis=[]
+        self.index+=1 
+        for pair in ambiguous_list:
+            error=False
+           
+            
+            
+            try:
+               c1=self.mbpnc[pair[0][0]]
+            except:
+               print "CrossLinkMS: WARNING> protein name "+pair[0][0]+" was not defined"
+               continue 
+            try:                         
+               c2=self.mbpnc[pair[1][0]]   
+            except:
+               print "CrossLinkMS: WARNING> protein name "+pair[1][0]+" was not defined"
+               continue                         
+            
+            r1=int(pair[0][1])
+            r2=int(pair[1][1])
+            psi=float(pair[2])
+            
+            print '''CrossLinkMS: attempting to add restraint between
+                     residue %d of chain %s and residue %d of chain %s''' % (r1,c1,r2,c2)
+
+
+            try:
+                s1=IMP.atom.Selection(self.prots[0], residue_index=r1, chains=c1, atom_type=IMP.atom.AT_CA)
+                p1=(s1.get_selected_particles()[0])
+            except:
+                print "CrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1,c1)
+                error=True
+                self.missing_residues.append((r1,c1))
+            try:
+                s2=IMP.atom.Selection(self.prots[0], residue_index=r2, chains=c2, atom_type=IMP.atom.AT_CA)
+                p2=(s2.get_selected_particles()[0])
+            except:
+                print "CrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2,c2)
+                error=True
+                self.missing_residues.append((r2,c2))            
+            if error: continue
+            
+
+            s1=IMP.atom.Selection(self.prots[0], residue_index=r1, chains=c1, atom_type=IMP.atom.AT_CA)
+            p1=s1.get_selected_particles()[0]
+            s2=IMP.atom.Selection(self.prots[0], residue_index=r2, chains=c2, atom_type=IMP.atom.AT_CA)
+            p2=s2.get_selected_particles()[0]
+            #this list contains the list of symmetric pairs to avoid duplicates
+            if (p1,p2,crosslinker) in self.added_pairs_list:
+                print "CrossLinkMS: WARNING> pair %d %s %d %s already there" % (r1,c1,r2,c2)
+                continue
+            if (p2,p1,crosslinker) in self.added_pairs_list:
+                print "CrossLinkMS: WARNING> pair %d %s %d %s already there" % (r1,c1,r2,c2)
+                continue
+
+            #check whether the atom pair belongs to the same rigid body
+            if(IMP.core.RigidMember.particle_is_instance(p1) and
+               IMP.core.RigidMember.particle_is_instance(p2) and
+               IMP.core.RigidMember(p1).get_rigid_body() ==
+               IMP.core.RigidMember(p2).get_rigid_body() and not force_restraint):
+                print '''CrossLinkMS: WARNING> residue %d of chain %s and
+                       residue %d of chain %s belong to the same rigid body''' % (r1,c1,r2,c2)
+                continue
+
+            p1s.append(p1)
+            p2s.append(p2)
+            r1s.append(r1)
+            r2s.append(r2)
+            c1s.append(c1)
+            c2s.append(c2)
+            psis.append(psi)
+            
+            print "CrossLinkMS: added pair %d %s %d %s" % (r1,c1,r2,c2)
+                       
+            self.added_pairs_list.append((p1,p2,crosslinker))
+
+
+        if len(p1s)>0:
+            rs_name= '{:05}'.format(self.index % 100000)
+
+            ln=impisd2.BinomialCrossLinkMSRestraint(self.m,self.sigma,self.beta,self.delta,self.lam,self.weight,self.epsilon,self.crosslinker_dict[crosslinker])
+
+            for i in range(len(p1s)):
+                print rs_name,i
+                ln.add_contribution()
+                
+                
+                for kindex in self.psiintervals:
+                   lower=self.psiintervals[kindex][0]
+                   upper=self.psiintervals[kindex][1]
+                   if psis[i] > lower and psis[i] <= upper:
+                      index=kindex
+                      psi=self.get_psi(index) 
+                                
+                ln.add_particle_pair(i,(p1s[i].get_index(),p2s[i].get_index()),psi[0].get_particle().get_index())
+                self.pairs.append((p1s[i], p2s[i], crosslinker, rs_name,
+                     index, 100, (r1s[i],c1s[i],i), (r2s[i],c2s[i],i), crosslinker, i, ln))
+                     
+                h=IMP.core.Linear(0,0.03)
+                dps=IMP.core.DistancePairScore(h)
+                pr=IMP.core.PairRestraint(dps,IMP.ParticlePair(p1s[i],p2s[i]))  
+                self.rs2.add_restraint(pr)
+                
+            self.rs.add_restraint(ln)
+
+        print "CrossLinkMS: missing residues"
+        for ms in self.missing_residues:
+            print "CrossLinkMS:missing "+str(ms)
+
+            
+        #self.rs2.add_restraint(impisd2.IntensityThresholdRestraint(self.delta))
+        #self.rs2.add_restraint(impisd2.UniformPrior(self.delta,1000000000.0,self.delta.get_upper(),self.delta.get_lower()))
+        
+
+        
+        #exit()
+            #self.rs2.add_restraint(impisd2.UniformPrior(psip,1000000000.0,0.5,0.01))
+            
+            
+    def set_label(self,label):
+        self.label=label
+
+    def add_to_model(self):
+        self.m.add_restraint(self.rs)
+        self.m.add_restraint(self.rs2)
+
+    def get_hierarchies(self):
+        return self.prots
+
+    def get_particles(self):
+        return self.sigmaglobal
+
+    def get_restraint_sets(self):
+        return self.rs,self.rs2
+
+    def get_restraint(self):
+        tmprs=IMP.RestraintSet('xlms')
+        tmprs.add_restraint(self.rs)
+        tmprs.add_restraint(self.rs2)
+        return tmprs
+
+    def set_output_level(self,level="low"):
+        #this might be "low" or "high"
+        self.outputlevel=level
+
+    def print_chimera_pseudobonds(self,filesuffix,model=0):
+        f=open(filesuffix+".chimera","w")
+        atype="ca"
+        for p in self.pairs:
+            s="#"+str(model)+":"+str(p[6][0])+"."+p[6][1]+"@"+atype+" #"+str(model)+":"+str(p[7][0])+"."+p[7][1]+"@"+atype
+            f.write(s+"\n")
+        f.close()
+
+    def print_chimera_pseudobonds_with_psiindexes(self,filesuffix,model=0):
+        
+        f=open(filesuffix+".chimera","w")
+        atype="ca"
+        for p in self.pairs:
+            s="#"+str(model)+":"+str(p[6][0])+"."+p[6][1]+"@"+atype+" #"+str(model)+":"+str(p[7][0])+"."+p[7][1]+"@"+atype
+            f.write(s+"\n")
+        f.close()
+
+    def get_output(self):
+        #content of the crosslink database pairs
+        #self.pairs.append((p1s[i], p2s[i], crosslinker, rs_name, psi, 100, (r1,c1,i),  (r2,c2,i), crosslinker, i, ln))
+        self.m.update()
+        output={}
+        output["CrossLinkMS_Likelihood_"+self.label]=str(self.rs.unprotected_evaluate(None))
+        output["CrossLinkMS_Prior_"+self.label]=str(self.rs2.unprotected_evaluate(None))
+
+
+        if self.outputlevel=="high":
+            for i in range(len(self.pairs)):
+
+                p0=self.pairs[i][0]
+                p1=self.pairs[i][1]
+                crosslinker=self.pairs[i][2]
+                psiindex=self.pairs[i][4]
+                ln=self.pairs[i][10]
+                index=self.pairs[i][9]
+                rsname=self.pairs[i][3]
+                resid1=self.pairs[i][6][0]
+                chain1=self.pairs[i][6][1]
+                copy1=self.pairs[i][6][2]
+                resid2=self.pairs[i][7][0]
+                chain2=self.pairs[i][7][1]
+                copy2=self.pairs[i][7][2]
+                label_copy=str(rsname)+":"+str(index)+"-"+str(resid1)+":"+chain1+"_"+"-"+str(resid2)+":"+chain2+"_"+crosslinker
+
+                if copy1==0:
+                    label=str(resid1)+":"+chain1+"_"+str(resid2)+":"+chain2
+                    #output["CrossLinkMS_Combined_Probability_"+str(rsname)+"_"+crosslinker+"_"+label]=str(ln.get_probability())
+                    output["CrossLinkMS_Score_"+str(rsname)+"_"+index+"_"+crosslinker+"_"+label]=str(ln.unprotected_evaluate(None))
+
+
+                d0=IMP.core.XYZ(p0)
+                d1=IMP.core.XYZ(p1)
+                output["CrossLinkMS_Distance_"+index+"_"+label_copy]=str(IMP.core.get_distance(d0,d1))
+        
+        output["CrossLinkMS_Sigma_"+self.label]=str(self.sigma.get_scale())
+        output["CrossLinkMS_Delta_"+self.label]=str(self.delta.get_scale())
+        output["CrossLinkMS_Lambda_"+self.label]=str(self.lam.get_scale())
+        output["CrossLinkMS_Beta_"+self.label]=str(self.beta.get_scale())
+        for psiindex in self.psi_dictionary:
+            output["CrossLinkMS_Psi_"+str(psiindex)+"_"+self.label]=str(self.psi_dictionary[psiindex][0].get_scale())
+
+        for n in range(self.weight.get_number_of_states()):
+           output["CrossLinkMS_weights_"+str(n)+"_"+self.label]=str(self.weight.get_weight(n))
+        return output
+
+    def get_particles_to_sample(self):
+        ps={}
+        if self.sigmaissampled:
+           ps["Nuisances_CrossLinkMS_Sigma_"+self.label]=([self.sigma],self.sigmamaxtrans)
+        if self.deltaissampled:
+           ps["Nuisances_CrossLinkMS_Delta_"+self.label]=([self.delta],self.deltamaxtrans)           
+        if self.lamissampled:
+           ps["Nuisances_CrossLinkMS_Lambda_"+self.label]=([self.lam],self.lammaxtrans)  
+        if self.betaissampled:
+           ps["Nuisances_CrossLinkMS_Beta_"+self.label]=([self.beta],self.betamaxtrans)
+        
+        for psiindex in self.psi_dictionary:
+          if self.psi_dictionary[psiindex][2]:
+            ps["Nuisances_CrossLinkMS_Psi_"+str(psiindex)+"_"+self.label]=([self.psi_dictionary[psiindex][0]],self.psi_dictionary[psiindex][1])
+        
+        if self.weightissampled:
+           ps["Weights_CrossLinkMS_"+self.label]=([self.weight],self.weightmaxtrans)
+        return ps    
+
 ###############################################################
 
 

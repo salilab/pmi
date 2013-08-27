@@ -203,6 +203,15 @@ class Output():
         for o in objectlist:
             rs=o.get_restraint()
             imprmf.add_restraints(self.dictionary_rmfs[name],rs.get_restraints())
+    
+    def add_geometry_from_restraints_to_rmf(self,name,objectlist):
+        for o in objectlist:
+            print "here"
+            
+            rs=o.get_restraints()
+            for r in rs:
+              imprmf.add_geometries(self.dictionary_rmfs[name],
+                IMP.display.RestraintGeometry(r).get_components())  
 
     def write_rmf(self,name,nframe):
         imprmf.save_frame(self.dictionary_rmfs[name],nframe)

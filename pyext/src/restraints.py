@@ -76,6 +76,12 @@ class LinkDomains():
     def get_restraint(self):
         return self.rs
 
+    def get_restraints(self):
+        rlist=[]
+        for r in self.rs.get_restraints():
+            rlist.append(IMP.core.PairRestraint.get_from(r))
+        return rlist
+
     def print_chimera_pseudobonds(self,filesuffix,model=0):
         f=open(filesuffix+".chimera","w")
         atype="ca"
@@ -1499,6 +1505,12 @@ class SimplifiedCrossLinkMS():
         
     def get_restraint(self):
         return self.rs        
+
+    def get_restraints(self):
+        rlist=[]
+        for r in self.rs.get_restraints():
+            rlist.append(IMP.core.PairRestraint.get_from(r))
+        return rlist
 
     def set_output_level(self,level="low"):
             #this might be "low" or "high"

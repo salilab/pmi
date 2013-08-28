@@ -381,7 +381,8 @@ class TemplateRestraint():
 
 class CompositeRestraint():
 
-    def __init__(self,m,handleparticle,compositeparticles,cut_off=10.0,lam=10.0,label="None"):
+    def __init__(self,m,handleparticles,compositeparticles,cut_off=5.0,lam=1.0,label="None"):
+        
         global imppmi
         import IMP.pmi as imppmi 
         #composite particles: all particles beside the handle
@@ -389,9 +390,12 @@ class CompositeRestraint():
         self.rs = IMP.RestraintSet('cr')
         self.m=m       
         
-        ln=imppmi.CompositeRestraint(self.m,handleparticle,cut_off,lam)
-        for p in compositeparticles:
-            ln.add_composite_particle(p)
+        print handleparticles
+        
+        ln=imppmi.CompositeRestraint(self.m,handleparticles,cut_off,lam)
+        for ps in compositeparticles:
+            #composite particles is a list of list of particles
+            ln.add_composite_particle(ps)
         
         self.rs.add_restraint(ln)
       

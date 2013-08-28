@@ -85,7 +85,7 @@ class MultipleStates():
         self.xyzmodellist=[]
         self.xyzreflist=[]
         self.maxtrans_rb=0.15
-        self.maxrot_rb=0.03
+        self.maxrot_rb  =0.03
         self.maxtrans_fb=0.15
         self.m = m
 
@@ -793,7 +793,17 @@ class SimplifiedModel():
     def set_floppy_bodies(self):
         for p in self.floppy_bodies:
             tools.set_floppy_body(p)
-
+    
+    def get_particles_from_selection(self,selection_tuples):
+        #to be used for instance by CompositeRestraint
+        #selection tuples must be [("name1",r1,r2),("name2",r1,r2),....]
+        particles=[]
+        for s in selection_tuples:
+            sel=IMP.atom.Selection(self.prot,molecule=s[0],residue_indexes=range(s[1],s[2]+1))
+            ps=sel.get_selected_particles()
+            print "get_particles_from_selection: "+str(s)+" selected "+str(len(ps))+" particles"
+            particles+=ps
+        return particles
 
     def set_rigid_bodies_max_trans(self,maxtrans):
         self.maxtrans_rb=maxtrans

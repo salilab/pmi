@@ -25,8 +25,8 @@ IMPPMI_BEGIN_NAMESPACE
 class IMPPMIEXPORT  CompositeRestraint : public Restraint
 {
     //particle indexes in the composite
-    IMP::kernel::ParticleIndexes pis_;
-    IMP::kernel::ParticleIndex handle_particle_index_;
+    base::Vector<IMP::kernel::ParticleIndexes> pis_;
+    IMP::kernel::ParticleIndexes handle_particle_indexes_;
     double coffd_;
     double l_;
     IMP_NAMED_TUPLE_2(CacheKey, CacheKeys,
@@ -53,14 +53,14 @@ public:
    */
 
   CompositeRestraint(IMP::kernel::Model *m, 
-                     IMP::kernel::ParticleIndexAdaptor handle_particle_index, 
+                     IMP::kernel::ParticleIndexesAdaptor handle_particle_indexes, 
                      double coffd, double l, 
                      std::string name="CompositeRestraint%1%");
 
-  void add_composite_particle(IMP::kernel::ParticleIndexAdaptor pi){pis_.push_back(pi);}
+  void add_composite_particle(IMP::kernel::ParticleIndexesAdaptor pi){pis_.push_back(pi);}
   
         
-  unsigned int get_number_of_particles() const {return pis_.size();}  
+  unsigned int get_number_of_elements() const {return pis_.size();}  
 
 
   

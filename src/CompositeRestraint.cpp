@@ -18,11 +18,11 @@
 IMPPMI_BEGIN_NAMESPACE
 
 CompositeRestraint::CompositeRestraint(IMP::kernel::Model *m, 
-                          IMP::kernel::ParticleIndexAdaptor handle_particle_index,
+                          IMP::kernel::ParticleIndexesAdaptor handle_particle_indexes,
                           double coffd, double l, std::string name):
                           Restraint(m, name), 
-                          handle_particle_index_(handle_particle_index), 
-                          coffd_(coffd), l_(l) {pis_.push_back(handle_particle_index_);}                       
+                          handle_particle_indexes_(handle_particle_indexes), 
+                          coffd_(coffd), l_(l) {pis_.push_back(handle_particle_indexes_);}                       
 
 
 double CompositeRestraint::
@@ -52,12 +52,11 @@ double CompositeRestraint::get_probability_per_particle_excluding(unsigned int i
       return cache.find(key)->second;
     }
     
-    IMP::kernel::ParticleIndex ppi=pis_[ipart];  
-    core::XYZR di(get_model(), ppi);
+
     double onemprob=1.0;
     
       
-    for(unsigned int k=0;k<get_number_of_particles();++k){
+    for(unsigned int k=0;k<get_number_of_elements();++k){
       //std::cout << k << std::endl;
       if (std::find(excluded_ps.begin(), excluded_ps.end(), k) == excluded_ps.end()){
          //std::cout << "ex " << k << std::endl;         
@@ -75,19 +74,34 @@ double CompositeRestraint::get_probability_per_particle_excluding(unsigned int i
          }         
          //otherwise look in the cache of precalculated terms
          else {
-            IMP::kernel::ParticleIndex ppk=pis_[k];               
-            core::XYZR dk(get_model(), ppk);
-            double dist = (di.get_coordinates() -
-                dk.get_coordinates()).get_magnitude();
-            //p =1.0/(1.0+std::exp(-(coffd_-dist)/l_));
-            p=1.0;
+         
+            double onemprob1=1.0;
+            
+            IMP::kernel::ParticleIndexes ppi=pis_[ipart];  
+            IMP::kernel::ParticleIndexes ppk=pis_[k]; 
+
+            for(unsigned int ii=0;ii<ppi.size();++ii){
+              for(unsigned int kk=0;kk<ppk.size();++kk){              
+              
+                core::XYZR di(get_model(), ppi[ii]);
+                core::XYZR dk(get_model(), ppk[kk]);
+		            double dist = IMP::core::get_distance(di,dk);
+	              double arg=(dist-coffd_)/l_;	 
+		            onemprob1*=(arg/(1.0+std::abs(arg))+1.0)/2.0;
+                //onemprob1*=1.0-1.0/(1.0+std::exp(-(coffd_-dist)/l_));
+                //p=1.0;
+        
+                }
+              }
+            p=1.0-onemprob1;
             CacheKeyPot keypot2(k,ipart);
             cachepot[keypot1]=p;
-            cachepot[keypot2]=p;            
+            cachepot[keypot2]=p;    
          }
          
          
-         if (excluded_ps.size()==get_number_of_particles())
+         
+         if (excluded_ps.size()==get_number_of_elements())
          {
          onemprob *= 1.0-p;
          }
@@ -113,8 +127,10 @@ double CompositeRestraint::get_probability_per_particle_excluding(unsigned int i
 ModelObjectsTemp  CompositeRestraint::do_get_inputs() const
 {
   ParticlesTemp ret;
-  for(unsigned int k=0;k<get_number_of_particles();++k){
-     ret.push_back(get_model()->get_particle(pis_[k]));
+  for(unsigned int k=0;k<get_number_of_elements();++k){
+     for(unsigned int kk=0;kk<pis_[k].size();++kk){
+        ret.push_back(get_model()->get_particle(pis_[k][kk]));
+     }
   }
   return ret;
 }

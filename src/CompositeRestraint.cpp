@@ -19,10 +19,24 @@ IMPPMI_BEGIN_NAMESPACE
 
 CompositeRestraint::CompositeRestraint(IMP::kernel::Model *m, 
                           IMP::kernel::ParticleIndexesAdaptor handle_particle_indexes,
-                          double coffd, double l, std::string name):
+                          double coffd, double l, bool tabprob, std::string name):
                           Restraint(m, name), 
                           handle_particle_indexes_(handle_particle_indexes), 
-                          coffd_(coffd), l_(l) {pis_.push_back(handle_particle_indexes_);}                       
+                          coffd_(coffd), l_(l), tabprob_(tabprob) {
+                          
+                          pis_.push_back(handle_particle_indexes_);
+                          
+                          if (tabprob_){
+                             unsigned exparg_grid_size=1001;
+                             argmax_=100.0;
+                             argmin_=0.0;
+                             invdx_=double(exparg_grid_size)/argmax_;
+                             for(unsigned k=0;k<exparg_grid_size;++k){
+                                double argvalue=double(k)/invdx_;
+                                prob_grid_.push_back(1.0/(1.0+std::exp(-argvalue)));
+                               }
+                             }
+                          }                       
 
 
 double CompositeRestraint::
@@ -85,10 +99,9 @@ double CompositeRestraint::get_probability_per_particle_excluding(unsigned int i
               
                 core::XYZR di(get_model(), ppi[ii]);
                 core::XYZR dk(get_model(), ppk[kk]);
-		            double dist = IMP::core::get_distance(di,dk);
-	              double arg=(dist-coffd_)/l_;	 
-		            onemprob1*=(arg/(1.0+std::abs(arg))+1.0)/2.0;
-                //onemprob1*=1.0-1.0/(1.0+std::exp(-(coffd_-dist)/l_));
+		            double dist = IMP::core::get_distance(di,dk);	 
+		            //onemprob1*=(arg/(1.0+std::abs(arg))+1.0)/2.0;
+                onemprob1*=calc_prob(dist);
                 //p=1.0;
         
                 }

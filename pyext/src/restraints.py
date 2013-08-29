@@ -392,7 +392,7 @@ class CompositeRestraint():
         
         print handleparticles
         
-        ln=imppmi.CompositeRestraint(self.m,handleparticles,cut_off,lam)
+        ln=imppmi.CompositeRestraint(self.m,handleparticles,cut_off,lam,True)
         for ps in compositeparticles:
             #composite particles is a list of list of particles
             ln.add_composite_particle(ps)

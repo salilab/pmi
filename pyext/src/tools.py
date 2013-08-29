@@ -865,6 +865,12 @@ class Clustering():
 # ----------------------------------
 class GetModelDensity2():
     def __init__(self, align=0, dens_thresh=0.1, margin=20., voxel=5.):
+        global impem,deepcopy,cdist,array,argwhere,mgrid,shape,reshape
+        import IMP.em as impem
+        from numpy import array,argwhere,mgrid,shape,reshape
+        from copy import deepcopy
+        from scipy.spatial.distance import cdist
+
 
         self.dens_thresh= dens_thresh
         self.margin= margin

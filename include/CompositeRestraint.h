@@ -37,6 +37,32 @@ class IMPPMIEXPORT  CompositeRestraint : public Restraint
 
     typedef base::map<CacheKey, double> Cache;
     typedef base::map<CacheKeyPot, double> CachePot;    
+    
+    //variables needed to tabulate the exponential
+    Floats prob_grid_;
+    double invdx_;
+    double argmax_;
+    double argmin_;
+    bool tabprob_;
+
+    inline double calc_prob (double dist) const{
+      double argvalue=(dist-coffd_)/l_;  
+      double prob;
+      if (tabprob_){
+         //this prevents something being below the lower value of the array
+         double maxarg=std::max(argvalue,argmin_);      
+         //this prevents something being above the upper value of the array
+         double minarg=std::min(maxarg,argmax_);       
+         unsigned k = static_cast<unsigned>( std::floor(minarg*invdx_) );
+         prob=prob_grid_[k];
+      }
+      else{
+         prob=1.0/(1.0+std::exp(-argvalue));
+      }
+      return prob;
+    }
+
+    
     //base::map<std::tuple<unsigned int,unsigned int>,
     //          base::Pointer<container::CloseBipartitePairContainer>> map_cont_;
 
@@ -54,7 +80,7 @@ public:
 
   CompositeRestraint(IMP::kernel::Model *m, 
                      IMP::kernel::ParticleIndexesAdaptor handle_particle_indexes, 
-                     double coffd, double l, 
+                     double coffd, double l, bool tabprob, 
                      std::string name="CompositeRestraint%1%");
 
   void add_composite_particle(IMP::kernel::ParticleIndexesAdaptor pi){pis_.push_back(pi);}

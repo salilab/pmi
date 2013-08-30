@@ -673,21 +673,17 @@ class SimplifiedModel():
                 if i==0:
                     if bnd[0]>1:
                        ds.append((1,bnd[0]-1))
-                       print "1",ds
                        if len(ds)>len(colors): colors.append(colors[pdb_part_count])
                     if len(bounds)==1:
                         if bnd[1]<length:
-                           ds.append((bnd[1]+1,length))
-                           print "2",ds                           
+                           ds.append((bnd[1]+1,length))                          
                            if len(ds)>len(colors): colors.append(colors[pdb_part_count])
                 else:
-                    ds.append((bounds[i-1][1]+1, bnd[0]-1))
-                    print "3",ds                      
+                    ds.append((bounds[i-1][1]+1, bnd[0]-1))                     
                     if len(ds)>len(colors): colors.append(colors[pdb_part_count])
                     if i==len(bounds)-1:
                         if bnd[1]<length:
-                           ds.append((bnd[1]+1,length))
-                           print "4",ds                              
+                           ds.append((bnd[1]+1,length))                         
                            if len(ds)>len(colors): colors.append(colors[pdb_part_count])
 
         print ds

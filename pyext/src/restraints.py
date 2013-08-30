@@ -128,10 +128,9 @@ class ConnectivityRestraint():
         generate a connectivity restraint between domains
         setting up the composite restraint
         example:
-        cr=restraints.ConnectivityRestraint(prot,[(1,100,"SEA1"),(1,100,"Sec13"),(1,100,"Seh1")])
+        cr=restraints.ConnectivityRestraint(prot,["SEA1",(1,100,"Sec13"),(100,150,"Seh1")])
         cr.add_to_model()
         cr.set_label("CR1")
-        outputobjects.append(cr)
         '''
         self.hier=hier
         self.kappa=kappa
@@ -142,8 +141,12 @@ class ConnectivityRestraint():
         self.m=self.hier.get_model()
         
         sels=[]
+        
         for s in selection_tuples:
-            sel=IMP.atom.Selection(self.hier,molecule=s[2],residue_indexes=range(s[0],s[1]+1))
+            if type(s)==tuple and len(s)==3:
+              sel=IMP.atom.Selection(self.hier,molecule=s[2],residue_indexes=range(s[0],s[1]+1))
+            elif type(s)==str:
+              sel=IMP.atom.Selection(self.hier,molecule=s)              
             sels.append(sel)
             print sel.get_selected_particle_indexes()
 
@@ -438,14 +441,14 @@ class TemplateRestraint():
 
 class CompositeRestraint():
 
-    def __init__(self,m,handleparticles,compositeparticles,cut_off=5.0,lam=1.0,label="None"):
+    def __init__(self,handleparticles,compositeparticles,cut_off=5.0,lam=1.0,label="None"):
         
         global imppmi
         import IMP.pmi as imppmi 
         #composite particles: all particles beside the handle
         self.label=label
         self.rs = IMP.RestraintSet('cr')
-        self.m=m       
+        self.m=handleparticles[0].get_model()       
         
         print handleparticles
         

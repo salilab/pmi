@@ -806,11 +806,16 @@ class SimplifiedModel():
         #to be used for instance by CompositeRestraint
         #selection tuples must be [(r1,r2,"name1"),(r1,r2,"name2"),....]
         particles=[]
+        
         for s in selection_tuples:
-            sel=IMP.atom.Selection(self.prot,molecule=s[2],residue_indexes=range(s[0],s[1]+1))
+            if type(s)==tuple and len(s)==3:
+              sel=IMP.atom.Selection(self.prot,molecule=s[2],residue_indexes=range(s[0],s[1]+1))
+            elif type(s)==str:
+              sel=IMP.atom.Selection(self.prot,molecule=s)              
             ps=sel.get_selected_particles()
             print "get_particles_from_selection: "+str(s)+" selected "+str(len(ps))+" particles"
             particles+=ps
+            
         return particles
 
     def set_rigid_bodies_max_trans(self,maxtrans):

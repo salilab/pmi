@@ -124,24 +124,28 @@ class LinkDomains():
 class ConnectivityRestraint():
 
     def __init__(self,hier,selection_tuples,kappa=10.0,label="None"):
-        #generate a linker between residues using HarmonicUpperBound
-        #restraints. Define a list of linked residues,
-        #e.g.   [(3,5,"A"),(9,10,"B")]
-        # will link residues 3 and 5 belonging to chain A and
-        #residues 9 and 10 belonging to chain B
-
+        '''
+        generate a connectivity restraint between domains
+        setting up the composite restraint
+        example:
+        cr=restraints.ConnectivityRestraint(prot,[(1,100,"SEA1"),(1,100,"Sec13"),(1,100,"Seh1")])
+        cr.add_to_model()
+        cr.set_label("CR1")
+        outputobjects.append(cr)
+        '''
         self.hier=hier
         self.kappa=kappa
         self.label=label
         if self.label=="None": self.label=str(selection_tuples)
         self.rs = IMP.RestraintSet(label)
         
-        self.m=particles[0].get_model()
+        self.m=self.hier.get_model()
         
         sels=[]
         for s in selection_tuples:
             sel=IMP.atom.Selection(self.hier,molecule=s[2],residue_indexes=range(s[0],s[1]+1))
             sels.append(sel)
+            print sel.get_selected_particle_indexes()
 
         cr = IMP.atom.create_connectivity_restraint(sels, self.kappa, self.label)
         self.rs.add_restraint(cr)
@@ -1212,7 +1216,7 @@ class BinomialXLMSRestraint():
         #check whther the file was initialized
     
     def create_psi(self,index,value):
-        if value==None
+        if value==None:
            self.psiinit=0.01
            self.psiissampled=True
         else:

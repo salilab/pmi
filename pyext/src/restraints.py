@@ -118,6 +118,59 @@ class LinkDomains():
 
         return output
 
+
+###########################################################################
+
+class ConnectivityRestraint():
+
+    def __init__(self,hier,selection_tuples,kappa=10.0,label="None"):
+        #generate a linker between residues using HarmonicUpperBound
+        #restraints. Define a list of linked residues,
+        #e.g.   [(3,5,"A"),(9,10,"B")]
+        # will link residues 3 and 5 belonging to chain A and
+        #residues 9 and 10 belonging to chain B
+
+        self.hier=hier
+        self.kappa=kappa
+        self.label=label
+        if self.label=="None": self.label=str(selection_tuples)
+        self.rs = IMP.RestraintSet(label)
+        
+        self.m=particles[0].get_model()
+        
+        sels=[]
+        for s in selection_tuples:
+            sel=IMP.atom.Selection(self.hier,molecule=s[2],residue_indexes=range(s[0],s[1]+1))
+            sels.append(sel)
+
+        cr = IMP.atom.create_connectivity_restraint(sels, self.kappa, self.label)
+        self.rs.add_restraint(cr)
+
+    def set_label(self,label):
+        self.label=label
+        self.rs.set_name(label)
+        for r in self.rs.get_restraints():
+            r.set_name(label)
+
+    def add_to_model(self):
+        self.m.add_restraint(self.rs)
+
+    def get_restraint(self):
+        return self.rs
+
+    def get_restraints(self):
+        rlist=[]
+        for r in self.rs.get_restraints():
+            rlist.append(IMP.core.PairRestraint.get_from(r))
+        return rlist
+
+    def get_output(self):
+        self.m.update()
+        output={}
+        output["ConnectivityRestraint_"+self.label]=str(self.rs.unprotected_evaluate(None))
+        return output
+
+
 ###########################################################################
 
 class UpperBound():
@@ -1127,7 +1180,6 @@ class BinomialXLMSRestraint():
         
         self.epsilon=0.01
         self.psi_dictionary={}
-        self.psiintervals={"LowC":(0.0,22.0),"LowMedC":(22,26),"HighMedC":(26.0,28.0),"HighC":(28.0,10000.0)}
 
         self.sigma=tools.SetupNuisance(self.m,self.sigmainit,
              self.sigmaminnuis,self.sigmamaxnuis,self.sigmaissampled).get_particle()
@@ -1159,21 +1211,25 @@ class BinomialXLMSRestraint():
         self.mbpnc=map_between_protein_names_and_chains
         #check whther the file was initialized
     
-    def create_psi(self,index):
-        self.psiinit=0.01
+    def create_psi(self,index,value):
+        if value==None
+           self.psiinit=0.01
+           self.psiissampled=True
+        else:
+           self.psiinit=value 
+           self.psiissampled=False
         self.psiminnuis=0.0000001
         self.psimaxnuis=0.4999999
-        self.psimin=0.01
-        self.psimax=0.49   
-        self.psiissampled=True
-        self.psitrans=0.01    
+        self.psimin=    0.01
+        self.psimax=    0.49
+        self.psitrans=  0.01 
         self.psi=tools.SetupNuisance(self.m,self.psiinit,
              self.psiminnuis,self.psimaxnuis,self.psiissampled).get_particle()
-        self.psi_dictionary[index]=(self.psi,self.psitrans,self.psiissampled)
+        self.psi_dictionary[index]=(self.psi,self.psitrans,self.psiissampled)    
         
-    def get_psi(self,index):
+    def get_psi(self,index,value):
         if not index in self.psi_dictionary:
-           self.create_psi(index)
+           self.create_psi(index,value)
         return self.psi_dictionary[index]
 
     def get_crosslinker_dict(self,typeofprofile):
@@ -1245,6 +1301,7 @@ class BinomialXLMSRestraint():
         c1s=[]
         c2s=[]
         psis=[]
+        psivalues=[]
         self.index+=1 
         for pair in ambiguous_list:
             error=False
@@ -1265,6 +1322,10 @@ class BinomialXLMSRestraint():
             r1=int(pair[0][1])
             r2=int(pair[1][1])
             psi=float(pair[2])
+            try:
+               psivalue=float(pair[3])
+            except:
+               psivalue=None
             
             print '''CrossLinkMS: attempting to add restraint between
                      residue %d of chain %s and residue %d of chain %s''' % (r1,c1,r2,c2)
@@ -1315,6 +1376,7 @@ class BinomialXLMSRestraint():
             c1s.append(c1)
             c2s.append(c2)
             psis.append(psi)
+            psivalues.append(psivalue)
             
             print "CrossLinkMS: added pair %d %s %d %s" % (r1,c1,r2,c2)
                        
@@ -1329,14 +1391,8 @@ class BinomialXLMSRestraint():
             for i in range(len(p1s)):
                 print rs_name,i
                 ln.add_contribution()
-                
-                
-                for kindex in self.psiintervals:
-                   lower=self.psiintervals[kindex][0]
-                   upper=self.psiintervals[kindex][1]
-                   if psis[i] > lower and psis[i] <= upper:
-                      index=kindex
-                      psi=self.get_psi(index) 
+
+                psi=self.get_psi(psis[i],psivalues[i]) 
                                 
                 ln.add_particle_pair(i,(p1s[i].get_index(),p2s[i].get_index()),psi[0].get_particle().get_index())
                 self.pairs.append((p1s[i], p2s[i], crosslinker, rs_name,

@@ -667,16 +667,24 @@ class SimplifiedModel():
                 s.set_name(pdb)
 
 
+
             #calculate regions without structrue (un-modelled regions)
             for i,bnd in enumerate(bounds):
                 if i==0:
-                    if bnd[0]>1: ds.append((1,bnd[0]-1))
+                    if bnd[0]>1:
+                       ds.append((1,bnd[0]-1))
+                       if len(ds)>len(colors): colors.append(colors[pdb_part_count])
                     if len(bounds)==1:
-                        if bnd[1]<length: ds.append((bnd[1]+1,length))
+                        if bnd[1]<length:
+                           ds.append((bnd[1]+1,length))
+                           if len(ds)>len(colors): colors.append(colors[pdb_part_count])
                 else:
                     ds.append((bounds[i-1][1]+1, bnd[0]-1))
+                    if len(ds)>len(colors): colors.append(colors[pdb_part_count])
                     if i==len(bounds)-1:
-                        if bnd[1]<length: ds.append((bnd[1]+1,length))
+                        if bnd[1]<length:
+                           ds.append((bnd[1]+1,length))
+                           if len(ds)>len(colors): colors.append(colors[pdb_part_count])
 
         print ds
         #work on un-modelled regions
@@ -796,10 +804,10 @@ class SimplifiedModel():
     
     def get_particles_from_selection(self,selection_tuples):
         #to be used for instance by CompositeRestraint
-        #selection tuples must be [("name1",r1,r2),("name2",r1,r2),....]
+        #selection tuples must be [(r1,r2,"name1"),(r1,r2,"name2"),....]
         particles=[]
         for s in selection_tuples:
-            sel=IMP.atom.Selection(self.prot,molecule=s[0],residue_indexes=range(s[1],s[2]+1))
+            sel=IMP.atom.Selection(self.prot,molecule=s[2],residue_indexes=range(s[0],s[1]+1))
             ps=sel.get_selected_particles()
             print "get_particles_from_selection: "+str(s)+" selected "+str(len(ps))+" particles"
             particles+=ps

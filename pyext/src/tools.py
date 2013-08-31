@@ -802,6 +802,11 @@ class GetModelDensity():
 class Clustering():
 
     def __init__(self):
+        global impem,deepcopy,cdist,array,argwhere,mgrid,shape,reshape,zeros,sqrt,diagonal,argsort
+        import IMP.em as impem
+        from numpy import array,argwhere,mgrid,shape,reshape,zeros,diagonal,argsort
+        from copy import deepcopy
+        from scipy.spatial.distance import cdist
         from math import sqrt
         self.all_coords = {}
 
@@ -985,6 +990,11 @@ class GetModelDensity2():
 
 class GetContactMap():
     def __init__(self, distance=15.):
+        global impem,deepcopy,cdist,array,argwhere,mgrid,shape,reshape,zeros,sqrt,diagonal,argsort
+        import IMP.em as impem
+        from numpy import array,argwhere,mgrid,shape,reshape,zeros,diagonal,argsort
+        from copy import deepcopy
+        from scipy.spatial.distance import cdist
         global itemgetter
         from operator import itemgetter
         

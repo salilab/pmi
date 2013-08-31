@@ -767,36 +767,40 @@ class SimplifiedModel():
         #self.rigid_bodies+=RigiParticles
         self.floppy_bodies+=FlexParticles
 
-
     def set_rigid_bodies(self,subunits,coords=()):
         #sometimes, we know about structure of an interaction
         #and here we make such PPIs rigid
-        randomize_coords = lambda c: tuple(1.*(nrrand(3)-0.5)+array(c))
+        randomize_coords = lambda c: tuple(1.*(random.rand(3)-0.5)+array(c))
 
-        rigid_parts = []
-        for prt in self.prot.get_children():
-            if prt.get_name() in subunits:
-                for frag in prt.get_children():
-                    rigid_parts += IMP.atom.get_leaves(frag)
-                    print prt.get_name(),IMP.atom.get_leaves(frag)
+        if type(subunits[0])==str:
+            rigid_parts = []
+            for prt in self.prot.get_children():
+                if prt.get_name() in subunits:
+                    for frag in prt.get_children(): rigid_parts += IMP.atom.get_leaves(frag)
+            rb=IMP.atom.create_rigid_body(rigid_parts)
+            rb.set_coordinates_are_optimized(True)
+            if coords!=(): rb.set_coordinates(randomize_coords(coords))
+            else: rb.set_coordinates(randomize_coords((0.,0.,0.)))
+            self.rigid_bodies.append(rb)
+
+        elif type(subunits[0])==tuple or type(subunits[0])==list():
+            rigid_parts = []
+            print '#####',subunits, [name[0] for name in subunits]
+            for prt in self.prot.get_children():
+                if prt.get_name() in [name[0] for name in subunits]:
+                    prt_index=[name[0] for name in subunits].index(prt.get_name())
+                    bounds=subunits[prt_index][1]
+                    s= IMP.atom.Selection(prt, residue_indexes=range(bounds[0],bounds[1]+1))
+                    rigid_parts += s.get_selected_particles()
+                    print prt,s,'\n\t',s.get_selected_particles()
+                    for f in prt.get_children(): print '\t\t',f
                     print
-                    rb=IMP.atom.create_rigid_body(IMP.atom.get_leaves(frag))
-                    rb.set_coordinates_are_optimized(True)
-                    if coords!=():
-                        rb.set_coordinates(randomize_coords(coords))
-                    else:
-                        rb.set_coordinates(randomize_coords((0.,0.,0.)))
-                    self.rigid_bodies.append(rb)
+            rb=IMP.atom.create_rigid_body(rigid_parts)
+            rb.set_coordinates_are_optimized(True)
+            if coords!=(): rb.set_coordinates(randomize_coords(coords))
+            else: rb.set_coordinates(randomize_coords((0.,0.,0.)))
+            self.rigid_bodies.append(rb)
 
-        '''
-        rb=IMP.atom.create_rigid_body(rigid_parts)
-        rb.set_coordinates_are_optimized(True)
-        if coords!=():
-            rb.set_coordinates(randomize_coords(coords))
-        else:
-            rb.set_coordinates(randomize_coords((0.,0.,0.)))
-        self.rigid_bodies.append(rb)
-       '''
 
     def set_floppy_bodies(self):
         for p in self.floppy_bodies:

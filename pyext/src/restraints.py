@@ -93,7 +93,9 @@ class LinkDomains():
     def get_output(self):
         self.m.update()
         output={}
-        output["LinkDomains_"+self.label]=str(self.rs.unprotected_evaluate(None))
+        score=self.rs.unprotected_evaluate(None)
+        output["_TotalScore"]=str(score)
+        output["LinkDomains_"+self.label]=str(score)
         for rst in self.rs.get_restraints():
             #output["LinkDomains_"+
             #        IMP.core.PairRestraint.get_from(rst).get_name()+
@@ -174,7 +176,9 @@ class ConnectivityRestraint():
     def get_output(self):
         self.m.update()
         output={}
-        output["ConnectivityRestraint_"+self.label]=str(self.rs.unprotected_evaluate(None))
+        score=self.rs.unprotected_evaluate(None)
+        output["_TotalScore"]=str(score)        
+        output["ConnectivityRestraint_"+self.label]=str(score)
         return output
 
 
@@ -243,7 +247,9 @@ class UpperBound():
     def get_output(self):
         output={}
         self.m.update()
-        output["UpperBound_"+self.label]=str(self.rs.unprotected_evaluate(None))
+        score=self.rs.unprotected_evaluate(None)
+        output["_TotalScore"]=str(score)        
+        output["UpperBound_"+self.label]=str(score)
         return output
 
 ###########################################################################
@@ -295,7 +301,9 @@ class ExcludedVolumeResidue():
     def get_output(self):
         self.m.update()
         output={}
-        output["ExcludedVolumeResidue_"+self.label]=str(self.rs.unprotected_evaluate(None))
+        score=self.rs.unprotected_evaluate(None)
+        output["_TotalScore"]=str(score)        
+        output["ExcludedVolumeResidue_"+self.label]=str(score)
         return output
 
 ###########################################################################
@@ -310,6 +318,13 @@ class ExcludedVolumeSphere():
 
         evr=IMP.atom.create_excluded_volume_restraint([prot])
         self.rs.add_restraint(evr)
+
+    def add_excluded_particle_pairs(self,excluded_particle_pairs):
+        # add pairs to be filtered when calculating  the score
+        lpc=IMP.container.ListPairContainer(self.m)
+        lpc.add_particle_pairs(excluded_particle_pairs)
+        icpf=IMP.container.InContainerPairFilter(lpc)
+        IMP.core.ExcludedVolumeRestraint.get_from(self.rs.get_restraints()[0]).add_pair_filter(icpf)
 
     def set_label(self,label):
         self.label=label
@@ -329,7 +344,9 @@ class ExcludedVolumeSphere():
     def get_output(self):
         self.m.update()
         output={}
-        output["ExcludedVolumeSphere_"+self.label]=str(self.rs.unprotected_evaluate(None))
+        score=self.rs.unprotected_evaluate(None)
+        output["_TotalScore"]=str(score)        
+        output["ExcludedVolumeSphere_"+self.label]=str(score)
         return output
 
 ###########################################################################
@@ -387,7 +404,9 @@ class BipartiteExcludedVolumeResidue():
     def get_output(self):
         self.m.update()
         output={}
-        output["BipartiteExcludedVolumeResidue_"+self.label]=str(self.rs.unprotected_evaluate(None))
+        score=self.rs.unprotected_evaluate(None)
+        output["_TotalScore"]=str(score)        
+        output["BipartiteExcludedVolumeResidue_"+self.label]=str(score)
         return output
 
 ###########################################################################
@@ -433,7 +452,9 @@ class TemplateRestraint():
     def get_output(self):
         self.m.update()
         output={}
-        output["TemplateRestraint_"+self.label]=str(self.rs.unprotected_evaluate(None))
+        score=self.rs.unprotected_evaluate(None)
+        output["_TotalScore"]=str(score)        
+        output["TemplateRestraint_"+self.label]=str(score)
         return output
 
 
@@ -468,7 +489,9 @@ class CompositeRestraint():
     def get_output(self):
         self.m.update()
         output={}
-        output["CompositeRestraint_"+self.label]=str(self.rs.unprotected_evaluate(None))
+        score=self.rs.unprotected_evaluate(None)
+        output["_TotalScore"]=str(score)        
+        output["CompositeRestraint_"+self.label]=str(score)
         return output
 
 ###########################################################################
@@ -510,7 +533,9 @@ class MarginalChi3Restraint():
     def get_output(self):
         self.m.update()
         output={}
-        output["MarginalChi3Restraint_"+self.label]=str(self.rs.unprotected_evaluate(None))
+        score=self.rs.unprotected_evaluate(None)
+        output["_TotalScore"]=str(score)        
+        output["MarginalChi3Restraint_"+self.label]=str(score)
         output["MarginalChi3Restraint_Sigma_"+self.label]=str(self.sigma.get_scale())
         return output
 
@@ -555,7 +580,9 @@ class ExternalBarrier():
     def get_output(self):
         self.m.update()
         output={}
-        output["ExternalBarrier_"+self.label]=str(self.rs.unprotected_evaluate(None))
+        score=self.rs.unprotected_evaluate(None)
+        output["_TotalScore"]=str(score)        
+        output["ExternalBarrier_"+self.label]=str(score)
         return output
 
 ###########################################################################
@@ -1092,8 +1119,12 @@ class CrossLinkMS():
         #self.pairs.append((p1s[i], p2s[i], crosslinker, rs_name, 100, 100, (r1,c1,i),  (r2,c2,i), crosslinker, i, ln))
         self.m.update()
         output={}
-        output["CrossLinkMS_Likelihood_"+self.label]=str(self.rs.unprotected_evaluate(None))
-        output["CrossLinkMS_Prior_"+self.label]=str(self.rs2.unprotected_evaluate(None))
+        score=self.rs.unprotected_evaluate(None)
+        score2=self.rs2.unprotected_evaluate(None)
+        output["_TotalScore"]=str(score+score2)        
+        
+        output["CrossLinkMS_Likelihood_"+self.label]=str(score)
+        output["CrossLinkMS_Prior_"+self.label]=str(score2)
         output["CrossLinkMS_Sigma"]=str(self.sigmaglobal.get_scale())
 
 
@@ -1474,8 +1505,11 @@ class BinomialXLMSRestraint():
         #self.pairs.append((p1s[i], p2s[i], crosslinker, rs_name, psi, 100, (r1,c1,i),  (r2,c2,i), crosslinker, i, ln))
         self.m.update()
         output={}
-        output["CrossLinkMS_Likelihood_"+self.label]=str(self.rs.unprotected_evaluate(None))
-        output["CrossLinkMS_Prior_"+self.label]=str(self.rs2.unprotected_evaluate(None))
+        score=self.rs.unprotected_evaluate(None)
+        score2=self.rs2.unprotected_evaluate(None)
+        output["_TotalScore"]=str(score+score2)        
+        output["CrossLinkMS_Likelihood_"+self.label]=str(score)
+        output["CrossLinkMS_Prior_"+self.label]=str(score2)
 
 
         if self.outputlevel=="high":
@@ -1628,7 +1662,9 @@ class SimplifiedCrossLinkMS():
         self.m.update()
 
         output={}
-        output["SimplifiedCrossLinkMS_Score_"+self.label]=str(self.rs.unprotected_evaluate(None))
+        score=self.rs.unprotected_evaluate(None)
+        output["_TotalScore"]=str(score)            
+        output["SimplifiedCrossLinkMS_Score_"+self.label]=str(score)
         for i in range(len(self.pairs)):
 
             p0=self.pairs[i][0]
@@ -1755,7 +1791,9 @@ class SimplifiedPEMAP():
         self.m.update()
 
         output={}
-        output["SimplifiedPEMAP_Score_"+self.label]=str(self.rs.unprotected_evaluate(None))
+        score=self.rs.unprotected_evaluate(None)
+        output["_TotalScore"]=str(score)            
+        output["SimplifiedPEMAP_Score_"+self.label]=str(score)
         for i in range(len(self.pairs)):
 
             p0=self.pairs[i][0]
@@ -1906,7 +1944,9 @@ class CrossLinkMSSimple():
         #self.pairs.append((p1s[i], p2s[i], crosslinker, rs_name, 100, 100, (r1,c1),  (r2,c2), crosslinker, ln))
         self.m.update()
         output={}
-        output["CrossLinkMSSimple_Score_"+self.label]=str(self.rs.unprotected_evaluate(None))
+        score=self.rs.unprotected_evaluate(None)
+        output["_TotalScore"]=str(score)            
+        output["CrossLinkMSSimple_Score_"+self.label]=str(score)
         for i in range(len(self.pairs)):
 
             p0=self.pairs[i][0]
@@ -2138,9 +2178,14 @@ class SecondaryStructure():
     def get_output(self):
         output={}
         self.m.update()
-        output["SecondaryStructure_Angles_"+self.label]=str(self.anglrs.unprotected_evaluate(None))
-        output["SecondaryStructure_Dihedrals_"+self.label]=str(self.dihers.unprotected_evaluate(None))
-        output["SecondaryStructure_Bonds_"+self.label]=str(self.bondrs.unprotected_evaluate(None))
+        score_angle=self.anglrs.unprotected_evaluate(None)
+        score_dihers=self.dihers.unprotected_evaluate(None)
+        score_bondrs=self.bondrs.unprotected_evaluate(None)
+        output["_TotalScore"]=str(score_angle+score_dihers+score_bondrs)    
+        
+        output["SecondaryStructure_Angles_"+self.label]=str(score_angle)
+        output["SecondaryStructure_Dihedrals_"+self.label]=str(score_dihers)
+        output["SecondaryStructure_Bonds_"+self.label]=str(score_bondrs)
         return output
 
 ###########################################################################
@@ -2171,7 +2216,9 @@ class WeightRestraint():
     def get_output(self):
         self.m.update()
         output={}
-        output["WeightRestraint_"+self.label]=str(self.rs.unprotected_evaluate(None))
+        score=self.rs.unprotected_evaluate(None)
+        output["_TotalScore"]=str(score)         
+        output["WeightRestraint_"+self.label]=str(score)
         return output
 
 
@@ -2194,7 +2241,9 @@ class JeffreysPrior():
 
     def get_output(self):
         output={}
-        output["JeffreyPrior_"+self.label]=str(self.rs.evaluate(False))
+        score=self.rs.unprotected_evaluate(None)
+        output["_TotalScore"]=str(score)         
+        output["JeffreyPrior_"+self.label]=str(score)
         return output
 
 ###########################################################################
@@ -2284,8 +2333,12 @@ class SAXSISDRestraint():
     def get_output(self):
         self.m.update()
         output={}
-        output["SAXSISDRestraint_Likelihood_"+self.label]=str(self.rs.unprotected_evaluate(None))
-        output["SAXSISDRestraint_Prior_"+self.label]=str(self.rs2.unprotected_evaluate(None))
+        score=self.rs.unprotected_evaluate(None)
+        score2=self.rs2.unprotected_evaluate(None)
+        output["_TotalScore"]=str(score+score2) 
+        
+        output["SAXSISDRestraint_Likelihood_"+self.label]=str(score)
+        output["SAXSISDRestraint_Prior_"+self.label]=str(score2)
         output["SAXSISDRestraint_Sigma_"+self.label]=str(self.sigma.get_scale())
         output["SAXSISDRestraint_Gamma_"+self.label]=str(self.gamma.get_scale())
         return output
@@ -2479,7 +2532,9 @@ class CysteineCrossLinkRestraint():
     def get_output(self):
         self.m.update()
         output={}
-        output["CysteineCrossLinkRestraint_Score_"+self.label]=str(self.rs.unprotected_evaluate(None))
+        score=self.rs.unprotected_evaluate(None)
+        output["_TotalScore"]=str(score)         
+        output["CysteineCrossLinkRestraint_Score_"+self.label]=str(score)
         output["CysteineCrossLinkRestraint_sigma_"+self.label]=str(self.sigma.get_scale())
         for eps in self.epsilons.keys():
             output["CysteineCrossLinkRestraint_epsilon_"+eps+"_"+self.label]=str(self.epsilons[eps].get_scale())
@@ -2607,6 +2662,8 @@ class GaussianEMRestraint():
     def get_output(self):
         self.m.update()
         output={}
+        score=self.rs.unprotected_evaluate(None)
+        output["_TotalScore"]=str(score)         
         output["GaussianEMRestraint_"+self.label]=str(self.rs.unprotected_evaluate(None))
         output["GaussianEMRestraint_sigma_"+self.label]=str(self.sigmaglobal.get_scale())
         return output

@@ -550,7 +550,7 @@ class SimplifiedModel():
     This class creates the molecular hierarchies for the various involved proteins.
     '''
 
-    def __init__(self,m):
+    def __init__(self,m,upperharmonic=True):
         global random, itemgetter,tools,nrrand,array
         import random
         from operator import itemgetter
@@ -558,11 +558,19 @@ class SimplifiedModel():
         from numpy.random import rand as nrrand
         from numpy import array
         
+        # this flag uses either harmonic (False) or upperharmonic (True)
+        # in the intra-pair connectivity restraint. Harmonic is used whe you want to
+        # remove the intra-ev term from energy calculations, e.g.:
+        # upperharmonic=False
+        # ip=simo.get_connected_intra_pairs()
+        # ev.add_excluded_particle_pairs(ip)
+        
+        self.upperharmonic=upperharmonic
         self.rigid_bodies=[]
         self.floppy_bodies=[]
-
+                 
         self.label="None"
-
+  
         self.maxtrans_rb=0.15
         self.maxrot_rb=0.03
         self.maxtrans_fb=0.15
@@ -573,6 +581,7 @@ class SimplifiedModel():
         self.unmodeledregions_cr_dict={}
         self.sortedsegments_cr_dict={}
         self.prot=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
+        self.connected_intra_pairs=[]
 
     # create a protein, represented as a set of connected balls of appropriate
     # radii and number, chose by the resolution parameter and the number of
@@ -722,12 +731,17 @@ class SimplifiedModel():
                 if x==len(Spheres)-1: break
                 #r=IMP.atom.create_connectivity_restraint([IMP.atom.Selection(prt),\
                 #                          IMP.atom.Selection(Spheres[x+1])],-3.0,self.kappa)
-                hu=IMP.core.HarmonicUpperBound(0., self.kappa)
+                if self.upperharmonic:
+                   hu=IMP.core.HarmonicUpperBound(0., self.kappa)
+                else:
+                   hu=IMP.core.Harmonic(0., self.kappa)                   
                 dps=IMP.core.SphereDistancePairScore(hu)
                 pt0=IMP.atom.Selection(prt).get_selected_particles()[0]
                 pt1=IMP.atom.Selection(Spheres[x+1]).get_selected_particles()[0]
                 r=IMP.core.PairRestraint(dps,IMP.ParticlePair(pt0,pt1))
                 unmodeledregions_cr.add_restraint(r)
+                self.connected_intra_pairs.append((pt0,pt1))
+                self.connected_intra_pairs.append((pt1,pt0))                
                         # only allow the particles to separate by 1 angstrom
                         # self.m.set_maximum_score(r, self.kappa)
             protein_h.add_child(h)
@@ -750,12 +764,17 @@ class SimplifiedModel():
             first= IMP.atom.get_leaves(SortedSegments[x+1][0])[0]
             #r=IMP.atom.create_connectivity_restraint([IMP.atom.Selection(last),\
             #                                          IMP.atom.Selection(first)],-3.0,self.kappa)
-            hu=IMP.core.HarmonicUpperBound(0., self.kappa)
+            if self.upperharmonic:
+               hu=IMP.core.HarmonicUpperBound(0., self.kappa)
+            else:
+               hu=IMP.core.Harmonic(0., self.kappa)    
             dps=IMP.core.SphereDistancePairScore(hu)
             pt0=IMP.atom.Selection(last).get_selected_particles()[0]
             pt1=IMP.atom.Selection(first).get_selected_particles()[0]
             r=IMP.core.PairRestraint(dps,IMP.ParticlePair(pt0,pt1))
             sortedsegments_cr.add_restraint(r)
+            self.connected_intra_pairs.append((pt0,pt1))
+            self.connected_intra_pairs.append((pt1,pt0))
             # only allow the particles to separate by 1 angstrom
             # self.m.set_maximum_score(r, self.kappa)
 
@@ -770,7 +789,7 @@ class SimplifiedModel():
     def set_rigid_bodies(self,subunits,coords=()):
         #sometimes, we know about structure of an interaction
         #and here we make such PPIs rigid
-        randomize_coords = lambda c: tuple(1.*(random.rand(3)-0.5)+array(c))
+        randomize_coords = lambda c: tuple(1.*(nrrand(3)-0.5)+array(c))
 
         if type(subunits[0])==str:
             rigid_parts = []
@@ -822,6 +841,9 @@ class SimplifiedModel():
             
         return particles
 
+    def get_connected_intra_pairs(self):
+        return self.connected_intra_pairs
+
     def set_rigid_bodies_max_trans(self,maxtrans):
         self.maxtrans_rb=maxtrans
 
@@ -842,10 +864,13 @@ class SimplifiedModel():
 
     def get_output(self):
         output={}
+        score=self.m.evaluate(False)
+        output["_TotalScore"]=str(score)
+        output["SimplifiedModel_Total_Score_"+self.label]=str(score)        
         for name in self.sortedsegments_cr_dict:
-            output["SimplifiedModel_SortedSegments_"+name+"_"+self.label]=str(self.sortedsegments_cr_dict[name].evaluate(False))
-            output["SimplifiedModel_UnmodeledRegions_"+name+"_"+self.label]=str(self.unmodeledregions_cr_dict[name].evaluate(False))
-            output["SimplifiedModel_Total_Score_"+self.label]=str(self.m.evaluate(False))
+            output["SimplifiedModel_Link_SortedSegments_"+name+"_"+self.label]=str(self.sortedsegments_cr_dict[name].evaluate(False))
+            output["SimplifiedModel_Link_UnmodeledRegions_"+name+"_"+self.label]=str(self.unmodeledregions_cr_dict[name].evaluate(False))
+
         return output
 
     def get_hierarchy(self):

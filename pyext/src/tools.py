@@ -271,11 +271,14 @@ class Output():
 
 #-------------------
       
-    def init_stat2(self,name,listofobjects):
+    def init_stat2(self,name,listofobjects,listofsummedobjects=None):
         #this is a new stat file that should be less 
         #space greedy!
+        #listofsummedobjects must be in the form [([obj1,obj2,obj3,obj4...],label)]
+        
+        if listofsummedobjects==None: listofsummedobjects=[]
         flstat=open(name,'w')
-        output={}
+        output=self.initoutput
         stat2_keywords={"STAT2HEADER":"STAT2HEADER"}
         stat2_inverse={}
         
@@ -284,7 +287,23 @@ class Output():
                 print "Output: object ", l, " doesn't have get_output() method"
                 exit()
             else:
-                output.update(l.get_output())
+                d=l.get_output()
+                #remove all entries that begin with _ (private entries)
+                dfiltered=dict((k, v) for k, v in d.iteritems() if k[0]!="_")
+                output.update(dfiltered)
+        
+        #check for customizable entries     
+        for l in listofsummedobjects:
+          for t in l[0]:
+            if not "get_output" in dir(t):
+                print "Output: object ", t, " doesn't have get_output() method"
+                exit()
+            else:
+                if "_TotalScore" not in t.get_output():
+                  print "Output: object ", t, " doesn't have _TotalScore entry to be summed"
+                  exit()
+                else:
+                  output.update({l[1]:0.0})            
         
         for n,k in enumerate(output):
             stat2_keywords.update({n:k})
@@ -292,16 +311,24 @@ class Output():
         
         flstat.write("%s \n" % stat2_keywords)
         flstat.close()
-        self.dictionary_stats2[name]=(listofobjects,stat2_inverse)
+        self.dictionary_stats2[name]=(listofobjects,stat2_inverse,listofsummedobjects)
 
     def write_stat2(self,name,appendmode=True):
         output={}
-        (listofobjects,stat2_inverse)=self.dictionary_stats2[name]
+        (listofobjects,stat2_inverse,listofsummedobjects)=self.dictionary_stats2[name]
 
         for obj in listofobjects:
             od=obj.get_output()
-            for k in od: 
+            dfiltered=dict((k, v) for k, v in od.iteritems() if k[0]!="_")
+            for k in dfiltered: 
                output.update({stat2_inverse[k]:od[k]})
+        
+        for l in listofsummedobjects:
+           partial_score=0.0
+           for t in l[0]:
+             d=t.get_output()
+             partial_score+=float(d["_TotalScore"])
+           output.update({stat2_inverse[l[1]]:str(partial_score)})
 
         if appendmode:
             writeflag='a'

@@ -864,13 +864,17 @@ class SimplifiedModel():
 
     def get_output(self):
         output={}
-        score=self.m.evaluate(False)
-        output["_TotalScore"]=str(score)
-        output["SimplifiedModel_Total_Score_"+self.label]=str(score)        
+        score=0.0
+        
+        output["SimplifiedModel_Total_Score_"+self.label]=str(self.m.evaluate(False))        
         for name in self.sortedsegments_cr_dict:
-            output["SimplifiedModel_Link_SortedSegments_"+name+"_"+self.label]=str(self.sortedsegments_cr_dict[name].evaluate(False))
-            output["SimplifiedModel_Link_UnmodeledRegions_"+name+"_"+self.label]=str(self.unmodeledregions_cr_dict[name].evaluate(False))
-
+            partialscore=self.sortedsegments_cr_dict[name].evaluate(False)
+            score+=partialscore
+            output["SimplifiedModel_Link_SortedSegments_"+name+"_"+self.label]=str(partialscore)
+            partialscore=self.unmodeledregions_cr_dict[name].evaluate(False)
+            score+=partialscore            
+            output["SimplifiedModel_Link_UnmodeledRegions_"+name+"_"+self.label]=str(partialscore)
+        output["_TotalScore"]=str(score)
         return output
 
     def get_hierarchy(self):

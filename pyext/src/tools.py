@@ -237,8 +237,8 @@ class Output():
                 exit()
         self.dictionary_stats[name]=listofobjects
 
-    def set_output_entry(self,dictionary):
-        self.initoutput.update(dictionary)
+    def set_output_entry(self,key,value):
+        self.initoutput.update({key:value})
 
     def write_stat(self,name,appendmode=True):
         output=self.initoutput
@@ -271,12 +271,13 @@ class Output():
 
 #-------------------
       
-    def init_stat2(self,name,listofobjects,listofsummedobjects=None):
+    def init_stat2(self,name,listofobjects,extralabels=None,listofsummedobjects=None):
         #this is a new stat file that should be less 
         #space greedy!
         #listofsummedobjects must be in the form [([obj1,obj2,obj3,obj4...],label)]
         
         if listofsummedobjects==None: listofsummedobjects=[]
+        if extralabels==None: extralabels=[]
         flstat=open(name,'w')
         output={}
         stat2_keywords={"STAT2HEADER":"STAT2HEADER"}
@@ -305,31 +306,43 @@ class Output():
                 else:
                   output.update({l[1]:0.0})            
         
+        for k in extralabels:
+            output.update({k:0.0})  
+        
         for n,k in enumerate(output):
             stat2_keywords.update({n:k})
             stat2_inverse.update({k:n})
         
         flstat.write("%s \n" % stat2_keywords)
         flstat.close()
-        self.dictionary_stats2[name]=(listofobjects,stat2_inverse,listofsummedobjects)
+        self.dictionary_stats2[name]=(listofobjects,stat2_inverse,listofsummedobjects,extralabels)
 
     def write_stat2(self,name,appendmode=True):
         output={}
-        (listofobjects,stat2_inverse,listofsummedobjects)=self.dictionary_stats2[name]
+        (listofobjects,stat2_inverse,listofsummedobjects,extralabels)=self.dictionary_stats2[name]
 
+        #writing objects
         for obj in listofobjects:
             od=obj.get_output()
             dfiltered=dict((k, v) for k, v in od.iteritems() if k[0]!="_")
             for k in dfiltered: 
                output.update({stat2_inverse[k]:od[k]})
         
+        #writing summedobjects
         for l in listofsummedobjects:
            partial_score=0.0
            for t in l[0]:
              d=t.get_output()
              partial_score+=float(d["_TotalScore"])
            output.update({stat2_inverse[l[1]]:str(partial_score)})
-
+        
+        #writing extralabels
+        for k in extralabels:
+           if k in self.initoutput:
+              output.update({stat2_inverse[k]:self.initoutput[k]})
+           else:
+              output.update({stat2_inverse[k]:"None"})              
+        
         if appendmode:
             writeflag='a'
         else:

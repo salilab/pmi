@@ -115,11 +115,11 @@ class MultipleStates():
         #this function must be called before the rigid body definition!
         for prot in self.prot:
             for segment in segments:
-                rinterval=[(segment[0],segment[1]+1)]
+                #rinterval=[(segment[0],segment[1]+1)]
                 if (segment[0]==-1 or segment[1]==-1):
                     s=IMP.atom.Selection(prot,chains=segment[2])
                 else:
-                    s=IMP.atom.Selection(prot,chains=segment[2],residue_indexes=rinterval)
+                    s=IMP.atom.Selection(prot,chains=segment[2],residue_indexes=range(segment[0],segment[1]+1))
                 for p in s.get_selected_particles():
                     if IMP.core.RigidMember.particle_is_instance(p):
                         print "MultipleStates: one particle was not destroied because it was a RigidMember."
@@ -137,8 +137,6 @@ class MultipleStates():
         #for instance residuechainlist=[(35,"A"),(100,"B")] will add
         #residue 35 to chain A and residue 100 to chain B
         for rc in residuechainlist:
-
-
 
             s=IMP.atom.Selection(self.prot[0],chains=rc[1],residue_index=rc[0],atom_type=IMP.atom.AT_CA)
 
@@ -181,11 +179,11 @@ class MultipleStates():
             pstokeep=[]
             for segment in segments:
 
-                rinterval=[(segment[0],segment[1]+1)]
+                #rinterval=[(segment[0],segment[1]+1)]
                 if (segment[0]==-1 or segment[1]==-1):
                     s=IMP.atom.Selection(prot,chains=segment[2])
                 else:
-                    s=IMP.atom.Selection(prot,chains=segment[2],residue_indexes=rinterval)
+                    s=IMP.atom.Selection(prot,chains=segment[2],residue_indexes=range(segment[0],segment[1]+1))
                 pstokeep+=s.get_selected_particles()
 
             for p in IMP.atom.get_leaves(prot):
@@ -208,7 +206,7 @@ class MultipleStates():
             if (segment[0]==-1 or segment[1]==-1):
                 s=IMP.atom.Selection(prot,chains=segment[2])
             else:
-                s=IMP.atom.Selection(prot,chains=segment[2],residue_indexes=rinterval)
+                s=IMP.atom.Selection(prot,chains=segment[2],residue_indexes=range(segment[0],segment[1]+1))
             residue_indexes=[]
             for p in s.get_selected_particles():
 
@@ -302,11 +300,11 @@ class MultipleStates():
                 for interval in element:
                 #rinterval upper bound is incremented by one because the
                 #residue_indexes attribute cuts the upper edge
-                    rinterval=[(interval[0],interval[1]+1)]
+                    #rinterval=[(interval[0],interval[1]+1)]
                     if (interval[0]==-1 or interval[1]==-1):
                         s=IMP.atom.Selection(prot,chains=interval[2])
                     else:
-                        s=IMP.atom.Selection(prot,chains=interval[2],residue_indexes=rinterval)
+                        s=IMP.atom.Selection(prot,chains=interval[2],residue_indexes=range(interval[0],interval[1]+1))
                     for p in s.get_selected_particles():
                         atoms.append(IMP.core.XYZR(p))
 
@@ -315,7 +313,8 @@ class MultipleStates():
                         if (interval[0]==-1 or interval[1]==-1):
                             s=IMP.atom.Selection(self.prot_lowres[key][ncopy],chains=interval[2])
                         else:
-                            s=IMP.atom.Selection(self.prot_lowres[key][ncopy],chains=interval[2],residue_indexes=rinterval)
+                            s=IMP.atom.Selection(self.prot_lowres[key][ncopy],chains=interval[2],
+                                                residue_indexes=range(interval[0],interval[1]+1))
                         for p in s.get_selected_particles():
                             atoms.append(IMP.core.XYZR(p))
 
@@ -343,11 +342,11 @@ class MultipleStates():
                 for interval in element:
                 #rinterval upper bound is incremented by one because the
                 #residue_indexes attribute cuts the upper edge
-                    rinterval=[(interval[0],interval[1]+1)]
+                    #rinterval=[(interval[0],interval[1]+1)]
                     if (interval[0]==-1 or interval[1]==-1):
                         s=IMP.atom.Selection(prot,chains=interval[2])
                     else:
-                        s=IMP.atom.Selection(prot,chains=interval[2],residue_indexes=rinterval)
+                        s=IMP.atom.Selection(prot,chains=interval[2],residue_indexes=range(interval[0],interval[1]+1))
                     for p in s.get_selected_particles():
                         (r,c)=tools.get_residue_index_and_chain_from_particle(p)
                         tools.set_floppy_body(p)
@@ -399,7 +398,8 @@ class MultipleStates():
         hier=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m)) #create an empty hierarchy
         for pdb in list_pdb_file:
             if type(pdb)==str:
-                h=IMP.atom.read_pdb(pdb, self.m,IMP.atom.CAlphaPDBSelector())
+                h=IMP.atom.read_pdb(pdb, self.m,IMP.atom.AndPDBSelector(IMP.atom.CAlphaPDBSelector(), 
+                                                                      IMP.atom.ATOMPDBSelector()))
 
                 '''
                 #destroy CA atoms, for the future
@@ -428,7 +428,8 @@ class MultipleStates():
 
                 hier.add_child(h) #add read chains into hierarchy
             if type(pdb)==tuple:
-                h=IMP.atom.read_pdb(pdb[0], self.m,IMP.atom.CAlphaPDBSelector())
+                h=IMP.atom.read_pdb(pdb[0], self.m,IMP.atom.AndPDBSelector(IMP.atom.CAlphaPDBSelector(), 
+                                                                      IMP.atom.ATOMPDBSelector()))
 
                 '''
                 #destroy CA atoms, for the future
@@ -492,7 +493,7 @@ class MultipleStates():
         #generate a new multistate hierarchy
         self.prot_lowres[nres]=[]
         for prot in self.prot:
-            sh=IMP.atom.create_simplified_along_backbone(prot, nres, True)
+            sh=IMP.atom.create_simplified_along_backbone(prot, nres, False)
             print IMP.atom.get_leaves(sh)
             #for p in IMP.atom.get_leaves(sh):
             #    IMP.atom.Atom.setup_particle(p,IMP.atom.AT_CA)

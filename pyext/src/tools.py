@@ -278,7 +278,7 @@ class Output():
         
         if listofsummedobjects==None: listofsummedobjects=[]
         flstat=open(name,'w')
-        output=self.initoutput
+        output={}
         stat2_keywords={"STAT2HEADER":"STAT2HEADER"}
         stat2_inverse={}
         

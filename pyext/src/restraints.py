@@ -1182,8 +1182,6 @@ class BinomialXLMSRestraint():
         self.prots=prots
         self.pairs=[]
         
-
-
         self.weightmaxtrans=0.05
         self.weightissampled=False
        
@@ -1434,7 +1432,7 @@ class BinomialXLMSRestraint():
                                 
                 ln.add_particle_pair(i,(p1s[i].get_index(),p2s[i].get_index()),psi[0].get_particle().get_index())
                 self.pairs.append((p1s[i], p2s[i], crosslinker, rs_name,
-                     index, 100, (r1s[i],c1s[i],i), (r2s[i],c2s[i],i), crosslinker, i, ln))
+                     self.index, 100, (r1s[i],c1s[i],i), (r2s[i],c2s[i],i), crosslinker, i, ln))
                      
                 h=IMP.core.Linear(0,0.03)
                 dps=IMP.core.DistancePairScore(h)

@@ -4,7 +4,7 @@ PMI: Python Modeling Platform
 Repository of Python classes to represent, score, sample 
 and analyse models
 
-_Author(s)_: Riccardo Pellarin, Peter Cimermancic and Max Bonomi
+_Author(s)_: Riccardo Pellarin, Peter Cimermancic, Max Bonomi and Charles Greenberg
 
 _Maintainer_:
 

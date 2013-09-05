@@ -552,12 +552,15 @@ class SimplifiedModel():
     '''
 
     def __init__(self,m,upperharmonic=True):
-        global random, itemgetter,tools,nrrand,array
+        global random, itemgetter,tools,nrrand,array,imprmf,RMF
         import random
         from operator import itemgetter
         import IMP.pmi.tools as tools
         from numpy.random import rand as nrrand
         from numpy import array
+        import IMP.rmf as imprmf
+        import RMF
+
         
         # this flag uses either harmonic (False) or upperharmonic (True)
         # in the intra-pair connectivity restraint. Harmonic is used whe you want to
@@ -605,13 +608,6 @@ class SimplifiedModel():
                 rotation = IMP.algebra.get_random_rotation_3d()
                 transformation = IMP.algebra.Transformation3D(rotation, translation)
                 rb.set_reference_frame(IMP.algebra.ReferenceFrame3D(transformation))
-
-    def link_components_to_rmf(self,rmfname,frameindex):
-        import IMP.rmf
-        import RMF
-        rh= RMF.open_rmf_file(rmfname)
-        IMP.rmf.link_hierarchies(rh, [self.prot])
-        IMP.rmf.load_frame(rh, frameindex)
 
 
     def add_component(self,name,chainnames, length, pdbs, init_coords=None,simplepdb=1,ds=None,colors=None):
@@ -793,6 +789,18 @@ class SimplifiedModel():
         self.prot.add_child(protein_h)
         #self.rigid_bodies+=RigiParticles
         self.floppy_bodies+=FlexParticles
+
+    def link_components_to_rmf(self,rmfname,frameindex):
+        '''
+        load coordinates in the current representation
+        this should be done only if the hierarchy self.prot is identical to the one
+        i.e. all components were added
+        as stored in the rmf
+        '''
+        rh= RMF.open_rmf_file(rmfname)
+        imprmf.link_hierarchies(rh, [self.prot])
+        imprmf.load_frame(rh, frameindex)
+
 
     def set_rigid_bodies(self,subunits,coords=()):
         #sometimes, we know about structure of an interaction

@@ -770,7 +770,7 @@ class SimplifiedModel():
     def set_rigid_bodies(self,subunits,coords=()):
         #sometimes, we know about structure of an interaction
         #and here we make such PPIs rigid
-        randomize_coords = lambda c: tuple(1.*(random.rand(3)-0.5)+array(c))
+        randomize_coords = lambda c: tuple(1.*(nrrand(3)-0.5)+array(c))
 
         if type(subunits[0])==str:
             rigid_parts = []

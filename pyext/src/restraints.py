@@ -1174,7 +1174,7 @@ class BinomialXLMSRestraint():
         import IMP.isd2 as impisd2
         import IMP.pmi.tools as tools
         
-        self.setup=1
+        self.setup=0
            
         self.label="None"
         self.rs = IMP.RestraintSet('xlms')
@@ -1200,8 +1200,10 @@ class BinomialXLMSRestraint():
         self.betamax=4.0
         if self.setup==1:
            self.betaissampled=True
+           print "BinomialXLMSRestraint: beta is sampled"
         if self.setup==0:
-           self.betaissampled=False           
+           self.betaissampled=False      
+           print "BinomialXLMSRestraint: beta is NOT sampled"     
         self.betamaxtrans=0.01
         
         '''
@@ -1220,7 +1222,7 @@ class BinomialXLMSRestraint():
         self.lammaxtrans=0.1        
         '''
         
-        self.epsilon=0.01
+        self.epsilon=0.1
         self.psi_dictionary={}
 
         self.sigma=tools.SetupNuisance(self.m,self.sigmainit,
@@ -1258,9 +1260,11 @@ class BinomialXLMSRestraint():
         if value==None:
            self.psiinit=0.01
            self.psiissampled=True
+           print "BinomialXLMSRestraint: psi "+str(index)+" is sampled"           
         else:
            self.psiinit=value 
            self.psiissampled=False
+           print "BinomialXLMSRestraint: psi "+str(index)+" is NOT sampled"               
         self.psiminnuis=0.0000001
         self.psimaxnuis=0.4999999
         self.psimin=    0.01
@@ -1279,7 +1283,7 @@ class BinomialXLMSRestraint():
         #fill the cross-linker pmfs
         #to accelerate the init the list listofxlinkertypes might contain only yht needed crosslinks
 
-        disttuple=(0.0, 200.0, 1000)
+        disttuple=(0.0, 200.0, 500)
         omegatuple=(0.01, 1000.0, 30)
         sigmatuple=(self.sigmamin, self.sigmamax, self.nsigma)
 
@@ -1315,17 +1319,16 @@ class BinomialXLMSRestraint():
             #read with the new file parser
             totallist=eval(line)
             self.add_crosslink_according_to_new_file(totallist)
-            print totallist
 
         self.rs2.add_restraint(impisd2.UniformPrior(self.sigma,1000000000.0,self.sigmamax,self.sigmamin))
-        self.rs2.add_restraint(impisd2.JeffreysRestraint(self.sigma))
+        #self.rs2.add_restraint(impisd2.JeffreysRestraint(self.sigma))
         
         for psiindex in self.psi_dictionary:
-          print psiindex
           if self.psi_dictionary[psiindex][2]:
             psip=self.psi_dictionary[psiindex][0]
             
             if self.setup==0:
+               print "BinomialXLMSRestraint: setup 0, adding BinomialJeffreysPrior to psi particle "+str(psiindex) 
                self.rs2.add_restraint(impisd2.BinomialJeffreysPrior(psip))
             
             self.rs2.add_restraint(impisd2.UniformPrior(psip,1000000000.0,self.psimax,self.psimin))
@@ -1356,12 +1359,12 @@ class BinomialXLMSRestraint():
             try:
                c1=self.mbpnc[pair[0][0]]
             except:
-               print "CrossLinkMS: WARNING> protein name "+pair[0][0]+" was not defined"
+               print "BinomialXLMSRestraint: WARNING> protein name "+pair[0][0]+" was not defined"
                continue 
             try:                         
                c2=self.mbpnc[pair[1][0]]   
             except:
-               print "CrossLinkMS: WARNING> protein name "+pair[1][0]+" was not defined"
+               print "BinomialXLMSRestraint: WARNING> protein name "+pair[1][0]+" was not defined"
                continue                         
             
             r1=int(pair[0][1])
@@ -1380,14 +1383,14 @@ class BinomialXLMSRestraint():
                 s1=IMP.atom.Selection(self.prots[0], residue_index=r1, chains=c1, atom_type=IMP.atom.AT_CA)
                 p1=(s1.get_selected_particles()[0])
             except:
-                print "CrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1,c1)
+                print "BinomialXLMSRestraint: WARNING> residue %d of chain %s is not there" % (r1,c1)
                 error=True
                 self.missing_residues.append((r1,c1))
             try:
                 s2=IMP.atom.Selection(self.prots[0], residue_index=r2, chains=c2, atom_type=IMP.atom.AT_CA)
                 p2=(s2.get_selected_particles()[0])
             except:
-                print "CrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2,c2)
+                print "BinomialXLMSRestraint: WARNING> residue %d of chain %s is not there" % (r2,c2)
                 error=True
                 self.missing_residues.append((r2,c2))            
             if error: continue
@@ -1399,10 +1402,10 @@ class BinomialXLMSRestraint():
             p2=s2.get_selected_particles()[0]
             #this list contains the list of symmetric pairs to avoid duplicates
             if (p1,p2,crosslinker) in self.added_pairs_list:
-                print "CrossLinkMS: WARNING> pair %d %s %d %s already there" % (r1,c1,r2,c2)
+                print "BinomialXLMSRestraint: WARNING> pair %d %s %d %s already there" % (r1,c1,r2,c2)
                 continue
             if (p2,p1,crosslinker) in self.added_pairs_list:
-                print "CrossLinkMS: WARNING> pair %d %s %d %s already there" % (r1,c1,r2,c2)
+                print "BinomialXLMSRestraint: WARNING> pair %d %s %d %s already there" % (r1,c1,r2,c2)
                 continue
 
             #check whether the atom pair belongs to the same rigid body
@@ -1410,7 +1413,7 @@ class BinomialXLMSRestraint():
                IMP.core.RigidMember.particle_is_instance(p2) and
                IMP.core.RigidMember(p1).get_rigid_body() ==
                IMP.core.RigidMember(p2).get_rigid_body() and not force_restraint):
-                print '''CrossLinkMS: WARNING> residue %d of chain %s and
+                print '''BinomialXLMSRestraint: WARNING> residue %d of chain %s and
                        residue %d of chain %s belong to the same rigid body''' % (r1,c1,r2,c2)
                 continue
 
@@ -1423,7 +1426,7 @@ class BinomialXLMSRestraint():
             psis.append(psi)
             psivalues.append(psivalue)
             
-            print "CrossLinkMS: added pair %d %s %d %s" % (r1,c1,r2,c2)
+            print "BinomialXLMSRestraint: added pair %d %s %d %s" % (r1,c1,r2,c2)
                        
             self.added_pairs_list.append((p1,p2,crosslinker))
 
@@ -1432,13 +1435,14 @@ class BinomialXLMSRestraint():
             rs_name= '{:05}'.format(self.index % 100000)
             
             if self.setup==0:  
+               print "BinomialXLMSRestraint: constructor 0" 
                ln=impisd2.BinomialCrossLinkMSRestraint(self.m,self.sigma,self.epsilon,self.crosslinker_dict[crosslinker])
 
             if self.setup==1:  
+               print "BinomialXLMSRestraint: constructor 1" 
                ln=impisd2.BinomialCrossLinkMSRestraint(self.m,self.sigma,self.beta,self.epsilon,self.crosslinker_dict[crosslinker])
 
             for i in range(len(p1s)):
-                print rs_name,i
                 ln.add_contribution()
 
                 psi=self.get_psi(psis[i],psivalues[i]) 
@@ -1454,9 +1458,9 @@ class BinomialXLMSRestraint():
                 
             self.rs.add_restraint(ln)
 
-        print "CrossLinkMS: missing residues"
+        print "BinomialXLMSRestraint: missing residues"
         for ms in self.missing_residues:
-            print "CrossLinkMS:missing "+str(ms)
+            print "BinomialXLMSRestraint:missing "+str(ms)
 
             
         #self.rs2.add_restraint(impisd2.IntensityThresholdRestraint(self.delta))
@@ -1559,7 +1563,6 @@ class BinomialXLMSRestraint():
         output["CrossLinkMS_Beta_"+self.label]=str(self.beta.get_scale())
         for psiindex in self.psi_dictionary:
             output["CrossLinkMS_Psi_"+str(psiindex)+"_"+self.label]=str(self.psi_dictionary[psiindex][0].get_scale())
-
         '''
         for n in range(self.weight.get_number_of_states()):
            output["CrossLinkMS_weights_"+str(n)+"_"+self.label]=str(self.weight.get_weight(n))

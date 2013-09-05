@@ -606,6 +606,12 @@ class SimplifiedModel():
                 transformation = IMP.algebra.Transformation3D(rotation, translation)
                 rb.set_reference_frame(IMP.algebra.ReferenceFrame3D(transformation))
 
+    def link_components_to_rmf(self,rmfname,frameindex):
+        import IMP.rmf
+        import RMF
+        rh= RMF.open_rmf_file(rmfname)
+        IMP.rmf.link_hierarchies(rh, [self.prot])
+        IMP.rmf.load_frame(rh, frameindex)
 
 
     def add_component(self,name,chainnames, length, pdbs, init_coords=None,simplepdb=1,ds=None,colors=None):
@@ -671,7 +677,8 @@ class SimplifiedModel():
                     try:
                        clr=IMP.display.get_rgb_color(colors[pdb_part_count])
                     except:
-                       clr=IMP.display.get_rgb_color(1.0)
+                       colors.append(1.0)
+                       clr=IMP.display.get_rgb_color(colors[pdb_part_count])
                     IMP.display.Colored.setup_particle(prt,clr)  
                 
                 s.set_name(pdb)

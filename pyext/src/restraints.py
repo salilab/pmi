@@ -1173,7 +1173,8 @@ class BinomialXLMSRestraint():
         global impisd2, tools, exp
         import IMP.isd2 as impisd2
         import IMP.pmi.tools as tools
-              
+        
+        self.setup=1
            
         self.label="None"
         self.rs = IMP.RestraintSet('xlms')
@@ -1197,9 +1198,13 @@ class BinomialXLMSRestraint():
         self.betainit=1.0
         self.betamin=1.0
         self.betamax=4.0
-        self.betaissampled=False     
+        if self.setup==1:
+           self.betaissampled=True
+        if self.setup==0:
+           self.betaissampled=False           
         self.betamaxtrans=0.01
         
+        '''
         self.deltainit=0.001
         self.deltamin=0.001
         self.deltamax=0.1
@@ -1213,6 +1218,7 @@ class BinomialXLMSRestraint():
         self.lammaxnuis=100.0
         self.lamissampled=False        
         self.lammaxtrans=0.1        
+        '''
         
         self.epsilon=0.01
         self.psi_dictionary={}
@@ -1222,7 +1228,8 @@ class BinomialXLMSRestraint():
 
         self.beta=tools.SetupNuisance(self.m,self.betainit,
              self.betamin,self.betamax,self.betaissampled).get_particle()    
-    
+        
+        '''
         self.delta=tools.SetupNuisance(self.m,self.deltainit,
              self.deltamin,self.deltamax,self.deltaissampled).get_particle()
 
@@ -1233,7 +1240,7 @@ class BinomialXLMSRestraint():
         
         for n in range(len(self.prots)):
             self.weight.add_weight()
-
+        '''
         self.outputlevel="low"
         self.listofxlinkertypes=listofxlinkertypes
         #simulated reaction rates
@@ -1273,7 +1280,7 @@ class BinomialXLMSRestraint():
         #to accelerate the init the list listofxlinkertypes might contain only yht needed crosslinks
 
         disttuple=(0.0, 200.0, 1000)
-        omegatuple=(1.0, 1000.0, 30)
+        omegatuple=(0.01, 1000.0, 30)
         sigmatuple=(self.sigmamin, self.sigmamax, self.nsigma)
 
         crosslinker_dict={}
@@ -1311,14 +1318,16 @@ class BinomialXLMSRestraint():
             print totallist
 
         self.rs2.add_restraint(impisd2.UniformPrior(self.sigma,1000000000.0,self.sigmamax,self.sigmamin))
-        
-        print "CICCIO", self.rs2.unprotected_evaluate(None)
+        self.rs2.add_restraint(impisd2.JeffreysRestraint(self.sigma))
         
         for psiindex in self.psi_dictionary:
           print psiindex
           if self.psi_dictionary[psiindex][2]:
             psip=self.psi_dictionary[psiindex][0]
-            self.rs2.add_restraint(impisd2.BinomialJeffreysPrior(psip))
+            
+            if self.setup==0:
+               self.rs2.add_restraint(impisd2.BinomialJeffreysPrior(psip))
+            
             self.rs2.add_restraint(impisd2.UniformPrior(psip,1000000000.0,self.psimax,self.psimin))
         
     def add_crosslink_according_to_new_file(self,totallist,constructor=0):
@@ -1421,8 +1430,12 @@ class BinomialXLMSRestraint():
 
         if len(p1s)>0:
             rs_name= '{:05}'.format(self.index % 100000)
+            
+            if self.setup==0:  
+               ln=impisd2.BinomialCrossLinkMSRestraint(self.m,self.sigma,self.epsilon,self.crosslinker_dict[crosslinker])
 
-            ln=impisd2.BinomialCrossLinkMSRestraint(self.m,self.sigma,self.beta,self.delta,self.lam,self.weight,self.epsilon,self.crosslinker_dict[crosslinker])
+            if self.setup==1:  
+               ln=impisd2.BinomialCrossLinkMSRestraint(self.m,self.sigma,self.beta,self.epsilon,self.crosslinker_dict[crosslinker])
 
             for i in range(len(p1s)):
                 print rs_name,i
@@ -1539,24 +1552,30 @@ class BinomialXLMSRestraint():
                 output["CrossLinkMS_Distance_"+str(index)+"_"+label_copy]=str(IMP.core.get_distance(d0,d1))
         
         output["CrossLinkMS_Sigma_"+self.label]=str(self.sigma.get_scale())
+        '''
         output["CrossLinkMS_Delta_"+self.label]=str(self.delta.get_scale())
         output["CrossLinkMS_Lambda_"+self.label]=str(self.lam.get_scale())
+        '''
         output["CrossLinkMS_Beta_"+self.label]=str(self.beta.get_scale())
         for psiindex in self.psi_dictionary:
             output["CrossLinkMS_Psi_"+str(psiindex)+"_"+self.label]=str(self.psi_dictionary[psiindex][0].get_scale())
 
+        '''
         for n in range(self.weight.get_number_of_states()):
            output["CrossLinkMS_weights_"+str(n)+"_"+self.label]=str(self.weight.get_weight(n))
+        '''
         return output
 
     def get_particles_to_sample(self):
         ps={}
         if self.sigmaissampled:
            ps["Nuisances_CrossLinkMS_Sigma_"+self.label]=([self.sigma],self.sigmamaxtrans)
+        '''
         if self.deltaissampled:
            ps["Nuisances_CrossLinkMS_Delta_"+self.label]=([self.delta],self.deltamaxtrans)           
         if self.lamissampled:
            ps["Nuisances_CrossLinkMS_Lambda_"+self.label]=([self.lam],self.lammaxtrans)  
+        '''
         if self.betaissampled:
            ps["Nuisances_CrossLinkMS_Beta_"+self.label]=([self.beta],self.betamaxtrans)
         
@@ -1564,8 +1583,10 @@ class BinomialXLMSRestraint():
           if self.psi_dictionary[psiindex][2]:
             ps["Nuisances_CrossLinkMS_Psi_"+str(psiindex)+"_"+self.label]=([self.psi_dictionary[psiindex][0]],self.psi_dictionary[psiindex][1])
         
+        '''
         if self.weightissampled:
            ps["Weights_CrossLinkMS_"+self.label]=([self.weight],self.weightmaxtrans)
+        '''
         return ps    
 
 ###############################################################

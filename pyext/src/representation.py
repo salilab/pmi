@@ -801,6 +801,23 @@ class SimplifiedModel():
         imprmf.link_hierarchies(rh, [self.prot])
         imprmf.load_frame(rh, frameindex)
 
+    def create_components_from_rmf(self,rmfname,frameindex):
+        '''
+        still not working.
+        create the representation (i.e. hierarchies) from the rmf file.
+        it will be stored in self.prot, which will be overwritten.
+        load the coordinates from the rmf file at frameindex.
+        '''
+        rh= RMF.open_rmf_file(rmfname)
+        self.prot=imprmf.create_hierarchies(rh, self.m)[0]
+        imprmf.link_hierarchies(rh, [self.prot])
+        imprmf.load_frame(rh, frameindex)
+        '''
+        still missing: save rigid bodies contained in the rmf in self.rigid_bodies
+        save floppy bodies in self.floppy_bodies
+        get the connectivity restraints
+        '''
+
 
     def set_rigid_bodies(self,subunits,coords=()):
         #sometimes, we know about structure of an interaction

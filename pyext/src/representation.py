@@ -115,11 +115,11 @@ class MultipleStates():
         #this function must be called before the rigid body definition!
         for prot in self.prot:
             for segment in segments:
-                rinterval=[(segment[0],segment[1]+1)]
+                #rinterval=[(segment[0],segment[1]+1)]
                 if (segment[0]==-1 or segment[1]==-1):
                     s=IMP.atom.Selection(prot,chains=segment[2])
                 else:
-                    s=IMP.atom.Selection(prot,chains=segment[2],residue_indexes=rinterval)
+                    s=IMP.atom.Selection(prot,chains=segment[2],residue_indexes=range(segment[0],segment[1]+1))
                 for p in s.get_selected_particles():
                     if IMP.core.RigidMember.particle_is_instance(p):
                         print "MultipleStates: one particle was not destroied because it was a RigidMember."
@@ -137,8 +137,6 @@ class MultipleStates():
         #for instance residuechainlist=[(35,"A"),(100,"B")] will add
         #residue 35 to chain A and residue 100 to chain B
         for rc in residuechainlist:
-
-
 
             s=IMP.atom.Selection(self.prot[0],chains=rc[1],residue_index=rc[0],atom_type=IMP.atom.AT_CA)
 
@@ -181,11 +179,11 @@ class MultipleStates():
             pstokeep=[]
             for segment in segments:
 
-                rinterval=[(segment[0],segment[1]+1)]
+                #rinterval=[(segment[0],segment[1]+1)]
                 if (segment[0]==-1 or segment[1]==-1):
                     s=IMP.atom.Selection(prot,chains=segment[2])
                 else:
-                    s=IMP.atom.Selection(prot,chains=segment[2],residue_indexes=rinterval)
+                    s=IMP.atom.Selection(prot,chains=segment[2],residue_indexes=range(segment[0],segment[1]+1))
                 pstokeep+=s.get_selected_particles()
 
             for p in IMP.atom.get_leaves(prot):
@@ -208,7 +206,7 @@ class MultipleStates():
             if (segment[0]==-1 or segment[1]==-1):
                 s=IMP.atom.Selection(prot,chains=segment[2])
             else:
-                s=IMP.atom.Selection(prot,chains=segment[2],residue_indexes=rinterval)
+                s=IMP.atom.Selection(prot,chains=segment[2],residue_indexes=range(segment[0],segment[1]+1))
             residue_indexes=[]
             for p in s.get_selected_particles():
 
@@ -302,11 +300,11 @@ class MultipleStates():
                 for interval in element:
                 #rinterval upper bound is incremented by one because the
                 #residue_indexes attribute cuts the upper edge
-                    rinterval=[(interval[0],interval[1]+1)]
+                    #rinterval=[(interval[0],interval[1]+1)]
                     if (interval[0]==-1 or interval[1]==-1):
                         s=IMP.atom.Selection(prot,chains=interval[2])
                     else:
-                        s=IMP.atom.Selection(prot,chains=interval[2],residue_indexes=rinterval)
+                        s=IMP.atom.Selection(prot,chains=interval[2],residue_indexes=range(interval[0],interval[1]+1))
                     for p in s.get_selected_particles():
                         atoms.append(IMP.core.XYZR(p))
 
@@ -315,7 +313,8 @@ class MultipleStates():
                         if (interval[0]==-1 or interval[1]==-1):
                             s=IMP.atom.Selection(self.prot_lowres[key][ncopy],chains=interval[2])
                         else:
-                            s=IMP.atom.Selection(self.prot_lowres[key][ncopy],chains=interval[2],residue_indexes=rinterval)
+                            s=IMP.atom.Selection(self.prot_lowres[key][ncopy],chains=interval[2],
+                                                residue_indexes=range(interval[0],interval[1]+1))
                         for p in s.get_selected_particles():
                             atoms.append(IMP.core.XYZR(p))
 
@@ -343,11 +342,11 @@ class MultipleStates():
                 for interval in element:
                 #rinterval upper bound is incremented by one because the
                 #residue_indexes attribute cuts the upper edge
-                    rinterval=[(interval[0],interval[1]+1)]
+                    #rinterval=[(interval[0],interval[1]+1)]
                     if (interval[0]==-1 or interval[1]==-1):
                         s=IMP.atom.Selection(prot,chains=interval[2])
                     else:
-                        s=IMP.atom.Selection(prot,chains=interval[2],residue_indexes=rinterval)
+                        s=IMP.atom.Selection(prot,chains=interval[2],residue_indexes=range(interval[0],interval[1]+1))
                     for p in s.get_selected_particles():
                         (r,c)=tools.get_residue_index_and_chain_from_particle(p)
                         tools.set_floppy_body(p)
@@ -399,7 +398,8 @@ class MultipleStates():
         hier=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m)) #create an empty hierarchy
         for pdb in list_pdb_file:
             if type(pdb)==str:
-                h=IMP.atom.read_pdb(pdb, self.m,IMP.atom.CAlphaPDBSelector())
+                h=IMP.atom.read_pdb(pdb, self.m,IMP.atom.AndPDBSelector(IMP.atom.CAlphaPDBSelector(), 
+                                                                      IMP.atom.ATOMPDBSelector()))
 
                 '''
                 #destroy CA atoms, for the future
@@ -428,7 +428,8 @@ class MultipleStates():
 
                 hier.add_child(h) #add read chains into hierarchy
             if type(pdb)==tuple:
-                h=IMP.atom.read_pdb(pdb[0], self.m,IMP.atom.CAlphaPDBSelector())
+                h=IMP.atom.read_pdb(pdb[0], self.m,IMP.atom.AndPDBSelector(IMP.atom.CAlphaPDBSelector(), 
+                                                                      IMP.atom.ATOMPDBSelector()))
 
                 '''
                 #destroy CA atoms, for the future
@@ -492,7 +493,7 @@ class MultipleStates():
         #generate a new multistate hierarchy
         self.prot_lowres[nres]=[]
         for prot in self.prot:
-            sh=IMP.atom.create_simplified_along_backbone(prot, nres, True)
+            sh=IMP.atom.create_simplified_along_backbone(prot, nres, False)
             print IMP.atom.get_leaves(sh)
             #for p in IMP.atom.get_leaves(sh):
             #    IMP.atom.Atom.setup_particle(p,IMP.atom.AT_CA)
@@ -550,19 +551,30 @@ class SimplifiedModel():
     This class creates the molecular hierarchies for the various involved proteins.
     '''
 
-    def __init__(self,m):
-        global random, itemgetter,tools,nrrand,array
+    def __init__(self,m,upperharmonic=True):
+        global random, itemgetter,tools,nrrand,array,imprmf,RMF
         import random
         from operator import itemgetter
         import IMP.pmi.tools as tools
         from numpy.random import rand as nrrand
         from numpy import array
+        import IMP.rmf as imprmf
+        import RMF
+
         
+        # this flag uses either harmonic (False) or upperharmonic (True)
+        # in the intra-pair connectivity restraint. Harmonic is used whe you want to
+        # remove the intra-ev term from energy calculations, e.g.:
+        # upperharmonic=False
+        # ip=simo.get_connected_intra_pairs()
+        # ev.add_excluded_particle_pairs(ip)
+        
+        self.upperharmonic=upperharmonic
         self.rigid_bodies=[]
         self.floppy_bodies=[]
-
+                 
         self.label="None"
-
+  
         self.maxtrans_rb=0.15
         self.maxrot_rb=0.03
         self.maxtrans_fb=0.15
@@ -573,6 +585,7 @@ class SimplifiedModel():
         self.unmodeledregions_cr_dict={}
         self.sortedsegments_cr_dict={}
         self.prot=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
+        self.connected_intra_pairs=[]
 
     # create a protein, represented as a set of connected balls of appropriate
     # radii and number, chose by the resolution parameter and the number of
@@ -595,7 +608,6 @@ class SimplifiedModel():
                 rotation = IMP.algebra.get_random_rotation_3d()
                 transformation = IMP.algebra.Transformation3D(rotation, translation)
                 rb.set_reference_frame(IMP.algebra.ReferenceFrame3D(transformation))
-
 
 
     def add_component(self,name,chainnames, length, pdbs, init_coords=None,simplepdb=1,ds=None,colors=None):
@@ -661,7 +673,8 @@ class SimplifiedModel():
                     try:
                        clr=IMP.display.get_rgb_color(colors[pdb_part_count])
                     except:
-                       clr=IMP.display.get_rgb_color(1.0)
+                       colors.append(1.0)
+                       clr=IMP.display.get_rgb_color(colors[pdb_part_count])
                     IMP.display.Colored.setup_particle(prt,clr)  
                 
                 s.set_name(pdb)
@@ -722,12 +735,17 @@ class SimplifiedModel():
                 if x==len(Spheres)-1: break
                 #r=IMP.atom.create_connectivity_restraint([IMP.atom.Selection(prt),\
                 #                          IMP.atom.Selection(Spheres[x+1])],-3.0,self.kappa)
-                hu=IMP.core.HarmonicUpperBound(0., self.kappa)
+                if self.upperharmonic:
+                   hu=IMP.core.HarmonicUpperBound(0., self.kappa)
+                else:
+                   hu=IMP.core.Harmonic(0., self.kappa)                   
                 dps=IMP.core.SphereDistancePairScore(hu)
                 pt0=IMP.atom.Selection(prt).get_selected_particles()[0]
                 pt1=IMP.atom.Selection(Spheres[x+1]).get_selected_particles()[0]
                 r=IMP.core.PairRestraint(dps,IMP.ParticlePair(pt0,pt1))
                 unmodeledregions_cr.add_restraint(r)
+                self.connected_intra_pairs.append((pt0,pt1))
+                self.connected_intra_pairs.append((pt1,pt0))                
                         # only allow the particles to separate by 1 angstrom
                         # self.m.set_maximum_score(r, self.kappa)
             protein_h.add_child(h)
@@ -750,12 +768,17 @@ class SimplifiedModel():
             first= IMP.atom.get_leaves(SortedSegments[x+1][0])[0]
             #r=IMP.atom.create_connectivity_restraint([IMP.atom.Selection(last),\
             #                                          IMP.atom.Selection(first)],-3.0,self.kappa)
-            hu=IMP.core.HarmonicUpperBound(0., self.kappa)
+            if self.upperharmonic:
+               hu=IMP.core.HarmonicUpperBound(0., self.kappa)
+            else:
+               hu=IMP.core.Harmonic(0., self.kappa)    
             dps=IMP.core.SphereDistancePairScore(hu)
             pt0=IMP.atom.Selection(last).get_selected_particles()[0]
             pt1=IMP.atom.Selection(first).get_selected_particles()[0]
             r=IMP.core.PairRestraint(dps,IMP.ParticlePair(pt0,pt1))
             sortedsegments_cr.add_restraint(r)
+            self.connected_intra_pairs.append((pt0,pt1))
+            self.connected_intra_pairs.append((pt1,pt0))
             # only allow the particles to separate by 1 angstrom
             # self.m.set_maximum_score(r, self.kappa)
 
@@ -766,6 +789,18 @@ class SimplifiedModel():
         self.prot.add_child(protein_h)
         #self.rigid_bodies+=RigiParticles
         self.floppy_bodies+=FlexParticles
+
+    def link_components_to_rmf(self,rmfname,frameindex):
+        '''
+        load coordinates in the current representation
+        this should be done only if the hierarchy self.prot is identical to the one
+        i.e. all components were added
+        as stored in the rmf
+        '''
+        rh= RMF.open_rmf_file(rmfname)
+        imprmf.link_hierarchies(rh, [self.prot])
+        imprmf.load_frame(rh, frameindex)
+
 
     def set_rigid_bodies(self,subunits,coords=()):
         #sometimes, we know about structure of an interaction
@@ -822,6 +857,9 @@ class SimplifiedModel():
             
         return particles
 
+    def get_connected_intra_pairs(self):
+        return self.connected_intra_pairs
+
     def set_rigid_bodies_max_trans(self,maxtrans):
         self.maxtrans_rb=maxtrans
 
@@ -842,10 +880,17 @@ class SimplifiedModel():
 
     def get_output(self):
         output={}
+        score=0.0
+        
+        output["SimplifiedModel_Total_Score_"+self.label]=str(self.m.evaluate(False))        
         for name in self.sortedsegments_cr_dict:
-            output["SimplifiedModel_SortedSegments_"+name+"_"+self.label]=str(self.sortedsegments_cr_dict[name].evaluate(False))
-            output["SimplifiedModel_UnmodeledRegions_"+name+"_"+self.label]=str(self.unmodeledregions_cr_dict[name].evaluate(False))
-            output["SimplifiedModel_Total_Score_"+self.label]=str(self.m.evaluate(False))
+            partialscore=self.sortedsegments_cr_dict[name].evaluate(False)
+            score+=partialscore
+            output["SimplifiedModel_Link_SortedSegments_"+name+"_"+self.label]=str(partialscore)
+            partialscore=self.unmodeledregions_cr_dict[name].evaluate(False)
+            score+=partialscore            
+            output["SimplifiedModel_Link_UnmodeledRegions_"+name+"_"+self.label]=str(partialscore)
+        output["_TotalScore"]=str(score)
         return output
 
     def get_hierarchy(self):

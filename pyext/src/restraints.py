@@ -184,6 +184,7 @@ class ConnectivityRestraint():
 
 ###########################################################################
 
+
 class UpperBound():
 
     def __init__(self,prot,respairs,kappa,length=5.0):
@@ -1591,6 +1592,152 @@ class BinomialXLMSRestraint():
            ps["Weights_CrossLinkMS_"+self.label]=([self.weight],self.weightmaxtrans)
         '''
         return ps    
+
+##############################################################
+
+
+class ConnectivityCrossLinkMS():
+    '''
+    this restraint allows ambiguous crosslinking between multiple copies
+    it is a variant of the SimplifiedCrossLinkMS
+    '''
+
+    def __init__(self,prot,restraints_file,expdistance,strength):
+
+        self.rs=IMP.RestraintSet('data')
+        self.prot=prot
+        self.label="None"
+        self.pairs=[]
+        self.m=self.prot.get_model()
+
+        self.outputlevel="low"
+        self.expdistance=expdistance
+        self.strength=strength
+
+        #fill the cross-linker pmfs
+        #to accelerate the init the list listofxlinkertypes might contain only yht needed crosslinks
+
+
+        for line in open(restraints_file):
+
+            tokens=line.split()
+            #skip character
+            if (tokens[0]=="#"): continue
+            r1=int(tokens[2])
+            c1=tokens[0]
+            r2=int(tokens[3])
+            c2=tokens[1]
+
+            
+            hrc1=[]
+            for h in self.prot.get_children():
+                if c1 in h.get_name():
+                   hrc1.append(h)
+            
+            #hrc1 = [h for h in self.prot.get_children() if c1 in h.get_name()][0]
+            #print line
+            
+            s1=IMP.atom.Selection(hierarchies=hrc1, residue_index=r1)
+            ps1=s1.get_selected_particles()
+            if len(ps1)==0:
+                print "ConnectivityCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1,c1)
+                continue
+            #hrc2 = [h for h in self.prot.get_children() if c2 in h.get_name()][0]
+            
+            hrc2=[]   
+            for h in self.prot.get_children():
+                if c2 in h.get_name():
+                   hrc2.append(h)
+            
+            print line,hrc1,hrc2
+            
+            s2=IMP.atom.Selection(hierarchies=hrc2, residue_index=r2)
+            ps2=s2.get_selected_particles()
+            if len(ps2)==0:
+                print "ConnectivityCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2,c2)
+                continue
+            
+            sels=[s1,s2]
+            cr = IMP.atom.create_connectivity_restraint(sels, self.expdistance,self.strength)
+    
+            #hub= IMP.core.HarmonicUpperBound(self.expdistance,self.strength)
+            #df= IMP.core.SphereDistancePairScore(hub)
+            #dr= IMP.core.PairRestraint(df, (p1, p2))
+            self.rs.add_restraint(cr)
+            self.pairs.append(((hrc1,r1,c1),(hrc2,r2,c2),cr))
+            
+
+    def set_label(self,label):
+        self.label=label
+        self.rs.set_name(label)
+        for r in self.rs.get_restraints():
+            r.set_name(label)
+
+    def add_to_model(self):
+        self.m.add_restraint(self.rs)
+
+    def get_hierarchies(self):
+        return self.prot
+
+    def get_restraint_sets(self):
+        return self.rs
+        
+    def get_restraint(self):
+        return self.rs        
+
+    def set_output_level(self,level="low"):
+            #this might be "low" or "high"
+        self.outputlevel=level
+
+    def get_output(self):
+        #content of the crosslink database pairs
+        #self.pairs.append((p1,p2,dr,r1,c1,r2,c2))
+        self.m.update()
+
+        output={}
+        score=self.rs.unprotected_evaluate(None)
+        output["_TotalScore"]=str(score)            
+        output["SimplifiedCrossLinkMS_Score_"+self.label]=str(score)
+        for n,p in enumerate(self.pairs):
+
+            hrc1=p[0][0]
+            r1=p[0][1]
+            c1=p[0][2]
+            hrc2=p[1][0]
+            r2=p[1][1]
+            c2=p[1][2]
+            cr=p[2]
+            s1=IMP.atom.Selection(self.prot,hierarchies=hrc1, residue_index=r1)
+            ps1=s1.get_selected_particles()
+            s2=IMP.atom.Selection(self.prot,hierarchies=hrc2, residue_index=r2)
+            ps2=s2.get_selected_particles()
+            
+            for h1 in hrc1:
+                h1name=h1.get_name()
+                s1=IMP.atom.Selection(hierarchies=h1, residue_index=r1)
+                ps1=s1.get_selected_particles()
+                if len(ps1)!=1: 
+                   print "ConnectivityCrossLinkMS: warning, more than one (or zero) particle selected for chain, skipping output"
+                   continue
+                for p1 in ps1: 
+                    for h2 in hrc2:
+                       h2name=h2.get_name()
+                       s2=IMP.atom.Selection(hierarchies=h2, residue_index=r2)
+                       ps2=s2.get_selected_particles()                       
+                       if len(ps2)!=1: 
+                          print "ConnectivityCrossLinkMS: warning, more than one (or zero) particle selected for chain, skipping output"
+                          continue 
+                       for p2 in ps2:
+                          d1=IMP.core.XYZR(p1) 
+                          d2=IMP.core.XYZR(p2)      
+                          label=str(r1)+":"+h1name+"_"+str(r2)+":"+h2name    
+                          output["ConnectivityCrossLinkMS_Distance_"+label]=str(IMP.core.get_distance(d1,d2))
+
+            label=str(r1)+":"+c1+"_"+str(r2)+":"+c2
+            output["ConnectivityCrossLinkMS_Score_"+label]=str(cr.unprotected_evaluate(None))
+
+        return output
+
 
 ###############################################################
 

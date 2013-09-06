@@ -551,9 +551,10 @@ class SimplifiedModel():
     This class creates the molecular hierarchies for the various involved proteins.
     '''
 
-    def __init__(self,m,upperharmonic=True):
-        global random, itemgetter,tools,nrrand,array,imprmf,RMF
+    def __init__(self,m,upperharmonic=True,disorderedlenght=False):
+        global random, itemgetter,tools,nrrand,array,imprmf,RMF,sqrt
         import random
+        from math import sqrt as sqrt
         from operator import itemgetter
         import IMP.pmi.tools as tools
         from numpy.random import rand as nrrand
@@ -570,6 +571,7 @@ class SimplifiedModel():
         # ev.add_excluded_particle_pairs(ip)
         
         self.upperharmonic=upperharmonic
+        self.disorderedlenght=disorderedlenght
         self.rigid_bodies=[]
         self.floppy_bodies=[]
                  
@@ -731,17 +733,34 @@ class SimplifiedModel():
                 FlexParticles.append(ptem.get_particle())
 
             Spheres = IMP.atom.get_leaves(h)
+            
             for x,prt in enumerate(Spheres):
                 if x==len(Spheres)-1: break
                 #r=IMP.atom.create_connectivity_restraint([IMP.atom.Selection(prt),\
                 #                          IMP.atom.Selection(Spheres[x+1])],-3.0,self.kappa)
-                if self.upperharmonic:
-                   hu=IMP.core.HarmonicUpperBound(0., self.kappa)
-                else:
-                   hu=IMP.core.Harmonic(0., self.kappa)                   
-                dps=IMP.core.SphereDistancePairScore(hu)
+                
+                if self.disorderedlenght:
+                   nreslast=len(IMP.atom.Fragment(prt).get_residue_indexes())
+                   nresfirst=len(IMP.atom.Fragment(Spheres[x+1]).get_residue_indexes())
+                   #calculate the distance between the sphere centers using Kohn PNAS 2004
+                   optdist=sqrt(5/3)*1.93*(nreslast/2+nresfirst/2)**0.6
+                   #optdist2=sqrt(5/3)*1.93*((nreslast)**0.6+(nresfirst)**0.6)/2               
+                   if self.upperharmonic:
+                      hu=IMP.core.HarmonicUpperBound(optdist, self.kappa)
+                   else:
+                      hu=IMP.core.Harmonic(optdist, self.kappa) 
+                      dps=IMP.core.DistancePairScore(hu)            
+                else: #default
+                   optdist=0.0
+                   if self.upperharmonic: #default
+                      hu=IMP.core.HarmonicUpperBound(optdist, self.kappa)
+                   else:
+                      hu=IMP.core.Harmonic(optdist, self.kappa)               
+                      dps=IMP.core.SphereDistancePairScore(hu)
+
                 pt0=IMP.atom.Selection(prt).get_selected_particles()[0]
                 pt1=IMP.atom.Selection(Spheres[x+1]).get_selected_particles()[0]
+                print IMP.core.XYZR(pt0).get_radius()+IMP.core.XYZR(pt1).get_radius()
                 r=IMP.core.PairRestraint(dps,IMP.ParticlePair(pt0,pt1))
                 unmodeledregions_cr.add_restraint(r)
                 self.connected_intra_pairs.append((pt0,pt1))
@@ -768,13 +787,29 @@ class SimplifiedModel():
             first= IMP.atom.get_leaves(SortedSegments[x+1][0])[0]
             #r=IMP.atom.create_connectivity_restraint([IMP.atom.Selection(last),\
             #                                          IMP.atom.Selection(first)],-3.0,self.kappa)
-            if self.upperharmonic:
-               hu=IMP.core.HarmonicUpperBound(0., self.kappa)
-            else:
-               hu=IMP.core.Harmonic(0., self.kappa)    
-            dps=IMP.core.SphereDistancePairScore(hu)
-            pt0=IMP.atom.Selection(last).get_selected_particles()[0]
+
+            if self.disorderedlenght:
+               nreslast=len(IMP.atom.Fragment(last).get_residue_indexes())
+               nresfirst=len(IMP.atom.Fragment(first).get_residue_indexes())
+               #calculate the distance between the sphere centers using Kohn PNAS 2004               
+               optdist=sqrt(5/3)*1.93*(nreslast/2+nresfirst/2)**0.6
+               #optdist2=sqrt(5/3)*1.93*((nreslast)**0.6+(nresfirst)**0.6)/2
+               if self.upperharmonic:
+                  hu=IMP.core.HarmonicUpperBound(optdist, self.kappa)
+               else:
+                  hu=IMP.core.Harmonic(optdist, self.kappa) 
+               dps=IMP.core.DistancePairScore(hu)            
+            else: #default
+               optdist=0.0
+               if self.upperharmonic: #default
+                  hu=IMP.core.HarmonicUpperBound(optdist, self.kappa)
+               else:
+                  hu=IMP.core.Harmonic(optdist, self.kappa)               
+               dps=IMP.core.SphereDistancePairScore(hu)
+            
+            pt0=IMP.atom.Selection(last).get_selected_particles()[0]          
             pt1=IMP.atom.Selection(first).get_selected_particles()[0]
+            print IMP.core.XYZR(pt0).get_radius()+IMP.core.XYZR(pt1).get_radius()            
             r=IMP.core.PairRestraint(dps,IMP.ParticlePair(pt0,pt1))
             sortedsegments_cr.add_restraint(r)
             self.connected_intra_pairs.append((pt0,pt1))

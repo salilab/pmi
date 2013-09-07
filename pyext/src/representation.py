@@ -652,6 +652,9 @@ class SimplifiedModel():
                 if c.get_number_of_children()==0:
                     IMP.atom.show_molecular_hierarchy(t)
                 # there is no reason to use all atoms, just approximate the pdb shape instead
+                # add coarse level hierarchy
+                
+                #s0=IMP.atom.create_simplified_along_backbone(c, 10000000.0)
                 s=IMP.atom.create_simplified_along_backbone(c, self.resolution/2.0)
                 if simplepdb==1: s=IMP.atom.create_simplified_along_backbone(c, self.resolution/2.0)
                 else: s=IMP.atom.create_simplified_along_backbone(c, 1.)
@@ -668,8 +671,11 @@ class SimplifiedModel():
                     RigiParticles.append(rb)
                 #if rbo==1: rb.set_coordinates_are_optimized(False)
                 '''
-                protein_h.add_child(s)
+                #s0.add_child(s)                          
+                #protein_h.add_child(s0)
                 
+                protein_h.add_child(s) 
+               
                 for prt in IMP.atom.get_leaves(s):
                     #setting up color for each particle in the hierarchy, if colors missing in the colors list set it to red
                     try:

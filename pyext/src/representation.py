@@ -74,7 +74,9 @@ class MultipleStates():
         for ncopy in range(nstates):
             self.floppy_bodies.append([])
             self.rigid_bodies.append([])
-
+        
+        self.rigid_bodies_are_sampled=True
+        self.floppy_bodies_are_sampled=True
         self.prot=[]
         self.refprot=[]
         self.prot_lowres={}
@@ -94,7 +96,13 @@ class MultipleStates():
 
     def set_label(self,label):
         self.label=label
+    
+    def set_rigid_bodies_are_sampled(self,input=True):
+        self.rigid_bodies_are_sampled=input
 
+    def set_floppy_bodies_are_sampled(self,input=True):
+        self.floppy_bodies_are_sampled=input
+            
     def get_rigid_bodies(self):
         return  self.rigid_bodies
 
@@ -361,8 +369,10 @@ class MultipleStates():
         ps={}
         rblist=self.get_rigid_bodies()
         fblist=self.get_floppy_bodies()
-        ps["Rigid_Bodies_MultipleStates"]=(rblist,self.maxtrans_rb,self.maxrot_rb)
-        ps["Floppy_Bodies_MultipleStates"]=(fblist,self.maxtrans_fb)
+        if self.rigid_bodies_are_sampled:
+           ps["Rigid_Bodies_MultipleStates"]=(rblist,self.maxtrans_rb,self.maxrot_rb)
+        if self.floppy_bodies_are_sampled:
+           ps["Floppy_Bodies_MultipleStates"]=(fblist,self.maxtrans_fb)
         return ps
 
     def set_hierarchy_from_pdb(self,pdblistoflist):
@@ -551,7 +561,7 @@ class SimplifiedModel():
     This class creates the molecular hierarchies for the various involved proteins.
     '''
 
-    def __init__(self,m,upperharmonic=True,disorderedlenght=False):
+    def __init__(self,m,upperharmonic=True,disorderedlength=False):
         global random, itemgetter,tools,nrrand,array,imprmf,RMF,sqrt
         import random
         from math import sqrt as sqrt
@@ -571,7 +581,7 @@ class SimplifiedModel():
         # ev.add_excluded_particle_pairs(ip)
         
         self.upperharmonic=upperharmonic
-        self.disorderedlenght=disorderedlenght
+        self.disorderedlength=disorderedlength
         self.rigid_bodies=[]
         self.floppy_bodies=[]
                  
@@ -612,11 +622,12 @@ class SimplifiedModel():
                 rb.set_reference_frame(IMP.algebra.ReferenceFrame3D(transformation))
 
 
-    def add_component(self,name,chainnames, length, pdbs, init_coords=None,simplepdb=1,ds=None,colors=None):
+    def add_component(self,name,chainnames, length, pdbs, init_coords=None,simplepdb=1,ds=None,colors=None, resolutions=None):
         
         if ds==None: ds=[]
         if colors==None: colors=[]
         if init_coords==None: init_coords=()
+        if resolutions==None: resolutions=[]
         
         
         protein_h = IMP.atom.Molecule.setup_particle(IMP.Particle(self.m))
@@ -654,40 +665,65 @@ class SimplifiedModel():
                 # there is no reason to use all atoms, just approximate the pdb shape instead
                 # add coarse level hierarchy
                 
-                #s0=IMP.atom.create_simplified_along_backbone(c, 10000000.0)
-                s=IMP.atom.create_simplified_along_backbone(c, self.resolution/2.0)
-                if simplepdb==1: s=IMP.atom.create_simplified_along_backbone(c, self.resolution/2.0)
-                else: s=IMP.atom.create_simplified_along_backbone(c, 1.)
+                if len(resolutions)==0:
+                   #default
+                   #s0=IMP.atom.create_simplified_along_backbone(c, 10000000.0)
+                   s=IMP.atom.create_simplified_along_backbone(c, self.resolution/2.0)
+                   if simplepdb==1: s=IMP.atom.create_simplified_along_backbone(c, self.resolution/2.0)
+                   else: s=IMP.atom.create_simplified_along_backbone(c, 1.)
 
-                s.set_name(chainnames[pdb_part_count]+str(pdb_part_count))
-                IMP.atom.destroy(t)
-                '''
-                # make the simplified structure rigid
-                if init_coords!=() and rbo==0:
-                    print name,pdb
-                    rb=IMP.atom.create_rigid_body(s)
-                    rb.set_coordinates(init_coords)
-                    rb.set_coordinates_are_optimized(True)
-                    RigiParticles.append(rb)
-                #if rbo==1: rb.set_coordinates_are_optimized(False)
-                '''
-                #s0.add_child(s)                          
-                #protein_h.add_child(s0)
+                   s.set_name(chainnames[pdb_part_count]+str(pdb_part_count))
+                   IMP.atom.destroy(t)
+                   '''
+                   # make the simplified structure rigid
+                   if init_coords!=() and rbo==0:
+                      print name,pdb
+                      rb=IMP.atom.create_rigid_body(s)
+                      rb.set_coordinates(init_coords)
+                      rb.set_coordinates_are_optimized(True)
+                      RigiParticles.append(rb)
+                   #if rbo==1: rb.set_coordinates_are_optimized(False)
+                   '''
+                   #s0.add_child(s)                          
+                   #protein_h.add_child(s0)
                 
-                protein_h.add_child(s) 
+                   protein_h.add_child(s) 
                
-                for prt in IMP.atom.get_leaves(s):
-                    #setting up color for each particle in the hierarchy, if colors missing in the colors list set it to red
-                    try:
+                   for prt in IMP.atom.get_leaves(s):
+                     #setting up color for each particle in the hierarchy, if colors missing in the colors list set it to red
+                     try:
                        clr=IMP.display.get_rgb_color(colors[pdb_part_count])
-                    except:
+                     except:
                        colors.append(1.0)
                        clr=IMP.display.get_rgb_color(colors[pdb_part_count])
-                    IMP.display.Colored.setup_particle(prt,clr)  
-                
-                s.set_name(pdb)
+                     IMP.display.Colored.setup_particle(prt,clr)
+                   s.set_name(pdb)
 
-
+                else:
+                   #multiple resolutions
+                   s0=IMP.atom.create_simplified_along_backbone(c, 10000000.0)
+                   s0.set_name(chainnames[pdb_part_count]+str(pdb_part_count)+"bead")                   
+                   s=IMP.atom.create_simplified_along_backbone(c, self.resolution/2)
+                   s.set_name(chainnames[pdb_part_count]+str(pdb_part_count)+str(self.resolution))
+                   protein_h.add_child(s0)
+                   s0.add_child(s)
+                   for prt in IMP.atom.get_leaves(s):
+                     #setting up color for each particle in the hierarchy, if colors missing in the colors list set it to red
+                     try:
+                       clr=IMP.display.get_rgb_color(colors[pdb_part_count])
+                     except:
+                       colors.append(1.0)
+                       clr=IMP.display.get_rgb_color(colors[pdb_part_count])
+                     IMP.display.Colored.setup_particle(prt,clr)
+                   for prt in IMP.atom.get_leaves(s0):
+                     #setting up color for each particle in the hierarchy, if colors missing in the colors list set it to red
+                     try:
+                       clr=IMP.display.get_rgb_color(colors[pdb_part_count])
+                     except:
+                       colors.append(1.0)
+                       clr=IMP.display.get_rgb_color(colors[pdb_part_count])
+                     IMP.display.Colored.setup_particle(prt,clr)
+                   
 
             #calculate regions without structrue (un-modelled regions)
             for i,bnd in enumerate(bounds):
@@ -745,7 +781,7 @@ class SimplifiedModel():
                 #r=IMP.atom.create_connectivity_restraint([IMP.atom.Selection(prt),\
                 #                          IMP.atom.Selection(Spheres[x+1])],-3.0,self.kappa)
                 
-                if self.disorderedlenght:
+                if self.disorderedlength:
                    nreslast=len(IMP.atom.Fragment(prt).get_residue_indexes())
                    nresfirst=len(IMP.atom.Fragment(Spheres[x+1]).get_residue_indexes())
                    #calculate the distance between the sphere centers using Kohn PNAS 2004
@@ -794,7 +830,7 @@ class SimplifiedModel():
             #r=IMP.atom.create_connectivity_restraint([IMP.atom.Selection(last),\
             #                                          IMP.atom.Selection(first)],-3.0,self.kappa)
 
-            if self.disorderedlenght:
+            if self.disorderedlength:
                nreslast=len(IMP.atom.Fragment(last).get_residue_indexes())
                nresfirst=len(IMP.atom.Fragment(first).get_residue_indexes())
                #calculate the distance between the sphere centers using Kohn PNAS 2004               

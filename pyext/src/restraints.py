@@ -1707,9 +1707,9 @@ class ConnectivityCrossLinkMS():
             r2=p[1][1]
             c2=p[1][2]
             cr=p[2]
-            s1=IMP.atom.Selection(self.prot,hierarchies=hrc1, residue_index=r1)
+            s1=IMP.atom.Selection(hierarchies=hrc1, residue_index=r1)
             ps1=s1.get_selected_particles()
-            s2=IMP.atom.Selection(self.prot,hierarchies=hrc2, residue_index=r2)
+            s2=IMP.atom.Selection(hierarchies=hrc2, residue_index=r2)
             ps2=s2.get_selected_particles()
             
             for h1 in hrc1:

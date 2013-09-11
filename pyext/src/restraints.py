@@ -1223,7 +1223,7 @@ class BinomialXLMSRestraint():
         self.lammaxtrans=0.1        
         '''
         
-        self.epsilon=0.1
+        self.epsilon=0.01
         self.psi_dictionary={}
 
         self.sigma=tools.SetupNuisance(self.m,self.sigmainit,
@@ -1331,6 +1331,7 @@ class BinomialXLMSRestraint():
             if self.setup==0:
                print "BinomialXLMSRestraint: setup 0, adding BinomialJeffreysPrior to psi particle "+str(psiindex) 
                self.rs2.add_restraint(impisd2.BinomialJeffreysPrior(psip))
+               #self.rs2.add_restraint(impisd2.JeffreysRestraint(psip))
             
             self.rs2.add_restraint(impisd2.UniformPrior(psip,1000000000.0,self.psimax,self.psimin))
         

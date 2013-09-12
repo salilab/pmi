@@ -243,7 +243,10 @@ class Output():
     def write_stat(self,name,appendmode=True):
         output=self.initoutput
         for obj in self.dictionary_stats[name]:
-            output.update(obj.get_output())
+            d=obj.get_output()
+            #remove all entries that begin with _ (private entries)
+            dfiltered=dict((k, v) for k, v in d.iteritems() if k[0]!="_")
+            output.update(dfiltered)
 
         if appendmode:
             writeflag='a'
@@ -268,6 +271,53 @@ class Output():
         for obj in self.dictionary_stats[name]:
             output.update(obj.get_output())
         return output
+
+    def write_test(self,name,listofobjects):
+        '''
+        write the test:
+        output=tools.Output()
+        output.write_test("test_modeling11_models.rmf_45492_11Sep13_veena_imp-020713.dat",outputobjects)
+        run the test:
+        output=tools.Output()        
+        output.test("test_modeling11_models.rmf_45492_11Sep13_veena_imp-020713.dat",outputobjects)
+        '''
+        flstat=open(name,'w')    
+        output=self.initoutput
+        for l in listofobjects:
+            if not "get_output" in dir(l):
+                print "Output: object ", l, " doesn't have get_output() method"
+                exit()
+        self.dictionary_stats[name]=listofobjects
+        for obj in self.dictionary_stats[name]:
+            d=obj.get_output()
+            #remove all entries that begin with _ (private entries)
+            dfiltered=dict((k, v) for k, v in d.iteritems() if k[0]!="_")
+            output.update(dfiltered)
+        flstat.write("%s \n" % output)
+        flstat.close()        
+        
+
+    def test(self,name,listofobjects):
+        from numpy.testing import assert_approx_equal as aae
+        output=self.initoutput
+        for l in listofobjects:
+            if not "get_output" in dir(l):
+                print "Output: object ", l, " doesn't have get_output() method"
+                exit()
+        for obj in listofobjects:
+            output.update(obj.get_output())
+
+        flstat=open(name,'r')  
+        for l in flstat:
+            test_dict=eval(l)
+        for k in test_dict:
+            if k in output:
+               if test_dict[k]!=output[k]: print str(k)+": test failed, old value: "+str(test_dict[k])+" new value "+str(output[k])
+               #aae(float(test_dict[k]),
+               #    float(output[k]),7,str(k)+": test failed, old value: "+str(test_dict[k])+" new value "+str(output[k]))
+            else:
+               print str(k)+" from old objects (file "+str(filename)+") not in new objects"
+               
 
 #-------------------
       

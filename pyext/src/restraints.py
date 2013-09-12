@@ -16,7 +16,6 @@ class LinkDomains():
         # will link residues 3 and 5 belonging to chain A and
         #residues 9 and 10 belonging to chain B
         self.rs = IMP.RestraintSet('linker')
-
         self.prot=prot
         self.kappa=kappa
         self.resrangelist=resrangelist
@@ -134,6 +133,7 @@ class ConnectivityRestraint():
         cr.add_to_model()
         cr.set_label("CR1")
         '''
+        self.weight=1.0
         self.hier=hier
         self.kappa=kappa
         self.label=label
@@ -173,10 +173,14 @@ class ConnectivityRestraint():
             rlist.append(IMP.core.PairRestraint.get_from(r))
         return rlist
 
+    def set_weight(self,weight):
+        self.weight=weight
+        self.rs.set_weight(weight)
+ 
     def get_output(self):
         self.m.update()
         output={}
-        score=self.rs.unprotected_evaluate(None)
+        score=self.weight*self.rs.unprotected_evaluate(None)
         output["_TotalScore"]=str(score)        
         output["ConnectivityRestraint_"+self.label]=str(score)
         return output
@@ -313,6 +317,7 @@ class ExcludedVolumeSphere():
 
     def __init__(self,prot):
         self.rs = IMP.RestraintSet('excluded_volume')
+        self.weight=1.0
         self.prot=prot
         self.label="None"
         self.m=self.prot.get_model()
@@ -342,10 +347,14 @@ class ExcludedVolumeSphere():
     def get_restraint(self):
         return self.rs
 
+    def set_weight(self,weight):
+        self.weight=weight
+        self.rs.set_weight(weight)
+
     def get_output(self):
         self.m.update()
         output={}
-        score=self.rs.unprotected_evaluate(None)
+        score=self.weight*self.rs.unprotected_evaluate(None)
         output["_TotalScore"]=str(score)        
         output["ExcludedVolumeSphere_"+self.label]=str(score)
         return output
@@ -1606,6 +1615,7 @@ class ConnectivityCrossLinkMS():
     def __init__(self,prot,restraints_file,expdistance,strength):
 
         self.rs=IMP.RestraintSet('data')
+        self.weight=1.0
         self.prot=prot
         self.label="None"
         self.pairs=[]
@@ -1690,13 +1700,17 @@ class ConnectivityCrossLinkMS():
             #this might be "low" or "high"
         self.outputlevel=level
 
+    def set_weight(self,weight):
+        self.weight=weight
+        self.rs.set_weight(weight)
+
     def get_output(self):
         #content of the crosslink database pairs
         #self.pairs.append((p1,p2,dr,r1,c1,r2,c2))
         self.m.update()
 
         output={}
-        score=self.rs.unprotected_evaluate(None)
+        score=self.weight*self.rs.unprotected_evaluate(None)
         output["_TotalScore"]=str(score)            
         output["SimplifiedCrossLinkMS_Score_"+self.label]=str(score)
         for n,p in enumerate(self.pairs):
@@ -1735,7 +1749,7 @@ class ConnectivityCrossLinkMS():
                           output["ConnectivityCrossLinkMS_Distance_"+label]=str(IMP.core.get_distance(d1,d2))
 
             label=str(r1)+":"+c1+"_"+str(r2)+":"+c2
-            output["ConnectivityCrossLinkMS_Score_"+label]=str(cr.unprotected_evaluate(None))
+            output["ConnectivityCrossLinkMS_Score_"+label]=str(self.weight*cr.unprotected_evaluate(None))
 
         return output
 
@@ -1748,6 +1762,7 @@ class SimplifiedCrossLinkMS():
     def __init__(self,prot,restraints_file,expdistance,strength):
 
         self.rs=IMP.RestraintSet('data')
+        self.weight=1.0
         self.prot=prot
         self.label="None"
         self.pairs=[]
@@ -1826,13 +1841,17 @@ class SimplifiedCrossLinkMS():
             #this might be "low" or "high"
         self.outputlevel=level
 
+    def set_weight(self,weight):
+        self.weight=weight
+        self.rs.set_weight(weight)
+
     def get_output(self):
         #content of the crosslink database pairs
         #self.pairs.append((p1,p2,dr,r1,c1,r2,c2))
         self.m.update()
 
         output={}
-        score=self.rs.unprotected_evaluate(None)
+        score=self.weight*self.rs.unprotected_evaluate(None)
         output["_TotalScore"]=str(score)            
         output["SimplifiedCrossLinkMS_Score_"+self.label]=str(score)
         for i in range(len(self.pairs)):
@@ -1847,7 +1866,7 @@ class SimplifiedCrossLinkMS():
             chain2=self.pairs[i][6]
 
             label=str(resid1)+":"+chain1+"_"+str(resid2)+":"+chain2
-            output["SimplifiedCrossLinkMS_Score_"+crosslinker+"_"+label]=str(ln.unprotected_evaluate(None))
+            output["SimplifiedCrossLinkMS_Score_"+crosslinker+"_"+label]=str(self.weight*ln.unprotected_evaluate(None))
 
             d0=IMP.core.XYZ(p0)
             d1=IMP.core.XYZ(p1)

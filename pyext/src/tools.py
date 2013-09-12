@@ -316,7 +316,7 @@ class Output():
                #aae(float(test_dict[k]),
                #    float(output[k]),7,str(k)+": test failed, old value: "+str(test_dict[k])+" new value "+str(output[k]))
             else:
-               print str(k)+" from old objects (file "+str(filename)+") not in new objects"
+               print str(k)+" from old objects (file "+str(name)+") not in new objects"
                
 
 #-------------------

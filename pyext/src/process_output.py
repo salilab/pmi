@@ -7,6 +7,7 @@ parser.add_argument('-f', action="store", dest="filename", help="file name to pr
 parser.add_argument('-s', dest="fields", nargs="+", help="Specify all fields to be printed. Multiple flags will append a list of fields to be printed" )
 parser.add_argument('-t', dest="single_column_field", help="Specify a single column field to be printed. It will be printed as a column. If the field name is not complete, it will print all fields whose name contain the queried string." )
 parser.add_argument('-p', action="store_true", dest="print_fields", default=False, help="print the fields contained in the file")
+parser.add_argument('--head', action="store_true", dest="print_header", default=False, help="print the fields contained in the file (only stat2)")
 parser.add_argument('-n', action="store", dest="print_raw_number", help="print the selected raw" )
 parser.add_argument('--soft', action="store_true", dest="soft_match", default=False, help="Soft match. Closest matching field will be printed, e.g. S will give Step_Number, En will give energy, etc. ")
 parser.add_argument('--search_field', dest="search_field", help="Search a line from the file. Specify the field to be searched for. ")
@@ -33,7 +34,10 @@ for line in f.readlines():
     if "STAT2HEADER" in klist: 
         import operator
         isstat2=True
-        del d["STAT2HEADER"]
+        for k in klist:
+            if "STAT2HEADER" in str(k):
+               if result.print_header: print k, d[k]
+               del d[k]
         stat2_dict=d
         #get the list of keys sorted by value
         kkeys=[k[0] for k in sorted(stat2_dict.iteritems(), key=operator.itemgetter(1))]
@@ -90,6 +94,7 @@ if result.fields!=None:
            s0=' '.join(["%20s" % (str(d[invstat2_dict[field]])) for field in field_list])
       print "> "+s0
    f.close()
+
 
 if result.single_column_field!=None:
    field_list=[]

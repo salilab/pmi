@@ -318,6 +318,28 @@ class Output():
             else:
                print str(k)+" from old objects (file "+str(name)+") not in new objects"
                
+    def get_environment_variables(self):
+        import os 
+        return str(os.environ)
+    
+    def get_versions_of_relevant_modules(self):
+        import IMP
+        versions={}        
+        versions["IMP_VERSION"]=IMP.kernel.get_module_version()     
+        try:
+           import IMP.pmi
+           versions["PMI_VERSION"]=IMP.pmi.get_module_version() 
+        except (ImportError):
+           pass                      
+        try:
+           import IMP.isd2
+           versions["ISD2_VERSION"]=IMP.isd2.get_module_version()             
+        except (ImportError):
+           pass         
+        return versions
+
+       
+    
 
 #-------------------
       
@@ -331,6 +353,8 @@ class Output():
         flstat=open(name,'w')
         output={}
         stat2_keywords={"STAT2HEADER":"STAT2HEADER"}
+        stat2_keywords.update({"STAT2HEADER_ENVIRON":str(self.get_environment_variables())})
+        stat2_keywords.update({"STAT2HEADER_IMP_VERSIONS":str(self.get_versions_of_relevant_modules())})        
         stat2_inverse={}
         
         for l in listofobjects:

@@ -584,7 +584,7 @@ class SimplifiedModel():
         self.disorderedlength=disorderedlength
         self.rigid_bodies=[]
         self.floppy_bodies=[]
-                 
+        self.output_level="low"
         self.label="None"
   
         self.maxtrans_rb=0.15
@@ -896,7 +896,8 @@ class SimplifiedModel():
         '''
 
 
-    def set_rigid_bodies(self,subunits,coords=()):
+    def set_rigid_bodies(self,subunits,coords=None):
+        if coords==None: coords=()
         #sometimes, we know about structure of an interaction
         #and here we make such PPIs rigid
         randomize_coords = lambda c: tuple(1.*(nrrand(3)-0.5)+array(c))
@@ -908,8 +909,7 @@ class SimplifiedModel():
                     for frag in prt.get_children(): rigid_parts += IMP.atom.get_leaves(frag)
             rb=IMP.atom.create_rigid_body(rigid_parts)
             rb.set_coordinates_are_optimized(True)
-            if coords!=(): rb.set_coordinates(randomize_coords(coords))
-            else: rb.set_coordinates(randomize_coords((0.,0.,0.)))
+            if type(coords)==tuple and len(coords)==3: rb.set_coordinates(randomize_coords(coords))
             self.rigid_bodies.append(rb)
 
         elif type(subunits[0])==tuple or type(subunits[0])==list():
@@ -926,8 +926,7 @@ class SimplifiedModel():
                     print
             rb=IMP.atom.create_rigid_body(rigid_parts)
             rb.set_coordinates_are_optimized(True)
-            if coords!=(): rb.set_coordinates(randomize_coords(coords))
-            else: rb.set_coordinates(randomize_coords((0.,0.,0.)))
+            if type(coords)==tuple and len(coords)==3: rb.set_coordinates(randomize_coords(coords))
             self.rigid_bodies.append(rb)
 
 
@@ -971,7 +970,10 @@ class SimplifiedModel():
         ps["Rigid_Bodies_SimplifiedModel"]=(self.rigid_bodies,self.maxtrans_rb,self.maxrot_rb)
         ps["Floppy_Bodies_SimplifiedModel"]=(self.floppy_bodies,self.maxtrans_fb)
         return ps
-
+    
+    def set_output_level(self,level):
+        self.output_level=level
+    
     def get_output(self):
         output={}
         score=0.0
@@ -984,6 +986,12 @@ class SimplifiedModel():
             partialscore=self.unmodeledregions_cr_dict[name].evaluate(False)
             score+=partialscore            
             output["SimplifiedModel_Link_UnmodeledRegions_"+name+"_"+self.label]=str(partialscore)
+        if self.output_level=="high":
+            #print coordinates
+            for p in IMP.atom.get_leaves(self.prot):
+                d=IMP.core.XYZR(p)
+                output["Coordinates_"+p.get_name()+"_"+self.label]=str(d)
+                
         output["_TotalScore"]=str(score)
         return output
 

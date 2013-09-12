@@ -130,7 +130,7 @@ class ConnectivityRestraint():
         generate a connectivity restraint between domains
         setting up the composite restraint
         example:
-        cr=restraints.ConnectivityRestraint(prot,["SEA1",(1,100,"Sec13"),(100,150,"Seh1")])
+        cr=restraints.ConnectivityRestraint(prot,["CCC",(1,100,"TTT"),(100,150,"AAA")])
         cr.add_to_model()
         cr.set_label("CR1")
         '''

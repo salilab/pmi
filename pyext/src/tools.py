@@ -293,6 +293,8 @@ class Output():
             #remove all entries that begin with _ (private entries)
             dfiltered=dict((k, v) for k, v in d.iteritems() if k[0]!="_")
             output.update(dfiltered)
+        output.update({"ENVIRONMENT":str(self.get_environment_variables())})
+        output.update({"IMP_VERSIONS":str(self.get_versions_of_relevant_modules())})             
         flstat.write("%s \n" % output)
         flstat.close()        
         
@@ -306,6 +308,8 @@ class Output():
                 exit()
         for obj in listofobjects:
             output.update(obj.get_output())
+        output.update({"ENVIRONMENT":str(self.get_environment_variables())})
+        output.update({"IMP_VERSIONS":str(self.get_versions_of_relevant_modules())})   
 
         flstat=open(name,'r')  
         for l in flstat:

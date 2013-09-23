@@ -6,6 +6,55 @@ import IMP.algebra
 import IMP.atom
 import IMP.display
 
+class Rods():
+    def __init__(self,m):
+        self.m=m
+        self.hier=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
+        self.rigid_bodies=[]
+        self.floppy_bodies=[]        
+        self.maxtrans_rb=2.0
+        self.maxtrans_fb=2.0  
+        self.maxrot_rb=0.15
+    
+    def add_protein(self,name,(firstres,lastres)):
+        from math import pi,cos,sin
+        h = IMP.atom.Molecule.setup_particle(IMP.Particle(self.m))
+        h.set_name(name)
+        nres=lastres-firstres
+        radius=(nres)*5/2/pi
+        
+        for res in range(firstres,lastres):
+            alpha=2*pi/nres*(res-firstres)
+            x=radius*cos(alpha)
+            y=radius*sin(alpha)
+            p=IMP.Particle(self.m)
+            r=IMP.atom.Residue.setup_particle(p,IMP.atom.ALA,res)
+            d=IMP.core.XYZR.setup_particle(p,5.0)
+            d.set_coordinates(IMP.algebra.Vector3D((x,y,0)))   
+            d.set_coordinates_are_optimized(True)                     
+            h.add_child(r)
+        self.hier.add_child(h)
+    
+    def get_hierarchy(self):
+        return self.hier
+    
+    def set_rod(self,chainname,(firstres,lastres)):
+        prb=IMP.Particle(self.m)
+        sel=IMP.atom.Selection(self.hier,molecule=chainname,residue_indexes=range(firstres,lastres+1))
+        ps=sel.get_selected_particles()
+        rb=IMP.core.RigidBody.setup_particle(prb,ps)
+        self.rigid_bodies.append(rb)
+    
+    def get_particles_to_sample(self):
+        #get the list of samplable particles with their type
+        #and the mover displacement. Everything wrapped in a dictionary,
+        #to be used by samplers modules
+        ps={}
+        ps["Floppy_Bodies_Rods"]=(self.floppy_bodies,self.maxtrans_fb)
+        ps["Rigid_Bodies_Rods"]=(self.rigid_bodies,self.maxtrans_rb,self.maxrot_rb)
+        return ps                
+
+
 class Beads():
     def __init__(self,m):
         self.m=m
@@ -791,14 +840,14 @@ class SimplifiedModel():
                       hu=IMP.core.HarmonicUpperBound(optdist, self.kappa)
                    else:
                       hu=IMP.core.Harmonic(optdist, self.kappa) 
-                      dps=IMP.core.DistancePairScore(hu)            
+                   dps=IMP.core.DistancePairScore(hu)            
                 else: #default
                    optdist=0.0
                    if self.upperharmonic: #default
                       hu=IMP.core.HarmonicUpperBound(optdist, self.kappa)
                    else:
                       hu=IMP.core.Harmonic(optdist, self.kappa)               
-                      dps=IMP.core.SphereDistancePairScore(hu)
+                   dps=IMP.core.SphereDistancePairScore(hu)
 
                 pt0=IMP.atom.Selection(prt).get_selected_particles()[0]
                 pt1=IMP.atom.Selection(Spheres[x+1]).get_selected_particles()[0]

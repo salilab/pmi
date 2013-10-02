@@ -237,16 +237,13 @@ class Output():
                 exit()
         self.dictionary_stats[name]=listofobjects
 
-    def set_output_entry(self,key,value):
-        self.initoutput.update({key:value})
+    def set_output_entry(self,dictionary):
+        self.initoutput.update(dictionary)
 
     def write_stat(self,name,appendmode=True):
         output=self.initoutput
         for obj in self.dictionary_stats[name]:
-            d=obj.get_output()
-            #remove all entries that begin with _ (private entries)
-            dfiltered=dict((k, v) for k, v in d.iteritems() if k[0]!="_")
-            output.update(dfiltered)
+            output.update(obj.get_output())
 
         if appendmode:
             writeflag='a'
@@ -272,93 +269,17 @@ class Output():
             output.update(obj.get_output())
         return output
 
-    def write_test(self,name,listofobjects):
-        '''
-        write the test:
-        output=tools.Output()
-        output.write_test("test_modeling11_models.rmf_45492_11Sep13_veena_imp-020713.dat",outputobjects)
-        run the test:
-        output=tools.Output()        
-        output.test("test_modeling11_models.rmf_45492_11Sep13_veena_imp-020713.dat",outputobjects)
-        '''
-        flstat=open(name,'w')    
-        output=self.initoutput
-        for l in listofobjects:
-            if not "get_output" in dir(l):
-                print "Output: object ", l, " doesn't have get_output() method"
-                exit()
-        self.dictionary_stats[name]=listofobjects
-        for obj in self.dictionary_stats[name]:
-            d=obj.get_output()
-            #remove all entries that begin with _ (private entries)
-            dfiltered=dict((k, v) for k, v in d.iteritems() if k[0]!="_")
-            output.update(dfiltered)
-        output.update({"ENVIRONMENT":str(self.get_environment_variables())})
-        output.update({"IMP_VERSIONS":str(self.get_versions_of_relevant_modules())})             
-        flstat.write("%s \n" % output)
-        flstat.close()        
-        
-
-    def test(self,name,listofobjects):
-        from numpy.testing import assert_approx_equal as aae
-        output=self.initoutput
-        for l in listofobjects:
-            if not "get_output" in dir(l):
-                print "Output: object ", l, " doesn't have get_output() method"
-                exit()
-        for obj in listofobjects:
-            output.update(obj.get_output())
-        output.update({"ENVIRONMENT":str(self.get_environment_variables())})
-        output.update({"IMP_VERSIONS":str(self.get_versions_of_relevant_modules())})   
-
-        flstat=open(name,'r')  
-        for l in flstat:
-            test_dict=eval(l)
-        for k in test_dict:
-            if k in output:
-               if test_dict[k]!=output[k]: print str(k)+": test failed, old value: "+str(test_dict[k])+" new value "+str(output[k])
-               #aae(float(test_dict[k]),
-               #    float(output[k]),7,str(k)+": test failed, old value: "+str(test_dict[k])+" new value "+str(output[k]))
-            else:
-               print str(k)+" from old objects (file "+str(name)+") not in new objects"
-               
-    def get_environment_variables(self):
-        import os 
-        return str(os.environ)
-    
-    def get_versions_of_relevant_modules(self):
-        import IMP
-        versions={}        
-        versions["IMP_VERSION"]=IMP.kernel.get_module_version()     
-        try:
-           import IMP.pmi
-           versions["PMI_VERSION"]=IMP.pmi.get_module_version() 
-        except (ImportError):
-           pass                      
-        try:
-           import IMP.isd2
-           versions["ISD2_VERSION"]=IMP.isd2.get_module_version()             
-        except (ImportError):
-           pass         
-        return versions
-
-       
-    
-
 #-------------------
       
-    def init_stat2(self,name,listofobjects,extralabels=None,listofsummedobjects=None):
+    def init_stat2(self,name,listofobjects,listofsummedobjects=None):
         #this is a new stat file that should be less 
         #space greedy!
         #listofsummedobjects must be in the form [([obj1,obj2,obj3,obj4...],label)]
         
         if listofsummedobjects==None: listofsummedobjects=[]
-        if extralabels==None: extralabels=[]
         flstat=open(name,'w')
-        output={}
+        output=self.initoutput
         stat2_keywords={"STAT2HEADER":"STAT2HEADER"}
-        stat2_keywords.update({"STAT2HEADER_ENVIRON":str(self.get_environment_variables())})
-        stat2_keywords.update({"STAT2HEADER_IMP_VERSIONS":str(self.get_versions_of_relevant_modules())})        
         stat2_inverse={}
         
         for l in listofobjects:
@@ -384,43 +305,31 @@ class Output():
                 else:
                   output.update({l[1]:0.0})            
         
-        for k in extralabels:
-            output.update({k:0.0})  
-        
         for n,k in enumerate(output):
             stat2_keywords.update({n:k})
             stat2_inverse.update({k:n})
         
         flstat.write("%s \n" % stat2_keywords)
         flstat.close()
-        self.dictionary_stats2[name]=(listofobjects,stat2_inverse,listofsummedobjects,extralabels)
+        self.dictionary_stats2[name]=(listofobjects,stat2_inverse,listofsummedobjects)
 
     def write_stat2(self,name,appendmode=True):
         output={}
-        (listofobjects,stat2_inverse,listofsummedobjects,extralabels)=self.dictionary_stats2[name]
+        (listofobjects,stat2_inverse,listofsummedobjects)=self.dictionary_stats2[name]
 
-        #writing objects
         for obj in listofobjects:
             od=obj.get_output()
             dfiltered=dict((k, v) for k, v in od.iteritems() if k[0]!="_")
             for k in dfiltered: 
                output.update({stat2_inverse[k]:od[k]})
         
-        #writing summedobjects
         for l in listofsummedobjects:
            partial_score=0.0
            for t in l[0]:
              d=t.get_output()
              partial_score+=float(d["_TotalScore"])
            output.update({stat2_inverse[l[1]]:str(partial_score)})
-        
-        #writing extralabels
-        for k in extralabels:
-           if k in self.initoutput:
-              output.update({stat2_inverse[k]:self.initoutput[k]})
-           else:
-              output.update({stat2_inverse[k]:"None"})              
-        
+
         if appendmode:
             writeflag='a'
         else:
@@ -1040,7 +949,7 @@ class GetModelDensity2():
     def get_subunit_density(self,name, prot, transformation):
         crds= []
         radii= []
-
+        
         for part in [IMP.atom.get_leaves(c) for c in prot.get_children()\
                      if c.get_name()==name][-1]:
             p= IMP.core.XYZR(part)
@@ -1100,17 +1009,17 @@ class GetModelDensity2():
             dmap.set_particles(ps)
             dmap.resample()
             dmap.calcRMS() # computes statistic stuff about the map and insert it in the header
-            #print subunit, len(ps)
-            impem.write_map(dmap,outname+"_"+subunit+".mrc",impem.MRCReaderWriter())
+            print subunit, len(ps), subunit.rsplit('.',1)[0].split('/')[-1]
+            impem.write_map(dmap,outname+"_"+subunit.rsplit('.',1)[0].split('/')[-1]+".mrc",impem.MRCReaderWriter())
 
 
 # ----------------------------------
 
 class GetContactMap():
     def __init__(self, distance=15.):
-        global impem,deepcopy,cdist,array,argwhere,mgrid,shape,reshape,zeros,sqrt,diagonal,argsort
+        global impem,deepcopy,cdist,array,argwhere,mgrid,shape,reshape,zeros,sqrt,diagonal,argsort,log
         import IMP.em as impem
-        from numpy import array,argwhere,mgrid,shape,reshape,zeros,diagonal,argsort
+        from numpy import array,argwhere,mgrid,shape,reshape,zeros,diagonal,argsort,log
         from copy import deepcopy
         from scipy.spatial.distance import cdist
         global itemgetter
@@ -1119,13 +1028,19 @@ class GetContactMap():
         self.distance = distance
         self.contactmap = ''
         self.namelist = []
+        self.xlinks = 0
+        self.XL = {}
+        self.expanded = {}
+        self.resmap = {}
 
     def set_prot(self, prot):
         self.prot = prot
 
     def get_subunit_coords(self,frame, align=0):
         coords= []
+        radii= []
         namelist = []
+        test,testr = [],[]
         for part in self.prot.get_children():
             SortedSegments = []
             for chl in part.get_children():
@@ -1139,41 +1054,172 @@ class GetContactMap():
             for sgmnt in SortedSegments:
                 for leaf in IMP.atom.get_leaves(sgmnt[0]):
                     p= IMP.core.XYZR(leaf)
-                    coords.append(array([p.get_x(),p.get_y(),p.get_z()]))
-                    namelist.append(part.get_name()+'_'+sgmnt[0].get_name()+\
-                                    '_'+str(IMP.atom.Fragment(leaf).get_residue_indexes()[0]))
+                    
+                    if '.pdb' not in sgmnt[0].get_name(): 
+                        d = IMP.core.NonRigidMember(leaf)
+                        rf = d.get_rigid_body().get_reference_frame()
+                        lc = rf.get_local_coordinates(d.get_coordinates())
+                        #rf.get_transformation_to()
+                        d.set_internal_coordinates(lc)
+
+                        lc = array(list(lc))
+                        crd = array([p.get_x(),p.get_y(),p.get_z()])
+                    else: crd = array([p.get_x(),p.get_y(),p.get_z()])
+
+                    coords.append(crd)
+                    #coords.append(array([p.get_x(),p.get_y(),p.get_z()]))
+                    radii.append(p.get_radius())
+                    #if part.get_name()=='tfb1':
+                        #print leaf,sgmnt[0].get_name(),crd,p.get_radius()
+                        #test.append(crd)
+                        #testr.append(p.get_radius())
+                    new_name = part.get_name()+'_'+sgmnt[0].get_name()+\
+                                    '_'+str(IMP.atom.Fragment(leaf).get_residue_indexes()[0])
+                    namelist.append(new_name)
+                    self.expanded[new_name] = len(IMP.atom.Fragment(leaf).get_residue_indexes())
+                    if part.get_name() not in self.resmap: self.resmap[part.get_name()] = {}
+                    for res in IMP.atom.Fragment(leaf).get_residue_indexes():
+                        self.resmap[part.get_name()][res] = new_name
+        '''
+        test=array(test)
+        testr=array(testr)
+        tc= cdist(test,test)
+        print tc,'\n'
+        tc= (tc-testr).T - testr
+        print tc
+        import pylab as pl
+        fig = pl.figure()
+        ax = fig.add_subplot(111)
+        cax = ax.imshow(tc, interpolation='nearest')
+        fig.colorbar(cax)
+        pl.show()
+
+        #exit()'''
+
         coords = array(coords)
+        radii = array(radii)
         if len(self.namelist)==0:
             self.namelist = namelist
             self.contactmap = zeros((len(coords), len(coords)))
-        distances = cdist(coords, coords)<=self.distance
+        distances = cdist(coords, coords)
+        distances = (distances-radii).T - radii
+        distances = distances<=self.distance
         self.contactmap += distances
 
-    def dist_matrix(self):
+
+    def add_xlinks(self, filname):
+        self.xlinks = 1
+        data = open(filname)
+        D = data.readlines()
+        data.close()
+
+        for d in D:
+            d = d.strip().split()
+            t1, t2 = (d[0],d[1]), (d[1],d[0])
+            if t1 not in self.XL:
+                self.XL[t1] = [(int(d[2])+1, int(d[3])+1)]
+                self.XL[t2] = [(int(d[3])+1, int(d[2])+1)]
+            else:
+                self.XL[t1].append((int(d[2])+1, int(d[3])+1))
+                self.XL[t2].append((int(d[3])+1, int(d[2])+1))
+
+        
+
+
+    def dist_matrix(self, skip_cmap=0, skip_xl=1):
         K= self.namelist
         M= self.contactmap
         C,R = [],[]
+        L= sum(self.expanded.values())
+
+        # exp new
+        if skip_cmap==0:
+            Matrices = {}
+            proteins = [p.get_name() for p in self.prot.get_children()]
+            missing = []
+            for p1 in xrange(len(proteins)):
+                for p2 in xrange(p1,len(proteins)):
+                    pl1,pl2=max(self.resmap[proteins[p1]].keys()),max(self.resmap[proteins[p2]].keys())
+                    pn1,pn2=proteins[p1],proteins[p2]
+                    mtr=zeros((pl1+1,pl2+1))
+                    print 'Creating matrix for: ',p1,p2,pn1,pn2,mtr.shape,pl1,pl2
+                    for i1 in xrange(1,pl1+1):
+                        for i2 in xrange(1,pl2+1):
+                            try:
+                                r1=K.index( self.resmap[pn1][i1] )
+                                r2=K.index( self.resmap[pn2][i2] )
+                                r=M[r1,r2]
+                                mtr[i1-1,i2-1]=r
+                            except KeyError: missing.append((pn1,pn2,i1,i2)); pass
+                    Matrices[(pn1,pn2)]=mtr
+
+        # add cross-links
+        if skip_xl==0:
+            if self.XL=={}: print "Error: cross-links were not provided, use add_xlinks function!"; exit()
+            Matrices_xl = {}
+            proteins = [p.get_name() for p in self.prot.get_children()]
+            missing_xl = []
+            for p1 in xrange(len(proteins)):
+                for p2 in xrange(p1,len(proteins)):
+                    pl1,pl2=max(self.resmap[proteins[p1]].keys()),max(self.resmap[proteins[p2]].keys())
+                    pn1,pn2=proteins[p1],proteins[p2]
+                    mtr=zeros((pl1+1,pl2+1))
+                    flg=0
+                    try: xls = self.XL[(pn1,pn2)]
+                    except KeyError:
+                        try: xls = self.XL[(pn2,pn1)]; flg=1
+                        except KeyError: flg=2
+                    if flg==0:
+                        print 'Creating matrix for: ',p1,p2,pn1,pn2,mtr.shape,pl1,pl2
+                        for xl1,xl2 in xls:
+                            if xl1>pl1: print 'X'*10,xl1,xl2; xl1=pl1
+                            if xl2>pl2: print 'X'*10,xl1,xl2; xl2=pl2
+                            mtr[xl1-1,xl2-1]=100
+                    elif flg==1:
+                        print 'Creating matrix for: ',p1,p2,pn1,pn2,mtr.shape,pl1,pl2
+                        for xl1,xl2 in xls:
+                            if xl1>pl1: print 'X'*10,xl1,xl2; xl1=pl1
+                            if xl2>pl2: print 'X'*10,xl1,xl2; xl2=pl2
+                            mtr[xl2-1,xl1-1]=100
+                    Matrices_xl[(pn1,pn2)]=mtr                
+
+        # expand the matrix to individual residues
+        NewM = []
+        for x1 in xrange(len(K)):
+            lst = []
+            for x2 in xrange(len(K)):
+                lst += [M[x1,x2]]*self.expanded[K[x2]]
+            for i in xrange(self.expanded[K[x1]]): NewM.append(array(lst))
+        NewM = array(NewM)
+
+        # make list of protein names and create coordinate lists
+        r=0
         for x,k in enumerate(K):
-            if x==0: continue
+            if x==0:
+                r += self.expanded[k]
+                continue
             else:
                 sb = k.split('_')[0]
                 sbp= K[x-1].split('_')[0]
                 if sb!=sbp:
                     C.append(sbp)
-                    R.append(x)
+                    R.append(r)
+                else: r += self.expanded[k]
+        r += self.expanded[k]
         C.append(sbp)
-        R.append(x)
+        R.append(r)
         W = []
         for x,r in enumerate(R):
             if x==0: W.append(r)
             else: W.append(r-R[x-1])
-        print W
 
+        # start plotting
         import matplotlib.pyplot as plt
         import matplotlib.gridspec as gridspec
+        import scipy.sparse as sparse
 
         f = plt.figure()
-        gs = gridspec.GridSpec(10, 10,
+        gs = gridspec.GridSpec(len(W), len(W),
                        width_ratios=W,
                        height_ratios=W
                        )
@@ -1187,10 +1233,41 @@ class GetContactMap():
                 else: s2 = R[x2-1]
 
                 ax = plt.subplot(gs[cnt])
-                ax.set_yticks([])
-                ax.set_xticks([])
-                cax = ax.imshow(log(M[s1:r1,s2:r2]), interpolation='nearest')
+                if skip_cmap==0:
+                    try: mtr = Matrices[(C[x1],C[x2])]
+                    except KeyError: mtr = Matrices[(C[x2],C[x1])].T
+                    #cax = ax.imshow(log(NewM[s1:r1,s2:r2] / 1.), interpolation='nearest', vmin=0., vmax=log(NewM.max()))
+                    cax = ax.imshow(log(mtr), interpolation='nearest', vmin=0., vmax=log(NewM.max()))
+                    ax.set_xticks([])
+                    ax.set_yticks([])
+                if skip_xl==0:
+                    try: mtr = Matrices_xl[(C[x1],C[x2])]
+                    except KeyError: mtr = Matrices_xl[(C[x2],C[x1])].T
+                    cax = ax.spy(sparse.csr_matrix(mtr), markersize=10, color='white', linewidth=100, alpha=0.5)
+                    ax.set_xticks([])
+                    ax.set_yticks([])
+                                        
+
+                '''
+                if self.xlinks==1:
+                    pa, pb = C[x1], C[x2]
+                    try:
+                        xls = self.XL[(pa,pb)]
+                        xls = [i for i in xls if i[0] in range(1,r1-s1) and i[1] in range(1,r2-s2)]
+                        xla = [ia[0] for ia in xls]
+                        xlb = [ib[1] for ib in xls]
+                        ax.scatter(xla, xlb, s=35, facecolor='none', linewidth=2)
+                    except KeyError: 
+                        try:
+                            xls = self.XL[(pb,p1)]
+                            xls = [(i[1],i[0]) for i in xls if i[1] in range(1,r1-s1) and i[0] in range(1,r2-s2)]
+                            xla = [ia[0] for ia in xls]
+                            xlb = [ib[1] for ib in xls]
+                            ax.scatter(xla, xlb, s=35, facecolor='none', linewidth=2)
+                        except KeyError: pass
+                '''
                 cnt+=1
+                if x2==0: ax.set_ylabel(C[x1])
         plt.show()
 
         '''
@@ -1203,3 +1280,4 @@ class GetContactMap():
         fig.colorbar(cax)
         pl.show()
         '''
+

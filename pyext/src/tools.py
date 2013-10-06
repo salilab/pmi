@@ -236,13 +236,16 @@ class Output():
                 exit()
         self.dictionary_stats[name]=listofobjects
 
-    def set_output_entry(self,dictionary):
-        self.initoutput.update(dictionary)
+    def set_output_entry(self,key,value):
+        self.initoutput.update({key:value})
 
     def write_stat(self,name,appendmode=True):
         output=self.initoutput
         for obj in self.dictionary_stats[name]:
-            output.update(obj.get_output())
+            d=obj.get_output()
+            #remove all entries that begin with _ (private entries)
+            dfiltered=dict((k, v) for k, v in d.iteritems() if k[0]!="_")
+            output.update(dfiltered)
 
         if appendmode:
             writeflag='a'
@@ -268,17 +271,93 @@ class Output():
             output.update(obj.get_output())
         return output
 
+    def write_test(self,name,listofobjects):
+        '''
+        write the test:
+        output=tools.Output()
+        output.write_test("test_modeling11_models.rmf_45492_11Sep13_veena_imp-020713.dat",outputobjects)
+        run the test:
+        output=tools.Output()        
+        output.test("test_modeling11_models.rmf_45492_11Sep13_veena_imp-020713.dat",outputobjects)
+        '''
+        flstat=open(name,'w')    
+        output=self.initoutput
+        for l in listofobjects:
+            if not "get_output" in dir(l):
+                print "Output: object ", l, " doesn't have get_output() method"
+                exit()
+        self.dictionary_stats[name]=listofobjects
+        for obj in self.dictionary_stats[name]:
+            d=obj.get_output()
+            #remove all entries that begin with _ (private entries)
+            dfiltered=dict((k, v) for k, v in d.iteritems() if k[0]!="_")
+            output.update(dfiltered)
+        output.update({"ENVIRONMENT":str(self.get_environment_variables())})
+        output.update({"IMP_VERSIONS":str(self.get_versions_of_relevant_modules())})             
+        flstat.write("%s \n" % output)
+        flstat.close()        
+        
+
+    def test(self,name,listofobjects):
+        from numpy.testing import assert_approx_equal as aae
+        output=self.initoutput
+        for l in listofobjects:
+            if not "get_output" in dir(l):
+                print "Output: object ", l, " doesn't have get_output() method"
+                exit()
+        for obj in listofobjects:
+            output.update(obj.get_output())
+        output.update({"ENVIRONMENT":str(self.get_environment_variables())})
+        output.update({"IMP_VERSIONS":str(self.get_versions_of_relevant_modules())})   
+
+        flstat=open(name,'r')  
+        for l in flstat:
+            test_dict=eval(l)
+        for k in test_dict:
+            if k in output:
+               if test_dict[k]!=output[k]: print str(k)+": test failed, old value: "+str(test_dict[k])+" new value "+str(output[k])
+               #aae(float(test_dict[k]),
+               #    float(output[k]),7,str(k)+": test failed, old value: "+str(test_dict[k])+" new value "+str(output[k]))
+            else:
+               print str(k)+" from old objects (file "+str(name)+") not in new objects"
+               
+    def get_environment_variables(self):
+        import os 
+        return str(os.environ)
+    
+    def get_versions_of_relevant_modules(self):
+        import IMP
+        versions={}        
+        versions["IMP_VERSION"]=IMP.kernel.get_module_version()     
+        try:
+           import IMP.pmi
+           versions["PMI_VERSION"]=IMP.pmi.get_module_version() 
+        except (ImportError):
+           pass                      
+        try:
+           import IMP.isd2
+           versions["ISD2_VERSION"]=IMP.isd2.get_module_version()             
+        except (ImportError):
+           pass         
+        return versions
+
+       
+    
+
 #-------------------
       
-    def init_stat2(self,name,listofobjects,listofsummedobjects=None):
+    def init_stat2(self,name,listofobjects,extralabels=None,listofsummedobjects=None):
         #this is a new stat file that should be less 
         #space greedy!
         #listofsummedobjects must be in the form [([obj1,obj2,obj3,obj4...],label)]
         
         if listofsummedobjects==None: listofsummedobjects=[]
+        if extralabels==None: extralabels=[]
         flstat=open(name,'w')
-        output=self.initoutput
+        output={}
         stat2_keywords={"STAT2HEADER":"STAT2HEADER"}
+        stat2_keywords.update({"STAT2HEADER_ENVIRON":str(self.get_environment_variables())})
+        stat2_keywords.update({"STAT2HEADER_IMP_VERSIONS":str(self.get_versions_of_relevant_modules())})        
         stat2_inverse={}
         
         for l in listofobjects:
@@ -304,31 +383,43 @@ class Output():
                 else:
                   output.update({l[1]:0.0})            
         
+        for k in extralabels:
+            output.update({k:0.0})  
+        
         for n,k in enumerate(output):
             stat2_keywords.update({n:k})
             stat2_inverse.update({k:n})
         
         flstat.write("%s \n" % stat2_keywords)
         flstat.close()
-        self.dictionary_stats2[name]=(listofobjects,stat2_inverse,listofsummedobjects)
+        self.dictionary_stats2[name]=(listofobjects,stat2_inverse,listofsummedobjects,extralabels)
 
     def write_stat2(self,name,appendmode=True):
         output={}
-        (listofobjects,stat2_inverse,listofsummedobjects)=self.dictionary_stats2[name]
+        (listofobjects,stat2_inverse,listofsummedobjects,extralabels)=self.dictionary_stats2[name]
 
+        #writing objects
         for obj in listofobjects:
             od=obj.get_output()
             dfiltered=dict((k, v) for k, v in od.iteritems() if k[0]!="_")
             for k in dfiltered: 
                output.update({stat2_inverse[k]:od[k]})
         
+        #writing summedobjects
         for l in listofsummedobjects:
            partial_score=0.0
            for t in l[0]:
              d=t.get_output()
              partial_score+=float(d["_TotalScore"])
            output.update({stat2_inverse[l[1]]:str(partial_score)})
-
+        
+        #writing extralabels
+        for k in extralabels:
+           if k in self.initoutput:
+              output.update({stat2_inverse[k]:self.initoutput[k]})
+           else:
+              output.update({stat2_inverse[k]:"None"})              
+        
         if appendmode:
             writeflag='a'
         else:

@@ -124,7 +124,7 @@ class LinkDomains():
 
 class ConnectivityRestraint():
 
-    def __init__(self,hier,selection_tuples,kappa=10.0,label="None"):
+    def __init__(self,hier,selection_tuples,kappa=10.0,resolution=None,label="None"):
         '''
         generate a connectivity restraint between domains
         setting up the composite restraint
@@ -144,14 +144,32 @@ class ConnectivityRestraint():
         
         sels=[]
         
-        for s in selection_tuples:
-            if type(s)==tuple and len(s)==3:
-              sel=IMP.atom.Selection(self.hier,molecule=s[2],residue_indexes=range(s[0],s[1]+1))
-            elif type(s)==str:
-              sel=IMP.atom.Selection(self.hier,molecule=s)              
-            sels.append(sel)
-            print sel.get_selected_particle_indexes()
 
+        for s in selection_tuples:
+
+                   
+           if type(s)==tuple and len(s)==3:
+              hiers=[]
+              for h in self.hier.get_children():
+                if s[2] in h.get_name():
+                   hiers.append(h)
+              sel=IMP.atom.Selection(hierarchies=hiers,residue_indexes=range(s[0],s[1]+1))
+           elif type(s)==str:
+              hiers=[]
+              for h in self.hier.get_children():
+                if s in h.get_name():
+                   hiers.append(h)
+              sel=IMP.atom.Selection(hierarchies=hiers)  
+
+           if resolution!=None:
+              particles=IMP.pmi.tools.get_particles_by_resolution(self.hier,resolution)              
+              selectedp=sel.get_selected_particles()
+              print particles
+              print selectedp
+              #get the intersection to remove redundant particles
+              sel=IMP.atom.Selection(list(set(selectedp) & set(particles)))
+           sels.append(sel)
+                        
         cr = IMP.atom.create_connectivity_restraint(sels, self.kappa, self.label)
         self.rs.add_restraint(cr)
 
@@ -315,14 +333,24 @@ class ExcludedVolumeResidue():
 
 class ExcludedVolumeSphere():
 
-    def __init__(self,prot):
+    def __init__(self,prot,resolution=None):
         self.rs = IMP.RestraintSet('excluded_volume')
         self.weight=1.0
         self.prot=prot
         self.label="None"
         self.m=self.prot.get_model()
-
-        evr=IMP.atom.create_excluded_volume_restraint([prot])
+        
+        if resolution==None:
+          #default
+          evr=IMP.atom.create_excluded_volume_restraint([prot])
+        else:
+           particles=[]
+           lsa=IMP.container.ListSingletonContainer(self.m)
+           particles=IMP.pmi.tools.get_particles_by_resolution(prot,resolution)
+           lsa.add_particles(particles)
+           evr=IMP.core.ExcludedVolumeRestraint(lsa,1.0)   
+           
+                  
         self.rs.add_restraint(evr)
 
     def add_excluded_particle_pairs(self,excluded_particle_pairs):
@@ -1612,7 +1640,7 @@ class ConnectivityCrossLinkMS():
     it is a variant of the SimplifiedCrossLinkMS
     '''
 
-    def __init__(self,prot,restraints_file,expdistance,strength):
+    def __init__(self,prot,restraints_file,expdistance,strength,resolution=None):
 
         self.rs=IMP.RestraintSet('data')
         self.weight=1.0
@@ -1624,6 +1652,9 @@ class ConnectivityCrossLinkMS():
         self.outputlevel="low"
         self.expdistance=expdistance
         self.strength=strength
+        
+        if resolution!=None:
+         particles=IMP.pmi.tools.get_particles_by_resolution(self.prot,resolution) 
 
         #fill the cross-linker pmfs
         #to accelerate the init the list listofxlinkertypes might contain only yht needed crosslinks
@@ -1650,6 +1681,9 @@ class ConnectivityCrossLinkMS():
             
             s1=IMP.atom.Selection(hierarchies=hrc1, residue_index=r1)
             ps1=s1.get_selected_particles()
+            
+
+            
             if len(ps1)==0:
                 print "ConnectivityCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1,c1)
                 continue
@@ -1660,13 +1694,23 @@ class ConnectivityCrossLinkMS():
                 if c2 in h.get_name():
                    hrc2.append(h)
             
-            print line,hrc1,hrc2
             
             s2=IMP.atom.Selection(hierarchies=hrc2, residue_index=r2)
             ps2=s2.get_selected_particles()
             if len(ps2)==0:
                 print "ConnectivityCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2,c2)
                 continue
+
+            if resolution!=None:
+             
+              #get the intersection to remove redundant particles
+              ps1=(list(set(ps1) & set(particles)))
+              ps2=(list(set(ps2) & set(particles)))
+              s1=IMP.atom.Selection(ps1)
+              s2=IMP.atom.Selection(ps2)
+                        
+            
+
             
             sels=[s1,s2]
             cr = IMP.atom.create_connectivity_restraint(sels, self.expdistance,self.strength)
@@ -1675,7 +1719,7 @@ class ConnectivityCrossLinkMS():
             #df= IMP.core.SphereDistancePairScore(hub)
             #dr= IMP.core.PairRestraint(df, (p1, p2))
             self.rs.add_restraint(cr)
-            self.pairs.append(((hrc1,r1,c1),(hrc2,r2,c2),cr))
+            self.pairs.append((ps1,hrc1,c1,r1,ps2,hrc2,c2,r2,cr))
             
 
     def set_label(self,label):
@@ -1715,38 +1759,24 @@ class ConnectivityCrossLinkMS():
         output["SimplifiedCrossLinkMS_Score_"+self.label]=str(score)
         for n,p in enumerate(self.pairs):
 
-            hrc1=p[0][0]
-            r1=p[0][1]
-            c1=p[0][2]
-            hrc2=p[1][0]
-            r2=p[1][1]
-            c2=p[1][2]
-            cr=p[2]
-            s1=IMP.atom.Selection(hierarchies=hrc1, residue_index=r1)
-            ps1=s1.get_selected_particles()
-            s2=IMP.atom.Selection(hierarchies=hrc2, residue_index=r2)
-            ps2=s2.get_selected_particles()
+            ps1=p[0]
+            hrc1=p[1]
+            c1=p[2]
+            r1=p[3]
+            ps2=p[4]
+            hrc2=p[5]
+            c2=p[6]
+            r2=p[7]
+            cr=p[8]
             
-            for h1 in hrc1:
-                h1name=h1.get_name()
-                s1=IMP.atom.Selection(hierarchies=h1, residue_index=r1)
-                ps1=s1.get_selected_particles()
-                if len(ps1)!=1: 
-                   print "ConnectivityCrossLinkMS: warning, more than one (or zero) particle selected for chain, skipping output"
-                   continue
-                for p1 in ps1: 
-                    for h2 in hrc2:
-                       h2name=h2.get_name()
-                       s2=IMP.atom.Selection(hierarchies=h2, residue_index=r2)
-                       ps2=s2.get_selected_particles()                       
-                       if len(ps2)!=1: 
-                          print "ConnectivityCrossLinkMS: warning, more than one (or zero) particle selected for chain, skipping output"
-                          continue 
-                       for p2 in ps2:
-                          d1=IMP.core.XYZR(p1) 
-                          d2=IMP.core.XYZR(p2)      
-                          label=str(r1)+":"+h1name+"_"+str(r2)+":"+h2name    
-                          output["ConnectivityCrossLinkMS_Distance_"+label]=str(IMP.core.get_distance(d1,d2))
+            for n1,p1 in enumerate(ps1):
+                name1=hrc1[n1].get_name()
+                for n2,p2 in enumerate(ps2):
+                  name2=hrc2[n2].get_name()                    
+                  d1=IMP.core.XYZR(p1) 
+                  d2=IMP.core.XYZR(p2)      
+                  label=str(r1)+":"+name1+"_"+str(r2)+":"+name2    
+                  output["ConnectivityCrossLinkMS_Distance_"+label]=str(IMP.core.get_distance(d1,d2))
 
             label=str(r1)+":"+c1+"_"+str(r2)+":"+c2
             output["ConnectivityCrossLinkMS_Score_"+label]=str(self.weight*cr.unprotected_evaluate(None))
@@ -2012,7 +2042,7 @@ class CrossLinkMSSimple():
     def __init__(self,prot,restraints_file,TruncatedHarmonic=True):
         """read crosslink restraints between two residue
         of different chains from an external text file
-        sintax: part_name_1 part_name_2 distance error
+        syntax: part_name_1 part_name_2 distance error
         example:     0 1 1.0 0.1"""
         self.prot=prot
         self.rs=IMP.RestraintSet('xlms')
@@ -2029,6 +2059,10 @@ class CrossLinkMSSimple():
         else:
             hf=IMP.core.Harmonic(12.0,1.0/25.0)
         dps=IMP.core.DistancePairScore(hf)
+        
+        #small linear contribution for long range
+        h=IMP.core.Linear(0,0.03)
+        dps2=IMP.core.DistancePairScore(h)
 
         index=0
 
@@ -2105,9 +2139,16 @@ class CrossLinkMSSimple():
             ln=IMP.core.PairRestraint(dps,IMP.ParticlePair(p1,p2))
             ln.set_name("CrossLinkMSSimple_"+str(r1)+":"+str(c1)+"-"+str(r2)+":"+str(c2))
             ln.set_weight(1.0)
-            self.rs.add_restraint(ln)
 
-            self.pairs.append((p1,  p2,  crosslinker,  rs_name,  100,  100,  (r1,c1),  (r2,c2), crosslinker, ln))
+            self.rs.add_restraint(ln)
+            
+
+            pr=IMP.core.PairRestraint(dps2,IMP.ParticlePair(p1,p2))  
+
+            self.rs.add_restraint(pr)
+
+
+            self.pairs.append((p1,  p2,  crosslinker,  rs_name,  100,  100,  (r1,c1),  (r2,c2), crosslinker, ln,pr))
 
 
     def set_label(self,label):
@@ -2130,7 +2171,7 @@ class CrossLinkMSSimple():
 
     def get_output(self):
         #content of the crosslink database pairs
-        #self.pairs.append((p1s[i], p2s[i], crosslinker, rs_name, 100, 100, (r1,c1),  (r2,c2), crosslinker, ln))
+        #self.pairs.append((p1s[i], p2s[i], crosslinker, rs_name, 100, 100, (r1,c1),  (r2,c2), crosslinker, ln,pr))
         self.m.update()
         output={}
         score=self.rs.unprotected_evaluate(None)
@@ -2142,6 +2183,7 @@ class CrossLinkMSSimple():
             p1=self.pairs[i][1]
             crosslinker=self.pairs[i][2]
             ln=self.pairs[i][9]
+            pr=self.pairs[i][10]
             resid1=self.pairs[i][6][0]
             chain1=self.pairs[i][6][1]
             resid2=self.pairs[i][7][0]
@@ -2149,7 +2191,7 @@ class CrossLinkMSSimple():
 
             label=str(resid1)+":"+chain1+"_"+str(resid2)+":"+chain2
             output["CrossLinkMSSimple_Score_"+crosslinker+"_"+label]=str(ln.unprotected_evaluate(None))
-
+            output["CrossLinkMSSimple_Score_Linear_"+crosslinker+"_"+label]=str(pr.unprotected_evaluate(None))
             d0=IMP.core.XYZ(p0)
             d1=IMP.core.XYZ(p1)
             output["CrossLinkMSSimple_Distance_"+label]=str(IMP.core.get_distance(d0,d1))

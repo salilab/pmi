@@ -5,6 +5,7 @@ import IMP.base
 import IMP.algebra
 import IMP.atom
 import IMP.display
+import IMP.pmi
 
 class Rods():
     def __init__(self,m):
@@ -229,7 +230,75 @@ class MultipleStates():
 
             print s.get_selected_particles()
 
+    def add_beads(self,segments,xyzs=None,radii=None,colors=None):
+        '''
+        this method generate beads in missing portions.
+        The segments argument must be a list of selections 
+        in the form [(firstres,lastres,chain)]
+        each selection will generate a bead
+        '''
+        if xyzs==None: xyzs=[]
+        if radii==None: radii=[]
+        if colors==None: colors=[]
+        
+        from math import pi
+        
+        for n,s in enumerate(segments):
+          firstres=s[0]
+          lastres=s[1]
+          chainid=s[2]
+          nres=s[1]-s[0]
+          for prot in self.prot:         
+            for prot in self.prot: 
+                cps=IMP.atom.get_by_type(prot, IMP.atom.CHAIN_TYPE)
+                for c in cps:
+                   chain=IMP.atom.Chain(c)
+                   if chain.get_id()==chainid:
+                       p=IMP.Particle(self.m)
+                       f=IMP.atom.Fragment.setup_particle(p)
+                       rindexes=range(firstres,lasteres+1)
+                       f.set_residue_indexes(rindexes)
+                       f.set_name("Fragment_"+'%i-%i' % (firstres,lastres))
+                       chain.add_child(f)
+                       mass=len(rindexes)*110.0
+                       vol=IMP.atom.get_volume_from_mass(mass)
+                       if n+1>len(radii):
+                          mass=len(rindexes)*110.0
+                          vol=IMP.atom.get_volume_from_mass(mass)
+                          radius=(3*vol/math.pi)**(1/3)
+                       else:
+                          radius=radii[n]
 
+                       if n+1>len(xyzs):
+                          x=0
+                          y=0
+                          z=0
+                       else:
+                          x=xyzs[n][0]
+                          y=xyzs[n][1]         
+                          z=xyzs[n][2]
+                       
+                       if n+1<=len(colors):
+                          clr=IMP.display.get_rgb_color(colors[n])
+                          IMP.display.Colored.setup_particle(prt,clr)
+                                                                  
+                       d=IMP.atom.XYZR.setup_particle(p,IMP.algebra.Sphere3D(x,y,z,radius))
+                       
+    
+    def renumber_residues(self,chainid,newfirstresiduenumber):
+            for prot in self.prot: 
+                cps=IMP.atom.get_by_type(prot, IMP.atom.CHAIN_TYPE)
+                for c in cps:
+                    if IMP.atom.Chain(c).get_id()==chainid:
+                       ps=c.get_children()
+                       r=IMP.atom.Residue(ps[0])
+                       ri=r.get_index()
+                       offs=newfirstresiduenumber-ri
+                       for p in ps:
+                           r=IMP.atom.Residue(p)
+                           ri=r.get_index()                            
+                           r.set_index(ri+offs)
+                
     def destroy_everything_but_the_residues(self,segments):
         #segments are defined as a list of tuples ex [(res1,res2,chain),....]
         for prot in self.prot:
@@ -256,6 +325,12 @@ class MultipleStates():
                         #self.m.remove_particle(p)
 
     def generate_linkers_restraint_and_floppy_bodies(self,segment):
+        '''
+        this methods automatically links the particles consecutively
+        according to the sequence. The restraint applied is a harmonic upper bound,
+        with a distance that is proportional to the number of residues
+        in the gap.
+        '''
         #this function will create floppy bodies where there are not
         #rigid bodies and moreover create a linker restraint between them
         linker_restraint_objects=[]
@@ -307,9 +382,10 @@ class MultipleStates():
                     pruned_residue_list.append(r)
                     r0=r
 
-
+            
             r0=pruned_residue_list[0]
             linkdomaindef=[]
+            
             for i in range(1,len(pruned_residue_list)):
                 r=pruned_residue_list[i]
                 if r[1]==r0[1] and r[1]==False and IMP.core.RigidMember(r[3]).get_rigid_body() == IMP.core.RigidMember(r0[3]).get_rigid_body():
@@ -317,14 +393,20 @@ class MultipleStates():
                 else:
                     linkdomaindef.append((r0[0],r[0],r[2]))
                     r0=r
-
+            
+            print " creating linker between atoms defined by: "+str(linkdomaindef)
+            
             ld=restraints.LinkDomains(prot,linkdomaindef,1.0,3.0)
             ld.set_label(str(ncopy))
             ld.add_to_model()
             linker_restraint_objects.append(ld)
             prs=ld.get_pairs()
-
+        
         return linker_restraint_objects
+
+
+
+
 
     def get_ref_hierarchies(self):
         return  self.refprot
@@ -567,8 +649,10 @@ class MultipleStates():
 
     def calculate_drms(self):
         # calculate DRMSD matrix
+
         if len(self.xyzmodellist)==0:
             print "MultipleStates: hierarchies were not intialized"
+            
         if len(self.xyzreflist)==0:
             print "MultipleStates: reference hierarchies were not intialized"
 
@@ -605,9 +689,9 @@ class MultipleStates():
 
 
 class SimplifiedModel():
-#Peter Cimermancic
+#Peter Cimermancic and Riccardo Pellarin
     '''
-    This class creates the molecular hierarchies for the various involved proteins.
+    This class creates the molecular hierarchies for the various involved proteins.    
     '''
 
     def __init__(self,m,upperharmonic=True,disorderedlength=False):
@@ -671,8 +755,26 @@ class SimplifiedModel():
                 rb.set_reference_frame(IMP.algebra.ReferenceFrame3D(transformation))
 
 
-    def add_component(self,name,chainnames, length, pdbs, init_coords=None,simplepdb=1,ds=None,colors=None, resolutions=None):
-        
+    def add_component(self,name, chainnames, length, pdbs, 
+                      init_coords=None, simplepdb=1, ds=None, colors=None, 
+                      resolutions=None):
+        '''
+        Using multiple resolution (resolutions!=None)
+        Using this representation, a crystallographic structure or a homology model
+        can be represented by a set of models, coarse-grained at different levels (giving as input a list of sizes 
+        for the beads, in residue number). All particles belonging to the models are constrained in the same rigid body. 
+        Restraints constructors have an optional argument that corresponds to the resolution you want to apply it.
+        If the resolution of the model is hybrid (i.e., some parts are multi resolution, and some 
+        other are single resolution because they are flexible) the restraint picks up the most convenient particle.
+
+        In this way cross-links will be applied directly to individual residues, excluded 
+        volume is applied to intermediate resolutions (eg. 10 residues per bead) and 
+        connectivity restraint from domain mapping is applied to larger beads (eg. 100 residues per bead), 
+        saving a lot of computational time. I've benchmarked it and it is generally faster 
+        (from twice, up to 2 orders of magnitude faster), and of course, we are not limited 
+        by the usage of a single compromise resolution (eg, 5 residues per beads).
+        '''
+    
         if ds==None: ds=[]
         if colors==None: colors=[]
         if init_coords==None: init_coords=()
@@ -702,7 +804,7 @@ class SimplifiedModel():
                             
                 del sls
 
-                #find start and end indeces
+                #find start and end indexes
                 start = IMP.atom.Residue(t.get_children()[0].get_children()[0]).get_index()
                 end   = IMP.atom.Residue(t.get_children()[0].get_children()[-1]).get_index()
                 bounds.append(( start,end ))
@@ -716,7 +818,6 @@ class SimplifiedModel():
                 
                 if len(resolutions)==0:
                    #default
-                   #s0=IMP.atom.create_simplified_along_backbone(c, 10000000.0)
                    s=IMP.atom.create_simplified_along_backbone(c, self.resolution/2.0)
                    if simplepdb==1: s=IMP.atom.create_simplified_along_backbone(c, self.resolution/2.0)
                    else: s=IMP.atom.create_simplified_along_backbone(c, 1.)
@@ -739,6 +840,7 @@ class SimplifiedModel():
                    protein_h.add_child(s) 
                
                    for prt in IMP.atom.get_leaves(s):
+                     IMP.pmi.Resolution.setup_particle(prt,self.resolution)               
                      #setting up color for each particle in the hierarchy, if colors missing in the colors list set it to red
                      try:
                        clr=IMP.display.get_rgb_color(colors[pdb_part_count])
@@ -750,28 +852,19 @@ class SimplifiedModel():
 
                 else:
                    #multiple resolutions
-                   s0=IMP.atom.create_simplified_along_backbone(c, 10000000.0)
-                   s0.set_name(chainnames[pdb_part_count]+str(pdb_part_count)+"bead")                   
-                   s=IMP.atom.create_simplified_along_backbone(c, self.resolution/2)
-                   s.set_name(chainnames[pdb_part_count]+str(pdb_part_count)+str(self.resolution))
-                   protein_h.add_child(s0)
-                   s0.add_child(s)
-                   for prt in IMP.atom.get_leaves(s):
-                     #setting up color for each particle in the hierarchy, if colors missing in the colors list set it to red
-                     try:
-                       clr=IMP.display.get_rgb_color(colors[pdb_part_count])
-                     except:
-                       colors.append(1.0)
-                       clr=IMP.display.get_rgb_color(colors[pdb_part_count])
-                     IMP.display.Colored.setup_particle(prt,clr)
-                   for prt in IMP.atom.get_leaves(s0):
-                     #setting up color for each particle in the hierarchy, if colors missing in the colors list set it to red
-                     try:
-                       clr=IMP.display.get_rgb_color(colors[pdb_part_count])
-                     except:
-                       colors.append(1.0)
-                       clr=IMP.display.get_rgb_color(colors[pdb_part_count])
-                     IMP.display.Colored.setup_particle(prt,clr)
+                   for r in resolutions:
+                     s0=IMP.atom.create_simplified_along_backbone(c, r)
+                     s0.set_name(chainnames[pdb_part_count]+str(pdb_part_count)+str(r))            
+                     protein_h.add_child(s0)
+                     for prt in IMP.atom.get_leaves(s0):
+                       IMP.pmi.Resolution.setup_particle(prt,r)
+                       #setting up color for each particle in the hierarchy, if colors missing in the colors list set it to red
+                       try:
+                         clr=IMP.display.get_rgb_color(colors[pdb_part_count])
+                       except:
+                         colors.append(1.0)
+                         clr=IMP.display.get_rgb_color(colors[pdb_part_count])
+                       IMP.display.Colored.setup_particle(prt,clr)
                    
 
             #calculate regions without structrue (un-modelled regions)
@@ -792,14 +885,22 @@ class SimplifiedModel():
                            ds.append((bnd[1]+1,length))                         
                            if len(ds)>len(colors): colors.append(colors[pdb_part_count])
 
-        print ds
         #work on un-modelled regions
         randomize_coords = lambda c: tuple(10.*(nrrand(3)-0.5)+array(c))
 
         for n,ds_frag in enumerate(ds):
             if ds_frag[1]-ds_frag[0]==0: ds_frag=(ds_frag[0],ds_frag[1]+1)
+            
+            '''
+            #alternatively: define fragments
+            h=IMP.atom.Fragment.setup_particle(IMP.Particle(self.m))
+            h.set_residue_indexes(range(ds_frag[0],ds_frag[1]))
+            h.set_name(name+'_%i-%i' % (ds_frag[0],ds_frag[1]))
+            '''
+            
             h=IMP.atom.create_protein(self.m, name+'_%i-%i' % (ds_frag[0],ds_frag[1]), self.resolution, \
                           [ds_frag[0],ds_frag[1]])
+                          
             for prt in IMP.atom.get_leaves(h):
                 #setting up color for the particle, if colors missing in the colors list set it to red
                 try:
@@ -807,7 +908,9 @@ class SimplifiedModel():
                 except:
                     clr=IMP.display.get_rgb_color(1.0)
                 IMP.display.Colored.setup_particle(prt,clr)
-
+                
+                #decorate particles according to their resolution
+                IMP.pmi.Resolution.setup_particle(prt,self.resolution)
 
                 ptem= prt.get_as_xyzr()
                 ptem.set_radius(ptem.get_radius()*0.8)
@@ -818,9 +921,12 @@ class SimplifiedModel():
                 if len(pdbs)==0: ptem.set_coordinates((random.uniform(bb[0][0],bb[1][0]),\
                        random.uniform(bb[0][1],bb[1][1]),random.uniform(bb[0][2],bb[1][2])))
                 else:
+                  if len(resolutions)==0:
+                    #default:
                     crd=IMP.atom.get_leaves(s)[0].get_as_xyz().get_coordinates()
                     ptem.set_coordinates(randomize_coords(crd))
-
+                  
+  
                 FlexParticles.append(ptem.get_particle())
 
             Spheres = IMP.atom.get_leaves(h)
@@ -851,7 +957,7 @@ class SimplifiedModel():
 
                 pt0=IMP.atom.Selection(prt).get_selected_particles()[0]
                 pt1=IMP.atom.Selection(Spheres[x+1]).get_selected_particles()[0]
-                print IMP.core.XYZR(pt0).get_radius()+IMP.core.XYZR(pt1).get_radius()
+                #print IMP.core.XYZR(pt0).get_radius()+IMP.core.XYZR(pt1).get_radius()
                 r=IMP.core.PairRestraint(dps,IMP.ParticlePair(pt0,pt1))
                 unmodeledregions_cr.add_restraint(r)
                 self.connected_intra_pairs.append((pt0,pt1))
@@ -900,7 +1006,7 @@ class SimplifiedModel():
             
             pt0=IMP.atom.Selection(last).get_selected_particles()[0]          
             pt1=IMP.atom.Selection(first).get_selected_particles()[0]
-            print IMP.core.XYZR(pt0).get_radius()+IMP.core.XYZR(pt1).get_radius()            
+            #print IMP.core.XYZR(pt0).get_radius()+IMP.core.XYZR(pt1).get_radius()            
             r=IMP.core.PairRestraint(dps,IMP.ParticlePair(pt0,pt1))
             sortedsegments_cr.add_restraint(r)
             self.connected_intra_pairs.append((pt0,pt1))
@@ -915,6 +1021,65 @@ class SimplifiedModel():
         self.prot.add_child(protein_h)
         #self.rigid_bodies+=RigiParticles
         self.floppy_bodies+=FlexParticles
+
+    def create_rotational_symmetry(self,maincopy,copies):
+        #still working on it!
+        from math import pi
+        ncopies=len(copies)+1
+
+        sel=IMP.atom.Selection(self.prot,molecule=maincopy)              
+        mainparticles=sel.get_selected_particles()
+        
+        for k in range(len(copies)):
+          rotation3D=IMP.algebra.get_rotation_about_axis(IMP.algebra.Vector3D(0,0,1), 2*pi/ncopies*(k+1))
+          sm=IMP.core.TransformationSymmetry(rotation3D)
+
+        
+          sel=IMP.atom.Selection(self.prot,molecule=copies[k])              
+          copyparticles=sel.get_selected_particles()
+
+           
+          mainpurged=[]
+          copypurged=[]
+          for n,p in enumerate(mainparticles):
+           
+            pc=copyparticles[n]
+            
+            #print p.get_name(),pc.get_name()
+
+
+            if (p.get_name()!=pc.get_name()): print p.get_name()+" "+pc.get_name()+" not the same particle"
+
+
+            if IMP.core.RigidMember.particle_is_instance(p):
+               rb=IMP.core.RigidMember(p).get_rigid_body()
+               if not rb in mainpurged: 
+                  mainpurged.append(rb)
+                  print "added", type(rb),rb.get_name()
+            else:
+               print "added", type(p),p.get_name()
+               mainpurged.append(p)
+            
+            if IMP.core.RigidMember.particle_is_instance(pc):
+               rbc=IMP.core.RigidMember(pc).get_rigid_body()
+               if not rbc in copypurged: 
+                  copypurged.append(rbc)
+                  print "added", type(rbc),rbc.get_name()
+            else:
+               print "added", type(pc),pc.get_name()
+               copypurged.append(pc)
+                                    
+          lc=IMP.container.ListSingletonContainer(self.m)        
+          for n,p in enumerate(mainpurged):
+            
+            pc=copypurged[n]
+            IMP.core.Reference.setup_particle(p,pc)
+            lc.add_particle(pc)
+          c=IMP.container.SingletonsConstraint(sm,None,lc)
+          self.m.add_score_state(c)        
+        self.m.update()
+
+
 
     def link_components_to_rmf(self,rmfname,frameindex):
         '''

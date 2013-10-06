@@ -96,7 +96,6 @@ class ParticleToSampleList():
             ps[key]=value
         return ps
 
-
 class Output():
 
     def __init__(self,ascii=True):
@@ -596,6 +595,34 @@ def get_residue_index_and_chain_from_particle(p):
     c=IMP.atom.Residue(IMP.atom.Atom(p).get_parent()).get_parent()
     cid=IMP.atom.Chain(c).get_id()
     return rind,cid
+
+def get_particles_by_resolution(prot,resolution):
+    particles=[]
+    for hier in prot.get_children():
+        resolutions=[]
+        residues=set()
+        #calculate the closest resolution        
+        for p in IMP.atom.get_leaves(hier):
+            res=IMP.pmi.Resolution.get_resolution(IMP.pmi.Resolution(p))
+            residues.update(IMP.atom.Fragment(p).get_residue_indexes())
+            resolutions.append(res)
+        
+        
+        closestres=min(resolutions, key=lambda x:abs(x-resolution))
+        
+        for p in IMP.atom.get_leaves(hier):
+           if closestres==IMP.pmi.Resolution.get_resolution(IMP.pmi.Resolution(p)):  
+              particles.append(p)
+              for rindex in IMP.atom.Fragment(p).get_residue_indexes():
+                  residues.remove(rindex)
+        
+        #select the rest, residues which were not included because
+        #they were not multi-res
+        
+        s=IMP.atom.Selection(hier, residue_indexes=list(residues))
+        particles+=s.get_selected_particles()
+        
+    return particles
 
 def set_floppy_body(p):
     if IMP.core.RigidMember.particle_is_instance(p):

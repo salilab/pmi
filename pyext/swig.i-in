@@ -3,6 +3,8 @@
 //IMP_SWIG_VALUE_TEMPLATE(IMP::example, ExampleTemplateClassD)
 
 IMP_SWIG_OBJECT(IMP::pmi, CompositeRestraint, CompositeRestraints);
+IMP_SWIG_DECORATOR(IMP::pmi, Resolution, Resolutions);
 
 //%include "IMP/example/ExampleRestraint.h"
 %include "IMP/pmi/CompositeRestraint.h"
+%include "IMP/pmi/Resolution.h"

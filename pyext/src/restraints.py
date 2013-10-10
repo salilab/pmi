@@ -162,10 +162,10 @@ class ConnectivityRestraint():
               sel=IMP.atom.Selection(hierarchies=hiers)  
 
            if resolution!=None:
-              particles=IMP.pmi.tools.get_particles_by_resolution(self.hier,resolution)              
+              particles=[]
+              for prot in self.hier.get_children():
+                  particles+=IMP.pmi.tools.get_particles_by_resolution(prot,resolution)              
               selectedp=sel.get_selected_particles()
-              print particles
-              print selectedp
               #get the intersection to remove redundant particles
               sel=IMP.atom.Selection(list(set(selectedp) & set(particles)))
            sels.append(sel)
@@ -346,8 +346,9 @@ class ExcludedVolumeSphere():
         else:
            particles=[]
            lsa=IMP.container.ListSingletonContainer(self.m)
-           particles=IMP.pmi.tools.get_particles_by_resolution(prot,resolution)
-           lsa.add_particles(particles)
+           for hier in prot.get_children():
+              particles=IMP.pmi.tools.get_particles_by_resolution(hier,resolution)
+              lsa.add_particles(particles)
            evr=IMP.core.ExcludedVolumeRestraint(lsa,1.0)   
            
                   
@@ -1654,7 +1655,9 @@ class ConnectivityCrossLinkMS():
         self.strength=strength
         
         if resolution!=None:
-         particles=IMP.pmi.tools.get_particles_by_resolution(self.prot,resolution) 
+          particles=[]
+          for prot in self.prot.get_children():
+             particles+=IMP.pmi.tools.get_particles_by_resolution(prot,resolution) 
 
         #fill the cross-linker pmfs
         #to accelerate the init the list listofxlinkertypes might contain only yht needed crosslinks

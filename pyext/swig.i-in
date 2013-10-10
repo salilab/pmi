@@ -4,7 +4,9 @@
 
 IMP_SWIG_OBJECT(IMP::pmi, CompositeRestraint, CompositeRestraints);
 IMP_SWIG_DECORATOR(IMP::pmi, Resolution, Resolutions);
+IMP_SWIG_DECORATOR(IMP::pmi, Symmetric, Symmetrics);
 
 //%include "IMP/example/ExampleRestraint.h"
 %include "IMP/pmi/CompositeRestraint.h"
 %include "IMP/pmi/Resolution.h"
+%include "IMP/pmi/Symmetric.h"

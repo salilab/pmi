@@ -432,6 +432,73 @@ class Output():
     def write_stats2(self):
         for stat in self.dictionary_stats2.keys():
             self.write_stat2(stat)
+
+class ProcessOutput():
+    
+    def __init__(self,filename):
+        self.filename=filename
+        self.isstat1=False
+        self.isstat2=False
+        
+        #open the file
+        if self.filename!=None:
+           f=open(self.filename,"r")
+        else:
+           print "Error: No file name provided. Use -h for help"
+           exit()
+        
+        #get the keys from the first line
+        for line in f.readlines():
+            d=eval(line)
+            self.klist=d.keys()
+            #check if it is a stat2 file
+            if "STAT2HEADER" in self.klist: 
+                import operator
+                self.isstat2=True
+                for k in self.klist:
+                    if "STAT2HEADER" in str(k):
+                       #if print_header: print k, d[k]
+                       del d[k]
+                stat2_dict=d
+                #get the list of keys sorted by value
+                kkeys=[k[0] for k in sorted(stat2_dict.iteritems(), key=operator.itemgetter(1))]
+                self.klist=[k[1] for k in sorted(stat2_dict.iteritems(), key=operator.itemgetter(1))]
+                self.invstat2_dict={}
+                for k in kkeys:
+                    self.invstat2_dict.update({stat2_dict[k]:k})
+            else:
+                self.isstat1=True
+                self.klist.sort()
+                
+            break
+        f.close()    
+            
+    def get_keys(self):      
+        return self.klist
+        
+    def get_fields(self,fields):
+         
+           outdict={}
+           for field in fields:
+               outdict[field]=[]
+           
+           #print fields values
+           f=open(self.filename,"r")
+           line_number=0
+           for line in f.readlines():
+              line_number+=1
+              try:
+                 d=eval(line)
+              except:
+                 print "# Warning: skipped line number " + str(line_number) + " not a valid line"
+                 continue
+              if   self.isstat1: [outdict[field].append(d[field]) for field in fields]
+              elif self.isstat2: 
+                   if line_number==1: continue
+                   [outdict[field].append(d[self.invstat2_dict[field]]) for field in fields]
+           f.close()
+           return outdict        
+
         
 
 class Variance():
@@ -688,31 +755,34 @@ def get_residue_index_and_chain_from_particle(p):
     return rind,cid
 
 def get_particles_by_resolution(prot,resolution):
+   
+    #for hier in prot.get_children():
+
     particles=[]
-    for hier in prot.get_children():
-        resolutions=[]
-        residues=set()
-        #calculate the closest resolution        
-        for p in IMP.atom.get_leaves(hier):
-            res=IMP.pmi.Resolution.get_resolution(IMP.pmi.Resolution(p))
-            residues.update(IMP.atom.Fragment(p).get_residue_indexes())
-            resolutions.append(res)
+    resolutions=[]
+    residues=set() 
+
+    #calculate the closest resolution        
+    for p in IMP.atom.get_leaves(prot):
+        res=IMP.pmi.Resolution.get_resolution(IMP.pmi.Resolution(p))
+        residues.update(IMP.atom.Fragment(p).get_residue_indexes())
+        resolutions.append(res)
+       
+    closestres=min(resolutions, key=lambda x:abs(x-resolution))
         
-        
-        closestres=min(resolutions, key=lambda x:abs(x-resolution))
-        
-        for p in IMP.atom.get_leaves(hier):
-           if closestres==IMP.pmi.Resolution.get_resolution(IMP.pmi.Resolution(p)):  
-              particles.append(p)
-              for rindex in IMP.atom.Fragment(p).get_residue_indexes():
-                  residues.remove(rindex)
-        
-        #select the rest, residues which were not included because
-        #they were not multi-res
-        
-        s=IMP.atom.Selection(hier, residue_indexes=list(residues))
-        particles+=s.get_selected_particles()
-        
+    for p in IMP.atom.get_leaves(prot):
+        if closestres==IMP.pmi.Resolution.get_resolution(IMP.pmi.Resolution(p)):  
+          particles.append(p)
+          for rindex in IMP.atom.Fragment(p).get_residue_indexes():
+              residues.remove(rindex)
+    
+    #select the rest, residues which were not included because
+    #they were not multi-res
+    
+    s=IMP.atom.Selection(prot, residue_indexes=list(residues))
+    particles+=s.get_selected_particles()
+    
+    
     return particles
 
 def set_floppy_body(p):
@@ -1399,3 +1469,137 @@ class GetContactMap():
         pl.show()
         '''
 
+def get_graph_from_hierarchy(hier):
+    graph=[]
+    depth_dict={}
+    depth=0
+    (graph,depth,depth_dict)=recursive_graph(hier,graph,depth,depth_dict)
+    
+    #filters node labels according to depth_dict
+    node_labels_dict={}
+    node_size_dict={}
+    for key in depth_dict:
+        node_size_dict=10/depth_dict[key]
+        if depth_dict[key]<3: 
+           node_labels_dict[key]=key
+        else:
+           node_labels_dict[key]=""
+    draw_graph(graph,labels_dict=node_labels_dict)
+
+def recursive_graph(hier,graph,depth,depth_dict):
+    depth=depth+1
+    nameh=IMP.atom.Hierarchy(hier).get_name()
+    index=str(hier.get_particle().get_index())
+    name1=nameh+"_"+index
+    depth_dict[name1]=depth
+    
+    children=IMP.atom.Hierarchy(hier).get_children()
+    
+    if len(children)==1 or children==None:
+       depth=depth-1
+       return (graph,depth,depth_dict)
+    
+    else:
+      for c in children:
+        (graph,depth,depth_dict)=recursive_graph(c,graph,depth,depth_dict)
+        nameh=IMP.atom.Hierarchy(c).get_name()
+        index=str(c.get_particle().get_index())
+        namec=nameh+"_"+index        
+        graph.append((name1,namec))
+      
+      depth=depth-1
+      return (graph,depth,depth_dict)
+     
+def draw_graph(graph, labels_dict=None, graph_layout='spring',
+               node_size=5, node_color='blue', node_alpha=0.3,
+               node_text_size=11,
+               edge_color='blue', edge_alpha=0.3, edge_tickness=1,
+               edge_text_pos=0.3,
+               text_font='sans-serif'):
+
+    import networkx as nx
+    import matplotlib.pyplot as plt
+
+
+    # create networkx graph
+    G=nx.Graph()
+
+    # add edges
+    for edge in graph:
+        G.add_edge(edge[0], edge[1])
+
+    # these are different layouts for the network you may try
+    # shell seems to work best
+    if graph_layout == 'spring':
+        graph_pos=nx.spring_layout(G)
+    elif graph_layout == 'spectral':
+        graph_pos=nx.spectral_layout(G)
+    elif graph_layout == 'random':
+        graph_pos=nx.random_layout(G)
+    else:
+        graph_pos=nx.shell_layout(G)
+
+    # draw graph
+    nx.draw_networkx_nodes(G,graph_pos,node_size=node_size, 
+                           alpha=node_alpha, node_color=node_color)
+    nx.draw_networkx_edges(G,graph_pos,width=edge_tickness,
+                           alpha=edge_alpha,edge_color=edge_color)
+    nx.draw_networkx_labels(G, graph_pos,labels=labels_dict,font_size=node_text_size,
+                            font_family=text_font)
+
+
+    #if labels is None:
+    #    labels = range(len(graph))
+
+    #edge_labels = dict(zip(graph, labels))
+    #nx.draw_networkx_edge_labels(G, graph_pos, edge_labels=edge_labels, 
+    #                             label_pos=edge_text_pos)
+
+    # show graph
+    plt.show()
+
+    
+    
+def draw_table():
+    
+    #still an example!
+    
+    from ipyD3 import d3object
+    from IPython.display import display
+    
+    d3 = d3object(width=800,
+              height=400,
+              style='JFTable',
+              number=1,
+              d3=None,
+              title='Example table with d3js',
+              desc='An example table created created with d3js with data generated with Python.')
+    data=[[1277.0, 654.0, 288.0, 1976.0, 3281.0, 3089.0, 10336.0, 4650.0, 4441.0, 4670.0, 944.0, 110.0],
+    [1318.0, 664.0, 418.0, 1952.0, 3581.0, 4574.0, 11457.0, 6139.0, 7078.0, 6561.0, 2354.0, 710.0],
+    [1783.0, 774.0, 564.0, 1470.0, 3571.0, 3103.0, 9392.0, 5532.0, 5661.0, 4991.0, 2032.0, 680.0],
+    [1301.0, 604.0, 286.0, 2152.0, 3282.0, 3369.0, 10490.0, 5406.0, 4727.0, 3428.0, 1559.0, 620.0],
+    [1537.0, 1714.0, 724.0, 4824.0, 5551.0, 8096.0, 16589.0, 13650.0, 9552.0, 13709.0, 2460.0, 720.0],
+    [5691.0, 2995.0, 1680.0, 11741.0, 16232.0, 14731.0, 43522.0, 32794.0, 26634.0, 31400.0, 7350.0, 3010.0],
+    [1650.0, 2096.0, 60.0, 50.0, 1180.0, 5602.0, 15728.0, 6874.0, 5115.0, 3510.0, 1390.0, 170.0],
+    [72.0, 60.0, 60.0, 10.0, 120.0, 172.0, 1092.0, 675.0, 408.0, 360.0, 156.0, 100.0]]
+    data=[list(i) for i in zip(*data)]
+    sRows=[['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'Deecember']]
+    sColumns=[['Prod {0}'.format(i) for i in xrange(1,9)],
+          [None, '', None, None, 'Group 1', None, None, 'Group 2']]
+    d3.addSimpleTable(   data, 
+                     fontSizeCells=[12,],
+                     sRows=sRows,
+                     sColumns=sColumns,
+                     sRowsMargins=[5,50,0],
+                     sColsMargins=[5,20,10],
+                     spacing=0,
+                     addBorders=1,
+                     addOutsideBorders=-1,
+                     rectWidth=45,
+                     rectHeight=0                   
+                 )
+    html=d3.render(mode=['html', 'show'])
+    display(html)
+    
+    
+    

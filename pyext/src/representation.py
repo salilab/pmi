@@ -924,9 +924,9 @@ class SimplifiedModel():
                   if len(resolutions)==0:
                     #default:
                     crd=IMP.atom.get_leaves(s)[0].get_as_xyz().get_coordinates()
+                    #comment: why is that done in this way?
                     ptem.set_coordinates(randomize_coords(crd))
-                  
-  
+
                 FlexParticles.append(ptem.get_particle())
 
             Spheres = IMP.atom.get_leaves(h)
@@ -968,12 +968,24 @@ class SimplifiedModel():
 
 
         SortedSegments = []
+        
+        if len(resolutions)!=0: 
+           pbr=tools.get_particles_by_resolution(protein_h,1.0)
+        
         for chl in protein_h.get_children():
+            
             start = IMP.atom.get_leaves(chl)[0]
             end   = IMP.atom.get_leaves(chl)[-1]
-
+            
+            if len(resolutions)!=0: 
+               #skip particles            
+               if not start in pbr: continue
+               if not end   in pbr: continue
+            
             startres = IMP.atom.Fragment(start).get_residue_indexes()[0]
             endres   = IMP.atom.Fragment(end).get_residue_indexes()[-1]
+            
+            
             SortedSegments.append((chl,startres))
         SortedSegments = sorted(SortedSegments, key=itemgetter(1))
 
@@ -1008,6 +1020,7 @@ class SimplifiedModel():
             pt1=IMP.atom.Selection(first).get_selected_particles()[0]
             #print IMP.core.XYZR(pt0).get_radius()+IMP.core.XYZR(pt1).get_radius()            
             r=IMP.core.PairRestraint(dps,IMP.ParticlePair(pt0,pt1))
+            print pt0.get_name(),pt1.get_name()
             sortedsegments_cr.add_restraint(r)
             self.connected_intra_pairs.append((pt0,pt1))
             self.connected_intra_pairs.append((pt1,pt0))
@@ -1050,33 +1063,65 @@ class SimplifiedModel():
 
             if (p.get_name()!=pc.get_name()): print p.get_name()+" "+pc.get_name()+" not the same particle"
 
-
+            '''
             if IMP.core.RigidMember.particle_is_instance(p):
                rb=IMP.core.RigidMember(p).get_rigid_body()
                if not rb in mainpurged: 
                   mainpurged.append(rb)
-                  print "added", type(rb),rb.get_name()
+                  IMP.pmi.Symmetric.setup_particle(rb,0)
+                  print "added Rigid Body", type(rb),rb.get_name()
+            elif IMP.core.NonRigidMember.particle_is_instance(p):   
+                  mainpurged.append(p)
+                  IMP.pmi.Symmetric.setup_particle(p,0)
+                  print "added NonRigidMember", type(p),p.get_name()    
+                  print "warning: NonRigidMember particles might not work with symmetries"
+                  print "create rigid body with nonrigidmembers=False"                                        
             else:
-               print "added", type(p),p.get_name()
+               print "added Particle", type(p),p.get_name()
                mainpurged.append(p)
+               IMP.pmi.Symmetric.setup_particle(p,0)
+            '''
+            print "added Particle", type(p),p.get_name()
+            mainpurged.append(p)
+            IMP.pmi.Symmetric.setup_particle(p,0)           
             
+            '''
             if IMP.core.RigidMember.particle_is_instance(pc):
                rbc=IMP.core.RigidMember(pc).get_rigid_body()
                if not rbc in copypurged: 
                   copypurged.append(rbc)
-                  print "added", type(rbc),rbc.get_name()
+                  IMP.pmi.Symmetric.setup_particle(rbc,1)
+                  print "added Rigid Body", type(rbc),rbc.get_name()
+            elif IMP.core.NonRigidMember.particle_is_instance(pc):   
+                  copypurged.append(pc)
+                  print "added NonRigidMember", type(pc),pc.get_name()  
+                  print "warning: NonRigidMember particles might not work with symmetries"
+                  print "create rigid body with nonrigidmembers=False" 
+                  IMP.pmi.Symmetric.setup_particle(pc,1)   
             else:
-               print "added", type(pc),pc.get_name()
+               print "added Particle", type(pc),pc.get_name()
                copypurged.append(pc)
-                                    
+               IMP.pmi.Symmetric.setup_particle(pc,1)
+            '''
+
+            print "added Particle", type(pc),pc.get_name()
+            copypurged.append(pc)
+            IMP.pmi.Symmetric.setup_particle(pc,1)
+           
+                       
           lc=IMP.container.ListSingletonContainer(self.m)        
           for n,p in enumerate(mainpurged):
             
             pc=copypurged[n]
-            IMP.core.Reference.setup_particle(p,pc)
+            print "setting "+p.get_name()+" as reference for "+pc.get_name()    
+            
+            
+            IMP.core.Reference.setup_particle(pc,p)
             lc.add_particle(pc)
+          
           c=IMP.container.SingletonsConstraint(sm,None,lc)
           self.m.add_score_state(c)        
+        
         self.m.update()
 
 
@@ -1110,7 +1155,7 @@ class SimplifiedModel():
         '''
 
 
-    def set_rigid_bodies(self,subunits,coords=None):
+    def set_rigid_bodies(self,subunits,coords=None,nonrigidmembers=True):
         if coords==None: coords=()
         #sometimes, we know about structure of an interaction
         #and here we make such PPIs rigid
@@ -1121,8 +1166,15 @@ class SimplifiedModel():
             for prt in self.prot.get_children():
                 if prt.get_name() in subunits:
                     for frag in prt.get_children(): rigid_parts += IMP.atom.get_leaves(frag)
+            
+            if not nonrigidmembers:
+               for p in rigid_parts:
+                   if p in self.floppy_bodies:
+                      rigid_parts.remove(p)
+                    
             rb=IMP.atom.create_rigid_body(rigid_parts)
             rb.set_coordinates_are_optimized(True)
+            rb.set_name(''.join(subunits)+"_rigid_body")
             if type(coords)==tuple and len(coords)==3: rb.set_coordinates(randomize_coords(coords))
             self.rigid_bodies.append(rb)
 
@@ -1138,14 +1190,24 @@ class SimplifiedModel():
                     print prt,s,'\n\t',s.get_selected_particles()
                     for f in prt.get_children(): print '\t\t',f
                     print
+            
+            if not nonrigidmembers:
+               for p in rigid_parts:
+                   if p in self.floppy_bodies:
+                      rigid_parts.remove(p)        
+            
+            
             rb=IMP.atom.create_rigid_body(rigid_parts)
             rb.set_coordinates_are_optimized(True)
+            rb.set_name(''.join(subunits)+"_rigid_body")
             if type(coords)==tuple and len(coords)==3: rb.set_coordinates(randomize_coords(coords))
             self.rigid_bodies.append(rb)
 
 
     def set_floppy_bodies(self):
         for p in self.floppy_bodies:
+            name=p.get_name()
+            p.set_name(name+"_floppy_body")
             tools.set_floppy_body(p)
     
     def get_particles_from_selection(self,selection_tuples):
@@ -1181,6 +1243,30 @@ class SimplifiedModel():
         #and the mover displacement. Everything wrapped in a dictionary,
         #to be used by samplers modules
         ps={}
+        
+        #remove symmetric particles: they are not sampled
+        rbtmp=[]
+        fbtmp=[]
+        for rb in self.rigid_bodies:
+           try:
+              IMP.pmi.Symmetric(rb)
+              if IMP.pmi.Symmetric(rb).get_symmetric()!=1:
+                 rbtmp.append(rb)
+           except: 
+              rbtmp.append(rb)
+    
+        for fb in self.floppy_bodies:
+           try:
+              IMP.pmi.Symmetric(fb)
+              if IMP.pmi.Symmetric(fb).get_symmetric()!=1:
+                 fbtmp.append(fb)
+           except: 
+              fbtmp.append(fb)        
+            
+        self.rigid_bodies=rbtmp
+        self.floppy_bodies=fbtmp
+        
+        
         ps["Rigid_Bodies_SimplifiedModel"]=(self.rigid_bodies,self.maxtrans_rb,self.maxrot_rb)
         ps["Floppy_Bodies_SimplifiedModel"]=(self.floppy_bodies,self.maxtrans_fb)
         return ps
@@ -1211,3 +1297,8 @@ class SimplifiedModel():
 
     def get_hierarchy(self):
         return  self.prot
+
+    def draw_hierarchy_graph(self):
+        for c in IMP.atom.Hierarchy(self.prot).get_children():
+            print "Drawing hierarchy graph for "+c.get_name()
+            tools.get_graph_from_hierarchy(c)

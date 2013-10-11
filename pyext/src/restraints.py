@@ -1711,9 +1711,6 @@ class ConnectivityCrossLinkMS():
               ps2=(list(set(ps2) & set(particles)))
               s1=IMP.atom.Selection(ps1)
               s2=IMP.atom.Selection(ps2)
-                        
-            
-
             
             sels=[s1,s2]
             cr = IMP.atom.create_connectivity_restraint(sels, self.expdistance,self.strength)

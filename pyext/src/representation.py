@@ -1061,7 +1061,7 @@ class SimplifiedModel():
             #print p.get_name(),pc.get_name()
 
 
-            if (p.get_name()!=pc.get_name()): print p.get_name()+" "+pc.get_name()+" not the same particle"
+            #if (p.get_name()!=pc.get_name()): print p.get_name()+" "+pc.get_name()+" not the same particle"
 
             '''
             if IMP.core.RigidMember.particle_is_instance(p):
@@ -1081,7 +1081,7 @@ class SimplifiedModel():
                mainpurged.append(p)
                IMP.pmi.Symmetric.setup_particle(p,0)
             '''
-            print "added Particle", type(p),p.get_name()
+            #print "added Particle", type(p),p.get_name()
             mainpurged.append(p)
             IMP.pmi.Symmetric.setup_particle(p,0)           
             
@@ -1104,7 +1104,7 @@ class SimplifiedModel():
                IMP.pmi.Symmetric.setup_particle(pc,1)
             '''
 
-            print "added Particle", type(pc),pc.get_name()
+            #print "added Particle", type(pc),pc.get_name()
             copypurged.append(pc)
             IMP.pmi.Symmetric.setup_particle(pc,1)
            
@@ -1248,19 +1248,17 @@ class SimplifiedModel():
         rbtmp=[]
         fbtmp=[]
         for rb in self.rigid_bodies:
-           try:
-              IMP.pmi.Symmetric(rb)
+           if IMP.pmi.Symmetric.particle_is_instance(rb):
               if IMP.pmi.Symmetric(rb).get_symmetric()!=1:
                  rbtmp.append(rb)
-           except: 
+           else: 
               rbtmp.append(rb)
     
         for fb in self.floppy_bodies:
-           try:
-              IMP.pmi.Symmetric(fb)
+           if IMP.pmi.Symmetric.particle_is_instance(fb):
               if IMP.pmi.Symmetric(fb).get_symmetric()!=1:
                  fbtmp.append(fb)
-           except: 
+           else: 
               fbtmp.append(fb)        
             
         self.rigid_bodies=rbtmp
@@ -1302,3 +1300,4 @@ class SimplifiedModel():
         for c in IMP.atom.Hierarchy(self.prot).get_children():
             print "Drawing hierarchy graph for "+c.get_name()
             tools.get_graph_from_hierarchy(c)
+            

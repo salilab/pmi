@@ -499,7 +499,29 @@ class ProcessOutput():
            f.close()
            return outdict        
 
+    def plot_fields(self,fields):
+        import matplotlib.pyplot as plt
         
+        
+        plt.rc('lines', linewidth=4)
+        fig, axs  = plt.subplots(nrows=len(fields))
+        
+        fig.set_size_inches(10.5,5.5*len(fields))
+        
+        plt.rc('axes', color_cycle=['r', 'g', 'b', 'y'])
+        
+        n=0
+        for key in fields:
+           x = range(len(fields[key]))
+           y=[float(y) for y in fields[key]]
+           axs[n].plot(x,y)
+           axs[n].set_title(key)
+           
+           n+=1
+
+        # Tweak spacing between subplots to prevent labels from overlapping
+        plt.subplots_adjust(hspace=0.3)
+        plt.show()     
 
 class Variance():
     def __init__(self, model, tau, niter, prot, th_profile, write_data=False):
@@ -1600,6 +1622,6 @@ def draw_table():
                  )
     html=d3.render(mode=['html', 'show'])
     display(html)
-    
-    
-    
+
+        
+        

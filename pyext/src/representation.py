@@ -731,6 +731,7 @@ class SimplifiedModel():
         self.sortedsegments_cr_dict={}
         self.prot=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
         self.connected_intra_pairs=[]
+        self.hier_dict={}
 
     # create a protein, represented as a set of connected balls of appropriate
     # radii and number, chose by the resolution parameter and the number of
@@ -753,6 +754,130 @@ class SimplifiedModel():
                 rotation = IMP.algebra.get_random_rotation_3d()
                 transformation = IMP.algebra.Transformation3D(rotation, translation)
                 rb.set_reference_frame(IMP.algebra.ReferenceFrame3D(transformation))
+
+
+    def add_component_name(self,name):
+        protein_h = IMP.atom.Molecule.setup_particle(IMP.Particle(self.m))
+        protein_h.set_name(name)
+        self.hier_dict[name]=protein_h
+        self.prot.add_child(protein_h)
+
+    
+    def add_component_pdb(self,name,pdbname,chain,resolutions,color):
+        protein_h=self.hier_dict[name]
+        
+        t=IMP.atom.read_pdb( pdbname, self.m, 
+        IMP.atom.AndPDBSelector(IMP.atom.ChainPDBSelector(chain), 
+                                                                      IMP.atom.ATOMPDBSelector()))
+        
+        #find start and end indexes
+        start = IMP.atom.Residue(t.get_children()[0].get_children()[0]).get_index()
+        end   = IMP.atom.Residue(t.get_children()[0].get_children()[-1]).get_index()
+
+        c=IMP.atom.Chain(IMP.atom.get_by_type(t, IMP.atom.CHAIN_TYPE)[0])
+        for r in resolutions:
+            s=IMP.atom.create_simplified_along_backbone(c, r)
+            chil=s.get_children()
+            s0=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
+            s0.set_name(name+'_%i-%i' % (start,end)+"_Res:"+str(r))
+            for ch in chil: s0.add_child(ch)            
+            protein_h.add_child(s0)
+            del s
+            for prt in IMP.atom.get_leaves(s0):
+                IMP.pmi.Resolution.setup_particle(prt,r)
+                #setting up color for each particle in the hierarchy, if colors missing in the colors list set it to red
+                try:
+                    clr=IMP.display.get_rgb_color(color)
+                except:
+                    colors.append(1.0)
+                    clr=IMP.display.get_rgb_color(colors[pdb_part_count])
+                IMP.display.Colored.setup_particle(prt,clr)
+
+       
+
+
+    def add_component_beads(self,name,ds,colors):
+        from math import pi
+        protein_h=self.hier_dict[name]    
+        for n,dss in enumerate(ds):
+            ds_frag=(dss[0],dss[1])
+            prt=IMP.Particle(self.m)
+            h=IMP.atom.Fragment.setup_particle(prt)
+            h.set_residue_indexes(range(ds_frag[0],ds_frag[1]+1))
+            h.set_name(name+'_%i-%i' % (ds_frag[0],ds_frag[1]))
+            resolution=len(h.get_residue_indexes())
+            try:
+                clr=IMP.display.get_rgb_color(colors[n])
+            except:
+                clr=IMP.display.get_rgb_color(colors[0])
+            
+            IMP.display.Colored.setup_particle(prt,clr)
+            
+            #decorate particles according to their resolution
+            IMP.pmi.Resolution.setup_particle(prt,1000000)
+            p=IMP.atom.get_leaves(h)[0]
+            IMP.core.XYZR.setup_particle(p)
+            ptem=IMP.core.XYZR(p)
+            mass =IMP.atom.get_mass_from_number_of_residues(resolution)
+            volume=IMP.atom.get_volume_from_mass(mass)
+            radius=0.8*(3.0/4.0/pi*volume)**(1.0/3.0)
+            ptem.set_radius(radius)
+            self.floppy_bodies.append(p)
+            protein_h.add_child(h)
+    
+    def setup_component_sequence_connectivity(self,name):
+        unmodeledregions_cr=IMP.RestraintSet("unmodeledregions")
+        sortedsegments_cr=IMP.RestraintSet("sortedsegments")    
+        protein_h=protein_h=self.hier_dict[name]    
+        SortedSegments = []
+        pbr=tools.get_particles_by_resolution(protein_h,1.0)
+        
+        for chl in protein_h.get_children():
+            start = IMP.atom.get_leaves(chl)[0]
+            end   = IMP.atom.get_leaves(chl)[-1]
+            if not start in pbr: continue
+            if not end   in pbr: continue
+            startres = IMP.atom.Fragment(start).get_residue_indexes()[0]
+            endres   = IMP.atom.Fragment(end).get_residue_indexes()[-1]
+            SortedSegments.append((chl,startres))
+        SortedSegments = sorted(SortedSegments, key=itemgetter(1))
+
+        #connect the particles
+        for x in xrange(len(SortedSegments)-1):
+            last = IMP.atom.get_leaves(SortedSegments[x][0])[-1]
+            first= IMP.atom.get_leaves(SortedSegments[x+1][0])[0]
+
+            if self.disorderedlength:
+               nreslast=len(IMP.atom.Fragment(last).get_residue_indexes())
+               nresfirst=len(IMP.atom.Fragment(first).get_residue_indexes())
+               #calculate the distance between the sphere centers using Kohn PNAS 2004               
+               optdist=sqrt(5/3)*1.93*(nreslast/2+nresfirst/2)**0.6
+               #optdist2=sqrt(5/3)*1.93*((nreslast)**0.6+(nresfirst)**0.6)/2
+               if self.upperharmonic:
+                  hu=IMP.core.HarmonicUpperBound(optdist, self.kappa)
+               else:
+                  hu=IMP.core.Harmonic(optdist, self.kappa) 
+               dps=IMP.core.DistancePairScore(hu)            
+            else: #default
+               optdist=0.0
+               if self.upperharmonic: #default
+                  hu=IMP.core.HarmonicUpperBound(optdist, self.kappa)
+               else:
+                  hu=IMP.core.Harmonic(optdist, self.kappa)               
+               dps=IMP.core.SphereDistancePairScore(hu)
+            
+            pt0=IMP.atom.Selection(last).get_selected_particles()[0]          
+            pt1=IMP.atom.Selection(first).get_selected_particles()[0]           
+            r=IMP.core.PairRestraint(dps,IMP.ParticlePair(pt0,pt1))
+            print "Adding sequence connectivity restraint between", pt0.get_name(), " and ", pt1.get_name()
+            sortedsegments_cr.add_restraint(r)
+            self.connected_intra_pairs.append((pt0,pt1))
+            self.connected_intra_pairs.append((pt1,pt0))
+
+        self.m.add_restraint(sortedsegments_cr)
+        self.m.add_restraint(unmodeledregions_cr)
+        self.sortedsegments_cr_dict[name]=sortedsegments_cr
+        self.unmodeledregions_cr_dict[name]=unmodeledregions_cr
 
 
     def add_component(self,name, chainnames, length, pdbs, 
@@ -1199,7 +1324,7 @@ class SimplifiedModel():
             
             rb=IMP.atom.create_rigid_body(rigid_parts)
             rb.set_coordinates_are_optimized(True)
-            rb.set_name(''.join(subunits)+"_rigid_body")
+            rb.set_name(''.join(str(subunits))+"_rigid_body")
             if type(coords)==tuple and len(coords)==3: rb.set_coordinates(randomize_coords(coords))
             self.rigid_bodies.append(rb)
 

@@ -1658,7 +1658,7 @@ class ConnectivityCrossLinkMS():
           particles=[]
           for prot in self.prot.get_children():
              particles+=IMP.pmi.tools.get_particles_by_resolution(prot,resolution) 
-
+        
         #fill the cross-linker pmfs
         #to accelerate the init the list listofxlinkertypes might contain only yht needed crosslinks
 
@@ -1712,12 +1712,10 @@ class ConnectivityCrossLinkMS():
               s1=IMP.atom.Selection(ps1)
               s2=IMP.atom.Selection(ps2)
             
+            
             sels=[s1,s2]
             cr = IMP.atom.create_connectivity_restraint(sels, self.expdistance,self.strength)
     
-            #hub= IMP.core.HarmonicUpperBound(self.expdistance,self.strength)
-            #df= IMP.core.SphereDistancePairScore(hub)
-            #dr= IMP.core.PairRestraint(df, (p1, p2))
             self.rs.add_restraint(cr)
             self.pairs.append((ps1,hrc1,c1,r1,ps2,hrc2,c2,r2,cr))
             
@@ -1768,9 +1766,9 @@ class ConnectivityCrossLinkMS():
             c2=p[6]
             r2=p[7]
             cr=p[8]
-            
-            for n1,p1 in enumerate(ps1):
+            for n1,p1 in enumerate(ps1):        
                 name1=hrc1[n1].get_name()
+
                 for n2,p2 in enumerate(ps2):
                   name2=hrc2[n2].get_name()                    
                   d1=IMP.core.XYZR(p1) 

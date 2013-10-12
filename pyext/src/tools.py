@@ -791,7 +791,8 @@ def get_particles_by_resolution(prot,resolution):
         resolutions.append(res)
        
     closestres=min(resolutions, key=lambda x:abs(x-resolution))
-        
+    
+    
     for p in IMP.atom.get_leaves(prot):
         if closestres==IMP.pmi.Resolution.get_resolution(IMP.pmi.Resolution(p)):  
           particles.append(p)
@@ -1512,7 +1513,7 @@ def recursive_graph(hier,graph,depth,depth_dict):
     depth=depth+1
     nameh=IMP.atom.Hierarchy(hier).get_name()
     index=str(hier.get_particle().get_index())
-    name1=nameh+"_"+index
+    name1=nameh+"|#"+index
     depth_dict[name1]=depth
     
     children=IMP.atom.Hierarchy(hier).get_children()
@@ -1526,7 +1527,7 @@ def recursive_graph(hier,graph,depth,depth_dict):
         (graph,depth,depth_dict)=recursive_graph(c,graph,depth,depth_dict)
         nameh=IMP.atom.Hierarchy(c).get_name()
         index=str(c.get_particle().get_index())
-        namec=nameh+"_"+index        
+        namec=nameh+"|#"+index        
         graph.append((name1,namec))
       
       depth=depth-1

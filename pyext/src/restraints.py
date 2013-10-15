@@ -333,9 +333,10 @@ class ExcludedVolumeResidue():
 
 class ExcludedVolumeSphere():
 
-    def __init__(self,prot,resolution=None):
+    def __init__(self,prot,resolution=None,kappa=1.0):
         self.rs = IMP.RestraintSet('excluded_volume')
         self.weight=1.0
+        self.kappa=kappa
         self.prot=prot
         self.label="None"
         self.m=self.prot.get_model()
@@ -349,7 +350,7 @@ class ExcludedVolumeSphere():
            for hier in prot.get_children():
               particles=IMP.pmi.tools.get_particles_by_resolution(hier,resolution)
               lsa.add_particles(particles)
-           evr=IMP.core.ExcludedVolumeRestraint(lsa,1.0)   
+           evr=IMP.core.ExcludedVolumeRestraint(lsa,self.kappa)   
            
                   
         self.rs.add_restraint(evr)
@@ -1787,8 +1788,17 @@ class ConnectivityCrossLinkMS():
 
 class SimplifiedCrossLinkMS():
 
-    def __init__(self,prot,restraints_file,expdistance,strength):
-
+    def __init__(self,prot,restraints_file,expdistance,strength,resolution=None, columnmapping=None, truncatedharmonic=False):
+        #columnindexes is a list of column indexes for protein1, protein2, residue1, residue2
+        #by default column 0 = protein1; column 1 = protein2; column 2 = residue1; column 3 = residue2
+        
+        if columnmapping==None:
+           columnmapping={}
+           columnmapping["Protein1"]=0
+           columnmapping["Protein2"]=1
+           columnmapping["Residue1"]=2
+           columnmapping["Residue2"]=3
+        
         self.rs=IMP.RestraintSet('data')
         self.weight=1.0
         self.prot=prot
@@ -1800,36 +1810,68 @@ class SimplifiedCrossLinkMS():
         self.expdistance=expdistance
         self.strength=strength
 
+
         #fill the cross-linker pmfs
         #to accelerate the init the list listofxlinkertypes might contain only yht needed crosslinks
-
-
+        protein1=columnmapping["Protein1"]
+        protein2=columnmapping["Protein2"]
+        residue1=columnmapping["Residue1"]
+        residue2=columnmapping["Residue2"]        
+        
+        if resolution!=None:
+          particles=[]
+          for prot in self.prot.get_children():
+             particles+=IMP.pmi.tools.get_particles_by_resolution(prot,resolution) 
+        
+        
+        
         for line in open(restraints_file):
 
             tokens=line.split()
             #skip character
             if (tokens[0]=="#"): continue
-            r1=int(tokens[2])
-            c1=tokens[0]
-            r2=int(tokens[3])
-            c2=tokens[1]
+            r1=int(tokens[residue1])
+            c1=tokens[protein1]
+            r2=int(tokens[residue2])
+            c2=tokens[protein2]
 
-            try:
-                hrc1 = [h for h in self.prot.get_children() if h.get_name()==c1][0]
-                s1=IMP.atom.Selection(hrc1, residue_index=r1)
-                p1=s1.get_selected_particles()[0]
-            except:
-                print "SimplifiedCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1,c1)
-                continue
-            try:
-                hrc2 = [h for h in self.prot.get_children() if h.get_name()==c2][0]
-                s2=IMP.atom.Selection(hrc2, residue_index=r2)
-                p2=s2.get_selected_particles()[0]
-            except:
-                print "SimplifiedCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2,c2)
-                continue
 
-            hub= IMP.core.HarmonicUpperBound(self.expdistance,self.strength)
+            hrc1 = [h for h in self.prot.get_children() if h.get_name()==c1][0]
+            s1=IMP.atom.Selection(hrc1, residue_index=r1)
+            ps1=s1.get_selected_particles()
+
+            hrc2 = [h for h in self.prot.get_children() if h.get_name()==c2][0]
+            s2=IMP.atom.Selection(hrc2, residue_index=r2)
+            ps2=s2.get_selected_particles()
+       
+            if resolution!=None: 
+              #get the intersection to remove redundant particles
+              ps1=(list(set(ps1) & set(particles)))
+              ps2=(list(set(ps2) & set(particles)))
+              
+            if len(ps1)>1:
+               print "SimplifiedCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles"  % (r1,c1)
+               exit()
+            elif len(ps1)==0:
+               print "SimplifiedCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1,c1)
+               continue               
+
+            if len(ps2)>1:
+               print "SimplifiedCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles"  % (r2,c2)
+               exit()
+            elif len(ps2)==0:
+               print "SimplifiedCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2,c2)
+               continue 
+
+            
+            p1=ps1[0]
+            p2=ps2[0]
+
+            if truncatedharmonic:
+                #use truncated harmonic to account for outliers
+                hub=IMP.core.TruncatedHarmonicBound(12.0,1.0/25.0,15.0,5)
+            else: 
+                hub= IMP.core.HarmonicUpperBound(self.expdistance,self.strength)
             df= IMP.core.SphereDistancePairScore(hub)
             dr= IMP.core.PairRestraint(df, (p1, p2))
             self.rs.add_restraint(dr)

@@ -763,20 +763,40 @@ class SimplifiedModel():
         self.prot.add_child(protein_h)
 
     
-    def add_component_pdb(self,name,pdbname,chain,resolutions,color):
+    def add_component_pdb(self,name,pdbname,chain,resolutions,color,resrange=None):
+        #resrange specify the residue range to extract from the pdb
+        #it is a tuple (beg,end). If not specified, it takes all residues belonging to
+        # the specified chain.
+         
         protein_h=self.hier_dict[name]
         
         t=IMP.atom.read_pdb( pdbname, self.m, 
-        IMP.atom.AndPDBSelector(IMP.atom.ChainPDBSelector(chain), 
-                                                                      IMP.atom.ATOMPDBSelector()))
+        IMP.atom.AndPDBSelector(IMP.atom.ChainPDBSelector(chain),IMP.atom.ATOMPDBSelector()))
         
         #find start and end indexes
+        
         start = IMP.atom.Residue(t.get_children()[0].get_children()[0]).get_index()
         end   = IMP.atom.Residue(t.get_children()[0].get_children()[-1]).get_index()
 
+          
+
         c=IMP.atom.Chain(IMP.atom.get_by_type(t, IMP.atom.CHAIN_TYPE)[0])
+        
+        if resrange!=None:
+           if resrange[0]>start: start=resrange[0]
+           if resrange[1]<end:   end=resrange[1] 
+        
+        sel=IMP.atom.Selection(c,residue_indexes=range(start,end+1),atom_type=IMP.atom.AT_CA)
+        ps=sel.get_selected_particles()
+        c0=IMP.atom.Chain.setup_particle(IMP.Particle(self.m),"X")
+        
+        for ch in ps:
+            par=IMP.atom.Atom(ch).get_parent()
+            c0.add_child(par)
+    
+        
         for r in resolutions:
-            s=IMP.atom.create_simplified_along_backbone(c, r)
+            s=IMP.atom.create_simplified_along_backbone(c0, r)
             chil=s.get_children()
             s0=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
             s0.set_name(name+'_%i-%i' % (start,end)+"_Res:"+str(r))
@@ -1305,22 +1325,25 @@ class SimplifiedModel():
 
         elif type(subunits[0])==tuple or type(subunits[0])==list():
             rigid_parts = []
-            print '#####',subunits, [name[0] for name in subunits]
-            for prt in self.prot.get_children():
-                if prt.get_name() in [name[0] for name in subunits]:
-                    prt_index=[name[0] for name in subunits].index(prt.get_name())
-                    bounds=subunits[prt_index][1]
-                    s= IMP.atom.Selection(prt, residue_indexes=range(bounds[0],bounds[1]+1))
+            #print '#####',subunits, [name[0] for name in subunits]
+            for subunit in subunits:
+                    print "WWWWW",subunit
+                    name=subunit[0]
+                    bounds=subunit[1]
+                    s= IMP.atom.Selection(self.prot,molecule=name, residue_indexes=range(bounds[0],bounds[1]+1))
                     rigid_parts += s.get_selected_particles()
-                    print prt,s,'\n\t',s.get_selected_particles()
-                    for f in prt.get_children(): print '\t\t',f
-                    print
+                    
+                    for p in s.get_selected_particles():
+                        print p, IMP.atom.Fragment(p).get_parent()
+                    
+                    #print prt,s,'\n\t',s.get_selected_particles()
+                    #for f in prt.get_children(): print '\t\t',f
+                    #print
             
             if not nonrigidmembers:
                for p in rigid_parts:
                    if p in self.floppy_bodies:
                       rigid_parts.remove(p)        
-            
             
             rb=IMP.atom.create_rigid_body(rigid_parts)
             rb.set_coordinates_are_optimized(True)

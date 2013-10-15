@@ -763,7 +763,7 @@ class SimplifiedModel():
         self.prot.add_child(protein_h)
 
     
-    def add_component_pdb(self,name,pdbname,chain,resolutions,color,resrange=None):
+    def add_component_pdb(self,name,pdbname,chain,resolutions,color,resrange=None,offset=0,show=False):
         #resrange specify the residue range to extract from the pdb
         #it is a tuple (beg,end). If not specified, it takes all residues belonging to
         # the specified chain.
@@ -790,10 +790,15 @@ class SimplifiedModel():
         ps=sel.get_selected_particles()
         c0=IMP.atom.Chain.setup_particle(IMP.Particle(self.m),"X")
         
-        for ch in ps:
-            par=IMP.atom.Atom(ch).get_parent()
+        for p in ps:
+            par=IMP.atom.Atom(p).get_parent()
+            ri=IMP.atom.Residue(par).get_index()
+            IMP.atom.Residue(par).set_index(ri+offset)
             c0.add_child(par)
-    
+        
+        if show:
+           IMP.atom.show_molecular_hierarchy(c0)
+        
         
         for r in resolutions:
             s=IMP.atom.create_simplified_along_backbone(c0, r)

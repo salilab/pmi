@@ -350,6 +350,7 @@ class Output():
         #this is a new stat file that should be less 
         #space greedy!
         #listofsummedobjects must be in the form [([obj1,obj2,obj3,obj4...],label)]
+        #extralabels
         
         if listofsummedobjects==None: listofsummedobjects=[]
         if extralabels==None: extralabels=[]

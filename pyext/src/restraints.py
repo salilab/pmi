@@ -1788,7 +1788,7 @@ class ConnectivityCrossLinkMS():
 
 class SimplifiedCrossLinkMS():
 
-    def __init__(self,prot,restraints_file,expdistance,strength,resolution=None, columnmapping=None, truncatedharmonic=False):
+    def __init__(self,prot,restraints_file,expdistance,strength,resolution=None, columnmapping=None):
         #columnindexes is a list of column indexes for protein1, protein2, residue1, residue2
         #by default column 0 = protein1; column 1 = protein2; column 2 = residue1; column 3 = residue2
         
@@ -1804,6 +1804,7 @@ class SimplifiedCrossLinkMS():
         self.prot=prot
         self.label="None"
         self.pairs=[]
+        self.already_added_pairs={}
         self.m=self.prot.get_model()
 
         self.outputlevel="low"
@@ -1866,17 +1867,26 @@ class SimplifiedCrossLinkMS():
             
             p1=ps1[0]
             p2=ps2[0]
-
-            if truncatedharmonic:
-                #use truncated harmonic to account for outliers
-                hub=IMP.core.TruncatedHarmonicBound(12.0,1.0/25.0,15.0,5)
-            else: 
-                hub= IMP.core.HarmonicUpperBound(self.expdistance,self.strength)
-            df= IMP.core.SphereDistancePairScore(hub)
-            dr= IMP.core.PairRestraint(df, (p1, p2))
-            self.rs.add_restraint(dr)
-            self.pairs.append((p1,p2,dr,r1,c1,r2,c2))
-
+            
+            if (p1,p2) in self.already_added_pairs:
+               dr=self.already_added_pairs[(p1,p2)]
+               weight=dr.get_weight()
+               dr.set_weight(weight+1.0)
+               print "SimplifiedCrossLinkMS> crosslink %d %s %d %s was already found, adding 1.0 to the weight, weight is now %d"  % (r1,c1,r2,c2,weight+1.0)
+               continue
+            
+            else:
+                        
+ 
+              hub= IMP.core.HarmonicUpperBound(self.expdistance,self.strength)
+              df= IMP.core.SphereDistancePairScore(hub)
+              dr= IMP.core.PairRestraint(df, (p1, p2))
+              dr.set_name(c1+":"+str(r1)+"-"+c2+":"+str(r2))
+            
+              self.rs.add_restraint(dr)
+              self.pairs.append((p1,p2,dr,r1,c1,r2,c2))
+              self.already_added_pairs[(p1,p2)]=dr
+              self.already_added_pairs[(p2,p1)]=dr
 
     def set_label(self,label):
         self.label=label
@@ -1943,6 +1953,187 @@ class SimplifiedCrossLinkMS():
             output["SimplifiedCrossLinkMS_Distance_"+label]=str(IMP.core.get_distance(d0,d1))
 
         return output
+
+
+###############################################################
+
+
+class SigmoidCrossLinkMS():
+
+    def __init__(self,prot,restraints_file,inflection,slope,amplitude,resolution=None, columnmapping=None):
+        #columnindexes is a list of column indexes for protein1, protein2, residue1, residue2
+        #by default column 0 = protein1; column 1 = protein2; column 2 = residue1; column 3 = residue2
+        
+        if columnmapping==None:
+           columnmapping={}
+           columnmapping["Protein1"]=0
+           columnmapping["Protein2"]=1
+           columnmapping["Residue1"]=2
+           columnmapping["Residue2"]=3
+        
+        self.rs=IMP.RestraintSet('data')
+        self.weight=1.0
+        self.prot=prot
+        self.label="None"
+        self.pairs=[]
+        self.already_added_pairs={}
+        self.m=self.prot.get_model()
+
+        self.outputlevel="low"
+
+        #small linear contribution for long range
+        h=IMP.core.Linear(0,0.05)
+        dps2=IMP.core.DistancePairScore(h)
+
+
+        #fill the cross-linker pmfs
+        #to accelerate the init the list listofxlinkertypes might contain only yht needed crosslinks
+        protein1=columnmapping["Protein1"]
+        protein2=columnmapping["Protein2"]
+        residue1=columnmapping["Residue1"]
+        residue2=columnmapping["Residue2"]        
+        
+        if resolution!=None:
+          particles=[]
+          for prot in self.prot.get_children():
+             particles+=IMP.pmi.tools.get_particles_by_resolution(prot,resolution) 
+        
+        
+        
+        for line in open(restraints_file):
+
+            tokens=line.split()
+            #skip character
+            if (tokens[0]=="#"): continue
+            r1=int(tokens[residue1])
+            c1=tokens[protein1]
+            r2=int(tokens[residue2])
+            c2=tokens[protein2]
+
+
+            #hrc1 = [h for h in self.prot.get_children() if h.get_name()==c1][0]
+            s1=IMP.atom.Selection(self.prot,molecule=c1, residue_index=r1)
+            ps1=s1.get_selected_particles()
+
+            #hrc2 = [h for h in self.prot.get_children() if h.get_name()==c2][0]
+            s2=IMP.atom.Selection(self.prot,molecule=c2, residue_index=r2)
+            ps2=s2.get_selected_particles()
+       
+            if resolution!=None: 
+              #get the intersection to remove redundant particles
+              ps1=(list(set(ps1) & set(particles)))
+              ps2=(list(set(ps2) & set(particles)))
+              
+            if len(ps1)>1:
+               print "SigmoidCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s"  % (r1,c1,str(ps1))
+               exit()
+            elif len(ps1)==0:
+               print "SigmoidCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1,c1)
+               continue               
+
+            if len(ps2)>1:
+               print "SigmoidCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s"  % (r2,c2,str(ps2))
+               exit()
+            elif len(ps2)==0:
+               print "SigmoidCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2,c2)
+               continue 
+
+            
+            p1=ps1[0]
+            p2=ps2[0]
+            
+            if (p1,p2) in self.already_added_pairs:
+               dr=self.already_added_pairs[(p1,p2)]
+               weight=dr.get_weight()
+               dr.increment_amplitude(amplitude)
+               print "SigmoidCrossLinkMS> crosslink %d %s %d %s was already found, adding %d to the amplitude, amplitude is now %d"  % (r1,c1,r2,c2,amplitude,dr.get_amplitude())
+               dr.set_name(c1+":"+str(r1)+"-"+c2+":"+str(r2)+"-ampl:"+str(dr.get_amplitude()))
+               continue
+            
+            else:
+                        
+ 
+              dr= IMP.pmi.SigmoidRestraintSphere(self.m, p1, p2, inflection, slope, amplitude)
+              dr.set_name(c1+":"+str(r1)+"-"+c2+":"+str(r2)+"-ampl:"+str(dr.get_amplitude()))
+            
+              self.rs.add_restraint(dr)
+              
+              pr=IMP.core.PairRestraint(dps2,IMP.ParticlePair(p1,p2)) 
+
+              self.rs.add_restraint(pr)
+              
+              self.pairs.append((p1,p2,dr,pr,r1,c1,r2,c2))
+              self.already_added_pairs[(p1,p2)]=dr
+              self.already_added_pairs[(p2,p1)]=dr
+
+    def set_label(self,label):
+        self.label=label
+
+    def add_to_model(self):
+        self.m.add_restraint(self.rs)
+
+    def get_hierarchies(self):
+        return self.prot
+
+    def get_restraint_sets(self):
+        return self.rs
+        
+    def get_restraint(self):
+        return self.rs        
+
+    def get_restraints(self):
+        rlist=[]
+        for r in self.rs.get_restraints():
+            rlist.append(IMP.core.PairRestraint.get_from(r))
+        return rlist
+    
+    def get_particle_pairs(self):
+        ppairs=[]
+        for i in range(len(self.pairs)):        
+            p0=self.pairs[i][0]
+            p1=self.pairs[i][1]
+            ppairs.append((p0,p1))
+        return ppairs            
+            
+    def set_output_level(self,level="low"):
+            #this might be "low" or "high"
+        self.outputlevel=level
+
+    def set_weight(self,weight):
+        self.weight=weight
+        self.rs.set_weight(weight)
+
+    def get_output(self):
+        #content of the crosslink database pairs
+        #self.pairs.append((p1,p2,dr,r1,c1,r2,c2))
+        self.m.update()
+
+        output={}
+        score=self.weight*self.rs.unprotected_evaluate(None)
+        output["_TotalScore"]=str(score)            
+        output["SigmoidCrossLinkMS_Score_"+self.label]=str(score)
+        for i in range(len(self.pairs)):
+
+            p0=self.pairs[i][0]
+            p1=self.pairs[i][1]
+            crosslinker='standard'
+            ln=self.pairs[i][2]
+            pr=self.pairs[i][3]
+            resid1=self.pairs[i][4]
+            chain1=self.pairs[i][5]
+            resid2=self.pairs[i][6]
+            chain2=self.pairs[i][7]
+
+            label=str(resid1)+":"+chain1+"_"+str(resid2)+":"+chain2
+            output["SigmoidCrossLinkMS_Score_"+crosslinker+"_"+label]=str(self.weight*ln.unprotected_evaluate(None))
+            output["SigmoidCrossLinkMS_Linear_Score_"+crosslinker+"_"+label]=str(self.weight*pr.unprotected_evaluate(None))
+            d0=IMP.core.XYZ(p0)
+            d1=IMP.core.XYZ(p1)
+            output["SigmoidCrossLinkMS_Distance_"+label]=str(IMP.core.get_distance(d0,d1))
+
+        return output
+
+
 
 ##############################################################
 

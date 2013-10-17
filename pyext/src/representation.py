@@ -738,7 +738,7 @@ class SimplifiedModel():
     # amino acids.
 
 
-    def shuffle_configuration(self,bounding_box_length=100.,translate=True):
+    def shuffle_configuration(self,bounding_box_length=300.,translate=True):
         "shuffle configuration, used to restart the optimization"
         "it only works if rigid bodies were initialized"
         if len(self.rigid_bodies)==0:
@@ -763,7 +763,7 @@ class SimplifiedModel():
         self.prot.add_child(protein_h)
 
     
-    def add_component_pdb(self,name,pdbname,chain,resolutions,color,resrange=None,offset=0,show=False):
+    def add_component_pdb(self,name,pdbname,chain,resolutions,color,resrange=None,offset=0,show=False,isnucleicacid=False):
         #resrange specify the residue range to extract from the pdb
         #it is a tuple (beg,end). If not specified, it takes all residues belonging to
         # the specified chain.
@@ -772,29 +772,38 @@ class SimplifiedModel():
         
         t=IMP.atom.read_pdb( pdbname, self.m, 
         IMP.atom.AndPDBSelector(IMP.atom.ChainPDBSelector(chain),IMP.atom.ATOMPDBSelector()))
-        
+
         #find start and end indexes
         
         start = IMP.atom.Residue(t.get_children()[0].get_children()[0]).get_index()
         end   = IMP.atom.Residue(t.get_children()[0].get_children()[-1]).get_index()
 
-          
-
         c=IMP.atom.Chain(IMP.atom.get_by_type(t, IMP.atom.CHAIN_TYPE)[0])
+
         
         if resrange!=None:
            if resrange[0]>start: start=resrange[0]
            if resrange[1]<end:   end=resrange[1] 
         
-        sel=IMP.atom.Selection(c,residue_indexes=range(start,end+1),atom_type=IMP.atom.AT_CA)
+        
+        if not isnucleicacid:
+           #do what you have to do for proteins
+           sel=IMP.atom.Selection(c,residue_indexes=range(start,end+1),atom_type=IMP.atom.AT_CA)
+
+        else:
+           #do what you have to do for nucleic-acids
+           sel=IMP.atom.Selection(c,residue_indexes=range(start,end+1),atom_type=IMP.atom.AT_P)
+         
         ps=sel.get_selected_particles()
         c0=IMP.atom.Chain.setup_particle(IMP.Particle(self.m),"X")
-        
+
         for p in ps:
             par=IMP.atom.Atom(p).get_parent()
             ri=IMP.atom.Residue(par).get_index()
             IMP.atom.Residue(par).set_index(ri+offset)
             c0.add_child(par)
+        start=start+offset
+        end=end+offset
         
         if show:
            IMP.atom.show_molecular_hierarchy(c0)
@@ -818,7 +827,6 @@ class SimplifiedModel():
                     clr=IMP.display.get_rgb_color(colors[pdb_part_count])
                 IMP.display.Colored.setup_particle(prt,clr)
 
-       
 
 
     def add_component_beads(self,name,ds,colors):
@@ -855,7 +863,7 @@ class SimplifiedModel():
         sortedsegments_cr=IMP.RestraintSet("sortedsegments")    
         protein_h=protein_h=self.hier_dict[name]    
         SortedSegments = []
-        pbr=tools.get_particles_by_resolution(protein_h,1.0)
+        pbr=tools.get_particles_by_resolution(protein_h,10.0)
         
         for chl in protein_h.get_children():
             start = IMP.atom.get_leaves(chl)[0]
@@ -1310,7 +1318,33 @@ class SimplifiedModel():
         #sometimes, we know about structure of an interaction
         #and here we make such PPIs rigid
         randomize_coords = lambda c: tuple(1.*(nrrand(3)-0.5)+array(c))
-
+        
+        rigid_parts=[]
+        for s in subunits:
+            if type(s)==type(tuple()) and len(s)==2:
+               sel=IMP.atom.Selection(self.prot,molecule=s[0],residue_indexes=range(s[1][0],s[1][1]+1))
+               
+               ps=sel.get_selected_particles()
+               for p in ps: 
+                   print s,p
+               rigid_parts+=sel.get_selected_particles()
+               
+               
+            elif type(s)==type(str()):
+               sel=IMP.atom.Selection(self.prot,molecule=s)
+               rigid_parts+=sel.get_selected_particles()
+               ps=sel.get_selected_particles()
+               for p in ps: 
+                   print s,p        
+        
+        
+        rb=IMP.atom.create_rigid_body(rigid_parts)
+        rb.set_coordinates_are_optimized(True)
+        rb.set_name(''.join(str(subunits))+"_rigid_body")        
+        if type(coords)==tuple and len(coords)==3: rb.set_coordinates(randomize_coords(coords))
+        self.rigid_bodies.append(rb)
+            
+        '''
         if type(subunits[0])==str:
             rigid_parts = []
             for prt in self.prot.get_children():
@@ -1355,7 +1389,7 @@ class SimplifiedModel():
             rb.set_name(''.join(str(subunits))+"_rigid_body")
             if type(coords)==tuple and len(coords)==3: rb.set_coordinates(randomize_coords(coords))
             self.rigid_bodies.append(rb)
-
+         '''
 
     def set_floppy_bodies(self):
         for p in self.floppy_bodies:

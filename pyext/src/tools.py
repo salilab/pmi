@@ -478,7 +478,8 @@ class ProcessOutput():
         return self.klist
         
     def get_fields(self,fields):
-         
+           
+           
            outdict={}
            for field in fields:
                outdict[field]=[]
@@ -503,7 +504,6 @@ class ProcessOutput():
     def plot_fields(self,fields):
         import matplotlib.pyplot as plt
         
-        
         plt.rc('lines', linewidth=4)
         fig, axs  = plt.subplots(nrows=len(fields))
         
@@ -515,8 +515,12 @@ class ProcessOutput():
         for key in fields:
            x = range(len(fields[key]))
            y=[float(y) for y in fields[key]]
-           axs[n].plot(x,y)
-           axs[n].set_title(key)
+           if len(fields)>1:
+              axs[n].plot(x,y)
+              axs[n].set_title(key)
+           else:
+              axs.plot(x,y)
+              axs.set_title(key)
            
            n+=1
 

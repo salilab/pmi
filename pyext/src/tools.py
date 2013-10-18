@@ -216,6 +216,9 @@ class Output():
         imprmf.save_frame(self.dictionary_rmfs[name],nframe)
         self.dictionary_rmfs[name].flush()
 
+    def close_rmf(self,name):
+        del self.dictionary_rmfs[name]
+
     def write_rmfs(self,nframe):
         for rmf in self.dictionary_rmfs.keys():
             self.write_rmf(rmf,nframe)

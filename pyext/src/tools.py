@@ -938,6 +938,33 @@ def get_random_data_point(expected_value,ntrials,sensitivity,sigma,outlierprob,b
 #####Analysis tools
 ############################
 
+
+#--------------------------------
+#transform rmf-to-pdb
+
+def rmf_to_pdb(rmffilename, frame):
+   import RMF
+   import IMP.rmf
+   fh = RMF.open_rmf_file(rmffilename)
+   traverse(fh.get_root_node())
+   
+def traverse(n):
+   
+   print "#####"
+   
+   c = n.get_children()
+   
+   
+   if len(c) == 0:
+       print "here"
+       print IMP.atom.get_pdb_string(n)
+   else:
+       for ch in c:
+           print "there", ch
+           traverse(c)
+
+
+
 # ----------------------------------
 class GetModelDensity():
     def __init__(self, prot, dens_thresh=0.1, margin=20., voxel=5.):

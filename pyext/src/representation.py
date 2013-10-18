@@ -732,6 +732,7 @@ class SimplifiedModel():
         self.prot=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
         self.connected_intra_pairs=[]
         self.hier_dict={}
+        self.hier_geometry_pairs={}
 
     # create a protein, represented as a set of connected balls of appropriate
     # radii and number, chose by the resolution parameter and the number of
@@ -828,7 +829,6 @@ class SimplifiedModel():
                 IMP.display.Colored.setup_particle(prt,clr)
 
 
-
     def add_component_beads(self,name,ds,colors):
         from math import pi
         protein_h=self.hier_dict[name]    
@@ -857,7 +857,25 @@ class SimplifiedModel():
             ptem.set_radius(radius)
             self.floppy_bodies.append(p)
             protein_h.add_child(h)
-    
+
+    def setup_component_geometry(self,name,color=0):
+        #this function stores all particle pairs
+        #ordered by residue number, to be used 
+        #to construct backbone traces
+        self.hier_geometry_pairs[name]=[]
+        protein_h=protein_h=self.hier_dict[name]
+        pbr=tools.get_particles_by_resolution(protein_h,1.0)
+        
+        sortedparticles=[]
+        
+        for p in pbr:
+            startres = IMP.atom.Fragment(p).get_residue_indexes()[0]
+            sortedparticles.append((p,startres))
+            sortedparticles = sorted(sortedparticles, key=itemgetter(1))
+            
+        for n in range(len(sortedparticles)-1):
+            self.hier_geometry_pairs[name].append((sortedparticles[n][0],sortedparticles[n+1][0]))
+        
     def setup_component_sequence_connectivity(self,name):
         unmodeledregions_cr=IMP.RestraintSet("unmodeledregions")
         sortedsegments_cr=IMP.RestraintSet("sortedsegments")    
@@ -1488,3 +1506,16 @@ class SimplifiedModel():
             print "Drawing hierarchy graph for "+c.get_name()
             tools.get_graph_from_hierarchy(c)
             
+
+    def get_geometries(self):
+        #create segments at the lowest resolution
+        seggeos=[]
+        for name in self.hier_geometry_pairs:
+            for pt in self.hier_geometry_pairs[name]:
+                p1=pt[0]
+                p2=pt[1]
+                coor1=IMP.core.XYZ(p1).get_coordinates()
+                coor2=IMP.core.XYZ(p2).get_coordinates()
+                seg=IMP.algebra.Segment3D(coor1,coor2)
+                seggeos.append(IMP.display.SegmentGeometry(seg))
+        return seggeos

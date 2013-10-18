@@ -202,6 +202,12 @@ class Output():
         for o in objectlist:
             rs=o.get_restraint()
             imprmf.add_restraints(self.dictionary_rmfs[name],rs.get_restraints())
+
+    def add_geometries_to_rmf(self,name,objectlist):
+        for o in objectlist:
+            geos=o.get_geometries()
+            imprmf.add_geometries(self.dictionary_rmfs[name],geos)
+
     
     def add_particle_pair_from_restraints_to_rmf(self,name,objectlist):
         for o in objectlist:
@@ -530,6 +536,7 @@ class ProcessOutput():
         # Tweak spacing between subplots to prevent labels from overlapping
         plt.subplots_adjust(hspace=0.3)
         plt.show()     
+
 
 class Variance():
     def __init__(self, model, tau, niter, prot, th_profile, write_data=False):

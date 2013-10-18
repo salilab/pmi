@@ -1982,7 +1982,7 @@ class SigmoidCrossLinkMS():
         self.outputlevel="low"
 
         #small linear contribution for long range
-        h=IMP.core.Linear(0,0.05)
+        h=IMP.core.Linear(0,0.07)
         dps2=IMP.core.DistancePairScore(h)
 
 

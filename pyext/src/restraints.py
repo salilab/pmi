@@ -1972,6 +1972,8 @@ class SigmoidCrossLinkMS():
            columnmapping["Residue2"]=3
         
         self.rs=IMP.RestraintSet('data')
+        self.rslin=IMP.RestraintSet('data')
+        self.rssig=IMP.RestraintSet('data')
         self.weight=1.0
         self.prot=prot
         self.label="None"
@@ -2057,10 +2059,12 @@ class SigmoidCrossLinkMS():
               dr.set_name(c1+":"+str(r1)+"-"+c2+":"+str(r2)+"-ampl:"+str(dr.get_amplitude()))
             
               self.rs.add_restraint(dr)
+              self.rssig.add_restraint(dr)
               
               pr=IMP.core.PairRestraint(dps2,IMP.ParticlePair(p1,p2)) 
 
               self.rs.add_restraint(pr)
+              self.rslin.add_restraint(pr)
               
               self.pairs.append((p1,p2,dr,pr,r1,c1,r2,c2))
               self.already_added_pairs[(p1,p2)]=dr
@@ -2112,6 +2116,8 @@ class SigmoidCrossLinkMS():
         score=self.weight*self.rs.unprotected_evaluate(None)
         output["_TotalScore"]=str(score)            
         output["SigmoidCrossLinkMS_Score_"+self.label]=str(score)
+        output["SigmoidCrossLinkMS_Sigmoidal_Score_"+self.label]=self.rssig.unprotected_evaluate(None)   
+        output["SigmoidCrossLinkMS_Linear_Score_"+self.label]=self.rslin.unprotected_evaluate(None)
         for i in range(len(self.pairs)):
 
             p0=self.pairs[i][0]
@@ -2127,8 +2133,8 @@ class SigmoidCrossLinkMS():
             label=str(resid1)+":"+chain1+"_"+str(resid2)+":"+chain2
             output["SigmoidCrossLinkMS_Score_"+crosslinker+"_"+label]=str(self.weight*ln.unprotected_evaluate(None))
             output["SigmoidCrossLinkMS_Linear_Score_"+crosslinker+"_"+label]=str(self.weight*pr.unprotected_evaluate(None))
-            d0=IMP.core.XYZ(p0)
-            d1=IMP.core.XYZ(p1)
+            d0=IMP.core.XYZR(p0)
+            d1=IMP.core.XYZR(p1)
             output["SigmoidCrossLinkMS_Distance_"+label]=str(IMP.core.get_distance(d0,d1))
 
         return output

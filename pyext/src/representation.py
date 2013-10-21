@@ -733,6 +733,7 @@ class SimplifiedModel():
         self.connected_intra_pairs=[]
         self.hier_dict={}
         self.hier_geometry_pairs={}
+        self.elements={}
 
     # create a protein, represented as a set of connected balls of appropriate
     # radii and number, chose by the resolution parameter and the number of
@@ -762,6 +763,7 @@ class SimplifiedModel():
         protein_h.set_name(name)
         self.hier_dict[name]=protein_h
         self.prot.add_child(protein_h)
+        self.elements[name]=[]
 
     
     def add_component_pdb(self,name,pdbname,chain,resolutions,color,resrange=None,offset=0,show=False,isnucleicacid=False):
@@ -806,6 +808,10 @@ class SimplifiedModel():
         start=start+offset
         end=end+offset
         
+        
+        self.elements[name].append((start,end,pdbname.split("/")[-1]+":"+chain,"pdb"))
+        
+        
         if show:
            IMP.atom.show_molecular_hierarchy(c0)
         
@@ -834,6 +840,7 @@ class SimplifiedModel():
         protein_h=self.hier_dict[name]    
         for n,dss in enumerate(ds):
             ds_frag=(dss[0],dss[1])
+            self.elements[name].append((dss[0],dss[1]," ","bead"))
             prt=IMP.Particle(self.m)
             h=IMP.atom.Fragment.setup_particle(prt)
             h.set_residue_indexes(range(ds_frag[0],ds_frag[1]+1))
@@ -1519,3 +1526,85 @@ class SimplifiedModel():
                 seg=IMP.algebra.Segment3D(coor1,coor2)
                 seggeos.append(IMP.display.SegmentGeometry(seg))
         return seggeos
+        
+    def draw_hierarchy_composition(self):
+        from matplotlib import pyplot
+        import matplotlib as mpl
+        
+
+
+        
+        ks=self.elements.keys()
+        ks.sort()
+ 
+        max=0
+        for k in self.elements:
+            for l in self.elements[k]:
+                if l[1]>max: max=l[1]
+        
+        
+        for k in ks:
+            list=sorted(self.elements[k], key=itemgetter(0))
+            endres=list[-1][1]
+            fig = pyplot.figure(figsize=(26.0*float(endres)/max,2))
+            ax = fig.add_axes([0.05, 0.475, 0.9, 0.15])
+            #ax = fig.add_axes([0.05, 0.475, 0.9, 0.15])
+            
+            # Set the colormap and norm to correspond to the data for which
+            # the colorbar will be used.
+            cmap = mpl.cm.cool
+            norm = mpl.colors.Normalize(vmin=5, vmax=10)
+    
+
+    
+            
+            
+            bounds=[1]
+            colors=['white']
+            
+            
+            for l in list:
+                firstres=l[0]
+                lastres=l[1]
+                if l[3]=="pdb": colors.append("#3366CC")
+                if l[3]=="bead": colors.append("#33CCFF")                
+                bounds.append(l[0])
+
+            bounds.append(endres)
+            
+            cmap = mpl.colors.ListedColormap(colors)
+            cmap.set_over('0.25')
+            cmap.set_under('0.75')
+
+    
+            norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
+            cb2 = mpl.colorbar.ColorbarBase(ax, cmap=cmap,
+                                     norm=norm,
+                                     # to use 'extend', you must
+                                     # specify two extra boundaries:
+                                     boundaries=bounds,
+                                     ticks=bounds, # optional
+                                     spacing='proportional',
+                                     orientation='horizontal')
+            
+            npdb=0
+            for l in list:  
+                if l[3]=="pdb": 
+                   npdb+=1                   
+                   mid=1.0/endres*float(l[0])
+                   #t =ax.text(mid, float(npdb-1)/2.0+1.5, l[2], ha="left", va="center", rotation=0,
+                   #size=10)
+                
+                   #t=ax.annotate(l[0],2)
+                
+                
+                   ax.annotate(l[2], xy=(mid, 1),  xycoords='axes fraction',
+                   xytext=(mid+0.025, float(npdb-1)/2.0+1.5), textcoords='axes fraction',
+                   arrowprops=dict(arrowstyle="->",
+                                connectionstyle="angle,angleA=0,angleB=90,rad=10"),
+                   )
+            t=ax.text(0, 0.5, k, ha="right", va="center", rotation=0,
+                size=15)
+            cb2.add_lines(bounds,["black"]*len(bounds),[1]*len(bounds))
+            #cb2.set_label(k)   
+            pyplot.show()

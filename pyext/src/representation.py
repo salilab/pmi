@@ -788,18 +788,15 @@ class SimplifiedModel():
            if resrange[0]>start: start=resrange[0]
            if resrange[1]<end:   end=resrange[1] 
         
-        sel=IMP.atom.Selection(c,residue_indexes=range(start,end+1))
         
-        '''
         if not isnucleicacid:
            #do what you have to do for proteins
-           ,atom_type=IMP.atom.AT_CA)
+           sel=IMP.atom.Selection(c,residue_indexes=range(start,end+1),atom_type=IMP.atom.AT_CA)
 
         else:
            #do what you have to do for nucleic-acids
            sel=IMP.atom.Selection(c,residue_indexes=range(start,end+1),atom_type=IMP.atom.AT_P)
-        '''
-        
+         
         ps=sel.get_selected_particles()
         c0=IMP.atom.Chain.setup_particle(IMP.Particle(self.m),"X")
 
@@ -820,11 +817,7 @@ class SimplifiedModel():
         
         
         for r in resolutions:
-            if r==0:
-               #use atomistic representation
-               s=c0
-            else:
-               s=IMP.atom.create_simplified_along_backbone(c0, r)
+            s=IMP.atom.create_simplified_along_backbone(c0, r)
             chil=s.get_children()
             s0=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
             s0.set_name(name+'_%i-%i' % (start,end)+"_Res:"+str(r))

@@ -788,15 +788,18 @@ class SimplifiedModel():
            if resrange[0]>start: start=resrange[0]
            if resrange[1]<end:   end=resrange[1] 
         
+        sel=IMP.atom.Selection(c,residue_indexes=range(start,end+1))
         
+        '''
         if not isnucleicacid:
            #do what you have to do for proteins
-           sel=IMP.atom.Selection(c,residue_indexes=range(start,end+1),atom_type=IMP.atom.AT_CA)
+           ,atom_type=IMP.atom.AT_CA)
 
         else:
            #do what you have to do for nucleic-acids
            sel=IMP.atom.Selection(c,residue_indexes=range(start,end+1),atom_type=IMP.atom.AT_P)
-         
+        '''
+        
         ps=sel.get_selected_particles()
         c0=IMP.atom.Chain.setup_particle(IMP.Particle(self.m),"X")
 
@@ -817,7 +820,11 @@ class SimplifiedModel():
         
         
         for r in resolutions:
-            s=IMP.atom.create_simplified_along_backbone(c0, r)
+            if r==0:
+               #use atomistic representation
+               s=c0
+            else:
+               s=IMP.atom.create_simplified_along_backbone(c0, r)
             chil=s.get_children()
             s0=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
             s0.set_name(name+'_%i-%i' % (start,end)+"_Res:"+str(r))
@@ -1546,7 +1553,7 @@ class SimplifiedModel():
         for k in ks:
             list=sorted(self.elements[k], key=itemgetter(0))
             endres=list[-1][1]
-            fig = pyplot.figure(figsize=(26.0*float(endres)/max,2))
+            fig = pyplot.figure(figsize=(26.0*float(endres)/max+2,2))
             ax = fig.add_axes([0.05, 0.475, 0.9, 0.15])
             #ax = fig.add_axes([0.05, 0.475, 0.9, 0.15])
             
@@ -1566,8 +1573,8 @@ class SimplifiedModel():
             for l in list:
                 firstres=l[0]
                 lastres=l[1]
-                if l[3]=="pdb": colors.append("#3366CC")
-                if l[3]=="bead": colors.append("#33CCFF")                
+                if l[3]=="pdb": colors.append("#99CCFF")
+                if l[3]=="bead": colors.append("#FFFF99")                
                 bounds.append(l[0])
 
             bounds.append(endres)
@@ -1587,6 +1594,8 @@ class SimplifiedModel():
                                      spacing='proportional',
                                      orientation='horizontal')
             
+            extra_artists=[]
+            
             npdb=0
             for l in list:  
                 if l[3]=="pdb": 
@@ -1598,13 +1607,52 @@ class SimplifiedModel():
                    #t=ax.annotate(l[0],2)
                 
                 
-                   ax.annotate(l[2], xy=(mid, 1),  xycoords='axes fraction',
+                   t=ax.annotate(l[2], xy=(mid, 1),  xycoords='axes fraction',
                    xytext=(mid+0.025, float(npdb-1)/2.0+1.5), textcoords='axes fraction',
                    arrowprops=dict(arrowstyle="->",
                                 connectionstyle="angle,angleA=0,angleB=90,rad=10"),
                    )
-            t=ax.text(0, 0.5, k, ha="right", va="center", rotation=0,
+                   extra_artists.append(t)
+            
+            #set the title of the bar
+            title=ax.text(-0.005, 0.5, k, ha="right", va="center", rotation=90,
                 size=15)
+            
+            extra_artists.append(title)
+            
+            #changing the xticks labels
+
+            labels=len(bounds)*[" "]
+            
+            ax.set_xticklabels(labels)
+            
+            mid=1.0/endres*float(bounds[0])
+            t=ax.annotate(bounds[0], xy=(mid, 0),  xycoords='axes fraction',
+                   xytext=(mid-0.01, -0.5), textcoords='axes fraction',)            
+            
+            extra_artists.append(t)
+            
+            offsets=[0,-0.5,-1.0]
+            nclashes=0
+            for n in range(1,len(bounds)):
+                if bounds[n]==bounds[n-1]: continue
+                mid=1.0/endres*float(bounds[n])
+                if (float(bounds[n])-float(bounds[n-1]))/max<=0.01:
+                   nclashes+=1
+                   offset=offsets[nclashes%3]
+                else:
+                   nclashes=0
+                   offset=offsets[0]
+                if offset>-0.75: 
+                  t=ax.annotate(bounds[n], xy=(mid, 0),  xycoords='axes fraction',
+                     xytext=(mid, -0.5+offset), textcoords='axes fraction')
+                else:
+                  t=ax.annotate(bounds[n], xy=(mid, 0),  xycoords='axes fraction',
+                     xytext=(mid, -0.5+offset), textcoords='axes fraction',arrowprops=dict(arrowstyle="-"))
+                extra_artists.append(t)
+                            
             cb2.add_lines(bounds,["black"]*len(bounds),[1]*len(bounds))
             #cb2.set_label(k)   
+            
+            pyplot.savefig(k+"structure.png",dpi=150,transparent="True",bbox_extra_artists=(extra_artists), bbox_inches='tight')
             pyplot.show()

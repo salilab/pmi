@@ -1963,6 +1963,8 @@ class SigmoidCrossLinkMS():
     def __init__(self,prot,restraints_file,inflection,slope,amplitude,resolution=None, columnmapping=None):
         #columnindexes is a list of column indexes for protein1, protein2, residue1, residue2
         #by default column 0 = protein1; column 1 = protein2; column 2 = residue1; column 3 = residue2
+
+
         
         if columnmapping==None:
            columnmapping={}
@@ -2139,6 +2141,297 @@ class SigmoidCrossLinkMS():
 
         return output
 
+
+
+class ISDCrossLinkMS():
+
+    def __init__(self,prot,restraints_file,length,resolution=None, columnmapping=None):
+        #columnindexes is a list of column indexes for protein1, protein2, residue1, residue2
+        #by default column 0 = protein1; column 1 = protein2; column 2 = residue1; column 3 = residue2;
+        # column 4 = idscores
+
+        global impisd2, tools
+        import IMP.isd2 as impisd2
+        import IMP.pmi.tools as tools
+        
+        if columnmapping==None:
+           columnmapping={}
+           columnmapping["Protein1"]=0
+           columnmapping["Protein2"]=1
+           columnmapping["Residue1"]=2
+           columnmapping["Residue2"]=3
+           columnmapping["IDScore"]=4
+        
+        self.rs=IMP.RestraintSet('data')
+        self.rspsi=IMP.RestraintSet('prior_psi')
+        self.rssig=IMP.RestraintSet('prior_sigmas')        
+        self.prot=prot
+        self.label="None"
+        self.pairs=[]
+        self.m=self.prot.get_model()
+        self.sigma_dictionary={}
+        self.psi_dictionary={}
+        
+        self.ids_map=tools.map()
+        #self.ids_map.set_map_element(20.0,0.05)      
+        self.ids_map.set_map_element(35.0,0.01)   
+
+        self.radius_map=tools.map()
+        self.radius_map.set_map_element(2.5,2.5)
+        self.radius_map.set_map_element(5.0,5.0)      
+        self.radius_map.set_map_element(7.5,7.5)  
+        self.radius_map.set_map_element(10,10)
+        self.radius_map.set_map_element(15,15)      
+        self.radius_map.set_map_element(20,20) 
+        
+        self.outputlevel="low"
+
+
+
+        #fill the cross-linker pmfs
+        #to accelerate the init the list listofxlinkertypes might contain only yht needed crosslinks
+        protein1=columnmapping["Protein1"]
+        protein2=columnmapping["Protein2"]
+        residue1=columnmapping["Residue1"]
+        residue2=columnmapping["Residue2"]        
+        idscore=columnmapping["IDScore"]
+        
+        print idscore
+        
+        if resolution!=None:
+          particles=[]
+          for prot in self.prot.get_children():
+             particles+=IMP.pmi.tools.get_particles_by_resolution(prot,resolution) 
+        
+        
+        
+        for line in open(restraints_file):
+
+            tokens=line.split()
+            #skip character
+            if (tokens[0]=="#"): continue
+            r1=int(tokens[residue1])
+            c1=tokens[protein1]
+            r2=int(tokens[residue2])
+            c2=tokens[protein2]
+            ids=float(tokens[idscore])
+
+
+            s1=IMP.atom.Selection(self.prot,molecule=c1, residue_index=r1)
+            ps1=s1.get_selected_particles()
+ 
+            s2=IMP.atom.Selection(self.prot,molecule=c2, residue_index=r2)
+            ps2=s2.get_selected_particles()
+       
+            if resolution!=None: 
+              #get the intersection to remove redundant particles
+              ps1=(list(set(ps1) & set(particles)))
+              ps2=(list(set(ps2) & set(particles)))
+              
+            if len(ps1)>1:
+               print "ISDCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s"  % (r1,c1,str(ps1))
+               exit()
+            elif len(ps1)==0:
+               print "ISDCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1,c1)
+               continue               
+
+            if len(ps2)>1:
+               print "ISDCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s"  % (r2,c2,str(ps2))
+               exit()
+            elif len(ps2)==0:
+               print "ISDCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2,c2)
+               continue 
+
+            p1=ps1[0]
+            p2=ps2[0]
+            
+            #remove in the future!!!
+            if p1==p2: continue
+            
+            dr= impisd2.CrossLinkMSRestraint(self.m, length)
+
+            
+            #sigma1=self.get_sigma(IMP.pmi.Resolution(p1))[0]
+            #sigma2=self.get_sigma(IMP.pmi.Resolution(p2))[0]    
+            mappedr1=self.radius_map.get_map_element(IMP.core.XYZR(p1).get_radius())
+            sigma1=self.get_sigma(mappedr1)[0]
+            mappedr2=self.radius_map.get_map_element(IMP.core.XYZR(p2).get_radius())
+            sigma2=self.get_sigma(mappedr2)[0]
+            psival=self.ids_map.get_map_element(ids)
+            psi=self.get_psi(psival)[0]
+            p1i=p1.get_index()
+            p2i=p2.get_index()
+            s1i=sigma1.get_particle().get_index()
+            s2i=sigma2.get_particle().get_index()
+            psii=psi.get_particle().get_index()
+            dr.add_contribution((p1i,p2i),(s1i,s2i),psii)
+            
+            print "--------------"
+            print "ISDCrossLinkMS: generating cross-link restraint between"
+            print "ISDCrossLinkMS: residue %d of chain %s and residue %d of chain %s" % (r1,c1,r2,c2)
+            print "ISDCrossLinkMS: with sigma1 %f  sigma2 %f psi %s" % (mappedr1,mappedr2,psival) 
+            
+            self.rs.add_restraint(dr)
+            self.rssig.add_restraint(dr)
+
+            #check if the two residues belong to the same rigid body
+            
+
+            if(IMP.core.RigidMember.particle_is_instance(p1) and
+               IMP.core.RigidMember.particle_is_instance(p2) and
+               IMP.core.RigidMember(p1).get_rigid_body() ==
+               IMP.core.RigidMember(p2).get_rigid_body()):
+               xlattribute="intrarb"
+            else:
+               xlattribute="interrb"
+
+
+            dr.set_name(xlattribute+"-"+c1+":"+str(r1)+"-"+c2+":"+str(r2))
+          
+            self.pairs.append((p1,p2,dr,r1,c1,r2,c2,xlattribute,mappedr1,mappedr2,psival))
+        
+        for psi in self.psi_dictionary:
+            #self.rspsi.add_restraint(impisd2.BinomialJeffreysPrior(self.psi_dictionary[psi][0]))
+            self.rspsi.add_restraint(impisd2.JeffreysRestraint(self.psi_dictionary[psi][0]))
+
+        #for sigma in self.sigma_dictionary:
+            #self.rssig.add_restraint(impisd2.JeffreysRestraint(self.sigma_dictionary[sigma][0]))
+            
+        
+    def create_sigma(self,resolution):
+        self.sigmainit=resolution+2.0
+        self.sigmaissampled=True             
+        self.sigmaminnuis=0.0000001
+        self.sigmamaxnuis=1000.0
+        self.sigmamin=    resolution
+        self.sigmamax=    500.0
+        self.sigmatrans=  0.2
+        self.sigma=tools.SetupNuisance(self.m,self.sigmainit,
+             self.sigmaminnuis,self.sigmamaxnuis,self.sigmaissampled).get_particle()
+        self.sigma_dictionary[resolution]=(self.sigma,self.sigmatrans,self.sigmaissampled)    
+        self.rssig.add_restraint(impisd2.UniformPrior(self.sigma,1000000000.0,self.sigmamax,self.sigmamin))
+        
+        
+    def get_sigma(self,resolution):
+        if not resolution in self.sigma_dictionary:
+           self.create_sigma(resolution)
+        return self.sigma_dictionary[resolution]
+
+
+    def create_psi(self,value):
+        self.psiinit=value
+        self.psiissampled=True                     
+        self.psiminnuis=0.0000001
+        self.psimaxnuis=0.4999999
+        self.psimin=    0.01
+        self.psimax=    0.49
+        self.psitrans=  0.01 
+        self.psi=tools.SetupNuisance(self.m,self.psiinit,
+             self.psiminnuis,self.psimaxnuis,self.psiissampled).get_particle()
+        self.psi_dictionary[value]=(self.psi,self.psitrans,self.psiissampled)    
+        self.rspsi.add_restraint(impisd2.UniformPrior(self.psi,1000000000.0,self.psimax,self.psimin))
+        
+    def get_psi(self,value):
+        if not value in self.psi_dictionary:
+           self.create_psi(value)
+        return self.psi_dictionary[value]
+
+
+    def set_label(self,label):
+        self.label=label
+
+    def add_to_model(self):
+        self.m.add_restraint(self.rs)
+        self.m.add_restraint(self.rspsi)
+        self.m.add_restraint(self.rssig)
+
+    def get_hierarchies(self):
+        return self.prot
+
+    def get_restraint_sets(self):
+        return self.rs
+        
+    def get_restraint(self):
+        return self.rs        
+
+    def get_restraints(self):
+        rlist=[]
+        for r in self.rs.get_restraints():
+            rlist.append(IMP.core.PairRestraint.get_from(r))
+        return rlist
+    
+    def get_particle_pairs(self):
+        ppairs=[]
+        for i in range(len(self.pairs)):        
+            p0=self.pairs[i][0]
+            p1=self.pairs[i][1]
+            ppairs.append((p0,p1))
+        return ppairs            
+            
+    def set_output_level(self,level="low"):
+            #this might be "low" or "high"
+        self.outputlevel=level
+
+
+    def get_output(self):
+        #content of the crosslink database pairs
+        #self.pairs.append((p1,p2,dr,r1,c1,r2,c2))
+        self.m.update()
+
+        output={}
+        score=self.rs.unprotected_evaluate(None)
+        output["_TotalScore"]=str(score)            
+        output["ISDCrossLinkMS_Data_Score_"+self.label]=str(score)
+        output["ISDCrossLinkMS_PriorSig_Score_"+self.label]=self.rssig.unprotected_evaluate(None)   
+        output["ISDCrossLinkMS_PriorPsi_Score_"+self.label]=self.rspsi.unprotected_evaluate(None)  
+        for i in range(len(self.pairs)):
+
+            p0=self.pairs[i][0]
+            p1=self.pairs[i][1]
+            crosslinker='standard'
+            ln=self.pairs[i][2]
+            resid1=self.pairs[i][3]
+            chain1=self.pairs[i][4]
+            resid2=self.pairs[i][5]
+            chain2=self.pairs[i][6]
+            attribute=self.pairs[i][7]
+            rad1=self.pairs[i][8]
+            rad2=self.pairs[i][9]
+            psi=self.pairs[i][10]
+            
+            label=attribute+"-"+str(resid1)+":"+chain1+"_"+str(resid2)+":"+chain2+"-"+str(rad1)+"-"+str(rad2)+"-"+str(psi)
+            output["ISDCrossLinkMS_Score_"+crosslinker+"_"+label]=str(ln.unprotected_evaluate(None))
+            d0=IMP.core.XYZ(p0)
+            d1=IMP.core.XYZ(p1)
+            output["ISDCrossLinkMS_Distance_"+label]=str(IMP.core.get_distance(d0,d1))
+
+        for psiindex in self.psi_dictionary:
+            output["ISDCrossLinkMS_Psi_"+str(psiindex)+"_"+self.label]=str(self.psi_dictionary[psiindex][0].get_scale())
+
+        for resolution in self.sigma_dictionary:
+            output["ISDCrossLinkMS_Sigma_"+str(resolution)+"_"+self.label]=str(self.sigma_dictionary[resolution][0].get_scale())
+        
+        '''
+        l=output.keys()
+        l.sort()
+        for o in l:
+            print o,output[o]
+        '''
+        return output
+
+    def get_particles_to_sample(self):
+        ps={}
+
+        for resolution in self.sigma_dictionary:
+          if self.sigma_dictionary[resolution][2]:
+            ps["Nuisances_ISDCrossLinkMS_Sigma_"+str(resolution)+"_"+self.label]=\
+                      ([self.sigma_dictionary[resolution][0]],self.sigma_dictionary[resolution][1])
+        
+        for psiindex in self.psi_dictionary:
+          if self.psi_dictionary[psiindex][2]:
+            ps["Nuisances_ISDCrossLinkMS_Psi_"+str(psiindex)+"_"+self.label]=([self.psi_dictionary[psiindex][0]],self.psi_dictionary[psiindex][1])
+        
+        return ps  
 
 
 ##############################################################

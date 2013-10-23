@@ -747,15 +747,19 @@ class SimplifiedModel():
             print "MultipleStates: rigid bodies were not intialized"
         hbbl=bounding_box_length/2
         if 1:
+            ub = IMP.algebra.Vector3D(-hbbl,-hbbl,-hbbl)
+            lb = IMP.algebra.Vector3D( hbbl, hbbl, hbbl)
+            bb = IMP.algebra.BoundingBox3D(ub, lb)
             for rb in self.rigid_bodies:
-                ub = IMP.algebra.Vector3D(-hbbl,-hbbl,-hbbl)
-                lb = IMP.algebra.Vector3D( hbbl, hbbl, hbbl)
-                bb = IMP.algebra.BoundingBox3D(ub, lb)
+
                 if translate==True: translation = IMP.algebra.get_random_vector_in(bb)
                 else: translation = (rb.get_x(), rb.get_y(), rb.get_z())
                 rotation = IMP.algebra.get_random_rotation_3d()
                 transformation = IMP.algebra.Transformation3D(rotation, translation)
                 rb.set_reference_frame(IMP.algebra.ReferenceFrame3D(transformation))
+            for fb in self.floppy_bodies:
+                translation = IMP.algebra.get_random_vector_in(bb)
+                IMP.core.XYZ(fb).set_coordinates(translation)
 
 
     def add_component_name(self,name):

@@ -1642,7 +1642,7 @@ class ConnectivityCrossLinkMS():
     it is a variant of the SimplifiedCrossLinkMS
     '''
 
-    def __init__(self,prot,restraints_file,expdistance,strength,resolution=None):
+    def __init__(self,prot,restraints_file,expdistance,strength=None,resolution=None):
 
         self.rs=IMP.RestraintSet('data')
         self.weight=1.0
@@ -1712,7 +1712,22 @@ class ConnectivityCrossLinkMS():
               ps2=(list(set(ps2) & set(particles)))
               s1=IMP.atom.Selection(ps1)
               s2=IMP.atom.Selection(ps2)
-            
+
+            #calculate the radii to estimate the slope of the restraint
+            if self.strength==None:
+              rad1=0
+              rad2=0
+              for p in ps1:
+                rad1+=IMP.core.XYZR(p).get_radius()
+
+              for p in ps2:
+                rad2+=IMP.core.XYZR(p).get_radius()
+
+              rad1=rad1/len(ps1)
+              rad2=rad2/len(ps2)
+
+              self.strength=1/(rad1**2+rad2**2)
+
             
             sels=[s1,s2]
             cr = IMP.atom.create_connectivity_restraint(sels, self.expdistance,self.strength)

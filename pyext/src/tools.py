@@ -860,6 +860,29 @@ def select_calpha_or_residue(prot,chain,resid,ObjectName="None:",SelectResidue=F
     return p
 
 
+class map():
+      
+      def __init__(self):
+          self.map={}
+      
+      def set_map_element(self,xvalue,yvalue):
+          self.map[xvalue]=yvalue
+      
+      def get_map_element(self,invalue):
+          n=0
+          mindist=1
+          for x in self.map:
+              dist=(invalue-x)*(invalue-x)
+
+              if n==0: 
+                 mindist=dist
+                 minx=x             
+              if dist<mindist: 
+                 mindist=dist
+                 minx=x
+              n+=1
+          return self.map[minx]
+          
 ########################
 ### Tools to simulate data
 ########################

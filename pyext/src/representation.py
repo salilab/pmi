@@ -891,12 +891,12 @@ class SimplifiedModel():
         for n in range(len(sortedparticles)-1):
             self.hier_geometry_pairs[name].append((sortedparticles[n][0],sortedparticles[n+1][0]))
         
-    def setup_component_sequence_connectivity(self,name):
+    def setup_component_sequence_connectivity(self,name,resolution=10):
         unmodeledregions_cr=IMP.RestraintSet("unmodeledregions")
         sortedsegments_cr=IMP.RestraintSet("sortedsegments")    
         protein_h=protein_h=self.hier_dict[name]    
         SortedSegments = []
-        pbr=tools.get_particles_by_resolution(protein_h,10.0)
+        pbr=tools.get_particles_by_resolution(protein_h,resolution)
         
         for chl in protein_h.get_children():
             start = IMP.atom.get_leaves(chl)[0]

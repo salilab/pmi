@@ -538,6 +538,19 @@ class ProcessOutput():
         plt.show()     
 
 
+def plot_xy_data(x,y):
+        import matplotlib.pyplot as plt
+        plt.rc('lines', linewidth=4)
+        fig, ax  = plt.subplots(nrows=1)
+        fig.set_size_inches(10.5,5.5)
+        plt.rc('axes', color_cycle=['r'])
+        print x
+        print y
+        ax.plot(x,y)
+        plt.show()  
+
+
+
 class Variance():
     def __init__(self, model, tau, niter, prot, th_profile, write_data=False):
         global sqrt,os,random
@@ -792,7 +805,7 @@ def get_residue_index_and_chain_from_particle(p):
     return rind,cid
 
 def get_particles_by_resolution(prot,resolution):
-   
+    import math
     #for hier in prot.get_children():
 
     particles=[]
@@ -805,8 +818,7 @@ def get_particles_by_resolution(prot,resolution):
         residues.update(IMP.atom.Fragment(p).get_residue_indexes())
         resolutions.append(res)
        
-    closestres=min(resolutions, key=lambda x:abs(x-resolution))
-    
+    closestres=min(resolutions, key=lambda x:abs(float(x)-float(resolution)))
     
     for p in IMP.atom.get_leaves(prot):
         if closestres==IMP.pmi.Resolution.get_resolution(IMP.pmi.Resolution(p)):  

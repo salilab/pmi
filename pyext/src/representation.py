@@ -824,11 +824,14 @@ class SimplifiedModel():
             s=IMP.atom.create_simplified_along_backbone(c0, r)
             chil=s.get_children()
             s0=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
+            
             s0.set_name(name+'_%i-%i' % (start,end)+"_Res:"+str(r))
             for ch in chil: s0.add_child(ch)            
             protein_h.add_child(s0)
             del s
             for prt in IMP.atom.get_leaves(s0):
+                radius=IMP.core.XYZR(prt).get_radius()
+                IMP.pmi.Uncertainty.setup_particle(prt,radius)
                 IMP.pmi.Resolution.setup_particle(prt,r)
                 #setting up color for each particle in the hierarchy, if colors missing in the colors list set it to red
                 try:
@@ -866,6 +869,7 @@ class SimplifiedModel():
             volume=IMP.atom.get_volume_from_mass(mass)
             radius=0.8*(3.0/4.0/pi*volume)**(1.0/3.0)
             ptem.set_radius(radius)
+            IMP.pmi.Uncertainty.setup_particle(ptem,radius)
             self.floppy_bodies.append(p)
             protein_h.add_child(h)
 

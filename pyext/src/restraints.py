@@ -1718,10 +1718,10 @@ class ConnectivityCrossLinkMS():
               rad1=0
               rad2=0
               for p in ps1:
-                rad1+=IMP.core.XYZR(p).get_radius()
+                rad1+=IMP.pmi.Uncertainty(p).get_uncertainty()
 
               for p in ps2:
-                rad2+=IMP.core.XYZR(p).get_radius()
+                rad2+=IMP.pmi.Uncertainty(p).get_uncertainty()
 
               rad1=rad1/len(ps1)
               rad2=rad2/len(ps2)

@@ -1734,6 +1734,29 @@ class ConnectivityCrossLinkMS():
     
             self.rs.add_restraint(cr)
             self.pairs.append((ps1,hrc1,c1,r1,ps2,hrc2,c2,r2,cr))
+
+    def plot_restraint(self,uncertainty1,uncertainty2,maxdist=50,npoints=10):
+        import IMP.pmi.tools as tools
+        
+        p1=IMP.Particle(self.m)
+        p2=IMP.Particle(self.m)
+        d1=IMP.core.XYZR.setup_particle(p1)
+        d2=IMP.core.XYZR.setup_particle(p2)
+        d1.set_radius(uncertainty1)
+        d2.set_radius(uncertainty2)                
+        s1=IMP.atom.Selection(p1)
+        s2=IMP.atom.Selection(p2)
+        sels=[s1,s2]
+        strength=1/(uncertainty1**2+uncertainty2**2)
+        cr = IMP.atom.create_connectivity_restraint(sels, self.expdistance,strength)
+        dists=[]
+        scores=[]
+        for i in range(npoints):
+            d2.set_coordinates(IMP.algebra.Vector3D(maxdist/npoints*float(i),0,0))
+            dists.append(IMP.core.get_distance(d1,d2))
+            scores.append(cr.unprotected_evaluate(None))
+        tools.plot_xy_data(dists,scores)
+            
             
 
     def set_label(self,label):

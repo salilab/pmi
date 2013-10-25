@@ -579,14 +579,11 @@ class SimplifiedCrossLinkMS():
         d1=IMP.core.XYZR.setup_particle(p1)
         d2=IMP.core.XYZR.setup_particle(p2)
         d1.set_radius(radius1)
-        d2.set_radius(radius2)                
-        s1=IMP.atom.Selection(p1)
-        s2=IMP.atom.Selection(p2)
-        #limit=self.strength*(self.expdistance+1)**2+10.0
-        #hub= IMP.core.TruncatedHarmonicUpperBound(self.expdistance,self.strength,self.expdistance+5.,limit)
-        #df= IMP.core.SphereDistancePairScore(hub)
-        #dr= IMP.core.PairRestraint(df, (p1, p2))
-        dr=IMP.pmi.SigmoidRestraintSphere(self.m, p1, p2, self.expdistance, 1.0, 5.0) 
+        d2.set_radius(radius2)   
+        limit=self.strength*(self.expdistance+1)**2+10.0
+        hub= IMP.core.TruncatedHarmonicUpperBound(self.expdistance,self.strength,self.expdistance+5.,limit)
+        df= IMP.core.SphereDistancePairScore(hub)
+        dr= IMP.core.PairRestraint(df, (p1, p2))
         dists=[]
         scores=[]
         for i in range(npoints):
@@ -630,7 +627,7 @@ class SimplifiedCrossLinkMS():
 
 class SigmoidCrossLinkMS():
 
-    def __init__(self,prot,restraints_file,inflection,slope,amplitude,resolution=None, columnmapping=None):
+    def __init__(self,prot,restraints_file,inflection,slope,amplitude,linear_slope,resolution=None, columnmapping=None):
         #columnindexes is a list of column indexes for protein1, protein2, residue1, residue2
         #by default column 0 = protein1; column 1 = protein2; column 2 = residue1; column 3 = residue2
 
@@ -644,20 +641,18 @@ class SigmoidCrossLinkMS():
            columnmapping["Residue2"]=3
         
         self.rs=IMP.RestraintSet('data')
-        self.rslin=IMP.RestraintSet('data')
-        self.rssig=IMP.RestraintSet('data')
         self.weight=1.0
         self.prot=prot
         self.label="None"
         self.pairs=[]
         self.already_added_pairs={}
         self.m=self.prot.get_model()
+        self.inflection=inflection
+        self.slope=slope
+        self.amplitude=amplitude
+        self.linear_slope=linear_slope
 
         self.outputlevel="low"
-
-        #small linear contribution for long range
-        h=IMP.core.Linear(0,0.07)
-        dps2=IMP.core.DistancePairScore(h)
 
 
         #fill the cross-linker pmfs
@@ -725,20 +720,13 @@ class SigmoidCrossLinkMS():
                continue
             
             else:
-                        
- 
-              dr= IMP.pmi.SigmoidRestraintSphere(self.m, p1, p2, inflection, slope, amplitude)
+
+              dr= IMP.pmi.SigmoidRestraintSphere(self.m, p1, p2, self.inflection, self.slope, self.amplitude,self.linear_slope)
               dr.set_name(c1+":"+str(r1)+"-"+c2+":"+str(r2)+"-ampl:"+str(dr.get_amplitude()))
             
               self.rs.add_restraint(dr)
-              self.rssig.add_restraint(dr)
-              
-              pr=IMP.core.PairRestraint(dps2,IMP.ParticlePair(p1,p2)) 
 
-              self.rs.add_restraint(pr)
-              self.rslin.add_restraint(pr)
-              
-              self.pairs.append((p1,p2,dr,pr,r1,c1,r2,c2))
+              self.pairs.append((p1,p2,dr,r1,c1,r2,c2))
               self.already_added_pairs[(p1,p2)]=dr
               self.already_added_pairs[(p2,p1)]=dr
 
@@ -779,6 +767,24 @@ class SigmoidCrossLinkMS():
         self.weight=weight
         self.rs.set_weight(weight)
 
+    def plot_restraint(self,radius1,radius2,maxdist=50,npoints=10):
+        import IMP.pmi.output as output
+        
+        p1=IMP.Particle(self.m)
+        p2=IMP.Particle(self.m)
+        d1=IMP.core.XYZR.setup_particle(p1)
+        d2=IMP.core.XYZR.setup_particle(p2)
+        d1.set_radius(radius1)
+        d2.set_radius(radius2)
+        dr= IMP.pmi.SigmoidRestraintSphere(self.m, p1, p2, self.inflection, self.slope, self.amplitude,self.linear_slope)
+        dists=[]
+        scores=[]
+        for i in range(npoints):
+            d2.set_coordinates(IMP.algebra.Vector3D(maxdist/npoints*float(i),0,0))
+            dists.append(IMP.core.get_distance(d1,d2))
+            scores.append(dr.unprotected_evaluate(None))
+        output.plot_xy_data(dists,scores)
+
     def get_output(self):
         #content of the crosslink database pairs
         #self.pairs.append((p1,p2,dr,r1,c1,r2,c2))
@@ -788,23 +794,19 @@ class SigmoidCrossLinkMS():
         score=self.weight*self.rs.unprotected_evaluate(None)
         output["_TotalScore"]=str(score)            
         output["SigmoidCrossLinkMS_Score_"+self.label]=str(score)
-        output["SigmoidCrossLinkMS_Sigmoidal_Score_"+self.label]=self.rssig.unprotected_evaluate(None)   
-        output["SigmoidCrossLinkMS_Linear_Score_"+self.label]=self.rslin.unprotected_evaluate(None)
         for i in range(len(self.pairs)):
 
             p0=self.pairs[i][0]
             p1=self.pairs[i][1]
             crosslinker='standard'
             ln=self.pairs[i][2]
-            pr=self.pairs[i][3]
-            resid1=self.pairs[i][4]
-            chain1=self.pairs[i][5]
-            resid2=self.pairs[i][6]
-            chain2=self.pairs[i][7]
+            resid1=self.pairs[i][3]
+            chain1=self.pairs[i][4]
+            resid2=self.pairs[i][5]
+            chain2=self.pairs[i][6]
 
             label=str(resid1)+":"+chain1+"_"+str(resid2)+":"+chain2
             output["SigmoidCrossLinkMS_Score_"+crosslinker+"_"+label]=str(self.weight*ln.unprotected_evaluate(None))
-            output["SigmoidCrossLinkMS_Linear_Score_"+crosslinker+"_"+label]=str(self.weight*pr.unprotected_evaluate(None))
             d0=IMP.core.XYZR(p0)
             d1=IMP.core.XYZR(p1)
             output["SigmoidCrossLinkMS_Distance_"+label]=str(IMP.core.get_distance(d0,d1))

@@ -769,7 +769,52 @@ class SimplifiedModel():
         self.prot.add_child(protein_h)
         self.elements[name]=[]
 
+    def add_pdb_and_intervening_beads(self,name,pdbname,chain,resolutions,resrange,beadsize,
+                                      color,pdbresrange=None,offset=0,show=False,isnucleicacid=False):
+        
+        
+        #get the initial and end residues of the pdb
+        t=IMP.atom.read_pdb( pdbname, self.m, 
+        IMP.atom.AndPDBSelector(IMP.atom.ChainPDBSelector(chain),IMP.atom.ATOMPDBSelector()))
+
+        #find start and end indexes
+        
+        start = IMP.atom.Residue(t.get_children()[0].get_children()[0]).get_index()
+        end   = IMP.atom.Residue(t.get_children()[0].get_children()[-1]).get_index()
+
+        if pdbresrange!=None:
+           if pdbresrange[0]>start: start=pdbresrange[0]
+           if pdbresrange[1]<end:   end=pdbresrange[1]  
+       
+        start=start+offset
+        end  =end+offset        
+        
+
+
+        for i in range(resrange[0],start-1,beadsize)[0:-1]:
+            self.add_component_beads(name,[(i,i+beadsize-1)],colors=[color])
+        
+         
+        if resrange[0]<start-1:
+           j=range(resrange[0],start-1,beadsize)[-1]
+           self.add_component_beads(name,[(j,start-1)],colors=[color])
+        
+        self.add_component_pdb(name,pdbname,chain,resolutions=resolutions, color=color,
+                               resrange=resrange,offset=offset,isnucleicacid=isnucleicacid)
+
+        for i in range(end+1,resrange[1],beadsize)[0:-1]:
+            print "adding sphere from %d to %d , beadsize %d" % (i,i+beadsize-1,beadsize)
+            self.add_component_beads(name,[(i,i+beadsize-1)],colors=[color])
+        
+        if end+1<resrange[1]:
+           j=range(end+1,resrange[1],beadsize)[-1]
+           self.add_component_beads(name,[(j+1,resrange[1])],colors=[color])
+        
+        #IMP.atom.show_molecular_hierarchy(self.hier_dict[name])
     
+
+
+
     def add_component_pdb(self,name,pdbname,chain,resolutions,color,resrange=None,offset=0,show=False,isnucleicacid=False):
         #resrange specify the residue range to extract from the pdb
         #it is a tuple (beg,end). If not specified, it takes all residues belonging to
@@ -1075,6 +1120,11 @@ class SimplifiedModel():
                         if bnd[1]<length:
                            ds.append((bnd[1]+1,length))                         
                            if len(ds)>len(colors): colors.append(colors[pdb_part_count])
+
+        else:
+            ds.append((1,length))
+
+
 
         #work on un-modelled regions
         randomize_coords = lambda c: tuple(10.*(nrrand(3)-0.5)+array(c))

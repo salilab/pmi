@@ -816,21 +816,25 @@ def get_particles_by_resolution(prot,resolution):
        
     firstresn=min(residues)
     lastresn=max(residues)
-
     for nres in range(firstresn,lastresn+1):
-       s=IMP.atom.Selection(prot,residue_index=nres)
-       resolutions=[]
+        s=IMP.atom.Selection(prot,residue_index=nres)
+        resolutions=[]
 
-       # calculate the closest resolution for each set of particles that represent a residue 
-       for p in s.get_selected_particles():
-           resolutions.append(IMP.pmi.Resolution(IMP.pmi.Resolution(p)).get_resolution())
-       closestres=min(resolutions, key=lambda x:abs(float(x)-float(resolution)))
+        # calculate the closest resolution for each set of particles that represent a residue 
+        ps=s.get_selected_particles()
 
-       # now we get the particle 
-       for p in s.get_selected_particles():
-          if closestres==IMP.pmi.Resolution.get_resolution(IMP.pmi.Resolution(p)): 
-            if not p in particles:  
-               particles.append(p)     
+        if len(ps)>0:
+            for p in ps:
+                resolutions.append(IMP.pmi.Resolution(IMP.pmi.Resolution(p)).get_resolution())
+            closestres=min(resolutions, key=lambda x:abs(float(x)-float(resolution)))
+            
+            # now we get the particle 
+            for p in ps:
+                if closestres==IMP.pmi.Resolution.get_resolution(IMP.pmi.Resolution(p)): 
+                    if not p in particles:  
+                        particles.append(p)     
+        else: 
+            print "get_particles_by_resolution: residue %d in molecule %s is missing" % (nres,prot.get_name())
 
     return list(particles)
 

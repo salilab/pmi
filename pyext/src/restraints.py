@@ -1659,7 +1659,7 @@ class ConnectivityCrossLinkMS():
           particles=[]
           for prot in self.prot.get_children():
              particles+=IMP.pmi.tools.get_particles_by_resolution(prot,resolution) 
-        
+
         #fill the cross-linker pmfs
         #to accelerate the init the list listofxlinkertypes might contain only yht needed crosslinks
 

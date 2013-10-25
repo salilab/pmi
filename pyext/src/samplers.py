@@ -2,7 +2,7 @@ import IMP
 import IMP.core
 
 class MonteCarlo():
-    def __init__(self,m,objects,temp):
+    def __init__(self,m,objects,temp,filterbyname=None):
         
         #check that isd2 is installed
         try:

@@ -24,6 +24,7 @@ class IMPPMIEXPORT  SigmoidRestraintSphere : public Restraint
     double inflection_;
     double slope_;
     double amplitude_;
+    double line_slope_;
 
 
 
@@ -39,7 +40,7 @@ public:
                           IMP::kernel::ParticleIndexAdaptor p1,
                           IMP::kernel::ParticleIndexAdaptor p2,
                           double inflection, double slope, 
-                          double amplitude,
+                          double amplitude, double line_slope_=0,
                      std::string name="SigmoidRestraintSphere%1%");
 
   void set_amplitude(double amplitude){amplitude_=amplitude;}

@@ -445,7 +445,7 @@ class MultipleStates():
                     else:
                         s=IMP.atom.Selection(prot,chains=interval[2],residue_indexes=range(interval[0],interval[1]+1))
                     for p in s.get_selected_particles():
-                        atoms.append(IMP.core.XYZR(p))
+                           atoms.append(IMP.core.XYZR(p))
 
                     #add low resolution representation to the rigid bodies
                     for key in self.prot_lowres:
@@ -455,7 +455,7 @@ class MultipleStates():
                             s=IMP.atom.Selection(self.prot_lowres[key][ncopy],chains=interval[2],
                                                 residue_indexes=range(interval[0],interval[1]+1))
                         for p in s.get_selected_particles():
-                            atoms.append(IMP.core.XYZR(p))
+                               atoms.append(IMP.core.XYZR(p))
 
 
                 if len(atoms)>0:
@@ -1406,19 +1406,17 @@ class SimplifiedModel():
         for s in subunits:
             if type(s)==type(tuple()) and len(s)==2:
                sel=IMP.atom.Selection(self.prot,molecule=s[0],residue_indexes=range(s[1][0],s[1][1]+1))
-               
-               ps=sel.get_selected_particles()
-               for p in ps: 
-                   print s,p
-               rigid_parts+=sel.get_selected_particles()
+               for p in sel.get_selected_particles():
+                  if not p in self.floppy_bodies:
+                     rigid_parts.append(p)
                
                
             elif type(s)==type(str()):
                sel=IMP.atom.Selection(self.prot,molecule=s)
-               rigid_parts+=sel.get_selected_particles()
-               ps=sel.get_selected_particles()
-               for p in ps: 
-                   print s,p        
+               for p in sel.get_selected_particles():
+                  if not p in self.floppy_bodies:
+                     rigid_parts.append(p)
+     
         
         
         rb=IMP.atom.create_rigid_body(rigid_parts)

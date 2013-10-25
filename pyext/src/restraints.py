@@ -1874,7 +1874,9 @@ class SimplifiedCrossLinkMS():
             r2=int(tokens[residue2])
             c2=tokens[protein2]
 
-
+            names = [h.get_name() for h in self.prot.get_children()]
+            if c1 not in names or c2 not in names:
+                print c1, ' OR ', c2, ' not in the model!'; continue
             hrc1 = [h for h in self.prot.get_children() if h.get_name()==c1][0]
             s1=IMP.atom.Selection(hrc1, residue_index=r1)
             ps1=s1.get_selected_particles()
@@ -1890,6 +1892,7 @@ class SimplifiedCrossLinkMS():
               
             if len(ps1)>1:
                print "SimplifiedCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles"  % (r1,c1)
+               print "particles are: ", [p.get_name() for p in ps1]
                exit()
             elif len(ps1)==0:
                print "SimplifiedCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1,c1)
@@ -1897,6 +1900,7 @@ class SimplifiedCrossLinkMS():
 
             if len(ps2)>1:
                print "SimplifiedCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles"  % (r2,c2)
+               print "particles are: ", [p.get_name() for p in ps2]
                exit()
             elif len(ps2)==0:
                print "SimplifiedCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2,c2)
@@ -3359,7 +3363,9 @@ class CysteineCrossLinkRestraint():
 
 class GaussianEMRestraint():
 
-    def __init__(self,prot,map_anchors_fn,segment_anchors=None,segment_parts=None,rigid=True):
+    def __init__(self,prot,map_anchors_fn,segment_anchors=None,segment_parts=None,rigid=True,resolution=None):
+        #segment parts should be a list containing protein names or a tuple with protein names and residue ranges:
+        # [("ABC",1,100),"CYT","CDR"]
 
         global sys, impisd2, tools
         import sys
@@ -3372,12 +3378,35 @@ class GaussianEMRestraint():
         
         #dcoords=IMP.multifit.read_anchors_data(map_anchors_fn).points_
         self.prot=prot
-        sel=IMP.atom.Selection(self.prot)
-        #sel.set_atom_type(IMP.atom.AT_CA)
-        self.model_anchors=sel.get_selected_particles()
-
-
         self.m=self.prot.get_model()
+
+        
+
+        if resolution!=None:
+           hierarchy_anchors=[]
+           for prot in self.prot.get_children():
+             hierarchy_anchors+=IMP.pmi.tools.get_particles_by_resolution(prot,resolution)         
+
+        
+        if segment_parts!=None:
+            model_anchors=[]
+            for seg in segment_parts:
+                if type(seg)==str:
+                   s=IMP.atom.Selection(self.prot,molecule=seg)
+                   ps=s.get_selected_particles()
+                   model_anchors+=ps
+                elif type(seg)==tuple:
+                   s=IMP.atom.Selection(self.prot,molecule=seg[0],residue_indexes=range(seg[1],seg[2]+1))
+                   ps=s.get_selected_particles()
+                   model_anchors+=ps                
+            if resolution!=None:
+              #get the intersection to remove redundant particles
+              self.model_anchors=(list(set(model_anchors) & set(hierarchy_anchors)))
+
+        for p in self.model_anchors:
+            print p.get_name()  
+
+
 
         data = open(map_anchors_fn)
         D = data.readlines()
@@ -3389,6 +3418,13 @@ class GaussianEMRestraint():
 
         # parameters
         self.model_sigmas=[15.0]*len(self.model_anchors)
+        
+        self.model_sigmas=[]
+        self.model_weights=[]
+        for p in self.model_anchors: self.model_sigmas.append(IMP.core.XYZR(p).get_radius())
+        for p in self.model_weights: self.model_weights.append(len(IMP.atom.Fragment(p).get_residue_indexes()))
+
+
 
         #self.model_sigmas=[float(anch.get_as_xyzr().get_radius()) for anch in self.segment_parts]
         self.model_weights=[1.0]*len(self.model_anchors)

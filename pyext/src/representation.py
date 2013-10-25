@@ -870,11 +870,18 @@ class SimplifiedModel():
             chil=s.get_children()
             s0=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
             
-            s0.set_name(name+'_%i-%i' % (start,end)+"_Res:"+str(r))
+            s0.set_name(name+'_%i-%i_pdb' % (start,end)+"_Res:"+str(r))
             for ch in chil: s0.add_child(ch)            
             protein_h.add_child(s0)
             del s
             for prt in IMP.atom.get_leaves(s0):
+                ri=IMP.atom.Fragment(prt).get_residue_indexes()
+                first=ri[0]
+                last=ri[-1]
+                if first==last:
+                   prt.set_name(name+'_%i_pdb' % (first))
+                else:                   
+                   prt.set_name(name+'_%i-%i_pdb' % (first,last))
                 radius=IMP.core.XYZR(prt).get_radius()
                 IMP.pmi.Uncertainty.setup_particle(prt,radius)
                 IMP.pmi.Resolution.setup_particle(prt,r)
@@ -896,7 +903,11 @@ class SimplifiedModel():
             prt=IMP.Particle(self.m)
             h=IMP.atom.Fragment.setup_particle(prt)
             h.set_residue_indexes(range(ds_frag[0],ds_frag[1]+1))
-            h.set_name(name+'_%i-%i' % (ds_frag[0],ds_frag[1]))
+            
+            if ds_frag[0]==ds_frag[1]:
+               h.set_name(name+'_%i_bead' % (ds_frag[0]))
+            else:
+               h.set_name(name+'_%i-%i_bead' % (ds_frag[0],ds_frag[1]))               
             resolution=len(h.get_residue_indexes())
             try:
                 clr=IMP.display.get_rgb_color(colors[n])

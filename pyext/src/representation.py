@@ -691,7 +691,43 @@ class MultipleStates():
 class SimplifiedModel():
 #Peter Cimermancic and Riccardo Pellarin
     '''
-    This class creates the molecular hierarchies for the various involved proteins.    
+    This class creates the molecular hierarchies, representation, 
+    sequence connectivity for the various involved proteins and 
+    nucleic acid macromolecules. 
+    
+    To initialize the class:
+    
+    m                the model
+    upperharmonic    Bool This flag uses either harmonic (False) 
+                     or upperharmonic (True) in the intra-pair 
+                     connectivity restraint. Default is True.
+    disorderedlength Bool This flag uses either disordered length 
+                     calculated for random coil peptides (True) or zero 
+                     surface-to-surface distance between beads (False)
+                     as optimal distance for the sequence connectivity 
+                     restraint. Default is False.
+    
+    How to use the SimplifiedModel class (typical use):
+    
+    m = IMP.Model()
+    simo = representation.SimplifiedModel(m,upperharmonic=
+                               True,disorderedlength=False)
+    
+    simo.add_component_name("prot1")
+    simo.add_component_beads("prot1",[(1,31)],colors=[0.0])
+    simo.add_component_pdb("prot1",'prot1.1.pdb', "A",
+                 resolutions=[1,10], color=0.0, offset=-39)
+    simo.add_component_beads("prot1",[(131,145)],colors=[0.0])
+    simo.add_component_pdb("prot1",'prot1.2.pdb', "A",
+                             resolutions=[1,10], color=0.0)
+    simo.add_component_beads("prot1",[(626,635)],colors=[0.0])
+ 
+    simo.setup_component_sequence_connectivity("prot1")    
+    simo.set_rigid_bodies([("prot1",(30,130))])
+    simo.set_rigid_bodies([("prot1",(146,625))]) 
+    simo.set_floppy_bodies()
+    simo.shuffle_configuration()
+    
     '''
 
     def __init__(self,m,upperharmonic=True,disorderedlength=False):
@@ -845,6 +881,7 @@ class SimplifiedModel():
         else:
            #do what you have to do for nucleic-acids
            sel=IMP.atom.Selection(c,residue_indexes=range(start,end+1),atom_type=IMP.atom.AT_P)
+           
          
         ps=sel.get_selected_particles()
         c0=IMP.atom.Chain.setup_particle(IMP.Particle(self.m),"X")
@@ -857,13 +894,7 @@ class SimplifiedModel():
         start=start+offset
         end=end+offset
         
-        
         self.elements[name].append((start,end,pdbname.split("/")[-1]+":"+chain,"pdb"))
-        
-        
-        if show:
-           IMP.atom.show_molecular_hierarchy(c0)
-        
         
         for r in resolutions:
             s=IMP.atom.create_simplified_along_backbone(c0, r)
@@ -885,6 +916,9 @@ class SimplifiedModel():
                     colors.append(1.0)
                     clr=IMP.display.get_rgb_color(colors[pdb_part_count])
                 IMP.display.Colored.setup_particle(prt,clr)
+
+        if show:
+           IMP.atom.show_molecular_hierarchy(protein_h)
 
 
     def add_component_beads(self,name,ds,colors):

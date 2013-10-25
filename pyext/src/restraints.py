@@ -1793,7 +1793,7 @@ class ConnectivityCrossLinkMS():
         output={}
         score=self.weight*self.rs.unprotected_evaluate(None)
         output["_TotalScore"]=str(score)            
-        output["SimplifiedCrossLinkMS_Score_"+self.label]=str(score)
+        output["ConnectivityCrossLinkMS_Score_"+self.label]=str(score)
         for n,p in enumerate(self.pairs):
 
             ps1=p[0]
@@ -1919,8 +1919,8 @@ class SimplifiedCrossLinkMS():
             
             else:
                         
- 
-              hub= IMP.core.HarmonicUpperBound(self.expdistance,self.strength)
+              limit=self.strength*(self.expdistance+15)**2+10.0
+              hub= IMP.core.TruncatedHarmonicUpperBound(self.expdistance,self.strength,self.expdistance+15.,limit)
               df= IMP.core.SphereDistancePairScore(hub)
               dr= IMP.core.PairRestraint(df, (p1, p2))
               dr.set_name(c1+":"+str(r1)+"-"+c2+":"+str(r2))
@@ -1966,6 +1966,30 @@ class SimplifiedCrossLinkMS():
     def set_weight(self,weight):
         self.weight=weight
         self.rs.set_weight(weight)
+
+    def plot_restraint(self,radius1,radius2,maxdist=50,npoints=10):
+        import IMP.pmi.tools as tools
+        
+        p1=IMP.Particle(self.m)
+        p2=IMP.Particle(self.m)
+        d1=IMP.core.XYZR.setup_particle(p1)
+        d2=IMP.core.XYZR.setup_particle(p2)
+        d1.set_radius(radius1)
+        d2.set_radius(radius2)                
+        s1=IMP.atom.Selection(p1)
+        s2=IMP.atom.Selection(p2)
+        #limit=self.strength*(self.expdistance+1)**2+10.0
+        #hub= IMP.core.TruncatedHarmonicUpperBound(self.expdistance,self.strength,self.expdistance+5.,limit)
+        #df= IMP.core.SphereDistancePairScore(hub)
+        #dr= IMP.core.PairRestraint(df, (p1, p2))
+        dr=IMP.pmi.SigmoidRestraintSphere(self.m, p1, p2, self.expdistance, 1.0, 5.0) 
+        dists=[]
+        scores=[]
+        for i in range(npoints):
+            d2.set_coordinates(IMP.algebra.Vector3D(maxdist/npoints*float(i),0,0))
+            dists.append(IMP.core.get_distance(d1,d2))
+            scores.append(dr.unprotected_evaluate(None))
+        tools.plot_xy_data(dists,scores)
 
     def get_output(self):
         #content of the crosslink database pairs

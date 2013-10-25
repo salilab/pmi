@@ -851,15 +851,22 @@ class SimplifiedModel():
 
 
 
-    def add_component_pdb(self,name,pdbname,chain,resolutions,color,resrange=None,offset=0,show=False,isnucleicacid=False):
+    def add_component_pdb(self,name,pdbname,chain,resolutions,color,resrange=None,offset=0,
+                                   show=False,isnucleicacid=False,readnonwateratoms=False):
         #resrange specify the residue range to extract from the pdb
         #it is a tuple (beg,end). If not specified, it takes all residues belonging to
         # the specified chain.
          
         protein_h=self.hier_dict[name]
+
         
-        t=IMP.atom.read_pdb( pdbname, self.m, 
-        IMP.atom.AndPDBSelector(IMP.atom.ChainPDBSelector(chain),IMP.atom.ATOMPDBSelector()))
+        if not readnonwateratoms:
+           t=IMP.atom.read_pdb( pdbname, self.m, 
+           IMP.atom.AndPDBSelector(IMP.atom.ChainPDBSelector(chain),IMP.atom.ATOMPDBSelector()))
+        else:
+           t=IMP.atom.read_pdb( pdbname, self.m, 
+           IMP.atom.AndPDBSelector(IMP.atom.ChainPDBSelector(chain),IMP.atom.NonWaterPDBSelector()))   
+
 
         #find start and end indexes
         

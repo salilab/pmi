@@ -2319,9 +2319,9 @@ class ISDCrossLinkMS():
             
             #sigma1=self.get_sigma(IMP.pmi.Resolution(p1))[0]
             #sigma2=self.get_sigma(IMP.pmi.Resolution(p2))[0]    
-            mappedr1=self.radius_map.get_map_element(IMP.core.XYZR(p1).get_radius())
+            mappedr1=self.radius_map.get_map_element(IMP.pmi.Uncertainty(p1).get_uncertainty())
             sigma1=self.get_sigma(mappedr1)[0]
-            mappedr2=self.radius_map.get_map_element(IMP.core.XYZR(p2).get_radius())
+            mappedr2=self.radius_map.get_map_element(IMP.pmi.Uncertainty(p2).get_uncertainty())
             sigma2=self.get_sigma(mappedr2)[0]
             psival=self.ids_map.get_map_element(ids)
             psi=self.get_psi(psival)[0]
@@ -2336,6 +2336,7 @@ class ISDCrossLinkMS():
             print "ISDCrossLinkMS: generating cross-link restraint between"
             print "ISDCrossLinkMS: residue %d of chain %s and residue %d of chain %s" % (r1,c1,r2,c2)
             print "ISDCrossLinkMS: with sigma1 %f  sigma2 %f psi %s" % (mappedr1,mappedr2,psival) 
+            print "ISDCrossLinkMS: between particles %s and %s" % (p1.get_name(),p2.get_name())
             
             self.rs.add_restraint(dr)
             self.rssig.add_restraint(dr)
@@ -2356,14 +2357,6 @@ class ISDCrossLinkMS():
           
             self.pairs.append((p1,p2,dr,r1,c1,r2,c2,xlattribute,mappedr1,mappedr2,psival))
         
-        for psi in self.psi_dictionary:
-            #self.rspsi.add_restraint(impisd2.BinomialJeffreysPrior(self.psi_dictionary[psi][0]))
-            self.rspsi.add_restraint(impisd2.JeffreysRestraint(self.psi_dictionary[psi][0]))
-
-        #for sigma in self.sigma_dictionary:
-            #self.rssig.add_restraint(impisd2.JeffreysRestraint(self.sigma_dictionary[sigma][0]))
-            
-        
     def create_sigma(self,resolution):
         self.sigmainit=resolution+2.0
         self.sigmaissampled=True             
@@ -2376,7 +2369,7 @@ class ISDCrossLinkMS():
              self.sigmaminnuis,self.sigmamaxnuis,self.sigmaissampled).get_particle()
         self.sigma_dictionary[resolution]=(self.sigma,self.sigmatrans,self.sigmaissampled)    
         self.rssig.add_restraint(impisd2.UniformPrior(self.sigma,1000000000.0,self.sigmamax,self.sigmamin))
-        
+        #self.rssig.add_restraint(impisd2.JeffreysRestraint(self.sigma))        
         
     def get_sigma(self,resolution):
         if not resolution in self.sigma_dictionary:
@@ -2390,12 +2383,13 @@ class ISDCrossLinkMS():
         self.psiminnuis=0.0000001
         self.psimaxnuis=0.4999999
         self.psimin=    0.01
-        self.psimax=    0.49
+        self.psimax=    0.3
         self.psitrans=  0.01 
         self.psi=tools.SetupNuisance(self.m,self.psiinit,
              self.psiminnuis,self.psimaxnuis,self.psiissampled).get_particle()
         self.psi_dictionary[value]=(self.psi,self.psitrans,self.psiissampled)    
         self.rspsi.add_restraint(impisd2.UniformPrior(self.psi,1000000000.0,self.psimax,self.psimin))
+        self.rspsi.add_restraint(impisd2.JeffreysRestraint(self.psi))
         
     def get_psi(self,value):
         if not value in self.psi_dictionary:
@@ -2476,13 +2470,7 @@ class ISDCrossLinkMS():
 
         for resolution in self.sigma_dictionary:
             output["ISDCrossLinkMS_Sigma_"+str(resolution)+"_"+self.label]=str(self.sigma_dictionary[resolution][0].get_scale())
-        
-        '''
-        l=output.keys()
-        l.sort()
-        for o in l:
-            print o,output[o]
-        '''
+
         return output
 
     def get_particles_to_sample(self):

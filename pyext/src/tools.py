@@ -808,33 +808,31 @@ def get_particles_by_resolution(prot,resolution):
     #this function does not work with the root hierarchy, but 
     #individual proteins
     #for hier in prot.get_children():
-
     particles=[]
-    resolutions=[]
     residues=set() 
 
-    #calculate the closest resolution        
     for p in IMP.atom.get_leaves(prot):
-        res=IMP.pmi.Resolution.get_resolution(IMP.pmi.Resolution(p))
         residues.update(IMP.atom.Fragment(p).get_residue_indexes())
-        resolutions.append(res)
        
-    closestres=min(resolutions, key=lambda x:abs(float(x)-float(resolution)))
-    
-    for p in IMP.atom.get_leaves(prot):
-        if closestres==IMP.pmi.Resolution.get_resolution(IMP.pmi.Resolution(p)):  
-          particles.append(p)
-          for rindex in IMP.atom.Fragment(p).get_residue_indexes():
-              residues.remove(rindex)
-    
-    #select the rest, residues which were not included because
-    #they were not multi-res
-    
-    s=IMP.atom.Selection(prot, residue_indexes=list(residues))
-    particles+=s.get_selected_particles()
-    
-    
-    return particles
+    firstresn=min(residues)
+    lastresn=max(residues)
+
+    for nres in range(firstresn,lastresn+1):
+       s=IMP.atom.Selection(prot,residue_index=nres)
+       resolutions=[]
+
+       # calculate the closest resolution for each set of particles that represent a residue 
+       for p in s.get_selected_particles():
+           resolutions.append(IMP.pmi.Resolution(IMP.pmi.Resolution(p)).get_resolution())
+       closestres=min(resolutions, key=lambda x:abs(float(x)-float(resolution)))
+
+       # now we get the particle 
+       for p in s.get_selected_particles():
+          if closestres==IMP.pmi.Resolution.get_resolution(IMP.pmi.Resolution(p)): 
+            if not p in particles:  
+               particles.append(p)     
+
+    return list(particles)
 
 def set_floppy_body(p):
     if IMP.core.RigidMember.particle_is_instance(p):

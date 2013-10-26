@@ -12,7 +12,10 @@ class SimplifiedModel():
     '''
     This class creates the molecular hierarchies, representation, 
     sequence connectivity for the various involved proteins and 
-    nucleic acid macromolecules. 
+    nucleic acid macromolecules:
+    
+    Create a protein, DNA or RNA, represent it as a set of connected balls of appropriate
+    radii and number of residues, pdb at given resolution(s), or ideal helices.
     
     To initialize the class:
     
@@ -27,6 +30,8 @@ class SimplifiedModel():
                      restraint. Default is False.
     
     How to use the SimplifiedModel class (typical use):
+    
+
     
     m = IMP.Model()
     simo = representation.SimplifiedModel(m,upperharmonic=
@@ -88,12 +93,10 @@ class SimplifiedModel():
         self.prot=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
         self.connected_intra_pairs=[]
         self.hier_dict={}
+        self.sequence_dict={}
         self.hier_geometry_pairs={}
         self.elements={}
 
-    # create a protein, represented as a set of connected balls of appropriate
-    # radii and number, chose by the resolution parameter and the number of
-    # amino acids.
 
 
     def shuffle_configuration(self,bounding_box_length=300.,translate=True):
@@ -124,6 +127,15 @@ class SimplifiedModel():
         self.hier_dict[name]=protein_h
         self.prot.add_child(protein_h)
         self.elements[name]=[]
+    
+    def add_component_sequence(self,name,filename,format="FASTA"):
+        from Bio import SeqIO
+        handle = open(filename, "rU")
+        record_dict = SeqIO.to_dict(SeqIO.parse(handle, "fasta"))
+        handle.close()
+        length=len(record_dict[name].seq)
+        self.sequence_dict[name]=record_dict[name].seq
+        self.elements[name].append((length,length," ","end"))
 
     def add_pdb_and_intervening_beads(self,name,pdbname,chain,resolutions,resrange,beadsize,
                                       color,pdbresrange=None,offset=0,show=False,isnucleicacid=False):
@@ -252,6 +264,62 @@ class SimplifiedModel():
            IMP.atom.show_molecular_hierarchy(protein_h)
 
 
+
+    def add_component_ideal_helix(self,name,resolutions,resrange,color,show=False):
+        from math import pi,cos,sin
+        protein_h=self.hier_dict[name]   
+        start=resrange[0]
+        end=resrange[1]
+        self.elements[name].append((start,end," ","helix"))
+        c0=IMP.atom.Chain.setup_particle(IMP.Particle(self.m),"X")         
+        for n,res in enumerate(range(start,end+1)):
+            r=IMP.atom.Residue.setup_particle(IMP.Particle(self.m),IMP.atom.ALA,res)
+            p=IMP.Particle(self.m)
+            d=IMP.core.XYZR.setup_particle(p)
+            x=2.3*cos(n*2*pi/3.6)
+            y=2.3*sin(n*2*pi/3.6) 
+            z=5.4/3.6*n*2*pi/3.6    
+            print x,y,z      
+            d.set_coordinates(IMP.algebra.Vector3D(x,y,z))
+            d.set_radius(2.9)
+            #print d
+            a=IMP.atom.Atom.setup_particle(p,IMP.atom.AT_CA)
+            r.add_child(a)
+            c0.add_child(r)
+            
+        for r in resolutions:
+            s=IMP.atom.create_simplified_along_backbone(c0, r)
+            chil=s.get_children()
+            s0=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
+            
+            s0.set_name(name+'_%i-%i_pdb' % (start,end)+"_Res:"+str(r))
+            for ch in chil: s0.add_child(ch)            
+            protein_h.add_child(s0)
+            del s
+            for prt in IMP.atom.get_leaves(s0):
+                ri=IMP.atom.Fragment(prt).get_residue_indexes()
+                first=ri[0]
+                last=ri[-1]
+                if first==last:
+                   prt.set_name(name+'_%i_pdb' % (first))
+                else:                   
+                   prt.set_name(name+'_%i-%i_pdb' % (first,last))
+                radius=IMP.core.XYZR(prt).get_radius()
+                IMP.pmi.Uncertainty.setup_particle(prt,radius)
+                IMP.pmi.Resolution.setup_particle(prt,r)
+                #setting up color for each particle in the hierarchy, if colors missing in the colors list set it to red
+                try:
+                    clr=IMP.display.get_rgb_color(color)
+                except:
+                    colors.append(1.0)
+                    clr=IMP.display.get_rgb_color(colors[pdb_part_count])
+                IMP.display.Colored.setup_particle(prt,clr)
+
+        if show:
+           IMP.atom.show_molecular_hierarchy(protein_h)
+            
+            
+
     def add_component_beads(self,name,ds,colors):
         from math import pi
         protein_h=self.hier_dict[name]    
@@ -304,7 +372,7 @@ class SimplifiedModel():
             
         for n in range(len(sortedparticles)-1):
             self.hier_geometry_pairs[name].append((sortedparticles[n][0],sortedparticles[n+1][0]))
-        
+      
     def setup_component_sequence_connectivity(self,name,resolution=10):
         unmodeledregions_cr=IMP.RestraintSet("unmodeledregions")
         sortedsegments_cr=IMP.RestraintSet("sortedsegments")    
@@ -775,6 +843,8 @@ class SimplifiedModel():
         for s in subunits:
             if type(s)==type(tuple()) and len(s)==2:
                sel=IMP.atom.Selection(self.prot,molecule=s[0],residue_indexes=range(s[1][0],s[1][1]+1))
+               if len(sel.get_selected_particles())==0: 
+                  print "set_rigid_bodies: selected particle does not exists"
                for p in sel.get_selected_particles():
                   #if not p in self.floppy_bodies:
                      rigid_parts.append(p)
@@ -782,6 +852,8 @@ class SimplifiedModel():
                
             elif type(s)==type(str()):
                sel=IMP.atom.Selection(self.prot,molecule=s)
+               if len(sel.get_selected_particles())==0: 
+                  print "set_rigid_bodies: selected particle does not exists"
                for p in sel.get_selected_particles():
                   #if not p in self.floppy_bodies:
                      rigid_parts.append(p)
@@ -974,11 +1046,9 @@ class SimplifiedModel():
             else:
                print "%20s %20s" % (name,nres), " ".join(["%20s %20s" % (str(p.get_name()),
                      str(IMP.pmi.Resolution(p).get_resolution())) for p in ps])
-               
-        
+
+                
     def draw_hierarchy_composition(self):
-        from matplotlib import pyplot
-        import matplotlib as mpl
 
         ks=self.elements.keys()
         ks.sort()
@@ -988,36 +1058,75 @@ class SimplifiedModel():
             for l in self.elements[k]:
                 if l[1]>max: max=l[1]
         
-        
         for k in ks:
+            self.draw_component_composition(k,max)
+        
+    def draw_component_composition(self,name,max=1000):
+            from matplotlib import pyplot
+            import matplotlib as mpl    
+            k=name
             list=sorted(self.elements[k], key=itemgetter(0))
             endres=list[-1][1]
             fig = pyplot.figure(figsize=(26.0*float(endres)/max+2,2))
             ax = fig.add_axes([0.05, 0.475, 0.9, 0.15])
-            #ax = fig.add_axes([0.05, 0.475, 0.9, 0.15])
             
             # Set the colormap and norm to correspond to the data for which
             # the colorbar will be used.
             cmap = mpl.cm.cool
             norm = mpl.colors.Normalize(vmin=5, vmax=10)
             bounds=[1]
-            colors=['white']
+            colors=[]
             
+            print k
             
-            for l in list:
+            for n,l in enumerate(list):
                 firstres=l[0]
                 lastres=l[1]
-                if l[3]=="pdb": colors.append("#99CCFF")
-                if l[3]=="bead": colors.append("#FFFF99")                
-                bounds.append(l[0])
-
-            bounds.append(endres)
+                if l[3]!="end":
+                    if bounds[-1]!=l[0]:
+                       colors.append("white")
+                       bounds.append(l[0])
+                       if l[3]=="pdb": colors.append("#99CCFF")
+                       if l[3]=="bead": colors.append("#FFFF99")
+                       if l[3]!="end":
+                          bounds.append(l[1]+1)
+                    else:
+                       if l[3]=="pdb": colors.append("#99CCFF")
+                       if l[3]=="bead": colors.append("#FFFF99")
+                       if l[3]!="end":                   
+                          bounds.append(l[1]+1)
+                else:
+                   if bounds[-1]-1==l[0]:
+                      bounds.pop()
+                      bounds.append(l[0])
+                   else:
+                      colors.append("white")
+                      bounds.append(l[0])                     
+                            
+            bounds.append(bounds[-1])
+            colors.append("white")
             
+            '''
+            for n,l in enumerate(list):
+                firstres=l[0]
+                lastres=l[1]
+  
+                if l[3]=="end" and bounds[-1]!=list[n-1][1]: 
+                   colors.append("white")
+                   bounds.append(list[n-1][1])
+                elif bounds[-1]!=l[0]:
+                   print bounds[-1],l[0]          
+                   bounds.append(l[0])
+                   if l[3]=="pdb": colors.append("#99CCFF")
+                   if l[3]=="bead": colors.append("#FFFF99")
+            
+            if bounds[-1]!=endres:
+               bounds.append(endres)
+            '''
             cmap = mpl.colors.ListedColormap(colors)
             cmap.set_over('0.25')
             cmap.set_under('0.75')
-
-    
+            
             norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
             cb2 = mpl.colorbar.ColorbarBase(ax, cmap=cmap,
                                      norm=norm,
@@ -1029,7 +1138,6 @@ class SimplifiedModel():
                                      orientation='horizontal')
             
             extra_artists=[]
-            
             npdb=0
             for l in list:  
                 if l[3]=="pdb": 
@@ -1037,10 +1145,7 @@ class SimplifiedModel():
                    mid=1.0/endres*float(l[0])
                    #t =ax.text(mid, float(npdb-1)/2.0+1.5, l[2], ha="left", va="center", rotation=0,
                    #size=10)
-                
                    #t=ax.annotate(l[0],2)
-                
-                
                    t=ax.annotate(l[2], xy=(mid, 1),  xycoords='axes fraction',
                    xytext=(mid+0.025, float(npdb-1)/2.0+1.5), textcoords='axes fraction',
                    arrowprops=dict(arrowstyle="->",
@@ -1053,19 +1158,13 @@ class SimplifiedModel():
                 size=15)
             
             extra_artists.append(title)
-            
             #changing the xticks labels
-
             labels=len(bounds)*[" "]
-            
             ax.set_xticklabels(labels)
-            
             mid=1.0/endres*float(bounds[0])
             t=ax.annotate(bounds[0], xy=(mid, 0),  xycoords='axes fraction',
                    xytext=(mid-0.01, -0.5), textcoords='axes fraction',)            
-            
             extra_artists.append(t)
-            
             offsets=[0,-0.5,-1.0]
             nclashes=0
             for n in range(1,len(bounds)):

@@ -326,10 +326,10 @@ class SimplifiedModel():
         for x in xrange(len(SortedSegments)-1):
             last = IMP.atom.get_leaves(SortedSegments[x][0])[-1]
             first= IMP.atom.get_leaves(SortedSegments[x+1][0])[0]
+            nreslast=len(IMP.atom.Fragment(last).get_residue_indexes())
+            nresfirst=len(IMP.atom.Fragment(first).get_residue_indexes())
 
-            if self.disorderedlength:
-               nreslast=len(IMP.atom.Fragment(last).get_residue_indexes())
-               nresfirst=len(IMP.atom.Fragment(first).get_residue_indexes())
+            if self.disorderedlength and (nreslast/2+nresfirst/2)>20.0 :
                #calculate the distance between the sphere centers using Kohn PNAS 2004               
                optdist=sqrt(5/3)*1.93*(nreslast/2+nresfirst/2)**0.6
                #optdist2=sqrt(5/3)*1.93*((nreslast)**0.6+(nresfirst)**0.6)/2

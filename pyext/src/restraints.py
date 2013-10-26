@@ -846,8 +846,8 @@ class ISDCrossLinkMS():
         self.psi_dictionary={}
         
         self.ids_map=tools.map()
-        #self.ids_map.set_map_element(20.0,0.05)      
-        self.ids_map.set_map_element(35.0,0.01)   
+        self.ids_map.set_map_element(20.0,0.05)      
+        self.ids_map.set_map_element(40.0,0.01)   
 
         self.radius_map=tools.map()
         self.radius_map.set_map_element(2.5,2.5)
@@ -979,7 +979,7 @@ class ISDCrossLinkMS():
         self.sigmaissampled=True             
         self.sigmaminnuis=0.0000001
         self.sigmamaxnuis=1000.0
-        self.sigmamin=    resolution-resolution/2
+        self.sigmamin=    0.01
         self.sigmamax=    500.0
         self.sigmatrans=  0.2
         self.sigma=tools.SetupNuisance(self.m,self.sigmainit,

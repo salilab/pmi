@@ -88,6 +88,7 @@ class SimplifiedModel():
         self.bblenght=100.0
         self.kappa=100.0
         self.m = m
+        
         self.unmodeledregions_cr_dict={}
         self.sortedsegments_cr_dict={}
         self.prot=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
@@ -96,7 +97,7 @@ class SimplifiedModel():
         self.sequence_dict={}
         self.hier_geometry_pairs={}
         self.elements={}
-
+        self.linker_restraints=IMP.RestraintSet("linker_restraints")
 
 
     def shuffle_configuration(self,bounding_box_length=300.,translate=True):
@@ -139,7 +140,6 @@ class SimplifiedModel():
 
     def add_pdb_and_intervening_beads(self,name,pdbname,chain,resolutions,resrange,beadsize,
                                       color,pdbresrange=None,offset=0,show=False,isnucleicacid=False):
-        
         
         #get the initial and end residues of the pdb
         t=IMP.atom.read_pdb( pdbname, self.m, 
@@ -375,7 +375,8 @@ class SimplifiedModel():
       
     def setup_component_sequence_connectivity(self,name,resolution=10):
         unmodeledregions_cr=IMP.RestraintSet("unmodeledregions")
-        sortedsegments_cr=IMP.RestraintSet("sortedsegments")    
+        sortedsegments_cr=IMP.RestraintSet("sortedsegments")   
+         
         protein_h=protein_h=self.hier_dict[name]    
         SortedSegments = []
         pbr=tools.get_particles_by_resolution(protein_h,resolution)
@@ -424,6 +425,8 @@ class SimplifiedModel():
 
         self.m.add_restraint(sortedsegments_cr)
         self.m.add_restraint(unmodeledregions_cr)
+        self.linker_restraints.add_restraint(sortedsegments_cr)
+        self.linker_restraints.add_restraint(unmodeledregions_cr)
         self.sortedsegments_cr_dict[name]=sortedsegments_cr
         self.unmodeledregions_cr_dict[name]=unmodeledregions_cr
 
@@ -814,6 +817,7 @@ class SimplifiedModel():
         rh= RMF.open_rmf_file(rmfname)
         imprmf.link_hierarchies(rh, [self.prot])
         imprmf.load_frame(rh, frameindex)
+        del rh
 
     def create_components_from_rmf(self,rmfname,frameindex):
         '''
@@ -824,8 +828,13 @@ class SimplifiedModel():
         '''
         rh= RMF.open_rmf_file(rmfname)
         self.prot=imprmf.create_hierarchies(rh, self.m)[0]
+        IMP.atom.show_molecular_hierarchy(self.prot)
         imprmf.link_hierarchies(rh, [self.prot])
         imprmf.load_frame(rh, frameindex)
+        del rh
+        for p in self.prot.get_children():
+            self.add_component_name(p.get_name())
+            self.hier_dict[p.get_name()]=p
         '''
         still missing: save rigid bodies contained in the rmf in self.rigid_bodies
         save floppy bodies in self.floppy_bodies
@@ -989,7 +998,8 @@ class SimplifiedModel():
         output={}
         score=0.0
         
-        output["SimplifiedModel_Total_Score_"+self.label]=str(self.m.evaluate(False))        
+        output["SimplifiedModel_Total_Score_"+self.label]=str(self.m.evaluate(False))  
+        output["SimplifiedModel_Linker_Score_"+self.label]=str(self.linker_restraints.unprotected_evaluate(None))
         for name in self.sortedsegments_cr_dict:
             partialscore=self.sortedsegments_cr_dict[name].evaluate(False)
             score+=partialscore

@@ -822,9 +822,10 @@ class ISDCrossLinkMS():
         #by default column 0 = protein1; column 1 = protein2; column 2 = residue1; column 3 = residue2;
         # column 4 = idscores
 
-        global impisd2, tools
+        global impisd2, tools,log
         import IMP.isd2 as impisd2
         import IMP.pmi.tools as tools
+        from math import log
         
         if columnmapping==None:
            columnmapping={}
@@ -838,6 +839,8 @@ class ISDCrossLinkMS():
         self.rspsi=IMP.RestraintSet('prior_psi')
         self.rssig=IMP.RestraintSet('prior_sigmas')        
         self.rslin=IMP.RestraintSet('prior_linear')
+
+        
         self.prot=prot
         self.label="None"
         self.pairs=[]
@@ -850,17 +853,17 @@ class ISDCrossLinkMS():
         self.ids_map.set_map_element(40.0,0.01)   
 
         self.radius_map=tools.map()
-        self.radius_map.set_map_element(2.5,2.5)
-        self.radius_map.set_map_element(5.0,5.0)      
-        self.radius_map.set_map_element(7.5,7.5)  
+        #self.radius_map.set_map_element(2.5,2.5)
+        #self.radius_map.set_map_element(5.0,5.0)      
+        #self.radius_map.set_map_element(7.5,7.5)  
         self.radius_map.set_map_element(10,10)
-        self.radius_map.set_map_element(15,15)      
-        self.radius_map.set_map_element(20,20) 
+        #self.radius_map.set_map_element(15,15)      
+        #self.radius_map.set_map_element(20,20) 
         
         self.outputlevel="low"
 
         #small linear contribution for long range
-        h=IMP.core.Linear(0,0.07)
+        h=IMP.core.Linear(0,1.0)
         dps2=IMP.core.DistancePairScore(h)
 
         #fill the cross-linker pmfs
@@ -878,7 +881,7 @@ class ISDCrossLinkMS():
           for prot in self.prot.get_children():
              particles+=IMP.pmi.tools.get_particles_by_resolution(prot,resolution) 
         
-        
+        restraints=[]
         
         for line in open(restraints_file):
 
@@ -928,9 +931,6 @@ class ISDCrossLinkMS():
             
             dr= impisd2.CrossLinkMSRestraint(self.m, length)
 
-            
-            #sigma1=self.get_sigma(IMP.pmi.Resolution(p1))[0]
-            #sigma2=self.get_sigma(IMP.pmi.Resolution(p2))[0]    
             mappedr1=self.radius_map.get_map_element(IMP.pmi.Uncertainty(p1).get_uncertainty())
             sigma1=self.get_sigma(mappedr1)[0]
             mappedr2=self.radius_map.get_map_element(IMP.pmi.Uncertainty(p2).get_uncertainty())
@@ -950,13 +950,13 @@ class ISDCrossLinkMS():
             print "ISDCrossLinkMS: with sigma1 %f  sigma2 %f psi %s" % (mappedr1,mappedr2,psival) 
             print "ISDCrossLinkMS: between particles %s and %s" % (p1.get_name(),p2.get_name())
             
-            self.rs.add_restraint(dr)
-            self.rssig.add_restraint(dr)
+            restraints.append(dr)
+            #self.rssig.add_restraint(dr)
 
-            pr=IMP.core.PairRestraint(dps2,IMP.ParticlePair(p1,p2)) 
-
-            self.rs.add_restraint(pr)
-            self.rslin.add_restraint(pr)
+            
+            
+            #######self.rs.add_restraint(pr)
+            
 
             #check if the two residues belong to the same rigid body
             
@@ -971,8 +971,16 @@ class ISDCrossLinkMS():
 
 
             dr.set_name(xlattribute+"-"+c1+":"+str(r1)+"-"+c2+":"+str(r2))
+            
+            #the linear restraint is used only for rmf display puroposes
+            pr=IMP.core.PairRestraint(dps2,IMP.ParticlePair(p1,p2)) 
+            pr.set_name(xlattribute+"-"+c1+":"+str(r1)+"-"+c2+":"+str(r2))
+            self.rslin.add_restraint(pr)
           
             self.pairs.append((p1,p2,dr,r1,c1,r2,c2,xlattribute,mappedr1,mappedr2,psival))
+
+        lw=impisd2.LogWrapper(restraints)
+        self.rs.add_restraint(lw)
         
     def create_sigma(self,resolution):
         self.sigmainit=resolution+2.0
@@ -1000,13 +1008,13 @@ class ISDCrossLinkMS():
         self.psiminnuis=0.0000001
         self.psimaxnuis=0.4999999
         self.psimin=    0.01
-        self.psimax=    1.0
+        self.psimax=    0.49
         self.psitrans=  0.01 
         self.psi=tools.SetupNuisance(self.m,self.psiinit,
              self.psiminnuis,self.psimaxnuis,self.psiissampled).get_particle()
         self.psi_dictionary[value]=(self.psi,self.psitrans,self.psiissampled)    
         self.rspsi.add_restraint(impisd2.UniformPrior(self.psi,1000000000.0,self.psimax,self.psimin))
-        self.rspsi.add_restraint(impisd2.JeffreysRestraint(self.psi))
+        #self.rspsi.add_restraint(impisd2.JeffreysRestraint(self.psi))
         
     def get_psi(self,value):
         if not value in self.psi_dictionary:
@@ -1029,7 +1037,10 @@ class ISDCrossLinkMS():
         return self.rs
         
     def get_restraint(self):
-        return self.rs        
+        return self.rs  
+    
+    def get_restraint_for_rmf(self):
+        return self.rslin
 
     def get_restraints(self):
         rlist=[]
@@ -1059,8 +1070,8 @@ class ISDCrossLinkMS():
         score=self.rs.unprotected_evaluate(None)
         output["_TotalScore"]=str(score)            
         output["ISDCrossLinkMS_Data_Score_"+self.label]=str(score)
-        output["ISDCrossLinkMS_PriorSig_Score_"+self.label]=self.rssig.unprotected_evaluate(None)   
-        output["ISDCrossLinkMS_PriorPsi_Score_"+self.label]=self.rspsi.unprotected_evaluate(None)  
+        #output["ISDCrossLinkMS_PriorSig_Score_"+self.label]=self.rssig.unprotected_evaluate(None)   
+        #output["ISDCrossLinkMS_PriorPsi_Score_"+self.label]=self.rspsi.unprotected_evaluate(None)  
         for i in range(len(self.pairs)):
 
             p0=self.pairs[i][0]
@@ -1077,7 +1088,7 @@ class ISDCrossLinkMS():
             psi=self.pairs[i][10]
             
             label=attribute+"-"+str(resid1)+":"+chain1+"_"+str(resid2)+":"+chain2+"-"+str(rad1)+"-"+str(rad2)+"-"+str(psi)
-            output["ISDCrossLinkMS_Score_"+crosslinker+"_"+label]=str(ln.unprotected_evaluate(None))
+            output["ISDCrossLinkMS_Score_"+crosslinker+"_"+label]=str(-log(ln.unprotected_evaluate(None)))
             d0=IMP.core.XYZ(p0)
             d1=IMP.core.XYZ(p1)
             output["ISDCrossLinkMS_Distance_"+label]=str(IMP.core.get_distance(d0,d1))

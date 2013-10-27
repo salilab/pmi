@@ -102,7 +102,10 @@ class Output():
 
     def add_restraints_to_rmf(self,name,objectlist):
         for o in objectlist:
-            rs=o.get_restraint()
+            try:
+               rs=o.get_restraint_for_rmf()
+            except:
+               rs=o.get_restraint()
             imprmf.add_restraints(self.dictionary_rmfs[name],rs.get_restraints())
 
     def add_geometries_to_rmf(self,name,objectlist):
@@ -417,10 +420,8 @@ class ProcessOutput():
         
         plt.rc('lines', linewidth=4)
         fig, axs  = plt.subplots(nrows=len(fields))
-        
         fig.set_size_inches(10.5,5.5*len(fields))
-        
-        plt.rc('axes', color_cycle=['r', 'g', 'b', 'y'])
+        plt.rc('axes', color_cycle=['r'])
         
         n=0
         for key in fields:
@@ -438,6 +439,18 @@ class ProcessOutput():
         # Tweak spacing between subplots to prevent labels from overlapping
         plt.subplots_adjust(hspace=0.3)
         plt.show()     
+
+
+    def plot_field_histogram(self,name,values,valuename=None):
+        import matplotlib.pyplot as plt
+        plt.hist([float(y) for y in values],bins=40,color='#66CCCC',normed=True)
+        plt.title(name)
+        if valuename==None:
+           plt.xlabel(name)
+        else:
+           plt.xlabel(valuename)
+        plt.ylabel("Frequency")
+        plt.show()
 
 
 def plot_xy_data(x,y):

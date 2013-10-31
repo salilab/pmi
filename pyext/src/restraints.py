@@ -817,7 +817,7 @@ class SigmoidCrossLinkMS():
 
 class ISDCrossLinkMS():
 
-    def __init__(self,prot,restraints_file,length,resolution=None, columnmapping=None):
+    def __init__(self,prot,restraints_file,length,resolution=None, columnmapping=None,samplelength=False):
         #columnindexes is a list of column indexes for protein1, protein2, residue1, residue2
         #by default column 0 = protein1; column 1 = protein2; column 2 = residue1; column 3 = residue2;
         # column 4 = idscores
@@ -839,7 +839,7 @@ class ISDCrossLinkMS():
         self.rspsi=IMP.RestraintSet('prior_psi')
         self.rssig=IMP.RestraintSet('prior_sigmas')        
         self.rslin=IMP.RestraintSet('prior_linear')
-
+        self.rslen=IMP.RestraintSet('prior_length')
         
         self.prot=prot
         self.label="None"
@@ -847,7 +847,7 @@ class ISDCrossLinkMS():
         self.m=self.prot.get_model()
         self.sigma_dictionary={}
         self.psi_dictionary={}
-        
+        self.samplelength=samplelength
         self.ids_map=tools.map()
         self.ids_map.set_map_element(20.0,0.05)      
         self.ids_map.set_map_element(40.0,0.01)   
@@ -863,8 +863,8 @@ class ISDCrossLinkMS():
         self.outputlevel="low"
 
         #small linear contribution for long range
-        h=IMP.core.Linear(0,1.0)
-        dps2=IMP.core.DistancePairScore(h)
+        self.linear=IMP.core.Linear(0,0.0)
+        dps2=IMP.core.DistancePairScore(self.linear)
 
         #fill the cross-linker pmfs
         #to accelerate the init the list listofxlinkertypes might contain only yht needed crosslinks
@@ -873,8 +873,6 @@ class ISDCrossLinkMS():
         residue1=columnmapping["Residue1"]
         residue2=columnmapping["Residue2"]        
         idscore=columnmapping["IDScore"]
-        
-        print idscore
         
         if resolution!=None:
           particles=[]
@@ -893,10 +891,15 @@ class ISDCrossLinkMS():
             r2=int(tokens[residue2])
             c2=tokens[protein2]
             
-            if tokens[idscore]=="High" : ids=1
-            elif tokens[idscore]=="Low" : ids=0
-            else: ids=float(tokens[idscore])
-
+            try:
+              #if the field exists in the file
+              d=tokens[idscore]
+              if tokens[idscore]=="High" : ids=1
+              elif tokens[idscore]=="Low" : ids=0
+              else: ids=float(tokens[idscore])
+            except:
+              #if the field does not exist in the file
+              ids=1
 
             s1=IMP.atom.Selection(self.prot,molecule=c1, residue_index=r1)
             ps1=s1.get_selected_particles()
@@ -929,7 +932,12 @@ class ISDCrossLinkMS():
             #remove in the future!!!
             if p1==p2: continue
             
-            dr= impisd2.CrossLinkMSRestraint(self.m, length)
+            if not self.samplelength:
+               dr= impisd2.CrossLinkMSRestraint(self.m, length)
+            else:
+               #this will create a xl length particle that will be sampled
+               self.create_length()
+               dr= impisd2.CrossLinkMSRestraint(self.m, self.length)               
 
             mappedr1=self.radius_map.get_map_element(IMP.pmi.Uncertainty(p1).get_uncertainty())
             sigma1=self.get_sigma(mappedr1)[0]
@@ -981,6 +989,18 @@ class ISDCrossLinkMS():
 
         lw=impisd2.LogWrapper(restraints)
         self.rs.add_restraint(lw)
+
+    def create_length(self):
+        self.lengthinit=10.0
+        self.lengthissampled=True             
+        self.lengthminnuis=0.0000001
+        self.lengthmaxnuis=1000.0
+        self.lengthmin=    6.0
+        self.lengthmax=    21.0
+        self.lengthtrans=  0.2
+        self.length=tools.SetupNuisance(self.m,self.lengthinit,
+             self.lengthminnuis,self.lengthmaxnuis,self.lengthissampled).get_particle()
+        self.rslen.add_restraint(impisd2.UniformPrior(self.length,1000000000.0,self.lengthmax,self.lengthmin))
         
     def create_sigma(self,resolution):
         self.sigmainit=resolution+2.0
@@ -989,7 +1009,7 @@ class ISDCrossLinkMS():
         self.sigmamaxnuis=1000.0
         self.sigmamin=    0.01
         self.sigmamax=    500.0
-        self.sigmatrans=  0.2
+        self.sigmatrans=  0.5
         self.sigma=tools.SetupNuisance(self.m,self.sigmainit,
              self.sigmaminnuis,self.sigmamaxnuis,self.sigmaissampled).get_particle()
         self.sigma_dictionary[resolution]=(self.sigma,self.sigmatrans,self.sigmaissampled)    
@@ -1000,7 +1020,9 @@ class ISDCrossLinkMS():
         if not resolution in self.sigma_dictionary:
            self.create_sigma(resolution)
         return self.sigma_dictionary[resolution]
-
+    
+    def set_slope_linear_term(self,slope):
+        self.linear.set_slope(slope)
 
     def create_psi(self,value):
         self.psiinit=value
@@ -1009,12 +1031,12 @@ class ISDCrossLinkMS():
         self.psimaxnuis=0.4999999
         self.psimin=    0.01
         self.psimax=    0.49
-        self.psitrans=  0.01 
+        self.psitrans=  0.1 
         self.psi=tools.SetupNuisance(self.m,self.psiinit,
              self.psiminnuis,self.psimaxnuis,self.psiissampled).get_particle()
         self.psi_dictionary[value]=(self.psi,self.psitrans,self.psiissampled)    
         self.rspsi.add_restraint(impisd2.UniformPrior(self.psi,1000000000.0,self.psimax,self.psimin))
-        #self.rspsi.add_restraint(impisd2.JeffreysRestraint(self.psi))
+        self.rspsi.add_restraint(impisd2.JeffreysRestraint(self.psi))
         
     def get_psi(self,value):
         if not value in self.psi_dictionary:
@@ -1029,6 +1051,8 @@ class ISDCrossLinkMS():
         self.m.add_restraint(self.rs)
         self.m.add_restraint(self.rspsi)
         self.m.add_restraint(self.rssig)
+        self.m.add_restraint(self.rslen)
+        self.m.add_restraint(self.rslin)
 
     def get_hierarchies(self):
         return self.prot
@@ -1070,8 +1094,9 @@ class ISDCrossLinkMS():
         score=self.rs.unprotected_evaluate(None)
         output["_TotalScore"]=str(score)            
         output["ISDCrossLinkMS_Data_Score_"+self.label]=str(score)
-        #output["ISDCrossLinkMS_PriorSig_Score_"+self.label]=self.rssig.unprotected_evaluate(None)   
-        #output["ISDCrossLinkMS_PriorPsi_Score_"+self.label]=self.rspsi.unprotected_evaluate(None)  
+        output["ISDCrossLinkMS_PriorSig_Score_"+self.label]=self.rssig.unprotected_evaluate(None)   
+        output["ISDCrossLinkMS_PriorPsi_Score_"+self.label]=self.rspsi.unprotected_evaluate(None)  
+        output["ISDCrossLinkMS_Linear_Score_"+self.label]=self.rslin.unprotected_evaluate(None)
         for i in range(len(self.pairs)):
 
             p0=self.pairs[i][0]
@@ -1098,7 +1123,10 @@ class ISDCrossLinkMS():
 
         for resolution in self.sigma_dictionary:
             output["ISDCrossLinkMS_Sigma_"+str(resolution)+"_"+self.label]=str(self.sigma_dictionary[resolution][0].get_scale())
-
+        
+        if self.samplelength:
+            output["ISDCrossLinkMS_Length_"+str(resolution)+"_"+self.label]=str(self.length.get_scale())
+        
         return output
 
     def get_particles_to_sample(self):
@@ -1112,6 +1140,10 @@ class ISDCrossLinkMS():
         for psiindex in self.psi_dictionary:
           if self.psi_dictionary[psiindex][2]:
             ps["Nuisances_ISDCrossLinkMS_Psi_"+str(psiindex)+"_"+self.label]=([self.psi_dictionary[psiindex][0]],self.psi_dictionary[psiindex][1])
+
+        if self.samplelength:
+           if self.lengthissampled:
+            ps["Nuisances_ISDCrossLinkMS_Length_"+self.label]=([self.length],self.lengthtrans)
         
         return ps  
 

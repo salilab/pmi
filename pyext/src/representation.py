@@ -94,6 +94,7 @@ class SimplifiedModel():
         self.prot=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
         self.connected_intra_pairs=[]
         self.hier_dict={}
+        self.color_dict={}
         self.sequence_dict={}
         self.hier_geometry_pairs={}
         self.elements={}
@@ -122,12 +123,16 @@ class SimplifiedModel():
                 IMP.core.XYZ(fb).set_coordinates(translation)
 
 
-    def add_component_name(self,name):
+    def add_component_name(self,name,color=None):
         protein_h = IMP.atom.Molecule.setup_particle(IMP.Particle(self.m))
         protein_h.set_name(name)
         self.hier_dict[name]=protein_h
         self.prot.add_child(protein_h)
+        self.color_dict[name]=color
         self.elements[name]=[]
+    
+    def get_component_names(self):
+        return self.hier_dict.keys()
     
     def add_component_sequence(self,name,filename,format="FASTA"):
         from Bio import SeqIO
@@ -139,7 +144,10 @@ class SimplifiedModel():
         self.elements[name].append((length,length," ","end"))
 
     def add_pdb_and_intervening_beads(self,name,pdbname,chain,resolutions,resrange,beadsize,
-                                      color,pdbresrange=None,offset=0,show=False,isnucleicacid=False):
+                                      color=None,pdbresrange=None,offset=0,show=False,isnucleicacid=False):
+
+        if color==None:
+           color=self.color_dict[name]
         
         #get the initial and end residues of the pdb
         t=IMP.atom.read_pdb( pdbname, self.m, 
@@ -180,12 +188,14 @@ class SimplifiedModel():
 
 
 
-    def add_component_pdb(self,name,pdbname,chain,resolutions,color,resrange=None,offset=0,
+    def add_component_pdb(self,name,pdbname,chain,resolutions,color=None,resrange=None,offset=0,
                                    show=False,isnucleicacid=False,readnonwateratoms=False):
         #resrange specify the residue range to extract from the pdb
         #it is a tuple (beg,end). If not specified, it takes all residues belonging to
         # the specified chain.
-         
+        if color==None:
+           color=self.color_dict[name]         
+        
         protein_h=self.hier_dict[name]
 
         
@@ -265,9 +275,14 @@ class SimplifiedModel():
 
 
 
-    def add_component_ideal_helix(self,name,resolutions,resrange,color,show=False):
+    def add_component_ideal_helix(self,name,resolutions,resrange,color=None,show=False):
+    
         from math import pi,cos,sin
+        
         protein_h=self.hier_dict[name]   
+        if color==None:
+           color=self.color_dict[name]
+        
         start=resrange[0]
         end=resrange[1]
         self.elements[name].append((start,end," ","helix"))
@@ -320,9 +335,12 @@ class SimplifiedModel():
             
             
 
-    def add_component_beads(self,name,ds,colors):
+    def add_component_beads(self,name,ds,colors=None):
         from math import pi
-        protein_h=self.hier_dict[name]    
+        protein_h=self.hier_dict[name]
+        if colors==None:
+           colors=[self.color_dict[name]]
+            
         for n,dss in enumerate(ds):
             ds_frag=(dss[0],dss[1])
             self.elements[name].append((dss[0],dss[1]," ","bead"))
@@ -355,7 +373,9 @@ class SimplifiedModel():
             self.floppy_bodies.append(p)
             protein_h.add_child(h)
 
-    def setup_component_geometry(self,name,color=0):
+    def setup_component_geometry(self,name,color=None):
+        if color==None:
+           color=self.color_dict[name]
         #this function stores all particle pairs
         #ordered by residue number, to be used 
         #to construct backbone traces
@@ -371,7 +391,7 @@ class SimplifiedModel():
             sortedparticles = sorted(sortedparticles, key=itemgetter(1))
             
         for n in range(len(sortedparticles)-1):
-            self.hier_geometry_pairs[name].append((sortedparticles[n][0],sortedparticles[n+1][0]))
+            self.hier_geometry_pairs[name].append((sortedparticles[n][0],sortedparticles[n+1][0],color))
       
     def setup_component_sequence_connectivity(self,name,resolution=10):
         unmodeledregions_cr=IMP.RestraintSet("unmodeledregions")
@@ -1032,10 +1052,15 @@ class SimplifiedModel():
             for pt in self.hier_geometry_pairs[name]:
                 p1=pt[0]
                 p2=pt[1]
+                color=pt[2]
+                try:
+                    clr=IMP.display.get_rgb_color(color)
+                except:
+                    clr=IMP.display.get_rgb_color(1.0)
                 coor1=IMP.core.XYZ(p1).get_coordinates()
                 coor2=IMP.core.XYZ(p2).get_coordinates()
                 seg=IMP.algebra.Segment3D(coor1,coor2)
-                seggeos.append(IMP.display.SegmentGeometry(seg))
+                seggeos.append(IMP.display.SegmentGeometry(seg,clr))
         return seggeos
 
     def show_component_table(self,name):
@@ -1199,3 +1224,31 @@ class SimplifiedModel():
             
             pyplot.savefig(k+"structure.png",dpi=150,transparent="True",bbox_extra_artists=(extra_artists), bbox_inches='tight')
             pyplot.show()
+
+    def get_prot_name_from_particle(self,particle):
+            names=self.get_component_names()
+            particle0=particle
+            name=None
+            while not name in names:
+                 h=IMP.atom.Hierarchy(particle0).get_parent()
+                 name=h.get_name()
+                 particle0=h.get_particle()
+            return name
+
+    def get_random_residue_pairs(self,names,resolution,number):
+            from random import choice
+            particles=[]
+            for name in names:
+                prot=self.hier_dict[name]
+                particles+=tools.get_particles_by_resolution(prot,resolution)
+            
+            random_residue_pairs=[]
+            for i in range(number):
+                p1=choice(particles)
+                p2=choice(particles)
+                r1=choice(IMP.atom.Fragment(p1).get_residue_indexes())
+                r2=choice(IMP.atom.Fragment(p2).get_residue_indexes())            
+                name1=self.get_prot_name_from_particle(p1)
+                name2=self.get_prot_name_from_particle(p2)
+                random_residue_pairs.append((name1,r1,name2,r2))
+            return random_residue_pairs           

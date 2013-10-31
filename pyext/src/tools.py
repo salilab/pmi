@@ -343,6 +343,7 @@ def get_drmsd(prot0, prot1):
 
     #-------------------------------
 
+
 def get_residue_index_and_chain_from_particle(p):
     rind=IMP.atom.Residue(IMP.atom.Atom(p).get_parent()).get_index()
     c=IMP.atom.Residue(IMP.atom.Atom(p).get_parent()).get_parent()

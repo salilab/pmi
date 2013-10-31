@@ -190,30 +190,45 @@ class SimplifiedModel():
 
     def add_component_pdb(self,name,pdbname,chain,resolutions,color=None,resrange=None,offset=0,
                                    show=False,isnucleicacid=False,readnonwateratoms=False):
-        #resrange specify the residue range to extract from the pdb
-        #it is a tuple (beg,end). If not specified, it takes all residues belonging to
-        # the specified chain.
+                                   
+        '''
+        resrange specify the residue range to extract from the pdb
+        it is a tuple (beg,end). If not specified, it takes all residues belonging to
+         the specified chain.
+         
+        chain can be either a string (eg, A, B, C) or an integer (0,1,2) in case you want
+        to get the corresponding chain number in the pdb.
+        '''
+        
         if color==None:
            color=self.color_dict[name]         
-        
         protein_h=self.hier_dict[name]
 
-        
-        if not readnonwateratoms:
-           t=IMP.atom.read_pdb( pdbname, self.m, 
-           IMP.atom.AndPDBSelector(IMP.atom.ChainPDBSelector(chain),IMP.atom.ATOMPDBSelector()))
-        else:
-           t=IMP.atom.read_pdb( pdbname, self.m, 
-           IMP.atom.AndPDBSelector(IMP.atom.ChainPDBSelector(chain),IMP.atom.NonWaterPDBSelector()))   
-
-
-        #find start and end indexes
-        
-        start = IMP.atom.Residue(t.get_children()[0].get_children()[0]).get_index()
-        end   = IMP.atom.Residue(t.get_children()[0].get_children()[-1]).get_index()
-
-        c=IMP.atom.Chain(IMP.atom.get_by_type(t, IMP.atom.CHAIN_TYPE)[0])
-
+        if type(chain)==str:
+           if not readnonwateratoms:
+              t=IMP.atom.read_pdb( pdbname, self.m, 
+              IMP.atom.AndPDBSelector(IMP.atom.ChainPDBSelector(chain),IMP.atom.ATOMPDBSelector()))
+           else:
+              t=IMP.atom.read_pdb( pdbname, self.m, 
+              IMP.atom.AndPDBSelector(IMP.atom.ChainPDBSelector(chain),IMP.atom.NonWaterPDBSelector()))  
+           #get the first and last residue
+           start = IMP.atom.Residue(t.get_children()[0].get_children()[0]).get_index()
+           end   = IMP.atom.Residue(t.get_children()[0].get_children()[-1]).get_index()
+           c=IMP.atom.Chain(IMP.atom.get_by_type(t, IMP.atom.CHAIN_TYPE)[0])
+               
+        elif type(chain)==int:
+           if not readnonwateratoms:        
+              s=IMP.atom.read_pdb( pdbname, self.m, IMP.atom.ATOMPDBSelector())
+           else:
+              s=IMP.atom.read_pdb( pdbname, self.m, IMP.atom.NonWaterPDBSelector())        
+           t=IMP.atom.Chain(IMP.atom.get_by_type(s, IMP.atom.CHAIN_TYPE)[chain])
+           #get the first and last residue
+           start = IMP.atom.Residue(t.get_children()[0]).get_index()
+           end   = IMP.atom.Residue(t.get_children()[-1]).get_index()           
+           c=t           
+           chain=t.get_id()
+           del s,t
+           
         
         if resrange!=None:
            if resrange[0]>start: start=resrange[0]

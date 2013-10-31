@@ -1,9 +1,12 @@
 class Output():
     
     def __init__(self,ascii=True):
-        global os,RMF,imprmf,cPickle
+        global os,RMF,imprmf,cPickle,impatom,impcore
         import cPickle as cPickle
         import os
+        import IMP
+        import IMP.atom as impatom
+        import IMP.core as impcore
         try:
             import RMF
             import IMP.rmf as imprmf
@@ -21,6 +24,8 @@ class Output():
         self.suffix=None
         self.ascii=ascii
         self.initoutput={}
+        self.chainids="ABCDEFGHIJKLMNOPQRSTUVXYWZabcdefghijklmnopqrstuvxywz"
+        self.dictchain={}
 
     def get_pdb_names(self):
         return self.dictionary_pdbs.keys()
@@ -35,13 +40,36 @@ class Output():
         flpdb=open(name,'w')
         flpdb.close()
         self.dictionary_pdbs[name]=prot
+        self.dictchain[name]={}
+        
+        for n,i in enumerate(self.dictionary_pdbs[name].get_children()):
+            self.dictchain[name][i.get_name()]=self.chainids[n]
 
     def write_pdb(self,name,appendmode=True):
         if appendmode:
             flpdb=open(name,'a')
         else:
             flpdb=open(name,'w')
-        IMP.atom.write_pdb(self.dictionary_pdbs[name],flpdb)
+            
+        #impatom.write_pdb(self.dictionary_pdbs[name],flpdb)
+        
+        for n,p in enumerate(impatom.get_leaves(self.dictionary_pdbs[name])):
+        
+           if p.get_parent().get_name() in self.dictchain[name]:
+              protname=p.get_parent().get_name()
+           else:
+              p0=p.get_parent()
+              protname=p0.get_parent().get_name()
+        
+           resind=impatom.Fragment(p).get_residue_indexes()
+        
+           if len(resind)==1:
+              flpdb.write(impatom.get_pdb_string(impcore.XYZ(p).get_coordinates(),
+                             n,impatom.AT_CA,impatom.ALA,
+                             self.dictchain[name][protname],resind[0]))
+        flpdb.write("ENDMOL\n")
+        
+        
         flpdb.close()
 
     def write_pdbs(self,appendmode=True):

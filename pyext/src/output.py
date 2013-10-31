@@ -450,6 +450,7 @@ class ProcessOutput():
         else:
            plt.xlabel(valuename)
         plt.ylabel("Frequency")
+        plt.savefig(name+".png",dpi=150,transparent="True")
         plt.show()
 
 

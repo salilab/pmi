@@ -380,12 +380,15 @@ def get_particles_by_resolution(prot,resolution):
                     if not p in particles:  
                         particles.append(p)     
         else: 
-            print "get_particles_by_resolution: residue %d in molecule %s is missing" % (nres,prot.get_name())
+            print "get_particles_by_resolution> WARNING residue %d in molecule %s is missing" % (nres,prot.get_name())
 
     return list(particles)
 
 
     #-------------------------------
+
+
+
 
 def select_calpha_or_residue(prot,chain,resid,ObjectName="None:",SelectResidue=False):
     #use calphas

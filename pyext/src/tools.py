@@ -360,17 +360,29 @@ def get_particles_by_resolution(prot,resolution):
     for p in IMP.atom.get_leaves(prot):
         residues.update(IMP.atom.Fragment(p).get_residue_indexes())
        
-    for nres in residues:
-        s = IMP.atom.Selection(prot,residue_index=nres)
-        ps = s.get_selected_particles()
-        if ps:
-          candidates = [
-           (p, abs(IMP.pmi.Resolution(IMP.pmi.Resolution(p)).get_resolution() - resolution)) for
-           p in ps]
-          closestres = min(candidates, key = lambda x : x[1])[1]
-          particles.extend([x[0] for x in candidates if x[1] == closestres])
+    firstresn=min(residues)
+    lastresn=max(residues)
+    for nres in range(firstresn,lastresn+1):
+        s=IMP.atom.Selection(prot,residue_index=nres)
+        resolutions=[]
 
-    return particles
+        # calculate the closest resolution for each set of particles that represent a residue 
+        ps=s.get_selected_particles()
+
+        if len(ps)>0:
+            for p in ps:
+                resolutions.append(IMP.pmi.Resolution(IMP.pmi.Resolution(p)).get_resolution())
+            closestres=min(resolutions, key=lambda x:abs(float(x)-float(resolution)))
+            
+            # now we get the particle 
+            for p in ps:
+                if closestres==IMP.pmi.Resolution.get_resolution(IMP.pmi.Resolution(p)): 
+                    if not p in particles:  
+                        particles.append(p)     
+        else: 
+            print "get_particles_by_resolution> WARNING residue %d in molecule %s is missing" % (nres,prot.get_name())
+
+    return list(particles)
     #-------------------------------
 
 def select_calpha_or_residue(prot,chain,resid,ObjectName="None:",SelectResidue=False):

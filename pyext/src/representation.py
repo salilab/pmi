@@ -99,7 +99,13 @@ class SimplifiedModel():
         self.hier_geometry_pairs={}
         self.elements={}
         self.linker_restraints=IMP.RestraintSet("linker_restraints")
-
+        self.threetoone={'ALA':'A','ARG':'R','ASN':'N','ASP':'D',
+                         'CYS':'C','GLU':'E','GLN':'Q','GLY':'G',
+                         'HIS':'H','ILE':'I','LEU':'L','LYS':'K',
+                         'MET':'M','PHE':'F','PRO':'P','SER':'S',
+                         'THR':'T','TRP':'W','TYR':'Y','VAL':'V','UNK':'X'}
+        self.onetothree = {v:k for k, v in self.threetoone.items()}
+        self.residuenamekey = IMP.kernel.StringKey("ResidueName")
 
     def shuffle_configuration(self,bounding_box_length=300.,translate=True):
         "shuffle configuration, used to restart the optimization"
@@ -189,7 +195,7 @@ class SimplifiedModel():
 
 
     def add_component_pdb(self,name,pdbname,chain,resolutions,color=None,resrange=None,offset=0,
-                                   show=False,isnucleicacid=False,readnonwateratoms=False):
+                                   cacenters=False,show=False,isnucleicacid=False,readnonwateratoms=False):
                                    
         '''
         resrange specify the residue range to extract from the pdb
@@ -259,6 +265,7 @@ class SimplifiedModel():
         
         for r in resolutions:
             s=IMP.atom.create_simplified_along_backbone(c0, r)
+                           
             chil=s.get_children()
             s0=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
             
@@ -274,9 +281,61 @@ class SimplifiedModel():
                    prt.set_name(name+'_%i_pdb' % (first))
                 else:                   
                    prt.set_name(name+'_%i-%i_pdb' % (first,last))
+                
+                if r==1:
+                   #all the code below is to set the appropriate residue name
+
+                   if not isnucleicacid:
+                      sel=IMP.atom.Selection(c0,residue_index=first, atom_type=IMP.atom.AT_CA)
+                   else:
+                      sel=IMP.atom.Selection(c0,residue_index=first, atom_type=IMP.atom.AT_P)
+                   
+                   p=sel.get_selected_particles()[0]
+                   rtobject=IMP.atom.Residue(IMP.atom.Atom(p).get_parent()).get_residue_type()
+                   #the problem of the following function is that it does not 
+                   #cover nucleic acid codes, therefore you'll get UNK for RNA and DNA pdbs.
+                   rt=self.onetothree[IMP.atom.get_one_letter_code(rtobject)]
+                   if cacenters:
+                       #this specially sets the radii and centers on the 
+                       #cartesian coordinates of the ca atoms when the resolution is 1
+                       #beacuse simplified along backbone gets the COM positions
+                       
+                       xyz=IMP.core.XYZ(p).get_coordinates()
+                       IMP.core.XYZ(prt).set_coordinates(xyz)
+                       
+                       try:
+                          vol=IMP.atom.get_volume_from_residue_type(rtobject)
+                          radius=IMP.algebra.get_ball_radius_from_volume_3d(vol)
+                       except IMP.base.ValueException:
+                          radius=IMP.core.XYZR(prt).get_radius()
+                       IMP.core.XYZR(prt).set_radius(radius)
+                    
+                   #setting the residue type to the particle
+                   
+                   if name in self.sequence_dict:
+                      try:
+                         rt_final=self.onetothree[self.sequence_dict[name][first-1]]
+                      except IndexError:
+                         print "add_component_pdb> WARNING: Name: %s residue number: %d the input fasta sequence is shorter \
+than the one read from the pdb, setting residue type from pdb. Check the fasta file or the pdb offset" % (name, first)
+                         rt_final=rt
+                   else:
+                      rt_final=rt
+                      
+                   if rt_final!=rt:
+                      print "add_component_pdb> WARNING: Name: %s residue number: %d Expected \
+residue: %s residue found in pdb: %s residue types don't match between \
+sequence and pdb, setting it to the one in the sequence, check \
+the pdb offset" % (name,first,rt_final,rt)
+                      
+                   #I'm using particle attributes rather that Residue decorators
+                   #because I don't want to mess up the hierarchy levels
+                   prt.add_attribute(self.residuenamekey, rt)
+                                      
                 radius=IMP.core.XYZR(prt).get_radius()
                 IMP.pmi.Uncertainty.setup_particle(prt,radius)
                 IMP.pmi.Resolution.setup_particle(prt,r)
+                
                 #setting up color for each particle in the hierarchy, if colors missing in the colors list set it to red
                 try:
                     clr=IMP.display.get_rgb_color(color)
@@ -318,6 +377,7 @@ class SimplifiedModel():
             c0.add_child(r)
             
         for r in resolutions:
+
             s=IMP.atom.create_simplified_along_backbone(c0, r)
             chil=s.get_children()
             s0=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
@@ -335,6 +395,20 @@ class SimplifiedModel():
                 else:                   
                    prt.set_name(name+'_%i-%i_pdb' % (first,last))
                 radius=IMP.core.XYZR(prt).get_radius()
+                if r==1: 
+                   if name in self.sequence_dict:
+                      rt_final=self.onetothree[self.sequence_dict[name][first-1]]
+                      rtobject=IMP.atom.ResidueType(rt_final)
+                      vol=IMP.atom.get_volume_from_residue_type(rtobject)
+                      radius=IMP.algebra.get_ball_radius_from_volume_3d(vol)
+                   else:
+                      rt="X"
+                      rtobject=IMP.atom.ResidueType("ALA")
+                      vol=IMP.atom.get_volume_from_residue_type(rtobject)
+                      radius=IMP.algebra.get_ball_radius_from_volume_3d(vol)
+                   prt.add_attribute(self.residuenamekey, rt)
+                   prt.set_radius(radius)
+
                 IMP.pmi.Uncertainty.setup_particle(prt,radius)
                 IMP.pmi.Resolution.setup_particle(prt,r)
                 #setting up color for each particle in the hierarchy, if colors missing in the colors list set it to red

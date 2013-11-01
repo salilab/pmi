@@ -1,10 +1,10 @@
 class Output():
     
     def __init__(self,ascii=True):
-        global os,RMF,imprmf,cPickle,impatom,impcore
+        global os,RMF,imprmf,cPickle,impatom,impcore,imp
         import cPickle as cPickle
         import os
-        import IMP
+        import IMP as imp
         import IMP.atom as impatom
         import IMP.core as impcore
         try:
@@ -24,6 +24,7 @@ class Output():
         self.suffix=None
         self.ascii=ascii
         self.initoutput={}
+        self.residuetypekey=imp.StringKey("ResidueName")
         self.chainids="ABCDEFGHIJKLMNOPQRSTUVXYWZabcdefghijklmnopqrstuvxywz"
         self.dictchain={}
 
@@ -64,8 +65,10 @@ class Output():
            resind=impatom.Fragment(p).get_residue_indexes()
         
            if len(resind)==1:
+           
+           
               flpdb.write(impatom.get_pdb_string(impcore.XYZ(p).get_coordinates(),
-                             n,impatom.AT_CA,impatom.ALA,
+                             n,impatom.AT_CA,impatom.ResidueType((p.get_value(self.residuetypekey))),
                              self.dictchain[name][protname],resind[0]))
         flpdb.write("ENDMOL\n")
         

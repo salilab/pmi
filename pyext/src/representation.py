@@ -146,11 +146,13 @@ class SimplifiedModel():
         record_dict = SeqIO.to_dict(SeqIO.parse(handle, "fasta"))
         handle.close()
         length=len(record_dict[name].seq)
-        self.sequence_dict[name]=record_dict[name].seq
+        self.sequence_dict[name]=str(record_dict[name].seq)
         self.elements[name].append((length,length," ","end"))
 
     def add_pdb_and_intervening_beads(self,name,pdbname,chain,resolutions,resrange,beadsize,
                                       color=None,pdbresrange=None,offset=0,show=False,isnucleicacid=False):
+
+        outhiers=[]
 
         if color==None:
            color=self.color_dict[name]
@@ -172,25 +174,25 @@ class SimplifiedModel():
         end  =end+offset        
         
         for i in range(resrange[0],start-1,beadsize)[0:-1]:
-            self.add_component_beads(name,[(i,i+beadsize-1)],colors=[color])
+            outhiers+=self.add_component_beads(name,[(i,i+beadsize-1)],colors=[color])
         
         if resrange[0]<start-1:
            j=range(resrange[0],start-1,beadsize)[-1]
-           self.add_component_beads(name,[(j,start-1)],colors=[color])
+           outhiers+=self.add_component_beads(name,[(j,start-1)],colors=[color])
         
-        self.add_component_pdb(name,pdbname,chain,resolutions=resolutions, color=color,
+        outhiers+=self.add_component_pdb(name,pdbname,chain,resolutions=resolutions, color=color,
                                resrange=resrange,offset=offset,isnucleicacid=isnucleicacid)
 
         for i in range(end+1,resrange[1],beadsize)[0:-1]:
             print "adding sphere from %d to %d , beadsize %d" % (i,i+beadsize-1,beadsize)
-            self.add_component_beads(name,[(i,i+beadsize-1)],colors=[color])
+            outhiers+=self.add_component_beads(name,[(i,i+beadsize-1)],colors=[color])
         
         if end+1<resrange[1]:
            j=range(end+1,resrange[1],beadsize)[-1]
-           self.add_component_beads(name,[(j+1,resrange[1])],colors=[color])
+           outhiers+=self.add_component_beads(name,[(j+1,resrange[1])],colors=[color])
         
         #IMP.atom.show_molecular_hierarchy(self.hier_dict[name])
-    
+        return outhiers
 
 
 
@@ -209,6 +211,7 @@ class SimplifiedModel():
         if color==None:
            color=self.color_dict[name]         
         protein_h=self.hier_dict[name]
+        outhiers=[]
 
         if type(chain)==str:
            if not readnonwateratoms:
@@ -272,6 +275,7 @@ class SimplifiedModel():
             s0.set_name(name+'_%i-%i_pdb' % (start,end)+"_Res:"+str(r))
             for ch in chil: s0.add_child(ch)            
             protein_h.add_child(s0)
+            outhiers+=[s0]
             del s
             for prt in IMP.atom.get_leaves(s0):
                 ri=IMP.atom.Fragment(prt).get_residue_indexes()
@@ -330,7 +334,7 @@ the pdb offset" % (name,first,rt_final,rt)
                       
                    #I'm using particle attributes rather that Residue decorators
                    #because I don't want to mess up the hierarchy levels
-                   prt.add_attribute(self.residuenamekey, rt)
+                   prt.add_attribute(self.residuenamekey, rt_final)
                                       
                 radius=IMP.core.XYZR(prt).get_radius()
                 IMP.pmi.Uncertainty.setup_particle(prt,radius)
@@ -346,7 +350,8 @@ the pdb offset" % (name,first,rt_final,rt)
 
         if show:
            IMP.atom.show_molecular_hierarchy(protein_h)
-
+        
+        return outhiers
 
 
     def add_component_ideal_helix(self,name,resolutions,resrange,color=None,show=False):
@@ -354,6 +359,7 @@ the pdb offset" % (name,first,rt_final,rt)
         from math import pi,cos,sin
         
         protein_h=self.hier_dict[name]   
+        outhiers=[]
         if color==None:
            color=self.color_dict[name]
         
@@ -367,8 +373,7 @@ the pdb offset" % (name,first,rt_final,rt)
             d=IMP.core.XYZR.setup_particle(p)
             x=2.3*cos(n*2*pi/3.6)
             y=2.3*sin(n*2*pi/3.6) 
-            z=5.4/3.6*n*2*pi/3.6    
-            print x,y,z      
+            z=5.4/3.6/2*n*2*pi/3.6   
             d.set_coordinates(IMP.algebra.Vector3D(x,y,z))
             d.set_radius(2.9)
             #print d
@@ -382,18 +387,19 @@ the pdb offset" % (name,first,rt_final,rt)
             chil=s.get_children()
             s0=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
             
-            s0.set_name(name+'_%i-%i_pdb' % (start,end)+"_Res:"+str(r))
+            s0.set_name(name+'_%i-%i_helix' % (start,end)+"_Res:"+str(r))
             for ch in chil: s0.add_child(ch)            
             protein_h.add_child(s0)
+            outhiers+=[s0]
             del s
             for prt in IMP.atom.get_leaves(s0):
                 ri=IMP.atom.Fragment(prt).get_residue_indexes()
                 first=ri[0]
                 last=ri[-1]
                 if first==last:
-                   prt.set_name(name+'_%i_pdb' % (first))
+                   prt.set_name(name+'_%i_helix' % (first))
                 else:                   
-                   prt.set_name(name+'_%i-%i_pdb' % (first,last))
+                   prt.set_name(name+'_%i-%i_helix' % (first,last))
                 radius=IMP.core.XYZR(prt).get_radius()
                 if r==1: 
                    if name in self.sequence_dict:
@@ -402,12 +408,12 @@ the pdb offset" % (name,first,rt_final,rt)
                       vol=IMP.atom.get_volume_from_residue_type(rtobject)
                       radius=IMP.algebra.get_ball_radius_from_volume_3d(vol)
                    else:
-                      rt="X"
+                      rt_final="X"
                       rtobject=IMP.atom.ResidueType("ALA")
                       vol=IMP.atom.get_volume_from_residue_type(rtobject)
                       radius=IMP.algebra.get_ball_radius_from_volume_3d(vol)
-                   prt.add_attribute(self.residuenamekey, rt)
-                   prt.set_radius(radius)
+                   prt.add_attribute(self.residuenamekey, rt_final)
+                   IMP.core.XYZR(prt).set_radius(radius)
 
                 IMP.pmi.Uncertainty.setup_particle(prt,radius)
                 IMP.pmi.Resolution.setup_particle(prt,r)
@@ -421,12 +427,14 @@ the pdb offset" % (name,first,rt_final,rt)
 
         if show:
            IMP.atom.show_molecular_hierarchy(protein_h)
-            
+        
+        return outhiers 
             
 
     def add_component_beads(self,name,ds,colors=None):
         from math import pi
         protein_h=self.hier_dict[name]
+        outhiers=[]
         if colors==None:
            colors=[self.color_dict[name]]
             
@@ -460,8 +468,26 @@ the pdb offset" % (name,first,rt_final,rt)
             ptem.set_radius(radius)
             IMP.pmi.Uncertainty.setup_particle(ptem,radius)
             self.floppy_bodies.append(p)
+            outhiers+=[h]
             protein_h.add_child(h)
+        
+        return outhiers
 
+    def add_component_necklace(self,name,begin,end,length):
+        
+        outhiers=[]
+        nbeads=len(range(begin,end,length))
+        lastend=range(begin,end,length)[-2]
+        if float(end-lastend+length)<length/2:
+           length=length+int(float(end-i+length)/(nbeads-1))
+        
+        for i in range(begin,end,length)[0:-1]:
+           outhiers+=self.add_component_beads(name,[(i,i+length-1)])
+        outhiers+=self.add_component_beads(name,[(i+length,end)])
+        
+        return outhiers
+        
+ 
     def setup_component_geometry(self,name,color=None):
         if color==None:
            color=self.color_dict[name]
@@ -950,6 +976,24 @@ the pdb offset" % (name,first,rt_final,rt)
         get the connectivity restraints
         '''
 
+    def set_rigid_body_from_hierarchies(self,hiers):
+        rigid_parts=set()
+        name=""
+        print "set_rigid_body_from_hierarchies> setting up a new rigid body"
+        for hier in hiers:
+            ps=IMP.atom.get_leaves(hier)
+            for p in ps:
+              if IMP.core.RigidMember.particle_is_instance(p):
+                 rb=IMP.core.RigidMember(p).get_rigid_body()
+                 print "set_rigid_body_from_hierarchies> WARNING particle %s already belongs to rigid body %s" % (p.get_name(),rb.get_name())
+              else:
+                 rigid_parts.add(p)
+            name+=hier.get_name()+"-"
+            print "set_rigid_body_from_hierarchies> adding %s to the rigid body" % hier.get_name()
+        rb=IMP.atom.create_rigid_body(list(rigid_parts))
+        rb.set_coordinates_are_optimized(True)
+        rb.set_name(name+"rigid_body")
+        self.rigid_bodies.append(rb)
 
     def set_rigid_bodies(self,subunits,coords=None,nonrigidmembers=True):
         if coords==None: coords=()
@@ -957,7 +1001,7 @@ the pdb offset" % (name,first,rt_final,rt)
         #and here we make such PPIs rigid
         randomize_coords = lambda c: tuple(1.*(nrrand(3)-0.5)+array(c))
         
-        rigid_parts=[]
+        rigid_parts=set()
         for s in subunits:
             if type(s)==type(tuple()) and len(s)==2:
                sel=IMP.atom.Selection(self.prot,molecule=s[0],residue_indexes=range(s[1][0],s[1][1]+1))
@@ -965,8 +1009,12 @@ the pdb offset" % (name,first,rt_final,rt)
                   print "set_rigid_bodies: selected particle does not exists"
                for p in sel.get_selected_particles():
                   #if not p in self.floppy_bodies:
-                     rigid_parts.append(p)
-               
+                      if IMP.core.RigidMember.particle_is_instance(p):
+                         rb=IMP.core.RigidMember(p).get_rigid_body()
+                         print "set_rigid_body_from_hierarchies> WARNING particle %s already belongs to rigid body %s" % (p.get_name(),rb.get_name())
+                      else:
+                         rigid_parts.add(p)
+                     
                
             elif type(s)==type(str()):
                sel=IMP.atom.Selection(self.prot,molecule=s)
@@ -974,62 +1022,20 @@ the pdb offset" % (name,first,rt_final,rt)
                   print "set_rigid_bodies: selected particle does not exists"
                for p in sel.get_selected_particles():
                   #if not p in self.floppy_bodies:
-                     rigid_parts.append(p)
+                      if IMP.core.RigidMember.particle_is_instance(p):
+                         rb=IMP.core.RigidMember(p).get_rigid_body()
+                         print "set_rigid_body_from_hierarchies> WARNING particle %s already belongs to rigid body %s" % (p.get_name(),rb.get_name())
+                      else:
+                         rigid_parts.add(p)
      
         
         
-        rb=IMP.atom.create_rigid_body(rigid_parts)
+        rb=IMP.atom.create_rigid_body(list(rigid_parts))
         rb.set_coordinates_are_optimized(True)
         rb.set_name(''.join(str(subunits))+"_rigid_body")        
         if type(coords)==tuple and len(coords)==3: rb.set_coordinates(randomize_coords(coords))
         self.rigid_bodies.append(rb)
             
-        '''
-        if type(subunits[0])==str:
-            rigid_parts = []
-            for prt in self.prot.get_children():
-                if prt.get_name() in subunits:
-                    for frag in prt.get_children(): rigid_parts += IMP.atom.get_leaves(frag)
-            
-            if not nonrigidmembers:
-               for p in rigid_parts:
-                   if p in self.floppy_bodies:
-                      rigid_parts.remove(p)
-                    
-            rb=IMP.atom.create_rigid_body(rigid_parts)
-            rb.set_coordinates_are_optimized(True)
-            rb.set_name(''.join(subunits)+"_rigid_body")
-            if type(coords)==tuple and len(coords)==3: rb.set_coordinates(randomize_coords(coords))
-            self.rigid_bodies.append(rb)
-
-        elif type(subunits[0])==tuple or type(subunits[0])==list():
-            rigid_parts = []
-            #print '#####',subunits, [name[0] for name in subunits]
-            for subunit in subunits:
-                    print "WWWWW",subunit
-                    name=subunit[0]
-                    bounds=subunit[1]
-                    s= IMP.atom.Selection(self.prot,molecule=name, residue_indexes=range(bounds[0],bounds[1]+1))
-                    rigid_parts += s.get_selected_particles()
-                    
-                    for p in s.get_selected_particles():
-                        print p, IMP.atom.Fragment(p).get_parent()
-                    
-                    #print prt,s,'\n\t',s.get_selected_particles()
-                    #for f in prt.get_children(): print '\t\t',f
-                    #print
-            
-            if not nonrigidmembers:
-               for p in rigid_parts:
-                   if p in self.floppy_bodies:
-                      rigid_parts.remove(p)        
-            
-            rb=IMP.atom.create_rigid_body(rigid_parts)
-            rb.set_coordinates_are_optimized(True)
-            rb.set_name(''.join(str(subunits))+"_rigid_body")
-            if type(coords)==tuple and len(coords)==3: rb.set_coordinates(randomize_coords(coords))
-            self.rigid_bodies.append(rb)
-         '''
 
     def set_floppy_bodies(self):
         for p in self.floppy_bodies:
@@ -1152,13 +1158,26 @@ the pdb offset" % (name,first,rt_final,rt)
                 seggeos.append(IMP.display.SegmentGeometry(seg,clr))
         return seggeos
 
+    def setup_bonds(self):
+        #create segments at the lowest resolution
+        seggeos=[]
+        for name in self.hier_geometry_pairs:
+            for pt in self.hier_geometry_pairs[name]:
+                p1=pt[0]
+                p2=pt[1]
+                IMP.atom.create_bond(IMP.atom.Bonded.setup_particle(p1),IMP.atom.Bonded.setup_particle(p2),1)
+
     def show_component_table(self,name):
         residues=set()
         prot=self.hier_dict[name]
 
         for p in IMP.atom.get_leaves(prot):
             residues.update(IMP.atom.Fragment(p).get_residue_indexes())
-       
+        
+        if name in self.sequence_dict:
+           lastresn_fromsequence=len(self.sequence_dict[name])
+           residues.update([1,lastresn_fromsequence])
+        
         firstresn=min(residues)
         lastresn=max(residues)
         
@@ -1168,7 +1187,7 @@ the pdb offset" % (name,first,rt_final,rt)
             if len(ps)==0:  
                print "%20s %20s" % (name,nres), "**** not represented ****"
             else:
-               print "%20s %20s" % (name,nres), " ".join(["%20s %20s" % (str(p.get_name()),
+               print "%20s %7s" % (name,nres), " ".join(["%20s %7s" % (str(p.get_name()),
                      str(IMP.pmi.Resolution(p).get_resolution())) for p in ps])
 
                 
@@ -1212,11 +1231,13 @@ the pdb offset" % (name,first,rt_final,rt)
                        bounds.append(l[0])
                        if l[3]=="pdb": colors.append("#99CCFF")
                        if l[3]=="bead": colors.append("#FFFF99")
+                       if l[3]=="helix": colors.append("#33CCCC")
                        if l[3]!="end":
                           bounds.append(l[1]+1)
                     else:
                        if l[3]=="pdb": colors.append("#99CCFF")
                        if l[3]=="bead": colors.append("#FFFF99")
+                       if l[3]=="helix": colors.append("#33CCCC")
                        if l[3]!="end":                   
                           bounds.append(l[1]+1)
                 else:

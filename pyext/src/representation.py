@@ -78,11 +78,14 @@ class SimplifiedModel():
         self.disorderedlength=disorderedlength
         self.rigid_bodies=[]
         self.floppy_bodies=[]
+        self.super_rigid_bodies=[]
         self.output_level="low"
         self.label="None"
   
         self.maxtrans_rb=0.15
         self.maxrot_rb=0.03
+        self.maxtrans_srb=1.0
+        self.maxrot_srb=0.025
         self.maxtrans_fb=0.15
         self.resolution=10.0
         self.bblenght=100.0
@@ -995,6 +998,23 @@ the pdb offset" % (name,first,rt_final,rt)
         rb.set_name(name+"rigid_body")
         self.rigid_bodies.append(rb)
 
+    def set_super_rigid_body_from_hierarchies(self,hiers):
+        super_rigid_xyzs=set()
+        super_rigid_rbs=set()
+        name=""
+        print "set_super_rigid_body_from_hierarchies> setting up a new SUPER rigid body"
+        for hier in hiers:
+            ps=IMP.atom.get_leaves(hier)
+            for p in ps:
+              if IMP.core.RigidMember.particle_is_instance(p):
+                 rb=IMP.core.RigidMember(p).get_rigid_body()
+                 super_rigid_rbs.add(rb)
+              else:
+                 super_rigid_xyzs.add(p)
+            print "set_rigid_body_from_hierarchies> adding %s to the rigid body" % hier.get_name()
+        self.super_rigid_bodies.append((super_rigid_xyzs,super_rigid_rbs))
+
+
     def set_rigid_bodies(self,subunits,coords=None,nonrigidmembers=True):
         if coords==None: coords=()
         #sometimes, we know about structure of an interaction
@@ -1027,15 +1047,40 @@ the pdb offset" % (name,first,rt_final,rt)
                          print "set_rigid_body_from_hierarchies> WARNING particle %s already belongs to rigid body %s" % (p.get_name(),rb.get_name())
                       else:
                          rigid_parts.add(p)
-     
-        
         
         rb=IMP.atom.create_rigid_body(list(rigid_parts))
         rb.set_coordinates_are_optimized(True)
         rb.set_name(''.join(str(subunits))+"_rigid_body")        
         if type(coords)==tuple and len(coords)==3: rb.set_coordinates(randomize_coords(coords))
         self.rigid_bodies.append(rb)
-            
+        
+    def set_super_rigid_bodies(self,subunits,coords=None):
+        super_rigid_xyzs=set()
+        super_rigid_rbs=set()
+        
+        for s in subunits:
+            if type(s)==type(tuple()) and len(s)==2:
+               sel=IMP.atom.Selection(self.prot,molecule=s[0],residue_indexes=range(s[1][0],s[1][1]+1))
+               if len(sel.get_selected_particles())==0: 
+                  print "set_rigid_bodies: selected particle does not exists"
+               for p in sel.get_selected_particles():
+                      if IMP.core.RigidMember.particle_is_instance(p):
+                         rb=IMP.core.RigidMember(p).get_rigid_body()
+                         super_rigid_rbs.add(rb)
+                      else:
+                         super_rigid_xyzs.add(p)
+            elif type(s)==type(str()):
+               sel=IMP.atom.Selection(self.prot,molecule=s)
+               if len(sel.get_selected_particles())==0: 
+                  print "set_rigid_bodies: selected particle does not exists"
+               for p in sel.get_selected_particles():
+                  #if not p in self.floppy_bodies:
+                      if IMP.core.RigidMember.particle_is_instance(p):
+                         rb=IMP.core.RigidMember(p).get_rigid_body()
+                         super_rigid_rbs.add(rb)
+                      else:
+                         super_rigid_xyzs.add(p)
+        self.super_rigid_bodies.append((super_rigid_xyzs,super_rigid_rbs))       
 
     def set_floppy_bodies(self):
         for p in self.floppy_bodies:
@@ -1096,14 +1141,15 @@ the pdb offset" % (name,first,rt_final,rt)
               if IMP.pmi.Symmetric(fb).get_symmetric()!=1:
                  fbtmp.append(fb)
            else: 
-              fbtmp.append(fb)        
-            
+              fbtmp.append(fb)   
+              
         self.rigid_bodies=rbtmp
         self.floppy_bodies=fbtmp
-        
-        
+
         ps["Rigid_Bodies_SimplifiedModel"]=(self.rigid_bodies,self.maxtrans_rb,self.maxrot_rb)
         ps["Floppy_Bodies_SimplifiedModel"]=(self.floppy_bodies,self.maxtrans_fb)
+        ps["SR_Bodies_SimplifiedModel"]=(self.super_rigid_bodies,self.maxtrans_srb,self.maxrot_srb)
+        print ps
         return ps
     
     def set_output_level(self,level):

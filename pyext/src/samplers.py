@@ -42,6 +42,10 @@ class MonteCarlo():
                     for mv in mvs: mv.set_name(k)
                     self.mvs+=mvs
 
+                if "SR_Bodies" in k:
+                    mvs=self.get_super_rigid_body_movers(pts[k][0],pts[k][1],pts[k][2])
+                    for mv in mvs: mv.set_name(k)
+                    self.mvs+=mvs
 
                 if "Floppy_Bodies" in k:
                     mvs=self.get_floppy_body_movers(pts[k][0],pts[k][1])
@@ -175,6 +179,16 @@ class MonteCarlo():
         for rb in rbs:
             mvs.append(IMP.core.RigidBodyMover(rb,maxtrans,maxrot))
         return mvs
+
+    def get_super_rigid_body_movers(self,rbs,maxtrans,maxrot):
+        mvs=[]
+        for rb in rbs:
+            srbm=IMP.pmi.TransformMover(self.m,maxtrans,maxrot)
+            for xyz in rb[0]: srbm.add_xyz_particle(xyz)
+            for rb  in rb[1]: srbm.add_rigid_body_particle(rb)  
+            mvs.append(srbm)          
+        return mvs
+
 
     def get_floppy_body_movers(self,fbs,maxtrans):
         mvs=[]

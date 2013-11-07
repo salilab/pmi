@@ -27,37 +27,37 @@ class ConnectivityRestraint():
         self.label=label
         if self.label=="None": self.label=str(selection_tuples)
         self.rs = IMP.RestraintSet(label)
-        
+
         self.m=self.hier.get_model()
-        
+
         sels=[]
-        
+
 
         for s in selection_tuples:
 
-                   
-           if type(s)==tuple and len(s)==3:
-              hiers=[]
-              for h in self.hier.get_children():
-                if s[2] in h.get_name():
-                   hiers.append(h)
-              sel=IMP.atom.Selection(hierarchies=hiers,residue_indexes=range(s[0],s[1]+1))
-           elif type(s)==str:
-              hiers=[]
-              for h in self.hier.get_children():
-                if s in h.get_name():
-                   hiers.append(h)
-              sel=IMP.atom.Selection(hierarchies=hiers)  
 
-           if resolution!=None:
-              particles=[]
-              for prot in self.hier.get_children():
-                  particles+=IMP.pmi.tools.get_particles_by_resolution(prot,resolution)              
-              selectedp=sel.get_selected_particles()
-              #get the intersection to remove redundant particles
-              sel=IMP.atom.Selection(list(set(selectedp) & set(particles)))
-           sels.append(sel)
-                        
+            if type(s)==tuple and len(s)==3:
+                hiers=[]
+                for h in self.hier.get_children():
+                    if s[2] in h.get_name():
+                        hiers.append(h)
+                sel=IMP.atom.Selection(hierarchies=hiers,residue_indexes=range(s[0],s[1]+1))
+            elif type(s)==str:
+                hiers=[]
+                for h in self.hier.get_children():
+                    if s in h.get_name():
+                        hiers.append(h)
+                sel=IMP.atom.Selection(hierarchies=hiers)
+
+            if resolution!=None:
+                particles=[]
+                for prot in self.hier.get_children():
+                    particles+=IMP.pmi.tools.get_particles_by_resolution(prot,resolution)
+                selectedp=sel.get_selected_particles()
+                #get the intersection to remove redundant particles
+                sel=IMP.atom.Selection(list(set(selectedp) & set(particles)))
+            sels.append(sel)
+
         cr = IMP.atom.create_connectivity_restraint(sels, self.kappa, self.label)
         self.rs.add_restraint(cr)
 
@@ -82,12 +82,12 @@ class ConnectivityRestraint():
     def set_weight(self,weight):
         self.weight=weight
         self.rs.set_weight(weight)
- 
+
     def get_output(self):
         self.m.update()
         output={}
         score=self.weight*self.rs.unprotected_evaluate(None)
-        output["_TotalScore"]=str(score)        
+        output["_TotalScore"]=str(score)
         output["ConnectivityRestraint_"+self.label]=str(score)
         return output
 
@@ -104,19 +104,19 @@ class ExcludedVolumeSphere():
         self.prot=prot
         self.label="None"
         self.m=self.prot.get_model()
-        
+
         if resolution==None:
-          #default
-          evr=IMP.atom.create_excluded_volume_restraint([prot])
+            #default
+            evr=IMP.atom.create_excluded_volume_restraint([prot])
         else:
-           particles=[]
-           lsa=IMP.container.ListSingletonContainer(self.m)
-           for hier in prot.get_children():
-              particles=IMP.pmi.tools.get_particles_by_resolution(hier,resolution)
-              lsa.add_particles(particles)
-           evr=IMP.core.ExcludedVolumeRestraint(lsa,self.kappa)   
-           
-                  
+            particles=[]
+            lsa=IMP.container.ListSingletonContainer(self.m)
+            for hier in prot.get_children():
+                particles=IMP.pmi.tools.get_particles_by_resolution(hier,resolution)
+                lsa.add_particles(particles)
+            evr=IMP.core.ExcludedVolumeRestraint(lsa,self.kappa)
+
+
         self.rs.add_restraint(evr)
 
     def add_excluded_particle_pairs(self,excluded_particle_pairs):
@@ -149,7 +149,7 @@ class ExcludedVolumeSphere():
         self.m.update()
         output={}
         score=self.weight*self.rs.unprotected_evaluate(None)
-        output["_TotalScore"]=str(score)        
+        output["_TotalScore"]=str(score)
         output["ExcludedVolumeSphere_"+self.label]=str(score)
         return output
 
@@ -159,23 +159,23 @@ class ExcludedVolumeSphere():
 class CompositeRestraint():
 
     def __init__(self,handleparticles,compositeparticles,cut_off=5.0,lam=1.0,label="None"):
-        
+
         global imppmi
-        import IMP.pmi as imppmi 
+        import IMP.pmi as imppmi
         #composite particles: all particles beside the handle
         self.label=label
         self.rs = IMP.RestraintSet('cr')
-        self.m=handleparticles[0].get_model()       
-        
+        self.m=handleparticles[0].get_model()
+
         print handleparticles
-        
+
         ln=imppmi.CompositeRestraint(self.m,handleparticles,cut_off,lam,True)
         for ps in compositeparticles:
             #composite particles is a list of list of particles
             ln.add_composite_particle(ps)
-        
+
         self.rs.add_restraint(ln)
-      
+
     def set_label(self,label):
         self.label=label
 
@@ -186,7 +186,7 @@ class CompositeRestraint():
         self.m.update()
         output={}
         score=self.rs.unprotected_evaluate(None)
-        output["_TotalScore"]=str(score)        
+        output["_TotalScore"]=str(score)
         output["CompositeRestraint_"+self.label]=str(score)
         return output
 
@@ -232,7 +232,7 @@ class ExternalBarrier():
         self.m.update()
         output={}
         score=self.rs.unprotected_evaluate(None)
-        output["_TotalScore"]=str(score)        
+        output["_TotalScore"]=str(score)
         output["ExternalBarrier_"+self.label]=str(score)
         return output
 
@@ -258,11 +258,11 @@ class ConnectivityCrossLinkMS():
         self.outputlevel="low"
         self.expdistance=expdistance
         self.strength=strength
-        
+
         if resolution!=None:
-          particles=[]
-          for prot in self.prot.get_children():
-             particles+=IMP.pmi.tools.get_particles_by_resolution(prot,resolution) 
+            particles=[]
+            for prot in self.prot.get_children():
+                particles+=IMP.pmi.tools.get_particles_by_resolution(prot,resolution)
 
         #fill the cross-linker pmfs
         #to accelerate the init the list listofxlinkertypes might contain only yht needed crosslinks
@@ -278,31 +278,31 @@ class ConnectivityCrossLinkMS():
             r2=int(tokens[3])
             c2=tokens[1]
 
-            
+
             hrc1=[]
             for h in self.prot.get_children():
                 if c1 in h.get_name():
-                   hrc1.append(h)
-            
+                    hrc1.append(h)
+
             #hrc1 = [h for h in self.prot.get_children() if c1 in h.get_name()][0]
             #print line
-            
+
             s1=IMP.atom.Selection(hierarchies=hrc1, residue_index=r1)
             ps1=s1.get_selected_particles()
-            
 
-            
+
+
             if len(ps1)==0:
                 print "ConnectivityCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1,c1)
                 continue
             #hrc2 = [h for h in self.prot.get_children() if c2 in h.get_name()][0]
-            
-            hrc2=[]   
+
+            hrc2=[]
             for h in self.prot.get_children():
                 if c2 in h.get_name():
-                   hrc2.append(h)
-            
-            
+                    hrc2.append(h)
+
+
             s2=IMP.atom.Selection(hierarchies=hrc2, residue_index=r2)
             ps2=s2.get_selected_particles()
             if len(ps2)==0:
@@ -310,44 +310,44 @@ class ConnectivityCrossLinkMS():
                 continue
 
             if resolution!=None:
-             
-              #get the intersection to remove redundant particles
-              ps1=(list(set(ps1) & set(particles)))
-              ps2=(list(set(ps2) & set(particles)))
-              s1=IMP.atom.Selection(ps1)
-              s2=IMP.atom.Selection(ps2)
+
+                #get the intersection to remove redundant particles
+                ps1=(list(set(ps1) & set(particles)))
+                ps2=(list(set(ps2) & set(particles)))
+                s1=IMP.atom.Selection(ps1)
+                s2=IMP.atom.Selection(ps2)
 
             #calculate the radii to estimate the slope of the restraint
             if self.strength==None:
-              rad1=0
-              rad2=0
-              for p in ps1:
-                rad1+=IMP.pmi.Uncertainty(p).get_uncertainty()
+                rad1=0
+                rad2=0
+                for p in ps1:
+                    rad1+=IMP.pmi.Uncertainty(p).get_uncertainty()
 
-              for p in ps2:
-                rad2+=IMP.pmi.Uncertainty(p).get_uncertainty()
+                for p in ps2:
+                    rad2+=IMP.pmi.Uncertainty(p).get_uncertainty()
 
-              rad1=rad1/len(ps1)
-              rad2=rad2/len(ps2)
+                rad1=rad1/len(ps1)
+                rad2=rad2/len(ps2)
 
-              self.strength=1/(rad1**2+rad2**2)
+                self.strength=1/(rad1**2+rad2**2)
 
-            
+
             sels=[s1,s2]
             cr = IMP.atom.create_connectivity_restraint(sels, self.expdistance,self.strength)
-    
+
             self.rs.add_restraint(cr)
             self.pairs.append((ps1,hrc1,c1,r1,ps2,hrc2,c2,r2,cr))
 
     def plot_restraint(self,uncertainty1,uncertainty2,maxdist=50,npoints=10):
         import IMP.pmi.output as output
-        
+
         p1=IMP.Particle(self.m)
         p2=IMP.Particle(self.m)
         d1=IMP.core.XYZR.setup_particle(p1)
         d2=IMP.core.XYZR.setup_particle(p2)
         d1.set_radius(uncertainty1)
-        d2.set_radius(uncertainty2)                
+        d2.set_radius(uncertainty2)
         s1=IMP.atom.Selection(p1)
         s2=IMP.atom.Selection(p2)
         sels=[s1,s2]
@@ -360,8 +360,8 @@ class ConnectivityCrossLinkMS():
             dists.append(IMP.core.get_distance(d1,d2))
             scores.append(cr.unprotected_evaluate(None))
         output.plot_xy_data(dists,scores)
-            
-            
+
+
 
     def set_label(self,label):
         self.label=label
@@ -377,9 +377,9 @@ class ConnectivityCrossLinkMS():
 
     def get_restraint_sets(self):
         return self.rs
-        
+
     def get_restraint(self):
-        return self.rs        
+        return self.rs
 
     def set_output_level(self,level="low"):
             #this might be "low" or "high"
@@ -396,7 +396,7 @@ class ConnectivityCrossLinkMS():
 
         output={}
         score=self.weight*self.rs.unprotected_evaluate(None)
-        output["_TotalScore"]=str(score)            
+        output["_TotalScore"]=str(score)
         output["ConnectivityCrossLinkMS_Score_"+self.label]=str(score)
         for n,p in enumerate(self.pairs):
 
@@ -409,15 +409,15 @@ class ConnectivityCrossLinkMS():
             c2=p[6]
             r2=p[7]
             cr=p[8]
-            for n1,p1 in enumerate(ps1):        
+            for n1,p1 in enumerate(ps1):
                 name1=hrc1[n1].get_name()
 
                 for n2,p2 in enumerate(ps2):
-                  name2=hrc2[n2].get_name()                    
-                  d1=IMP.core.XYZR(p1) 
-                  d2=IMP.core.XYZR(p2)      
-                  label=str(r1)+":"+name1+"_"+str(r2)+":"+name2    
-                  output["ConnectivityCrossLinkMS_Distance_"+label]=str(IMP.core.get_distance(d1,d2))
+                    name2=hrc2[n2].get_name()
+                    d1=IMP.core.XYZR(p1)
+                    d2=IMP.core.XYZR(p2)
+                    label=str(r1)+":"+name1+"_"+str(r2)+":"+name2
+                    output["ConnectivityCrossLinkMS_Distance_"+label]=str(IMP.core.get_distance(d1,d2))
 
             label=str(r1)+":"+c1+"_"+str(r2)+":"+c2
             output["ConnectivityCrossLinkMS_Score_"+label]=str(self.weight*cr.unprotected_evaluate(None))
@@ -433,14 +433,14 @@ class SimplifiedCrossLinkMS():
     def __init__(self,prot,restraints_file,expdistance,strength,resolution=None, columnmapping=None):
         #columnindexes is a list of column indexes for protein1, protein2, residue1, residue2
         #by default column 0 = protein1; column 1 = protein2; column 2 = residue1; column 3 = residue2
-        
+
         if columnmapping==None:
-           columnmapping={}
-           columnmapping["Protein1"]=0
-           columnmapping["Protein2"]=1
-           columnmapping["Residue1"]=2
-           columnmapping["Residue2"]=3
-        
+            columnmapping={}
+            columnmapping["Protein1"]=0
+            columnmapping["Protein2"]=1
+            columnmapping["Residue1"]=2
+            columnmapping["Residue2"]=3
+
         self.rs=IMP.RestraintSet('data')
         self.weight=1.0
         self.prot=prot
@@ -459,15 +459,15 @@ class SimplifiedCrossLinkMS():
         protein1=columnmapping["Protein1"]
         protein2=columnmapping["Protein2"]
         residue1=columnmapping["Residue1"]
-        residue2=columnmapping["Residue2"]        
-        
+        residue2=columnmapping["Residue2"]
+
         if resolution!=None:
-          particles=[]
-          for prot in self.prot.get_children():
-             particles+=IMP.pmi.tools.get_particles_by_resolution(prot,resolution) 
-        
-        
-        
+            particles=[]
+            for prot in self.prot.get_children():
+                particles+=IMP.pmi.tools.get_particles_by_resolution(prot,resolution)
+
+
+
         for line in open(restraints_file):
 
             tokens=line.split()
@@ -488,51 +488,51 @@ class SimplifiedCrossLinkMS():
             hrc2 = [h for h in self.prot.get_children() if h.get_name()==c2][0]
             s2=IMP.atom.Selection(hrc2, residue_index=r2)
             ps2=s2.get_selected_particles()
-       
-            if resolution!=None: 
-              #get the intersection to remove redundant particles
-              ps1=(list(set(ps1) & set(particles)))
-              ps2=(list(set(ps2) & set(particles)))
-              
+
+            if resolution!=None:
+                #get the intersection to remove redundant particles
+                ps1=(list(set(ps1) & set(particles)))
+                ps2=(list(set(ps2) & set(particles)))
+
             if len(ps1)>1:
-               print "SimplifiedCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles"  % (r1,c1)
-               print "particles are: ", [p.get_name() for p in ps1]
-               exit()
+                print "SimplifiedCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles"  % (r1,c1)
+                print "particles are: ", [p.get_name() for p in ps1]
+                exit()
             elif len(ps1)==0:
-               print "SimplifiedCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1,c1)
-               continue               
+                print "SimplifiedCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1,c1)
+                continue
 
             if len(ps2)>1:
-               print "SimplifiedCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles"  % (r2,c2)
-               print "particles are: ", [p.get_name() for p in ps2]
-               exit()
+                print "SimplifiedCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles"  % (r2,c2)
+                print "particles are: ", [p.get_name() for p in ps2]
+                exit()
             elif len(ps2)==0:
-               print "SimplifiedCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2,c2)
-               continue 
+                print "SimplifiedCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2,c2)
+                continue
 
-            
+
             p1=ps1[0]
             p2=ps2[0]
-            
+
             if (p1,p2) in self.already_added_pairs:
-               dr=self.already_added_pairs[(p1,p2)]
-               weight=dr.get_weight()
-               dr.set_weight(weight+1.0)
-               print "SimplifiedCrossLinkMS> crosslink %d %s %d %s was already found, adding 1.0 to the weight, weight is now %d"  % (r1,c1,r2,c2,weight+1.0)
-               continue
-            
+                dr=self.already_added_pairs[(p1,p2)]
+                weight=dr.get_weight()
+                dr.set_weight(weight+1.0)
+                print "SimplifiedCrossLinkMS> crosslink %d %s %d %s was already found, adding 1.0 to the weight, weight is now %d"  % (r1,c1,r2,c2,weight+1.0)
+                continue
+
             else:
-                        
-              limit=self.strength*(self.expdistance+15)**2+10.0
-              hub= IMP.core.TruncatedHarmonicUpperBound(self.expdistance,self.strength,self.expdistance+15.,limit)
-              df= IMP.core.SphereDistancePairScore(hub)
-              dr= IMP.core.PairRestraint(df, (p1, p2))
-              dr.set_name(c1+":"+str(r1)+"-"+c2+":"+str(r2))
-            
-              self.rs.add_restraint(dr)
-              self.pairs.append((p1,p2,dr,r1,c1,r2,c2))
-              self.already_added_pairs[(p1,p2)]=dr
-              self.already_added_pairs[(p2,p1)]=dr
+
+                limit=self.strength*(self.expdistance+15)**2+10.0
+                hub= IMP.core.TruncatedHarmonicUpperBound(self.expdistance,self.strength,self.expdistance+15.,limit)
+                df= IMP.core.SphereDistancePairScore(hub)
+                dr= IMP.core.PairRestraint(df, (p1, p2))
+                dr.set_name(c1+":"+str(r1)+"-"+c2+":"+str(r2))
+
+                self.rs.add_restraint(dr)
+                self.pairs.append((p1,p2,dr,r1,c1,r2,c2))
+                self.already_added_pairs[(p1,p2)]=dr
+                self.already_added_pairs[(p2,p1)]=dr
 
     def set_label(self,label):
         self.label=label
@@ -545,24 +545,24 @@ class SimplifiedCrossLinkMS():
 
     def get_restraint_sets(self):
         return self.rs
-        
+
     def get_restraint(self):
-        return self.rs        
+        return self.rs
 
     def get_restraints(self):
         rlist=[]
         for r in self.rs.get_restraints():
             rlist.append(IMP.core.PairRestraint.get_from(r))
         return rlist
-    
+
     def get_particle_pairs(self):
         ppairs=[]
-        for i in range(len(self.pairs)):        
+        for i in range(len(self.pairs)):
             p0=self.pairs[i][0]
             p1=self.pairs[i][1]
             ppairs.append((p0,p1))
-        return ppairs            
-            
+        return ppairs
+
     def set_output_level(self,level="low"):
             #this might be "low" or "high"
         self.outputlevel=level
@@ -573,13 +573,13 @@ class SimplifiedCrossLinkMS():
 
     def plot_restraint(self,radius1,radius2,maxdist=50,npoints=10):
         import IMP.pmi.output as output
-        
+
         p1=IMP.Particle(self.m)
         p2=IMP.Particle(self.m)
         d1=IMP.core.XYZR.setup_particle(p1)
         d2=IMP.core.XYZR.setup_particle(p2)
         d1.set_radius(radius1)
-        d2.set_radius(radius2)   
+        d2.set_radius(radius2)
         limit=self.strength*(self.expdistance+1)**2+10.0
         hub= IMP.core.TruncatedHarmonicUpperBound(self.expdistance,self.strength,self.expdistance+5.,limit)
         df= IMP.core.SphereDistancePairScore(hub)
@@ -599,7 +599,7 @@ class SimplifiedCrossLinkMS():
 
         output={}
         score=self.weight*self.rs.unprotected_evaluate(None)
-        output["_TotalScore"]=str(score)            
+        output["_TotalScore"]=str(score)
         output["SimplifiedCrossLinkMS_Score_"+self.label]=str(score)
         for i in range(len(self.pairs)):
 
@@ -632,14 +632,14 @@ class SigmoidCrossLinkMS():
         #by default column 0 = protein1; column 1 = protein2; column 2 = residue1; column 3 = residue2
 
 
-        
+
         if columnmapping==None:
-           columnmapping={}
-           columnmapping["Protein1"]=0
-           columnmapping["Protein2"]=1
-           columnmapping["Residue1"]=2
-           columnmapping["Residue2"]=3
-        
+            columnmapping={}
+            columnmapping["Protein1"]=0
+            columnmapping["Protein2"]=1
+            columnmapping["Residue1"]=2
+            columnmapping["Residue2"]=3
+
         self.rs=IMP.RestraintSet('data')
         self.weight=1.0
         self.prot=prot
@@ -660,15 +660,15 @@ class SigmoidCrossLinkMS():
         protein1=columnmapping["Protein1"]
         protein2=columnmapping["Protein2"]
         residue1=columnmapping["Residue1"]
-        residue2=columnmapping["Residue2"]        
-        
+        residue2=columnmapping["Residue2"]
+
         if resolution!=None:
-          particles=[]
-          for prot in self.prot.get_children():
-             particles+=IMP.pmi.tools.get_particles_by_resolution(prot,resolution) 
-        
-        
-        
+            particles=[]
+            for prot in self.prot.get_children():
+                particles+=IMP.pmi.tools.get_particles_by_resolution(prot,resolution)
+
+
+
         for line in open(restraints_file):
 
             tokens=line.split()
@@ -687,48 +687,48 @@ class SigmoidCrossLinkMS():
             #hrc2 = [h for h in self.prot.get_children() if h.get_name()==c2][0]
             s2=IMP.atom.Selection(self.prot,molecule=c2, residue_index=r2)
             ps2=s2.get_selected_particles()
-       
-            if resolution!=None: 
-              #get the intersection to remove redundant particles
-              ps1=(list(set(ps1) & set(particles)))
-              ps2=(list(set(ps2) & set(particles)))
-              
+
+            if resolution!=None:
+                #get the intersection to remove redundant particles
+                ps1=(list(set(ps1) & set(particles)))
+                ps2=(list(set(ps2) & set(particles)))
+
             if len(ps1)>1:
-               print "SigmoidCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s"  % (r1,c1,str(ps1))
-               exit()
+                print "SigmoidCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s"  % (r1,c1,str(ps1))
+                exit()
             elif len(ps1)==0:
-               print "SigmoidCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1,c1)
-               continue               
+                print "SigmoidCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1,c1)
+                continue
 
             if len(ps2)>1:
-               print "SigmoidCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s"  % (r2,c2,str(ps2))
-               exit()
+                print "SigmoidCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s"  % (r2,c2,str(ps2))
+                exit()
             elif len(ps2)==0:
-               print "SigmoidCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2,c2)
-               continue 
+                print "SigmoidCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2,c2)
+                continue
 
-            
+
             p1=ps1[0]
             p2=ps2[0]
-            
+
             if (p1,p2) in self.already_added_pairs:
-               dr=self.already_added_pairs[(p1,p2)]
-               weight=dr.get_weight()
-               dr.increment_amplitude(amplitude)
-               print "SigmoidCrossLinkMS> crosslink %d %s %d %s was already found, adding %d to the amplitude, amplitude is now %d"  % (r1,c1,r2,c2,amplitude,dr.get_amplitude())
-               dr.set_name(c1+":"+str(r1)+"-"+c2+":"+str(r2)+"-ampl:"+str(dr.get_amplitude()))
-               continue
-            
+                dr=self.already_added_pairs[(p1,p2)]
+                weight=dr.get_weight()
+                dr.increment_amplitude(amplitude)
+                print "SigmoidCrossLinkMS> crosslink %d %s %d %s was already found, adding %d to the amplitude, amplitude is now %d"  % (r1,c1,r2,c2,amplitude,dr.get_amplitude())
+                dr.set_name(c1+":"+str(r1)+"-"+c2+":"+str(r2)+"-ampl:"+str(dr.get_amplitude()))
+                continue
+
             else:
 
-              dr= IMP.pmi.SigmoidRestraintSphere(self.m, p1, p2, self.inflection, self.slope, self.amplitude,self.linear_slope)
-              dr.set_name(c1+":"+str(r1)+"-"+c2+":"+str(r2)+"-ampl:"+str(dr.get_amplitude()))
-            
-              self.rs.add_restraint(dr)
+                dr= IMP.pmi.SigmoidRestraintSphere(self.m, p1, p2, self.inflection, self.slope, self.amplitude,self.linear_slope)
+                dr.set_name(c1+":"+str(r1)+"-"+c2+":"+str(r2)+"-ampl:"+str(dr.get_amplitude()))
 
-              self.pairs.append((p1,p2,dr,r1,c1,r2,c2))
-              self.already_added_pairs[(p1,p2)]=dr
-              self.already_added_pairs[(p2,p1)]=dr
+                self.rs.add_restraint(dr)
+
+                self.pairs.append((p1,p2,dr,r1,c1,r2,c2))
+                self.already_added_pairs[(p1,p2)]=dr
+                self.already_added_pairs[(p2,p1)]=dr
 
     def set_label(self,label):
         self.label=label
@@ -741,24 +741,24 @@ class SigmoidCrossLinkMS():
 
     def get_restraint_sets(self):
         return self.rs
-        
+
     def get_restraint(self):
-        return self.rs        
+        return self.rs
 
     def get_restraints(self):
         rlist=[]
         for r in self.rs.get_restraints():
             rlist.append(IMP.core.PairRestraint.get_from(r))
         return rlist
-    
+
     def get_particle_pairs(self):
         ppairs=[]
-        for i in range(len(self.pairs)):        
+        for i in range(len(self.pairs)):
             p0=self.pairs[i][0]
             p1=self.pairs[i][1]
             ppairs.append((p0,p1))
-        return ppairs            
-            
+        return ppairs
+
     def set_output_level(self,level="low"):
             #this might be "low" or "high"
         self.outputlevel=level
@@ -769,7 +769,7 @@ class SigmoidCrossLinkMS():
 
     def plot_restraint(self,radius1,radius2,maxdist=50,npoints=10):
         import IMP.pmi.output as output
-        
+
         p1=IMP.Particle(self.m)
         p2=IMP.Particle(self.m)
         d1=IMP.core.XYZR.setup_particle(p1)
@@ -792,7 +792,7 @@ class SigmoidCrossLinkMS():
 
         output={}
         score=self.weight*self.rs.unprotected_evaluate(None)
-        output["_TotalScore"]=str(score)            
+        output["_TotalScore"]=str(score)
         output["SigmoidCrossLinkMS_Score_"+self.label]=str(score)
         for i in range(len(self.pairs)):
 
@@ -826,21 +826,21 @@ class ISDCrossLinkMS():
         import IMP.isd2 as impisd2
         import IMP.pmi.tools as tools
         from math import log
-        
+
         if columnmapping==None:
-           columnmapping={}
-           columnmapping["Protein1"]=0
-           columnmapping["Protein2"]=1
-           columnmapping["Residue1"]=2
-           columnmapping["Residue2"]=3
-           columnmapping["IDScore"]=4
-        
+            columnmapping={}
+            columnmapping["Protein1"]=0
+            columnmapping["Protein2"]=1
+            columnmapping["Residue1"]=2
+            columnmapping["Residue2"]=3
+            columnmapping["IDScore"]=4
+
         self.rs=IMP.RestraintSet('data')
         self.rspsi=IMP.RestraintSet('prior_psi')
-        self.rssig=IMP.RestraintSet('prior_sigmas')        
+        self.rssig=IMP.RestraintSet('prior_sigmas')
         self.rslin=IMP.RestraintSet('prior_linear')
         self.rslen=IMP.RestraintSet('prior_length')
-        
+
         self.prot=prot
         self.label="None"
         self.pairs=[]
@@ -849,17 +849,17 @@ class ISDCrossLinkMS():
         self.psi_dictionary={}
         self.samplelength=samplelength
         self.ids_map=tools.map()
-        self.ids_map.set_map_element(20.0,0.05)      
-        self.ids_map.set_map_element(40.0,0.01)   
+        self.ids_map.set_map_element(20.0,0.05)
+        self.ids_map.set_map_element(40.0,0.01)
 
         self.radius_map=tools.map()
         #self.radius_map.set_map_element(2.5,2.5)
-        #self.radius_map.set_map_element(5.0,5.0)      
-        #self.radius_map.set_map_element(7.5,7.5)  
+        #self.radius_map.set_map_element(5.0,5.0)
+        #self.radius_map.set_map_element(7.5,7.5)
         self.radius_map.set_map_element(10,10)
-        #self.radius_map.set_map_element(15,15)      
-        #self.radius_map.set_map_element(20,20) 
-        
+        #self.radius_map.set_map_element(15,15)
+        #self.radius_map.set_map_element(20,20)
+
         self.outputlevel="low"
 
         #small linear contribution for long range
@@ -871,16 +871,16 @@ class ISDCrossLinkMS():
         protein1=columnmapping["Protein1"]
         protein2=columnmapping["Protein2"]
         residue1=columnmapping["Residue1"]
-        residue2=columnmapping["Residue2"]        
+        residue2=columnmapping["Residue2"]
         idscore=columnmapping["IDScore"]
-        
+
         if resolution!=None:
-          particles=[]
-          for prot in self.prot.get_children():
-             particles+=IMP.pmi.tools.get_particles_by_resolution(prot,resolution) 
-        
+            particles=[]
+            for prot in self.prot.get_children():
+                particles+=IMP.pmi.tools.get_particles_by_resolution(prot,resolution)
+
         restraints=[]
-        
+
         for line in open(restraints_file):
 
             tokens=line.split()
@@ -890,54 +890,54 @@ class ISDCrossLinkMS():
             c1=tokens[protein1]
             r2=int(tokens[residue2])
             c2=tokens[protein2]
-            
+
             try:
-              #if the field exists in the file
-              d=tokens[idscore]
-              if tokens[idscore]=="High" : ids=1
-              elif tokens[idscore]=="Low" : ids=0
-              else: ids=float(tokens[idscore])
+                #if the field exists in the file
+                d=tokens[idscore]
+                if tokens[idscore]=="High" : ids=1
+                elif tokens[idscore]=="Low" : ids=0
+                else: ids=float(tokens[idscore])
             except:
-              #if the field does not exist in the file
-              ids=1
+                #if the field does not exist in the file
+                ids=1
 
             s1=IMP.atom.Selection(self.prot,molecule=c1, residue_index=r1)
             ps1=s1.get_selected_particles()
- 
+
             s2=IMP.atom.Selection(self.prot,molecule=c2, residue_index=r2)
             ps2=s2.get_selected_particles()
-       
-            if resolution!=None: 
-              #get the intersection to remove redundant particles
-              ps1=(list(set(ps1) & set(particles)))
-              ps2=(list(set(ps2) & set(particles)))
-              
+
+            if resolution!=None:
+                #get the intersection to remove redundant particles
+                ps1=(list(set(ps1) & set(particles)))
+                ps2=(list(set(ps2) & set(particles)))
+
             if len(ps1)>1:
-               print "ISDCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s"  % (r1,c1,str(ps1))
-               exit()
+                print "ISDCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s"  % (r1,c1,str(ps1))
+                exit()
             elif len(ps1)==0:
-               print "ISDCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1,c1)
-               continue               
+                print "ISDCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1,c1)
+                continue
 
             if len(ps2)>1:
-               print "ISDCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s"  % (r2,c2,str(ps2))
-               exit()
+                print "ISDCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s"  % (r2,c2,str(ps2))
+                exit()
             elif len(ps2)==0:
-               print "ISDCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2,c2)
-               continue 
+                print "ISDCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2,c2)
+                continue
 
             p1=ps1[0]
             p2=ps2[0]
-            
+
             #remove in the future!!!
             if p1==p2: continue
-            
+
             if not self.samplelength:
-               dr= impisd2.CrossLinkMSRestraint(self.m, length)
+                dr= impisd2.CrossLinkMSRestraint(self.m, length)
             else:
-               #this will create a xl length particle that will be sampled
-               self.create_length()
-               dr= impisd2.CrossLinkMSRestraint(self.m, self.length)               
+                #this will create a xl length particle that will be sampled
+                self.create_length()
+                dr= impisd2.CrossLinkMSRestraint(self.m, self.length)
 
             mappedr1=self.radius_map.get_map_element(IMP.pmi.Uncertainty(p1).get_uncertainty())
             sigma1=self.get_sigma(mappedr1)[0]
@@ -951,40 +951,40 @@ class ISDCrossLinkMS():
             s2i=sigma2.get_particle().get_index()
             psii=psi.get_particle().get_index()
             dr.add_contribution((p1i,p2i),(s1i,s2i),psii)
-            
+
             print "--------------"
             print "ISDCrossLinkMS: generating cross-link restraint between"
             print "ISDCrossLinkMS: residue %d of chain %s and residue %d of chain %s" % (r1,c1,r2,c2)
-            print "ISDCrossLinkMS: with sigma1 %f  sigma2 %f psi %s" % (mappedr1,mappedr2,psival) 
+            print "ISDCrossLinkMS: with sigma1 %f  sigma2 %f psi %s" % (mappedr1,mappedr2,psival)
             print "ISDCrossLinkMS: between particles %s and %s" % (p1.get_name(),p2.get_name())
-            
+
             restraints.append(dr)
             #self.rssig.add_restraint(dr)
 
-            
-            
+
+
             #######self.rs.add_restraint(pr)
-            
+
 
             #check if the two residues belong to the same rigid body
-            
+
 
             if(IMP.core.RigidMember.particle_is_instance(p1) and
                IMP.core.RigidMember.particle_is_instance(p2) and
                IMP.core.RigidMember(p1).get_rigid_body() ==
                IMP.core.RigidMember(p2).get_rigid_body()):
-               xlattribute="intrarb"
+                xlattribute="intrarb"
             else:
-               xlattribute="interrb"
+                xlattribute="interrb"
 
 
             dr.set_name(xlattribute+"-"+c1+":"+str(r1)+"-"+c2+":"+str(r2))
-            
+
             #the linear restraint is used only for rmf display puroposes
-            pr=IMP.core.PairRestraint(dps2,IMP.ParticlePair(p1,p2)) 
+            pr=IMP.core.PairRestraint(dps2,IMP.ParticlePair(p1,p2))
             pr.set_name(xlattribute+"-"+c1+":"+str(r1)+"-"+c2+":"+str(r2))
             self.rslin.add_restraint(pr)
-          
+
             self.pairs.append((p1,p2,dr,r1,c1,r2,c2,xlattribute,mappedr1,mappedr2,psival))
 
         lw=impisd2.LogWrapper(restraints)
@@ -992,7 +992,7 @@ class ISDCrossLinkMS():
 
     def create_length(self):
         self.lengthinit=10.0
-        self.lengthissampled=True             
+        self.lengthissampled=True
         self.lengthminnuis=0.0000001
         self.lengthmaxnuis=1000.0
         self.lengthmin=    6.0
@@ -1001,10 +1001,10 @@ class ISDCrossLinkMS():
         self.length=tools.SetupNuisance(self.m,self.lengthinit,
              self.lengthminnuis,self.lengthmaxnuis,self.lengthissampled).get_particle()
         self.rslen.add_restraint(impisd2.UniformPrior(self.length,1000000000.0,self.lengthmax,self.lengthmin))
-        
+
     def create_sigma(self,resolution):
         self.sigmainit=resolution+2.0
-        self.sigmaissampled=True             
+        self.sigmaissampled=True
         self.sigmaminnuis=0.0000001
         self.sigmamaxnuis=1000.0
         self.sigmamin=    0.01
@@ -1012,35 +1012,35 @@ class ISDCrossLinkMS():
         self.sigmatrans=  0.5
         self.sigma=tools.SetupNuisance(self.m,self.sigmainit,
              self.sigmaminnuis,self.sigmamaxnuis,self.sigmaissampled).get_particle()
-        self.sigma_dictionary[resolution]=(self.sigma,self.sigmatrans,self.sigmaissampled)    
+        self.sigma_dictionary[resolution]=(self.sigma,self.sigmatrans,self.sigmaissampled)
         self.rssig.add_restraint(impisd2.UniformPrior(self.sigma,1000000000.0,self.sigmamax,self.sigmamin))
-        #self.rssig.add_restraint(impisd2.JeffreysRestraint(self.sigma))        
-        
+        #self.rssig.add_restraint(impisd2.JeffreysRestraint(self.sigma))
+
     def get_sigma(self,resolution):
         if not resolution in self.sigma_dictionary:
-           self.create_sigma(resolution)
+            self.create_sigma(resolution)
         return self.sigma_dictionary[resolution]
-    
+
     def set_slope_linear_term(self,slope):
         self.linear.set_slope(slope)
 
     def create_psi(self,value):
         self.psiinit=value
-        self.psiissampled=True                     
+        self.psiissampled=True
         self.psiminnuis=0.0000001
         self.psimaxnuis=0.4999999
         self.psimin=    0.01
         self.psimax=    0.49
-        self.psitrans=  0.1 
+        self.psitrans=  0.1
         self.psi=tools.SetupNuisance(self.m,self.psiinit,
              self.psiminnuis,self.psimaxnuis,self.psiissampled).get_particle()
-        self.psi_dictionary[value]=(self.psi,self.psitrans,self.psiissampled)    
+        self.psi_dictionary[value]=(self.psi,self.psitrans,self.psiissampled)
         self.rspsi.add_restraint(impisd2.UniformPrior(self.psi,1000000000.0,self.psimax,self.psimin))
         self.rspsi.add_restraint(impisd2.JeffreysRestraint(self.psi))
-        
+
     def get_psi(self,value):
         if not value in self.psi_dictionary:
-           self.create_psi(value)
+            self.create_psi(value)
         return self.psi_dictionary[value]
 
 
@@ -1059,10 +1059,10 @@ class ISDCrossLinkMS():
 
     def get_restraint_sets(self):
         return self.rs
-        
+
     def get_restraint(self):
-        return self.rs  
-    
+        return self.rs
+
     def get_restraint_for_rmf(self):
         return self.rslin
 
@@ -1071,15 +1071,15 @@ class ISDCrossLinkMS():
         for r in self.rs.get_restraints():
             rlist.append(IMP.core.PairRestraint.get_from(r))
         return rlist
-    
+
     def get_particle_pairs(self):
         ppairs=[]
-        for i in range(len(self.pairs)):        
+        for i in range(len(self.pairs)):
             p0=self.pairs[i][0]
             p1=self.pairs[i][1]
             ppairs.append((p0,p1))
-        return ppairs            
-            
+        return ppairs
+
     def set_output_level(self,level="low"):
             #this might be "low" or "high"
         self.outputlevel=level
@@ -1092,10 +1092,10 @@ class ISDCrossLinkMS():
 
         output={}
         score=self.rs.unprotected_evaluate(None)
-        output["_TotalScore"]=str(score)            
+        output["_TotalScore"]=str(score)
         output["ISDCrossLinkMS_Data_Score_"+self.label]=str(score)
-        output["ISDCrossLinkMS_PriorSig_Score_"+self.label]=self.rssig.unprotected_evaluate(None)   
-        output["ISDCrossLinkMS_PriorPsi_Score_"+self.label]=self.rspsi.unprotected_evaluate(None)  
+        output["ISDCrossLinkMS_PriorSig_Score_"+self.label]=self.rssig.unprotected_evaluate(None)
+        output["ISDCrossLinkMS_PriorPsi_Score_"+self.label]=self.rspsi.unprotected_evaluate(None)
         output["ISDCrossLinkMS_Linear_Score_"+self.label]=self.rslin.unprotected_evaluate(None)
         for i in range(len(self.pairs)):
 
@@ -1111,7 +1111,7 @@ class ISDCrossLinkMS():
             rad1=self.pairs[i][8]
             rad2=self.pairs[i][9]
             psi=self.pairs[i][10]
-            
+
             label=attribute+"-"+str(resid1)+":"+chain1+"_"+str(resid2)+":"+chain2+"-"+str(rad1)+"-"+str(rad2)+"-"+str(psi)
             output["ISDCrossLinkMS_Score_"+crosslinker+"_"+label]=str(-log(ln.unprotected_evaluate(None)))
             d0=IMP.core.XYZ(p0)
@@ -1123,29 +1123,29 @@ class ISDCrossLinkMS():
 
         for resolution in self.sigma_dictionary:
             output["ISDCrossLinkMS_Sigma_"+str(resolution)+"_"+self.label]=str(self.sigma_dictionary[resolution][0].get_scale())
-        
+
         if self.samplelength:
             output["ISDCrossLinkMS_Length_"+str(resolution)+"_"+self.label]=str(self.length.get_scale())
-        
+
         return output
 
     def get_particles_to_sample(self):
         ps={}
 
         for resolution in self.sigma_dictionary:
-          if self.sigma_dictionary[resolution][2]:
-            ps["Nuisances_ISDCrossLinkMS_Sigma_"+str(resolution)+"_"+self.label]=\
-                      ([self.sigma_dictionary[resolution][0]],self.sigma_dictionary[resolution][1])
-        
+            if self.sigma_dictionary[resolution][2]:
+                ps["Nuisances_ISDCrossLinkMS_Sigma_"+str(resolution)+"_"+self.label]=\
+                          ([self.sigma_dictionary[resolution][0]],self.sigma_dictionary[resolution][1])
+
         for psiindex in self.psi_dictionary:
-          if self.psi_dictionary[psiindex][2]:
-            ps["Nuisances_ISDCrossLinkMS_Psi_"+str(psiindex)+"_"+self.label]=([self.psi_dictionary[psiindex][0]],self.psi_dictionary[psiindex][1])
+            if self.psi_dictionary[psiindex][2]:
+                ps["Nuisances_ISDCrossLinkMS_Psi_"+str(psiindex)+"_"+self.label]=([self.psi_dictionary[psiindex][0]],self.psi_dictionary[psiindex][1])
 
         if self.samplelength:
-           if self.lengthissampled:
-            ps["Nuisances_ISDCrossLinkMS_Length_"+self.label]=([self.length],self.lengthtrans)
-        
-        return ps  
+            if self.lengthissampled:
+                ps["Nuisances_ISDCrossLinkMS_Length_"+self.label]=([self.length],self.lengthtrans)
+
+        return ps
 
 
 ##############################################################
@@ -1255,7 +1255,7 @@ class SimplifiedPEMAP():
 
         output={}
         score=self.rs.unprotected_evaluate(None)
-        output["_TotalScore"]=str(score)            
+        output["_TotalScore"]=str(score)
         output["SimplifiedPEMAP_Score_"+self.label]=str(score)
         for i in range(len(self.pairs)):
 
@@ -1282,14 +1282,14 @@ class SimplifiedPEMAP():
 ############################################################
 
 class SecondaryStructure():
-    
+
 
     def __init__(self,prot,resrangetuple,ssstring,mixture=False,nativeness=1.0,kt_caff=0.1):
         #check that the secondary structure string
         #is compatible with the ssstring
         global impisd2
         import IMP.isd2 as impisd2
-        
+
         self.prot=prot
         self.m=self.prot.get_model()
         self.dihe_dict={}
@@ -1494,8 +1494,8 @@ class SecondaryStructure():
         score_angle=self.anglrs.unprotected_evaluate(None)
         score_dihers=self.dihers.unprotected_evaluate(None)
         score_bondrs=self.bondrs.unprotected_evaluate(None)
-        output["_TotalScore"]=str(score_angle+score_dihers+score_bondrs)    
-        
+        output["_TotalScore"]=str(score_angle+score_dihers+score_bondrs)
+
         output["SecondaryStructure_Angles_"+self.label]=str(score_angle)
         output["SecondaryStructure_Dihedrals_"+self.label]=str(score_dihers)
         output["SecondaryStructure_Bonds_"+self.label]=str(score_bondrs)
@@ -1530,7 +1530,7 @@ class WeightRestraint():
         self.m.update()
         output={}
         score=self.rs.unprotected_evaluate(None)
-        output["_TotalScore"]=str(score)         
+        output["_TotalScore"]=str(score)
         output["WeightRestraint_"+self.label]=str(score)
         return output
 
@@ -1555,7 +1555,7 @@ class JeffreysPrior():
     def get_output(self):
         output={}
         score=self.rs.unprotected_evaluate(None)
-        output["_TotalScore"]=str(score)         
+        output["_TotalScore"]=str(score)
         output["JeffreyPrior_"+self.label]=str(score)
         return output
 
@@ -1565,7 +1565,7 @@ class SAXSISDRestraint():
 
 
 
-    def __init__(self,prot,profile,weight=1):
+    def __init__(self,prot,profile,weight=1,resolution=1):
         global impsaxs, impisd2, tools
         import IMP.saxs as impsaxs
         import IMP.isd2 as impisd2
@@ -1580,14 +1580,18 @@ class SAXSISDRestraint():
         self.gammamaxtrans=0.05
         self.prof = impsaxs.Profile(profile)
 
-        atoms = IMP.atom.get_by_type(self.prot, IMP.atom.ATOM_TYPE)
+        self.atoms=[]
+
+        for p in prot.get_children():
+            self.atoms=tools.get_particles_by_resolution(p,resolution)
+
 
         self.sigma = tools.SetupNuisance(self.m,10.0,0.00001,100,True).get_particle()
 
         self.th = impsaxs.Profile(self.prof.get_min_q(),
                 self.prof.get_max_q(), self.prof.get_delta_q())
 
-        self.th.calculate_profile(atoms)
+        self.th.calculate_profile(self.atoms, impsaxs.CA_ATOMS)
         gammahat = array([self.prof.get_intensity(i)/self.th.get_intensity(i)
                             for i in xrange(self.prof.size()-1) ]).mean()
 
@@ -1595,7 +1599,7 @@ class SAXSISDRestraint():
 
         self.cov = eye(self.prof.size()).tolist()
 
-        self.saxs = impisd2.SAXSRestraint(atoms, self.prof, self.sigma,
+        self.saxs = impisd2.SAXSRestraint(self.atoms, self.prof, self.sigma,
                                         self.gamma, self.cov, impsaxs.CA_ATOMS)
 
         self.rs.add_restraint(self.saxs)
@@ -1610,10 +1614,25 @@ class SAXSISDRestraint():
         j2 = impisd2.JeffreysRestraint(self.gamma)
         self.rs2.add_restraint(j2)
 
-    def gen_covariance_matrices(self, tau, nsigma):
-        v = tools.Variance(self.m, tau, nsigma, self.prot, self.th)
-        v.run()
-        self.cov = v.get_cov(relative=True)
+    def update_covariance_matrices(self, tau):
+        import numpy
+        self.th.calculate_profile(self.atoms, impsaxs.CA_ATOMS,
+                False, True, tau)
+        prof=numpy.zeros(self.th.size())
+        Sigma=numpy.zeros((self.th.size(),self.th.size()))
+        #absolute variance matrix
+        for i in xrange(self.th.size()):
+            prof[i] = self.th.get_intensity(i)
+            for j in xrange(i,self.th.size()):
+                Sigma[i,j] = self.th.get_variance(i,j)
+                if j != i:
+                    Sigma[j,i] = Sigma[i,j]
+        #relative matrix
+        for i in xrange(prof.shape):
+            for j in xrange(prof.shape):
+                Sigma[i,j] = Sigma[i,j]/(prof[i]*prof[j])
+        self.cov = Sigma.tolist()
+        self.saxs.set_cov(0, self.cov)
 
     def get_gamma_value(self):
         return self.gamma.get_scale()
@@ -1624,12 +1643,6 @@ class SAXSISDRestraint():
     def add_to_model(self):
         self.m.add_restraint(self.rs)
         self.m.add_restraint(self.rs2)
-
-    def get_restraint(self):
-        tmprs=IMP.RestraintSet('tmp')
-        tmprs.add_restraint(self.rs)
-        tmprs.add_restraint(self.rs2)
-        return tmprs
 
     def set_gammamaxtrans(self,gammamaxtrans):
         self.gammamaxtrans=gammamaxtrans
@@ -1648,8 +1661,8 @@ class SAXSISDRestraint():
         output={}
         score=self.rs.unprotected_evaluate(None)
         score2=self.rs2.unprotected_evaluate(None)
-        output["_TotalScore"]=str(score+score2) 
-        
+        output["_TotalScore"]=str(score+score2)
+
         output["SAXSISDRestraint_Likelihood_"+self.label]=str(score)
         output["SAXSISDRestraint_Prior_"+self.label]=str(score2)
         output["SAXSISDRestraint_Sigma_"+self.label]=str(self.sigma.get_scale())
@@ -1846,7 +1859,7 @@ class CysteineCrossLinkRestraint():
         self.m.update()
         output={}
         score=self.rs.unprotected_evaluate(None)
-        output["_TotalScore"]=str(score)         
+        output["_TotalScore"]=str(score)
         output["CysteineCrossLinkRestraint_Score_"+self.label]=str(score)
         output["CysteineCrossLinkRestraint_sigma_"+self.label]=str(self.sigma.get_scale())
         for eps in self.epsilons.keys():
@@ -1882,39 +1895,39 @@ class GaussianEMRestraint():
         import IMP.isd2 as impisd2
         import IMP.pmi.tools as tools
         #import IMP.multifit
-        
+
         if segment_anchors==None: segment_anchors=[]
-        if segment_parts==None: segment_parts=[]        
-        
+        if segment_parts==None: segment_parts=[]
+
         #dcoords=IMP.multifit.read_anchors_data(map_anchors_fn).points_
         self.prot=prot
         self.m=self.prot.get_model()
 
-        
+
 
         if resolution!=None:
-           hierarchy_anchors=[]
-           for prot in self.prot.get_children():
-             hierarchy_anchors+=IMP.pmi.tools.get_particles_by_resolution(prot,resolution)         
+            hierarchy_anchors=[]
+            for prot in self.prot.get_children():
+                hierarchy_anchors+=IMP.pmi.tools.get_particles_by_resolution(prot,resolution)
 
-        
+
         if segment_parts!=None:
             model_anchors=[]
             for seg in segment_parts:
                 if type(seg)==str:
-                   s=IMP.atom.Selection(self.prot,molecule=seg)
-                   ps=s.get_selected_particles()
-                   model_anchors+=ps
+                    s=IMP.atom.Selection(self.prot,molecule=seg)
+                    ps=s.get_selected_particles()
+                    model_anchors+=ps
                 elif type(seg)==tuple:
-                   s=IMP.atom.Selection(self.prot,molecule=seg[0],residue_indexes=range(seg[1],seg[2]+1))
-                   ps=s.get_selected_particles()
-                   model_anchors+=ps                
+                    s=IMP.atom.Selection(self.prot,molecule=seg[0],residue_indexes=range(seg[1],seg[2]+1))
+                    ps=s.get_selected_particles()
+                    model_anchors+=ps
             if resolution!=None:
-              #get the intersection to remove redundant particles
-              self.model_anchors=(list(set(model_anchors) & set(hierarchy_anchors)))
+                #get the intersection to remove redundant particles
+                self.model_anchors=(list(set(model_anchors) & set(hierarchy_anchors)))
 
         for p in self.model_anchors:
-            print p.get_name()  
+            print p.get_name()
 
 
 
@@ -1928,7 +1941,7 @@ class GaussianEMRestraint():
 
         # parameters
         self.model_sigmas=[15.0]*len(self.model_anchors)
-        
+
         self.model_sigmas=[]
         self.model_weights=[]
         for p in self.model_anchors: self.model_sigmas.append(IMP.core.XYZR(p).get_radius())
@@ -2004,7 +2017,7 @@ class GaussianEMRestraint():
         self.m.update()
         output={}
         score=self.rs.unprotected_evaluate(None)
-        output["_TotalScore"]=str(score)         
+        output["_TotalScore"]=str(score)
         output["GaussianEMRestraint_"+self.label]=str(self.rs.unprotected_evaluate(None))
         output["GaussianEMRestraint_sigma_"+self.label]=str(self.sigmaglobal.get_scale())
         return output

@@ -90,6 +90,9 @@ class Output():
             flpdb=open(name,'w')
             flpdb.close()
             self.dictionary_pdbs[name]=prot
+            self.dictchain[name]={}
+            for n,i in enumerate(self.dictionary_pdbs[name].get_children()):
+                self.dictchain[name][i.get_name()]=self.chainids[n]
 
     def write_pdb_best_scoring(self,score):
         if self.nbestscoring==None:

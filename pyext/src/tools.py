@@ -384,6 +384,38 @@ def get_particles_by_resolution(prot,resolution):
 
     return list(particles)
     #-------------------------------
+    
+def get_position_terminal_residue(hier,terminus="C",resolution=1):
+    #this function get the xyz position of the 
+    #C or N terminal residue of a hierarchy, given the resolution.
+    #the argument of terminus can be either N or C
+    
+    termresidue=None
+    termarticle=None
+    for p in IMP.atom.get_leaves(hier):
+        if IMP.pmi.Resolution(p).get_resolution()==resolution:
+           residues=IMP.atom.Fragment(p).get_residue_indexes()  
+           if terminus=="C":
+               if max(residues)>=termresidue and termresidue!=None:
+                  termresidue=max(residues)
+                  termparticle=p      
+               elif termresidue==None:
+                  termresidue=max(residues)
+                  termparticle=p                                      
+           elif terminus=="N":
+               if min(residues)<=termresidue and termresidue!=None:
+                  termresidue=min(residues)
+                  termparticle=p      
+               elif termresidue==None:
+                  termresidue=min(residues)
+                  termparticle=p                     
+           else: 
+               print "get_position_terminal_residue> terminus argument should be either N or C"
+             
+    return IMP.core.XYZ(termparticle).get_coordinates()
+               
+
+
 
 def select_calpha_or_residue(prot,chain,resid,ObjectName="None:",SelectResidue=False):
     #use calphas

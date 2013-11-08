@@ -479,7 +479,7 @@ the pdb offset" % (name,first,rt_final,rt)
             mass =IMP.atom.get_mass_from_number_of_residues(resolution)
             volume=IMP.atom.get_volume_from_mass(mass)
             radius=0.8*(3.0/4.0/pi*volume)**(1.0/3.0)
-            IMP.atom.Mass.setup_particle(ptem).set_mass(mass)
+            IMP.atom.Mass.setup_particle(ptem,mass)
             ptem.set_radius(radius)
             try:
                 if tuple(incoord)!=None: ptem.set_coordinates(incoord)

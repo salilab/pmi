@@ -1895,39 +1895,39 @@ class GaussianEMRestraint():
         import IMP.isd2 as impisd2
         import IMP.pmi.tools as tools
         #import IMP.multifit
-
+        
         if segment_anchors==None: segment_anchors=[]
-        if segment_parts==None: segment_parts=[]
-
+        if segment_parts==None: segment_parts=[]        
+        
         #dcoords=IMP.multifit.read_anchors_data(map_anchors_fn).points_
         self.prot=prot
         self.m=self.prot.get_model()
 
-
+        
 
         if resolution!=None:
-            hierarchy_anchors=[]
-            for prot in self.prot.get_children():
-                hierarchy_anchors+=IMP.pmi.tools.get_particles_by_resolution(prot,resolution)
+           hierarchy_anchors=[]
+           for prot in self.prot.get_children():
+             hierarchy_anchors+=IMP.pmi.tools.get_particles_by_resolution(prot,resolution)         
 
-
+        
         if segment_parts!=None:
             model_anchors=[]
             for seg in segment_parts:
                 if type(seg)==str:
-                    s=IMP.atom.Selection(self.prot,molecule=seg)
-                    ps=s.get_selected_particles()
-                    model_anchors+=ps
+                   s=IMP.atom.Selection(self.prot,molecule=seg)
+                   ps=s.get_selected_particles()
+                   model_anchors+=ps
                 elif type(seg)==tuple:
-                    s=IMP.atom.Selection(self.prot,molecule=seg[0],residue_indexes=range(seg[1],seg[2]+1))
-                    ps=s.get_selected_particles()
-                    model_anchors+=ps
+                   s=IMP.atom.Selection(self.prot,molecule=seg[0],residue_indexes=range(seg[1],seg[2]+1))
+                   ps=s.get_selected_particles()
+                   model_anchors+=ps                
             if resolution!=None:
-                #get the intersection to remove redundant particles
-                self.model_anchors=(list(set(model_anchors) & set(hierarchy_anchors)))
+              #get the intersection to remove redundant particles
+              self.model_anchors=(list(set(model_anchors) & set(hierarchy_anchors)))
 
         for p in self.model_anchors:
-            print p.get_name()
+            print p.get_name()  
 
 
 
@@ -1941,7 +1941,7 @@ class GaussianEMRestraint():
 
         # parameters
         self.model_sigmas=[15.0]*len(self.model_anchors)
-
+        
         self.model_sigmas=[]
         self.model_weights=[]
         for p in self.model_anchors: self.model_sigmas.append(IMP.core.XYZR(p).get_radius())
@@ -1952,16 +1952,18 @@ class GaussianEMRestraint():
         #self.model_sigmas=[float(anch.get_as_xyzr().get_radius()) for anch in self.segment_parts]
         self.model_weights=[1.0]*len(self.model_anchors)
         self.density_sigmas=[15.0]*len(segment_anchors)
-        self.density_weights=[5.0]*len(segment_anchors)
+        self.density_weights=[1.0]*len(segment_anchors)
+        self.sigmaissampled=False
         self.sigmamaxtrans=0.1
         self.sigmamin=1.
         self.sigmamax=100.0
-        self.sigmainit=10.0
+        self.sigmainit=2.75
         self.cutoff_dist_for_container=10.0
         self.rigid=rigid
         self.segment_anchors=segment_anchors
         self.segment_parts=segment_parts
         self.tabexp=True
+
 
 
         self.density_anchors=[]
@@ -1981,11 +1983,20 @@ class GaussianEMRestraint():
                                          self.density_sigmas[0]*1.5))
 
         for np,p in enumerate(self.model_anchors):
-            self.model_sigmas[np]=IMP.core.XYZR(p).get_radius()/1.5
+            self.model_sigmas[np]=IMP.core.XYZR(p).get_radius()*2
 
         self.sigmaglobal=tools.SetupNuisance(self.m,self.sigmainit,
                  self.sigmamin,self.sigmamax,True).get_particle()
         print 'setting up restraint'
+
+        
+        print self.model_anchors
+        print self.density_anchors
+        print self.model_weights
+        print self.density_weights
+        print self.model_sigmas
+        print self.density_sigmas
+        
 
         self.gaussianEM_restraint=impisd2.GaussianEMRestraint(
             self.model_anchors,self.model_sigmas,self.model_weights,
@@ -2004,7 +2015,8 @@ class GaussianEMRestraint():
 
     def get_particles_to_sample(self):
         ps={}
-        ps["Nuisances_GaussianEMRestraint_sigma_"+self.label]=([self.sigmaglobal],self.sigmamaxtrans)
+        if self.sigmaissampled:
+           ps["Nuisances_GaussianEMRestraint_sigma_"+self.label]=([self.sigmaglobal],self.sigmamaxtrans)
         return ps
 
     def get_hierarchy(self):
@@ -2017,7 +2029,7 @@ class GaussianEMRestraint():
         self.m.update()
         output={}
         score=self.rs.unprotected_evaluate(None)
-        output["_TotalScore"]=str(score)
+        output["_TotalScore"]=str(score)         
         output["GaussianEMRestraint_"+self.label]=str(self.rs.unprotected_evaluate(None))
         output["GaussianEMRestraint_sigma_"+self.label]=str(self.sigmaglobal.get_scale())
         return output

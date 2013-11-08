@@ -153,8 +153,8 @@ class SimplifiedModel():
         self.elements[name].append((length,length," ","end"))
 
     def add_pdb_and_intervening_beads(self,name,pdbname,chain,resolutions,resrange,beadsize,
-                                      color=None,pdbresrange=None,offset=0,show=False,isnucleicacid=False):
-
+                                      color=None,pdbresrange=None,offset=0,show=False,isnucleicacid=False,
+                                      attachbeads=False):
         outhiers=[]
 
         if color==None:
@@ -174,25 +174,34 @@ class SimplifiedModel():
            if pdbresrange[1]<end:   end=pdbresrange[1]  
        
         start=start+offset
-        end  =end+offset        
-        
+        end  =end+offset    
+
+        #attach floppy beads to the start or end of PDB structure
+        initcoords=[None,None]
+        if attachbeads==True:
+            firstca= IMP.core.XYZ(t.get_children()[0].get_children()[0].get_children()[0]).get_coordinates()
+            lastca=  IMP.core.XYZ(t.get_children()[0].get_children()[-1].get_children()[0]).get_coordinates()     
+            initcoords=[firstca,lastca]
+
+        #add pre-beads        
         for i in range(resrange[0],start-1,beadsize)[0:-1]:
-            outhiers+=self.add_component_beads(name,[(i,i+beadsize-1)],colors=[color])
+            outhiers+=self.add_component_beads(name,[(i,i+beadsize-1)],colors=[color],incoord=initcoords[0])
         
         if resrange[0]<start-1:
            j=range(resrange[0],start-1,beadsize)[-1]
-           outhiers+=self.add_component_beads(name,[(j,start-1)],colors=[color])
+           outhiers+=self.add_component_beads(name,[(j,start-1)],colors=[color],incoord=initcoords[0])
         
         outhiers+=self.add_component_pdb(name,pdbname,chain,resolutions=resolutions, color=color,
                                resrange=resrange,offset=offset,isnucleicacid=isnucleicacid)
 
+        #add after-beads
         for i in range(end+1,resrange[1],beadsize)[0:-1]:
             print "adding sphere from %d to %d , beadsize %d" % (i,i+beadsize-1,beadsize)
-            outhiers+=self.add_component_beads(name,[(i,i+beadsize-1)],colors=[color])
+            outhiers+=self.add_component_beads(name,[(i,i+beadsize-1)],colors=[color],incoord=initcoords[1])
         
         if end+1<resrange[1]:
            j=range(end+1,resrange[1],beadsize)[-1]
-           outhiers+=self.add_component_beads(name,[(j+1,resrange[1])],colors=[color])
+           self.add_component_beads(name,[(j,resrange[1])],colors=[color],incoord=initcoords[1])
         
         #IMP.atom.show_molecular_hierarchy(self.hier_dict[name])
         return outhiers
@@ -434,7 +443,7 @@ the pdb offset" % (name,first,rt_final,rt)
         return outhiers 
             
 
-    def add_component_beads(self,name,ds,colors=None):
+    def add_component_beads(self,name,ds,colors=None,incoord=None):
         from math import pi
         protein_h=self.hier_dict[name]
         outhiers=[]
@@ -469,6 +478,9 @@ the pdb offset" % (name,first,rt_final,rt)
             volume=IMP.atom.get_volume_from_mass(mass)
             radius=0.8*(3.0/4.0/pi*volume)**(1.0/3.0)
             ptem.set_radius(radius)
+            try:
+                if tuple(incoord)!=None: ptem.set_coordinates(incoord)
+            except TypeError: pass 
             IMP.pmi.Uncertainty.setup_particle(ptem,radius)
             self.floppy_bodies.append(p)
             outhiers+=[h]

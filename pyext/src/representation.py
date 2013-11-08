@@ -102,6 +102,7 @@ class SimplifiedModel():
         self.hier_geometry_pairs={}
         self.elements={}
         self.linker_restraints=IMP.RestraintSet("linker_restraints")
+        self.linker_restraints_dict={}
         self.threetoone={'ALA':'A','ARG':'R','ASN':'N','ASP':'D',
                          'CYS':'C','GLU':'E','GLN':'Q','GLY':'G',
                          'HIS':'H','ILE':'I','LEU':'L','LYS':'K',
@@ -491,11 +492,11 @@ the pdb offset" % (name,first,rt_final,rt)
     def add_component_necklace(self,name,begin,end,length):
         
         outhiers=[]
-        nbeads=len(range(begin,end,length))
-        lastend=range(begin,end,length)[-2]
-        if float(end-lastend+length)<length/2:
-           length=length+int(float(end-i+length)/(nbeads-1))
-        
+        #nbeads=len(range(begin,end,length))
+        #lastend=range(begin,end,length)[-2]
+        #if float(end-lastend+length)<length/2:
+        #   length=length+int(float(end-i+length)/(nbeads-1))
+
         for i in range(begin,end,length)[0:-1]:
            outhiers+=self.add_component_beads(name,[(i,i+length-1)])
         outhiers+=self.add_component_beads(name,[(i+length,end)])
@@ -546,11 +547,15 @@ the pdb offset" % (name,first,rt_final,rt)
             last = IMP.atom.get_leaves(SortedSegments[x][0])[-1]
             first= IMP.atom.get_leaves(SortedSegments[x+1][0])[0]
             nreslast=len(IMP.atom.Fragment(last).get_residue_indexes())
+            lastresn=IMP.atom.Fragment(last).get_residue_indexes()[-1]
             nresfirst=len(IMP.atom.Fragment(first).get_residue_indexes())
-
-            if self.disorderedlength and (nreslast/2+nresfirst/2)>20.0 :
+            firstresn=IMP.atom.Fragment(first).get_residue_indexes()[0]
+            
+            residuegap=firstresn-lastresn-1
+            
+            if self.disorderedlength and (nreslast/2+nresfirst/2+residuegap)>20.0 :
                #calculate the distance between the sphere centers using Kohn PNAS 2004               
-               optdist=sqrt(5/3)*1.93*(nreslast/2+nresfirst/2)**0.6
+               optdist=sqrt(5/3)*1.93*(nreslast/2+nresfirst/2+residuegap)**0.6
                #optdist2=sqrt(5/3)*1.93*((nreslast)**0.6+(nresfirst)**0.6)/2
                if self.upperharmonic:
                   hu=IMP.core.HarmonicUpperBound(optdist, self.kappa)
@@ -558,18 +563,22 @@ the pdb offset" % (name,first,rt_final,rt)
                   hu=IMP.core.Harmonic(optdist, self.kappa) 
                dps=IMP.core.DistancePairScore(hu)            
             else: #default
-               optdist=0.0
+               optdist=0.0+residuegap*3.6
                if self.upperharmonic: #default
                   hu=IMP.core.HarmonicUpperBound(optdist, self.kappa)
                else:
                   hu=IMP.core.Harmonic(optdist, self.kappa)               
                dps=IMP.core.SphereDistancePairScore(hu)
             
+            
+            
             pt0=IMP.atom.Selection(last).get_selected_particles()[0]          
             pt1=IMP.atom.Selection(first).get_selected_particles()[0]           
             r=IMP.core.PairRestraint(dps,IMP.ParticlePair(pt0,pt1))
+            
             print "Adding sequence connectivity restraint between", pt0.get_name(), " and ", pt1.get_name()
             sortedsegments_cr.add_restraint(r)
+            self.linker_restraints_dict["LinkerRestraint-"+pt0.get_name()+"-"+pt1.get_name()]=r
             self.connected_intra_pairs.append((pt0,pt1))
             self.connected_intra_pairs.append((pt1,pt0))
 
@@ -1131,6 +1140,15 @@ the pdb offset" % (name,first,rt_final,rt)
 
     def set_floppy_bodies_max_trans(self,maxtrans):
         self.maxtrans_fb=maxtrans
+        
+    def set_rigid_bodies_as_fixed(self,rigidbodiesarefixed=True):
+        '''
+        this function will fix rigid bodies in their actual
+        position. the get_particles_to_sample function will return
+        just the floppy bodies.
+        '''
+        self.rigidbodiesarefixed=rigidbodiesarefixed
+        
 
     def get_particles_to_sample(self):
         #get the list of samplable particles with their type
@@ -1141,12 +1159,13 @@ the pdb offset" % (name,first,rt_final,rt)
         #remove symmetric particles: they are not sampled
         rbtmp=[]
         fbtmp=[]
-        for rb in self.rigid_bodies:
-           if IMP.pmi.Symmetric.particle_is_instance(rb):
-              if IMP.pmi.Symmetric(rb).get_symmetric()!=1:
-                 rbtmp.append(rb)
-           else: 
-              rbtmp.append(rb)
+        if not self.rigidbodiesarefixed:
+            for rb in self.rigid_bodies:
+               if IMP.pmi.Symmetric.particle_is_instance(rb):
+                  if IMP.pmi.Symmetric(rb).get_symmetric()!=1:
+                     rbtmp.append(rb)
+               else: 
+                  rbtmp.append(rb)
     
         for fb in self.floppy_bodies:
            if IMP.pmi.Symmetric.particle_is_instance(fb):
@@ -1180,6 +1199,8 @@ the pdb offset" % (name,first,rt_final,rt)
             partialscore=self.unmodeledregions_cr_dict[name].evaluate(False)
             score+=partialscore            
             output["SimplifiedModel_Link_UnmodeledRegions_"+name+"_"+self.label]=str(partialscore)
+        for name in self.linker_restraints_dict:
+            output[name+"_"+self.label]=str(self.linker_restraints_dict[name].unprotected_evaluate(None))
         if self.output_level=="high":
             #print coordinates
             for p in IMP.atom.get_leaves(self.prot):

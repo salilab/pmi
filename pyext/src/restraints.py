@@ -627,19 +627,31 @@ class SimplifiedCrossLinkMS():
 
 class SigmoidCrossLinkMS():
 
-    def __init__(self,prot,restraints_file,inflection,slope,amplitude,linear_slope,resolution=None, columnmapping=None):
+    def __init__(self,prot,restraints_file,inflection,slope,amplitude,
+                 linear_slope,resolution=None, columnmapping=None, csvfile=False,
+                 filters=None):
         #columnindexes is a list of column indexes for protein1, protein2, residue1, residue2
         #by default column 0 = protein1; column 1 = protein2; column 2 = residue1; column 3 = residue2
-
+        #the filters applies to the csvfile, the format is 
+        #filters=[("Field1",">|<|=|>=|<=",value),("Field2","is","String"),("Field2","in","String")]
+        import IMP.pmi.tools as tools
 
 
         if columnmapping==None:
-            columnmapping={}
-            columnmapping["Protein1"]=0
-            columnmapping["Protein2"]=1
-            columnmapping["Residue1"]=2
-            columnmapping["Residue2"]=3
+           columnmapping={}
+           columnmapping["Protein1"]=0
+           columnmapping["Protein2"]=1
+           columnmapping["Residue1"]=2
+           columnmapping["Residue2"]=3
 
+        if csvfile==True:
+           #in case the file is a cvs file
+           #columnmapping will contain the field names
+           #that compare in the first line of the cvs file
+           db=tools.get_db_from_csv(restraints_file)
+        else:
+           db=open(restraints_file)
+           
         self.rs=IMP.RestraintSet('data')
         self.weight=1.0
         self.prot=prot
@@ -663,22 +675,46 @@ class SigmoidCrossLinkMS():
         residue2=columnmapping["Residue2"]
 
         if resolution!=None:
-            particles=[]
-            for prot in self.prot.get_children():
-                particles+=IMP.pmi.tools.get_particles_by_resolution(prot,resolution)
-
-
-
-        for line in open(restraints_file):
-
-            tokens=line.split()
-            #skip character
-            if (tokens[0]=="#"): continue
-            r1=int(tokens[residue1])
-            c1=tokens[protein1]
-            r2=int(tokens[residue2])
-            c2=tokens[protein2]
-
+          particles=[]
+          for prot in self.prot.get_children():
+             particles+=IMP.pmi.tools.get_particles_by_resolution(prot,resolution) 
+        
+        
+        
+        for entry in db:
+            if not csvfile:
+               tokens=entry.split()
+               #skip character
+               if (tokens[0]=="#"): continue
+               r1=int(tokens[residue1])
+               c1=tokens[protein1]
+               r2=int(tokens[residue2])
+               c2=tokens[protein2]
+            else:
+               if filters != None:
+                  #all filters are applied using a and boolean operator
+                  skip=True
+                  for f in filters:
+                      if f[1]=="=":
+                         if float(entry[f[0]])==float(f[2]): skip=False
+                      if f[1]=="<=":                      
+                         if float(entry[f[0]])<=float(f[2]): skip=False
+                      if f[1]==">=": 
+                         if float(entry[f[0]])>=float(f[2]): skip=False
+                      if f[1]=="<":
+                         if float(entry[f[0]])<float(f[2]): skip=False                  
+                      if f[1]==">":
+                         if float(entry[f[0]])>float(f[2]): skip=False                     
+                      if f[1]=="is":                      
+                         if entry[f[0]]==f[2]: skip=False
+                      if f[1]=="in": 
+                         if f[2] in entry[f[0]]: skip=False
+                  if skip==True: continue
+               print entry
+               r1=int(entry[residue1])
+               c1=entry[protein1]
+               r2=int(entry[residue2])
+               c2=entry[protein2]               
 
             #hrc1 = [h for h in self.prot.get_children() if h.get_name()==c1][0]
             s1=IMP.atom.Selection(self.prot,molecule=c1, residue_index=r1)

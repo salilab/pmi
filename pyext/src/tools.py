@@ -436,6 +436,14 @@ class map():
                  minx=x
               n+=1
           return self.map[minx]
+
+def get_db_from_csv(csvfilename):
+     import csv
+     outputlist=[]
+     csvr=csv.DictReader(open(csvfilename))
+     for l in csvr:
+         outputlist.append(l)
+     return outputlist
           
 ########################
 ### Tools to simulate data

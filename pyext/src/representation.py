@@ -86,6 +86,7 @@ class SimplifiedModel():
         self.maxrot_rb=0.03
         self.maxtrans_srb=1.0
         self.maxrot_srb=0.025
+        self.rigidbodiesarefixed=False
         self.maxtrans_fb=0.15
         self.resolution=10.0
         self.bblenght=100.0
@@ -478,6 +479,7 @@ the pdb offset" % (name,first,rt_final,rt)
             mass =IMP.atom.get_mass_from_number_of_residues(resolution)
             volume=IMP.atom.get_volume_from_mass(mass)
             radius=0.8*(3.0/4.0/pi*volume)**(1.0/3.0)
+            IMP.atom.Mass.setup_particle(ptem).set_mass(mass)
             ptem.set_radius(radius)
             try:
                 if tuple(incoord)!=None: ptem.set_coordinates(incoord)
@@ -1268,8 +1270,8 @@ the pdb offset" % (name,first,rt_final,rt)
             else:
                print "%20s %7s" % (name,nres), " ".join(["%20s %7s" % (str(p.get_name()),
                      str(IMP.pmi.Resolution(p).get_resolution())) for p in ps])
-
-                
+    
+               
     def draw_hierarchy_composition(self):
 
         ks=self.elements.keys()

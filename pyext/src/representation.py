@@ -223,11 +223,13 @@ class SimplifiedModel():
         '''
         
         if color==None:
+           # if the color is not passed, then get the stored color
            color=self.color_dict[name]         
         protein_h=self.hier_dict[name]
         outhiers=[]
 
         if type(chain)==str:
+           #if the chainid is a string
            if not readnonwateratoms:
               t=IMP.atom.read_pdb( pdbname, self.m, 
               IMP.atom.AndPDBSelector(IMP.atom.ChainPDBSelector(chain),IMP.atom.ATOMPDBSelector()))
@@ -240,6 +242,7 @@ class SimplifiedModel():
            c=IMP.atom.Chain(IMP.atom.get_by_type(t, IMP.atom.CHAIN_TYPE)[0])
                
         elif type(chain)==int:
+           #if the chainid is a number, get the corresponding chain number from the pdb
            if not readnonwateratoms:        
               s=IMP.atom.read_pdb( pdbname, self.m, IMP.atom.ATOMPDBSelector())
            else:
@@ -349,6 +352,8 @@ the pdb offset" % (name,first,rt_final,rt)
                    #I'm using particle attributes rather that Residue decorators
                    #because I don't want to mess up the hierarchy levels
                    prt.add_attribute(self.residuenamekey, rt_final)
+                   rt=IMP.atom.ResidueType(rt_final)
+                   IMP.atom.Residue.setup_particle(prt,rt)
                                       
                 radius=IMP.core.XYZR(prt).get_radius()
                 IMP.pmi.Uncertainty.setup_particle(prt,radius)
@@ -426,6 +431,7 @@ the pdb offset" % (name,first,rt_final,rt)
                       rtobject=IMP.atom.ResidueType("ALA")
                       vol=IMP.atom.get_volume_from_residue_type(rtobject)
                       radius=IMP.algebra.get_ball_radius_from_volume_3d(vol)
+                   IMP.atom.Residue.setup_particle(prt,rtobject)   
                    prt.add_attribute(self.residuenamekey, rt_final)
                    IMP.core.XYZR(prt).set_radius(radius)
 
@@ -464,6 +470,7 @@ the pdb offset" % (name,first,rt_final,rt)
             else:
                h.set_name(name+'_%i-%i_bead' % (ds_frag[0],ds_frag[1]))               
             resolution=len(h.get_residue_indexes())
+            
             try:
                 clr=IMP.display.get_rgb_color(colors[n])
             except:
@@ -471,7 +478,17 @@ the pdb offset" % (name,first,rt_final,rt)
             
             IMP.display.Colored.setup_particle(prt,clr)
             
-            #decorate particles according to their resolution
+            if resolution==1:
+               #if the Fragment is made by only one residue
+               #decorate it also as a Residue
+               if name in self.sequence_dict:
+                  rtstring=self.onetothree[self.sequence_dict[name][ds_frag[0]]]
+               else:
+                  rtstring="ALA"
+               rt=IMP.atom.ResidueType(rtstring)
+               IMP.atom.Residue.setup_particle(prt,rt)
+
+            #decorate particles according to their resolution               
             IMP.pmi.Resolution.setup_particle(prt,1000000)
             p=IMP.atom.get_leaves(h)[0]
             IMP.core.XYZR.setup_particle(p)

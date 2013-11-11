@@ -853,7 +853,9 @@ class SigmoidCrossLinkMS():
 
 class ISDCrossLinkMS():
 
-    def __init__(self,prot,restraints_file,length,resolution=None, columnmapping=None,samplelength=False):
+    def __init__(self,prot,restraints_file,length,resolution=None, 
+                 columnmapping=None,samplelength=False,
+                 ids_map=None,radius_map=None):
         #columnindexes is a list of column indexes for protein1, protein2, residue1, residue2
         #by default column 0 = protein1; column 1 = protein2; column 2 = residue1; column 3 = residue2;
         # column 4 = idscores
@@ -884,17 +886,19 @@ class ISDCrossLinkMS():
         self.sigma_dictionary={}
         self.psi_dictionary={}
         self.samplelength=samplelength
-        self.ids_map=tools.map()
-        self.ids_map.set_map_element(20.0,0.05)
-        self.ids_map.set_map_element(40.0,0.01)
-
-        self.radius_map=tools.map()
-        #self.radius_map.set_map_element(2.5,2.5)
-        #self.radius_map.set_map_element(5.0,5.0)
-        #self.radius_map.set_map_element(7.5,7.5)
-        self.radius_map.set_map_element(10,10)
-        #self.radius_map.set_map_element(15,15)
-        #self.radius_map.set_map_element(20,20)
+        
+        if ids_map==None:
+           self.ids_map=tools.map()
+           self.ids_map.set_map_element(20.0,0.05)
+           self.ids_map.set_map_element(65.0,0.01)
+        else:
+           self.ids_map=ids_map
+        
+        if radius_map==None:
+           self.radius_map=tools.map()
+           self.radius_map.set_map_element(10,10)
+        else:
+           self.radius_map=radius_map
 
         self.outputlevel="low"
 

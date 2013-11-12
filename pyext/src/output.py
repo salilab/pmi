@@ -22,6 +22,7 @@ class Output():
         self.best_score_list=None
         self.nbestscoring=None
         self.suffix=None
+        self.replica_exchange=False
         self.ascii=ascii
         self.initoutput={}
         self.residuetypekey=imp.StringKey("ResidueName")
@@ -79,11 +80,29 @@ class Output():
         for pdb in self.dictionary_pdbs.keys():
             self.write_pdb(pdb,appendmode)
 
-    def init_pdb_best_scoring(self,suffix,prot,nbestscoring):
+    def init_pdb_best_scoring(self,suffix,prot,nbestscoring,replica_exchange=False):
         # save only the nbestscoring conformations
         # create as many pdbs as needed
-        self.best_score_list=[]
+        
+        
+        
+        
         self.suffix=suffix
+        self.replica_exchange=replica_exchange
+        if not self.replica_exchange:
+           #common usage
+           #if you are not in replica exchange mode
+           #initialize the array of scores internally
+           self.best_score_list=[]
+        else:
+           #otherwise the replicas must cominucate 
+           #through a common file to know what are the best scores
+           self.best_score_file_name="best.scores.rex.py"
+           self.best_score_list=[]
+           best_score_file=open(self.best_score_file_name,"w")
+           best_score_file.write("self.best_score_list="+str(self.best_score_list))
+           best_score_file.close()
+        
         self.nbestscoring=nbestscoring
         for i in range(self.nbestscoring):
             name=suffix+"."+str(i)+".pdb"
@@ -99,6 +118,10 @@ class Output():
             print "Output.write_pdb_best_scoring: init_pdb_best_scoring not run"
 
         #update the score list
+        if self.replica_exchange:
+           #read the self.best_score_list from the file
+           execfile(self.best_score_file_name)
+        
         if len(self.best_score_list)<self.nbestscoring:
             self.best_score_list.append(score)
             self.best_score_list.sort()
@@ -124,6 +147,12 @@ class Output():
                 os.remove(filenametoremove)
                 filetoadd=self.suffix+"."+str(index)+".pdb"
                 self.write_pdb(filetoadd,appendmode=False)
+
+        if self.replica_exchange:
+           #write the self.best_score_list to the file
+           best_score_file=open(self.best_score_file_name,"w")
+           best_score_file.write("self.best_score_list="+str(self.best_score_list))
+           best_score_file.close()
 
     def init_rmf(self,name,prot):
         if not self.rmf_library:

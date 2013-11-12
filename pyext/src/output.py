@@ -486,6 +486,37 @@ class ProcessOutput():
         plt.ylabel("Frequency")
         plt.savefig(name+".png",dpi=150,transparent="True")
         plt.show()
+    
+    
+def plot_fields_box_plots(name,values,positions,
+                          valuename="None",positionname="None"):
+    '''
+    This function plots time series as boxplots
+    fields is a list of time series, positions are the x-values
+    valuename is the y-label, positionname is the x-label
+    '''
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import Polygon
+    #import numpy as np
+    
+    bps=[]
+    fig = plt.figure(figsize=(10,10))
+    fig.canvas.set_window_title(name)
+    ax1 = fig.add_subplot(111)
+    
+    plt.subplots_adjust(left=0.161, right=0.990, top=0.95, bottom=0.11)
+    
+
+    bps.append(plt.boxplot( values, notch=0, sym='', vert=1, 
+                              whis=1.5,positions=positions))  
+    
+    plt.setp(bps[-1]['boxes'], color='black',lw=1.5)
+    plt.setp(bps[-1]['whiskers'], color='black',ls=":",lw=1.5)
+    
+    plt.xlabel(positionname)
+    plt.ylabel(valuename)
+    plt.savefig(name+".png",dpi=150,transparent="True")
+    plt.show()
 
 
 def plot_xy_data(x,y):

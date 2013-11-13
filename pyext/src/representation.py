@@ -109,7 +109,12 @@ class SimplifiedModel():
                          'HIS':'H','ILE':'I','LEU':'L','LYS':'K',
                          'MET':'M','PHE':'F','PRO':'P','SER':'S',
                          'THR':'T','TRP':'W','TYR':'Y','VAL':'V','UNK':'X'}
-        self.onetothree = {v:k for k, v in self.threetoone.items()}
+        try:
+           #that works with python 2.7
+           self.onetothree = {v:k for k, v in self.threetoone.items()}
+        except:
+           #maintain compatibility with python 2.6
+           self.onetothree = dict((v,k) for k, v in self.threetoone.iteritems())
         self.residuenamekey = IMP.kernel.StringKey("ResidueName")
 
     def shuffle_configuration(self,bounding_box_length=300.,translate=True):
@@ -304,7 +309,7 @@ class SimplifiedModel():
                    prt.set_name(name+'_%i-%i_pdb' % (first,last))
                 
                 if r==1:
-                   #all the code below is to set the appropriate residue name
+                   #all the code below is to set the appropriate residue type
 
                    if not isnucleicacid:
                       sel=IMP.atom.Selection(c0,residue_index=first, atom_type=IMP.atom.AT_CA)
@@ -903,57 +908,12 @@ the pdb offset" % (name,first,rt_final,rt)
            
             pc=copyparticles[n]
             
-            #print p.get_name(),pc.get_name()
-
-
-            #if (p.get_name()!=pc.get_name()): print p.get_name()+" "+pc.get_name()+" not the same particle"
-
-            '''
-            if IMP.core.RigidMember.particle_is_instance(p):
-               rb=IMP.core.RigidMember(p).get_rigid_body()
-               if not rb in mainpurged: 
-                  mainpurged.append(rb)
-                  IMP.pmi.Symmetric.setup_particle(rb,0)
-                  print "added Rigid Body", type(rb),rb.get_name()
-            elif IMP.core.NonRigidMember.particle_is_instance(p):   
-                  mainpurged.append(p)
-                  IMP.pmi.Symmetric.setup_particle(p,0)
-                  print "added NonRigidMember", type(p),p.get_name()    
-                  print "warning: NonRigidMember particles might not work with symmetries"
-                  print "create rigid body with nonrigidmembers=False"                                        
-            else:
-               print "added Particle", type(p),p.get_name()
-               mainpurged.append(p)
-               IMP.pmi.Symmetric.setup_particle(p,0)
-            '''
-            #print "added Particle", type(p),p.get_name()
             mainpurged.append(p)
             IMP.pmi.Symmetric.setup_particle(p,0)           
-            
-            '''
-            if IMP.core.RigidMember.particle_is_instance(pc):
-               rbc=IMP.core.RigidMember(pc).get_rigid_body()
-               if not rbc in copypurged: 
-                  copypurged.append(rbc)
-                  IMP.pmi.Symmetric.setup_particle(rbc,1)
-                  print "added Rigid Body", type(rbc),rbc.get_name()
-            elif IMP.core.NonRigidMember.particle_is_instance(pc):   
-                  copypurged.append(pc)
-                  print "added NonRigidMember", type(pc),pc.get_name()  
-                  print "warning: NonRigidMember particles might not work with symmetries"
-                  print "create rigid body with nonrigidmembers=False" 
-                  IMP.pmi.Symmetric.setup_particle(pc,1)   
-            else:
-               print "added Particle", type(pc),pc.get_name()
-               copypurged.append(pc)
-               IMP.pmi.Symmetric.setup_particle(pc,1)
-            '''
 
-            #print "added Particle", type(pc),pc.get_name()
             copypurged.append(pc)
             IMP.pmi.Symmetric.setup_particle(pc,1)
-           
-                       
+                   
           lc=IMP.container.ListSingletonContainer(self.m)        
           for n,p in enumerate(mainpurged):
             
@@ -1334,24 +1294,6 @@ the pdb offset" % (name,first,rt_final,rt)
                             
             bounds.append(bounds[-1])
             colors.append("white")
-            
-            '''
-            for n,l in enumerate(list):
-                firstres=l[0]
-                lastres=l[1]
-  
-                if l[3]=="end" and bounds[-1]!=list[n-1][1]: 
-                   colors.append("white")
-                   bounds.append(list[n-1][1])
-                elif bounds[-1]!=l[0]:
-                   print bounds[-1],l[0]          
-                   bounds.append(l[0])
-                   if l[3]=="pdb": colors.append("#99CCFF")
-                   if l[3]=="bead": colors.append("#FFFF99")
-            
-            if bounds[-1]!=endres:
-               bounds.append(endres)
-            '''
             cmap = mpl.colors.ListedColormap(colors)
             cmap.set_over('0.25')
             cmap.set_under('0.75')

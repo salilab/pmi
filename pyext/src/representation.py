@@ -570,13 +570,43 @@ class SimplifiedModel():
         
         return outhiers
 
-    def add_component_necklace(self,name,begin,end,length):
+    def add_component_density(self,name,hierarchy,
+                              resolution,inputfile=None,outputfile=None):
+        outhier=[]
+        protein_h=self.hier_dict[name]
         
+        if "Densities" not in self.hier_resolution[name]: 
+           root=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
+           root.set_name("Densities")
+           self.hier_resolution[name]["Densities"]=root   
+           protein_h.add_child(root)
+
+        if inputfile==None:
+           all_fragment_leaves=IMP.atom.get_leaves(hierarchy)
+           particles=self.hier_db.get_particles_by_resolution(name,resolution)
+           fragment_particles=list(set(all_fragment_leaves) & set(particles))
+           density_particles=density.calculate_densities(fragment_particles)
+           if outputfile!=None:
+              #save the outputfile here
+        else:
+           density_particles=...
+           #read the outputfile here
+        
+        s0=IMP.atom.Fragment.setup_particle(IMP.Particle(self.m))
+        s0.set_name(hierarchy.get_name())
+        self.hier_resolution[name]["Densities"].add_child(s0)
+        outhier.append(s0)
+        
+        for p in density_particle:
+            s0.add_child(p)
+        
+        return outhier
+        
+        
+        
+
+    def add_component_necklace(self,name,begin,end,length):
         outhiers=[]
-        #nbeads=len(range(begin,end,length))
-        #lastend=range(begin,end,length)[-2]
-        #if float(end-lastend+length)<length/2:
-        #   length=length+int(float(end-i+length)/(nbeads-1))
 
         for i in range(begin,end,length)[0:-1]:
            outhiers+=self.add_component_beads(name,[(i,i+length-1)])

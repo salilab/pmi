@@ -356,14 +356,32 @@ def get_particles_by_resolution(prot,resolution):
     #for hier in prot.get_children():
     particles = []
     residues = set() 
+    
+    if resolution!=0 and resolution!=1:
+       print "resolution", resolution
+       ps=IMP.atom.get_by_type(prot, IMP.atom.FRAGMENT_TYPE)
+       for p in ps:
+         residues.update(IMP.atom.Fragment(p).get_residue_indexes())
+    elif resolution==1:
+       print "resolution 1"
+       ps=IMP.atom.get_by_type(prot, IMP.atom.FRAGMENT_TYPE)
+       for p in ps:
+          residues.update(IMP.atom.Fragment(p).get_residue_indexes())
+       ps=IMP.atom.get_by_type(prot, IMP.atom.RESIDUE_TYPE)
+       for p in ps:
+          residues.add(IMP.atom.Residue(p).get_index())
+    elif resolution==0:
+       print "resolution 0"
+       ps=IMP.atom.get_by_type(prot, IMP.atom.RESIDUE_TYPE)
+       return ps
+    
 
-    for p in IMP.atom.get_leaves(prot):
-        residues.update(IMP.atom.Fragment(p).get_residue_indexes())
        
     firstresn=min(residues)
     lastresn=max(residues)
     for nres in range(firstresn,lastresn+1):
-        s=IMP.atom.Selection(prot,residue_index=nres)
+        s=IMP.atom.Selection(prot,residue_index=nres,
+                             hierarchy_types=[IMP.atom.FRAGMENT_TYPE,IMP.atom.RESIDUE_TYPE])
         resolutions=[]
 
         # calculate the closest resolution for each set of particles that represent a residue 
@@ -468,7 +486,154 @@ class map():
                  minx=x
               n+=1
           return self.map[minx]
+          
+class HierarchyDatabase():
+     def __init__(self):
+        self.db={}
+        #this dictionary map a particle to its root hierarchy
+        self.root_hierarchy_dict={}
+        self.preroot_fragment_hierarchy_dict={}
+        self.model=None
+    
+     def add_name(self,name):
+        if name not in self.db:
+           self.db[name]={}
+    
+     def add_residue_number(self,name,resn):
+        resn=int(resn)
+        self.add_name(name)
+        if resn not in self.db[name]:
+           self.db[name][resn]={}
+           
+     def add_resolution(self,name,resn,resolution):
+        resn=int(resn)
+        resolution=float(resolution)     
+        self.add_name(name)
+        self.add_residue_number(name,resn)         
+        if resolution not in self.db[name][resn]:
+           self.db[name][resn][resolution]=[]   
+     
+     def add_particles(self,name,resn,resolution,particles):
+        resn=int(resn)
+        resolution=float(resolution)
+        self.add_name(name)
+        self.add_residue_number(name,resn)
+        self.add_resolution(name,resn,resolution)
+        self.db[name][resn][resolution]+=particles
+        for p in particles:
+            (rh,prf)=self.get_root_hierarchy(p)
+            self.root_hierarchy_dict[p]=rh
+            self.preroot_fragment_hierarchy_dict[p]=prf
+        if self.model==None: self.model=particles[0].get_model()
+    
+     def get_model(self):
+        return self.model
+    
+     def get_names(self):
+        names=self.db.keys()
+        names.sort()
+        return names
+    
+     def get_particles(self,name,resn,resolution):
+        resn=int(resn)
+        resolution=float(resolution)     
+        return self.db[name][resn][resolution]
 
+     def get_particles_at_closest_resolution(self,name,resn,resolution):
+        resn=int(resn)
+        resolution=float(resolution)     
+        closestres=min(self.get_residue_resolutions(name,resn), 
+                       key=lambda x:abs(float(x)-float(resolution)))
+        return self.get_particles(name,resn,closestres)    
+
+     def get_residue_resolutions(self,name,resn):
+        resn=int(resn)   
+        resolutions=self.db[name][resn].keys()
+        resolutions.sort()
+        return resolutions
+    
+     def get_molecule_resolutions(self,name):    
+        resolutions=set()        
+        for resn in self.db[name]:
+            resolutions.update(self.db[name][resn].keys())
+        resolutions.sort()
+        return resolutions
+
+     def get_residue_numbers(self,name):
+        residue_numbers=self.db[name].keys()
+        residue_numbers.sort()
+        return residue_numbers
+     
+     def get_particles_by_resolution(self,name,resolution):
+        resolution=float(resolution)     
+        particles=[]
+        for resn in self.get_residue_numbers(name):
+            result=self.get_particles_at_closest_resolution(name,resn,resolution)
+            pstemp=[p for p in result if p not in particles]
+            particles+=pstemp
+        return particles
+     
+     def get_all_particles_by_resolution(self,resolution):
+        resolution=float(resolution)
+        particles=[]
+        for name in self.get_names():
+          particles+=self.get_particles_by_resolution(name,resolution)
+        return particles
+    
+     def get_root_hierarchy(self,particle):
+        prerootfragment=particle
+        while IMP.atom.Atom.particle_is_instance(particle) or \
+              IMP.atom.Residue.particle_is_instance(particle) or \
+              IMP.atom.Fragment.particle_is_instance(particle):
+           if IMP.atom.Atom.particle_is_instance(particle):
+              p=IMP.atom.Atom(particle).get_parent()
+           elif IMP.atom.Residue.particle_is_instance(particle):
+              p=IMP.atom.Residue(particle).get_parent()
+           elif IMP.atom.Fragment.particle_is_instance(particle):
+              p=IMP.atom.Fragment(particle).get_parent()
+           prerootfragment=particle
+           particle=p
+        return (IMP.atom.Hierarchy(particle),IMP.atom.Hierarchy(prerootfragment))
+    
+     def get_all_root_hierarchies_by_resolution(self,resolution):
+        hierarchies=[]
+        resolution=float(resolution)
+        particles=self.get_all_particles_by_resolution(resolution)
+        for p in particles:
+            rh=self.root_hierarchy_dict[p]
+            if rh not in hierarchies: hierarchies.append(rh)
+        return hierarchies
+
+     def get_preroot_fragments_by_resolution(self,name,resolution):
+        fragments=[]
+        resolution=float(resolution)
+        particles=self.get_particles_by_resolution(name,resolution)
+        for p in particles:
+            fr=self.preroot_fragment_hierarchy_dict[p]
+            if fr not in fragments: fragments.append(fr)
+        return fragments
+    
+     def show(self,name):
+        print name
+        for resn in self.get_residue_numbers(name):
+            print resn
+            for resolution in  self.get_residue_resolutions(name,resn):
+                print "----", resolution
+                for p in self.get_particles(name,resn,resolution):
+                    print "--------", p.get_name()
+    
+        
+
+def get_residue_indexes(hier):
+    if IMP.atom.Fragment.particle_is_instance(hier):
+       resind=IMP.atom.Fragment(hier).get_residue_indexes()
+    elif IMP.atom.Residue.particle_is_instance(hier):
+       resind=[IMP.atom.Residue(hier).get_index()]
+    else:
+       print "get_residue_indexes> input is not Fragment or Residue"
+    return resind
+    
+ 
 def get_db_from_csv(csvfilename):
      import csv
      outputlist=[]

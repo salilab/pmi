@@ -101,6 +101,8 @@ class SimplifiedModel():
         self.color_dict={}
         self.sequence_dict={}
         self.hier_geometry_pairs={}
+        self.hier_db=tools.HierarchyDatabase()
+        self.hier_resolution={}
         self.elements={}
         self.linker_restraints=IMP.RestraintSet("linker_restraints")
         self.linker_restraints_dict={}
@@ -115,6 +117,7 @@ class SimplifiedModel():
         except:
            #maintain compatibility with python 2.6
            self.onetothree = dict((v,k) for k, v in self.threetoone.iteritems())
+           
         self.residuenamekey = IMP.kernel.StringKey("ResidueName")
 
     def shuffle_configuration(self,bounding_box_length=300.,translate=True):
@@ -140,9 +143,11 @@ class SimplifiedModel():
 
 
     def add_component_name(self,name,color=None):
-        protein_h = IMP.atom.Molecule.setup_particle(IMP.Particle(self.m))
+        protein_h = IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
         protein_h.set_name(name)
         self.hier_dict[name]=protein_h
+        self.hier_resolution[name]={}
+        self.hier_db.add_name(name)
         self.prot.add_child(protein_h)
         self.color_dict[name]=color
         self.elements[name]=[]
@@ -288,15 +293,104 @@ class SimplifiedModel():
         
         self.elements[name].append((start,end,pdbname.split("/")[-1]+":"+chain,"pdb"))
         
+        if (1 in resolutions) or (0 in resolutions):
+           #in that case create residues and append atoms
+
+           
+           if 1 in resolutions:
+              if "Res:1" not in self.hier_resolution[name]: 
+                 root=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
+                 root.set_name("Res:1")
+                 self.hier_resolution[name]["Res:1"]=root
+                 protein_h.add_child(root)
+              
+              s1=IMP.atom.Fragment.setup_particle(IMP.Particle(self.m))
+              s1.set_name(name+'_%i-%i_pdb' % (start,end))
+              self.hier_resolution[name]["Res:1"].add_child(s1)
+              outhiers+=[s1]
+           if 0 in resolutions:
+              if "Res:0" not in self.hier_resolution[name]: 
+                 root=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
+                 root.set_name("Res:0")
+                 self.hier_resolution[name]["Res:0"]=root   
+                 protein_h.add_child(root)        
+              s0=IMP.atom.Fragment.setup_particle(IMP.Particle(self.m))
+              s0.set_name(name+'_%i-%i_pdb' % (start,end))
+              self.hier_resolution[name]["Res:0"].add_child(s0)
+              outhiers+=[s0]           
+
+           if not isnucleicacid:
+              sel=IMP.atom.Selection(c0,atom_type=IMP.atom.AT_CA)
+           else:
+              sel=IMP.atom.Selection(c0,atom_type=IMP.atom.AT_P)
+                   
+           for p in sel.get_selected_particles():
+              resobject=IMP.atom.Residue(IMP.atom.Atom(p).get_parent())
+              if 0 in resolutions:
+                 #if you ask for atoms
+                 resclone0=IMP.atom.create_clone(resobject)
+                 resindex=IMP.atom.Residue(resclone0).get_index()
+                 s0.add_child(resclone0)  
+                 self.hier_db.add_particles(name,resindex,0,resclone0.get_children())
+
+                 chil=resclone0.get_children()         
+                 for ch in chil:
+                   IMP.pmi.Resolution.setup_particle(ch,0)
+                   try:
+                     clr=IMP.display.get_rgb_color(color)
+                   except:
+                     clr=IMP.display.get_rgb_color(1.0)
+                   IMP.display.Colored.setup_particle(ch,clr)
+                 
+                                            
+              if 1 in resolutions:
+                 #else clone the residue
+                 resclone1=IMP.atom.create_clone_one(resobject)
+                 resindex=IMP.atom.Residue(resclone1).get_index()
+                 s1.add_child(resclone1)
+                 self.hier_db.add_particles(name,resindex,1,[resclone1.get_particle()])                               
+
+
+                 rt=IMP.atom.Residue(resclone1).get_residue_type()
+                 xyz=IMP.core.XYZ(p).get_coordinates()
+                 prt=resclone1.get_particle()
+                 prt.set_name(name+'_%i_pdb' % (resindex))
+                 IMP.core.XYZ.setup_particle(prt).set_coordinates(xyz)
+                       
+                 try:
+                   vol=IMP.atom.get_volume_from_residue_type(rt)
+                   #mass=IMP.atom.get_mass_from_residue_type(rt)
+                 except IMP.base.ValueException:
+                   vol=IMP.atom.get_volume_from_residue_type(IMP.atom.ResidueType("ALA"))
+                   #mass=IMP.atom.get_mass_from_residue_type(IMP.atom.ResidueType("ALA"))
+                 radius=IMP.algebra.get_ball_radius_from_volume_3d(vol)
+                 IMP.core.XYZR.setup_particle(prt).set_radius(radius) 
+                 IMP.atom.Mass.setup_particle(prt,100) 
+              
+                 IMP.pmi.Uncertainty.setup_particle(prt,radius)
+                 IMP.pmi.Resolution.setup_particle(prt,1)
+                
+                 try:
+                   clr=IMP.display.get_rgb_color(color)
+                 except:
+                   clr=IMP.display.get_rgb_color(1.0)
+                 IMP.display.Colored.setup_particle(prt,clr)  
+                          
         for r in resolutions:
+          if r!=0 and r!=1:
+            if "Res:"+str(int(r)) not in self.hier_resolution[name]: 
+                 root=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
+                 root.set_name("Res:"+str(int(r)))
+                 self.hier_resolution[name]["Res:"+str(int(r))]=root   
+                 protein_h.add_child(root) 
             s=IMP.atom.create_simplified_along_backbone(c0, r)
                            
             chil=s.get_children()
-            s0=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
+            s0=IMP.atom.Fragment.setup_particle(IMP.Particle(self.m))
             
-            s0.set_name(name+'_%i-%i_pdb' % (start,end)+"_Res:"+str(r))
+            s0.set_name(name+'_%i-%i_pdb' % (start,end))
             for ch in chil: s0.add_child(ch)            
-            protein_h.add_child(s0)
+            self.hier_resolution[name]["Res:"+str(int(r))].add_child(s0)
             outhiers+=[s0]
             del s
             for prt in IMP.atom.get_leaves(s0):
@@ -308,56 +402,9 @@ class SimplifiedModel():
                 else:                   
                    prt.set_name(name+'_%i-%i_pdb' % (first,last))
                 
-                if r==1:
-                   #all the code below is to set the appropriate residue type
-
-                   if not isnucleicacid:
-                      sel=IMP.atom.Selection(c0,residue_index=first, atom_type=IMP.atom.AT_CA)
-                   else:
-                      sel=IMP.atom.Selection(c0,residue_index=first, atom_type=IMP.atom.AT_P)
-                   
-                   p=sel.get_selected_particles()[0]
-                   rtobject=IMP.atom.Residue(IMP.atom.Atom(p).get_parent()).get_residue_type()
-                   #the problem of the following function is that it does not 
-                   #cover nucleic acid codes, therefore you'll get UNK for RNA and DNA pdbs.
-                   rt=self.onetothree[IMP.atom.get_one_letter_code(rtobject)]
-                   if cacenters:
-                       #this specially sets the radii and centers on the 
-                       #cartesian coordinates of the ca atoms when the resolution is 1
-                       #beacuse simplified along backbone gets the COM positions
-                       
-                       xyz=IMP.core.XYZ(p).get_coordinates()
-                       IMP.core.XYZ(prt).set_coordinates(xyz)
-                       
-                       try:
-                          vol=IMP.atom.get_volume_from_residue_type(rtobject)
-                          radius=IMP.algebra.get_ball_radius_from_volume_3d(vol)
-                       except IMP.base.ValueException:
-                          radius=IMP.core.XYZR(prt).get_radius()
-                       IMP.core.XYZR(prt).set_radius(radius)
-                    
-                   #setting the residue type to the particle
-                   
-                   if name in self.sequence_dict:
-                      try:
-                         rt_final=self.onetothree[self.sequence_dict[name][first-1]]
-                      except IndexError:
-                         print "add_component_pdb> WARNING: Name: %s residue number: %d the input fasta sequence is shorter \
-than the one read from the pdb, setting residue type from pdb. Check the fasta file or the pdb offset" % (name, first)
-                         rt_final=rt
-                   else:
-                      rt_final=rt
-                      
-                   if rt_final!=rt:
-                      print "add_component_pdb> WARNING: Name: %s residue number: %d Expected \
-residue: %s residue found in pdb: %s residue types don't match between \
-sequence and pdb, setting it to the one in the sequence, check \
-the pdb offset" % (name,first,rt_final,rt)
-                      
-                   #I'm using particle attributes rather that Residue decorators
-                   #because I don't want to mess up the hierarchy levels
-                   prt.add_attribute(self.residuenamekey, rt_final)
-                                      
+                for kk in ri:
+                   self.hier_db.add_particles(name,kk,r,[prt]) 
+                                                      
                 radius=IMP.core.XYZR(prt).get_radius()
                 IMP.pmi.Uncertainty.setup_particle(prt,radius)
                 IMP.pmi.Resolution.setup_particle(prt,r)
@@ -373,6 +420,11 @@ the pdb offset" % (name,first,rt_final,rt)
         if show:
            IMP.atom.show_molecular_hierarchy(protein_h)
         
+        
+        del c
+        del c0
+        del t
+
         return outhiers
 
 
@@ -464,14 +516,33 @@ the pdb offset" % (name,first,rt_final,rt)
             ds_frag=(dss[0],dss[1])
             self.elements[name].append((dss[0],dss[1]," ","bead"))
             prt=IMP.Particle(self.m)
-            h=IMP.atom.Fragment.setup_particle(prt)
-            h.set_residue_indexes(range(ds_frag[0],ds_frag[1]+1))
-            
             if ds_frag[0]==ds_frag[1]:
+               #if the bead represent a single residue
+               if name in self.sequence_dict:
+                  rtstr=self.onetothree[self.sequence_dict[name][first-1]]
+                  rt=IMP.atom.ResidueType(rtstr)
+               else:
+                  rt=IMP.atom.ResidueType("ALA")
+               h=IMP.atom.Residue.setup_particle(prt,rt,ds_frag[0])
                h.set_name(name+'_%i_bead' % (ds_frag[0]))
+               prt.set_name(name+'_%i_bead' % (ds_frag[0]))
+               resolution=1
             else:
-               h.set_name(name+'_%i-%i_bead' % (ds_frag[0],ds_frag[1]))               
-            resolution=len(h.get_residue_indexes())
+               h=IMP.atom.Fragment.setup_particle(prt)
+               h.set_name(name+'_%i-%i_bead' % (ds_frag[0],ds_frag[1])) 
+               prt.set_name(name+'_%i-%i_bead' % (ds_frag[0],ds_frag[1]))                
+               h.set_residue_indexes(range(ds_frag[0],ds_frag[1]+1)) 
+               resolution=len(h.get_residue_indexes())
+            if "Beads" not in self.hier_resolution[name]: 
+                 root=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
+                 root.set_name("Beads")
+                 self.hier_resolution[name]["Beads"]=root   
+                 protein_h.add_child(root) 
+            self.hier_resolution[name]["Beads"].add_child(h)
+
+            for kk in range(ds_frag[0],ds_frag[1]+1):
+                self.hier_db.add_particles(name,kk,resolution,[prt])
+
             try:
                 clr=IMP.display.get_rgb_color(colors[n])
             except:
@@ -480,22 +551,22 @@ the pdb offset" % (name,first,rt_final,rt)
             IMP.display.Colored.setup_particle(prt,clr)
             
             #decorate particles according to their resolution
-            IMP.pmi.Resolution.setup_particle(prt,1000000)
-            p=IMP.atom.get_leaves(h)[0]
-            IMP.core.XYZR.setup_particle(p)
-            ptem=IMP.core.XYZR(p)
+            IMP.pmi.Resolution.setup_particle(prt,resolution)
+            
+            IMP.core.XYZR.setup_particle(prt)
+            ptem=IMP.core.XYZR(prt)
             mass =IMP.atom.get_mass_from_number_of_residues(resolution)
             volume=IMP.atom.get_volume_from_mass(mass)
             radius=0.8*(3.0/4.0/pi*volume)**(1.0/3.0)
-            IMP.atom.Mass.setup_particle(ptem,mass)
+            IMP.atom.Mass.setup_particle(prt,mass)
             ptem.set_radius(radius)
             try:
                 if tuple(incoord)!=None: ptem.set_coordinates(incoord)
             except TypeError: pass 
             IMP.pmi.Uncertainty.setup_particle(ptem,radius)
-            self.floppy_bodies.append(p)
+            self.floppy_bodies.append(prt)
+
             outhiers+=[h]
-            protein_h.add_child(h)
         
         return outhiers
 
@@ -527,7 +598,7 @@ the pdb offset" % (name,first,rt_final,rt)
         sortedparticles=[]
         
         for p in pbr:
-            startres = IMP.atom.Fragment(p).get_residue_indexes()[0]
+            startres = tools.get_residue_indexes(p)[0]
             sortedparticles.append((p,startres))
             sortedparticles = sorted(sortedparticles, key=itemgetter(1))
             
@@ -538,28 +609,35 @@ the pdb offset" % (name,first,rt_final,rt)
         unmodeledregions_cr=IMP.RestraintSet("unmodeledregions")
         sortedsegments_cr=IMP.RestraintSet("sortedsegments")   
          
-        protein_h=protein_h=self.hier_dict[name]    
+        protein_h=self.hier_dict[name]    
         SortedSegments = []
-        pbr=tools.get_particles_by_resolution(protein_h,resolution)
+        frs=self.hier_db.get_preroot_fragments_by_resolution(name,resolution)
         
-        for chl in protein_h.get_children():
-            start = IMP.atom.get_leaves(chl)[0]
-            end   = IMP.atom.get_leaves(chl)[-1]
-            if not start in pbr: continue
-            if not end   in pbr: continue
-            startres = IMP.atom.Fragment(start).get_residue_indexes()[0]
-            endres   = IMP.atom.Fragment(end).get_residue_indexes()[-1]
-            SortedSegments.append((chl,startres))
-        SortedSegments = sorted(SortedSegments, key=itemgetter(1))
+        for fr in frs:
+            try:
+               start = fr.get_children()[0]
+            except:
+               start = fr
+            
+            try:
+               end   = fr.get_children()[-1]
+            except:
+               end   = fr
+
+            startres = tools.get_residue_indexes(start)[0]
+            endres   = tools.get_residue_indexes(end)[-1]
+            SortedSegments.append((start,end,startres))
+        SortedSegments = sorted(SortedSegments, key=itemgetter(2))
 
         #connect the particles
         for x in xrange(len(SortedSegments)-1):
-            last = IMP.atom.get_leaves(SortedSegments[x][0])[-1]
-            first= IMP.atom.get_leaves(SortedSegments[x+1][0])[0]
-            nreslast=len(IMP.atom.Fragment(last).get_residue_indexes())
-            lastresn=IMP.atom.Fragment(last).get_residue_indexes()[-1]
-            nresfirst=len(IMP.atom.Fragment(first).get_residue_indexes())
-            firstresn=IMP.atom.Fragment(first).get_residue_indexes()[0]
+            last = SortedSegments[x][1]
+            first= SortedSegments[x+1][0]
+            
+            nreslast=len(tools.get_residue_indexes(last))
+            lastresn=tools.get_residue_indexes(last)[-1]
+            nresfirst=len(tools.get_residue_indexes(first))
+            firstresn=tools.get_residue_indexes(first)[0]
             
             residuegap=firstresn-lastresn-1
             
@@ -580,10 +658,8 @@ the pdb offset" % (name,first,rt_final,rt)
                   hu=IMP.core.Harmonic(optdist, self.kappa)               
                dps=IMP.core.SphereDistancePairScore(hu)
             
-            
-            
-            pt0=IMP.atom.Selection(last).get_selected_particles()[0]          
-            pt1=IMP.atom.Selection(first).get_selected_particles()[0]           
+            pt0=last.get_particle()
+            pt1=first.get_particle()
             r=IMP.core.PairRestraint(dps,IMP.ParticlePair(pt0,pt1))
             
             print "Adding sequence connectivity restraint between", pt0.get_name(), " and ", pt1.get_name()
@@ -598,292 +674,6 @@ the pdb offset" % (name,first,rt_final,rt)
         self.linker_restraints.add_restraint(unmodeledregions_cr)
         self.sortedsegments_cr_dict[name]=sortedsegments_cr
         self.unmodeledregions_cr_dict[name]=unmodeledregions_cr
-
-
-    def add_component(self,name, chainnames, length, pdbs, 
-                      init_coords=None, simplepdb=1, ds=None, colors=None, 
-                      resolutions=None):
-        '''
-        Using multiple resolution (resolutions!=None)
-        Using this representation, a crystallographic structure or a homology model
-        can be represented by a set of models, coarse-grained at different levels (giving as input a list of sizes 
-        for the beads, in residue number). All particles belonging to the models are constrained in the same rigid body. 
-        Restraints constructors have an optional argument that corresponds to the resolution you want to apply it.
-        If the resolution of the model is hybrid (i.e., some parts are multi resolution, and some 
-        other are single resolution because they are flexible) the restraint picks up the most convenient particle.
-
-        In this way cross-links will be applied directly to individual residues, excluded 
-        volume is applied to intermediate resolutions (eg. 10 residues per bead) and 
-        connectivity restraint from domain mapping is applied to larger beads (eg. 100 residues per bead), 
-        saving a lot of computational time. I've benchmarked it and it is generally faster 
-        (from twice, up to 2 orders of magnitude faster), and of course, we are not limited 
-        by the usage of a single compromise resolution (eg, 5 residues per beads).
-        '''
-    
-        if ds==None: ds=[]
-        if colors==None: colors=[]
-        if init_coords==None: init_coords=()
-        if resolutions==None: resolutions=[]
-        
-        
-        protein_h = IMP.atom.Molecule.setup_particle(IMP.Particle(self.m))
-        protein_h.set_name(name)
-        bb=IMP.algebra.BoundingBox3D(IMP.algebra.Vector3D(-self.bblenght,-self.bblenght,-self.bblenght),
-                                      IMP.algebra.Vector3D(self.bblenght, self.bblenght, self.bblenght))
-
-        unmodeledregions_cr=IMP.RestraintSet("unmodeledregions")
-        sortedsegments_cr=IMP.RestraintSet("sortedsegments")
-
-        RigiParticles=[]
-        FlexParticles=[]
-
-        # work on PDB structures first
-        #ds = [] #store regions without structures
-        if len(pdbs)>0:
-            bounds = []
-            for pdb_part_count,pdb in enumerate(pdbs):
-                sls=IMP.base.SetLogState(IMP.NONE)
-                t=IMP.atom.read_pdb( pdb, self.m, 
-                  IMP.atom.AndPDBSelector(IMP.atom.ChainPDBSelector(chainnames[pdb_part_count]), 
-                                                                      IMP.atom.ATOMPDBSelector()))
-                            
-                del sls
-
-                #find start and end indexes
-                start = IMP.atom.Residue(t.get_children()[0].get_children()[0]).get_index()
-                end   = IMP.atom.Residue(t.get_children()[0].get_children()[-1]).get_index()
-                bounds.append(( start,end ))
-
-                #IMP.atom.show_molecular_hierarchy(t)
-                c=IMP.atom.Chain(IMP.atom.get_by_type(t, IMP.atom.CHAIN_TYPE)[0])
-                if c.get_number_of_children()==0:
-                    IMP.atom.show_molecular_hierarchy(t)
-                # there is no reason to use all atoms, just approximate the pdb shape instead
-                # add coarse level hierarchy
-                
-                if len(resolutions)==0:
-                   #default
-                   s=IMP.atom.create_simplified_along_backbone(c, self.resolution/2.0)
-                   if simplepdb==1: s=IMP.atom.create_simplified_along_backbone(c, self.resolution/2.0)
-                   else: s=IMP.atom.create_simplified_along_backbone(c, 1.)
-
-                   s.set_name(chainnames[pdb_part_count]+str(pdb_part_count))
-                   IMP.atom.destroy(t)
-                   '''
-                   # make the simplified structure rigid
-                   if init_coords!=() and rbo==0:
-                      print name,pdb
-                      rb=IMP.atom.create_rigid_body(s)
-                      rb.set_coordinates(init_coords)
-                      rb.set_coordinates_are_optimized(True)
-                      RigiParticles.append(rb)
-                   #if rbo==1: rb.set_coordinates_are_optimized(False)
-                   '''
-                   #s0.add_child(s)                          
-                   #protein_h.add_child(s0)
-                
-                   protein_h.add_child(s) 
-               
-                   for prt in IMP.atom.get_leaves(s):
-                     IMP.pmi.Resolution.setup_particle(prt,self.resolution)               
-                     #setting up color for each particle in the hierarchy, if colors missing in the colors list set it to red
-                     try:
-                       clr=IMP.display.get_rgb_color(colors[pdb_part_count])
-                     except:
-                       colors.append(1.0)
-                       clr=IMP.display.get_rgb_color(colors[pdb_part_count])
-                     IMP.display.Colored.setup_particle(prt,clr)
-                   s.set_name(pdb)
-
-                else:
-                   #multiple resolutions
-                   for r in resolutions:
-                     s0=IMP.atom.create_simplified_along_backbone(c, r)
-                     s0.set_name(chainnames[pdb_part_count]+str(pdb_part_count)+str(r))            
-                     protein_h.add_child(s0)
-                     for prt in IMP.atom.get_leaves(s0):
-                       IMP.pmi.Resolution.setup_particle(prt,r)
-                       #setting up color for each particle in the hierarchy, if colors missing in the colors list set it to red
-                       try:
-                         clr=IMP.display.get_rgb_color(colors[pdb_part_count])
-                       except:
-                         colors.append(1.0)
-                         clr=IMP.display.get_rgb_color(colors[pdb_part_count])
-                       IMP.display.Colored.setup_particle(prt,clr)
-                   
-
-            #calculate regions without structrue (un-modelled regions)
-            for i,bnd in enumerate(bounds):
-                if i==0:
-                    if bnd[0]>1:
-                       ds.append((1,bnd[0]-1))
-                       if len(ds)>len(colors): colors.append(colors[pdb_part_count])
-                    if len(bounds)==1:
-                        if bnd[1]<length:
-                           ds.append((bnd[1]+1,length))                          
-                           if len(ds)>len(colors): colors.append(colors[pdb_part_count])
-                else:
-                    ds.append((bounds[i-1][1]+1, bnd[0]-1))                     
-                    if len(ds)>len(colors): colors.append(colors[pdb_part_count])
-                    if i==len(bounds)-1:
-                        if bnd[1]<length:
-                           ds.append((bnd[1]+1,length))                         
-                           if len(ds)>len(colors): colors.append(colors[pdb_part_count])
-
-        else:
-            ds.append((1,length))
-
-
-
-        #work on un-modelled regions
-        randomize_coords = lambda c: tuple(10.*(nrrand(3)-0.5)+array(c))
-
-        for n,ds_frag in enumerate(ds):
-            if ds_frag[1]-ds_frag[0]==0: ds_frag=(ds_frag[0],ds_frag[1]+1)
-            
-            '''
-            #alternatively: define fragments
-            h=IMP.atom.Fragment.setup_particle(IMP.Particle(self.m))
-            h.set_residue_indexes(range(ds_frag[0],ds_frag[1]))
-            h.set_name(name+'_%i-%i' % (ds_frag[0],ds_frag[1]))
-            '''
-            
-            h=IMP.atom.create_protein(self.m, name+'_%i-%i' % (ds_frag[0],ds_frag[1]), self.resolution, \
-                          [ds_frag[0],ds_frag[1]])
-                          
-            for prt in IMP.atom.get_leaves(h):
-                #setting up color for the particle, if colors missing in the colors list set it to red
-                try:
-                    clr=IMP.display.get_rgb_color(colors[n])
-                except:
-                    clr=IMP.display.get_rgb_color(1.0)
-                IMP.display.Colored.setup_particle(prt,clr)
-                
-                #decorate particles according to their resolution
-                IMP.pmi.Resolution.setup_particle(prt,self.resolution)
-
-                ptem= prt.get_as_xyzr()
-                ptem.set_radius(ptem.get_radius()*0.8)
-
-                #if init_coords==(): ptem.set_coordinates((random.uniform(bb[0][0],bb[1][0]),\
-                #      random.uniform(bb[0][1],bb[1][1]),random.uniform(bb[0][2],bb[1][2])))
-                #else: ptem.set_coordinates(randomize_coords(init_coords))
-                if len(pdbs)==0: ptem.set_coordinates((random.uniform(bb[0][0],bb[1][0]),\
-                       random.uniform(bb[0][1],bb[1][1]),random.uniform(bb[0][2],bb[1][2])))
-                else:
-                  if len(resolutions)==0:
-                    #default:
-                    crd=IMP.atom.get_leaves(s)[0].get_as_xyz().get_coordinates()
-                    #comment: why is that done in this way?
-                    ptem.set_coordinates(randomize_coords(crd))
-
-                FlexParticles.append(ptem.get_particle())
-
-            Spheres = IMP.atom.get_leaves(h)
-            
-            for x,prt in enumerate(Spheres):
-                if x==len(Spheres)-1: break
-                #r=IMP.atom.create_connectivity_restraint([IMP.atom.Selection(prt),\
-                #                          IMP.atom.Selection(Spheres[x+1])],-3.0,self.kappa)
-                
-                if self.disorderedlength:
-                   nreslast=len(IMP.atom.Fragment(prt).get_residue_indexes())
-                   nresfirst=len(IMP.atom.Fragment(Spheres[x+1]).get_residue_indexes())
-                   #calculate the distance between the sphere centers using Kohn PNAS 2004
-                   optdist=sqrt(5/3)*1.93*(nreslast/2+nresfirst/2)**0.6
-                   #optdist2=sqrt(5/3)*1.93*((nreslast)**0.6+(nresfirst)**0.6)/2               
-                   if self.upperharmonic:
-                      hu=IMP.core.HarmonicUpperBound(optdist, self.kappa)
-                   else:
-                      hu=IMP.core.Harmonic(optdist, self.kappa) 
-                   dps=IMP.core.DistancePairScore(hu)            
-                else: #default
-                   optdist=0.0
-                   if self.upperharmonic: #default
-                      hu=IMP.core.HarmonicUpperBound(optdist, self.kappa)
-                   else:
-                      hu=IMP.core.Harmonic(optdist, self.kappa)               
-                   dps=IMP.core.SphereDistancePairScore(hu)
-
-                pt0=IMP.atom.Selection(prt).get_selected_particles()[0]
-                pt1=IMP.atom.Selection(Spheres[x+1]).get_selected_particles()[0]
-                #print IMP.core.XYZR(pt0).get_radius()+IMP.core.XYZR(pt1).get_radius()
-                r=IMP.core.PairRestraint(dps,IMP.ParticlePair(pt0,pt1))
-                unmodeledregions_cr.add_restraint(r)
-                self.connected_intra_pairs.append((pt0,pt1))
-                self.connected_intra_pairs.append((pt1,pt0))                
-                        # only allow the particles to separate by 1 angstrom
-                        # self.m.set_maximum_score(r, self.kappa)
-            protein_h.add_child(h)
-
-
-        SortedSegments = []
-        
-        if len(resolutions)!=0: 
-           pbr=tools.get_particles_by_resolution(protein_h,1.0)
-        
-        for chl in protein_h.get_children():
-            
-            start = IMP.atom.get_leaves(chl)[0]
-            end   = IMP.atom.get_leaves(chl)[-1]
-            
-            if len(resolutions)!=0: 
-               #skip particles            
-               if not start in pbr: continue
-               if not end   in pbr: continue
-            
-            startres = IMP.atom.Fragment(start).get_residue_indexes()[0]
-            endres   = IMP.atom.Fragment(end).get_residue_indexes()[-1]
-            
-            
-            SortedSegments.append((chl,startres))
-        SortedSegments = sorted(SortedSegments, key=itemgetter(1))
-
-
-        #connect the particles
-        for x in xrange(len(SortedSegments)-1):
-            last = IMP.atom.get_leaves(SortedSegments[x][0])[-1]
-            first= IMP.atom.get_leaves(SortedSegments[x+1][0])[0]
-            #r=IMP.atom.create_connectivity_restraint([IMP.atom.Selection(last),\
-            #                                          IMP.atom.Selection(first)],-3.0,self.kappa)
-
-            if self.disorderedlength:
-               nreslast=len(IMP.atom.Fragment(last).get_residue_indexes())
-               nresfirst=len(IMP.atom.Fragment(first).get_residue_indexes())
-               #calculate the distance between the sphere centers using Kohn PNAS 2004               
-               optdist=sqrt(5/3)*1.93*(nreslast/2+nresfirst/2)**0.6
-               #optdist2=sqrt(5/3)*1.93*((nreslast)**0.6+(nresfirst)**0.6)/2
-               if self.upperharmonic:
-                  hu=IMP.core.HarmonicUpperBound(optdist, self.kappa)
-               else:
-                  hu=IMP.core.Harmonic(optdist, self.kappa) 
-               dps=IMP.core.DistancePairScore(hu)            
-            else: #default
-               optdist=0.0
-               if self.upperharmonic: #default
-                  hu=IMP.core.HarmonicUpperBound(optdist, self.kappa)
-               else:
-                  hu=IMP.core.Harmonic(optdist, self.kappa)               
-               dps=IMP.core.SphereDistancePairScore(hu)
-            
-            pt0=IMP.atom.Selection(last).get_selected_particles()[0]          
-            pt1=IMP.atom.Selection(first).get_selected_particles()[0]
-            #print IMP.core.XYZR(pt0).get_radius()+IMP.core.XYZR(pt1).get_radius()            
-            r=IMP.core.PairRestraint(dps,IMP.ParticlePair(pt0,pt1))
-            print pt0.get_name(),pt1.get_name()
-            sortedsegments_cr.add_restraint(r)
-            self.connected_intra_pairs.append((pt0,pt1))
-            self.connected_intra_pairs.append((pt1,pt0))
-            # only allow the particles to separate by 1 angstrom
-            # self.m.set_maximum_score(r, self.kappa)
-
-        self.m.add_restraint(sortedsegments_cr)
-        self.m.add_restraint(unmodeledregions_cr)
-        self.sortedsegments_cr_dict[name]=sortedsegments_cr
-        self.unmodeledregions_cr_dict[name]=unmodeledregions_cr
-        self.prot.add_child(protein_h)
-        #self.rigid_bodies+=RigiParticles
-        self.floppy_bodies+=FlexParticles
 
     def create_rotational_symmetry(self,maincopy,copies):
         #still working on it!
@@ -1075,7 +865,7 @@ the pdb offset" % (name,first,rt_final,rt)
             if IMP.core.RigidMember.particle_is_instance(p):
                 print "I'm trying to make this particle flexible although it was assigned to a rigid body", p.get_name()
                 rb=IMP.core.RigidMember(p).get_rigid_body()
-                rb.set_is_rigid_member(p.get_particle_index(),False)
+                rb.set_is_rigid_member(p.get_index(),False)
                 p.set_name(p.get_name()+"_rigid_body_member")
     
     def get_particles_from_selection(self,selection_tuples):
@@ -1178,6 +968,9 @@ the pdb offset" % (name,first,rt_final,rt)
     def get_hierarchy(self):
         return  self.prot
 
+    def get_hierarchy_db(self):
+        return  self.hier_db
+
     def draw_hierarchy_graph(self):
         for c in IMP.atom.Hierarchy(self.prot).get_children():
             print "Drawing hierarchy graph for "+c.get_name()
@@ -1212,27 +1005,25 @@ the pdb offset" % (name,first,rt_final,rt)
                 IMP.atom.create_bond(IMP.atom.Bonded.setup_particle(p1),IMP.atom.Bonded.setup_particle(p2),1)
 
     def show_component_table(self,name):
-        residues=set()
-        prot=self.hier_dict[name]
-
-        for p in IMP.atom.get_leaves(prot):
-            residues.update(IMP.atom.Fragment(p).get_residue_indexes())
-        
         if name in self.sequence_dict:
-           lastresn_fromsequence=len(self.sequence_dict[name])
-           residues.update([1,lastresn_fromsequence])
-        
-        firstresn=min(residues)
-        lastresn=max(residues)
+           lastresn=len(self.sequence_dict[name])
+           firstresn=1
+        else:
+           residues=self.hier_db.get_residue_numbers(name)
+           firstresn=min(residues)
+           lastresn=max(residues)
         
         for nres in range(firstresn,lastresn+1):
-            s=IMP.atom.Selection(prot,residue_index=nres)
-            ps=s.get_selected_particles()
-            if len(ps)==0:  
-               print "%20s %20s" % (name,nres), "**** not represented ****"
-            else:
+            try:
+               resolutions=self.hier_db.get_residue_resolutions(name,nres)
+               ps=[]
+               for r in resolutions:
+                  ps+=self.hier_db.get_particles(name,nres,r)
                print "%20s %7s" % (name,nres), " ".join(["%20s %7s" % (str(p.get_name()),
                      str(IMP.pmi.Resolution(p).get_resolution())) for p in ps])
+            except:  
+               print "%20s %20s" % (name,nres), "**** not represented ****"
+
     
                
     def draw_hierarchy_composition(self):
@@ -1382,8 +1173,8 @@ the pdb offset" % (name,first,rt_final,rt)
             for i in range(number):
                 p1=choice(particles)
                 p2=choice(particles)
-                r1=choice(IMP.atom.Fragment(p1).get_residue_indexes())
-                r2=choice(IMP.atom.Fragment(p2).get_residue_indexes())            
+                r1=choice(tools.get_residue_indexes(p1))
+                r2=choice(tools.get_residue_indexes(p2))            
                 name1=self.get_prot_name_from_particle(p1)
                 name2=self.get_prot_name_from_particle(p2)
                 random_residue_pairs.append((name1,r1,name2,r2))

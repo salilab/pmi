@@ -97,25 +97,19 @@ class ConnectivityRestraint():
 
 class ExcludedVolumeSphere():
 
-    def __init__(self,prot,resolution=None,kappa=1.0):
+    def __init__(self,hierarchies,resolution=None,kappa=1.0):
+        
         self.rs = IMP.RestraintSet('excluded_volume')
         self.weight=1.0
         self.kappa=kappa
-        self.prot=prot
+
         self.label="None"
-        self.m=self.prot.get_model()
+        self.m=hierarchies[0].get_model()
 
-        if resolution==None:
-            #default
-            evr=IMP.atom.create_excluded_volume_restraint([prot])
-        else:
-            particles=[]
-            lsa=IMP.container.ListSingletonContainer(self.m)
-            for hier in prot.get_children():
-                particles=IMP.pmi.tools.get_particles_by_resolution(hier,resolution)
-                lsa.add_particles(particles)
-            evr=IMP.core.ExcludedVolumeRestraint(lsa,self.kappa)
-
+        lsa=IMP.container.ListSingletonContainer(self.m)
+        for hier in hierarchies:
+            lsa.add_particles(IMP.atom.get_leaves(hier))        
+        evr=IMP.core.ExcludedVolumeRestraint(lsa,self.kappa)
 
         self.rs.add_restraint(evr)
 
@@ -878,8 +872,8 @@ class ISDCrossLinkMS():
         self.rssig=IMP.RestraintSet('prior_sigmas')
         self.rslin=IMP.RestraintSet('prior_linear')
         self.rslen=IMP.RestraintSet('prior_length')
-
-        self.prot=prot
+        
+        self.prot=simo.get_hierachies()
         self.label="None"
         self.pairs=[]
         self.m=self.prot.get_model()
@@ -941,11 +935,15 @@ class ISDCrossLinkMS():
                 #if the field does not exist in the file
                 ids=1
 
-            s1=IMP.atom.Selection(self.prot,molecule=c1, residue_index=r1)
+            s1=IMP.atom.Selection(self.prot,molecule=c1, residue_index=r1, hierarchy_types=[IMP.atom.FRAGMENT_TYPE])
             ps1=s1.get_selected_particles()
+            
+            print particles,ps1
 
-            s2=IMP.atom.Selection(self.prot,molecule=c2, residue_index=r2)
+            s2=IMP.atom.Selection(self.prot,molecule=c2, residue_index=r2, hierarchy_types=[IMP.atom.FRAGMENT_TYPE])
             ps2=s2.get_selected_particles()
+
+            print particles,ps2
 
             if resolution!=None:
                 #get the intersection to remove redundant particles

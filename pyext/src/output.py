@@ -56,21 +56,23 @@ class Output():
         #impatom.write_pdb(self.dictionary_pdbs[name],flpdb)
         
         for n,p in enumerate(impatom.get_leaves(self.dictionary_pdbs[name])):
+           root=p
+           protname=root.get_name()
+           while not protname in self.dictchain[name]:
+              root0=root.get_parent()
+              protname=root0.get_name()
+              root=root0
         
-           if p.get_parent().get_name() in self.dictchain[name]:
-              protname=p.get_parent().get_name()
-           else:
-              p0=p.get_parent()
-              protname=p0.get_parent().get_name()
+           #resind=impatom.Fragment(p).get_residue_indexes()
         
-           resind=impatom.Fragment(p).get_residue_indexes()
-        
-           if len(resind)==1:
-           
-           
+           if impatom.Residue.particle_is_instance(p):
+              residue=impatom.Residue(p)
+              rt=residue.get_residue_type()
+              resind=residue.get_index()
               flpdb.write(impatom.get_pdb_string(impcore.XYZ(p).get_coordinates(),
-                             n,impatom.AT_CA,impatom.ResidueType((p.get_value(self.residuetypekey))),
-                             self.dictchain[name][protname],resind[0]))
+                             n,impatom.AT_CA,rt,
+                             self.dictchain[name][protname],
+                             resind))
         flpdb.write("ENDMOL\n")
         
         
@@ -83,10 +85,7 @@ class Output():
     def init_pdb_best_scoring(self,suffix,prot,nbestscoring,replica_exchange=False):
         # save only the nbestscoring conformations
         # create as many pdbs as needed
-        
-        
-        
-        
+
         self.suffix=suffix
         self.replica_exchange=replica_exchange
         if not self.replica_exchange:

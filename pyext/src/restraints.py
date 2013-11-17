@@ -621,8 +621,8 @@ class SimplifiedCrossLinkMS():
 
 class SigmoidCrossLinkMS():
 
-    def __init__(self,prot,restraints_file,inflection,slope,amplitude,
-                 linear_slope,resolution=None, columnmapping=None, csvfile=False,
+    def __init__(self,prot,hiers,restraints_file,inflection,slope,amplitude,
+                 linear_slope,columnmapping=None, csvfile=False,
                  filters=None):
         #columnindexes is a list of column indexes for protein1, protein2, residue1, residue2
         #by default column 0 = protein1; column 1 = protein2; column 2 = residue1; column 3 = residue2
@@ -649,6 +649,12 @@ class SigmoidCrossLinkMS():
         self.rs=IMP.RestraintSet('data')
         self.weight=1.0
         self.prot=prot
+        
+        particles=[]
+        for h in hiers:
+            particles+=IMP.atom.get_leaves(h)
+        
+        
         self.label="None"
         self.pairs=[]
         self.already_added_pairs={}
@@ -667,13 +673,9 @@ class SigmoidCrossLinkMS():
         protein2=columnmapping["Protein2"]
         residue1=columnmapping["Residue1"]
         residue2=columnmapping["Residue2"]
-
-        if resolution!=None:
-          particles=[]
-          for prot in self.prot.get_children():
-             particles+=IMP.pmi.tools.get_particles_by_resolution(prot,resolution) 
         
-        
+        fdb=open("filtered.xl.db","w")
+        exdb=open("excluded.xl.db","w")        
         
         for entry in db:
             if not csvfile:
@@ -686,25 +688,10 @@ class SigmoidCrossLinkMS():
                c2=tokens[protein2]
             else:
                if filters != None:
-                  #all filters are applied using a and boolean operator
-                  skip=True
-                  for f in filters:
-                      if f[1]=="=":
-                         if float(entry[f[0]])==float(f[2]): skip=False
-                      if f[1]=="<=":                      
-                         if float(entry[f[0]])<=float(f[2]): skip=False
-                      if f[1]==">=": 
-                         if float(entry[f[0]])>=float(f[2]): skip=False
-                      if f[1]=="<":
-                         if float(entry[f[0]])<float(f[2]): skip=False                  
-                      if f[1]==">":
-                         if float(entry[f[0]])>float(f[2]): skip=False                     
-                      if f[1]=="is":                      
-                         if entry[f[0]]==f[2]: skip=False
-                      if f[1]=="in": 
-                         if f[2] in entry[f[0]]: skip=False
-                  if skip==True: continue
-               print entry
+                  if eval(tools.cross_link_db_filter_parser(filters))==False: 
+                     exdb.write(str(entry)+"\n")
+                     continue
+               fdb.write(str(entry)+"\n")
                r1=int(entry[residue1])
                c1=entry[protein1]
                r2=int(entry[residue2])
@@ -718,10 +705,8 @@ class SigmoidCrossLinkMS():
             s2=IMP.atom.Selection(self.prot,molecule=c2, residue_index=r2)
             ps2=s2.get_selected_particles()
 
-            if resolution!=None:
-                #get the intersection to remove redundant particles
-                ps1=(list(set(ps1) & set(particles)))
-                ps2=(list(set(ps2) & set(particles)))
+            ps1=(list(set(ps1) & set(particles)))
+            ps2=(list(set(ps2) & set(particles)))
 
             if len(ps1)>1:
                 print "SigmoidCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s"  % (r1,c1,str(ps1))
@@ -847,8 +832,8 @@ class SigmoidCrossLinkMS():
 
 class ISDCrossLinkMS():
 
-    def __init__(self,prot,restraints_file,length,resolution=None, 
-                 columnmapping=None,samplelength=False,
+    def __init__(self,hiers,restraints_file,length,resolution=None, 
+                 columnmapping=None,csvfile=False, samplelength=False,
                  ids_map=None,radius_map=None):
         #columnindexes is a list of column indexes for protein1, protein2, residue1, residue2
         #by default column 0 = protein1; column 1 = protein2; column 2 = residue1; column 3 = residue2;
@@ -866,6 +851,14 @@ class ISDCrossLinkMS():
             columnmapping["Residue1"]=2
             columnmapping["Residue2"]=3
             columnmapping["IDScore"]=4
+
+        if csvfile==True:
+           #in case the file is a cvs file
+           #columnmapping will contain the field names
+           #that compare in the first line of the cvs file
+           db=tools.get_db_from_csv(restraints_file)
+        else:
+           db=open(restraints_file)
 
         self.rs=IMP.RestraintSet('data')
         self.rspsi=IMP.RestraintSet('prior_psi')
@@ -1322,14 +1315,16 @@ class SimplifiedPEMAP():
 class SecondaryStructure():
 
 
-    def __init__(self,prot,resrangetuple,ssstring,mixture=False,nativeness=1.0,kt_caff=0.1):
+    def __init__(self,hiers,ssstring,mixture=False,nativeness=1.0,kt_caff=0.1):
         #check that the secondary structure string
         #is compatible with the ssstring
-        global impisd2
+        global impisd2,pi,log
         import IMP.isd2 as impisd2
+        from math import pi
+        from math import log
 
-        self.prot=prot
-        self.m=self.prot.get_model()
+        self.hiers=hiers
+        self.m=self.hiers[0].get_model()
         self.dihe_dict={}
         self.ang_dict={}
         self.do_mix={}
@@ -1341,16 +1336,16 @@ class SecondaryStructure():
         self.dihers=IMP.RestraintSet("Dihedrals")
         self.bondrs=IMP.RestraintSet("Bonds")
         self.label="None"
-        if resrangetuple[1]-resrangetuple[0]+1+4!=len(ssstring):
-            print "SecondaryStructure: residue range and SS string incompatible"
-            exit()
-        for i in range(resrangetuple[0]-2,resrangetuple[1]+3):
-            self.dihe_dict[(i,resrangetuple[2])]=ssstring[i-resrangetuple[0]]
-            self.ang_dict[(i,resrangetuple[2])]=ssstring[i-resrangetuple[0]]
-            self.do_mix[(i,resrangetuple[2])]=mixture
 
-        (bondrslist,anglrslist,diherslist,pairslist)=self.get_CA_force_field(resrangetuple)
+        if len(hiers)!=len(ssstring):
+            print len(hiers), len(ssstring)
+            print "SecondaryStructure: residue range and SS string incompatible"
+        self.ssstring=ssstring
+
+        (bondrslist,anglrslist,diherslist,pairslist)=self.get_CA_force_field()
         self.pairslist=pairslist
+        
+        print anglrslist,diherslist,bondrslist,self.hiers
         self.anglrs.add_restraints(anglrslist)
         self.dihers.add_restraints(diherslist)
         self.bondrs.add_restraints(bondrslist)
@@ -1363,47 +1358,29 @@ class SecondaryStructure():
         self.m.add_restraint(self.dihers)
         self.m.add_restraint(self.bondrs)
 
-    def get_CA_force_field(self,resrange):
-        bondrslist=[]
-        anglrslist=[]
-        diherslist=[]
-        pairslist=[]
-        # add bonds
-        for res in range(resrange[0]-1,resrange[1]+1):
-            ps=[]
-            for delta in range(0,2):
-                try:
-                    s=IMP.atom.Selection(self.prot, chains=resrange[2], residue_index=res+delta, atom_type=IMP.atom.AT_CA)
-                    ps.append(s.get_selected_particles()[0])
-                except:
-                    print "SecondaryStructure: Bond: didn't find "+resrange[2]+str(res+delta)
-                    continue
+    def get_CA_force_field(self):
+       bondrslist=[]
+       anglrslist=[]
+       diherslist=[]
+       pairslist=[]
+       # add bonds
+       for res in range(0,len(self.hiers)-1):
 
-            if (len(ps)!=2): continue
+            ps=self.hiers[res:res+2]
+            print ps,res
             pairslist.append(IMP.ParticlePair(ps[0],ps[1]))
             pairslist.append(IMP.ParticlePair(ps[1],ps[0]))
             br=self.get_distance_restraint(ps[0],ps[1],3.78,416.0)
             br.set_name('Bond_restraint')
             bondrslist.append(br)
-        # add dihedrals
-        for res in range(resrange[0]-2,resrange[1]+3):
+       # add dihedrals
+       for res in range(0,len(self.hiers)-4):
 
             #if res not in dihe_dict: continue
             # get the appropriate parameters
             # get the particles
-            ps=[]
-            ssstring=""
-            for delta in range(-2,+3):
-                try:
-                    s=IMP.atom.Selection(self.prot, chains=resrange[2],residue_index=res+delta, atom_type=IMP.atom.AT_CA)
-                    ps.append(s.get_selected_particles()[0])
-                    ssstring+=self.dihe_dict[(res+delta,resrange[2])]
-                except:
-                    print "SecondaryStructure: Dihedral: didn't find "+resrange[2]+str(res+delta)
-                    continue
-
-            if (len(ps)!=5): continue
-            [phi0,phi1,score_dih]=self.read_potential_dihedral(ssstring,self.do_mix[(res,resrange[2])])
+            ps=self.hiers[res:res+5]
+            [phi0,phi1,score_dih]=self.read_potential_dihedral(self.ssstring[res:res+4],True)
             pairslist.append(IMP.ParticlePair(ps[0],ps[3]))
             pairslist.append(IMP.ParticlePair(ps[3],ps[0]))
             pairslist.append(IMP.ParticlePair(ps[1],ps[4]))
@@ -1412,34 +1389,23 @@ class SecondaryStructure():
             dr.set_name('Dihedral restraint')
             diherslist.append(dr)
         # add angles
-        for res in range(resrange[0]-1,resrange[1]+2):
-            ps=[]
-            ssstring=""
-            for delta in range(-1,+2):
-                try:
-                    s=IMP.atom.Selection(self.prot, chains=resrange[2],residue_index=res+delta, atom_type=IMP.atom.AT_CA)
-                    ps.append(s.get_selected_particles()[0])
-                    ssstring+=self.ang_dict[(res+delta,resrange[2])]
-                except:
-                    print "SecondaryStructure: Angle: didn't find "+resrange[2]+str(res+delta)
-                    continue
-
-            if (len(ps)!=3): continue
-            [psi,score_ang]=self.read_potential_angle(ssstring,self.do_mix[(res,resrange[2])])
+       for res in range(0,len(self.hiers)-2):
+            ps=self.hiers[res:res+3]
+            [psi,score_ang]=self.read_potential_angle(self.ssstring[res:res+2],True)
             pairslist.append(IMP.ParticlePair(ps[0],ps[2]))
             pairslist.append(IMP.ParticlePair(ps[2],ps[0]))
             dr=impisd2.CAAngleRestraint(ps[0],ps[1],ps[2],psi,score_ang)
             dr.set_name('Angle restraint')
             anglrslist.append(dr)
-        return (bondrslist,anglrslist,diherslist,pairslist)
+       return (bondrslist,anglrslist,diherslist,pairslist)
 
     def read_potential_dihedral(self,string,mix=False):
     # read potentials for dihedral
         score_dih=[]
         phi0=[]; phi1=[]
         for i in range(0,36):
-            phi0.append(i*10.0/180.0*math.pi)
-            phi1.append(i*10.0/180.0*math.pi)
+            phi0.append(i*10.0/180.0*pi)
+            phi1.append(i*10.0/180.0*pi)
             for j in range(0,36):
                 score_dih.append(0.0)
         # open file
@@ -1450,7 +1416,7 @@ class SecondaryStructure():
                 if (len(riga)==4 and riga[0]==string):
                     ii=int(float(riga[1])/10.0)
                     jj=int(float(riga[2])/10.0)
-                    score_dih[ii*len(phi0)+jj]=-self.kt_caff*math.log(float(riga[3]))
+                    score_dih[ii*len(phi0)+jj]=-self.kt_caff*log(float(riga[3]))
             f.close()
         if mix:
             #mix random coil and native secondary structure
@@ -1471,7 +1437,7 @@ class SecondaryStructure():
                     counts[ii*len(phi0)+jj]+=(1.0-self.nativeness)*float(riga[3])
             f.close()
             for i in range(len(counts)):
-                score_dih[i]=-self.kt_caff*math.log(counts[i])
+                score_dih[i]=-self.kt_caff*log(counts[i])
         return [phi0,phi1,score_dih]
 
     def read_potential_angle(self,string,mix=False):
@@ -1479,7 +1445,7 @@ class SecondaryStructure():
         score_ang=[]
         psi=[]
         for i in range(0,180):
-            psi.append(i/180.0*math.pi)
+            psi.append(i/180.0*pi)
             score_ang.append(0.0)
         # read file
         if not mix:
@@ -1488,7 +1454,7 @@ class SecondaryStructure():
                 riga=(line.strip()).split()
                 if (len(riga)==3 and riga[0]==string):
                     ii=int(riga[1])
-                    score_ang[ii]=-self.kt_caff*math.log(float(riga[2]))
+                    score_ang[ii]=-self.kt_caff*log(float(riga[2]))
             f.close()
         if mix:
             #mix random coil and native secondary structure
@@ -1507,7 +1473,7 @@ class SecondaryStructure():
                     counts[ii]+=(1.0-self.nativeness)*float(riga[2])
             f.close()
             for i in range(0,180):
-                score_ang[i]=-self.kt_caff*math.log(counts[i])
+                score_ang[i]=-self.kt_caff*log(counts[i])
         return [psi,score_ang]
 
     def get_excluded_pairs(self):

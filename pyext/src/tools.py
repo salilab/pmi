@@ -331,6 +331,41 @@ def get_log_grid(gmin,gmax,ngrid):
     #-------------------------------
 
 
+def cross_link_db_filter_parser(inputstring):
+    '''
+    example '"{ID_Score}" > 28 AND "{Sample}" == 
+     "%10_1%" OR ":Sample}" == "%10_2%" OR ":Sample}" 
+    == "%10_3%" OR ":Sample}" == "%8_1%" OR ":Sample}" == "%8_2%"'
+    '''
+    
+    import pyparsing as pp
+    
+    operator = pp.Regex(">=|<=|!=|>|<|==|in").setName("operator")
+    value = pp.QuotedString('"') | pp.Regex(r"[+-]?\d+(:?\.\d*)?(:?[eE][+-]?\d+)?")
+    identifier = pp.Word(pp.alphas, pp.alphanums + "_")
+    comparison_term = identifier | value 
+    condition = pp.Group(comparison_term + operator + comparison_term)
+    
+    expr = pp.operatorPrecedence(condition,[
+                                ("OR", 2, pp.opAssoc.LEFT, ),
+                                ("AND", 2, pp.opAssoc.LEFT, ),
+                                ])
+    
+    parsedstring=str(expr.parseString(inputstring)) \
+                         .replace("[","(") \
+                         .replace("]",")") \
+                         .replace(","," ") \
+                         .replace("'"," ") \
+                         .replace("%","'") \
+                         .replace("{","float(entry['") \
+                         .replace("}","'])") \
+                         .replace(":","str(entry['") \
+                         .replace("}","'])") \
+                         .replace("AND","and") \
+                         .replace("OR","or")                         
+    return parsedstring
+
+
 def get_drmsd(prot0, prot1):
     drmsd=0.; npairs=0.;
     for i in range(0,len(prot0)-1):
@@ -432,8 +467,6 @@ def get_position_terminal_residue(hier,terminus="C",resolution=1):
              
     return IMP.core.XYZ(termparticle).get_coordinates()
                
-
-
 
 def select_calpha_or_residue(prot,chain,resid,ObjectName="None:",SelectResidue=False):
     #use calphas
@@ -601,7 +634,7 @@ class HierarchyDatabase():
         particles=self.get_all_particles_by_resolution(resolution)
         for p in particles:
             rh=self.root_hierarchy_dict[p]
-            if rh not in hierarchies: hierarchies.append(rh)
+            if rh not in hierarchies: hierarchies.append(IMP.atom.Hierarchy(rh))
         return hierarchies
 
      def get_preroot_fragments_by_resolution(self,name,resolution):
@@ -622,8 +655,6 @@ class HierarchyDatabase():
                 for p in self.get_particles(name,resn,resolution):
                     print "--------", p.get_name()
     
-        
-
 def get_residue_indexes(hier):
     if IMP.atom.Fragment.particle_is_instance(hier):
        resind=IMP.atom.Fragment(hier).get_residue_indexes()

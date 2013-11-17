@@ -153,13 +153,13 @@ class Output():
            best_score_file.write("self.best_score_list="+str(self.best_score_list))
            best_score_file.close()
 
-    def init_rmf(self,name,prot):
+    def init_rmf(self,name,hierarchies):
         if not self.rmf_library:
             print "Output error: neet rmf library to init rmf"
             exit()
 
         rh = RMF.create_rmf_file(name)
-        imprmf.add_hierarchy(rh, prot)
+        imprmf.add_hierarchies(rh, hierarchies)
         self.dictionary_rmfs[name]=rh
 
     def add_restraints_to_rmf(self,name,objectlist):

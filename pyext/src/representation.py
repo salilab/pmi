@@ -143,7 +143,7 @@ class SimplifiedModel():
 
 
     def add_component_name(self,name,color=None):
-        protein_h = IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
+        protein_h = IMP.atom.Molecule.setup_particle(IMP.Particle(self.m))
         protein_h.set_name(name)
         self.hier_dict[name]=protein_h
         self.hier_resolution[name]={}
@@ -293,137 +293,12 @@ class SimplifiedModel():
         
         self.elements[name].append((start,end,pdbname.split("/")[-1]+":"+chain,"pdb"))
         
-        if (1 in resolutions) or (0 in resolutions):
-           #in that case create residues and append atoms
-
-           
-           if 1 in resolutions:
-              if "Res:1" not in self.hier_resolution[name]: 
-                 root=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
-                 root.set_name("Res:1")
-                 self.hier_resolution[name]["Res:1"]=root
-                 protein_h.add_child(root)
-              
-              s1=IMP.atom.Fragment.setup_particle(IMP.Particle(self.m))
-              s1.set_name(name+'_%i-%i_pdb' % (start,end))
-              self.hier_resolution[name]["Res:1"].add_child(s1)
-              outhiers+=[s1]
-           if 0 in resolutions:
-              if "Res:0" not in self.hier_resolution[name]: 
-                 root=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
-                 root.set_name("Res:0")
-                 self.hier_resolution[name]["Res:0"]=root   
-                 protein_h.add_child(root)        
-              s0=IMP.atom.Fragment.setup_particle(IMP.Particle(self.m))
-              s0.set_name(name+'_%i-%i_pdb' % (start,end))
-              self.hier_resolution[name]["Res:0"].add_child(s0)
-              outhiers+=[s0]           
-
-           if not isnucleicacid:
-              sel=IMP.atom.Selection(c0,atom_type=IMP.atom.AT_CA)
-           else:
-              sel=IMP.atom.Selection(c0,atom_type=IMP.atom.AT_P)
-                   
-           for p in sel.get_selected_particles():
-              resobject=IMP.atom.Residue(IMP.atom.Atom(p).get_parent())
-              if 0 in resolutions:
-                 #if you ask for atoms
-                 resclone0=IMP.atom.create_clone(resobject)
-                 resindex=IMP.atom.Residue(resclone0).get_index()
-                 s0.add_child(resclone0)  
-                 self.hier_db.add_particles(name,resindex,0,resclone0.get_children())
-
-                 chil=resclone0.get_children()         
-                 for ch in chil:
-                   IMP.pmi.Resolution.setup_particle(ch,0)
-                   try:
-                     clr=IMP.display.get_rgb_color(color)
-                   except:
-                     clr=IMP.display.get_rgb_color(1.0)
-                   IMP.display.Colored.setup_particle(ch,clr)
-                 
-                                            
-              if 1 in resolutions:
-                 #else clone the residue
-                 resclone1=IMP.atom.create_clone_one(resobject)
-                 resindex=IMP.atom.Residue(resclone1).get_index()
-                 s1.add_child(resclone1)
-                 self.hier_db.add_particles(name,resindex,1,[resclone1.get_particle()])                               
-
-
-                 rt=IMP.atom.Residue(resclone1).get_residue_type()
-                 xyz=IMP.core.XYZ(p).get_coordinates()
-                 prt=resclone1.get_particle()
-                 prt.set_name(name+'_%i_pdb' % (resindex))
-                 IMP.core.XYZ.setup_particle(prt).set_coordinates(xyz)
-                       
-                 try:
-                   vol=IMP.atom.get_volume_from_residue_type(rt)
-                   #mass=IMP.atom.get_mass_from_residue_type(rt)
-                 except IMP.base.ValueException:
-                   vol=IMP.atom.get_volume_from_residue_type(IMP.atom.ResidueType("ALA"))
-                   #mass=IMP.atom.get_mass_from_residue_type(IMP.atom.ResidueType("ALA"))
-                 radius=IMP.algebra.get_ball_radius_from_volume_3d(vol)
-                 IMP.core.XYZR.setup_particle(prt).set_radius(radius) 
-                 IMP.atom.Mass.setup_particle(prt,100) 
-              
-                 IMP.pmi.Uncertainty.setup_particle(prt,radius)
-                 IMP.pmi.Resolution.setup_particle(prt,1)
-                
-                 try:
-                   clr=IMP.display.get_rgb_color(color)
-                 except:
-                   clr=IMP.display.get_rgb_color(1.0)
-                 IMP.display.Colored.setup_particle(prt,clr)  
-                          
-        for r in resolutions:
-          if r!=0 and r!=1:
-            if "Res:"+str(int(r)) not in self.hier_resolution[name]: 
-                 root=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
-                 root.set_name("Res:"+str(int(r)))
-                 self.hier_resolution[name]["Res:"+str(int(r))]=root   
-                 protein_h.add_child(root) 
-            s=IMP.atom.create_simplified_along_backbone(c0, r)
-                           
-            chil=s.get_children()
-            s0=IMP.atom.Fragment.setup_particle(IMP.Particle(self.m))
-            
-            s0.set_name(name+'_%i-%i_pdb' % (start,end))
-            for ch in chil: s0.add_child(ch)            
-            self.hier_resolution[name]["Res:"+str(int(r))].add_child(s0)
-            outhiers+=[s0]
-            del s
-            for prt in IMP.atom.get_leaves(s0):
-                ri=IMP.atom.Fragment(prt).get_residue_indexes()
-                first=ri[0]
-                last=ri[-1]
-                if first==last:
-                   prt.set_name(name+'_%i_pdb' % (first))
-                else:                   
-                   prt.set_name(name+'_%i-%i_pdb' % (first,last))
-                
-                for kk in ri:
-                   self.hier_db.add_particles(name,kk,r,[prt]) 
-                                                      
-                radius=IMP.core.XYZR(prt).get_radius()
-                IMP.pmi.Uncertainty.setup_particle(prt,radius)
-                IMP.pmi.Resolution.setup_particle(prt,r)
-                
-                #setting up color for each particle in the hierarchy, if colors missing in the colors list set it to red
-                try:
-                    clr=IMP.display.get_rgb_color(color)
-                except:
-                    colors.append(1.0)
-                    clr=IMP.display.get_rgb_color(colors[pdb_part_count])
-                IMP.display.Colored.setup_particle(prt,clr)
+        outhiers+=self.coarse_hierarchy(name,start,end,resolutions,isnucleicacid,c0,protein_h,"pdb",color)
 
         if show:
            IMP.atom.show_molecular_hierarchy(protein_h)
-        
-        
-        del c
-        del c0
-        del t
+                
+        del c; del c0; del t
 
         return outhiers
 
@@ -455,53 +330,12 @@ class SimplifiedModel():
             r.add_child(a)
             c0.add_child(r)
             
-        for r in resolutions:
-
-            s=IMP.atom.create_simplified_along_backbone(c0, r)
-            chil=s.get_children()
-            s0=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
-            
-            s0.set_name(name+'_%i-%i_helix' % (start,end)+"_Res:"+str(r))
-            for ch in chil: s0.add_child(ch)            
-            protein_h.add_child(s0)
-            outhiers+=[s0]
-            del s
-            for prt in IMP.atom.get_leaves(s0):
-                ri=IMP.atom.Fragment(prt).get_residue_indexes()
-                first=ri[0]
-                last=ri[-1]
-                if first==last:
-                   prt.set_name(name+'_%i_helix' % (first))
-                else:                   
-                   prt.set_name(name+'_%i-%i_helix' % (first,last))
-                radius=IMP.core.XYZR(prt).get_radius()
-                if r==1: 
-                   if name in self.sequence_dict:
-                      rt_final=self.onetothree[self.sequence_dict[name][first-1]]
-                      rtobject=IMP.atom.ResidueType(rt_final)
-                      vol=IMP.atom.get_volume_from_residue_type(rtobject)
-                      radius=IMP.algebra.get_ball_radius_from_volume_3d(vol)
-                   else:
-                      rt_final="X"
-                      rtobject=IMP.atom.ResidueType("ALA")
-                      vol=IMP.atom.get_volume_from_residue_type(rtobject)
-                      radius=IMP.algebra.get_ball_radius_from_volume_3d(vol)
-                   prt.add_attribute(self.residuenamekey, rt_final)
-                   IMP.core.XYZR(prt).set_radius(radius)
-
-                IMP.pmi.Uncertainty.setup_particle(prt,radius)
-                IMP.pmi.Resolution.setup_particle(prt,r)
-                #setting up color for each particle in the hierarchy, if colors missing in the colors list set it to red
-                try:
-                    clr=IMP.display.get_rgb_color(color)
-                except:
-                    colors.append(1.0)
-                    clr=IMP.display.get_rgb_color(colors[pdb_part_count])
-                IMP.display.Colored.setup_particle(prt,clr)
+        outhiers+=self.coarse_hierarchy(name,start,end,resolutions,False,c0,protein_h,"helix",color)
 
         if show:
            IMP.atom.show_molecular_hierarchy(protein_h)
-        
+                
+        del c0       
         return outhiers 
             
 
@@ -570,6 +404,8 @@ class SimplifiedModel():
         
         return outhiers
 
+
+    '''
     def add_component_density(self,name,hierarchy,
                               resolution,inputfile=None,outputfile=None):
         outhier=[]
@@ -601,8 +437,132 @@ class SimplifiedModel():
             s0.add_child(p)
         
         return outhier
-        
-        
+    ''' 
+
+    def check_root(self,name,protein_h,resolution):
+        if "Res:"+str(int(resolution)) not in self.hier_resolution[name]: 
+           root=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
+           root.set_name("Res:"+str(int(resolution)))
+           self.hier_resolution[name]["Res:"+str(int(resolution))]=root
+           protein_h.add_child(root)        
+
+    def coarse_hierarchy(self,name,start,end,resolutions,isnucleicacid,input_hierarchy,protein_h,type,color):
+        #this function generates all needed coarse grained layers
+        #name is the name of the protein
+        #resolutions is the list of resolutions
+        #protein_h is the root hierarchy
+        #input hierarchy is the hierarchy to coarse grain
+        #type is a string, typically "pdb" or "helix"
+        outhiers=[]
+
+        if (1 in resolutions) or (0 in resolutions):
+           #in that case create residues and append atoms
+           
+           if 1 in resolutions:
+              self.check_root(name,protein_h,1)
+              s1=IMP.atom.Fragment.setup_particle(IMP.Particle(self.m))
+              s1.set_name('%s_%i-%i_%s' % (name,start,end,type))
+              self.hier_resolution[name]["Res:1"].add_child(s1)
+              outhiers+=[s1]
+           if 0 in resolutions:
+              self.check_root(name,protein_h,0)
+              s0=IMP.atom.Fragment.setup_particle(IMP.Particle(self.m))
+              s0.set_name('%s_%i-%i_%s' % (name,start,end,type))
+              self.hier_resolution[name]["Res:0"].add_child(s0)
+              outhiers+=[s0]           
+
+           if not isnucleicacid:
+              sel=IMP.atom.Selection(input_hierarchy,atom_type=IMP.atom.AT_CA)
+           else:
+              sel=IMP.atom.Selection(input_hierarchy,atom_type=IMP.atom.AT_P)
+                   
+           for p in sel.get_selected_particles():
+              resobject=IMP.atom.Residue(IMP.atom.Atom(p).get_parent())
+              if 0 in resolutions:
+                 #if you ask for atoms
+                 resclone0=IMP.atom.create_clone(resobject)
+                 resindex=IMP.atom.Residue(resclone0).get_index()
+                 s0.add_child(resclone0)  
+                 self.hier_db.add_particles(name,resindex,0,resclone0.get_children())
+
+                 chil=resclone0.get_children()         
+                 for ch in chil:
+                   IMP.pmi.Resolution.setup_particle(ch,0)
+                   try:
+                     clr=IMP.display.get_rgb_color(color)
+                   except:
+                     clr=IMP.display.get_rgb_color(1.0)
+                   IMP.display.Colored.setup_particle(ch,clr)
+                 
+                                            
+              if 1 in resolutions:
+                 #else clone the residue
+                 resclone1=IMP.atom.create_clone_one(resobject)
+                 resindex=IMP.atom.Residue(resclone1).get_index()
+                 s1.add_child(resclone1)
+                 self.hier_db.add_particles(name,resindex,1,[resclone1.get_particle()])                               
+
+                 rt=IMP.atom.Residue(resclone1).get_residue_type()
+                 xyz=IMP.core.XYZ(p).get_coordinates()
+                 prt=resclone1.get_particle()
+                 prt.set_name('%s_%i_%s' % (name,resindex,type))
+                 IMP.core.XYZ.setup_particle(prt).set_coordinates(xyz)
+                       
+                 try:
+                   vol=IMP.atom.get_volume_from_residue_type(rt)
+                   #mass=IMP.atom.get_mass_from_residue_type(rt)
+                 except IMP.base.ValueException:
+                   vol=IMP.atom.get_volume_from_residue_type(IMP.atom.ResidueType("ALA"))
+                   #mass=IMP.atom.get_mass_from_residue_type(IMP.atom.ResidueType("ALA"))
+                 radius=IMP.algebra.get_ball_radius_from_volume_3d(vol)
+                 IMP.core.XYZR.setup_particle(prt).set_radius(radius) 
+                 IMP.atom.Mass.setup_particle(prt,100) 
+                 IMP.pmi.Uncertainty.setup_particle(prt,radius)
+                 IMP.pmi.Resolution.setup_particle(prt,1)
+                 try:
+                   clr=IMP.display.get_rgb_color(color)
+                 except:
+                   clr=IMP.display.get_rgb_color(1.0)
+                 IMP.display.Colored.setup_particle(prt,clr)  
+                          
+        for r in resolutions:
+          if r!=0 and r!=1:
+            self.check_root(name,protein_h,r) 
+            s=IMP.atom.create_simplified_along_backbone(input_hierarchy, r)
+                           
+            chil=s.get_children()
+            s0=IMP.atom.Fragment.setup_particle(IMP.Particle(self.m))
+            s0.set_name('%s_%i-%i_%s' % (name,start,end,type))
+            for ch in chil: s0.add_child(ch)            
+            self.hier_resolution[name]["Res:"+str(int(r))].add_child(s0)
+            outhiers+=[s0]
+            del s
+            
+            for prt in IMP.atom.get_leaves(s0):
+                ri=IMP.atom.Fragment(prt).get_residue_indexes()
+                first=ri[0]
+                last=ri[-1]
+                if first==last:
+                   prt.set_name('%s_%i_%s' % (name,first,type))
+                else:    
+                   prt.set_name('%s_%i_%i_%s' % (name,first,last,type))                
+                for kk in ri:
+                   self.hier_db.add_particles(name,kk,r,[prt]) 
+                                                      
+                radius=IMP.core.XYZR(prt).get_radius()
+                IMP.pmi.Uncertainty.setup_particle(prt,radius)
+                IMP.pmi.Resolution.setup_particle(prt,r)
+                
+                #setting up color for each particle in the 
+                #hierarchy, if colors missing in the colors list set it to red
+                try:
+                    clr=IMP.display.get_rgb_color(color)
+                except:
+                    colors.append(1.0)
+                    clr=IMP.display.get_rgb_color(colors[pdb_part_count])
+                IMP.display.Colored.setup_particle(prt,clr)
+
+        return outhiers        
         
 
     def add_component_necklace(self,name,begin,end,length):

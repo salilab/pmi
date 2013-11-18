@@ -674,8 +674,9 @@ class SigmoidCrossLinkMS():
         residue1=columnmapping["Residue1"]
         residue2=columnmapping["Residue2"]
         
-        fdb=open("filtered.xl.db","w")
+        indb=open("included.xl.db","w")
         exdb=open("excluded.xl.db","w")        
+        midb=open("missing.xl.db","w") 
         
         for entry in db:
             if not csvfile:
@@ -691,7 +692,7 @@ class SigmoidCrossLinkMS():
                   if eval(tools.cross_link_db_filter_parser(filters))==False: 
                      exdb.write(str(entry)+"\n")
                      continue
-               fdb.write(str(entry)+"\n")
+               indb.write(str(entry)+"\n")
                r1=int(entry[residue1])
                c1=entry[protein1]
                r2=int(entry[residue2])
@@ -713,6 +714,7 @@ class SigmoidCrossLinkMS():
                 exit()
             elif len(ps1)==0:
                 print "SigmoidCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1,c1)
+                midb.write(str(entry)+"\n")
                 continue
 
             if len(ps2)>1:
@@ -720,6 +722,7 @@ class SigmoidCrossLinkMS():
                 exit()
             elif len(ps2)==0:
                 print "SigmoidCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2,c2)
+                midb.write(str(entry)+"\n")
                 continue
 
 
@@ -832,9 +835,9 @@ class SigmoidCrossLinkMS():
 
 class ISDCrossLinkMS():
 
-    def __init__(self,hiers,restraints_file,length,resolution=None, 
+    def __init__(self,prot,hiers,restraints_file,length,slope=0.0,
                  columnmapping=None,csvfile=False, samplelength=False,
-                 ids_map=None,radius_map=None):
+                 ids_map=None,radius_map=None,filters=None):
         #columnindexes is a list of column indexes for protein1, protein2, residue1, residue2
         #by default column 0 = protein1; column 1 = protein2; column 2 = residue1; column 3 = residue2;
         # column 4 = idscores
@@ -860,13 +863,17 @@ class ISDCrossLinkMS():
         else:
            db=open(restraints_file)
 
+        indb=open("included.xl.db","w")
+        exdb=open("excluded.xl.db","w")        
+        midb=open("missing.xl.db","w") 
+
         self.rs=IMP.RestraintSet('data')
         self.rspsi=IMP.RestraintSet('prior_psi')
         self.rssig=IMP.RestraintSet('prior_sigmas')
         self.rslin=IMP.RestraintSet('prior_linear')
         self.rslen=IMP.RestraintSet('prior_length')
         
-        self.prot=simo.get_hierachies()
+        self.prot=prot
         self.label="None"
         self.pairs=[]
         self.m=self.prot.get_model()
@@ -891,6 +898,7 @@ class ISDCrossLinkMS():
 
         #small linear contribution for long range
         self.linear=IMP.core.Linear(0,0.0)
+        self.linear.set_slope(slope)
         dps2=IMP.core.DistancePairScore(self.linear)
 
         #fill the cross-linker pmfs
@@ -901,53 +909,54 @@ class ISDCrossLinkMS():
         residue2=columnmapping["Residue2"]
         idscore=columnmapping["IDScore"]
 
-        if resolution!=None:
-            particles=[]
-            for prot in self.prot.get_children():
-                particles+=IMP.pmi.tools.get_particles_by_resolution(prot,resolution)
+        particles=[]
+        for h in hiers:
+            particles+=IMP.atom.get_leaves(h)
 
         restraints=[]
 
-        for line in open(restraints_file):
+        for entry in db:
+            if not csvfile:
+               tokens=entry.split()
+               #skip character
+               if (tokens[0]=="#"): continue
+               r1=int(tokens[residue1])
+               c1=tokens[protein1]
+               r2=int(tokens[residue2])
+               c2=tokens[protein2]
+               ids=float(tokens[idscore])
+            else:
+               if filters != None:
+                  if eval(tools.cross_link_db_filter_parser(filters))==False: 
+                     exdb.write(str(entry)+"\n")
+                     continue
+               indb.write(str(entry)+"\n")
+               r1=int(entry[residue1])
+               c1=entry[protein1]
+               r2=int(entry[residue2])
+               c2=entry[protein2]
+               ids=float(entry[idscore])
+   
+               
+                           
 
-            tokens=line.split()
-            #skip character
-            if (tokens[0]=="#"): continue
-            r1=int(tokens[residue1])
-            c1=tokens[protein1]
-            r2=int(tokens[residue2])
-            c2=tokens[protein2]
-
-            try:
-                #if the field exists in the file
-                d=tokens[idscore]
-                if tokens[idscore]=="High" : ids=1
-                elif tokens[idscore]=="Low" : ids=0
-                else: ids=float(tokens[idscore])
-            except:
-                #if the field does not exist in the file
-                ids=1
-
-            s1=IMP.atom.Selection(self.prot,molecule=c1, residue_index=r1, hierarchy_types=[IMP.atom.FRAGMENT_TYPE])
+            #hrc1 = [h for h in self.prot.get_children() if h.get_name()==c1][0]
+            s1=IMP.atom.Selection(self.prot,molecule=c1, residue_index=r1)
             ps1=s1.get_selected_particles()
-            
-            print particles,ps1
 
-            s2=IMP.atom.Selection(self.prot,molecule=c2, residue_index=r2, hierarchy_types=[IMP.atom.FRAGMENT_TYPE])
+            #hrc2 = [h for h in self.prot.get_children() if h.get_name()==c2][0]
+            s2=IMP.atom.Selection(self.prot,molecule=c2, residue_index=r2)
             ps2=s2.get_selected_particles()
 
-            print particles,ps2
-
-            if resolution!=None:
-                #get the intersection to remove redundant particles
-                ps1=(list(set(ps1) & set(particles)))
-                ps2=(list(set(ps2) & set(particles)))
+            ps1=(list(set(ps1) & set(particles)))
+            ps2=(list(set(ps2) & set(particles)))
 
             if len(ps1)>1:
                 print "ISDCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s"  % (r1,c1,str(ps1))
                 exit()
             elif len(ps1)==0:
                 print "ISDCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1,c1)
+                midb.write(str(entry)+"\n")
                 continue
 
             if len(ps2)>1:
@@ -955,7 +964,9 @@ class ISDCrossLinkMS():
                 exit()
             elif len(ps2)==0:
                 print "ISDCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2,c2)
+                midb.write(str(entry)+"\n")
                 continue
+
 
             p1=ps1[0]
             p2=ps2[0]
@@ -990,11 +1001,6 @@ class ISDCrossLinkMS():
             print "ISDCrossLinkMS: between particles %s and %s" % (p1.get_name(),p2.get_name())
 
             restraints.append(dr)
-            #self.rssig.add_restraint(dr)
-
-
-
-            #######self.rs.add_restraint(pr)
 
 
             #check if the two residues belong to the same rigid body
@@ -1011,7 +1017,6 @@ class ISDCrossLinkMS():
 
             dr.set_name(xlattribute+"-"+c1+":"+str(r1)+"-"+c2+":"+str(r2))
 
-            #the linear restraint is used only for rmf display puroposes
             pr=IMP.core.PairRestraint(dps2,IMP.ParticlePair(p1,p2))
             pr.set_name(xlattribute+"-"+c1+":"+str(r1)+"-"+c2+":"+str(r2))
             self.rslin.add_restraint(pr)

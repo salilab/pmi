@@ -654,6 +654,20 @@ class HierarchyDatabase():
                 print "----", resolution
                 for p in self.get_particles(name,resn,resolution):
                     print "--------", p.get_name()
+
+
+def sublist_iterator(l,lmin=None,lmax=None):
+    #this iterator yields all sublists 
+    #of length >= lmin and <= lmax
+    if lmin==None: lmin=0
+    if lmax==None: lmax=len(l)
+    n = len(l)+1
+    for i in xrange(n):
+        for j in xrange(i+1, n):
+           if len(l[i:j]) <= lmax and len(l[i:j]) >= lmin: yield l[i:j]
+
+def flatten_list(l):
+    return [item for sublist in l for item in sublist]
     
 def get_residue_indexes(hier):
     if IMP.atom.Fragment.particle_is_instance(hier):

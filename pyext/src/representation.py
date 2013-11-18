@@ -442,7 +442,7 @@ class SimplifiedModel():
     def check_root(self,name,protein_h,resolution):
         if "Res:"+str(int(resolution)) not in self.hier_resolution[name]: 
            root=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
-           root.set_name("Res:"+str(int(resolution)))
+           root.set_name(name+"_Res:"+str(int(resolution)))
            self.hier_resolution[name]["Res:"+str(int(resolution))]=root
            protein_h.add_child(root)        
 
@@ -681,7 +681,6 @@ class SimplifiedModel():
           sel=IMP.atom.Selection(self.prot,molecule=copies[k])              
           copyparticles=sel.get_selected_particles()
 
-           
           mainpurged=[]
           copypurged=[]
           for n,p in enumerate(mainparticles):
@@ -780,6 +779,16 @@ class SimplifiedModel():
             print "set_rigid_body_from_hierarchies> adding %s to the rigid body" % hier.get_name()
         self.super_rigid_bodies.append((super_rigid_xyzs,super_rigid_rbs))
 
+    def set_chain_of_super_rigid_bodies(self,hiers,lmin=None,lmax=None):
+        '''
+        this function takes a linear list of hierarchies (they are supposed
+         to be sequence-contiguous) and 
+        produces a chain of super rigid bodies with given length range, specified
+        by lmax and lmin
+        '''
+        hiers=tools.flatten_list(hiers)
+        for hs in tools.sublist_iterator(hiers,lmin,lmax):
+            self.set_super_rigid_body_from_hierarchies(hs)
 
     def set_rigid_bodies(self,subunits,coords=None,nonrigidmembers=True):
         if coords==None: coords=()
@@ -870,8 +879,7 @@ class SimplifiedModel():
               sel=IMP.atom.Selection(self.prot,molecule=s)              
             ps=sel.get_selected_particles()
             print "get_particles_from_selection: "+str(s)+" selected "+str(len(ps))+" particles"
-            particles+=ps
-            
+            particles+=ps            
         return particles
 
     def get_connected_intra_pairs(self):

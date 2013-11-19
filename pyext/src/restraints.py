@@ -98,7 +98,7 @@ class ConnectivityRestraint():
 class ExcludedVolumeSphere():
 
     def __init__(self,hierarchies,resolution=None,kappa=1.0):
-        
+
         self.rs = IMP.RestraintSet('excluded_volume')
         self.weight=1.0
         self.kappa=kappa
@@ -108,7 +108,7 @@ class ExcludedVolumeSphere():
 
         lsa=IMP.container.ListSingletonContainer(self.m)
         for hier in hierarchies:
-            lsa.add_particles(IMP.atom.get_leaves(hier))        
+            lsa.add_particles(IMP.atom.get_leaves(hier))
         evr=IMP.core.ExcludedVolumeRestraint(lsa,self.kappa)
 
         self.rs.add_restraint(evr)
@@ -624,7 +624,7 @@ class SigmoidCrossLinkMS():
                  filters=None):
         #columnindexes is a list of column indexes for protein1, protein2, residue1, residue2
         #by default column 0 = protein1; column 1 = protein2; column 2 = residue1; column 3 = residue2
-        #the filters applies to the csvfile, the format is 
+        #the filters applies to the csvfile, the format is
         #filters=[("Field1",">|<|=|>=|<=",value),("Field2","is","String"),("Field2","in","String")]
         import IMP.pmi.tools as tools
 
@@ -643,16 +643,16 @@ class SigmoidCrossLinkMS():
            db=tools.get_db_from_csv(restraints_file)
         else:
            db=open(restraints_file)
-           
+
         self.rs=IMP.RestraintSet('data')
         self.weight=1.0
         self.prot=prot
-        
+
         particles=[]
         for h in hiers:
             particles+=IMP.atom.get_leaves(h)
-        
-        
+
+
         self.label="None"
         self.pairs=[]
         self.already_added_pairs={}
@@ -671,11 +671,11 @@ class SigmoidCrossLinkMS():
         protein2=columnmapping["Protein2"]
         residue1=columnmapping["Residue1"]
         residue2=columnmapping["Residue2"]
-        
+
         indb=open("included.xl.db","w")
-        exdb=open("excluded.xl.db","w")        
-        midb=open("missing.xl.db","w") 
-        
+        exdb=open("excluded.xl.db","w")
+        midb=open("missing.xl.db","w")
+
         for entry in db:
             if not csvfile:
                tokens=entry.split()
@@ -687,14 +687,14 @@ class SigmoidCrossLinkMS():
                c2=tokens[protein2]
             else:
                if filters != None:
-                  if eval(tools.cross_link_db_filter_parser(filters))==False: 
+                  if eval(tools.cross_link_db_filter_parser(filters))==False:
                      exdb.write(str(entry)+"\n")
                      continue
                indb.write(str(entry)+"\n")
                r1=int(entry[residue1])
                c1=entry[protein1]
                r2=int(entry[residue2])
-               c2=entry[protein2]               
+               c2=entry[protein2]
 
             #hrc1 = [h for h in self.prot.get_children() if h.get_name()==c1][0]
             s1=IMP.atom.Selection(self.prot,molecule=c1, residue_index=r1)
@@ -862,15 +862,15 @@ class ISDCrossLinkMS():
            db=open(restraints_file)
 
         indb=open("included.xl.db","w")
-        exdb=open("excluded.xl.db","w")        
-        midb=open("missing.xl.db","w") 
+        exdb=open("excluded.xl.db","w")
+        midb=open("missing.xl.db","w")
 
         self.rs=IMP.RestraintSet('data')
         self.rspsi=IMP.RestraintSet('prior_psi')
         self.rssig=IMP.RestraintSet('prior_sigmas')
         self.rslin=IMP.RestraintSet('prior_linear')
         self.rslen=IMP.RestraintSet('prior_length')
-        
+
         self.prot=prot
         self.label="None"
         self.pairs=[]
@@ -878,14 +878,14 @@ class ISDCrossLinkMS():
         self.sigma_dictionary={}
         self.psi_dictionary={}
         self.samplelength=samplelength
-        
+
         if ids_map==None:
            self.ids_map=tools.map()
            self.ids_map.set_map_element(20.0,0.05)
            self.ids_map.set_map_element(65.0,0.01)
         else:
            self.ids_map=ids_map
-        
+
         if radius_map==None:
            self.radius_map=tools.map()
            self.radius_map.set_map_element(10,10)
@@ -925,7 +925,7 @@ class ISDCrossLinkMS():
                ids=float(tokens[idscore])
             else:
                if filters != None:
-                  if eval(tools.cross_link_db_filter_parser(filters))==False: 
+                  if eval(tools.cross_link_db_filter_parser(filters))==False:
                      exdb.write(str(entry)+"\n")
                      continue
                indb.write(str(entry)+"\n")
@@ -934,9 +934,9 @@ class ISDCrossLinkMS():
                r2=int(entry[residue2])
                c2=entry[protein2]
                ids=float(entry[idscore])
-   
-               
-                           
+
+
+
 
             #hrc1 = [h for h in self.prot.get_children() if h.get_name()==c1][0]
             s1=IMP.atom.Selection(self.prot,molecule=c1, residue_index=r1)
@@ -1347,7 +1347,7 @@ class SecondaryStructure():
 
         (bondrslist,anglrslist,diherslist,pairslist)=self.get_CA_force_field()
         self.pairslist=pairslist
-        
+
         print anglrslist,diherslist,bondrslist,self.hiers
         self.anglrs.add_restraints(anglrslist)
         self.dihers.add_restraints(diherslist)
@@ -1892,127 +1892,45 @@ class CysteineCrossLinkRestraint():
         return output
 
 class GaussianEMRestraint():
-
-    def __init__(self,prot,map_anchors_fn,segment_anchors=None,segment_parts=None,rigid=True,resolution=None):
-        #segment parts should be a list containing protein names or a tuple with protein names and residue ranges:
-        # [("ABC",1,100),"CYT","CDR"]
-
+    def __init__(self,densities,target_fn):
         global sys, impisd2, tools
         import sys
-        import IMP.isd2 as impisd2
+        import IMP.isd2
+        import IMP.isd2.gmm_tools
         import IMP.pmi.tools as tools
-        #import IMP.multifit
-        
-        if segment_anchors==None: segment_anchors=[]
-        if segment_parts==None: segment_parts=[]        
-        
-        #dcoords=IMP.multifit.read_anchors_data(map_anchors_fn).points_
-        self.prot=prot
-        self.m=self.prot.get_model()
 
-        
-
-        if resolution!=None:
-           hierarchy_anchors=[]
-           for prot in self.prot.get_children():
-             hierarchy_anchors+=IMP.pmi.tools.get_particles_by_resolution(prot,resolution)         
-
-        
-        if segment_parts!=None:
-            model_anchors=[]
-            for seg in segment_parts:
-                if type(seg)==str:
-                   s=IMP.atom.Selection(self.prot,molecule=seg)
-                   ps=s.get_selected_particles()
-                   model_anchors+=ps
-                elif type(seg)==tuple:
-                   s=IMP.atom.Selection(self.prot,molecule=seg[0],residue_indexes=range(seg[1],seg[2]+1))
-                   ps=s.get_selected_particles()
-                   model_anchors+=ps                
-            if resolution!=None:
-              #get the intersection to remove redundant particles
-              self.model_anchors=(list(set(model_anchors) & set(hierarchy_anchors)))
-
-        for p in self.model_anchors:
-            print p.get_name()  
-
-
-
-        data = open(map_anchors_fn)
-        D = data.readlines()
-        data.close()
-        dcoords={}
-        for d in D:
-            d=d.strip().split('|')
-            if len(d)==6: dcoords[int(d[1])] = IMP.algebra.Vector3D(float(d[2]),float(d[3]),float(d[4]))
-
-        # parameters
-        self.model_sigmas=[15.0]*len(self.model_anchors)
-        
-        self.model_sigmas=[]
-        self.model_weights=[]
-        for p in self.model_anchors: self.model_sigmas.append(IMP.core.XYZR(p).get_radius())
-        for p in self.model_weights: self.model_weights.append(len(IMP.atom.Fragment(p).get_residue_indexes()))
-
-
-
-        #self.model_sigmas=[float(anch.get_as_xyzr().get_radius()) for anch in self.segment_parts]
-        self.model_weights=[1.0]*len(self.model_anchors)
-        self.density_sigmas=[15.0]*len(segment_anchors)
-        self.density_weights=[1.0]*len(segment_anchors)
+        ## some parameters
         self.sigmaissampled=False
         self.sigmamaxtrans=0.1
         self.sigmamin=1.
         self.sigmamax=100.0
         self.sigmainit=2.75
         self.cutoff_dist_for_container=10.0
-        self.rigid=rigid
-        self.segment_anchors=segment_anchors
-        self.segment_parts=segment_parts
         self.tabexp=True
 
+        ## setup target GMM
+        self.m=densities[0].get_model()
+        target_ps=[]
+        IMP.isd2.gmm_tools.read_gmm_txt(target_ps,target_fn,self.m)
 
+        ## model GMM
+        model_ps=[]
+        for h in densities:
+            model_ps+=IMP.core.get_leaves(h)
 
-        self.density_anchors=[]
-        for d in dcoords:
-            if self.segment_anchors==[]:
-                p=IMP.Particle(self.m)
-                self.density_anchors.append(p)
-                IMP.core.XYZR.setup_particle(p,\
-                                         IMP.algebra.Sphere3D(d,\
-                                         self.density_sigmas[nd]*1.5))
-            else:
-                if d in self.segment_anchors:
-                    p=IMP.Particle(self.m)
-                    self.density_anchors.append(p)
-                    IMP.core.XYZR.setup_particle(p,\
-                                         IMP.algebra.Sphere3D(dcoords[d],\
-                                         self.density_sigmas[0]*1.5))
-
-        for np,p in enumerate(self.model_anchors):
-            self.model_sigmas[np]=IMP.core.XYZR(p).get_radius()*2
-
+        ## sigma particle
         self.sigmaglobal=tools.SetupNuisance(self.m,self.sigmainit,
-                 self.sigmamin,self.sigmamax,True).get_particle()
-        print 'setting up restraint'
+                                             self.sigmamin,self.sigmamax,
+                                             self.sigmaissampled).get_particle()
 
-        
-        print self.model_anchors
-        print self.density_anchors
-        print self.model_weights
-        print self.density_weights
-        print self.model_sigmas
-        print self.density_sigmas
-        
-
-        self.gaussianEM_restraint=impisd2.GaussianEMRestraint(
-            self.model_anchors,self.model_sigmas,self.model_weights,
-            self.density_anchors,self.density_sigmas,self.density_weights,
-            self.sigmaglobal.get_particle(),self.cutoff_dist_for_container,
-            self.rigid,self.tabexp)
+        ## create restraint
+        print 'target',len(target_ps),'model',len(model_ps)
+        self.gaussianEM_restraint=IMP.isd2.GaussianEMRestraint(model_ps,target_ps,self.sigmaglobal,
+                                                               self.cutoff_dist_for_container,False,False)
         print 'done setup'
         self.rs = IMP.RestraintSet('GaussianEMRestraint')
         self.rs.add_restraint(self.gaussianEM_restraint)
+
 
     def set_label(self,label):
         self.label=label
@@ -2036,7 +1954,7 @@ class GaussianEMRestraint():
         self.m.update()
         output={}
         score=self.rs.unprotected_evaluate(None)
-        output["_TotalScore"]=str(score)         
+        output["_TotalScore"]=str(score)
         output["GaussianEMRestraint_"+self.label]=str(self.rs.unprotected_evaluate(None))
         output["GaussianEMRestraint_sigma_"+self.label]=str(self.sigmaglobal.get_scale())
         return output

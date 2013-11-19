@@ -178,11 +178,9 @@ class Output():
     
     def add_particle_pair_from_restraints_to_rmf(self,name,objectlist):
         for o in objectlist:
-            print "here"
             
             pps=o.get_particle_pairs()
             for pp in pps:
-              print type(IMP.core.EdgePairGeometry(pp))
               imprmf.add_geometry(self.dictionary_rmfs[name],IMP.core.EdgePairGeometry(pp))  
 
     def write_rmf(self,name,nframe):

@@ -161,8 +161,6 @@ class CompositeRestraint():
         self.rs = IMP.RestraintSet('cr')
         self.m=handleparticles[0].get_model()
 
-        print handleparticles
-
         ln=imppmi.CompositeRestraint(self.m,handleparticles,cut_off,lam,True)
         for ps in compositeparticles:
             #composite particles is a list of list of particles
@@ -1372,7 +1370,6 @@ class SecondaryStructure():
        for res in range(0,len(self.hiers)-1):
 
             ps=self.hiers[res:res+2]
-            print ps,res
             pairslist.append(IMP.ParticlePair(ps[0],ps[1]))
             pairslist.append(IMP.ParticlePair(ps[1],ps[0]))
             br=self.get_distance_restraint(ps[0],ps[1],3.78,416.0)

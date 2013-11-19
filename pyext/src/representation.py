@@ -933,7 +933,6 @@ class SimplifiedModel():
         ps["Rigid_Bodies_SimplifiedModel"]=(self.rigid_bodies,self.maxtrans_rb,self.maxrot_rb)
         ps["Floppy_Bodies_SimplifiedModel"]=(self.floppy_bodies,self.maxtrans_fb)
         ps["SR_Bodies_SimplifiedModel"]=(self.super_rigid_bodies,self.maxtrans_srb,self.maxrot_srb)
-        print ps
         return ps
     
     def set_output_level(self,level):
@@ -955,7 +954,6 @@ class SimplifiedModel():
         for name in self.linker_restraints_dict:
             output[name+"_"+self.label]=str(self.linker_restraints_dict[name].unprotected_evaluate(None))
         if self.output_level=="high":
-            #print coordinates
             for p in IMP.atom.get_leaves(self.prot):
                 d=IMP.core.XYZR(p)
                 output["Coordinates_"+p.get_name()+"_"+self.label]=str(d)
@@ -1052,8 +1050,6 @@ class SimplifiedModel():
             norm = mpl.colors.Normalize(vmin=5, vmax=10)
             bounds=[1]
             colors=[]
-            
-            print k
             
             for n,l in enumerate(list):
                 firstres=l[0]

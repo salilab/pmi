@@ -385,59 +385,6 @@ def get_residue_index_and_chain_from_particle(p):
     cid=IMP.atom.Chain(c).get_id()
     return rind,cid
 
-def get_particles_by_resolution(prot,resolution):
-    #this function does not work with the root hierarchy, but 
-    #individual proteins
-    #for hier in prot.get_children():
-    particles = []
-    residues = set() 
-    
-    if resolution!=0 and resolution!=1:
-       print "resolution", resolution
-       ps=IMP.atom.get_by_type(prot, IMP.atom.FRAGMENT_TYPE)
-       for p in ps:
-         residues.update(IMP.atom.Fragment(p).get_residue_indexes())
-    elif resolution==1:
-       print "resolution 1"
-       ps=IMP.atom.get_by_type(prot, IMP.atom.FRAGMENT_TYPE)
-       for p in ps:
-          residues.update(IMP.atom.Fragment(p).get_residue_indexes())
-       ps=IMP.atom.get_by_type(prot, IMP.atom.RESIDUE_TYPE)
-       for p in ps:
-          residues.add(IMP.atom.Residue(p).get_index())
-    elif resolution==0:
-       print "resolution 0"
-       ps=IMP.atom.get_by_type(prot, IMP.atom.RESIDUE_TYPE)
-       return ps
-    
-
-       
-    firstresn=min(residues)
-    lastresn=max(residues)
-    for nres in range(firstresn,lastresn+1):
-        s=IMP.atom.Selection(prot,residue_index=nres,
-                             hierarchy_types=[IMP.atom.FRAGMENT_TYPE,IMP.atom.RESIDUE_TYPE])
-        resolutions=[]
-
-        # calculate the closest resolution for each set of particles that represent a residue 
-        ps=s.get_selected_particles()
-
-        if len(ps)>0:
-            for p in ps:
-                resolutions.append(IMP.pmi.Resolution(IMP.pmi.Resolution(p)).get_resolution())
-            closestres=min(resolutions, key=lambda x:abs(float(x)-float(resolution)))
-            
-            # now we get the particle 
-            for p in ps:
-                if closestres==IMP.pmi.Resolution.get_resolution(IMP.pmi.Resolution(p)): 
-                    if not p in particles:  
-                        particles.append(p)     
-        else: 
-            print "get_particles_by_resolution> WARNING residue %d in molecule %s is missing" % (nres,prot.get_name())
-
-    return list(particles)
-    #-------------------------------
-    
 def get_position_terminal_residue(hier,terminus="C",resolution=1):
     #this function get the xyz position of the 
     #C or N terminal residue of a hierarchy, given the resolution.

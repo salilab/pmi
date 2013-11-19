@@ -1571,7 +1571,7 @@ class SAXSISDRestraint():
 
 
 
-    def __init__(self,prot,profile,weight=1,resolution=1):
+    def __init__(self,hier,profile,weight=1):
         global impsaxs, impisd2, tools
         import IMP.saxs as impsaxs
         import IMP.isd2 as impisd2
@@ -1580,33 +1580,34 @@ class SAXSISDRestraint():
         self.prot=prot
         self.m=self.prot.get_model()
         self.label="None"
-        self.rs = IMP.RestraintSet('saxs')
+        self.rs = IMP.RestraintSet(self.m, 'saxs')
 
         self.sigmamaxtrans=0.05
         self.gammamaxtrans=0.05
         self.prof = impsaxs.Profile(profile)
 
-        self.atoms=[]
+        atoms=[]
 
-        for p in prot.get_children():
-            self.atoms=tools.get_particles_by_resolution(p,resolution)
+        for h in hier:
+            atoms+=IMP.atom.get_leaves(h)
 
 
+        #sigma nuisance
         self.sigma = tools.SetupNuisance(self.m,10.0,0.00001,100,True).get_particle()
 
-        self.th = impsaxs.Profile(self.prof.get_min_q(),
+        #gamma nuisance, initial value is ML estimate with diagonal covariance
+        self.th = IMP.isd2.VariancedProfile(self.prof.get_min_q(),
                 self.prof.get_max_q(), self.prof.get_delta_q())
-
-        self.th.calculate_profile(self.atoms, impsaxs.CA_ATOMS)
+        self.th.calculate_profile(self.atoms, impsaxs.HEAVY_ATOMS)
         gammahat = array([self.prof.get_intensity(i)/self.th.get_intensity(i)
                             for i in xrange(self.prof.size()-1) ]).mean()
-
         self.gamma = tools.SetupNuisance(self.m,gammahat,0.01,20,True).get_particle()
 
+        #take identity covariance matrix for the start
         self.cov = eye(self.prof.size()).tolist()
 
-        self.saxs = impisd2.SAXSRestraint(self.atoms, self.prof, self.sigma,
-                                        self.gamma, self.cov, impsaxs.CA_ATOMS)
+        self.saxs = IMP.isd2.SAXSRestraint(atoms, self.prof, self.sigma,
+                                        self.gamma, self.cov, impsaxs.HEAVY_ATOMS)
 
         self.rs.add_restraint(self.saxs)
         self.rs.set_weight(weight)
@@ -1622,8 +1623,8 @@ class SAXSISDRestraint():
 
     def update_covariance_matrices(self, tau):
         import numpy
-        self.th.calculate_profile(self.atoms, impsaxs.CA_ATOMS,
-                False, True, tau)
+        tau=0.1
+        self.th.calculate_varianced_profile(self.atoms, impsaxs.HEAVY_ATOMS, tau)
         prof=numpy.zeros(self.th.size())
         Sigma=numpy.zeros((self.th.size(),self.th.size()))
         #absolute variance matrix

@@ -104,7 +104,7 @@ class SimplifiedModel():
         self.hier_db=tools.HierarchyDatabase()
         self.hier_resolution={}
         self.elements={}
-        self.linker_restraints=IMP.RestraintSet("linker_restraints")
+        self.linker_restraints=IMP.RestraintSet(self.m,"linker_restraints")
         self.linker_restraints_dict={}
         self.threetoone={'ALA':'A','ARG':'R','ASN':'N','ASP':'D',
                          'CYS':'C','GLU':'E','GLN':'Q','GLY':'G',
@@ -622,8 +622,8 @@ class SimplifiedModel():
             self.hier_geometry_pairs[name].append((sortedparticles[n][0],sortedparticles[n+1][0],color))
 
     def setup_component_sequence_connectivity(self,name,resolution=10):
-        unmodeledregions_cr=IMP.RestraintSet("unmodeledregions")
-        sortedsegments_cr=IMP.RestraintSet("sortedsegments")
+        unmodeledregions_cr=IMP.RestraintSet(self.m,"unmodeledregions")
+        sortedsegments_cr=IMP.RestraintSet(self.m,"sortedsegments")
 
         protein_h=self.hier_dict[name]
         SortedSegments = []

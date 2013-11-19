@@ -26,9 +26,8 @@ class ConnectivityRestraint():
         self.kappa=kappa
         self.label=label
         if self.label=="None": self.label=str(selection_tuples)
-        self.rs = IMP.RestraintSet(label)
-
         self.m=self.hier.get_model()
+        self.rs = IMP.RestraintSet(self.m,label)
 
         sels=[]
 
@@ -99,12 +98,12 @@ class ExcludedVolumeSphere():
 
     def __init__(self,hierarchies,resolution=None,kappa=1.0):
 
-        self.rs = IMP.RestraintSet('excluded_volume')
+        self.m=hierarchies[0].get_model()
+        self.rs = IMP.RestraintSet(self.m,'excluded_volume')
         self.weight=1.0
         self.kappa=kappa
 
         self.label="None"
-        self.m=hierarchies[0].get_model()
 
         lsa=IMP.container.ListSingletonContainer(self.m)
         for hier in hierarchies:
@@ -158,8 +157,9 @@ class CompositeRestraint():
         import IMP.pmi as imppmi
         #composite particles: all particles beside the handle
         self.label=label
-        self.rs = IMP.RestraintSet('cr')
         self.m=handleparticles[0].get_model()
+        self.rs = IMP.RestraintSet(self.m,'cr')
+
 
         ln=imppmi.CompositeRestraint(self.m,handleparticles,cut_off,lam,True)
         for ps in compositeparticles:
@@ -189,12 +189,12 @@ class CompositeRestraint():
 class ExternalBarrier():
 
     def __init__(self,prot,radius):
-        self.rs = IMP.RestraintSet('barrier')
+        self.m=self.prot.get_model()
+        self.rs = IMP.RestraintSet(self.m,'barrier')
         self.prot=prot
         self.radius=radius
         self.label="None"
 
-        self.m=self.prot.get_model()
         c3= IMP.algebra.Vector3D(0,0,0)
         ub3= IMP.core.HarmonicUpperBound(radius, 10.0)
         ss3= IMP.core.DistanceToSingletonScore(ub3, c3)
@@ -240,12 +240,12 @@ class ConnectivityCrossLinkMS():
 
     def __init__(self,prot,restraints_file,expdistance,strength=None,resolution=None):
 
-        self.rs=IMP.RestraintSet('data')
+        self.m=self.prot.get_model()
+        self.rs=IMP.RestraintSet(self.m,'data')
         self.weight=1.0
         self.prot=prot
         self.label="None"
         self.pairs=[]
-        self.m=self.prot.get_model()
 
         self.outputlevel="low"
         self.expdistance=expdistance
@@ -433,13 +433,13 @@ class SimplifiedCrossLinkMS():
             columnmapping["Residue1"]=2
             columnmapping["Residue2"]=3
 
-        self.rs=IMP.RestraintSet('data')
+        self.m=self.prot.get_model()
+        self.rs=IMP.RestraintSet(self.m,'data')
         self.weight=1.0
         self.prot=prot
         self.label="None"
         self.pairs=[]
         self.already_added_pairs={}
-        self.m=self.prot.get_model()
 
         self.outputlevel="low"
         self.expdistance=expdistance
@@ -644,7 +644,8 @@ class SigmoidCrossLinkMS():
         else:
            db=open(restraints_file)
 
-        self.rs=IMP.RestraintSet('data')
+        self.m=self.prot.get_model()
+        self.rs=IMP.RestraintSet(self.m,'data')
         self.weight=1.0
         self.prot=prot
 
@@ -656,7 +657,6 @@ class SigmoidCrossLinkMS():
         self.label="None"
         self.pairs=[]
         self.already_added_pairs={}
-        self.m=self.prot.get_model()
         self.inflection=inflection
         self.slope=slope
         self.amplitude=amplitude
@@ -865,16 +865,16 @@ class ISDCrossLinkMS():
         exdb=open("excluded.xl.db","w")
         midb=open("missing.xl.db","w")
 
-        self.rs=IMP.RestraintSet('data')
-        self.rspsi=IMP.RestraintSet('prior_psi')
-        self.rssig=IMP.RestraintSet('prior_sigmas')
-        self.rslin=IMP.RestraintSet('prior_linear')
-        self.rslen=IMP.RestraintSet('prior_length')
+        self.m=self.prot.get_model()
+        self.rs=IMP.RestraintSet(self.m,'data')
+        self.rspsi=IMP.RestraintSet(self.m,'prior_psi')
+        self.rssig=IMP.RestraintSet(self.m,'prior_sigmas')
+        self.rslin=IMP.RestraintSet(self.m,'prior_linear')
+        self.rslen=IMP.RestraintSet(self.m,'prior_length')
 
         self.prot=prot
         self.label="None"
         self.pairs=[]
-        self.m=self.prot.get_model()
         self.sigma_dictionary={}
         self.psi_dictionary={}
         self.samplelength=samplelength
@@ -1188,11 +1188,11 @@ class SimplifiedPEMAP():
 
     def __init__(self,prot,restraints_file,expdistance,strength):
 
-        self.rs=IMP.RestraintSet('data')
+        self.m=self.prot.get_model()
+        self.rs=IMP.RestraintSet(self.m,'data')
         self.prot=prot
         self.label="None"
         self.pairs=[]
-        self.m=self.prot.get_model()
 
         self.outputlevel="low"
         self.expdistance=expdistance
@@ -1335,9 +1335,9 @@ class SecondaryStructure():
         self.dihefilename=impisd2.get_data_path("CADihedralRestraint.dat")
         self.nativeness=nativeness
         self.kt_caff=kt_caff
-        self.anglrs=IMP.RestraintSet("Angles")
-        self.dihers=IMP.RestraintSet("Dihedrals")
-        self.bondrs=IMP.RestraintSet("Bonds")
+        self.anglrs=IMP.RestraintSet(self.m,"Angles")
+        self.dihers=IMP.RestraintSet(self.m,"Dihedrals")
+        self.bondrs=IMP.RestraintSet(self.m,"Bonds")
         self.label="None"
 
         if len(hiers)!=len(ssstring):
@@ -1482,7 +1482,7 @@ class SecondaryStructure():
         return self.pairslist
 
     def get_restraint(self):
-        tmprs=IMP.RestraintSet('tmp')
+        tmprs=IMP.RestraintSet(self.m,'tmp')
         tmprs.add_restraint(self.anglrs)
         tmprs.add_restraint(self.dihers)
         tmprs.add_restraint(self.bondrs)
@@ -1517,7 +1517,7 @@ class WeightRestraint():
         self.weight=weight
         self.m=self.weight.get_model()
         self.label="None"
-        self.rs = IMP.RestraintSet('weight_restraint')
+        self.rs = IMP.RestraintSet(self.m,'weight_restraint')
         self.lower =lower
         self.upper=upper
         self.kappa=kappa
@@ -1548,7 +1548,7 @@ class JeffreysPrior():
 
         self.m=nuisance.get_model()
         self.label="None"
-        self.rs = IMP.RestraintSet('jeffrey_prior')
+        self.rs = IMP.RestraintSet(self.m,'jeffrey_prior')
         jp=impisd2.JeffreysRestraint(nuisance)
         self.rs.add_restraint(jp)
 
@@ -1615,7 +1615,7 @@ class SAXSISDRestraint():
         #self.saxs_stuff={'nuis':(sigma,gamma),'cov':cov,
         #        'exp':prof,'th':tmp}
 
-        self.rs2 = IMP.RestraintSet('jeffreys')
+        self.rs2 = IMP.RestraintSet(self.m,'jeffreys')
         j1 = impisd2.JeffreysRestraint(self.sigma)
         self.rs2.add_restraint(j1)
         j2 = impisd2.JeffreysRestraint(self.gamma)
@@ -1696,8 +1696,8 @@ class CysteineCrossLinkRestraint():
         import IMP.pmi.tools as tools
 
         self.prots=prots
-        self.rs=IMP.RestraintSet('Cysteine_Crosslink')
         self.m=self.prots[0].get_model()
+        self.rs=IMP.RestraintSet(self.m,'Cysteine_Crosslink')
         self.cbeta=cbeta
         self.epsilonmaxtrans=0.01
         self.sigmamaxtrans=0.1
@@ -1928,7 +1928,7 @@ class GaussianEMRestraint():
         self.gaussianEM_restraint=IMP.isd2.GaussianEMRestraint(model_ps,target_ps,self.sigmaglobal,
                                                                self.cutoff_dist_for_container,False,False)
         print 'done setup'
-        self.rs = IMP.RestraintSet('GaussianEMRestraint')
+        self.rs = IMP.RestraintSet(self.m,'GaussianEMRestraint')
         self.rs.add_restraint(self.gaussianEM_restraint)
 
 

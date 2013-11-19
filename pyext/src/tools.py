@@ -31,12 +31,13 @@ class SetupNuisance():
     def __init__(self,m,initialvalue,minvalue,maxvalue,isoptimized=True):
         global impisd2
         import IMP.isd2 as impisd2
-        
-        nuisance=impisd2.Scale.setup_particle(IMP.Particle(m),initialvalue)
+        import IMP.isd
+
+        nuisance=IMP.isd.Scale.setup_particle(IMP.Particle(m),initialvalue)
         nuisance.set_lower(minvalue)
         nuisance.set_upper(maxvalue)
 
-        m.add_score_state(IMP.core.SingletonConstraint(impisd2.NuisanceRangeModifier(),None,nuisance))
+        #m.add_score_state(IMP.core.SingletonConstraint(IMP.isd.NuisanceRangeModifier(),None,nuisance))
         nuisance.set_is_optimized(nuisance.get_nuisance_key(),isoptimized)
         self.nuisance=nuisance
 
@@ -47,7 +48,7 @@ class SetupWeight():
 
     def __init__(self,m,isoptimized=True):
         global impisd2
-        import IMP.isd2 as impisd2    
+        import IMP.isd2 as impisd2
         pw=IMP.Particle(m)
         self.weight=impisd2.Weight.setup_particle(pw)
         self.weight.set_weights_are_optimized(True)
@@ -271,9 +272,9 @@ def get_cross_link_data(directory,filename,(distmin,distmax,ndist),
                                              (omegamin,omegamax,nomega),
                                             (sigmamin,sigmamax,nsigma),
                                             don=None,doff=None,prior=0,type_of_profile="gofr"):
-    
+
     import IMP.isd2
-    
+
     filen=IMP.isd2.get_data_path("CrossLinkPMFs.dict")
     xlpot=open(filen)
 
@@ -301,7 +302,7 @@ def get_cross_link_data_from_length(length,(distmin,distmax,ndist),
                                (omegamin,omegamax,nomega),
                                (sigmamin,sigmamax,nsigma)):
     import IMP.isd2
-    
+
     dist_grid=get_grid(distmin, distmax, ndist, False)
     omega_grid=get_log_grid(omegamin, omegamax, nomega)
     sigma_grid=get_log_grid(sigmamin, sigmamax, nsigma)
@@ -333,24 +334,24 @@ def get_log_grid(gmin,gmax,ngrid):
 
 def cross_link_db_filter_parser(inputstring):
     '''
-    example '"{ID_Score}" > 28 AND "{Sample}" == 
-     "%10_1%" OR ":Sample}" == "%10_2%" OR ":Sample}" 
+    example '"{ID_Score}" > 28 AND "{Sample}" ==
+     "%10_1%" OR ":Sample}" == "%10_2%" OR ":Sample}"
     == "%10_3%" OR ":Sample}" == "%8_1%" OR ":Sample}" == "%8_2%"'
     '''
-    
+
     import pyparsing as pp
-    
+
     operator = pp.Regex(">=|<=|!=|>|<|==|in").setName("operator")
     value = pp.QuotedString('"') | pp.Regex(r"[+-]?\d+(:?\.\d*)?(:?[eE][+-]?\d+)?")
     identifier = pp.Word(pp.alphas, pp.alphanums + "_")
-    comparison_term = identifier | value 
+    comparison_term = identifier | value
     condition = pp.Group(comparison_term + operator + comparison_term)
-    
+
     expr = pp.operatorPrecedence(condition,[
                                 ("OR", 2, pp.opAssoc.LEFT, ),
                                 ("AND", 2, pp.opAssoc.LEFT, ),
                                 ])
-    
+
     parsedstring=str(expr.parseString(inputstring)) \
                          .replace("[","(") \
                          .replace("]",")") \
@@ -362,7 +363,7 @@ def cross_link_db_filter_parser(inputstring):
                          .replace(":","str(entry['") \
                          .replace("}","'])") \
                          .replace("AND","and") \
-                         .replace("OR","or")                         
+                         .replace("OR","or")
     return parsedstring
 
 
@@ -386,34 +387,34 @@ def get_residue_index_and_chain_from_particle(p):
     return rind,cid
 
 def get_position_terminal_residue(hier,terminus="C",resolution=1):
-    #this function get the xyz position of the 
+    #this function get the xyz position of the
     #C or N terminal residue of a hierarchy, given the resolution.
     #the argument of terminus can be either N or C
-    
+
     termresidue=None
     termarticle=None
     for p in IMP.atom.get_leaves(hier):
         if IMP.pmi.Resolution(p).get_resolution()==resolution:
-           residues=IMP.atom.Fragment(p).get_residue_indexes()  
+           residues=IMP.atom.Fragment(p).get_residue_indexes()
            if terminus=="C":
                if max(residues)>=termresidue and termresidue!=None:
                   termresidue=max(residues)
-                  termparticle=p      
+                  termparticle=p
                elif termresidue==None:
                   termresidue=max(residues)
-                  termparticle=p                                      
+                  termparticle=p
            elif terminus=="N":
                if min(residues)<=termresidue and termresidue!=None:
                   termresidue=min(residues)
-                  termparticle=p      
+                  termparticle=p
                elif termresidue==None:
                   termresidue=min(residues)
-                  termparticle=p                     
-           else: 
+                  termparticle=p
+           else:
                print "get_position_terminal_residue> terminus argument should be either N or C"
-             
+
     return IMP.core.XYZ(termparticle).get_coordinates()
-               
+
 
 def select_calpha_or_residue(prot,chain,resid,ObjectName="None:",SelectResidue=False):
     #use calphas
@@ -448,25 +449,25 @@ def select_calpha_or_residue(prot,chain,resid,ObjectName="None:",SelectResidue=F
 class map():
       def __init__(self):
           self.map={}
-      
+
       def set_map_element(self,xvalue,yvalue):
           self.map[xvalue]=yvalue
-      
+
       def get_map_element(self,invalue):
           n=0
           mindist=1
           for x in self.map:
               dist=(invalue-x)*(invalue-x)
 
-              if n==0: 
+              if n==0:
                  mindist=dist
-                 minx=x             
-              if dist<mindist: 
+                 minx=x
+              if dist<mindist:
                  mindist=dist
                  minx=x
               n+=1
           return self.map[minx]
-          
+
 class HierarchyDatabase():
      def __init__(self):
         self.db={}
@@ -474,25 +475,25 @@ class HierarchyDatabase():
         self.root_hierarchy_dict={}
         self.preroot_fragment_hierarchy_dict={}
         self.model=None
-    
+
      def add_name(self,name):
         if name not in self.db:
            self.db[name]={}
-    
+
      def add_residue_number(self,name,resn):
         resn=int(resn)
         self.add_name(name)
         if resn not in self.db[name]:
            self.db[name][resn]={}
-           
+
      def add_resolution(self,name,resn,resolution):
         resn=int(resn)
-        resolution=float(resolution)     
+        resolution=float(resolution)
         self.add_name(name)
-        self.add_residue_number(name,resn)         
+        self.add_residue_number(name,resn)
         if resolution not in self.db[name][resn]:
-           self.db[name][resn][resolution]=[]   
-     
+           self.db[name][resn][resolution]=[]
+
      def add_particles(self,name,resn,resolution,particles):
         resn=int(resn)
         resolution=float(resolution)
@@ -505,35 +506,35 @@ class HierarchyDatabase():
             self.root_hierarchy_dict[p]=rh
             self.preroot_fragment_hierarchy_dict[p]=prf
         if self.model==None: self.model=particles[0].get_model()
-    
+
      def get_model(self):
         return self.model
-    
+
      def get_names(self):
         names=self.db.keys()
         names.sort()
         return names
-    
+
      def get_particles(self,name,resn,resolution):
         resn=int(resn)
-        resolution=float(resolution)     
+        resolution=float(resolution)
         return self.db[name][resn][resolution]
 
      def get_particles_at_closest_resolution(self,name,resn,resolution):
         resn=int(resn)
-        resolution=float(resolution)     
-        closestres=min(self.get_residue_resolutions(name,resn), 
+        resolution=float(resolution)
+        closestres=min(self.get_residue_resolutions(name,resn),
                        key=lambda x:abs(float(x)-float(resolution)))
-        return self.get_particles(name,resn,closestres)    
+        return self.get_particles(name,resn,closestres)
 
      def get_residue_resolutions(self,name,resn):
-        resn=int(resn)   
+        resn=int(resn)
         resolutions=self.db[name][resn].keys()
         resolutions.sort()
         return resolutions
-    
-     def get_molecule_resolutions(self,name):    
-        resolutions=set()        
+
+     def get_molecule_resolutions(self,name):
+        resolutions=set()
         for resn in self.db[name]:
             resolutions.update(self.db[name][resn].keys())
         resolutions.sort()
@@ -543,23 +544,23 @@ class HierarchyDatabase():
         residue_numbers=self.db[name].keys()
         residue_numbers.sort()
         return residue_numbers
-     
+
      def get_particles_by_resolution(self,name,resolution):
-        resolution=float(resolution)     
+        resolution=float(resolution)
         particles=[]
         for resn in self.get_residue_numbers(name):
             result=self.get_particles_at_closest_resolution(name,resn,resolution)
             pstemp=[p for p in result if p not in particles]
             particles+=pstemp
         return particles
-     
+
      def get_all_particles_by_resolution(self,resolution):
         resolution=float(resolution)
         particles=[]
         for name in self.get_names():
           particles+=self.get_particles_by_resolution(name,resolution)
         return particles
-    
+
      def get_root_hierarchy(self,particle):
         prerootfragment=particle
         while IMP.atom.Atom.particle_is_instance(particle) or \
@@ -574,7 +575,7 @@ class HierarchyDatabase():
            prerootfragment=particle
            particle=p
         return (IMP.atom.Hierarchy(particle),IMP.atom.Hierarchy(prerootfragment))
-    
+
      def get_all_root_hierarchies_by_resolution(self,resolution):
         hierarchies=[]
         resolution=float(resolution)
@@ -592,7 +593,7 @@ class HierarchyDatabase():
             fr=self.preroot_fragment_hierarchy_dict[p]
             if fr not in fragments: fragments.append(fr)
         return fragments
-    
+
      def show(self,name):
         print name
         for resn in self.get_residue_numbers(name):
@@ -604,7 +605,7 @@ class HierarchyDatabase():
 
 
 def sublist_iterator(l,lmin=None,lmax=None):
-    #this iterator yields all sublists 
+    #this iterator yields all sublists
     #of length >= lmin and <= lmax
     if lmin==None: lmin=0
     if lmax==None: lmax=len(l)
@@ -615,7 +616,7 @@ def sublist_iterator(l,lmin=None,lmax=None):
 
 def flatten_list(l):
     return [item for sublist in l for item in sublist]
-    
+
 def get_residue_indexes(hier):
     if IMP.atom.Fragment.particle_is_instance(hier):
        resind=IMP.atom.Fragment(hier).get_residue_indexes()
@@ -624,8 +625,8 @@ def get_residue_indexes(hier):
     else:
        print "get_residue_indexes> input is not Fragment or Residue"
     return resind
-    
- 
+
+
 def get_db_from_csv(csvfilename):
      import csv
      outputlist=[]
@@ -633,7 +634,7 @@ def get_db_from_csv(csvfilename):
      for l in csvr:
          outputlist.append(l)
      return outputlist
-          
+
 ########################
 ### Tools to simulate data
 ########################
@@ -721,5 +722,3 @@ def get_random_data_point(expected_value,ntrials,sensitivity,sigma,outlierprob,b
     rmean2/=float(ntrials)
     stddev=math.sqrt(max(rmean2-rmean*rmean,0.))
     return rmean,stddev
-        
-        

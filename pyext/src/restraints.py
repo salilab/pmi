@@ -1757,6 +1757,7 @@ class SAXSISDRestraint():
         atoms = []
 
         for h in hier:
+            IMP.atom.show_molecular_hierarchy(h)
             atoms += IMP.atom.get_leaves(h)
 
         # sigma nuisance
@@ -1773,6 +1774,9 @@ class SAXSISDRestraint():
         self.th = IMP.saxs.Profile(self.prof.get_min_q(),
                                             self.prof.get_max_q(), self.prof.get_delta_q())
         print "calculate profile"
+        
+        print len(atoms)
+        
         self.th.calculate_profile(atoms, impsaxs.HEAVY_ATOMS)
         print "setup gamma"
         gammahat = array([self.prof.get_intensity(i) / self.th.get_intensity(i)

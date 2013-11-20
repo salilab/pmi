@@ -175,6 +175,7 @@ class MonteCarlo():
     def get_nuisance_movers(self,nuisances,maxstep):
         mvs=[]
         for nuisance in nuisances:
+            print nuisance,maxstep
             mvs.append(IMP.core.NormalMover([nuisance],IMP.FloatKeys([IMP.FloatKey("nuisance")]),maxstep))
         return mvs
 

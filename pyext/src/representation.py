@@ -242,10 +242,10 @@ class SimplifiedModel():
            #if the chainid is a string
            if not readnonwateratoms:
               t=IMP.atom.read_pdb( pdbname, self.m,
-              IMP.atom.AndPDBSelector(IMP.atom.ChainPDBSelector(chain),IMP.atom.ATOMPDBSelector()))
+              IMP.atom.AndPDBSelector(IMP.atom.ChainPDBSelector(chain),IMP.atom.NonWaterNonHydrogenPDBSelector()))
            else:
               t=IMP.atom.read_pdb( pdbname, self.m,
-              IMP.atom.AndPDBSelector(IMP.atom.ChainPDBSelector(chain),IMP.atom.NonWaterPDBSelector()))
+              IMP.atom.AndPDBSelector(IMP.atom.ChainPDBSelector(chain),IMP.atom.NonWaterNonHydrogenPDBSelector()))
            #get the first and last residue
            start = IMP.atom.Residue(t.get_children()[0].get_children()[0]).get_index()
            end   = IMP.atom.Residue(t.get_children()[0].get_children()[-1]).get_index()
@@ -254,9 +254,9 @@ class SimplifiedModel():
         elif type(chain)==int:
            #if the chainid is a number, get the corresponding chain number from the pdb
            if not readnonwateratoms:
-              s=IMP.atom.read_pdb( pdbname, self.m, IMP.atom.ATOMPDBSelector())
+              s=IMP.atom.read_pdb( pdbname, self.m, IMP.atom.NonWaterNonHydrogenPDBSelector())
            else:
-              s=IMP.atom.read_pdb( pdbname, self.m, IMP.atom.NonWaterPDBSelector())
+              s=IMP.atom.read_pdb( pdbname, self.m, IMP.atom.NonWaterNonHydrogenPDBSelector())
            t=IMP.atom.Chain(IMP.atom.get_by_type(s, IMP.atom.CHAIN_TYPE)[chain])
            #get the first and last residue
            start = IMP.atom.Residue(t.get_children()[0]).get_index()

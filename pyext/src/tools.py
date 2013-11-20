@@ -29,8 +29,6 @@ class Stopwatch():
 
 class SetupNuisance():
     def __init__(self,m,initialvalue,minvalue,maxvalue,isoptimized=True):
-        global impisd2
-        import IMP.isd2 as impisd2
         import IMP.isd
 
         nuisance=IMP.isd.Scale.setup_particle(IMP.Particle(m),initialvalue)

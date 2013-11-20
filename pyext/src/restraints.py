@@ -1769,9 +1769,12 @@ class SAXSISDRestraint():
         )
 
         # gamma nuisance, initial value is ML estimate with diagonal covariance
-        self.th = IMP.isd2.VariancedProfile(self.prof.get_min_q(),
+        print "create profile"
+        self.th = IMP.saxs.Profile(self.prof.get_min_q(),
                                             self.prof.get_max_q(), self.prof.get_delta_q())
+        print "calculate profile"
         self.th.calculate_profile(atoms, impsaxs.HEAVY_ATOMS)
+        print "setup gamma"
         gammahat = array([self.prof.get_intensity(i) / self.th.get_intensity(i)
                           for i in xrange(self.prof.size() - 1)]).mean()
         self.gamma = tools.SetupNuisance(
@@ -1785,9 +1788,11 @@ class SAXSISDRestraint():
         # take identity covariance matrix for the start
         self.cov = eye(self.prof.size()).tolist()
 
+        print "create restraint"
         self.saxs = IMP.isd2.SAXSRestraint(atoms, self.prof, self.sigma,
                                            self.gamma, self.cov, impsaxs.HEAVY_ATOMS)
 
+        print "done"
         self.rs.add_restraint(self.saxs)
         self.rs.set_weight(weight)
 

@@ -1740,10 +1740,12 @@ class JeffreysPrior():
 class SAXSISDRestraint():
 
     def __init__(self, model, hier, profile, weight=1):
-        global impsaxs, impisd2, tools
+        global impsaxs, impisd, impisd2, tools
         import IMP.saxs as impsaxs
+        import IMP.isd as impisd
         import IMP.isd2 as impisd2
         import IMP.pmi.tools as tools
+        from numpy import array,eye
 
         self.m = model
         self.hier = hier
@@ -1782,12 +1784,7 @@ class SAXSISDRestraint():
         gammahat = array([self.prof.get_intensity(i) / self.th.get_intensity(i)
                           for i in xrange(self.prof.size() - 1)]).mean()
         self.gamma = tools.SetupNuisance(
-            self.m,
-            gammahat,
-            0.01,
-            20,
-            True).get_particle(
-        )
+                self.m, gammahat, 0.01, 20, True).get_particle()
 
         # take identity covariance matrix for the start
         self.cov = eye(self.prof.size()).tolist()
@@ -1804,9 +1801,9 @@ class SAXSISDRestraint():
         #        'exp':prof,'th':tmp}
 
         self.rs2 = IMP.RestraintSet(self.m, 'jeffreys')
-        j1 = impisd2.JeffreysRestraint(self.sigma)
+        j1 = impisd.JeffreysRestraint(self.m, self.sigma)
         self.rs2.add_restraint(j1)
-        j2 = impisd2.JeffreysRestraint(self.gamma)
+        j2 = impisd.JeffreysRestraint(self.m, self.gamma)
         self.rs2.add_restraint(j2)
 
     def update_covariance_matrices(self, tau):

@@ -603,8 +603,10 @@ class HierarchyDatabase():
 
 
 def sublist_iterator(l,lmin=None,lmax=None):
-    #this iterator yields all sublists
-    #of length >= lmin and <= lmax
+    '''
+    this iterator yields all sublists
+    of length >= lmin and <= lmax
+    '''
     if lmin==None: lmin=0
     if lmax==None: lmax=len(l)
     n = len(l)+1
@@ -616,12 +618,19 @@ def flatten_list(l):
     return [item for sublist in l for item in sublist]
 
 def get_residue_indexes(hier):
+    '''
+    This "overloaded" function retrieves the residue indexes
+    for each particle which is an instance of Fragmen,Residue or Atom
+    '''
     if IMP.atom.Fragment.particle_is_instance(hier):
        resind=IMP.atom.Fragment(hier).get_residue_indexes()
     elif IMP.atom.Residue.particle_is_instance(hier):
        resind=[IMP.atom.Residue(hier).get_index()]
+    elif  IMP.atom.Atom.particle_is_instance(hier):
+       a=IMP.atom.Atom(hier)
+       resind=[IMP.atom.Residue(a.get_parent()).get_index()]
     else:
-       print "get_residue_indexes> input is not Fragment or Residue"
+       print "get_residue_indexes> input is not Fragment, Residue or Atom"
     return resind
 
 

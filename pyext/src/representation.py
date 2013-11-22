@@ -120,26 +120,7 @@ class SimplifiedModel():
 
         self.residuenamekey = IMP.kernel.StringKey("ResidueName")
 
-    def shuffle_configuration(self,bounding_box_length=300.,translate=True):
-        "shuffle configuration, used to restart the optimization"
-        "it only works if rigid bodies were initialized"
-        if len(self.rigid_bodies)==0:
-            print "MultipleStates: rigid bodies were not intialized"
-        hbbl=bounding_box_length/2
-        if 1:
-            ub = IMP.algebra.Vector3D(-hbbl,-hbbl,-hbbl)
-            lb = IMP.algebra.Vector3D( hbbl, hbbl, hbbl)
-            bb = IMP.algebra.BoundingBox3D(ub, lb)
-            for rb in self.rigid_bodies:
 
-                if translate==True: translation = IMP.algebra.get_random_vector_in(bb)
-                else: translation = (rb.get_x(), rb.get_y(), rb.get_z())
-                rotation = IMP.algebra.get_random_rotation_3d()
-                transformation = IMP.algebra.Transformation3D(rotation, translation)
-                rb.set_reference_frame(IMP.algebra.ReferenceFrame3D(transformation))
-            for fb in self.floppy_bodies:
-                translation = IMP.algebra.get_random_vector_in(bb)
-                IMP.core.XYZ(fb).set_coordinates(translation)
 
 
     def add_component_name(self,name,color=None):
@@ -465,7 +446,29 @@ class SimplifiedModel():
         IMP.atom.show_molecular_hierarchy(protein_h)
         return outhier
 
+    def add_component_hierarchy_clone(self,name,hierarchy):
+        '''
+        this function makes a copy of a hierarchy and append it to a 
+        component
+        '''
+        outhier=[]
+        protein_h=self.hier_dict[name]
+        hierclone=IMP.atom.create_clone(hierarchy)
+        hierclone.set_name(hierclone.get_name()+"_clone")
+        protein_h.add_child(hierclone)
+        outhier.append(hierclone)
+        
+        for p in IMP.atom.get_leaves(hierclone):
+           for kk in tools.get_residue_indexes(p):
+              self.hier_db.add_particles(name,kk,IMP.pmi.Resolution(p).get_resolution(),[p])
+        
+        return outhier
+
     def check_root(self,name,protein_h,resolution):
+        '''
+        checks whether the root hierarchy exists, and if not
+        suitably constructs it
+        '''
         if "Res:"+str(int(resolution)) not in self.hier_resolution[name]:
            root=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
            root.set_name(name+"_Res:"+str(int(resolution)))
@@ -473,12 +476,14 @@ class SimplifiedModel():
            protein_h.add_child(root)
 
     def coarse_hierarchy(self,name,start,end,resolutions,isnucleicacid,input_hierarchy,protein_h,type,color):
-        #this function generates all needed coarse grained layers
-        #name is the name of the protein
-        #resolutions is the list of resolutions
-        #protein_h is the root hierarchy
-        #input hierarchy is the hierarchy to coarse grain
-        #type is a string, typically "pdb" or "helix"
+        '''
+        this function generates all needed coarse grained layers
+        name is the name of the protein
+        resolutions is the list of resolutions
+        protein_h is the root hierarchy
+        input hierarchy is the hierarchy to coarse grain
+        type is a string, typically "pdb" or "helix"
+        '''
         outhiers=[]
 
         if (1 in resolutions) or (0 in resolutions):
@@ -600,6 +605,45 @@ class SimplifiedModel():
 
         return outhiers
 
+    def shuffle_configuration(self,bounding_box_length=300.,translate=True):
+        "shuffle configuration, used to restart the optimization"
+        "it only works if rigid bodies were initialized"
+        if len(self.rigid_bodies)==0:
+            print "MultipleStates: rigid bodies were not intialized"
+        hbbl=bounding_box_length/2
+        if 1:
+            ub = IMP.algebra.Vector3D(-hbbl,-hbbl,-hbbl)
+            lb = IMP.algebra.Vector3D( hbbl, hbbl, hbbl)
+            bb = IMP.algebra.BoundingBox3D(ub, lb)
+            for rb in self.rigid_bodies:
+
+                if translate==True: translation = IMP.algebra.get_random_vector_in(bb)
+                else: translation = (rb.get_x(), rb.get_y(), rb.get_z())
+                rotation = IMP.algebra.get_random_rotation_3d()
+                transformation = IMP.algebra.Transformation3D(rotation, translation)
+                rb.set_reference_frame(IMP.algebra.ReferenceFrame3D(transformation))
+            for fb in self.floppy_bodies:
+                translation = IMP.algebra.get_random_vector_in(bb)
+                IMP.core.XYZ(fb).set_coordinates(translation)
+
+    def translate_hierarchy(self,hierarchy,translation_vector):
+        '''
+        this will apply a translation to a hierarchy along the input vector
+        '''
+        rbs=set()
+        xyzs=set()
+        transformation=IMP.algebra.Transformation3D(IMP.algebra.Vector3D(translation_vector))
+        for p in IMP.atom.get_leaves(hierarchy): 
+           if IMP.core.RigidMember.particle_is_instance(p):
+              rb=IMP.core.RigidMember(p).get_rigid_body()
+              rbs.add(rb)
+           else:
+              xyzs.add(p)
+        for xyz in xyzs:
+           IMP.core.transform(IMP.core.XYZ(xyz),transformation)
+        for rb in rbs:
+           IMP.core.transform(rb,transformation)
+          
 
     def setup_component_geometry(self,name,color=None):
         if color==None:
@@ -734,6 +778,42 @@ class SimplifiedModel():
 
         self.m.update()
 
+
+
+    def create_amyloid_fibril_symmetry(self,maincopy,axial_copies,
+                longitudinal_copies,axis=(0,0,1),translation_value=4.8):
+        #still working on it!
+        from math import pi
+        
+        outhiers=[]
+        protein_h=self.hier_dict[maincopy]
+        mainparts=IMP.atom.get_leaves(protein_h)
+        
+        for ilc in range(longitudinal_copies):
+            for iac in range(axial_copies):
+                copyname=maincopy+"_a"+str(ilc)+"_l"+str(iac)
+                self.add_component_name(copyname,0.0)
+                for hier in protein_h.get_children():
+                    self.add_component_hierarchy_clone(copyname,hier)
+                copyhier=self.hier_dict[copyname]
+                outhiers.append(copyhier)
+                copyparts=IMP.atom.get_leaves(copyhier)
+                rotation3D=IMP.algebra.get_rotation_about_axis(IMP.algebra.Vector3D(axis), 2*pi/axial_copies*(float(iac)))
+                translation_vector=tuple([translation_value*float(ilc)*x for x in axis])
+                print translation_vector
+                translation=IMP.algebra.Vector3D(translation_vector)
+                sm=IMP.core.TransformationSymmetry(IMP.algebra.Transformation3D(rotation3D,translation))
+                lc=IMP.container.ListSingletonContainer(self.m)
+                for n,p in enumerate(mainparts):
+                    pc=copyparts[n]
+                    IMP.pmi.Symmetric.setup_particle(p,0)
+                    IMP.pmi.Symmetric.setup_particle(pc,1)
+                    IMP.core.Reference.setup_particle(pc,p)
+                    lc.add_particle(pc)
+                c=IMP.container.SingletonsConstraint(sm,None,lc)
+                self.m.add_score_state(c)
+                self.m.update()
+        return outhiers
 
 
     def link_components_to_rmf(self,rmfname,frameindex):

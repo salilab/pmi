@@ -789,7 +789,7 @@ class SimplifiedModel():
         protein_h=self.hier_dict[maincopy]
         mainparts=IMP.atom.get_leaves(protein_h)
         
-        for ilc in range(longitudinal_copies):
+        for ilc in range(-longitudinal_copies,longitudinal_copies+1):
             for iac in range(axial_copies):
                 copyname=maincopy+"_a"+str(ilc)+"_l"+str(iac)
                 self.add_component_name(copyname,0.0)
@@ -869,7 +869,8 @@ class SimplifiedModel():
         rb.set_name(name+"rigid_body")
         self.rigid_bodies.append(rb)
 
-    def set_super_rigid_body_from_hierarchies(self,hiers):
+    def set_super_rigid_body_from_hierarchies(self,hiers,axis=None):
+        #axis is the rotation axis for 2D rotation
         super_rigid_xyzs=set()
         super_rigid_rbs=set()
         name=""
@@ -883,7 +884,11 @@ class SimplifiedModel():
               else:
                  super_rigid_xyzs.add(p)
             print "set_rigid_body_from_hierarchies> adding %s to the rigid body" % hier.get_name()
-        self.super_rigid_bodies.append((super_rigid_xyzs,super_rigid_rbs))
+        if axis==None:
+           self.super_rigid_bodies.append((super_rigid_xyzs,super_rigid_rbs))
+        else:
+           #these will be 2D rotation SRB
+           self.super_rigid_bodies.append((super_rigid_xyzs,super_rigid_rbs,axis))
 
     def set_chain_of_super_rigid_bodies(self,hiers,lmin=None,lmax=None):
         '''

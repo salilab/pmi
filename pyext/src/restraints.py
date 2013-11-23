@@ -1900,13 +1900,14 @@ class GaussianEMRestraint():
         import IMP.pmi.tools as tools
 
         ## some parameters
-        self.sigmaissampled=False
+        self.sigmaissampled=True
         self.sigmamaxtrans=0.1
-        self.sigmamin=1.
+        self.sigmamin=0.01
         self.sigmamax=100.0
-        self.sigmainit=2.75
+        self.sigmainit=0.01
         self.cutoff_dist_for_container=10.0
         self.tabexp=True
+        self.label='none'
 
         ## setup target GMM
         self.m=densities[0].get_model()
@@ -1925,12 +1926,13 @@ class GaussianEMRestraint():
 
         ## create restraint
         print 'target',len(target_ps),'model',len(model_ps)
-        self.gaussianEM_restraint=IMP.isd2.GaussianEMRestraint(model_ps,target_ps,self.sigmaglobal,
-                                                               self.cutoff_dist_for_container,False,False)
+        self.gaussianEM_restraint=IMP.isd2.GaussianEMRestraint(model_ps,target_ps,
+                                                               self.sigmaglobal,
+                                                               self.cutoff_dist_for_container,
+                                                               False,False)
         print 'done setup'
         self.rs = IMP.RestraintSet(self.m,'GaussianEMRestraint')
         self.rs.add_restraint(self.gaussianEM_restraint)
-
 
     def set_label(self,label):
         self.label=label

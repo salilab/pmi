@@ -643,7 +643,20 @@ class SimplifiedModel():
            IMP.core.transform(IMP.core.XYZ(xyz),transformation)
         for rb in rbs:
            IMP.core.transform(rb,transformation)
-          
+    
+    def translate_hierarchies(self,hierarchies,translation_vector):
+        for h in hierarchies: self.translate_hierarchy(h,translation_vector)
+        
+    def translate_hierarchies_to_reference_frame(self,hierarchies):
+        xc=0;yc=0;zc=0
+        nc=0
+        for h in hierarchies:
+            for p in IMP.atom.get_leaves(h):
+                coor=IMP.core.XYZ(p).get_coordinates()
+                nc+=1
+                xc+=coor[0];yc+=coor[1];zc+=coor[2] 
+        xc=xc/nc;yc=yc/nc;zc=zc/nc
+        self.translate_hierarchies(hierarchies,(-xc,-yc,-zc))
 
     def setup_component_geometry(self,name,color=None):
         if color==None:

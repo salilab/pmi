@@ -432,9 +432,9 @@ class SimplifiedModel():
             density_particles=[IMP.Particle(self.m) for i in xrange(num_components)]
             igmm=IMP.isd2.gmm_tools.read_gmm_txt(density_particles,inputfile)
             for p in density_particles:
-                IMP.core.XYZR.setup_particle(p,1.0)
+                dec=IMP.core.XYZR.setup_particle(p,2.0)
                 IMP.atom.Mass.setup_particle(p,IMP.isd2.Gaussian(p).get_weight())
-
+        
         s0=IMP.atom.Fragment.setup_particle(IMP.Particle(self.m))
         s0.set_name('_'.join([h.get_name() for h in hierarchy]))
         self.hier_resolution[name]["Densities"].add_child(s0)
@@ -443,9 +443,49 @@ class SimplifiedModel():
         for nps,p in enumerate(density_particles):
             s0.add_child(p)
             p.set_name(s0.get_name()+'_gaussian_%i'%nps)
-        IMP.atom.show_molecular_hierarchy(protein_h)
+
         return outhier
 
+    def get_component_density(self,name):
+        return self.hier_resolution[name]["Densities"]
+    
+    def add_component_density_representation(self,name,hierarchy):
+        '''
+        this function creates a bead representation for the gaussian so that 
+        it can be displayed in chimera
+        '''
+        outhier=[]
+        protein_h=self.hier_dict[name]
+
+        if "Representations" not in self.hier_resolution[name]:
+           root=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
+           root.set_name("Representations")
+           self.hier_resolution[name]["Representations"]=root
+           protein_h.add_child(root)
+
+        #construct representation beads to be displayed in chimera
+        representation_particles=[]
+        for p in IMP.atom.get_leaves(hierarchy):
+            rp=IMP.kernel.Particle(self.m)
+            dec=IMP.core.XYZR.setup_particle(rp)
+            dec.set_coordinates(IMP.core.XYZ(p).get_coordinates())
+            dec.set_radius(max(IMP.isd2.Gaussian(p).get_radii()))
+            representation_particles.append(rp)        
+
+        s0=IMP.atom.Fragment.setup_particle(IMP.Particle(self.m))
+        s0.set_name(hierarchy.get_name())
+        self.hier_resolution[name]["Representations"].add_child(s0)
+        outhier.append(s0)
+
+        for nps,rp in enumerate(representation_particles):
+           rp.set_name(s0.get_name()+'_representation_%i'%nps)
+           s0.add_child(rp)
+
+        return outhier
+    
+    def get_component_density_representation(self,name):
+        return self.hier_resolution[name]["Representations"]
+    
     def add_component_hierarchy_clone(self,name,hierarchy):
         '''
         this function makes a copy of a hierarchy and append it to a 

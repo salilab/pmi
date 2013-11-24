@@ -622,6 +622,7 @@ def get_residue_indexes(hier):
     This "overloaded" function retrieves the residue indexes
     for each particle which is an instance of Fragmen,Residue or Atom
     '''
+    resind=[]
     if IMP.atom.Fragment.particle_is_instance(hier):
        resind=IMP.atom.Fragment(hier).get_residue_indexes()
     elif IMP.atom.Residue.particle_is_instance(hier):

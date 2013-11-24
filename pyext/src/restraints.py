@@ -116,7 +116,6 @@ class ExcludedVolumeSphere():
         for hier in hierarchies:
             lsa.add_particles(IMP.atom.get_leaves(hier))
         evr = IMP.core.ExcludedVolumeRestraint(lsa, self.kappa)
-
         self.rs.add_restraint(evr)
 
     def add_excluded_particle_pairs(self, excluded_particle_pairs):
@@ -2346,13 +2345,14 @@ class GaussianEMRestraint():
         import IMP.pmi.tools as tools
 
         # some parameters
-        self.sigmaissampled = False
+        self.sigmaissampled = True
         self.sigmamaxtrans = 0.1
-        self.sigmamin = 1.
+        self.sigmamin = 0.001
         self.sigmamax = 100.0
-        self.sigmainit = 2.75
+        self.sigmainit = 0.001
         self.cutoff_dist_for_container = 10.0
         self.tabexp = True
+        self.label="None"
 
         # setup target GMM
         self.m = densities[0].get_model()

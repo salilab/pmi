@@ -116,7 +116,6 @@ class ExcludedVolumeSphere():
         for hier in hierarchies:
             lsa.add_particles(IMP.atom.get_leaves(hier))
         evr = IMP.core.ExcludedVolumeRestraint(lsa, self.kappa)
-
         self.rs.add_restraint(evr)
 
     def add_excluded_particle_pairs(self, excluded_particle_pairs):
@@ -2008,12 +2007,15 @@ class SAXSISDRestraint():
         self.gamma = tools.SetupNuisance(
                 self.m, gammahat, 0.01, 20, True).get_particle()
 
+        self.w = tools.SetupWeight(self.m).get_particle()
+
         # take identity covariance matrix for the start
         self.cov = eye(self.prof.size()).tolist()
 
         print "create restraint"
-        self.saxs = IMP.isd2.SAXSRestraint(atoms, self.prof, self.sigma,
-                                           self.gamma, self.cov, impsaxs.HEAVY_ATOMS)
+        self.saxs = IMP.isd2.SAXSRestraint(self.prof, self.sigma,
+                                           self.gamma, self.w)
+        self.saxs.add_scatterer(atoms, self.cov, impsaxs.HEAVY_ATOMS)
 
         print "done"
         self.rs.add_restraint(self.saxs)
@@ -2358,6 +2360,7 @@ class GaussianEMRestraint():
         self.sigmainit = 0.02
         self.cutoff_dist_for_container = 10.0
         self.tabexp = True
+        self.label="None"
 
         # setup target GMM
         self.m = densities[0].get_model()

@@ -45,10 +45,9 @@ class SetupNuisance():
 class SetupWeight():
 
     def __init__(self,m,isoptimized=True):
-        global impisd2
-        import IMP.isd2 as impisd2
+        import IMP.isd
         pw=IMP.Particle(m)
-        self.weight=impisd2.Weight.setup_particle(pw)
+        self.weight=IMP.isd.Weight.setup_particle(pw)
         self.weight.set_weights_are_optimized(True)
 
     def get_particle(self):
@@ -622,6 +621,7 @@ def get_residue_indexes(hier):
     This "overloaded" function retrieves the residue indexes
     for each particle which is an instance of Fragmen,Residue or Atom
     '''
+    resind=[]
     if IMP.atom.Fragment.particle_is_instance(hier):
        resind=IMP.atom.Fragment(hier).get_residue_indexes()
     elif IMP.atom.Residue.particle_is_instance(hier):

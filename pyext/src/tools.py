@@ -45,10 +45,9 @@ class SetupNuisance():
 class SetupWeight():
 
     def __init__(self,m,isoptimized=True):
-        global impisd2
-        import IMP.isd2 as impisd2
+        import IMP.isd
         pw=IMP.Particle(m)
-        self.weight=impisd2.Weight.setup_particle(pw)
+        self.weight=IMP.isd.Weight.setup_particle(pw)
         self.weight.set_weights_are_optimized(True)
 
     def get_particle(self):

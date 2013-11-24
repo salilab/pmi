@@ -2003,12 +2003,15 @@ class SAXSISDRestraint():
         self.gamma = tools.SetupNuisance(
                 self.m, gammahat, 0.01, 20, True).get_particle()
 
+        self.w = tools.SetupWeight(self.m).get_particle()
+
         # take identity covariance matrix for the start
         self.cov = eye(self.prof.size()).tolist()
 
         print "create restraint"
-        self.saxs = IMP.isd2.SAXSRestraint(atoms, self.prof, self.sigma,
-                                           self.gamma, self.cov, impsaxs.HEAVY_ATOMS)
+        self.saxs = IMP.isd2.SAXSRestraint(self.prof, self.sigma,
+                                           self.gamma, self.w)
+        self.saxs.add_scatterer(atoms, self.cov, impsaxs.HEAVY_ATOMS)
 
         print "done"
         self.rs.add_restraint(self.saxs)

@@ -376,23 +376,39 @@ def get_drmsd(prot0, prot1):
 
     #-------------------------------
 
-
-def get_residue_index_and_chain_from_particle(p):
-    rind=IMP.atom.Residue(IMP.atom.Atom(p).get_parent()).get_index()
-    c=IMP.atom.Residue(IMP.atom.Atom(p).get_parent()).get_parent()
-    cid=IMP.atom.Chain(c).get_id()
-    return rind,cid
-
+def get_ids_from_fasta_file(fastafile):
+    ids=[]
+    ff=open(fastafile,"r")
+    for l in ff:
+        if l[0]==">": ids.append(l[1:-1])
+    return ids
+ 
+def get_residue_position(hier,resindex):
+    sel=IMP.atom.Selection(hier,residue_index=resindex,
+                               atom_type=IMP.atom.AT_CA)
+    '''
+    this function works with plain hierarchies, as read from the pdb,
+    no multi-scale hierarchies
+    '''
+    p=sel.get_selected_particles()
+    if len(p)==1:
+       return IMP.core.XYZ(p[0]).get_coordinates()
+    else:
+       print "get_position_residue: got multiple (or zero) residues for hierarchy %s and residue %i" % (hier,resindex)
+       print "the list of particles is",[pp.get_name() for pp in p]
+       exit()
+    
 def get_position_terminal_residue(hier,terminus="C",resolution=1):
-    #this function get the xyz position of the
-    #C or N terminal residue of a hierarchy, given the resolution.
-    #the argument of terminus can be either N or C
-
+    '''
+    this function get the xyz position of the
+    C or N terminal residue of a hierarchy, given the resolution.
+    the argument of terminus can be either N or C
+    '''
     termresidue=None
-    termarticle=None
+    termparticle=None
     for p in IMP.atom.get_leaves(hier):
         if IMP.pmi.Resolution(p).get_resolution()==resolution:
-           residues=IMP.atom.Fragment(p).get_residue_indexes()
+           residues=IMP.pmi.tools.get_residue_indexes(p)
            if terminus=="C":
                if max(residues)>=termresidue and termresidue!=None:
                   termresidue=max(residues)
@@ -409,39 +425,43 @@ def get_position_terminal_residue(hier,terminus="C",resolution=1):
                   termparticle=p
            else:
                print "get_position_terminal_residue> terminus argument should be either N or C"
+               exit()
 
     return IMP.core.XYZ(termparticle).get_coordinates()
 
-
-def select_calpha_or_residue(prot,chain,resid,ObjectName="None:",SelectResidue=False):
-    #use calphas
-    p=None
-    s=IMP.atom.Selection(prot, chains=chain,
-         residue_index=resid, atom_type=IMP.atom.AT_CA)
-
-    ps=s.get_selected_particles()
-    #check if the calpha selection is empty
-    if ps:
-        if len(ps)==1:
-            p=ps[0]
+def get_residue_gaps_in_hierarchy(hierarchy,start,end):
+    '''
+    returns the residue index gaps and contiguous segments as tuples given the hierarchy, the first 
+    residue and the last residue indexes. The list is organized as 
+    [[1,100,"cont"],[101,120,"gap"],[121,200,"cont"]]
+    '''
+    gaps=[]
+    rindexgap=start
+    rindexcont=start
+    for rindex in range(start,end+1):
+        sel=IMP.atom.Selection(hierarchy,residue_index=rindex,
+                               atom_type=IMP.atom.AT_CA)
+        if len(sel.get_selected_particles())==0:
+           if rindexgap==rindex-1:
+              #residue is contiguous with the previously discovered gap
+              gaps[-1][1]+=1
+           else:
+              #residue is not contiguous with the previously discovered gap
+              #hence create a new gap tuple
+              gaps.append([rindex,rindex,"gap"])
+           #update the index of the last residue gap 
+           rindexgap=rindex
         else:
-            print ObjectName+" multiple residues selected for selection residue %s chain %s " % (resid,chain)
-    else:
-        #use the residue, in case of simplified representation
-        s=IMP.atom.Selection(prot, chains=chain,
-            residue_index=resid)
-        ps=s.get_selected_particles()
-        #check if the residue selection is empty
-        if ps:
-            if len(ps)==1:
-                p=ps[0]
-            else:
-                print ObjectName+" multiple residues selected for selection residue %s chain %s " % (resid,chain)
-
-        else:
-            print ObjectName+" residue %s chain %s does not exist" % (resid,chain)
-    return p
-
+           if rindexcont==rindex-1:
+              #residue is contiguous with the previously discovered gap
+              gaps[-1][1]+=1
+           else:
+              #residue is not contiguous with the previously discovered gap
+              #hence create a new gap tuple
+              gaps.append([rindex,rindex,"cont"])
+           #update the index of the last residue gap 
+           rindexcont=rindex           
+    return gaps
 
 class map():
       def __init__(self):
@@ -600,6 +620,7 @@ class HierarchyDatabase():
                 for p in self.get_particles(name,resn,resolution):
                     print "--------", p.get_name()
 
+      
 
 def sublist_iterator(l,lmin=None,lmax=None):
     '''
@@ -631,6 +652,7 @@ def get_residue_indexes(hier):
        resind=[IMP.atom.Residue(a.get_parent()).get_index()]
     else:
        print "get_residue_indexes> input is not Fragment, Residue or Atom"
+       exit()
     return resind
 
 

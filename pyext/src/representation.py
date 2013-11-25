@@ -120,9 +120,6 @@ class SimplifiedModel():
 
         self.residuenamekey = IMP.kernel.StringKey("ResidueName")
 
-
-
-
     def add_component_name(self,name,color=None):
         protein_h = IMP.atom.Molecule.setup_particle(IMP.Particle(self.m))
         protein_h.set_name(name)
@@ -136,26 +133,33 @@ class SimplifiedModel():
     def get_component_names(self):
         return self.hier_dict.keys()
 
-    def add_component_sequence(self,name,filename,format="FASTA"):
+    def add_component_sequence(self,name,filename,id=None,format="FASTA"):
         from Bio import SeqIO
         handle = open(filename, "rU")
         record_dict = SeqIO.to_dict(SeqIO.parse(handle, "fasta"))
         handle.close()
-        length=len(record_dict[name].seq)
-        self.sequence_dict[name]=str(record_dict[name].seq)
+        if id==None: id=name
+        length=len(record_dict[id].seq)
+        self.sequence_dict[name]=str(record_dict[id].seq)
         self.elements[name].append((length,length," ","end"))
 
-    def add_pdb_and_intervening_beads(self,name,pdbname,chain,resolutions,resrange,beadsize,
-                                      color=None,pdbresrange=None,offset=0,show=False,isnucleicacid=False,
+    def autobuild_pdb_and_intervening_beads(self,name,pdbname,chain,
+                                      resolutions=None,resrange=None,beadsize=20,
+                                      color=None,pdbresrange=None,offset=0,
+                                      show=False,isnucleicacid=False,
                                       attachbeads=False):
         outhiers=[]
 
         if color==None:
            color=self.color_dict[name]
-
+        
+        if resolutions==None:
+           resolutions=[1]
+        print "autobuild_pdb_and_intervening_beads: constructing %s from pdb %s and chain %s" % (name,pdbname,str(chain))
+        
         #get the initial and end residues of the pdb
         t=IMP.atom.read_pdb( pdbname, self.m,
-        IMP.atom.AndPDBSelector(IMP.atom.ChainPDBSelector(chain),IMP.atom.ATOMPDBSelector()))
+        IMP.atom.AndPDBSelector(IMP.atom.ChainPDBSelector(chain),IMP.atom.CAlphaPDBSelector()))
 
         #find start and end indexes
 
@@ -165,44 +169,50 @@ class SimplifiedModel():
         if pdbresrange!=None:
            if pdbresrange[0]>start: start=pdbresrange[0]
            if pdbresrange[1]<end:   end=pdbresrange[1]
-
-        start=start+offset
-        end  =end+offset
-
-        #attach floppy beads to the start or end of PDB structure
-        initcoords=[None,None]
-        if attachbeads==True:
-            firstca= IMP.core.XYZ(t.get_children()[0].get_children()[0].get_children()[0]).get_coordinates()
-            lastca=  IMP.core.XYZ(t.get_children()[0].get_children()[-1].get_children()[0]).get_coordinates()
-            initcoords=[firstca,lastca]
-
+        
+        gaps=tools.get_residue_gaps_in_hierarchy(t,start,end)
+        xyznter=tools.get_residue_position(t,start)
+        xyzcter=tools.get_residue_position(t,end)
+        
+        #check if resrange was defined, otherwise 
+        #use the sequence, or the pdb resrange
+        if resrange==None:
+           if name in self.sequence_dict:
+              resrange=(1,len(self.sequence_dict[name]))
+           else:
+              resrange=(start+offset,end+offset)
+        
         #add pre-beads
-        for i in range(resrange[0],start-1,beadsize)[0:-1]:
-            outhiers+=self.add_component_beads(name,[(i,i+beadsize-1)],colors=[color],incoord=initcoords[0])
+        print "autobuild_pdb_and_intervening_beads: constructing fragment %s as a bead" % (str((resrange[0],start-1)))
+        outhiers+=self.add_component_necklace(name,resrange[0],
+                                              start-1,beadsize,incoord=xyznter)        
+        
+        #construct pdb fragments and intervening beads
+        for g in gaps:
+            first=g[0]+offset
+            last=g[1]+offset
+            if g[2]=="cont":
+               print "autobuild_pdb_and_intervening_beads: constructing fragment %s from pdb" % (str((first,last)))
+               outhiers+=self.add_component_pdb(name,pdbname,
+                                                chain,resolutions=resolutions, 
+                                                color=color,cacenters=True,
+                                                resrange=(first,last),
+                                                offset=offset,isnucleicacid=isnucleicacid)
+            elif g[2]=="gap":
+               print "autobuild_pdb_and_intervening_beads: constructing fragment %s as a bead" % (str((first,last)))
+               parts=self.hier_db.get_particles_at_closest_resolution(name,first-1,1)
+               xyz=IMP.core.XYZ(parts[0]).get_coordinates()
+               outhiers+=self.add_component_necklace(name,first,last,beadsize,incoord=xyz)
+        
+        print "autobuild_pdb_and_intervening_beads: constructing fragment %s as a bead" % (str((end+1,resrange[1])))
+        outhiers+=self.add_component_necklace(name,end+1,
+                                              resrange[1],beadsize,incoord=xyzcter)
 
-        if resrange[0]<start-1:
-           j=range(resrange[0],start-1,beadsize)[-1]
-           outhiers+=self.add_component_beads(name,[(j,start-1)],colors=[color],incoord=initcoords[0])
-
-        outhiers+=self.add_component_pdb(name,pdbname,chain,resolutions=resolutions, color=color,
-                               resrange=resrange,offset=offset,isnucleicacid=isnucleicacid)
-
-        #add after-beads
-        for i in range(end+1,resrange[1],beadsize)[0:-1]:
-            print "adding sphere from %d to %d , beadsize %d" % (i,i+beadsize-1,beadsize)
-            outhiers+=self.add_component_beads(name,[(i,i+beadsize-1)],colors=[color],incoord=initcoords[1])
-
-        if end+1<resrange[1]:
-           j=range(end+1,resrange[1],beadsize)[-1]
-           self.add_component_beads(name,[(j,resrange[1])],colors=[color],incoord=initcoords[1])
-
-        #IMP.atom.show_molecular_hierarchy(self.hier_dict[name])
         return outhiers
 
 
-
     def add_component_pdb(self,name,pdbname,chain,resolutions,color=None,resrange=None,offset=0,
-                                   cacenters=False,show=False,isnucleicacid=False,readnonwateratoms=False):
+                                   cacenters=True,show=False,isnucleicacid=False,readnonwateratoms=False):
 
         '''
         resrange specify the residue range to extract from the pdb
@@ -334,7 +344,10 @@ class SimplifiedModel():
             if ds_frag[0]==ds_frag[1]:
                #if the bead represent a single residue
                if name in self.sequence_dict:
-                  rtstr=self.onetothree[self.sequence_dict[name][first-1]]
+                  try:
+                     rtstr=self.onetothree[self.sequence_dict[name][ds_frag[0]]]
+                  except:
+                     rtstr="UNK"
                   rt=IMP.atom.ResidueType(rtstr)
                else:
                   rt=IMP.atom.ResidueType("ALA")
@@ -636,13 +649,18 @@ class SimplifiedModel():
         return outhiers
 
 
-    def add_component_necklace(self,name,begin,end,length):
-        outhiers=[]
-
-        for i in range(begin,end,length)[0:-1]:
-           outhiers+=self.add_component_beads(name,[(i,i+length-1)])
-        outhiers+=self.add_component_beads(name,[(i+length,end)])
-
+    def add_component_necklace(self,name,begin,end,length,incoord=None):
+        '''
+        generates a string of beads with given length
+        '''
+        outhiers=[]        
+        if length<end-begin+1:
+          i=begin
+          for i in range(begin,end,length)[0:-1]:
+             outhiers+=self.add_component_beads(name,[(i,i+length-1)],incoord=incoord)
+          outhiers+=self.add_component_beads(name,[(i+length,end)],incoord=incoord)
+        else:
+          outhiers+=self.add_component_beads(name,[(begin,end)],incoord=incoord)
         return outhiers
 
     def shuffle_configuration(self,bounding_box_length=300.,translate=True):
@@ -787,6 +805,16 @@ class SimplifiedModel():
         self.linker_restraints.add_restraint(unmodeledregions_cr)
         self.sortedsegments_cr_dict[name]=sortedsegments_cr
         self.unmodeledregions_cr_dict[name]=unmodeledregions_cr
+    
+    def optimize_floppy_bodies(self,nsteps,temperature=1.0):
+        import IMP.pmi.samplers
+        pts=tools.ParticleToSampleList()
+        for n,fb in enumerate(self.floppy_bodies):
+            pts.add_particle(fb,"Floppy_Bodies",1.0,"Floppy_Body_"+str(n))
+        mc = IMP.pmi.samplers.MonteCarlo(self.m,[pts], temperature)
+        print "optimize_floppy_bodies: optimizing %i floppy bodies" % len(self.floppy_bodies)
+        mc.run(nsteps)
+
 
     def create_rotational_symmetry(self,maincopy,copies):
         #still working on it!

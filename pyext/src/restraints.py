@@ -1485,11 +1485,11 @@ class ISDCrossLinkMS():
                 str(resid1) + ":" + chain1 + "_" + str(resid2) + ":" + \
                 chain2 + "-" + str(rad1) + "-" + str(rad2) + "-" + str(psi)
             output["ISDCrossLinkMS_Score_" + crosslinker + "_" +
-                   label] = str(-self.log(ln.unprotected_evaluate(None)))
+                   label+"_"+self.label] = str(-self.log(ln.unprotected_evaluate(None)))
             d0 = IMP.core.XYZ(p0)
             d1 = IMP.core.XYZ(p1)
             output["ISDCrossLinkMS_Distance_" +
-                   label] = str(IMP.core.get_distance(d0, d1))
+                   label+"_"+self.label] = str(IMP.core.get_distance(d0, d1))
 
         for psiindex in self.psi_dictionary:
             output["ISDCrossLinkMS_Psi_" +

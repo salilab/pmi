@@ -31,27 +31,7 @@ class SimplifiedModel():
 
     How to use the SimplifiedModel class (typical use):
 
-
-
-    m = IMP.Model()
-    simo = representation.SimplifiedModel(m,upperharmonic=
-                               True,disorderedlength=False)
-
-    simo.add_component_name("prot1")
-    simo.add_component_beads("prot1",[(1,31)],colors=[0.0])
-    simo.add_component_pdb("prot1",'prot1.1.pdb', "A",
-                 resolutions=[1,10], color=0.0, offset=-39)
-    simo.add_component_beads("prot1",[(131,145)],colors=[0.0])
-    simo.add_component_pdb("prot1",'prot1.2.pdb', "A",
-                             resolutions=[1,10], color=0.0)
-    simo.add_component_beads("prot1",[(626,635)],colors=[0.0])
-
-    simo.setup_component_sequence_connectivity("prot1")
-    simo.set_rigid_bodies([("prot1",(30,130))])
-    simo.set_rigid_bodies([("prot1",(146,625))])
-    simo.set_floppy_bodies()
-    simo.shuffle_configuration()
-
+    see test/test_hierarchy_contruction.py
     '''
 
     def __init__(self,m,upperharmonic=True,disorderedlength=False):
@@ -166,29 +146,25 @@ class SimplifiedModel():
         start = IMP.atom.Residue(t.get_children()[0].get_children()[0]).get_index()
         end   = IMP.atom.Residue(t.get_children()[0].get_children()[-1]).get_index()
 
-        if pdbresrange!=None:
-           if pdbresrange[0]>start: start=pdbresrange[0]
-           if pdbresrange[1]<end:   end=pdbresrange[1]
-        
-        gaps=tools.get_residue_gaps_in_hierarchy(t,start,end)
-        xyznter=tools.get_residue_position(t,start)
-        xyzcter=tools.get_residue_position(t,end)
-        
         #check if resrange was defined, otherwise 
         #use the sequence, or the pdb resrange
+
         if resrange==None:
            if name in self.sequence_dict:
               resrange=(1,len(self.sequence_dict[name]))
            else:
               resrange=(start+offset,end+offset)
+        else:
+           start=resrange[0]-offset
+           end=resrange[1]-offset
+ 
+        gaps=tools.get_residue_gaps_in_hierarchy(t,resrange[0],resrange[1])
+        xyznter=tools.get_closest_residue_position(t,start,terminus="N")
+        xyzcter=tools.get_closest_residue_position(t,end,terminus="C")      
         
-        #add pre-beads
-        print "autobuild_pdb_and_intervening_beads: constructing fragment %s as a bead" % (str((resrange[0],start-1)))
-        outhiers+=self.add_component_necklace(name,resrange[0],
-                                              start-1,beadsize,incoord=xyznter)        
         
         #construct pdb fragments and intervening beads
-        for g in gaps:
+        for n,g in enumerate(gaps):
             first=g[0]+offset
             last=g[1]+offset
             if g[2]=="cont":
@@ -198,11 +174,16 @@ class SimplifiedModel():
                                                 color=color,cacenters=True,
                                                 resrange=(first,last),
                                                 offset=offset,isnucleicacid=isnucleicacid)
-            elif g[2]=="gap":
+            elif g[2]=="gap" and n>0:
                print "autobuild_pdb_and_intervening_beads: constructing fragment %s as a bead" % (str((first,last)))
                parts=self.hier_db.get_particles_at_closest_resolution(name,first-1,1)
                xyz=IMP.core.XYZ(parts[0]).get_coordinates()
                outhiers+=self.add_component_necklace(name,first,last,beadsize,incoord=xyz)
+
+            elif g[2]=="gap" and n==0:
+               #add pre-beads
+               print "autobuild_pdb_and_intervening_beads: constructing fragment %s as a bead" % (str((first,last)))
+               outhiers+=self.add_component_necklace(name,first,last,beadsize,incoord=xyznter)
         
         print "autobuild_pdb_and_intervening_beads: constructing fragment %s as a bead" % (str((end+1,resrange[1])))
         outhiers+=self.add_component_necklace(name,end+1,

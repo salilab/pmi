@@ -383,18 +383,30 @@ def get_ids_from_fasta_file(fastafile):
         if l[0]==">": ids.append(l[1:-1])
     return ids
  
-def get_residue_position(hier,resindex):
-    sel=IMP.atom.Selection(hier,residue_index=resindex,
-                               atom_type=IMP.atom.AT_CA)
+def get_closest_residue_position(hier,resindex,terminus="N"):
     '''
     this function works with plain hierarchies, as read from the pdb,
     no multi-scale hierarchies
-    '''
-    p=sel.get_selected_particles()
+    '''    
+    p=[]
+    niter=0
+    while len(p)==0:
+       niter+=1
+       sel=IMP.atom.Selection(hier,residue_index=resindex,
+                               atom_type=IMP.atom.AT_CA)
+
+       if terminus=="N": resindex+=1
+       if terminus=="C": resindex-=1
+       
+       if niter>=10000: 
+          print "get_closest_residue_position: exiting while loop without result"
+          break
+       p=sel.get_selected_particles() 
+       
     if len(p)==1:
        return IMP.core.XYZ(p[0]).get_coordinates()
     else:
-       print "get_position_residue: got multiple (or zero) residues for hierarchy %s and residue %i" % (hier,resindex)
+       print "get_closest_residue_position: got multiple residues for hierarchy %s and residue %i" % (hier,resindex)
        print "the list of particles is",[pp.get_name() for pp in p]
        exit()
     

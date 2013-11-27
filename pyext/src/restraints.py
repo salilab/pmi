@@ -2010,7 +2010,7 @@ class SAXSISDRestraint():
         gammahat = array([self.prof.get_intensity(i) / self.th.get_intensity(i)
                           for i in xrange(self.prof.size() - 1)]).mean()
         self.gamma = IMP.pmi.tools.SetupNuisance(
-                self.m, gammahat, 0.01, 20, True).get_particle()
+                self.m, gammahat, 1e-12, 1e8, True).get_particle()
 
         self.w = IMP.pmi.tools.SetupWeight(self.m).get_particle()
 
@@ -2030,9 +2030,7 @@ class SAXSISDRestraint():
         #        'exp':prof,'th':tmp}
 
         self.rs2 = IMP.RestraintSet(self.m, 'jeffreys')
-        j1 = impisd.JeffreysRestraint(self.m, self.sigma)
-        self.rs2.add_restraint(j1)
-        j2 = impisd.JeffreysRestraint(self.m, self.gamma)
+        j2 = IMP.isd.JeffreysRestraint(self.m, self.gamma)
         self.rs2.add_restraint(j2)
 
     def update_covariance_matrices(self, tau):

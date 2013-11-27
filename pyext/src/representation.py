@@ -496,15 +496,19 @@ class SimplifiedModel():
         psmain=IMP.atom.get_leaves(hierarchy)
         psclone=IMP.atom.get_leaves(hierclone)
         
+        #copying attributes        
         for n,pmain in enumerate(psmain):
            pclone=psclone[n]
-           resolution=IMP.pmi.Resolution(pmain).get_resolution()
-           IMP.pmi.Resolution.setup_particle(pclone,resolution)
-           radius=IMP.core.XYZR(pclone).get_radius()
-           IMP.pmi.Uncertainty.setup_particle(pclone,radius)
-           for kk in tools.get_residue_indexes(pclone):
-              self.hier_db.add_particles(name,kk,IMP.pmi.Resolution(pclone).get_resolution(),[pclone])
-        
+           if IMP.pmi.Resolution.particle_is_instance(pmain):
+              resolution=IMP.pmi.Resolution(pmain).get_resolution()
+              IMP.pmi.Resolution.setup_particle(pclone,resolution)
+              for kk in tools.get_residue_indexes(pclone):
+                 self.hier_db.add_particles(name,kk,IMP.pmi.Resolution(pclone).get_resolution(),[pclone])
+              
+           if IMP.pmi.Uncertainty.particle_is_instance(pmain):              
+              uncertainty=IMP.pmi.Uncertainty(pmain).get_resolution()
+              IMP.pmi.Uncertainty.setup_particle(pclone,uncertainty)
+
         return outhier
 
     def check_root(self,name,protein_h,resolution):

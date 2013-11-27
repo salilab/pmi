@@ -1960,14 +1960,13 @@ class JeffreysPrior():
 
 class SAXSISDRestraint():
 
-    global impsaxs, impisd, impisd2, tools
-    import IMP.saxs as impsaxs
-    import IMP.isd as impisd
-    import IMP.isd2 as impisd2
-    import IMP.pmi.tools as tools
+    import IMP.saxs 
+    import IMP.isd 
+    import IMP.isd2 
+    import IMP.pmi.tools
 
     def __init__(self, model, hier, profile, weight=1,
-            ff_type=impsaxs.HEAVY_ATOMS):
+            ff_type=IMP.saxs.HEAVY_ATOMS):
 
         from numpy import array,eye
         self.m = model
@@ -1977,7 +1976,7 @@ class SAXSISDRestraint():
 
         self.sigmamaxtrans = 0.05
         self.gammamaxtrans = 0.05
-        self.prof = impsaxs.Profile(profile)
+        self.prof = IMP.saxs.Profile(profile)
 
         atoms = []
 
@@ -1986,7 +1985,7 @@ class SAXSISDRestraint():
             atoms += IMP.atom.get_leaves(h)
 
         # sigma nuisance
-        self.sigma = tools.SetupNuisance(
+        self.sigma = IMP.pmi.tools.SetupNuisance(
             self.m,
             10.0,
             0.00001,
@@ -2002,14 +2001,18 @@ class SAXSISDRestraint():
         
         print len(atoms)
         
+        print ff_type
+        
+        for a in atoms: print IMP.atom.Residue(a).get_residue_type()
+        
         self.th.calculate_profile(atoms, ff_type)
         print "setup gamma"
         gammahat = array([self.prof.get_intensity(i) / self.th.get_intensity(i)
                           for i in xrange(self.prof.size() - 1)]).mean()
-        self.gamma = tools.SetupNuisance(
+        self.gamma = IMP.pmi.tools.SetupNuisance(
                 self.m, gammahat, 0.01, 20, True).get_particle()
 
-        self.w = tools.SetupWeight(self.m).get_particle()
+        self.w = IMP.pmi.tools.SetupWeight(self.m).get_particle()
 
         # take identity covariance matrix for the start
         self.cov = eye(self.prof.size()).tolist()

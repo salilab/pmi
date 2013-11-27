@@ -1960,14 +1960,16 @@ class JeffreysPrior():
 
 class SAXSISDRestraint():
 
-    def __init__(self, model, hier, profile, weight=1):
-        global impsaxs, impisd, impisd2, tools
-        import IMP.saxs as impsaxs
-        import IMP.isd as impisd
-        import IMP.isd2 as impisd2
-        import IMP.pmi.tools as tools
-        from numpy import array,eye
+    global impsaxs, impisd, impisd2, tools
+    import IMP.saxs as impsaxs
+    import IMP.isd as impisd
+    import IMP.isd2 as impisd2
+    import IMP.pmi.tools as tools
 
+    def __init__(self, model, hier, profile, weight=1,
+            ff_type=impsaxs.HEAVY_ATOMS):
+
+        from numpy import array,eye
         self.m = model
         self.hier = hier
         self.label = "None"
@@ -2000,7 +2002,7 @@ class SAXSISDRestraint():
         
         print len(atoms)
         
-        self.th.calculate_profile(atoms, impsaxs.HEAVY_ATOMS)
+        self.th.calculate_profile(atoms, ff_type)
         print "setup gamma"
         gammahat = array([self.prof.get_intensity(i) / self.th.get_intensity(i)
                           for i in xrange(self.prof.size() - 1)]).mean()
@@ -2015,7 +2017,7 @@ class SAXSISDRestraint():
         print "create restraint"
         self.saxs = IMP.isd2.SAXSRestraint(self.prof, self.sigma,
                                            self.gamma, self.w)
-        self.saxs.add_scatterer(atoms, self.cov, impsaxs.HEAVY_ATOMS)
+        self.saxs.add_scatterer(atoms, self.cov, ff_type)
 
         print "done"
         self.rs.add_restraint(self.saxs)

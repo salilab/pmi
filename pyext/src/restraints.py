@@ -2355,7 +2355,7 @@ class GaussianEMRestraint():
         self.label="None"
         self.sigmaissampled = True
         self.sigmamaxtrans = 0.1
-        self.sigmamin = 0.0001
+        self.sigmamin = 0.001
         self.sigmamax = 0.5
         self.sigmainit = 0.02
         self.cutoff_dist_for_container = 10.0

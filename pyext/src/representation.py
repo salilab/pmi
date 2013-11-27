@@ -384,7 +384,8 @@ class SimplifiedModel():
                               inputfile=None,outputfile=None,
                               outputmap=None,
                               kernel_type='GAUSSIAN',
-                              covariance_type='full'):
+                              covariance_type='full',voxel_size=1.0,
+                              sampled_points=100000):
         import IMP.isd2
         import IMP.isd2.gmm_tools
         import numpy as np
@@ -405,8 +406,8 @@ class SimplifiedModel():
            particles=self.hier_db.get_particles_by_resolution(name,resolution)
            fragment_particles=list(set(all_fragment_leaves) & set(particles))
            dmap=IMP.isd2.gmm_tools.create_density_from_particles(fragment_particles,
-                                                                 kernel_type=kernel_type)
-           pts=IMP.isd2.gmm_tools.density2points(dmap)
+                                                                 kernel_type=kernel_type,voxel_size=voxel_size)
+           pts=IMP.isd2.gmm_tools.density2points(dmap,sampled_points)
            gmm=IMP.isd2.gmm_tools.points2gmm(pts,num_components,covariance_type)
            density_particles=[]
            igmm=[]
@@ -492,9 +493,17 @@ class SimplifiedModel():
         protein_h.add_child(hierclone)
         outhier.append(hierclone)
         
-        for p in IMP.atom.get_leaves(hierclone):
-           for kk in tools.get_residue_indexes(p):
-              self.hier_db.add_particles(name,kk,IMP.pmi.Resolution(p).get_resolution(),[p])
+        psmain=IMP.atom.get_leaves(hierarchy)
+        psclone=IMP.atom.get_leaves(hierclone)
+        
+        for n,pmain in enumerate(psmain):
+           pclone=psclone[n]
+           resolution=IMP.pmi.Resolution(pmain).get_resolution()
+           IMP.pmi.Resolution.setup_particle(pclone,resolution)
+           radius=IMP.core.XYZR(pclone).get_radius()
+           IMP.pmi.Uncertainty.setup_particle(pclone,radius)
+           for kk in tools.get_residue_indexes(pclone):
+              self.hier_db.add_particles(name,kk,IMP.pmi.Resolution(pclone).get_resolution(),[pclone])
         
         return outhier
 
@@ -798,7 +807,6 @@ class SimplifiedModel():
 
 
     def create_rotational_symmetry(self,maincopy,copies):
-        #still working on it!
         from math import pi
         ncopies=len(copies)+1
 
@@ -844,7 +852,7 @@ class SimplifiedModel():
 
     def create_amyloid_fibril_symmetry(self,maincopy,axial_copies,
                 longitudinal_copies,axis=(0,0,1),translation_value=4.8):
-        #still working on it!
+
         from math import pi
         
         outhiers=[]

@@ -506,7 +506,7 @@ class SimplifiedModel():
                  self.hier_db.add_particles(name,kk,IMP.pmi.Resolution(pclone).get_resolution(),[pclone])
               
            if IMP.pmi.Uncertainty.particle_is_instance(pmain):              
-              uncertainty=IMP.pmi.Uncertainty(pmain).get_resolution()
+              uncertainty=IMP.pmi.Uncertainty(pmain).get_uncertainty()
               IMP.pmi.Uncertainty.setup_particle(pclone,uncertainty)
 
         return outhier
@@ -683,7 +683,7 @@ class SimplifiedModel():
         this will apply a translation to a hierarchy along the input vector
         '''
         rbs=set()
-        xyzs=set()
+        xyzs=set()   
         transformation=IMP.algebra.Transformation3D(IMP.algebra.Vector3D(translation_vector))
         for p in IMP.atom.get_leaves(hierarchy): 
            if IMP.core.RigidMember.particle_is_instance(p):

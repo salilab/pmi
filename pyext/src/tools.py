@@ -666,8 +666,8 @@ def get_residue_indexes(hier):
        print "get_residue_indexes> input is not Fragment, Residue or Atom"
        exit()
     return resind
-
-
+       
+       
 def get_db_from_csv(csvfilename):
      import csv
      outputlist=[]

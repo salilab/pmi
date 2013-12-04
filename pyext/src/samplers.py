@@ -2,15 +2,17 @@ import IMP
 import IMP.core
 
 class MonteCarlo():
+
+    #check that isd is installed
+    try:
+      import IMP.isd
+      isd_available = True
+    except ImportError:
+      isd_available = False
+
     def __init__(self,m,objects,temp,filterbyname=None):
         
-        #check that isd2 is installed
-        try:
-            global impisd2
-            import IMP.isd2 as impisd2 
-            self.isd2_available = True
-        except ImportError:
-            self.isd2_available = False
+
 
 
         #check that the objects containts get_particles_to_sample methods
@@ -58,16 +60,16 @@ class MonteCarlo():
                     self.mvs+=mvs
 
                 if "Nuisances" in k:
-                    if not self.isd2_available:
-                        print "MonteCarlo: isd2 module needed to use nuisances"
+                    if not self.isd_available:
+                        print "MonteCarlo: isd module needed to use nuisances"
                         exit()
                     mvs=self.get_nuisance_movers(pts[k][0],pts[k][1])
                     for mv in mvs: mv.set_name(k)
                     self.mvs+=mvs
 
                 if "Weights" in k:
-                    if not self.isd2_available:
-                        print "MonteCarlo: isd2 module needed to use weights"
+                    if not self.isd_available:
+                        print "MonteCarlo: isd module needed to use weights"
                         exit()
                     mvs=self.get_weight_movers(pts[k][0],pts[k][1])
                     for mv in mvs: mv.set_name(k)
@@ -159,7 +161,7 @@ class MonteCarlo():
                     mvacc=mv.get_number_of_accepted()
                     mvprp=mv.get_number_of_proposed()
                     accept=float(mvacc)/float(mvprp)
-                    wmv=impisd2.WeightMover.get_from(mv)
+                    wmv=IMP.isd.WeightMover.get_from(mv)
                     stepsize = wmv.get_radius()
 
                     if 0.4 > accept or accept > 0.6:
@@ -233,7 +235,7 @@ class MonteCarlo():
     def get_weight_movers(self,weights,maxstep):
         mvs=[]
         for weight in weights:
-            if(weight.get_number_of_states()>1): mvs.append(impisd2.WeightMover(weight,maxstep))
+            if(weight.get_number_of_states()>1): mvs.append(IMP.isd.WeightMover(weight,maxstep))
         return mvs
 
     def temp_simulated_annealing(self):
@@ -265,7 +267,7 @@ class MonteCarlo():
             if "Nuisances" in mvname:
                 output["MonteCarlo_StepSize_"+mvname+"_"+str(i)]=str(IMP.core.NormalMover.get_from(mv).get_sigma())
             if "Weights" in mvname:
-                output["MonteCarlo_StepSize_"+mvname+"_"+str(i)]=str(impisd2.WeightMover.get_from(mv).get_radius())
+                output["MonteCarlo_StepSize_"+mvname+"_"+str(i)]=str(IMP.isd.WeightMover.get_from(mv).get_radius())
         output["MonteCarlo_Temperature"]=str(self.mc.get_kt())
         output["MonteCarlo_Nframe"]=str(self.nframe)
         return output

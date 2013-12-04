@@ -294,7 +294,7 @@ class SimplifiedModel():
             d=IMP.core.XYZR.setup_particle(p)
             x=2.3*cos(n*2*pi/3.6)
             y=2.3*sin(n*2*pi/3.6)
-            z=5.4/3.6/2*n*2*pi/3.6
+            z=6.2/3.6/2*n*2*pi/3.6
             d.set_coordinates(IMP.algebra.Vector3D(x,y,z))
             d.set_radius(2.9)
             #print d
@@ -880,8 +880,10 @@ class SimplifiedModel():
                 lc=IMP.container.ListSingletonContainer(self.m)
                 for n,p in enumerate(mainparts):
                     pc=copyparts[n]
-                    IMP.pmi.Symmetric.setup_particle(p,0)
-                    IMP.pmi.Symmetric.setup_particle(pc,1)
+                    if not IMP.pmi.Symmetric.particle_is_instance(p):
+                       IMP.pmi.Symmetric.setup_particle(p,0)
+                    if not IMP.pmi.Symmetric.particle_is_instance(pc):
+                       IMP.pmi.Symmetric.setup_particle(pc,1)
                     IMP.core.Reference.setup_particle(pc,p)
                     lc.add_particle(pc)
                 c=IMP.container.SingletonsConstraint(sm,None,lc)

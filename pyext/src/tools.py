@@ -270,9 +270,9 @@ def get_cross_link_data(directory,filename,(distmin,distmax,ndist),
                                             (sigmamin,sigmamax,nsigma),
                                             don=None,doff=None,prior=0,type_of_profile="gofr"):
 
-    import IMP.isd2
+    import IMP.isd
 
-    filen=IMP.isd2.get_data_path("CrossLinkPMFs.dict")
+    filen=IMP.isd.get_data_path("CrossLinkPMFs.dict")
     xlpot=open(filen)
 
     for line in xlpot:
@@ -287,9 +287,9 @@ def get_cross_link_data(directory,filename,(distmin,distmax,ndist),
     sigma_grid=get_log_grid(sigmamin, sigmamax, nsigma)
 
     if don!=None and doff!=None:
-        xlmsdata=IMP.isd2.CrossLinkData(dist_grid,omega_grid,sigma_grid,xpot,pot,don,doff,prior)
+        xlmsdata=IMP.isd.CrossLinkData(dist_grid,omega_grid,sigma_grid,xpot,pot,don,doff,prior)
     else:
-        xlmsdata=IMP.isd2.CrossLinkData(dist_grid,omega_grid,sigma_grid,xpot,pot)
+        xlmsdata=IMP.isd.CrossLinkData(dist_grid,omega_grid,sigma_grid,xpot,pot)
     return xlmsdata
 
     #-------------------------------
@@ -298,13 +298,13 @@ def get_cross_link_data(directory,filename,(distmin,distmax,ndist),
 def get_cross_link_data_from_length(length,(distmin,distmax,ndist),
                                (omegamin,omegamax,nomega),
                                (sigmamin,sigmamax,nsigma)):
-    import IMP.isd2
+    import IMP.isd
 
     dist_grid=get_grid(distmin, distmax, ndist, False)
     omega_grid=get_log_grid(omegamin, omegamax, nomega)
     sigma_grid=get_log_grid(sigmamin, sigmamax, nsigma)
 
-    xlmsdata=IMP.isd2.CrossLinkData(dist_grid,omega_grid,sigma_grid,length)
+    xlmsdata=IMP.isd.CrossLinkData(dist_grid,omega_grid,sigma_grid,length)
     return xlmsdata
 
 

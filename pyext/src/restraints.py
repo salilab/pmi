@@ -164,6 +164,7 @@ class CompositeRestraint():
         compositeparticles,
         cut_off=5.0,
         lam=1.0,
+        plateau=0.0,
             label="None"):
 
         global imppmi
@@ -178,7 +179,8 @@ class CompositeRestraint():
             handleparticles,
             cut_off,
             lam,
-            True)
+            True,
+            plateau)
         for ps in compositeparticles:
             # composite particles is a list of list of particles
             ln.add_composite_particle(ps)
@@ -484,9 +486,6 @@ class ConnectivityDistanceRestraint():
         for hier in hiers:
             particles += IMP.atom.get_leaves(hier)
 
-        # fill the cross-linker pmfs
-        # to accelerate the init the list listofxlinkertypes might contain only
-        # yht needed crosslinks
 
         for line in open(restraints_file):
 
@@ -1671,6 +1670,130 @@ class SimplifiedPEMAP():
 
         return output
 
+class ResidueAngleRestraint():
+    '''
+    add angular restraint between triplets of consecutive 
+    residues/beads to enforce the stereochemistry.
+    '''
+    import IMP.pmi.tools
+    from math import pi as pi
+    
+    def __init__(self,hiers,anglemin=100.0,anglemax=140.0,strength=10.0):
+        self.m=hiers[0].get_model()
+        self.rs = IMP.RestraintSet(self.m, "Angles")
+        self.weight=1
+        self.label="None"
+        
+        ts=IMP.core.HarmonicWell((self.pi*anglemin/180.0,self.pi*anglemax/180.0),strength)
+        
+        for hs in IMP.pmi.tools.sublist_iterator(hiers,3,3):
+            triplet=[]
+            if len(hs)!=3: print "ResidueAngleRestraint: wrong length of triplet"; exit()
+            for h in hs:
+                ps=IMP.atom.get_leaves(h)
+                if len(ps)!=1: 
+                   print "ResidueAngleRestraint: multiple particles selected"; exit()
+                elif not IMP.atom.Residue.particle_is_instance(ps[0]):
+                   print "ResidueAngleRestraint: not a residue"; exit()
+                else:
+                   triplet.append(ps[0])
+            print "ResidueAngleRestraint: adding a restraint between %s %s %s" % (triplet[0].get_name(),triplet[1].get_name(),triplet[2].get_name())       
+            self.rs.add_restraint(IMP.core.AngleRestraint(ts,triplet[0],triplet[1],triplet[2]))
+
+    def set_label(self, label):
+        self.label = label
+        self.rs.set_name(label)
+        for r in self.rs.get_restraints():
+            r.set_name(label)
+
+    def add_to_model(self):
+        self.m.add_restraint(self.rs)
+
+    def get_restraint(self):
+        return self.rs
+
+    def set_weight(self, weight):
+        self.weight = weight
+        self.rs.set_weight(weight)
+
+    def get_output(self):
+        self.m.update()
+        output = {}
+        score = self.weight * self.rs.unprotected_evaluate(None)
+        output["_TotalScore"] = str(score)
+        output["ResidueAngleRestraint_" + self.label] = str(score)
+        return output
+
+class ResidueDihedralRestraint():
+    '''
+    add dihedral restraints between quatruplet of consecutive 
+    residues/beads to enforce the stereochemistry.
+    Give as input a string of "C" and "T", meaning cys (0+-40) or trans (180+-40)
+    dihedral. The length of the string mush be #residue-3.
+    Without the string, the dihedral will be assumed trans.
+    '''
+    import IMP.pmi.tools
+    from math import pi as pi
+    
+    def __init__(self,hiers,stringsequence=None,strength=10.0):
+        self.m=hiers[0].get_model()
+        self.rs = IMP.RestraintSet(self.m, "Angles")
+        self.weight=1
+        self.label="None"
+       
+        if stringsequence==None:
+           stringsequence="T"*(len(hiers)-3)        
+
+        for n,hs in enumerate(IMP.pmi.tools.sublist_iterator(hiers,4,4)):
+            quadruplet=[]
+            if len(hs)!=4: print "ResidueDihedralRestraint: wrong length of quadruplet"; exit()
+            for h in hs:
+                ps=IMP.atom.get_leaves(h)
+                if len(ps)!=1: 
+                   print "ResidueDihedralRestraint: multiple particles selected"; exit()
+                elif not IMP.atom.Residue.particle_is_instance(ps[0]):
+                   print "ResidueDihedralRestraint: not a residue"; exit()
+                else:
+                   quadruplet.append(ps[0])
+            dihedraltype=stringsequence[n]
+            if dihedraltype=="C":
+               anglemin=-40.0
+               anglemax=40.0
+               ts=IMP.core.HarmonicWell((self.pi*anglemin/180.0,self.pi*anglemax/180.0),strength)
+               print "ResidueDihedralRestraint: adding a CYS restraint between %s %s %s %s" % (quadruplet[0].get_name(),quadruplet[1].get_name(),
+               quadruplet[2].get_name(),quadruplet[3].get_name())       
+            if dihedraltype=="T":
+               anglemin=180-40.0
+               anglemax=180+40.0
+               ts=IMP.core.HarmonicWell((self.pi*anglemin/180.0,self.pi*anglemax/180.0),strength)
+               print "ResidueDihedralRestraint: adding a TRANS restraint between %s %s %s %s" % (quadruplet[0].get_name(),quadruplet[1].get_name(),
+               quadruplet[2].get_name(),quadruplet[3].get_name()) 
+            self.rs.add_restraint(IMP.core.DihedralRestraint(ts,quadruplet[0],quadruplet[1],quadruplet[2],quadruplet[3]))
+
+    def set_label(self, label):
+        self.label = label
+        self.rs.set_name(label)
+        for r in self.rs.get_restraints():
+            r.set_name(label)
+
+    def add_to_model(self):
+        self.m.add_restraint(self.rs)
+
+    def get_restraint(self):
+        return self.rs
+
+    def set_weight(self, weight):
+        self.weight = weight
+        self.rs.set_weight(weight)
+
+    def get_output(self):
+        self.m.update()
+        output = {}
+        score = self.weight * self.rs.unprotected_evaluate(None)
+        output["_TotalScore"] = str(score)
+        output["ResidueDihedralRestraint_" + self.label] = str(score)
+        return output
+            
 
 #
 class SecondaryStructure():
@@ -2100,6 +2223,10 @@ class SAXSISDRestraint():
 
 class CysteineCrossLinkRestraint():
 
+    import IMP.isd2
+    import IMP.isd
+    import IMP.pmi.tools
+
     def __init__(self, prots, filename, cbeta=False,
                  betatuple=(0.03, 0.1),
                  disttuple=(0.0, 25.0, 1000),
@@ -2114,9 +2241,7 @@ class CysteineCrossLinkRestraint():
     # epsilonname is a name for the epsilon particle that must be used for that particular
     # residue pair, eg, "Epsilon-Intra-Solvent", or
     # "Epsilon-Solvent-Membrane", etc.
-        global impisd2, tools
-        import IMP.isd2 as impisd2
-        import IMP.pmi.tools as tools
+
 
         self.prots = prots
         self.m = self.prots[0].get_model()
@@ -2141,7 +2266,7 @@ class CysteineCrossLinkRestraint():
         crossdataprior = 1
 
         # beta
-        self.beta = tools.SetupNuisance(
+        self.beta = IMP.pmi.tools.SetupNuisance(
             self.m,
             beta,
             betalower,
@@ -2149,14 +2274,14 @@ class CysteineCrossLinkRestraint():
             betaissampled).get_particle(
         )
         # sigma
-        self.sigma = tools.SetupNuisance(
+        self.sigma = IMP.pmi.tools.SetupNuisance(
             self.m,
             sigma,
             sigmatuple[0],
             sigmatuple[1],
             sigmaissampled).get_particle()
         # population particle
-        self.weight = tools.SetupWeight(self.m, weightissampled).get_particle()
+        self.weight = IMP.pmi.tools.SetupWeight(self.m, weightissampled).get_particle()
 
         # read the file
         fl = open(filename, "r")
@@ -2172,7 +2297,7 @@ class CysteineCrossLinkRestraint():
                 if 1.0 - float(t[4]) <= self.epsilons[t[5]].get_upper():
                     self.epsilons[t[5]].set_upper(1.0 - float(t[4]))
             else:
-                self.epsilons[t[5]] = tools.SetupNuisance(self.m,
+                self.epsilons[t[5]] = IMP.pmi.tools.SetupNuisance(self.m,
                                                           0.01, 0.01, 1.0 - float(t[4]), epsilonissampled).get_particle()
             up = self.epsilons[t[5]].get_upper()
             low = self.epsilons[t[5]].get_lower()
@@ -2184,20 +2309,22 @@ class CysteineCrossLinkRestraint():
 
         # create CrossLinkData
         if not self.cbeta:
-            crossdata = tools.get_cross_link_data(
+            crossdata = IMP.pmi.tools.get_cross_link_data(
                 "cysteine", "cysteine_CA_FES.txt.standard",
                 disttuple, omegatuple, sigmatuple, disttuple[1], disttuple[1], 1)
         else:
-            crossdata = tools.get_cross_link_data(
+            crossdata = IMP.pmi.tools.get_cross_link_data(
                 "cysteine", "cysteine_CB_FES.txt.standard",
                 disttuple, omegatuple, sigmatuple, disttuple[1], disttuple[1], 1)
 
         # create grids needed by CysteineCrossLinkData
-        fmod_grid = tools.get_grid(0.0, 1.0, 300, True)
-        omega2_grid = tools.get_log_grid(0.001, 10000.0, 100)
-        beta_grid = tools.get_log_grid(betalower, betaupper, betangrid)
+        fmod_grid = IMP.pmi.tools.get_grid(0.0, 1.0, 300, True)
+        omega2_grid = IMP.pmi.tools.get_log_grid(0.001, 10000.0, 100)
+        beta_grid = IMP.pmi.tools.get_log_grid(betalower, betaupper, betangrid)
 
         for d in data:
+            print "--------------"
+            print "CysteineCrossLink: attempting to create a restraint "+str(d)
             resid1 = d[0]
             chain1 = d[1]
             resid2 = d[2]
@@ -2207,13 +2334,13 @@ class CysteineCrossLinkRestraint():
 
             # CysteineCrossLinkData
 
-            ccldata = impisd2.CysteineCrossLinkData(
+            ccldata = IMP.isd.CysteineCrossLinkData(
                 fexp,
                 fmod_grid,
                 omega2_grid,
                 beta_grid)
 
-            ccl = impisd2.CysteineCrossLinkRestraint(
+            ccl = IMP.isd.CysteineCrossLinkRestraint(
                 self.beta,
                 self.sigma,
                 self.epsilons[epslabel],
@@ -2228,15 +2355,13 @@ class CysteineCrossLinkRestraint():
                     p1 = None
                     p2 = None
 
-                    p1 = tools.select_calpha_or_residue(
-                        prot=prot, chain=chain1,
-                        resid=resid1, ObjectName="CysteineCrossLink:", SelectResidue=True)
+                    p1 = IMP.atom.Selection(
+                            prot, molecule=chain1,residue_index=resid1).get_selected_particles()[0]
                     if p1 is None:
                         failed = True
 
-                    p2 = tools.select_calpha_or_residue(
-                        prot=prot, chain=chain2,
-                        resid=resid2, ObjectName="CysteineCrossLink:", SelectResidue=True)
+                    p2 = IMP.atom.Selection(
+                            prot, molecule=chain2,residue_index=resid2).get_selected_particles()[0]
                     if p2 is None:
                         failed = True
 
@@ -2245,22 +2370,24 @@ class CysteineCrossLinkRestraint():
                     p1 = []
                     p2 = []
                     for t in range(-1, 2):
-                        p = tools.select_calpha_or_residue(
-                            prot=prot, chain=chain1,
-                            resid=resid1 + t, ObjectName="CysteineCrossLink:", SelectResidue=False)
-                        if p is not None:
-                            p1.append(p)
+                        p = IMP.atom.Selection(
+                            prot, molecule=chain1,
+                            residue_index=resid1 + t).get_selected_particles()
+                        if len(p)==1:
+                            p1+=p
                         else:
                             failed = True
+                            print "\033[93m CysteineCrossLink: missing representation for residue %d of chain %s \033[0m" % (resid1+t, chain1)
 
-                        p = tools.select_calpha_or_residue(
-                            prot=prot, chain=chain2,
-                            resid=resid2 + t, ObjectName="CysteineCrossLink:", SelectResidue=False)
-                        if p is not None:
-                            p2.append(p)
+                        p = IMP.atom.Selection(
+                            prot, molecule=chain2,
+                            residue_index=resid2 + t).get_selected_particles()
+                        if len(p)==1:
+                            p2+=p
                         else:
                             failed = True
-
+                            print "\033[93m CysteineCrossLink: missing representation for residue %d of chain %s \033[0m" % (resid2+t, chain2)
+                            
                 if not self.cbeta:
                     if (p1 is not None and p2 is not None):
                         ccl.add_contribution(p1, p2)
@@ -2271,6 +2398,17 @@ class CysteineCrossLinkRestraint():
 
                 else:
                     if (len(p1) == 3 and len(p2) == 3):
+                        p11n=p1[0].get_name()
+                        p12n=p1[1].get_name()                        
+                        p13n=p1[2].get_name()   
+                        p21n=p2[0].get_name()
+                        p22n=p2[1].get_name()                        
+                        p23n=p2[2].get_name()
+                        
+                        print "CysteineCrossLink: generating CB cysteine cross-link restraint between"
+                        print "CysteineCrossLink: residue %d of chain %s and residue %d of chain %s" % (resid1, chain1, resid2, chain2)
+                        print "CysteineCrossLink: between particles %s %s %s and %s %s %s" % (p11n,p12n,p13n,p21n,p22n,p23n)
+
                         ccl.add_contribution(p1, p2)
 
             if not failed:
@@ -2331,18 +2469,18 @@ class CysteineCrossLinkRestraint():
         if self.outputlevel == "high":
             for rst in self.rs.get_restraints():
                 output["CysteineCrossLinkRestraint_Total_Frequency_" +
-                       impisd2.CysteineCrossLinkRestraint.get_from(rst).get_name() +
-                       "_" + self.label] = impisd2.CysteineCrossLinkRestraint.get_from(rst).get_model_frequency()
+                       IMP.isd.CysteineCrossLinkRestraint.get_from(rst).get_name() +
+                       "_" + self.label] = IMP.isd.CysteineCrossLinkRestraint.get_from(rst).get_model_frequency()
                 output["CysteineCrossLinkRestraint_Standard_Error_" +
-                       impisd2.CysteineCrossLinkRestraint.get_from(
+                       IMP.isd.CysteineCrossLinkRestraint.get_from(
                            rst).get_name(
                        ) + "_"
-                       + self.label] = impisd2.CysteineCrossLinkRestraint.get_from(rst).get_standard_error()
+                       + self.label] = IMP.isd.CysteineCrossLinkRestraint.get_from(rst).get_standard_error()
                 if len(self.prots) > 1:
                     for i in range(len(self.prots)):
                         output["CysteineCrossLinkRestraint_Frequency_Contribution_" +
-                               impisd2.CysteineCrossLinkRestraint.get_from(rst).get_name() +
-                               "_State_" + str(i) + "_" + self.label] = impisd2.CysteineCrossLinkRestraint.get_from(rst).get_frequencies()[i]
+                               IMP.isd.CysteineCrossLinkRestraint.get_from(rst).get_name() +
+                               "_State_" + str(i) + "_" + self.label] = IMP.isd.CysteineCrossLinkRestraint.get_from(rst).get_frequencies()[i]
 
         return output
 

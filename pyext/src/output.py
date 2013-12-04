@@ -21,7 +21,7 @@ class Output():
         self.dictionary_stats2={}
         self.best_score_list=None
         self.nbestscoring=None
-        self.suffix=None
+        self.suffixes=[]
         self.replica_exchange=False
         self.ascii=ascii
         self.initoutput={}
@@ -86,7 +86,7 @@ class Output():
         # save only the nbestscoring conformations
         # create as many pdbs as needed
 
-        self.suffix=suffix
+        self.suffixes.append(suffix)
         self.replica_exchange=replica_exchange
         if not self.replica_exchange:
            #common usage
@@ -125,12 +125,13 @@ class Output():
             self.best_score_list.append(score)
             self.best_score_list.sort()
             index=self.best_score_list.index(score)
-            for i in range(len(self.best_score_list)-2,index-1,-1):
-                oldname=self.suffix+"."+str(i)+".pdb"
-                newname=self.suffix+"."+str(i+1)+".pdb"
-                os.rename(oldname, newname)
-            filetoadd=self.suffix+"."+str(index)+".pdb"
-            self.write_pdb(filetoadd,appendmode=False)
+            for suffix in self.suffixes:
+              for i in range(len(self.best_score_list)-2,index-1,-1):
+                  oldname=suffix+"."+str(i)+".pdb"
+                  newname=suffix+"."+str(i+1)+".pdb"
+                  os.rename(oldname, newname)
+              filetoadd=suffix+"."+str(index)+".pdb"
+              self.write_pdb(filetoadd,appendmode=False)
 
         else:
             if score<self.best_score_list[-1]:
@@ -138,14 +139,15 @@ class Output():
                 self.best_score_list.sort()
                 self.best_score_list.pop(-1)
                 index=self.best_score_list.index(score)
-                for i in range(len(self.best_score_list)-1,index-1,-1):
-                    oldname=self.suffix+"."+str(i)+".pdb"
-                    newname=self.suffix+"."+str(i+1)+".pdb"
+                for suffix in self.suffixes:                
+                  for i in range(len(self.best_score_list)-1,index-1,-1):
+                    oldname=suffix+"."+str(i)+".pdb"
+                    newname=suffix+"."+str(i+1)+".pdb"
                     os.rename(oldname, newname)
-                filenametoremove=self.suffix+"."+str(self.nbestscoring)+".pdb"
-                os.remove(filenametoremove)
-                filetoadd=self.suffix+"."+str(index)+".pdb"
-                self.write_pdb(filetoadd,appendmode=False)
+                  filenametoremove=suffix+"."+str(self.nbestscoring)+".pdb"
+                  os.remove(filenametoremove)
+                  filetoadd=suffix+"."+str(index)+".pdb"
+                  self.write_pdb(filetoadd,appendmode=False)
 
         if self.replica_exchange:
            #write the self.best_score_list to the file

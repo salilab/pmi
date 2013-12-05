@@ -32,7 +32,9 @@ class AmbiguousCompositeRestraint():
         self.pairs = []
 
         self.outputlevel = "low"
-        
+        self.cut_off=cut_off
+        self.lam=lam
+        self.plateau=plateau
         
         particles=[]
         for hier in hiers:
@@ -88,14 +90,14 @@ class AmbiguousCompositeRestraint():
             ps1nosym = (list(set(ps1nosym) & set(particles)))
             ps2 = (list(set(ps2) & set(particles)))
             ps2nosym = (list(set(ps2nosym) & set(particles)))
- 
+            
             cr = IMP.pmi.CompositeRestraint(
                  self.m,
                  ps1nosym,
-                 cut_off,
-                 lam,
-                 False,
-                 plateau)
+                 self.cut_off,
+                 self.lam,
+                 True,
+                 self.plateau)
             cr.add_composite_particle(ps2)
 
             self.rs.add_restraint(cr)
@@ -104,10 +106,10 @@ class AmbiguousCompositeRestraint():
             cr = IMP.pmi.CompositeRestraint(
                  self.m,
                  ps1,
-                 cut_off,
-                 lam,
-                 False,
-                 plateau)
+                 self.cut_off,
+                 self.lam,
+                 True,
+                 self.plateau)
             cr.add_composite_particle(ps2nosym)
 
             self.rs.add_restraint(cr)
@@ -116,26 +118,22 @@ class AmbiguousCompositeRestraint():
 
     def plot_restraint(
         self,
-        uncertainty1,
-        uncertainty2,
-        maxdist=50,
-            npoints=10):
+        maxdist=100,
+            npoints=100):
         import IMP.pmi.output as output
 
         p1 = IMP.Particle(self.m)
         p2 = IMP.Particle(self.m)
         d1 = IMP.core.XYZR.setup_particle(p1)
         d2 = IMP.core.XYZR.setup_particle(p2)
-        d1.set_radius(uncertainty1)
-        d2.set_radius(uncertainty2)
-        s1 = IMP.atom.Selection(p1)
-        s2 = IMP.atom.Selection(p2)
-        sels = [s1, s2]
-        strength = 1 / (uncertainty1 ** 2 + uncertainty2 ** 2)
-        cr = IMP.atom.create_connectivity_restraint(
-            sels,
-            self.expdistance,
-            strength)
+        cr = IMP.pmi.CompositeRestraint(
+                 self.m,
+                 [p1],
+                 self.cut_off,
+                 self.lam,
+                 True,
+                 self.plateau)
+        cr.add_composite_particle([p2])         
         dists = []
         scores = []
         for i in range(npoints):

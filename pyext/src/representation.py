@@ -966,7 +966,7 @@ class SimplifiedModel():
            #these will be 2D rotation SRB
            self.super_rigid_bodies.append((super_rigid_xyzs,super_rigid_rbs,axis))
 
-    def set_chain_of_super_rigid_bodies(self,hiers,lmin=None,lmax=None):
+    def set_chain_of_super_rigid_bodies(self,hiers,lmin=None,lmax=None,axis=None):
         '''
         this function takes a linear list of hierarchies (they are supposed
          to be sequence-contiguous) and
@@ -975,7 +975,7 @@ class SimplifiedModel():
         '''
         hiers=tools.flatten_list(hiers)
         for hs in tools.sublist_iterator(hiers,lmin,lmax):
-            self.set_super_rigid_body_from_hierarchies(hs)
+            self.set_super_rigid_body_from_hierarchies(hs,axis)
 
     def set_rigid_bodies(self,subunits,coords=None,nonrigidmembers=True):
         if coords==None: coords=()

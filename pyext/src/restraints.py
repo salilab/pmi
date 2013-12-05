@@ -1757,14 +1757,14 @@ class ResidueDihedralRestraint():
                    quadruplet.append(ps[0])
             dihedraltype=stringsequence[n]
             if dihedraltype=="C":
-               anglemin=-40.0
-               anglemax=40.0
+               anglemin=-70.0
+               anglemax=70.0
                ts=IMP.core.HarmonicWell((self.pi*anglemin/180.0,self.pi*anglemax/180.0),strength)
                print "ResidueDihedralRestraint: adding a CYS restraint between %s %s %s %s" % (quadruplet[0].get_name(),quadruplet[1].get_name(),
                quadruplet[2].get_name(),quadruplet[3].get_name())       
             if dihedraltype=="T":
-               anglemin=180-40.0
-               anglemax=180+40.0
+               anglemin=180-70.0
+               anglemax=180+70.0
                ts=IMP.core.HarmonicWell((self.pi*anglemin/180.0,self.pi*anglemax/180.0),strength)
                print "ResidueDihedralRestraint: adding a TRANS restraint between %s %s %s %s" % (quadruplet[0].get_name(),quadruplet[1].get_name(),
                quadruplet[2].get_name(),quadruplet[3].get_name()) 

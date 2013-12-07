@@ -102,8 +102,13 @@ class ConnectivityRestraint():
 
 #
 class ExcludedVolumeSphere():
+    '''
+    all leaves of the input hierarchies will be input in the 
+    restraint. If other_hierarchies is defined, then a Bipartite container
+    between "hierarchies" and "other_hierarchies" leaves is initialized
+    '''
 
-    def __init__(self, hierarchies, resolution=None, kappa=1.0):
+    def __init__(self, hierarchies,other_hierarchies=None, resolution=None, kappa=1.0):
 
         self.m = hierarchies[0].get_model()
         self.rs = IMP.RestraintSet(self.m, 'excluded_volume')
@@ -111,11 +116,25 @@ class ExcludedVolumeSphere():
         self.kappa = kappa
 
         self.label = "None"
-
+        self.cpc=None
+        
+        ssps=IMP.core.SoftSpherePairScore(self.kappa)
         lsa = IMP.container.ListSingletonContainer(self.m)
+        
         for hier in hierarchies:
             lsa.add_particles(IMP.atom.get_leaves(hier))
-        evr = IMP.core.ExcludedVolumeRestraint(lsa, self.kappa)
+            
+        if other_hierarchies==None:
+           self.cpc=IMP.container.ClosePairContainer(lsa,0.0,10.0)
+           evr=IMP.container.PairsRestraint(ssps,self.cpc)
+
+        else:
+           other_lsa = IMP.container.ListSingletonContainer(self.m)
+           for hier in other_hierarchies:
+              other_lsa.add_particles(IMP.atom.get_leaves(hier))           
+           self.cpc=IMP.container.CloseBipartitePairContainer(lsa,other_lsa,0.0,10.0)
+           evr=IMP.container.PairsRestraint(ssps,self.cpc)
+
         self.rs.add_restraint(evr)
 
     def add_excluded_particle_pairs(self, excluded_particle_pairs):
@@ -123,8 +142,7 @@ class ExcludedVolumeSphere():
         lpc = IMP.container.ListPairContainer(self.m)
         lpc.add_particle_pairs(excluded_particle_pairs)
         icpf = IMP.container.InContainerPairFilter(lpc)
-        IMP.core.ExcludedVolumeRestraint.get_from(
-            self.rs.get_restraints()[0]).add_pair_filter(icpf)
+        self.cpc.add_pair_filter(icpf)
 
     def set_label(self, label):
         self.label = label
@@ -1670,35 +1688,38 @@ class SimplifiedPEMAP():
 
         return output
 
-class ResidueAngleRestraint():
+class ResidueBondRestraint():
     '''
-    add angular restraint between triplets of consecutive 
+    add bond restraint between pair of consecutive 
     residues/beads to enforce the stereochemistry.
     '''
     import IMP.pmi.tools
     from math import pi as pi
     
-    def __init__(self,hiers,anglemin=100.0,anglemax=140.0,strength=10.0):
+    def __init__(self,hiers,distance=3.78,strength=10.0):
         self.m=hiers[0].get_model()
-        self.rs = IMP.RestraintSet(self.m, "Angles")
+        self.rs = IMP.RestraintSet(self.m, "Bonds")
         self.weight=1
         self.label="None"
+        self.pairslist=[]
         
-        ts=IMP.core.HarmonicWell((self.pi*anglemin/180.0,self.pi*anglemax/180.0),strength)
+        ts=IMP.core.Harmonic(distance,strength)
         
-        for hs in IMP.pmi.tools.sublist_iterator(hiers,3,3):
-            triplet=[]
-            if len(hs)!=3: print "ResidueAngleRestraint: wrong length of triplet"; exit()
+        for hs in IMP.pmi.tools.sublist_iterator(hiers,2,2):
+            pair=[]
+            if len(hs)!=2: print "ResidueBondRestraint: wrong length of pair"; exit()
             for h in hs:
                 ps=IMP.atom.get_leaves(h)
                 if len(ps)!=1: 
-                   print "ResidueAngleRestraint: multiple particles selected"; exit()
+                   print "ResidueBondRestraint: multiple particles selected"; exit()
                 elif not IMP.atom.Residue.particle_is_instance(ps[0]):
-                   print "ResidueAngleRestraint: not a residue"; exit()
+                   print "ResidueBondRestraint: not a residue"; exit()
                 else:
-                   triplet.append(ps[0])
-            print "ResidueAngleRestraint: adding a restraint between %s %s %s" % (triplet[0].get_name(),triplet[1].get_name(),triplet[2].get_name())       
-            self.rs.add_restraint(IMP.core.AngleRestraint(ts,triplet[0],triplet[1],triplet[2]))
+                   pair.append(ps[0])
+            print "ResidueBondRestraint: adding a restraint between %s %s" % (pair[0].get_name(),pair[1].get_name())       
+            self.rs.add_restraint(IMP.core.DistanceRestraint(ts,pair[0],pair[1]))
+            self.pairslist.append(IMP.ParticlePair(pair[0], pair[1]))
+            self.pairslist.append(IMP.ParticlePair(pair[1], pair[0]))
 
     def set_label(self, label):
         self.label = label
@@ -1715,6 +1736,71 @@ class ResidueAngleRestraint():
     def set_weight(self, weight):
         self.weight = weight
         self.rs.set_weight(weight)
+
+    def get_excluded_pairs(self):
+        return self.pairslist
+
+    def get_output(self):
+        self.m.update()
+        output = {}
+        score = self.weight * self.rs.unprotected_evaluate(None)
+        output["_TotalScore"] = str(score)
+        output["ResidueBondRestraint_" + self.label] = str(score)
+        return output
+    
+
+
+class ResidueAngleRestraint():
+    '''
+    add angular restraint between triplets of consecutive 
+    residues/beads to enforce the stereochemistry.
+    '''
+    import IMP.pmi.tools
+    from math import pi as pi
+    
+    def __init__(self,hiers,anglemin=100.0,anglemax=140.0,strength=10.0):
+        self.m=hiers[0].get_model()
+        self.rs = IMP.RestraintSet(self.m, "Angles")
+        self.weight=1
+        self.label="None"
+        self.pairslist=[]
+        
+        ts=IMP.core.HarmonicWell((self.pi*anglemin/180.0,self.pi*anglemax/180.0),strength)
+        
+        for hs in IMP.pmi.tools.sublist_iterator(hiers,3,3):
+            triplet=[]
+            if len(hs)!=3: print "ResidueAngleRestraint: wrong length of triplet"; exit()
+            for h in hs:
+                ps=IMP.atom.get_leaves(h)
+                if len(ps)!=1: 
+                   print "ResidueAngleRestraint: multiple particles selected"; exit()
+                elif not IMP.atom.Residue.particle_is_instance(ps[0]):
+                   print "ResidueAngleRestraint: not a residue"; exit()
+                else:
+                   triplet.append(ps[0])
+            print "ResidueAngleRestraint: adding a restraint between %s %s %s" % (triplet[0].get_name(),triplet[1].get_name(),triplet[2].get_name())       
+            self.rs.add_restraint(IMP.core.AngleRestraint(ts,triplet[0],triplet[1],triplet[2]))
+            self.pairslist.append(IMP.ParticlePair(triplet[0], triplet[2]))
+            self.pairslist.append(IMP.ParticlePair(triplet[2], triplet[0]))
+
+    def set_label(self, label):
+        self.label = label
+        self.rs.set_name(label)
+        for r in self.rs.get_restraints():
+            r.set_name(label)
+
+    def add_to_model(self):
+        self.m.add_restraint(self.rs)
+
+    def get_restraint(self):
+        return self.rs
+
+    def set_weight(self, weight):
+        self.weight = weight
+        self.rs.set_weight(weight)
+
+    def get_excluded_pairs(self):
+        return self.pairslist
 
     def get_output(self):
         self.m.update()
@@ -1740,6 +1826,7 @@ class ResidueDihedralRestraint():
         self.rs = IMP.RestraintSet(self.m, "Angles")
         self.weight=1
         self.label="None"
+        self.pairslist=[]
        
         if stringsequence==None:
            stringsequence="T"*(len(hiers)-3)        
@@ -1769,6 +1856,8 @@ class ResidueDihedralRestraint():
                print "ResidueDihedralRestraint: adding a TRANS restraint between %s %s %s %s" % (quadruplet[0].get_name(),quadruplet[1].get_name(),
                quadruplet[2].get_name(),quadruplet[3].get_name()) 
             self.rs.add_restraint(IMP.core.DihedralRestraint(ts,quadruplet[0],quadruplet[1],quadruplet[2],quadruplet[3]))
+            self.pairslist.append(IMP.ParticlePair(quadruplet[0], quadruplet[3]))
+            self.pairslist.append(IMP.ParticlePair(quadruplet[3], quadruplet[0]))
 
     def set_label(self, label):
         self.label = label
@@ -1785,6 +1874,9 @@ class ResidueDihedralRestraint():
     def set_weight(self, weight):
         self.weight = weight
         self.rs.set_weight(weight)
+
+    def get_excluded_pairs(self):
+        return self.pairslist
 
     def get_output(self):
         self.m.update()

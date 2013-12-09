@@ -114,12 +114,22 @@ class SimplifiedModel():
         return self.hier_dict.keys()
 
     def add_component_sequence(self,name,filename,id=None,format="FASTA"):
+        '''
+        give the component name, the fasta filename,
+        and the id stored in the fasta file (i.e., the header)
+        If the id is not provided, it will assume the same compoennt 
+        name.
+        '''
         from Bio import SeqIO
         handle = open(filename, "rU")
         record_dict = SeqIO.to_dict(SeqIO.parse(handle, "fasta"))
         handle.close()
         if id==None: id=name
-        length=len(record_dict[id].seq)
+        try:
+           length=len(record_dict[id].seq)
+        except KeyError:
+           print "add_component_sequence: id %s not found in fasta file" % id
+           exit()
         self.sequence_dict[name]=str(record_dict[id].seq)
         self.elements[name].append((length,length," ","end"))
 
@@ -657,26 +667,80 @@ class SimplifiedModel():
           outhiers+=self.add_component_beads(name,[(begin,end)],incoord=incoord)
         return outhiers
 
-    def shuffle_configuration(self,bounding_box_length=300.,translate=True):
+    def shuffle_configuration(self,bounding_box_length=300.,translate=True,
+                              avoidcollision=True,cutoff=10.0,niterations=100):
         "shuffle configuration, used to restart the optimization"
-        "it only works if rigid bodies were initialized"
+        "it  works correclty if rigid bodies were initialized"
+        "avoidcollision check if the particle/rigid body was placed close to another particle"
+        "avoidcollision uses the optional arguments cutoff and niterations"
+        
         if len(self.rigid_bodies)==0:
-            print "MultipleStates: rigid bodies were not intialized"
+            print "shuffle_configuration: rigid bodies were not intialized"
         hbbl=bounding_box_length/2
-        if 1:
-            ub = IMP.algebra.Vector3D(-hbbl,-hbbl,-hbbl)
-            lb = IMP.algebra.Vector3D( hbbl, hbbl, hbbl)
-            bb = IMP.algebra.BoundingBox3D(ub, lb)
-            for rb in self.rigid_bodies:
+        ub = IMP.algebra.Vector3D(-hbbl,-hbbl,-hbbl)
+        lb = IMP.algebra.Vector3D( hbbl, hbbl, hbbl)
+        bb = IMP.algebra.BoundingBox3D(ub, lb)
+        
+        gcpf=IMP.core.NearestNeighborsClosePairsFinder()
+        gcpf.set_distance(cutoff)
+        allparticleindexes=IMP.get_indexes(IMP.atom.get_leaves(self.prot))
 
-                if translate==True: translation = IMP.algebra.get_random_vector_in(bb)
-                else: translation = (rb.get_x(), rb.get_y(), rb.get_z())
-                rotation = IMP.algebra.get_random_rotation_3d()
-                transformation = IMP.algebra.Transformation3D(rotation, translation)
-                rb.set_reference_frame(IMP.algebra.ReferenceFrame3D(transformation))
-            for fb in self.floppy_bodies:
-                translation = IMP.algebra.get_random_vector_in(bb)
-                IMP.core.XYZ(fb).set_coordinates(translation)
+        for rb in self.rigid_bodies:
+            if avoidcollision:
+               
+               rbindexes=rb.get_member_particle_indexes()
+               rbindexes+=rb.get_body_member_particle_indexes()
+               otherparticleindexes=list(set(allparticleindexes)-set(rbindexes))
+               if len(otherparticleindexes)==None: continue
+               
+            niter=0
+            while niter<niterations: 
+               if translate==True: translation = IMP.algebra.get_random_vector_in(bb)
+               else: translation = (rb.get_x(), rb.get_y(), rb.get_z())
+               rotation = IMP.algebra.get_random_rotation_3d()
+               transformation = IMP.algebra.Transformation3D(rotation, translation)
+               rb.set_reference_frame(IMP.algebra.ReferenceFrame3D(transformation))
+               
+               if avoidcollision:
+                  self.m.update()
+                  npairs=len(gcpf.get_close_pairs(self.m,otherparticleindexes,rbindexes))
+                  if npairs==0: niter=niterations
+                  else:
+                     niter+=1
+                     print "shuffle_configuration: rigid body placed close to other %d particles, trying again..." % npairs 
+                     if niter==niterations: 
+                        print "shuffle_configuration: tried the maximum number of iterations to avoid collisions, increase the distance cutoff" 
+                        exit()
+               else:
+                  niter=niterations
+                
+        for fb in self.floppy_bodies:
+
+            if avoidcollision:
+               if not IMP.core.NonRigidMember.get_is_setup(fb):
+                  fbindexes=IMP.get_indexes([fb])
+                  otherparticleindexes=list(set(allparticleindexes)-set(fbindexes))
+                  if len(otherparticleindexes)==None: continue
+               else: continue
+
+            niter=0
+            while niter<niterations: 
+               translation = IMP.algebra.get_random_vector_in(bb)
+               IMP.core.XYZ(fb).set_coordinates(translation)
+
+               if avoidcollision:
+                  self.m.update()
+                  npairs=len(gcpf.get_close_pairs(self.m,otherparticleindexes,fbindexes))
+                  if npairs==0: niter=niterations
+                  else:
+                     niter+=1
+                     print "shuffle_configuration: floppy body placed close to other %d particles, trying again..." % npairs              
+                     if niter==niterations: 
+                        print "shuffle_configuration: tried the maximum number of iterations to avoid collisions, increase the distance cutoff" 
+                        exit()
+               else:
+                  niter=niterations
+
 
     def translate_hierarchy(self,hierarchy,translation_vector):
         '''
@@ -973,7 +1037,9 @@ class SimplifiedModel():
         produces a chain of super rigid bodies with given length range, specified
         by lmax and lmin
         '''
-        hiers=tools.flatten_list(hiers)
+        try:
+          hiers=tools.flatten_list(hiers)
+        except: pass
         for hs in tools.sublist_iterator(hiers,lmin,lmax):
             self.set_super_rigid_body_from_hierarchies(hs,axis)
 

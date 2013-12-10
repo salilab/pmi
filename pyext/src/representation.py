@@ -91,12 +91,8 @@ class SimplifiedModel():
                          'HIS':'H','ILE':'I','LEU':'L','LYS':'K',
                          'MET':'M','PHE':'F','PRO':'P','SER':'S',
                          'THR':'T','TRP':'W','TYR':'Y','VAL':'V','UNK':'X'}
-        try:
-           #that works with python 2.7
-           self.onetothree = {v:k for k, v in self.threetoone.items()}
-        except:
-           #maintain compatibility with python 2.6
-           self.onetothree = dict((v,k) for k, v in self.threetoone.iteritems())
+
+        self.onetothree = dict((v,k) for k, v in self.threetoone.iteritems())
 
         self.residuenamekey = IMP.kernel.StringKey("ResidueName")
 

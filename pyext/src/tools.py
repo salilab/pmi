@@ -363,6 +363,12 @@ def cross_link_db_filter_parser(inputstring):
                          .replace("OR","or")
     return parsedstring
 
+def open_file_or_inline_text(filename):
+    try:
+        fl=open(filename,"r")
+    except IOError:
+        fl=filename.split("\n")
+    return fl
 
 def get_drmsd(prot0, prot1):
     drmsd=0.; npairs=0.;
@@ -497,12 +503,111 @@ class map():
               n+=1
           return self.map[minx]
 
+def select(representation,
+           resolution=None,
+           hierarchies=None,
+           selection_arguments=None,
+           name=None,
+           name_is_ambiguous=False,
+           first_residue=None,
+           last_residue=None,
+           residue=None,
+           representation_type=None):
+    '''
+    this function uses representation=SimplifiedModel
+    it returns the corresponding selected particles
+    representation_type="Beads", "Res:X", "Densities", "Representation", "Molecule"
+    '''
+
+    
+    allparticles=IMP.atom.get_leaves(representation.prot)
+    resolution_particles=None
+    hierarchies_particles=None
+    names_particles=None
+    residue_range_particles=None
+    residue_particles=None
+    representation_type_particles=None
+
+    
+    if resolution!=None:
+       resolution_particles=[]
+       hs=representation.get_hierarchies_at_given_resolution(resolution)
+       for h in hs:
+          resolution_particles+=IMP.atom.get_leaves(h)
+    
+    if hierarchies!=None:
+       hierarchies_particles=[]
+       for h in hierarchies:
+          hierarchies_particles+=IMP.atom.get_leaves(h)
+
+    if name!=None:
+       names_particles=[]
+       if name_is_ambiguous:
+          for namekey in representation.hier_dict:
+              if name in namekey:
+                 names_particles+=IMP.atom.get_leaves(representation.hier_dict[namekey])
+       elif name in representation.hier_dict:
+          names_particles+=IMP.atom.get_leaves(representation.hier_dict[name])
+       else:
+          print "select: component %s is not there" % name
+
+    if first_residue!=None and last_residue!=None:
+       sel = IMP.atom.Selection(representation.prot, 
+              residue_indexes=range(first_residue, last_residue + 1))
+       residue_range_particles=sel.get_selected_particles() 
+
+    if residue!=None:
+       sel = IMP.atom.Selection(representation.prot, residue_index=residue)
+       residue_particles=sel.get_selected_particles()
+    
+    if representation_type!=None:
+      representation_type_particles=[]
+      if representation_type=="Molecule":
+         for name in representation.hier_representation:
+             for repr_type in representation.hier_representation[name]:
+                 if repr_type=="Beads" or "Res:" in repr_type:
+                    h=representation.hier_representation[name][repr_type]
+                    representation_type_particles+=IMP.atom.get_leaves(h)
+      else:
+         for name in representation.hier_representation:
+            h=representation.hier_representation[name][representation_type]
+            representation_type_particles+=IMP.atom.get_leaves(h)
+    
+    selections=[resolution_particles,hierarchies_particles,names_particles,
+                residue_range_particles,residue_particles,representation_type_particles]
+    
+    selected_particles=set(allparticles)
+    
+    for s in selections:
+        if s!=None:
+           selected_particles = (set(s) & selected_particles)  
+
+    return list(selected_particles)
+
+
+def select_by_tuple(representation,tupleselection,resolution=None,name_is_ambiguous=False):
+    if isinstance(tupleselection, tuple) and len(tupleselection) == 3:
+        particles=IMP.pmi.tools.select(representation,resolution=resolution,
+                                               name=tupleselection[2],
+                                               first_residue=tupleselection[0],
+                                               last_residue=tupleselection[1],
+                                               name_is_ambiguous=name_is_ambiguous)
+    elif isinstance(tupleselection, str):
+        particles=IMP.pmi.tools.select(representation,resolution=resolution,
+                                               name=tupleselection,
+                                               name_is_ambiguous=name_is_ambiguous)
+    #now order the result by residue number
+    particles=IMP.pmi.tools.sort_by_residues(particles)
+
+    return particles
+
 class HierarchyDatabase():
      def __init__(self):
         self.db={}
         #this dictionary map a particle to its root hierarchy
         self.root_hierarchy_dict={}
         self.preroot_fragment_hierarchy_dict={}
+        self.particle_to_name={}
         self.model=None
 
      def add_name(self,name):
@@ -534,6 +639,7 @@ class HierarchyDatabase():
             (rh,prf)=self.get_root_hierarchy(p)
             self.root_hierarchy_dict[p]=rh
             self.preroot_fragment_hierarchy_dict[p]=prf
+            self.particle_to_name[p]=name
         if self.model==None: self.model=particles[0].get_model()
 
      def get_model(self):
@@ -632,8 +738,6 @@ class HierarchyDatabase():
                 for p in self.get_particles(name,resn,resolution):
                     print "--------", p.get_name()
 
-      
-
 def sublist_iterator(l,lmin=None,lmax=None):
     '''
     this iterator yields all sublists
@@ -666,8 +770,13 @@ def get_residue_indexes(hier):
        print "get_residue_indexes> input is not Fragment, Residue or Atom"
        exit()
     return resind
-       
-       
+
+def sort_by_residues(particles):       
+    particles_residues=[(p,IMP.pmi.tools.get_residue_indexes(p)) for p in particles ]
+    sorted_particles_residues=sorted(particles_residues, key=lambda tup: tup[1])
+    particles=[p[0] for p in sorted_particles_residues]
+    return particles
+     
 def get_db_from_csv(csvfilename):
      import csv
      outputlist=[]

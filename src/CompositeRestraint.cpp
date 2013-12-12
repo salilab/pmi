@@ -27,13 +27,13 @@ CompositeRestraint::CompositeRestraint(IMP::kernel::Model *m,
                           pis_.push_back(handle_particle_indexes_);
                           
                           if (tabprob_){
-                             unsigned exparg_grid_size=1001;
+                             exparg_grid_size_=1001;
                              argmax_=100.0;
-                             argmin_=0.0;
-                             invdx_=double(exparg_grid_size)/argmax_;
-                             for(unsigned k=0;k<exparg_grid_size;++k){
+                             argmin_=-100.0;
+                             invdx_=double(exparg_grid_size_)/argmax_;
+                             for(int k=-exparg_grid_size_;k<exparg_grid_size_;++k){
                                 double argvalue=double(k)/invdx_;
-                                prob_grid_.push_back((1.0-plateau_)/(1.0+std::exp(-argvalue))+plateau_);
+                                prob_grid_.push_back((1.0-plateau_)/(1.0+std::exp(-argvalue)));
                                }
                              }
                           }                       

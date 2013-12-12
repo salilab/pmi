@@ -5,7 +5,7 @@ import IMP.algebra
 import IMP.atom
 import IMP.container
 
-import IMP.pmi.restraints as restraints
+import IMP.pmi.stereochemistry as stereochemistry
 import IMP.pmi.representation as representation
 import IMP.pmi.tools as tools
 import IMP.pmi.samplers as samplers
@@ -42,14 +42,11 @@ for n in range(len(components)):
                                              resolutions=[1,10],beadsize=beadsize)
     simo.setup_component_sequence_connectivity(components[n],1)
     
-hier10=simo.hier_db.get_all_root_hierarchies_by_resolution(10)
-hier1=simo.hier_db.get_all_root_hierarchies_by_resolution(1)
-
-ev = restraints.ExcludedVolumeSphere(hier10)
+ev=IMP.pmi.stereochemistry.ExcludedVolumeSphere(simo,resolution=10)
 ev.add_to_model()
 
 o = output.Output()
-o.init_rmf("conformations.rmf", hier10)
+o.init_rmf("conformations.rmf",[simo.prot])
 o.write_rmf("conformations.rmf",0)
 
 simo.optimize_floppy_bodies(1000)

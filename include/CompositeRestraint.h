@@ -59,7 +59,7 @@ class IMPPMIEXPORT  CompositeRestraint : public Restraint
          prob=prob_grid_[k];
       }
       else{
-         prob=plateau_+(1.0-plateau_)/(1.0+std::exp(-argvalue));
+         prob=(1.0-plateau_)/(1.0+std::exp(-argvalue));
       }
       return prob;
     }

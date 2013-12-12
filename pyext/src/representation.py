@@ -416,7 +416,7 @@ class SimplifiedModel():
                               outputmap=None,
                               kernel_type='GAUSSIAN',
                               covariance_type='full',voxel_size=1.0,
-                              sampled_points=100000):
+                              sampled_points=1000000,num_iter=100):
         import IMP.isd2
         import IMP.isd2.gmm_tools
         import numpy as np
@@ -433,15 +433,18 @@ class SimplifiedModel():
            protein_h.add_child(root)
 
         if inputfile==None:
-           all_fragment_leaves=[]
-           for h in hierarchy:
-              all_fragment_leaves+=IMP.atom.get_leaves(hierarchy)
-           particles=self.hier_db.get_particles_by_resolution(name,resolution)
-           fragment_particles=list(set(all_fragment_leaves) & set(particles))
+        
+           print "add_component_density: getting the particles"
+           fragment_particles=IMP.pmi.tools.select(self,resolution=resolution,hierarchies=hierarchy)
+           print "add_component_density: create density from particles"
            dmap=IMP.isd2.gmm_tools.create_density_from_particles(fragment_particles,
                                                                  kernel_type=kernel_type,voxel_size=voxel_size)
+
+           print "add_component_density: transform density to points"                                                 
            pts=IMP.isd2.gmm_tools.density2points(dmap,sampled_points)
-           gmm=IMP.isd2.gmm_tools.points2gmm(pts,num_components,covariance_type)
+           print "add_component_density: transform points to gmm" 
+           gmm=IMP.isd2.gmm_tools.points2gmm(pts,num_components,covariance_type,num_iter)
+           print "add_component_density: finishing process" 
            density_particles=[]
            igmm=[]
            for nps in xrange(num_components):
@@ -811,25 +814,19 @@ class SimplifiedModel():
         xc=xc/nc;yc=yc/nc;zc=zc/nc
         self.translate_hierarchies(hierarchies,(-xc,-yc,-zc))
 
-    def setup_component_geometry(self,name,color=None):
+    def setup_component_geometry(self,name,color=None,resolution=1.0):
         if color==None:
            color=self.color_dict[name]
         #this function stores all particle pairs
         #ordered by residue number, to be used
         #to construct backbone traces
         self.hier_geometry_pairs[name]=[]
-        protein_h=protein_h=self.hier_dict[name]
-        pbr=tools.get_particles_by_resolution(protein_h,1.0)
+        protein_h=self.hier_dict[name]
+        pbr=IMP.pmi.tools.select(self,name=name,resolution=resolution)
+        pbr=IMP.pmi.tools.sort_by_residues(pbr)
 
-        sortedparticles=[]
-
-        for p in pbr:
-            startres = tools.get_residue_indexes(p)[0]
-            sortedparticles.append((p,startres))
-            sortedparticles = sorted(sortedparticles, key=itemgetter(1))
-
-        for n in range(len(sortedparticles)-1):
-            self.hier_geometry_pairs[name].append((sortedparticles[n][0],sortedparticles[n+1][0],color))
+        for n in range(len(pbr)-1):
+            self.hier_geometry_pairs[name].append((pbr[n],pbr[n+1],color))
 
     def setup_component_sequence_connectivity(self,name,resolution=10):
         unmodeledregions_cr=IMP.RestraintSet(self.m,"unmodeledregions")
@@ -990,7 +987,6 @@ class SimplifiedModel():
                 self.m.add_score_state(c)
                 self.m.update()
         return outhiers
-
 
     def link_components_to_rmf(self,rmfname,frameindex):
         '''
@@ -1191,12 +1187,6 @@ class SimplifiedModel():
         '''
         self.rigidbodiesarefixed=rigidbodiesarefixed
 
-    def get_hierarchy(self):
-        return  self.prot
-
-    def get_hierarchy_db(self):
-        return  self.hier_db   
-
     def draw_hierarchy_graph(self):
         for c in IMP.atom.Hierarchy(self.prot).get_children():
             print "Drawing hierarchy graph for "+c.get_name()
@@ -1373,6 +1363,31 @@ class SimplifiedModel():
             pyplot.savefig(k+"structure.png",dpi=150,transparent="True",bbox_extra_artists=(extra_artists), bbox_inches='tight')
             pyplot.show()
 
+    def draw_coordinates_projection(self):
+        import matplotlib.pyplot as pp
+        xpairs=[]
+        ypairs=[]
+        for name in self.hier_geometry_pairs:
+            for pt in self.hier_geometry_pairs[name]:
+                p1=pt[0]
+                p2=pt[1]
+                color=pt[2]
+                coor1=IMP.core.XYZ(p1).get_coordinates()
+                coor2=IMP.core.XYZ(p2).get_coordinates()
+                x1=coor1[0];x2=coor2[0]
+                y1=coor1[1];y2=coor2[1]
+                xpairs.append([x1,x2])
+                ypairs.append([y1,y2])
+        xlist = []
+        ylist = []
+        for xends,yends in zip(xpairs,ypairs):
+            xlist.extend(xends)
+            xlist.append(None)
+            ylist.extend(yends)
+            ylist.append(None)
+        pp.plot(xlist,ylist,'b-',alpha=0.1)
+        pp.show()
+                                
     def get_prot_name_from_particle(self,particle):
             names=self.get_component_names()
             particle0=particle

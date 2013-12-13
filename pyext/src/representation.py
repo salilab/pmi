@@ -176,7 +176,7 @@ class SimplifiedModel():
         xyznter=tools.get_closest_residue_position(t,start,terminus="N")
         xyzcter=tools.get_closest_residue_position(t,end,terminus="C")      
         
-        
+        print gaps,resrange[0],resrange[1],start,end
         #construct pdb fragments and intervening beads
         for n,g in enumerate(gaps):
             first=g[0]+offset
@@ -198,10 +198,6 @@ class SimplifiedModel():
                #add pre-beads
                print "autobuild_pdb_and_intervening_beads: constructing fragment %s as a bead" % (str((first,last)))
                outhiers+=self.add_component_necklace(name,first,last,beadsize,incoord=xyznter)
-        
-        print "autobuild_pdb_and_intervening_beads: constructing fragment %s as a bead" % (str((end+1,resrange[1])))
-        outhiers+=self.add_component_necklace(name,end+1,
-                                              resrange[1],beadsize,incoord=xyzcter)
 
         return outhiers
 

@@ -454,12 +454,15 @@ def get_residue_gaps_in_hierarchy(hierarchy,start,end):
     [[1,100,"cont"],[101,120,"gap"],[121,200,"cont"]]
     '''
     gaps=[]
-    rindexgap=start
-    rindexcont=start
-    for rindex in range(start,end+1):
+    for n,rindex in enumerate(range(start,end+1)):
         sel=IMP.atom.Selection(hierarchy,residue_index=rindex,
                                atom_type=IMP.atom.AT_CA)
+        
         if len(sel.get_selected_particles())==0:
+           if n==0:
+              #set the initial condition
+              rindexgap=start
+              rindexcont=start-1
            if rindexgap==rindex-1:
               #residue is contiguous with the previously discovered gap
               gaps[-1][1]+=1
@@ -470,12 +473,16 @@ def get_residue_gaps_in_hierarchy(hierarchy,start,end):
            #update the index of the last residue gap 
            rindexgap=rindex
         else:
+           if n==0:
+              #set the initial condition
+              rindexgap=start-1
+              rindexcont=start
            if rindexcont==rindex-1:
-              #residue is contiguous with the previously discovered gap
+              #residue is contiguous with the previously discovered continuous part
               gaps[-1][1]+=1
            else:
-              #residue is not contiguous with the previously discovered gap
-              #hence create a new gap tuple
+              #residue is not contiguous with the previously discovered continuous part
+              #hence create a new cont tuple
               gaps.append([rindex,rindex,"cont"])
            #update the index of the last residue gap 
            rindexcont=rindex           

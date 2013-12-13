@@ -372,7 +372,7 @@ class SimplifiedCrossLinkMS():
 
 
 
-class SigmoidCrossLinkMS():
+class SigmoidalCrossLinkMS():
 
     def __init__(
         self, representation, restraints_file, inflection, slope, amplitude,
@@ -448,8 +448,6 @@ class SigmoidCrossLinkMS():
 
             ps1=IMP.pmi.tools.select(representation,resolution=resolution,name=c1,name_is_ambiguous=False,residue=r1)
             ps2=IMP.pmi.tools.select(representation,resolution=resolution,name=c2,name_is_ambiguous=False,residue=r2)
-            
-            print r1,c1,r2,c2,ps1,ps2
             
             if len(ps1) > 1:
                 print "SigmoidCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s" % (r1, c1, str(ps1))

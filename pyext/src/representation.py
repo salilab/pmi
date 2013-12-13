@@ -57,6 +57,7 @@ class SimplifiedModel():
         self.upperharmonic=upperharmonic
         self.disorderedlength=disorderedlength
         self.rigid_bodies=[]
+        self.fixed_rigid_bodies=[]
         self.floppy_bodies=[]
         self.super_rigid_bodies=[]
         self.output_level="low"
@@ -365,7 +366,7 @@ class SimplifiedModel():
             self.hier_representation[name]["Beads"].add_child(h)
 
             for kk in range(ds_frag[0],ds_frag[1]+1):
-                self.hier_db.add_particles(name,kk,resolution,[prt])
+                self.hier_db.add_particles(name,kk,resolution,[h])
 
             try:
                 clr=IMP.display.get_rgb_color(colors[n])
@@ -621,7 +622,7 @@ class SimplifiedModel():
                  resclone1=IMP.atom.create_clone_one(resobject)
                  resindex=IMP.atom.Residue(resclone1).get_index()
                  s1.add_child(resclone1)
-                 self.hier_db.add_particles(name,resindex,1,[resclone1.get_particle()])
+                 self.hier_db.add_particles(name,resindex,1,[resclone1])
 
                  rt=IMP.atom.Residue(resclone1).get_residue_type()
                  xyz=IMP.core.XYZ(p).get_coordinates()
@@ -709,11 +710,15 @@ class SimplifiedModel():
               return rhbr   
 
     def shuffle_configuration(self,bounding_box_length=300.,translate=True,
-                              avoidcollision=True,cutoff=10.0,niterations=100):
+                              avoidcollision=True,cutoff=10.0,niterations=100,
+                              excluded_rigid_bodies=None,hierarchies_excluded_from_collision=None):
         "shuffle configuration, used to restart the optimization"
-        "it  works correclty if rigid bodies were initialized"
+        "it  works correctly if rigid bodies were initialized"
         "avoidcollision check if the particle/rigid body was placed close to another particle"
         "avoidcollision uses the optional arguments cutoff and niterations"
+        
+        if excluded_rigid_bodies==None: excluded_rigid_bodies=[]      
+        if hierarchies_excluded_from_collision==None: hierarchies_excluded_from_collision=[]
         
         if len(self.rigid_bodies)==0:
             print "shuffle_configuration: rigid bodies were not intialized"
@@ -725,12 +730,18 @@ class SimplifiedModel():
         gcpf=IMP.core.NearestNeighborsClosePairsFinder()
         gcpf.set_distance(cutoff)
         allparticleindexes=IMP.get_indexes(IMP.atom.get_leaves(self.prot))
+        hierarchies_excluded_from_collision_indexes=[]
+        for h in hierarchies_excluded_from_collision:
+            hierarchies_excluded_from_collision_indexes+=IMP.get_indexes(IMP.atom.get_leaves(h))
+        allparticleindexes=list(set(allparticleindexes)-set(hierarchies_excluded_from_collision_indexes))
 
         for rb in self.rigid_bodies:
+          if rb not in excluded_rigid_bodies:
             if avoidcollision:
                
                rbindexes=rb.get_member_particle_indexes()
                rbindexes+=rb.get_body_member_particle_indexes()
+               rbindexes=list(set(rbindexes)-set(hierarchies_excluded_from_collision_indexes))
                otherparticleindexes=list(set(allparticleindexes)-set(rbindexes))
                if len(otherparticleindexes)==None: continue
                
@@ -1040,40 +1051,7 @@ class SimplifiedModel():
         rb.set_coordinates_are_optimized(True)
         rb.set_name(name+"rigid_body")
         self.rigid_bodies.append(rb)
-
-    def set_super_rigid_body_from_hierarchies(self,hiers,axis=None):
-        #axis is the rotation axis for 2D rotation
-        super_rigid_xyzs=set()
-        super_rigid_rbs=set()
-        name=""
-        print "set_super_rigid_body_from_hierarchies> setting up a new SUPER rigid body"
-        for hier in hiers:
-            ps=IMP.atom.get_leaves(hier)
-            for p in ps:
-              if IMP.core.RigidMember.particle_is_instance(p):
-                 rb=IMP.core.RigidMember(p).get_rigid_body()
-                 super_rigid_rbs.add(rb)
-              else:
-                 super_rigid_xyzs.add(p)
-            print "set_rigid_body_from_hierarchies> adding %s to the rigid body" % hier.get_name()
-        if axis==None:
-           self.super_rigid_bodies.append((super_rigid_xyzs,super_rigid_rbs))
-        else:
-           #these will be 2D rotation SRB
-           self.super_rigid_bodies.append((super_rigid_xyzs,super_rigid_rbs,axis))
-
-    def set_chain_of_super_rigid_bodies(self,hiers,lmin=None,lmax=None,axis=None):
-        '''
-        this function takes a linear list of hierarchies (they are supposed
-         to be sequence-contiguous) and
-        produces a chain of super rigid bodies with given length range, specified
-        by lmax and lmin
-        '''
-        try:
-          hiers=tools.flatten_list(hiers)
-        except: pass
-        for hs in tools.sublist_iterator(hiers,lmin,lmax):
-            self.set_super_rigid_body_from_hierarchies(hs,axis)
+        return rb
 
     def set_rigid_bodies(self,subunits,coords=None,nonrigidmembers=True):
         if coords==None: coords=()
@@ -1113,6 +1091,45 @@ class SimplifiedModel():
         rb.set_name(''.join(str(subunits))+"_rigid_body")
         if type(coords)==tuple and len(coords)==3: rb.set_coordinates(randomize_coords(coords))
         self.rigid_bodies.append(rb)
+        return rb
+
+    def set_super_rigid_body_from_hierarchies(self,hiers,axis=None):
+        #axis is the rotation axis for 2D rotation
+        super_rigid_xyzs=set()
+        super_rigid_rbs=set()
+        name=""
+        print "set_super_rigid_body_from_hierarchies> setting up a new SUPER rigid body"
+        for hier in hiers:
+            ps=IMP.atom.get_leaves(hier)
+            for p in ps:
+              if IMP.core.RigidMember.particle_is_instance(p):
+                 rb=IMP.core.RigidMember(p).get_rigid_body()
+                 super_rigid_rbs.add(rb)
+              else:
+                 super_rigid_xyzs.add(p)
+            print "set_rigid_body_from_hierarchies> adding %s to the rigid body" % hier.get_name()
+        if axis==None:
+           self.super_rigid_bodies.append((super_rigid_xyzs,super_rigid_rbs))
+        else:
+           #these will be 2D rotation SRB
+           self.super_rigid_bodies.append((super_rigid_xyzs,super_rigid_rbs,axis))
+    
+    def fix_rigid_bodies(self,rigid_bodies):
+        self.fixed_rigid_bodies+=rigid_bodies   
+
+ 
+    def set_chain_of_super_rigid_bodies(self,hiers,lmin=None,lmax=None,axis=None):
+        '''
+        this function takes a linear list of hierarchies (they are supposed
+         to be sequence-contiguous) and
+        produces a chain of super rigid bodies with given length range, specified
+        by lmax and lmin
+        '''
+        try:
+          hiers=tools.flatten_list(hiers)
+        except: pass
+        for hs in tools.sublist_iterator(hiers,lmin,lmax):
+            self.set_super_rigid_body_from_hierarchies(hs,axis)
 
     def set_super_rigid_bodies(self,subunits,coords=None):
         super_rigid_xyzs=set()
@@ -1431,7 +1448,8 @@ class SimplifiedModel():
                   if IMP.pmi.Symmetric(rb).get_symmetric()!=1:
                      rbtmp.append(rb)
                else:
-                  rbtmp.append(rb)
+                  if rb not in self.fixed_rigid_bodies:
+                     rbtmp.append(rb)
 
         for fb in self.floppy_bodies:
            if IMP.pmi.Symmetric.particle_is_instance(fb):

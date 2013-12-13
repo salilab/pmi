@@ -519,8 +519,8 @@ def select(representation,
     representation_type="Beads", "Res:X", "Densities", "Representation", "Molecule"
     '''
 
-    
-    allparticles=IMP.atom.get_leaves(representation.prot)
+    if resolution==None:
+       allparticles=IMP.atom.get_leaves(representation.prot)
     resolution_particles=None
     hierarchies_particles=None
     names_particles=None
@@ -554,11 +554,12 @@ def select(representation,
     if first_residue!=None and last_residue!=None:
        sel = IMP.atom.Selection(representation.prot, 
               residue_indexes=range(first_residue, last_residue + 1))
-       residue_range_particles=sel.get_selected_particles() 
+       residue_range_particles=[IMP.atom.Hierarchy(p) for p in sel.get_selected_particles()]
+       
 
     if residue!=None:
        sel = IMP.atom.Selection(representation.prot, residue_index=residue)
-       residue_particles=sel.get_selected_particles()
+       residue_particles=[IMP.atom.Hierarchy(p) for p in sel.get_selected_particles()]
     
     if representation_type!=None:
       representation_type_particles=[]
@@ -573,10 +574,13 @@ def select(representation,
             h=representation.hier_representation[name][representation_type]
             representation_type_particles+=IMP.atom.get_leaves(h)
     
-    selections=[resolution_particles,hierarchies_particles,names_particles,
+    selections=[hierarchies_particles,names_particles,
                 residue_range_particles,residue_particles,representation_type_particles]
     
-    selected_particles=set(allparticles)
+    if resolution==None:
+       selected_particles=set(allparticles)
+    else:
+       selected_particles=set(resolution_particles)
     
     for s in selections:
         if s!=None:

@@ -448,7 +448,9 @@ class SigmoidCrossLinkMS():
 
             ps1=IMP.pmi.tools.select(representation,resolution=resolution,name=c1,name_is_ambiguous=False,residue=r1)
             ps2=IMP.pmi.tools.select(representation,resolution=resolution,name=c2,name_is_ambiguous=False,residue=r2)
-
+            
+            print r1,c1,r2,c2,ps1,ps2
+            
             if len(ps1) > 1:
                 print "SigmoidCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s" % (r1, c1, str(ps1))
                 exit()
@@ -732,8 +734,9 @@ class ISDCrossLinkMS():
             sigma2 = self.get_sigma(mappedr2)[0]
             psival = self.ids_map.get_map_element(ids)
             psi = self.get_psi(psival)[0]
-            p1i = p1.get_index()
-            p2i = p2.get_index()
+            
+            p1i = p1.get_particle_index()
+            p2i = p2.get_particle_index()
             s1i = sigma1.get_particle().get_index()
             s2i = sigma2.get_particle().get_index()
             psii = psi.get_particle().get_index()

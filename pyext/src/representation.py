@@ -7,7 +7,7 @@ import IMP.atom
 import IMP.display
 import IMP.pmi
 
-class SimplifiedModel():
+class Representation():
 #Peter Cimermancic and Riccardo Pellarin
     '''
     This class creates the molecular hierarchies, representation,
@@ -29,7 +29,7 @@ class SimplifiedModel():
                      as optimal distance for the sequence connectivity
                      restraint. Default is False.
 
-    How to use the SimplifiedModel class (typical use):
+    How to use the Representation class (typical use):
 
     see test/test_hierarchy_contruction.py
     '''
@@ -77,7 +77,7 @@ class SimplifiedModel():
         self.representation_is_modified=False
         self.unmodeledregions_cr_dict={}
         self.sortedsegments_cr_dict={}
-        self.prot=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
+        self.root_hierarchy=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
         self.connected_intra_pairs=[]
         self.hier_dict={}
         self.color_dict={}
@@ -101,14 +101,30 @@ class SimplifiedModel():
         self.onetothree = dict((v,k) for k, v in self.threetoone.iteritems())
 
         self.residuenamekey = IMP.kernel.StringKey("ResidueName")
+    
+    def get_hierarchy(self):
+        return self.root_hierarchy
 
-    def add_component_name(self,name,color=None):
+    def get_model(self):
+        return self.m                
+    
+    ''' 
+    class _Component:
+        def __init__(self, repclass=simo, name):
+            # save them
+            self.repclass = repclass
+        def set_color(self, color):
+            self.repclass._set_color(self.name, color)
+    ''' 
+        
+        
+    def create_component(self,name,color=None):
         protein_h = IMP.atom.Molecule.setup_particle(IMP.Particle(self.m))
         protein_h.set_name(name)
         self.hier_dict[name]=protein_h
         self.hier_representation[name]={}
         self.hier_db.add_name(name)
-        self.prot.add_child(protein_h)
+        self.root_hierarchy.add_child(protein_h)
         self.color_dict[name]=color
         self.elements[name]=[]
 
@@ -135,8 +151,8 @@ class SimplifiedModel():
         self.sequence_dict[name]=str(record_dict[id].seq)
         self.elements[name].append((length,length," ","end"))
 
-    def autobuild_pdb_and_intervening_beads(self,name,pdbname,chain,
-                                      resolutions=None,resrange=None,beadsize=20,
+    def autobuild_model(self,name,pdbname,chain,
+                                      resolutions=None,resrange=None,missingbeadsize=20,
                                       color=None,pdbresrange=None,offset=0,
                                       show=False,isnucleicacid=False,
                                       attachbeads=False):
@@ -149,7 +165,7 @@ class SimplifiedModel():
         
         if resolutions==None:
            resolutions=[1]
-        print "autobuild_pdb_and_intervening_beads: constructing %s from pdb %s and chain %s" % (name,pdbname,str(chain))
+        print "autobuild_model: constructing %s from pdb %s and chain %s" % (name,pdbname,str(chain))
         
         #get the initial and end residues of the pdb
         t=IMP.atom.read_pdb( pdbname, self.m,
@@ -182,22 +198,22 @@ class SimplifiedModel():
             first=g[0]+offset
             last=g[1]+offset
             if g[2]=="cont":
-               print "autobuild_pdb_and_intervening_beads: constructing fragment %s from pdb" % (str((first,last)))
+               print "autobuild_model: constructing fragment %s from pdb" % (str((first,last)))
                outhiers+=self.add_component_pdb(name,pdbname,
                                                 chain,resolutions=resolutions, 
                                                 color=color,cacenters=True,
                                                 resrange=(first,last),
                                                 offset=offset,isnucleicacid=isnucleicacid)
             elif g[2]=="gap" and n>0:
-               print "autobuild_pdb_and_intervening_beads: constructing fragment %s as a bead" % (str((first,last)))
+               print "autobuild_model: constructing fragment %s as a bead" % (str((first,last)))
                parts=self.hier_db.get_particles_at_closest_resolution(name,first-1,1)
                xyz=IMP.core.XYZ(parts[0]).get_coordinates()
-               outhiers+=self.add_component_necklace(name,first,last,beadsize,incoord=xyz)
+               outhiers+=self.add_component_necklace(name,first,last,missingbeadsize,incoord=xyz)
 
             elif g[2]=="gap" and n==0:
                #add pre-beads
-               print "autobuild_pdb_and_intervening_beads: constructing fragment %s as a bead" % (str((first,last)))
-               outhiers+=self.add_component_necklace(name,first,last,beadsize,incoord=xyznter)
+               print "autobuild_model: constructing fragment %s as a bead" % (str((first,last)))
+               outhiers+=self.add_component_necklace(name,first,last,missingbeadsize,incoord=xyznter)
 
         return outhiers
 
@@ -725,7 +741,7 @@ class SimplifiedModel():
         
         gcpf=IMP.core.NearestNeighborsClosePairsFinder()
         gcpf.set_distance(cutoff)
-        allparticleindexes=IMP.get_indexes(IMP.atom.get_leaves(self.prot))
+        allparticleindexes=IMP.get_indexes(IMP.atom.get_leaves(self.root_hierarchy))
         hierarchies_excluded_from_collision_indexes=[]
         for h in hierarchies_excluded_from_collision:
             hierarchies_excluded_from_collision_indexes+=IMP.get_indexes(IMP.atom.get_leaves(h))
@@ -905,21 +921,12 @@ class SimplifiedModel():
         self.sortedsegments_cr_dict[name]=sortedsegments_cr
         self.unmodeledregions_cr_dict[name]=unmodeledregions_cr
     
-    def optimize_floppy_bodies(self,nsteps,temperature=1.0):
-        import IMP.pmi.samplers
-        pts=tools.ParticleToSampleList()
-        for n,fb in enumerate(self.floppy_bodies):
-            pts.add_particle(fb,"Floppy_Bodies",1.0,"Floppy_Body_"+str(n))
-        mc = IMP.pmi.samplers.MonteCarlo(self.m,[pts], temperature)
-        print "optimize_floppy_bodies: optimizing %i floppy bodies" % len(self.floppy_bodies)
-        mc.run(nsteps)
-
     def create_rotational_symmetry(self,maincopy,copies):
         from math import pi
         self.representation_is_modified=True
         ncopies=len(copies)+1
 
-        sel=IMP.atom.Selection(self.prot,molecule=maincopy)
+        sel=IMP.atom.Selection(self.root_hierarchy,molecule=maincopy)
         mainparticles=sel.get_selected_particles()
 
         for k in range(len(copies)):
@@ -927,7 +934,7 @@ class SimplifiedModel():
           sm=IMP.core.TransformationSymmetry(rotation3D)
 
 
-          sel=IMP.atom.Selection(self.prot,molecule=copies[k])
+          sel=IMP.atom.Selection(self.root_hierarchy,molecule=copies[k])
           copyparticles=sel.get_selected_particles()
 
           mainpurged=[]
@@ -998,12 +1005,12 @@ class SimplifiedModel():
     def link_components_to_rmf(self,rmfname,frameindex):
         '''
         load coordinates in the current representation
-        this should be done only if the hierarchy self.prot is identical to the one
+        this should be done only if the hierarchy self.root_hierarchy is identical to the one
         i.e. all components were added
         as stored in the rmf
         '''
         rh= RMF.open_rmf_file(rmfname)
-        imprmf.link_hierarchies(rh, [self.prot])
+        imprmf.link_hierarchies(rh, [self.root_hierarchy])
         imprmf.load_frame(rh, frameindex)
         del rh
 
@@ -1011,16 +1018,16 @@ class SimplifiedModel():
         '''
         still not working.
         create the representation (i.e. hierarchies) from the rmf file.
-        it will be stored in self.prot, which will be overwritten.
+        it will be stored in self.root_hierarchy, which will be overwritten.
         load the coordinates from the rmf file at frameindex.
         '''
         rh= RMF.open_rmf_file(rmfname)
-        self.prot=imprmf.create_hierarchies(rh, self.m)[0]
-        IMP.atom.show_molecular_hierarchy(self.prot)
-        imprmf.link_hierarchies(rh, [self.prot])
+        self.root_hierarchy=imprmf.create_hierarchies(rh, self.m)[0]
+        IMP.atom.show_molecular_hierarchy(self.root_hierarchy)
+        imprmf.link_hierarchies(rh, [self.root_hierarchy])
         imprmf.load_frame(rh, frameindex)
         del rh
-        for p in self.prot.get_children():
+        for p in self.root_hierarchy.get_children():
             self.add_component_name(p.get_name())
             self.hier_dict[p.get_name()]=p
         '''
@@ -1058,7 +1065,7 @@ class SimplifiedModel():
         rigid_parts=set()
         for s in subunits:
             if type(s)==type(tuple()) and len(s)==2:
-               sel=IMP.atom.Selection(self.prot,molecule=s[0],residue_indexes=range(s[1][0],s[1][1]+1))
+               sel=IMP.atom.Selection(self.root_hierarchy,molecule=s[0],residue_indexes=range(s[1][0],s[1][1]+1))
                if len(sel.get_selected_particles())==0:
                   print "set_rigid_bodies: selected particle does not exists"
                for p in sel.get_selected_particles():
@@ -1071,7 +1078,7 @@ class SimplifiedModel():
 
 
             elif type(s)==type(str()):
-               sel=IMP.atom.Selection(self.prot,molecule=s)
+               sel=IMP.atom.Selection(self.root_hierarchy,molecule=s)
                if len(sel.get_selected_particles())==0:
                   print "set_rigid_bodies: selected particle does not exists"
                for p in sel.get_selected_particles():
@@ -1089,12 +1096,12 @@ class SimplifiedModel():
         self.rigid_bodies.append(rb)
         return rb
 
-    def set_super_rigid_body_from_hierarchies(self,hiers,axis=None):
+    def set_compound_mover_from_hierarchies(self,hiers,axis=None):
         #axis is the rotation axis for 2D rotation
         super_rigid_xyzs=set()
         super_rigid_rbs=set()
         name=""
-        print "set_super_rigid_body_from_hierarchies> setting up a new SUPER rigid body"
+        print "set_compound_mover_from_hierarchies> setting up a new compound mover"
         for hier in hiers:
             ps=IMP.atom.get_leaves(hier)
             for p in ps:
@@ -1114,7 +1121,7 @@ class SimplifiedModel():
         self.fixed_rigid_bodies+=rigid_bodies   
 
  
-    def set_chain_of_super_rigid_bodies(self,hiers,lmin=None,lmax=None,axis=None):
+    def set_chain_of_compound_movers(self,hiers,min_length=None,max_length=None,axis=None):
         '''
         this function takes a linear list of hierarchies (they are supposed
          to be sequence-contiguous) and
@@ -1124,18 +1131,18 @@ class SimplifiedModel():
         try:
           hiers=tools.flatten_list(hiers)
         except: pass
-        for hs in tools.sublist_iterator(hiers,lmin,lmax):
-            self.set_super_rigid_body_from_hierarchies(hs,axis)
+        for hs in tools.sublist_iterator(hiers,min_length,max_length):
+            self.set_compound_mover_from_hierarchies(hs,axis)
 
-    def set_super_rigid_bodies(self,subunits,coords=None):
+    def set_compound_mover(self,subunits,coords=None):
         super_rigid_xyzs=set()
         super_rigid_rbs=set()
 
         for s in subunits:
             if type(s)==type(tuple()) and len(s)==2:
-               sel=IMP.atom.Selection(self.prot,molecule=s[0],residue_indexes=range(s[1][0],s[1][1]+1))
+               sel=IMP.atom.Selection(self.root_hierarchy,molecule=s[0],residue_indexes=range(s[1][0],s[1][1]+1))
                if len(sel.get_selected_particles())==0:
-                  print "set_rigid_bodies: selected particle does not exists"
+                  print "set_compound_mover: selected particle does not exists"
                for p in sel.get_selected_particles():
                       if IMP.core.RigidMember.particle_is_instance(p):
                          rb=IMP.core.RigidMember(p).get_rigid_body()
@@ -1143,9 +1150,9 @@ class SimplifiedModel():
                       else:
                          super_rigid_xyzs.add(p)
             elif type(s)==type(str()):
-               sel=IMP.atom.Selection(self.prot,molecule=s)
+               sel=IMP.atom.Selection(self.root_hierarchy,molecule=s)
                if len(sel.get_selected_particles())==0:
-                  print "set_rigid_bodies: selected particle does not exists"
+                  print "set_compound_mover: selected particle does not exists"
                for p in sel.get_selected_particles():
                   #if not p in self.floppy_bodies:
                       if IMP.core.RigidMember.particle_is_instance(p):
@@ -1172,9 +1179,9 @@ class SimplifiedModel():
 
         for s in selection_tuples:
             if type(s)==tuple and len(s)==3:
-              sel=IMP.atom.Selection(self.prot,molecule=s[2],residue_indexes=range(s[0],s[1]+1))
+              sel=IMP.atom.Selection(self.root_hierarchy,molecule=s[2],residue_indexes=range(s[0],s[1]+1))
             elif type(s)==str:
-              sel=IMP.atom.Selection(self.prot,molecule=s)
+              sel=IMP.atom.Selection(self.root_hierarchy,molecule=s)
             ps=sel.get_selected_particles()
             print "get_particles_from_selection: "+str(s)+" selected "+str(len(ps))+" particles"
             particles+=ps
@@ -1201,7 +1208,7 @@ class SimplifiedModel():
         self.rigidbodiesarefixed=rigidbodiesarefixed
 
     def draw_hierarchy_graph(self):
-        for c in IMP.atom.Hierarchy(self.prot).get_children():
+        for c in IMP.atom.Hierarchy(self.root_hierarchy).get_children():
             print "Drawing hierarchy graph for "+c.get_name()
             output.get_graph_from_hierarchy(c)
 
@@ -1457,9 +1464,9 @@ class SimplifiedModel():
         self.rigid_bodies=rbtmp
         self.floppy_bodies=fbtmp
 
-        ps["Rigid_Bodies_SimplifiedModel"]=(self.rigid_bodies,self.maxtrans_rb,self.maxrot_rb)
-        ps["Floppy_Bodies_SimplifiedModel"]=(self.floppy_bodies,self.maxtrans_fb)
-        ps["SR_Bodies_SimplifiedModel"]=(self.super_rigid_bodies,self.maxtrans_srb,self.maxrot_srb)
+        ps["Rigid_Bodies_Representation"]=(self.rigid_bodies,self.maxtrans_rb,self.maxrot_rb)
+        ps["Floppy_Bodies_Representation"]=(self.floppy_bodies,self.maxtrans_fb)
+        ps["SR_Bodies_Representation"]=(self.super_rigid_bodies,self.maxtrans_srb,self.maxrot_srb)
         return ps
 
     def set_output_level(self,level):
@@ -1469,19 +1476,19 @@ class SimplifiedModel():
         output={}
         score=0.0
 
-        output["SimplifiedModel_Total_Score_"+self.label]=str(self.m.evaluate(False))
-        output["SimplifiedModel_Linker_Score_"+self.label]=str(self.linker_restraints.unprotected_evaluate(None))
+        output["Representation_Total_Score_"+self.label]=str(self.m.evaluate(False))
+        output["Representation_Linker_Score_"+self.label]=str(self.linker_restraints.unprotected_evaluate(None))
         for name in self.sortedsegments_cr_dict:
             partialscore=self.sortedsegments_cr_dict[name].evaluate(False)
             score+=partialscore
-            output["SimplifiedModel_Link_SortedSegments_"+name+"_"+self.label]=str(partialscore)
+            output["Representation_Link_SortedSegments_"+name+"_"+self.label]=str(partialscore)
             partialscore=self.unmodeledregions_cr_dict[name].evaluate(False)
             score+=partialscore
-            output["SimplifiedModel_Link_UnmodeledRegions_"+name+"_"+self.label]=str(partialscore)
+            output["Representation_Link_UnmodeledRegions_"+name+"_"+self.label]=str(partialscore)
         for name in self.linker_restraints_dict:
             output[name+"_"+self.label]=str(self.linker_restraints_dict[name].unprotected_evaluate(None))
         if self.output_level=="high":
-            for p in IMP.atom.get_leaves(self.prot):
+            for p in IMP.atom.get_leaves(self.root_hierarchy):
                 d=IMP.core.XYZR(p)
                 output["Coordinates_"+p.get_name()+"_"+self.label]=str(d)
 

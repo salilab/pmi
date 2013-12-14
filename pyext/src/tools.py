@@ -527,7 +527,7 @@ def select(representation,
     '''
 
     if resolution==None:
-       allparticles=IMP.atom.get_leaves(representation.prot)
+       allparticles=IMP.atom.get_leaves(representation.get_hierarchy())
     resolution_particles=None
     hierarchies_particles=None
     names_particles=None
@@ -559,13 +559,13 @@ def select(representation,
           print "select: component %s is not there" % name
 
     if first_residue!=None and last_residue!=None:
-       sel = IMP.atom.Selection(representation.prot, 
+       sel = IMP.atom.Selection(representation.get_hierarchy(), 
               residue_indexes=range(first_residue, last_residue + 1))
        residue_range_particles=[IMP.atom.Hierarchy(p) for p in sel.get_selected_particles()]
        
 
     if residue!=None:
-       sel = IMP.atom.Selection(representation.prot, residue_index=residue)
+       sel = IMP.atom.Selection(representation.get_hierarchy(), residue_index=residue)
        residue_particles=[IMP.atom.Hierarchy(p) for p in sel.get_selected_particles()]
     
     if representation_type!=None:

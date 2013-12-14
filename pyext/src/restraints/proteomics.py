@@ -34,7 +34,7 @@ class ConnectivityRestraint():
         self.label = label
         if self.label == "None":
             self.label = str(selection_tuples)
-        self.m = representation.prot.get_model()
+        self.m = representation.get_model()
         self.rs = IMP.RestraintSet(self.m, label)
 
         sels = []
@@ -106,7 +106,7 @@ class CompositeRestraint():
 
         # composite particles: all particles beside the handle
         self.label = label
-        self.m = representation.prot.get_model()
+        self.m = representation.get_model()
         self.rs = IMP.RestraintSet(self.m, 'cr')
         
         handleparticles=[]
@@ -173,7 +173,7 @@ class AmbiguousCompositeRestraint():
         label="None"):
 
         self.weight = 1.0
-        self.m = representation.prot.get_model()     
+        self.m = representation.get_model()     
         self.rs = IMP.RestraintSet(self.m, 'data')           
         self.label = "None"
         self.pairs = []
@@ -339,7 +339,7 @@ class SimplifiedPEMAP():
 
     def __init__(self, representation, restraints_file, expdistance, strength,resolution=None):
 
-        self.m = representation.prot.get_model()
+        self.m = representation.get_model()
         self.rs = IMP.RestraintSet(self.m, 'data')
         self.label = "None"
         self.pairs = []

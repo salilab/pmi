@@ -9,7 +9,7 @@ import IMP.container
 class ExternalBarrier():
 
     def __init__(self, representation, radius,hierarchies=None,resolution=None):
-        self.m = representation.prot.get_model()
+        self.m = representation.get_model()
         self.rs = IMP.RestraintSet(self.m, 'barrier')
 
         self.radius = radius

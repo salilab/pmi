@@ -1,18 +1,21 @@
+import os
+import IMP
+import IMP.atom
+import IMP.core
+try:
+   import RMF
+   import IMP.rmf
+   rmf_library=True
+except ImportError:
+   rmf_library=False
+
+
 class Output():
+
+    import cPickle
     
     def __init__(self,ascii=True):
-        global os,RMF,imprmf,cPickle,impatom,impcore,imp
-        import cPickle as cPickle
-        import os
-        import IMP as imp
-        import IMP.atom as impatom
-        import IMP.core as impcore
-        try:
-            import RMF
-            import IMP.rmf as imprmf
-            self.rmf_library=True
-        except ImportError:
-            self.rmf_library=False
+
 
 
         self.dictionary_pdbs={}
@@ -25,7 +28,7 @@ class Output():
         self.replica_exchange=False
         self.ascii=ascii
         self.initoutput={}
-        self.residuetypekey=imp.StringKey("ResidueName")
+        self.residuetypekey=IMP.StringKey("ResidueName")
         self.chainids="ABCDEFGHIJKLMNOPQRSTUVXYWZabcdefghijklmnopqrstuvxywz"
         self.dictchain={}
 
@@ -55,7 +58,7 @@ class Output():
             
         #impatom.write_pdb(self.dictionary_pdbs[name],flpdb)
         
-        for n,p in enumerate(impatom.get_leaves(self.dictionary_pdbs[name])):
+        for n,p in enumerate(IMP.atom.get_leaves(self.dictionary_pdbs[name])):
            root=p
            protname=root.get_name()
            while not protname in self.dictchain[name]:
@@ -65,12 +68,12 @@ class Output():
         
            #resind=impatom.Fragment(p).get_residue_indexes()
         
-           if impatom.Residue.particle_is_instance(p):
-              residue=impatom.Residue(p)
+           if IMP.atom.Residue.particle_is_instance(p):
+              residue=IMP.atom.Residue(p)
               rt=residue.get_residue_type()
               resind=residue.get_index()
-              flpdb.write(impatom.get_pdb_string(impcore.XYZ(p).get_coordinates(),
-                             n,impatom.AT_CA,rt,
+              flpdb.write(IMP.atom.get_pdb_string(IMP.atom.XYZ(p).get_coordinates(),
+                             n,IMP.atom.AT_CA,rt,
                              self.dictchain[name][protname],
                              resind))
         flpdb.write("ENDMOL\n")
@@ -156,12 +159,12 @@ class Output():
            best_score_file.close()
 
     def init_rmf(self,name,hierarchies):
-        if not self.rmf_library:
+        if not rmf_library:
             print "Output error: neet rmf library to init rmf"
             exit()
 
         rh = RMF.create_rmf_file(name)
-        imprmf.add_hierarchies(rh, hierarchies)
+        IMP.rmf.add_hierarchies(rh, hierarchies)
         self.dictionary_rmfs[name]=rh
 
     def add_restraints_to_rmf(self,name,objectlist):
@@ -170,12 +173,12 @@ class Output():
                rs=o.get_restraint_for_rmf()
             except:
                rs=o.get_restraint()
-            imprmf.add_restraints(self.dictionary_rmfs[name],rs.get_restraints())
+            IMP.rmf.add_restraints(self.dictionary_rmfs[name],rs.get_restraints())
 
     def add_geometries_to_rmf(self,name,objectlist):
         for o in objectlist:
             geos=o.get_geometries()
-            imprmf.add_geometries(self.dictionary_rmfs[name],geos)
+            IMP.rmf.add_geometries(self.dictionary_rmfs[name],geos)
 
     
     def add_particle_pair_from_restraints_to_rmf(self,name,objectlist):
@@ -183,10 +186,10 @@ class Output():
             
             pps=o.get_particle_pairs()
             for pp in pps:
-              imprmf.add_geometry(self.dictionary_rmfs[name],IMP.core.EdgePairGeometry(pp))  
+              IMP.rmf.add_geometry(self.dictionary_rmfs[name],IMP.core.EdgePairGeometry(pp))  
 
     def write_rmf(self,name,nframe):
-        imprmf.save_frame(self.dictionary_rmfs[name],nframe)
+        IMP.rmf.save_frame(self.dictionary_rmfs[name],nframe)
         self.dictionary_rmfs[name].flush()
 
     def close_rmf(self,name):

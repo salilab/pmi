@@ -21,7 +21,7 @@ class ConnectivityCrossLinkMS():
         strength=None,
         resolution=None):
 
-        self.m = representation.prot.get_model()
+        self.m = representation.get_model()
         self.rs = IMP.RestraintSet(self.m, 'data')
         self.weight = 1.0
         self.label = "None"
@@ -197,7 +197,7 @@ class SimplifiedCrossLinkMS():
             columnmapping["Residue1"] = 2
             columnmapping["Residue2"] = 3
 
-        self.m = representation.prot.get_model()
+        self.m = representation.get_model()
         self.rs = IMP.RestraintSet(self.m, 'data')
         self.weight = 1.0
         self.label = "None"
@@ -399,7 +399,7 @@ class SigmoidalCrossLinkMS():
         else:
             db = IMP.pmi.tools.open_file_or_inline_text(restraints_file)
 
-        self.m = representation.prot.get_model()
+        self.m = representation.get_model()
         self.rs = IMP.RestraintSet(self.m, 'data')
         self.weight = 1.0
 
@@ -625,7 +625,7 @@ class ISDCrossLinkMS():
         exdb = open("excluded.xl.db", "w")
         midb = open("missing.xl.db", "w")
 
-        self.m = representation.prot.get_model()
+        self.m = representation.get_model()
         self.rs = IMP.RestraintSet(self.m, 'data')
         self.rspsi = IMP.RestraintSet(self.m, 'prior_psi')
         self.rssig = IMP.RestraintSet(self.m, 'prior_sigmas')

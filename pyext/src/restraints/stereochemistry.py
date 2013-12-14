@@ -18,7 +18,7 @@ class ExcludedVolumeSphere():
                        other_hierarchies=None, 
                        resolution=None, kappa=1.0):
 
-        self.m = representation.prot.get_model()
+        self.m = representation.get_model()
         self.rs = IMP.RestraintSet(self.m, 'excluded_volume')
         self.weight = 1.0
         self.kappa = kappa
@@ -84,7 +84,7 @@ class ResidueBondRestraint():
     from math import pi as pi
     
     def __init__(self,representation,selection_tuple,distance=3.78,strength=10.0):
-        self.m=representation.prot.get_model()
+        self.m=representation.get_model()
         self.rs = IMP.RestraintSet(self.m, "Bonds")
         self.weight=1
         self.label="None"
@@ -146,7 +146,7 @@ class ResidueAngleRestraint():
     from math import pi as pi
     
     def __init__(self,representation,selection_tuple,anglemin=100.0,anglemax=140.0,strength=10.0):
-        self.m=representation.prot.get_model()
+        self.m=representation.get_model()
         self.rs = IMP.RestraintSet(self.m, "Angles")
         self.weight=1
         self.label="None"
@@ -208,7 +208,7 @@ class ResidueDihedralRestraint():
     from math import pi as pi
     
     def __init__(self,representation,selection_tuple,stringsequence=None,strength=10.0):
-        self.m=representation.prot.get_model()
+        self.m=representation.get_model()
         self.rs = IMP.RestraintSet(self.m, "Angles")
         self.weight=1
         self.label="None"
@@ -291,7 +291,7 @@ class SecondaryStructure():
 
 
         self.particles=IMP.pmi.tools.select_by_tuple(representation,selection_tuple,resolution=1)
-        self.m = representation.prot.get_model()
+        self.m = representation.get_model()
         self.dihe_dict = {}
         self.ang_dict = {}
         self.do_mix = {}

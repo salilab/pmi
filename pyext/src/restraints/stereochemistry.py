@@ -5,6 +5,10 @@ import IMP.base
 import IMP.algebra
 import IMP.atom
 import IMP.container
+try:
+    import IMP.isd2
+except ImportError:
+    noisd2lib=True
 
 class ExcludedVolumeSphere():
     '''
@@ -274,7 +278,8 @@ class ResidueDihedralRestraint():
 
 #
 class SecondaryStructure():
-    import IMP.isd2
+
+       
     from math import pi
     from math import log    
     
@@ -289,7 +294,7 @@ class SecondaryStructure():
         # check that the secondary structure string
         # is compatible with the ssstring
 
-
+        if noisd2lib: "SecondaryStructure: no isd2 library found"; exit()
         self.particles=IMP.pmi.tools.select_by_tuple(representation,selection_tuple,resolution=1)
         self.m = representation.get_model()
         self.dihe_dict = {}

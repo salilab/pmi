@@ -1228,8 +1228,9 @@ class SimplifiedModel():
         seggeos=[]
         for name in self.hier_geometry_pairs:
             for pt in self.hier_geometry_pairs[name]:
+
                 p1=pt[0]
-                p2=pt[1]
+                p2=pt[1]             
                 IMP.atom.create_bond(IMP.atom.Bonded.setup_particle(p1),IMP.atom.Bonded.setup_particle(p2),1)
 
     def show_component_table(self,name):

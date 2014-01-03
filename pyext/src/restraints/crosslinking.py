@@ -683,7 +683,7 @@ class ISDCrossLinkMS():
                     if eval(IMP.pmi.tools.cross_link_db_filter_parser(filters)) == False:
                         exdb.write(str(entry) + "\n")
                         continue
-                indb.write(str(entry) + "\n")
+                
                 r1 = int(entry[residue1])
                 c1 = entry[protein1]
                 r2 = int(entry[residue2])
@@ -739,12 +739,14 @@ class ISDCrossLinkMS():
             s2i = sigma2.get_particle().get_index()
             psii = psi.get_particle().get_index()
             dr.add_contribution((p1i, p2i), (s1i, s2i), psii)
-
+            
             print "--------------"
             print "ISDCrossLinkMS: generating cross-link restraint between"
             print "ISDCrossLinkMS: residue %d of chain %s and residue %d of chain %s" % (r1, c1, r2, c2)
             print "ISDCrossLinkMS: with sigma1 %f  sigma2 %f psi %s" % (mappedr1, mappedr2, psival)
             print "ISDCrossLinkMS: between particles %s and %s" % (p1.get_name(), p2.get_name())
+
+            indb.write(str(entry) + "\n")
 
             restraints.append(dr)
 
@@ -780,6 +782,7 @@ class ISDCrossLinkMS():
 
         lw = IMP.isd2.LogWrapper(restraints)
         self.rs.add_restraint(lw)
+        
 
     def create_length(self):
         self.lengthinit = 10.0

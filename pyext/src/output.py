@@ -453,8 +453,12 @@ class ProcessOutput():
     def get_keys(self):      
         return self.klist
         
-    def get_fields(self,fields):
-           
+    def get_fields(self,fields,filterout=None):
+           '''
+           this function get the wished field names and return a dictionary
+           you can give the optional argument filterout if you want to "grep" out
+           something from the file, so that it is faster
+           '''
            
            outdict={}
            for field in fields:
@@ -464,6 +468,9 @@ class ProcessOutput():
            f=open(self.filename,"r")
            line_number=0
            for line in f.readlines():
+              if filterout!=None: 
+                 if filterout in line:
+                    continue
               line_number+=1
               try:
                  d=eval(line)
@@ -517,7 +524,7 @@ class ProcessOutput():
     
     
 def plot_fields_box_plots(name,values,positions,
-                          valuename="None",positionname="None"):
+                          valuename="None",positionname="None",xlabels=None):
     '''
     This function plots time series as boxplots
     fields is a list of time series, positions are the x-values
@@ -541,6 +548,9 @@ def plot_fields_box_plots(name,values,positions,
     plt.setp(bps[-1]['boxes'], color='black',lw=1.5)
     plt.setp(bps[-1]['whiskers'], color='black',ls=":",lw=1.5)
     
+    print ax1.xaxis.get_majorticklocs()
+    if xlabels!=None: ax1.set_xticklabels(xlabels)
+    plt.xticks(rotation=90)
     plt.xlabel(positionname)
     plt.ylabel(valuename)
     plt.savefig(name+".png",dpi=150,transparent="True")

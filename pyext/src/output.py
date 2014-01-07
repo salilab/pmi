@@ -519,7 +519,7 @@ class ProcessOutput():
         else:
            plt.xlabel(valuename)
         plt.ylabel("Frequency")
-        plt.savefig(name+".png",dpi=150,transparent="True")
+        plt.savefig(name+".png",dpi=150,transparent="False")
         plt.show()
     
     
@@ -535,7 +535,7 @@ def plot_fields_box_plots(name,values,positions,
     #import numpy as np
     
     bps=[]
-    fig = plt.figure(figsize=(10,10))
+    fig = plt.figure(figsize=(float(len(positions))/2,5.0))
     fig.canvas.set_window_title(name)
     ax1 = fig.add_subplot(111)
     
@@ -553,7 +553,7 @@ def plot_fields_box_plots(name,values,positions,
     plt.xticks(rotation=90)
     plt.xlabel(positionname)
     plt.ylabel(valuename)
-    plt.savefig(name+".png",dpi=150,transparent="True")
+    plt.savefig(name+".png",dpi=150,bbox_inches="tight")
     plt.show()
 
 

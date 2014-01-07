@@ -600,7 +600,7 @@ class ISDCrossLinkMS():
 
     def __init__(self, representation, restraints_file, length, resolution=None,slope=0.0,
                  columnmapping=None, csvfile=False, samplelength=False,
-                 ids_map=None, radius_map=None, filters=None):
+                 ids_map=None, radius_map=None, filters=None,label="None"):
         # columnindexes is a list of column indexes for protein1, protein2, residue1, residue2
         # by default column 0 = protein1; column 1 = protein2; column 2 = residue1; column 3 = residue2;
         # column 4 = idscores
@@ -631,14 +631,14 @@ class ISDCrossLinkMS():
         self.rssig = IMP.RestraintSet(self.m, 'prior_sigmas')
         self.rslin = IMP.RestraintSet(self.m, 'prior_linear')
         self.rslen = IMP.RestraintSet(self.m, 'prior_length')
-
         
-        self.label = "None"
+        
+        self.label = label
         self.pairs = []
         self.sigma_dictionary = {}
         self.psi_dictionary = {}
         self.samplelength = samplelength
-
+        
         if ids_map is None:
             self.ids_map = IMP.pmi.tools.map()
             self.ids_map.set_map_element(20.0, 0.05)
@@ -760,11 +760,11 @@ class ISDCrossLinkMS():
                 xlattribute = "interrb"
 
             dr.set_name(
-                xlattribute + "-" + c1 + ":" + str(r1) + "-" + c2 + ":" + str(r2))
+                xlattribute + "-" + c1 + ":" + str(r1) + "-" + c2 + ":" + str(r2)+"_"+self.label)
 
             pr = IMP.core.PairRestraint(dps2, IMP.ParticlePair(p1, p2))
             pr.set_name(
-                xlattribute + "-" + c1 + ":" + str(r1) + "-" + c2 + ":" + str(r2))
+                xlattribute + "-" + c1 + ":" + str(r1) + "-" + c2 + ":" + str(r2)+"_"+self.label)
             self.rslin.add_restraint(pr)
 
             self.pairs.append(
@@ -921,7 +921,6 @@ class ISDCrossLinkMS():
 
             p0 = self.pairs[i][0]
             p1 = self.pairs[i][1]
-            crosslinker = 'standard'
             ln = self.pairs[i][2]
             resid1 = self.pairs[i][3]
             chain1 = self.pairs[i][4]
@@ -935,7 +934,7 @@ class ISDCrossLinkMS():
             label = attribute + "-" + \
                 str(resid1) + ":" + chain1 + "_" + str(resid2) + ":" + \
                 chain2 + "-" + str(rad1) + "-" + str(rad2) + "-" + str(psi)
-            output["ISDCrossLinkMS_Score_" + crosslinker + "_" +
+            output["ISDCrossLinkMS_Score_" + 
                    label+"_"+self.label] = str(-self.log(ln.unprotected_evaluate(None)))
             d0 = IMP.core.XYZ(p0)
             d1 = IMP.core.XYZ(p1)
@@ -947,11 +946,11 @@ class ISDCrossLinkMS():
                    str(psiindex) + "_" + self.label] = str(self.psi_dictionary[psiindex][0].get_scale())
 
         for resolution in self.sigma_dictionary:
-            output["ISDCrossLinkMS_Sigma_" +
+            output["ISDCrossLinkMS_Sigma_" + 
                    str(resolution) + "_" + self.label] = str(self.sigma_dictionary[resolution][0].get_scale())
 
         if self.samplelength:
-            output["ISDCrossLinkMS_Length_" +
+            output["ISDCrossLinkMS_Length_" + 
                    str(resolution) + "_" + self.label] = str(self.length.get_scale())
 
         return output

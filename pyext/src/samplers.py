@@ -2,8 +2,15 @@ import IMP
 import IMP.core
 
 class MonteCarlo():
-    def __init__(self,m,objects,temp,filterbyname=None):
 
+    #check that isd is installed
+    try:
+      import IMP.isd
+      isd_available = True
+    except ImportError:
+      isd_available = False
+
+    def __init__(self,m,objects,temp,filterbyname=None):
         #check that isd2 is installed
         try:
             global impisd2
@@ -58,16 +65,16 @@ class MonteCarlo():
                     self.mvs+=mvs
 
                 if "Nuisances" in k:
-                    if not self.isd2_available:
-                        print "MonteCarlo: isd2 module needed to use nuisances"
+                    if not self.isd_available:
+                        print "MonteCarlo: isd module needed to use nuisances"
                         exit()
                     mvs=self.get_nuisance_movers(pts[k][0],pts[k][1])
                     for mv in mvs: mv.set_name(k)
                     self.mvs+=mvs
 
                 if "Weights" in k:
-                    if not self.isd2_available:
-                        print "MonteCarlo: isd2 module needed to use weights"
+                    if not self.isd_available:
+                        print "MonteCarlo: isd module needed to use weights"
                         exit()
                     mvs=self.get_weight_movers(pts[k][0],pts[k][1])
                     for mv in mvs: mv.set_name(k)

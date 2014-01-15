@@ -43,7 +43,9 @@ class IMPPMIEXPORT  CompositeRestraint : public Restraint
     double invdx_;
     double argmax_;
     double argmin_;
-    bool tabprob_;
+    bool tabprob_;    
+    double plateau_;
+    int exparg_grid_size_;
 
     inline double calc_prob (double dist) const{
       double argvalue=(dist-coffd_)/l_;  
@@ -53,11 +55,12 @@ class IMPPMIEXPORT  CompositeRestraint : public Restraint
          double maxarg=std::max(argvalue,argmin_);      
          //this prevents something being above the upper value of the array
          double minarg=std::min(maxarg,argmax_);       
-         unsigned k = static_cast<unsigned>( std::floor(minarg*invdx_) );
+         unsigned k = static_cast<unsigned>( std::floor(minarg*invdx_)+exparg_grid_size_);
          prob=prob_grid_[k];
+         
       }
       else{
-         prob=1.0/(1.0+std::exp(-argvalue));
+         prob=(1.0-plateau_)/(1.0+std::exp(-argvalue));
       }
       return prob;
     }
@@ -80,7 +83,7 @@ public:
 
   CompositeRestraint(IMP::kernel::Model *m, 
                      IMP::kernel::ParticleIndexesAdaptor handle_particle_indexes, 
-                     double coffd, double l, bool tabprob, 
+                     double coffd, double l, bool tabprob, double plateau,
                      std::string name="CompositeRestraint%1%");
 
   void add_composite_particle(IMP::kernel::ParticleIndexesAdaptor pi){pis_.push_back(pi);}

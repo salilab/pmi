@@ -21,7 +21,7 @@ class Output():
         self.dictionary_stats2={}
         self.best_score_list=None
         self.nbestscoring=None
-        self.suffix=None
+        self.suffixes=[]
         self.replica_exchange=False
         self.ascii=ascii
         self.initoutput={}
@@ -86,7 +86,7 @@ class Output():
         # save only the nbestscoring conformations
         # create as many pdbs as needed
 
-        self.suffix=suffix
+        self.suffixes.append(suffix)
         self.replica_exchange=replica_exchange
         if not self.replica_exchange:
            #common usage
@@ -125,12 +125,13 @@ class Output():
             self.best_score_list.append(score)
             self.best_score_list.sort()
             index=self.best_score_list.index(score)
-            for i in range(len(self.best_score_list)-2,index-1,-1):
-                oldname=self.suffix+"."+str(i)+".pdb"
-                newname=self.suffix+"."+str(i+1)+".pdb"
-                os.rename(oldname, newname)
-            filetoadd=self.suffix+"."+str(index)+".pdb"
-            self.write_pdb(filetoadd,appendmode=False)
+            for suffix in self.suffixes:
+              for i in range(len(self.best_score_list)-2,index-1,-1):
+                  oldname=suffix+"."+str(i)+".pdb"
+                  newname=suffix+"."+str(i+1)+".pdb"
+                  os.rename(oldname, newname)
+              filetoadd=suffix+"."+str(index)+".pdb"
+              self.write_pdb(filetoadd,appendmode=False)
 
         else:
             if score<self.best_score_list[-1]:
@@ -138,14 +139,15 @@ class Output():
                 self.best_score_list.sort()
                 self.best_score_list.pop(-1)
                 index=self.best_score_list.index(score)
-                for i in range(len(self.best_score_list)-1,index-1,-1):
-                    oldname=self.suffix+"."+str(i)+".pdb"
-                    newname=self.suffix+"."+str(i+1)+".pdb"
+                for suffix in self.suffixes:                
+                  for i in range(len(self.best_score_list)-1,index-1,-1):
+                    oldname=suffix+"."+str(i)+".pdb"
+                    newname=suffix+"."+str(i+1)+".pdb"
                     os.rename(oldname, newname)
-                filenametoremove=self.suffix+"."+str(self.nbestscoring)+".pdb"
-                os.remove(filenametoremove)
-                filetoadd=self.suffix+"."+str(index)+".pdb"
-                self.write_pdb(filetoadd,appendmode=False)
+                  filenametoremove=suffix+"."+str(self.nbestscoring)+".pdb"
+                  os.remove(filenametoremove)
+                  filetoadd=suffix+"."+str(index)+".pdb"
+                  self.write_pdb(filetoadd,appendmode=False)
 
         if self.replica_exchange:
            #write the self.best_score_list to the file
@@ -451,8 +453,12 @@ class ProcessOutput():
     def get_keys(self):      
         return self.klist
         
-    def get_fields(self,fields):
-           
+    def get_fields(self,fields,filterout=None):
+           '''
+           this function get the wished field names and return a dictionary
+           you can give the optional argument filterout if you want to "grep" out
+           something from the file, so that it is faster
+           '''
            
            outdict={}
            for field in fields:
@@ -462,6 +468,9 @@ class ProcessOutput():
            f=open(self.filename,"r")
            line_number=0
            for line in f.readlines():
+              if filterout!=None: 
+                 if filterout in line:
+                    continue
               line_number+=1
               try:
                  d=eval(line)
@@ -510,12 +519,12 @@ class ProcessOutput():
         else:
            plt.xlabel(valuename)
         plt.ylabel("Frequency")
-        plt.savefig(name+".png",dpi=150,transparent="True")
+        plt.savefig(name+".png",dpi=150,transparent="False")
         plt.show()
     
     
 def plot_fields_box_plots(name,values,positions,
-                          valuename="None",positionname="None"):
+                          valuename="None",positionname="None",xlabels=None):
     '''
     This function plots time series as boxplots
     fields is a list of time series, positions are the x-values
@@ -526,7 +535,7 @@ def plot_fields_box_plots(name,values,positions,
     #import numpy as np
     
     bps=[]
-    fig = plt.figure(figsize=(10,10))
+    fig = plt.figure(figsize=(float(len(positions))/2,5.0))
     fig.canvas.set_window_title(name)
     ax1 = fig.add_subplot(111)
     
@@ -539,9 +548,12 @@ def plot_fields_box_plots(name,values,positions,
     plt.setp(bps[-1]['boxes'], color='black',lw=1.5)
     plt.setp(bps[-1]['whiskers'], color='black',ls=":",lw=1.5)
     
+    print ax1.xaxis.get_majorticklocs()
+    if xlabels!=None: ax1.set_xticklabels(xlabels)
+    plt.xticks(rotation=90)
     plt.xlabel(positionname)
     plt.ylabel(valuename)
-    plt.savefig(name+".png",dpi=150,transparent="True")
+    plt.savefig(name+".png",dpi=150,bbox_inches="tight")
     plt.show()
 
 

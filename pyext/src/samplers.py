@@ -175,6 +175,7 @@ class MonteCarlo():
     def get_nuisance_movers(self,nuisances,maxstep):
         mvs=[]
         for nuisance in nuisances:
+            print nuisance,maxstep
             mvs.append(IMP.core.NormalMover([nuisance],IMP.FloatKeys([IMP.FloatKey("nuisance")]),maxstep))
         return mvs
 
@@ -187,7 +188,12 @@ class MonteCarlo():
     def get_super_rigid_body_movers(self,rbs,maxtrans,maxrot):
         mvs=[]
         for rb in rbs:
-            srbm=IMP.pmi.TransformMover(self.m,maxtrans,maxrot)
+            if len(rb)==2:
+               #normal Super Rigid Body
+               srbm=IMP.pmi.TransformMover(self.m,maxtrans,maxrot)
+            if len(rb)==3:
+               #super rigid body with 2D rotation, rb[2] is the axis
+               srbm=IMP.pmi.TransformMover(self.m,IMP.algebra.Vector3D(rb[2]),maxtrans,maxrot)
             for xyz in rb[0]: srbm.add_xyz_particle(xyz)
             for rb  in rb[1]: srbm.add_rigid_body_particle(rb)
             mvs.append(srbm)

@@ -18,11 +18,11 @@ class GaussianEMRestraint():
 
         # some parameters
         self.label="None"
-        self.sigmaissampled = False
-        self.sigmamaxtrans = 0.1
-        self.sigmamin = 0.0005
-        self.sigmamax = 0.5
-        self.sigmainit = 0.0005
+        self.sigmaissampled = True
+        self.sigmamaxtrans = 0.3
+        self.sigmamin = 1.0
+        self.sigmamax = 100.0
+        self.sigmainit = 2.0
         self.cutoff_dist_for_container = 10.0
         self.tabexp = True
         self.label="None"

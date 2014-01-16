@@ -18,7 +18,7 @@ class GaussianEMRestraint():
 
         # some parameters
         self.label="None"
-        self.sigmaissampled = True
+        self.sigmaissampled = False
         self.sigmamaxtrans = 0.1
         self.sigmamin = 0.0005
         self.sigmamax = 0.5

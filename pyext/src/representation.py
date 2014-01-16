@@ -6,6 +6,7 @@ import IMP.algebra
 import IMP.atom
 import IMP.display
 import IMP.pmi
+from math import pi
 
 class SimplifiedModel():
 #Peter Cimermancic and Riccardo Pellarin
@@ -457,6 +458,7 @@ class SimplifiedModel():
                IMP.isd2.gmm_tools.write_gmm_to_map(igmm,outputmap,dmap)
         else:
             #read the inputfile here
+            print 'reading input file'
             density_particles=[IMP.Particle(self.m) for i in xrange(num_components)]
             igmm=IMP.isd2.gmm_tools.read_gmm_txt(density_particles,inputfile)
             for p in density_particles:
@@ -471,7 +473,7 @@ class SimplifiedModel():
         for nps,p in enumerate(density_particles):
             s0.add_child(p)
             p.set_name(s0.get_name()+'_gaussian_%i'%nps)
-
+        print 'end setup'
         return outhier
 
     def get_component_density(self,name):
@@ -705,7 +707,7 @@ class SimplifiedModel():
               self.hier_resolution[resolution]=rhbr
               return rhbr   
 
-    def shuffle_configuration(self,bounding_box_length=300.,translate=True,
+    def shuffle_configuration(self,max_translation=300.,max_rotation=2.0*pi,
                               avoidcollision=True,cutoff=10.0,niterations=100,
                               excluded_rigid_bodies=None,hierarchies_excluded_from_collision=None):
         "shuffle configuration, used to restart the optimization"
@@ -718,11 +720,7 @@ class SimplifiedModel():
         
         if len(self.rigid_bodies)==0:
             print "shuffle_configuration: rigid bodies were not intialized"
-        hbbl=bounding_box_length/2
-        ub = IMP.algebra.Vector3D(-hbbl,-hbbl,-hbbl)
-        lb = IMP.algebra.Vector3D( hbbl, hbbl, hbbl)
-        bb = IMP.algebra.BoundingBox3D(ub, lb)
-        
+
         gcpf=IMP.core.NearestNeighborsClosePairsFinder()
         gcpf.set_distance(cutoff)
         allparticleindexes=IMP.get_indexes(IMP.atom.get_leaves(self.prot))
@@ -742,12 +740,11 @@ class SimplifiedModel():
                if len(otherparticleindexes)==None: continue
                
             niter=0
-            while niter<niterations: 
-               if translate==True: translation = IMP.algebra.get_random_vector_in(bb)
-               else: translation = (rb.get_x(), rb.get_y(), rb.get_z())
-               rotation = IMP.algebra.get_random_rotation_3d()
-               transformation = IMP.algebra.Transformation3D(rotation, translation)
-               rb.set_reference_frame(IMP.algebra.ReferenceFrame3D(transformation))
+            while niter<niterations:                
+               rbxyz=(rb.get_x(), rb.get_y(), rb.get_z())
+               transformation=IMP.algebra.get_random_local_transformation(rbxyz,max_translation,max_rotation)
+               
+               IMP.core.transform(rb,transformation)
                
                if avoidcollision:
                   self.m.update()
@@ -760,7 +757,7 @@ class SimplifiedModel():
                         print "shuffle_configuration: tried the maximum number of iterations to avoid collisions, increase the distance cutoff" 
                         exit()
                else:
-                  niter=niterations
+                  break
                 
         for fb in self.floppy_bodies:
 
@@ -773,8 +770,9 @@ class SimplifiedModel():
 
             niter=0
             while niter<niterations: 
-               translation = IMP.algebra.get_random_vector_in(bb)
-               IMP.core.XYZ(fb).set_coordinates(translation)
+               fbxyz=IMP.core.XYZ(fb).get_coordinates()
+               transformation=IMP.algebra.get_random_local_transformation(fbxyz,max_translation,max_rotation)
+               IMP.core.transform(IMP.core.XYZ(fb),transformation)
 
                if avoidcollision:
                   self.m.update()
@@ -787,7 +785,7 @@ class SimplifiedModel():
                         print "shuffle_configuration: tried the maximum number of iterations to avoid collisions, increase the distance cutoff" 
                         exit()
                else:
-                  niter=niterations
+                  break
 
     def translate_hierarchy(self,hierarchy,translation_vector):
         '''

@@ -89,7 +89,10 @@ class SimplifiedModel():
         #self.hier_representation[name][representation_type]
         #where representation type is Res:X, Beads, Densities, Representation, etc...
         self.hier_representation={}
-        self.hier_resolution={}                 
+        self.hier_resolution={}
+        #reference structures is a dictionary that contains the coorindates of
+        #structures that are used to calculate the rmsd
+        self.reference_structures={}            
         self.elements={}
         self.linker_restraints=IMP.RestraintSet(self.m,"linker_restraints")
         self.linker_restraints_dict={}
@@ -819,6 +822,25 @@ class SimplifiedModel():
         xc=xc/nc;yc=yc/nc;zc=zc/nc
         self.translate_hierarchies(hierarchies,(-xc,-yc,-zc))
 
+    def set_current_coordinates_as_reference_for_rmsd(self,label):
+        self.reference_structures[label]=[IMP.core.XYZ(p).get_coordinates() for p in IMP.atom.get_leaves(self.prot)]
+    
+    def get_all_rmsds(self):
+        rmsds={}
+        current_coordinates=[IMP.core.XYZ(p).get_coordinates() for p in IMP.atom.get_leaves(self.prot)]
+        
+        for label in self.reference_structures:
+            reference_coordinates=self.reference_structures[label]
+            if len(reference_coordinates)!=len(current_coordinates):
+               print "calculate_all_rmsds: reference and actual coordinates are not the same"
+               continue
+            transformation=IMP.algebra.get_transformation_aligning_first_to_second(current_coordinates, reference_coordinates)
+            rmsd_global=IMP.atom.get_rmsd(reference_coordinates,current_coordinates)
+            rmsd_relative=0#IMP.atom.get_rmsd(reference_coordinates,current_coordinates,transformation)
+            rmsds[label+"_GlobalRMSD"]=rmsd_global
+            rmsds[label+"_RelativeRMSD"]=rmsd_relative
+        return rmsds            
+
     def setup_component_geometry(self,name,color=None,resolution=1.0):
         if color==None:
            color=self.color_dict[name]
@@ -1479,10 +1501,17 @@ class SimplifiedModel():
             output["SimplifiedModel_Link_UnmodeledRegions_"+name+"_"+self.label]=str(partialscore)
         for name in self.linker_restraints_dict:
             output[name+"_"+self.label]=str(self.linker_restraints_dict[name].unprotected_evaluate(None))
+        
+        if len(self.reference_structures.keys())!=0:
+           rmsds=self.get_all_rmsds()
+           for label in rmsds:
+               output["SimplifiedModel_"+label+"_"+self.label]=rmsds[label]
+           
         if self.output_level=="high":
             for p in IMP.atom.get_leaves(self.prot):
                 d=IMP.core.XYZR(p)
                 output["Coordinates_"+p.get_name()+"_"+self.label]=str(d)
+                
 
         output["_TotalScore"]=str(score)
         return output

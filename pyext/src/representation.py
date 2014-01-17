@@ -825,7 +825,7 @@ class SimplifiedModel():
     def set_current_coordinates_as_reference_for_rmsd(self,label):
         self.reference_structures[label]=[IMP.core.XYZ(p).get_coordinates() for p in IMP.atom.get_leaves(self.prot)]
     
-    def calculate_all_rmsds(self):
+    def get_all_rmsds(self):
         rmsds={}
         current_coordinates=[IMP.core.XYZ(p).get_coordinates() for p in IMP.atom.get_leaves(self.prot)]
         
@@ -836,7 +836,7 @@ class SimplifiedModel():
                continue
             transformation=IMP.algebra.get_transformation_aligning_first_to_second(current_coordinates, reference_coordinates)
             rmsd_global=IMP.atom.get_rmsd(reference_coordinates,current_coordinates)
-            rmsd_relative=IMP.atom.get_rmsd(reference_coordinates,current_coordinates,transformation)
+            rmsd_relative=0#IMP.atom.get_rmsd(reference_coordinates,current_coordinates,transformation)
             rmsds[label+"_GlobalRMSD"]=rmsd_global
             rmsds[label+"_RelativeRMSD"]=rmsd_relative
         return rmsds            
@@ -1502,7 +1502,7 @@ class SimplifiedModel():
         for name in self.linker_restraints_dict:
             output[name+"_"+self.label]=str(self.linker_restraints_dict[name].unprotected_evaluate(None))
         
-        if len(self.reference_structures.get_keys())!=0:
+        if len(self.reference_structures.keys())!=0:
            rmsds=self.get_all_rmsds()
            for label in rmsds:
                output["SimplifiedModel_"+label+"_"+self.label]=rmsds[label]

@@ -930,9 +930,12 @@ class SimplifiedModel():
         pts=tools.ParticleToSampleList()
         for n,fb in enumerate(self.floppy_bodies):
             pts.add_particle(fb,"Floppy_Bodies",1.0,"Floppy_Body_"+str(n))
-        mc = IMP.pmi.samplers.MonteCarlo(self.m,[pts], temperature)
-        print "optimize_floppy_bodies: optimizing %i floppy bodies" % len(self.floppy_bodies)
-        mc.run(nsteps)
+        if len(pts)>0:
+           mc = IMP.pmi.samplers.MonteCarlo(self.m,[pts], temperature)
+           print "optimize_floppy_bodies: optimizing %i floppy bodies" % len(self.floppy_bodies)
+           mc.run(nsteps)
+        else:
+           print "optimize_floppy_bodies: no particle to optimize" 
 
     def create_rotational_symmetry(self,maincopy,copies):
         from math import pi

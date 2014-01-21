@@ -840,9 +840,10 @@ class SimplifiedModel():
                continue
             transformation=IMP.algebra.get_transformation_aligning_first_to_second(current_coordinates, reference_coordinates)
             rmsd_global=IMP.atom.get_rmsd(reference_coordinates,current_coordinates)
-            rmsd_relative=0#IMP.atom.get_rmsd(reference_coordinates,current_coordinates,transformation)
+            #warning: temporary we are calculating the drms, and not the rmsd, for the relative distance
+            rmsd_relative=IMP.atom.get_drms(reference_coordinates,current_coordinates)
             rmsds[label+"_GlobalRMSD"]=rmsd_global
-            rmsds[label+"_RelativeRMSD"]=rmsd_relative
+            rmsds[label+"_RelativeDRMS"]=rmsd_relative
         return rmsds            
 
     def setup_component_geometry(self,name,color=None,resolution=1.0):

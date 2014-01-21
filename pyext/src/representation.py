@@ -6,6 +6,7 @@ import IMP.algebra
 import IMP.atom
 import IMP.display
 import IMP.pmi
+from math import pi
 
 class SimplifiedModel():
 #Peter Cimermancic and Riccardo Pellarin
@@ -88,7 +89,10 @@ class SimplifiedModel():
         #self.hier_representation[name][representation_type]
         #where representation type is Res:X, Beads, Densities, Representation, etc...
         self.hier_representation={}
-        self.hier_resolution={}                 
+        self.hier_resolution={}
+        #reference structures is a dictionary that contains the coorindates of
+        #structures that are used to calculate the rmsd
+        self.reference_structures={}            
         self.elements={}
         self.linker_restraints=IMP.RestraintSet(self.m,"linker_restraints")
         self.linker_restraints_dict={}
@@ -457,6 +461,7 @@ class SimplifiedModel():
                IMP.isd2.gmm_tools.write_gmm_to_map(igmm,outputmap,dmap)
         else:
             #read the inputfile here
+            print 'reading input file'
             density_particles=[IMP.Particle(self.m) for i in xrange(num_components)]
             igmm=IMP.isd2.gmm_tools.read_gmm_txt(density_particles,inputfile)
             for p in density_particles:
@@ -471,7 +476,7 @@ class SimplifiedModel():
         for nps,p in enumerate(density_particles):
             s0.add_child(p)
             p.set_name(s0.get_name()+'_gaussian_%i'%nps)
-
+        print 'end setup'
         return outhier
 
     def get_component_density(self,name):
@@ -705,7 +710,7 @@ class SimplifiedModel():
               self.hier_resolution[resolution]=rhbr
               return rhbr   
 
-    def shuffle_configuration(self,bounding_box_length=300.,translate=True,
+    def shuffle_configuration(self,max_translation=300.,max_rotation=2.0*pi,
                               avoidcollision=True,cutoff=10.0,niterations=100,
                               excluded_rigid_bodies=None,hierarchies_excluded_from_collision=None):
         "shuffle configuration, used to restart the optimization"
@@ -718,11 +723,7 @@ class SimplifiedModel():
         
         if len(self.rigid_bodies)==0:
             print "shuffle_configuration: rigid bodies were not intialized"
-        hbbl=bounding_box_length/2
-        ub = IMP.algebra.Vector3D(-hbbl,-hbbl,-hbbl)
-        lb = IMP.algebra.Vector3D( hbbl, hbbl, hbbl)
-        bb = IMP.algebra.BoundingBox3D(ub, lb)
-        
+
         gcpf=IMP.core.NearestNeighborsClosePairsFinder()
         gcpf.set_distance(cutoff)
         allparticleindexes=IMP.get_indexes(IMP.atom.get_leaves(self.prot))
@@ -742,12 +743,11 @@ class SimplifiedModel():
                if len(otherparticleindexes)==None: continue
                
             niter=0
-            while niter<niterations: 
-               if translate==True: translation = IMP.algebra.get_random_vector_in(bb)
-               else: translation = (rb.get_x(), rb.get_y(), rb.get_z())
-               rotation = IMP.algebra.get_random_rotation_3d()
-               transformation = IMP.algebra.Transformation3D(rotation, translation)
-               rb.set_reference_frame(IMP.algebra.ReferenceFrame3D(transformation))
+            while niter<niterations:                
+               rbxyz=(rb.get_x(), rb.get_y(), rb.get_z())
+               transformation=IMP.algebra.get_random_local_transformation(rbxyz,max_translation,max_rotation)
+               
+               IMP.core.transform(rb,transformation)
                
                if avoidcollision:
                   self.m.update()
@@ -760,12 +760,14 @@ class SimplifiedModel():
                         print "shuffle_configuration: tried the maximum number of iterations to avoid collisions, increase the distance cutoff" 
                         exit()
                else:
-                  niter=niterations
+                  break
                 
         for fb in self.floppy_bodies:
 
             if avoidcollision:
-               if not IMP.core.NonRigidMember.get_is_setup(fb):
+               rm=not IMP.core.RigidMember.get_is_setup(fb)
+               nrm=not IMP.core.NonRigidMember.get_is_setup(fb)
+               if rm and nrm:
                   fbindexes=IMP.get_indexes([fb])
                   otherparticleindexes=list(set(allparticleindexes)-set(fbindexes))
                   if len(otherparticleindexes)==None: continue
@@ -773,9 +775,12 @@ class SimplifiedModel():
 
             niter=0
             while niter<niterations: 
-               translation = IMP.algebra.get_random_vector_in(bb)
-               IMP.core.XYZ(fb).set_coordinates(translation)
-
+               fbxyz=IMP.core.XYZ(fb).get_coordinates()
+               transformation=IMP.algebra.get_random_local_transformation(fbxyz,max_translation,max_rotation)
+               IMP.core.transform(IMP.core.XYZ(fb),transformation)
+               print IMP.core.XYZ(fb),fbindexes,fb
+               
+               
                if avoidcollision:
                   self.m.update()
                   npairs=len(gcpf.get_close_pairs(self.m,otherparticleindexes,fbindexes))
@@ -787,7 +792,7 @@ class SimplifiedModel():
                         print "shuffle_configuration: tried the maximum number of iterations to avoid collisions, increase the distance cutoff" 
                         exit()
                else:
-                  niter=niterations
+                  break
 
     def translate_hierarchy(self,hierarchy,translation_vector):
         '''
@@ -820,6 +825,25 @@ class SimplifiedModel():
                 xc+=coor[0];yc+=coor[1];zc+=coor[2] 
         xc=xc/nc;yc=yc/nc;zc=zc/nc
         self.translate_hierarchies(hierarchies,(-xc,-yc,-zc))
+
+    def set_current_coordinates_as_reference_for_rmsd(self,label):
+        self.reference_structures[label]=[IMP.core.XYZ(p).get_coordinates() for p in IMP.atom.get_leaves(self.prot)]
+    
+    def get_all_rmsds(self):
+        rmsds={}
+        current_coordinates=[IMP.core.XYZ(p).get_coordinates() for p in IMP.atom.get_leaves(self.prot)]
+        
+        for label in self.reference_structures:
+            reference_coordinates=self.reference_structures[label]
+            if len(reference_coordinates)!=len(current_coordinates):
+               print "calculate_all_rmsds: reference and actual coordinates are not the same"
+               continue
+            transformation=IMP.algebra.get_transformation_aligning_first_to_second(current_coordinates, reference_coordinates)
+            rmsd_global=IMP.atom.get_rmsd(reference_coordinates,current_coordinates)
+            rmsd_relative=0#IMP.atom.get_rmsd(reference_coordinates,current_coordinates,transformation)
+            rmsds[label+"_GlobalRMSD"]=rmsd_global
+            rmsds[label+"_RelativeRMSD"]=rmsd_relative
+        return rmsds            
 
     def setup_component_geometry(self,name,color=None,resolution=1.0):
         if color==None:
@@ -910,9 +934,12 @@ class SimplifiedModel():
         pts=tools.ParticleToSampleList()
         for n,fb in enumerate(self.floppy_bodies):
             pts.add_particle(fb,"Floppy_Bodies",1.0,"Floppy_Body_"+str(n))
-        mc = IMP.pmi.samplers.MonteCarlo(self.m,[pts], temperature)
-        print "optimize_floppy_bodies: optimizing %i floppy bodies" % len(self.floppy_bodies)
-        mc.run(nsteps)
+        if len(pts)>0:
+           mc = IMP.pmi.samplers.MonteCarlo(self.m,[pts], temperature)
+           print "optimize_floppy_bodies: optimizing %i floppy bodies" % len(self.floppy_bodies)
+           mc.run(nsteps)
+        else:
+           print "optimize_floppy_bodies: no particle to optimize" 
 
     def create_rotational_symmetry(self,maincopy,copies):
         from math import pi
@@ -1481,10 +1508,17 @@ class SimplifiedModel():
             output["SimplifiedModel_Link_UnmodeledRegions_"+name+"_"+self.label]=str(partialscore)
         for name in self.linker_restraints_dict:
             output[name+"_"+self.label]=str(self.linker_restraints_dict[name].unprotected_evaluate(None))
+        
+        if len(self.reference_structures.keys())!=0:
+           rmsds=self.get_all_rmsds()
+           for label in rmsds:
+               output["SimplifiedModel_"+label+"_"+self.label]=rmsds[label]
+           
         if self.output_level=="high":
             for p in IMP.atom.get_leaves(self.prot):
                 d=IMP.core.XYZR(p)
                 output["Coordinates_"+p.get_name()+"_"+self.label]=str(d)
+                
 
         output["_TotalScore"]=str(score)
         return output

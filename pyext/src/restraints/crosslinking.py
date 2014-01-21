@@ -450,18 +450,18 @@ class SigmoidalCrossLinkMS():
             ps2=IMP.pmi.tools.select(representation,resolution=resolution,name=c2,name_is_ambiguous=False,residue=r2)
             
             if len(ps1) > 1:
-                print "SigmoidCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s" % (r1, c1, str(ps1))
+                print "SigmoidalCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s" % (r1, c1, str(ps1))
                 exit()
             elif len(ps1) == 0:
-                print "SigmoidCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1, c1)
+                print "SigmoidalCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1, c1)
                 midb.write(str(entry) + "\n")
                 continue
 
             if len(ps2) > 1:
-                print "SigmoidCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s" % (r2, c2, str(ps2))
+                print "SigmoidalCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s" % (r2, c2, str(ps2))
                 exit()
             elif len(ps2) == 0:
-                print "SigmoidCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2, c2)
+                print "SigmoidalCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2, c2)
                 midb.write(str(entry) + "\n")
                 continue
 
@@ -472,7 +472,7 @@ class SigmoidalCrossLinkMS():
                 dr = self.already_added_pairs[(p1, p2)]
                 weight = dr.get_weight()
                 dr.increment_amplitude(amplitude)
-                print "SigmoidCrossLinkMS> crosslink %d %s %d %s was already found, adding %d to the amplitude, amplitude is now %d" % (r1, c1, r2, c2, amplitude, dr.get_amplitude())
+                print "SigmoidalCrossLinkMS> crosslink %d %s %d %s was already found, adding %d to the amplitude, amplitude is now %d" % (r1, c1, r2, c2, amplitude, dr.get_amplitude())
                 dr.set_name(c1 + ":" + str(r1) + "-" + c2 + ":" + str(r2)
                             + "-ampl:" + str(dr.get_amplitude()))
                 continue
@@ -564,7 +564,7 @@ class SigmoidalCrossLinkMS():
         output = {}
         score = self.weight * self.rs.unprotected_evaluate(None)
         output["_TotalScore"] = str(score)
-        output["SigmoidCrossLinkMS_Score_" + self.label] = str(score)
+        output["SigmoidalCrossLinkMS_Score_" + self.label] = str(score)
         for i in range(len(self.pairs)):
 
             p0 = self.pairs[i][0]
@@ -578,11 +578,11 @@ class SigmoidalCrossLinkMS():
 
             label = str(resid1) + ":" + chain1 + "_" + \
                 str(resid2) + ":" + chain2
-            output["SigmoidCrossLinkMS_Score_" + crosslinker + "_" +
+            output["SigmoidalCrossLinkMS_Score_" + crosslinker + "_" +
                    label] = str(self.weight * ln.unprotected_evaluate(None))
             d0 = IMP.core.XYZR(p0)
             d1 = IMP.core.XYZR(p1)
-            output["SigmoidCrossLinkMS_Distance_" +
+            output["SigmoidalCrossLinkMS_Distance_" +
                    label] = str(IMP.core.get_distance(d0, d1))
 
         return output
@@ -600,7 +600,8 @@ class ISDCrossLinkMS():
 
     def __init__(self, representation, restraints_file, length, resolution=None,slope=0.0,
                  columnmapping=None, csvfile=False, samplelength=False,
-                 ids_map=None, radius_map=None, filters=None,label="None"):
+                 ids_map=None, radius_map=None, filters=None,label="None",marginal=False,
+                 automatic_sigma_classification=False):
         # columnindexes is a list of column indexes for protein1, protein2, residue1, residue2
         # by default column 0 = protein1; column 1 = protein2; column 2 = residue1; column 3 = residue2;
         # column 4 = idscores
@@ -626,8 +627,10 @@ class ISDCrossLinkMS():
         midb = open("missing.xl.db", "w")
 
         self.m = representation.prot.get_model()
+        self.marginal=marginal
         self.rs = IMP.RestraintSet(self.m, 'data')
-        self.rspsi = IMP.RestraintSet(self.m, 'prior_psi')
+        if not self.marginal:
+           self.rspsi = IMP.RestraintSet(self.m, 'prior_psi')
         self.rssig = IMP.RestraintSet(self.m, 'prior_sigmas')
         self.rslin = IMP.RestraintSet(self.m, 'prior_linear')
         self.rslen = IMP.RestraintSet(self.m, 'prior_length')
@@ -636,7 +639,8 @@ class ISDCrossLinkMS():
         self.label = label
         self.pairs = []
         self.sigma_dictionary = {}
-        self.psi_dictionary = {}
+        if not self.marginal:
+           self.psi_dictionary = {}
         self.samplelength = samplelength
         
         if ids_map is None:
@@ -648,7 +652,9 @@ class ISDCrossLinkMS():
 
         if radius_map is None:
             self.radius_map = IMP.pmi.tools.map()
-            self.radius_map.set_map_element(10, 10)
+            if automatic_sigma_classification:
+               self.radius_map.set_map_element(10, 10)
+            self.radius_map.set_map_element(1, 1)
         else:
             self.radius_map = radius_map
 
@@ -716,13 +722,22 @@ class ISDCrossLinkMS():
             # remove in the future!!!
             if p1 == p2:
                 continue
-
-            if not self.samplelength:
+            
+            if not self.marginal:
+              if not self.samplelength:
                 dr = IMP.isd2.CrossLinkMSRestraint(self.m, length)
-            else:
+              else:
                 # this will create a xl length particle that will be sampled
                 self.create_length()
                 dr = IMP.isd2.CrossLinkMSRestraint(self.m, self.length)
+
+            else:
+              if not self.samplelength:
+                dr = IMP.isd2.CrossLinkMSMarginalRestraint(self.m, length)
+              else:
+                # this will create a xl length particle that will be sampled
+                self.create_length()
+                dr = IMP.isd2.CrossLinkMSMarginalRestraint(self.m, self.length)
 
             mappedr1 = self.radius_map.get_map_element(
                 IMP.pmi.Uncertainty(p1).get_uncertainty())
@@ -730,21 +745,33 @@ class ISDCrossLinkMS():
             mappedr2 = self.radius_map.get_map_element(
                 IMP.pmi.Uncertainty(p2).get_uncertainty())
             sigma2 = self.get_sigma(mappedr2)[0]
-            psival = self.ids_map.get_map_element(ids)
-            psi = self.get_psi(psival)[0]
+            
+            if not self.marginal:
+               psival = self.ids_map.get_map_element(ids)
+               psi = self.get_psi(psival)[0]
             
             p1i = p1.get_particle_index()
             p2i = p2.get_particle_index()
             s1i = sigma1.get_particle().get_index()
             s2i = sigma2.get_particle().get_index()
-            psii = psi.get_particle().get_index()
-            dr.add_contribution((p1i, p2i), (s1i, s2i), psii)
+            if not self.marginal:
+               psii = psi.get_particle().get_index()
+               dr.add_contribution((p1i, p2i), (s1i, s2i), psii)
+               print "--------------"
+               print "ISDCrossLinkMS: generating cross-link restraint between"
+               print "ISDCrossLinkMS: residue %d of chain %s and residue %d of chain %s" % (r1, c1, r2, c2)
+               print "ISDCrossLinkMS: with sigma1 %f  sigma2 %f psi %s" % (mappedr1, mappedr2, psival)
+               print "ISDCrossLinkMS: between particles %s and %s" % (p1.get_name(), p2.get_name())
+            else:
+               psival=None
+               dr.add_contribution((p1i, p2i), (s1i, s2i))
+               print "--------------"               
+               print "ISDCrossLinkMS: generating marginal cross-link restraint between"
+               print "ISDCrossLinkMS: residue %d of chain %s and residue %d of chain %s" % (r1, c1, r2, c2)
+               print "ISDCrossLinkMS: with sigma1 %f  sigma2 %f" % (mappedr1, mappedr2)
+               print "ISDCrossLinkMS: between particles %s and %s" % (p1.get_name(), p2.get_name())            
             
-            print "--------------"
-            print "ISDCrossLinkMS: generating cross-link restraint between"
-            print "ISDCrossLinkMS: residue %d of chain %s and residue %d of chain %s" % (r1, c1, r2, c2)
-            print "ISDCrossLinkMS: with sigma1 %f  sigma2 %f psi %s" % (mappedr1, mappedr2, psival)
-            print "ISDCrossLinkMS: between particles %s and %s" % (p1.get_name(), p2.get_name())
+
 
             indb.write(str(entry) + "\n")
 
@@ -790,7 +817,7 @@ class ISDCrossLinkMS():
         self.lengthminnuis = 0.0000001
         self.lengthmaxnuis = 1000.0
         self.lengthmin = 6.0
-        self.lengthmax = 21.0
+        self.lengthmax = 30.0
         self.lengthtrans = 0.2
         self.length = IMP.pmi.tools.SetupNuisance(self.m, self.lengthinit,
                                           self.lengthminnuis, self.lengthmaxnuis, self.lengthissampled).get_particle()
@@ -808,7 +835,7 @@ class ISDCrossLinkMS():
         self.sigmaminnuis = 0.0000001
         self.sigmamaxnuis = 1000.0
         self.sigmamin = 0.01
-        self.sigmamax = 500.0
+        self.sigmamax = 5.0
         self.sigmatrans = 0.5
         self.sigma = IMP.pmi.tools.SetupNuisance(self.m, self.sigmainit,
                                          self.sigmaminnuis, self.sigmamaxnuis, self.sigmaissampled).get_particle()
@@ -867,7 +894,8 @@ class ISDCrossLinkMS():
 
     def add_to_model(self):
         self.m.add_restraint(self.rs)
-        self.m.add_restraint(self.rspsi)
+        if not self.marginal:
+           self.m.add_restraint(self.rspsi)
         self.m.add_restraint(self.rssig)
         self.m.add_restraint(self.rslen)
         self.m.add_restraint(self.rslin)
@@ -913,7 +941,8 @@ class ISDCrossLinkMS():
         output["ISDCrossLinkMS_Data_Score_" + self.label] = str(score)
         output["ISDCrossLinkMS_PriorSig_Score_" +
                self.label] = self.rssig.unprotected_evaluate(None)
-        output["ISDCrossLinkMS_PriorPsi_Score_" +
+        if not self.marginal:
+           output["ISDCrossLinkMS_PriorPsi_Score_" +
                self.label] = self.rspsi.unprotected_evaluate(None)
         output["ISDCrossLinkMS_Linear_Score_" +
                self.label] = self.rslin.unprotected_evaluate(None)
@@ -940,8 +969,9 @@ class ISDCrossLinkMS():
             d1 = IMP.core.XYZ(p1)
             output["ISDCrossLinkMS_Distance_" +
                    label+"_"+self.label] = str(IMP.core.get_distance(d0, d1))
-
-        for psiindex in self.psi_dictionary:
+        
+        if not self.marginal:
+          for psiindex in self.psi_dictionary:
             output["ISDCrossLinkMS_Psi_" +
                    str(psiindex) + "_" + self.label] = str(self.psi_dictionary[psiindex][0].get_scale())
 
@@ -963,8 +993,9 @@ class ISDCrossLinkMS():
                 ps["Nuisances_ISDCrossLinkMS_Sigma_" + str(resolution) + "_" + self.label] =\
                     ([self.sigma_dictionary[resolution][0]],
                      self.sigma_dictionary[resolution][1])
-
-        for psiindex in self.psi_dictionary:
+        
+        if not self.marginal:
+          for psiindex in self.psi_dictionary:
             if self.psi_dictionary[psiindex][2]:
                 ps["Nuisances_ISDCrossLinkMS_Psi_" +
                     str(psiindex) + "_" + self.label] = ([self.psi_dictionary[psiindex][0]], self.psi_dictionary[psiindex][1])

@@ -765,7 +765,9 @@ class SimplifiedModel():
         for fb in self.floppy_bodies:
 
             if avoidcollision:
-               if not IMP.core.NonRigidMember.get_is_setup(fb):
+               rm=not IMP.core.RigidMember.get_is_setup(fb)
+               nrm=not IMP.core.NonRigidMember.get_is_setup(fb)
+               if rm and nrm:
                   fbindexes=IMP.get_indexes([fb])
                   otherparticleindexes=list(set(allparticleindexes)-set(fbindexes))
                   if len(otherparticleindexes)==None: continue
@@ -776,7 +778,9 @@ class SimplifiedModel():
                fbxyz=IMP.core.XYZ(fb).get_coordinates()
                transformation=IMP.algebra.get_random_local_transformation(fbxyz,max_translation,max_rotation)
                IMP.core.transform(IMP.core.XYZ(fb),transformation)
-
+               print IMP.core.XYZ(fb),fbindexes,fb
+               
+               
                if avoidcollision:
                   self.m.update()
                   npairs=len(gcpf.get_close_pairs(self.m,otherparticleindexes,fbindexes))

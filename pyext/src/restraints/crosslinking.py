@@ -377,7 +377,7 @@ class SigmoidalCrossLinkMS():
     def __init__(
         self, representation, restraints_file, inflection, slope, amplitude,
         linear_slope, resolution=None,columnmapping=None, csvfile=False,
-        filters=None):
+        filters=None,filelabel="None"):
         # columnindexes is a list of column indexes for protein1, protein2, residue1, residue2
         # by default column 0 = protein1; column 1 = protein2; column 2 = residue1; column 3 = residue2
         # the filters applies to the csvfile, the format is
@@ -421,9 +421,9 @@ class SigmoidalCrossLinkMS():
         residue1 = columnmapping["Residue1"]
         residue2 = columnmapping["Residue2"]
 
-        indb = open("included.xl.db", "w")
-        exdb = open("excluded.xl.db", "w")
-        midb = open("missing.xl.db", "w")
+        indb = open("included."+filelabel+".xl.db", "w")
+        exdb = open("excluded."+filelabel+".xl.db", "w")
+        midb = open("missing."+filelabel+".xl.db", "w")
 
         for entry in db:
             if not csvfile:

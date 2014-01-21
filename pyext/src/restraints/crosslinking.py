@@ -450,18 +450,18 @@ class SigmoidalCrossLinkMS():
             ps2=IMP.pmi.tools.select(representation,resolution=resolution,name=c2,name_is_ambiguous=False,residue=r2)
             
             if len(ps1) > 1:
-                print "SigmoidCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s" % (r1, c1, str(ps1))
+                print "SigmoidalCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s" % (r1, c1, str(ps1))
                 exit()
             elif len(ps1) == 0:
-                print "SigmoidCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1, c1)
+                print "SigmoidalCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1, c1)
                 midb.write(str(entry) + "\n")
                 continue
 
             if len(ps2) > 1:
-                print "SigmoidCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s" % (r2, c2, str(ps2))
+                print "SigmoidalCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s" % (r2, c2, str(ps2))
                 exit()
             elif len(ps2) == 0:
-                print "SigmoidCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2, c2)
+                print "SigmoidalCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2, c2)
                 midb.write(str(entry) + "\n")
                 continue
 
@@ -472,7 +472,7 @@ class SigmoidalCrossLinkMS():
                 dr = self.already_added_pairs[(p1, p2)]
                 weight = dr.get_weight()
                 dr.increment_amplitude(amplitude)
-                print "SigmoidCrossLinkMS> crosslink %d %s %d %s was already found, adding %d to the amplitude, amplitude is now %d" % (r1, c1, r2, c2, amplitude, dr.get_amplitude())
+                print "SigmoidalCrossLinkMS> crosslink %d %s %d %s was already found, adding %d to the amplitude, amplitude is now %d" % (r1, c1, r2, c2, amplitude, dr.get_amplitude())
                 dr.set_name(c1 + ":" + str(r1) + "-" + c2 + ":" + str(r2)
                             + "-ampl:" + str(dr.get_amplitude()))
                 continue
@@ -564,7 +564,7 @@ class SigmoidalCrossLinkMS():
         output = {}
         score = self.weight * self.rs.unprotected_evaluate(None)
         output["_TotalScore"] = str(score)
-        output["SigmoidCrossLinkMS_Score_" + self.label] = str(score)
+        output["SigmoidalCrossLinkMS_Score_" + self.label] = str(score)
         for i in range(len(self.pairs)):
 
             p0 = self.pairs[i][0]
@@ -578,11 +578,11 @@ class SigmoidalCrossLinkMS():
 
             label = str(resid1) + ":" + chain1 + "_" + \
                 str(resid2) + ":" + chain2
-            output["SigmoidCrossLinkMS_Score_" + crosslinker + "_" +
+            output["SigmoidalCrossLinkMS_Score_" + crosslinker + "_" +
                    label] = str(self.weight * ln.unprotected_evaluate(None))
             d0 = IMP.core.XYZR(p0)
             d1 = IMP.core.XYZR(p1)
-            output["SigmoidCrossLinkMS_Distance_" +
+            output["SigmoidalCrossLinkMS_Distance_" +
                    label] = str(IMP.core.get_distance(d0, d1))
 
         return output

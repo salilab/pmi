@@ -778,7 +778,6 @@ class SimplifiedModel():
                fbxyz=IMP.core.XYZ(fb).get_coordinates()
                transformation=IMP.algebra.get_random_local_transformation(fbxyz,max_translation,max_rotation)
                IMP.core.transform(IMP.core.XYZ(fb),transformation)
-               print IMP.core.XYZ(fb),fbindexes,fb
                
                
                if avoidcollision:
@@ -939,7 +938,7 @@ class SimplifiedModel():
         pts=tools.ParticleToSampleList()
         for n,fb in enumerate(self.floppy_bodies):
             pts.add_particle(fb,"Floppy_Bodies",1.0,"Floppy_Body_"+str(n))
-        if len(pts)>0:
+        if len(pts.get_particles_to_sample())>0:
            mc = IMP.pmi.samplers.MonteCarlo(self.m,[pts], temperature)
            print "optimize_floppy_bodies: optimizing %i floppy bodies" % len(self.floppy_bodies)
            mc.run(nsteps)

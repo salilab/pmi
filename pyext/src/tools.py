@@ -579,6 +579,14 @@ def select(representation,
                  if repr_type=="Beads" or "Res:" in repr_type:
                     h=representation.hier_representation[name][repr_type]
                     representation_type_particles+=IMP.atom.get_leaves(h)
+      
+      elif representation_type=="PDB":
+         for name in representation.hier_representation:
+             for repr_type in representation.hier_representation[name]:
+                 if repr_type=="Res:" in repr_type:
+                    h=representation.hier_representation[name][repr_type]
+                    representation_type_particles+=IMP.atom.get_leaves(h)
+
       else:
          for name in representation.hier_representation:
             h=representation.hier_representation[name][representation_type]

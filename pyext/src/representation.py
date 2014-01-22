@@ -391,7 +391,7 @@ class SimplifiedModel():
             IMP.pmi.Uncertainty.setup_particle(prt,radius)
             IMP.pmi.Symmetric.setup_particle(prt,0)
             self.floppy_bodies.append(prt)
-
+            IMP.core.XYZ(prt).set_coordinates_are_optimized(True)
             outhiers+=[h]
 
         return outhiers

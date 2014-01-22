@@ -827,7 +827,7 @@ class SimplifiedModel():
 
     def set_current_coordinates_as_reference_for_rmsd(self,label):
         # getting only coordinates from pdb
-        ps=IMP.pmi.tools.select(self,resolution=1.0,representation_type="PDB")
+        ps=IMP.pmi.tools.select(self,resolution=1.0)
         # storing the reference coordinates and the particles
         self.reference_structures[label]=([IMP.core.XYZ(p).get_coordinates() for p in ps],ps)
     

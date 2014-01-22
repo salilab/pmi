@@ -377,7 +377,7 @@ class SigmoidalCrossLinkMS():
     def __init__(
         self, representation, restraints_file, inflection, slope, amplitude,
         linear_slope, resolution=None,columnmapping=None, csvfile=False,
-        filters=None):
+        filters=None,filelabel="None"):
         # columnindexes is a list of column indexes for protein1, protein2, residue1, residue2
         # by default column 0 = protein1; column 1 = protein2; column 2 = residue1; column 3 = residue2
         # the filters applies to the csvfile, the format is
@@ -421,9 +421,9 @@ class SigmoidalCrossLinkMS():
         residue1 = columnmapping["Residue1"]
         residue2 = columnmapping["Residue2"]
 
-        indb = open("included.xl.db", "w")
-        exdb = open("excluded.xl.db", "w")
-        midb = open("missing.xl.db", "w")
+        indb = open("included."+filelabel+".xl.db", "w")
+        exdb = open("excluded."+filelabel+".xl.db", "w")
+        midb = open("missing."+filelabel+".xl.db", "w")
 
         for entry in db:
             if not csvfile:
@@ -600,7 +600,7 @@ class ISDCrossLinkMS():
 
     def __init__(self, representation, restraints_file, length, resolution=None,slope=0.0,
                  columnmapping=None, csvfile=False, samplelength=False,
-                 ids_map=None, radius_map=None, filters=None,label="None",marginal=False,
+                 ids_map=None, radius_map=None, filters=None,label="None",filelabel="None",marginal=False,
                  automatic_sigma_classification=False):
         # columnindexes is a list of column indexes for protein1, protein2, residue1, residue2
         # by default column 0 = protein1; column 1 = protein2; column 2 = residue1; column 3 = residue2;
@@ -621,10 +621,10 @@ class ISDCrossLinkMS():
             db = IMP.pmi.tools.get_db_from_csv(restraints_file)
         else:
             db = IMP.pmi.tools.open_file_or_inline_text(restraints_file)
-
-        indb = open("included.xl.db", "w")
-        exdb = open("excluded.xl.db", "w")
-        midb = open("missing.xl.db", "w")
+        
+        indb = open("included."+filelabel+".xl.db", "w")
+        exdb = open("excluded."+filelabel+".xl.db", "w")
+        midb = open("missing."+filelabel+".xl.db", "w")
 
         self.m = representation.prot.get_model()
         self.marginal=marginal

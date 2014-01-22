@@ -324,6 +324,8 @@ class ReplicaExchange():
         self.rem = IMP.mpi.ReplicaExchange()
         # get number of replicas
         nproc = self.rem.get_number_of_replicas()
+        if nproc %2 != 0:
+           raise Exception, "number of replicas has to be even."
         # create array of temperatures, in geometric progression
         temp = self.rem.create_temperatures(self.TEMPMIN_, self.TEMPMAX_, nproc)
         # get replica index

@@ -826,22 +826,27 @@ class SimplifiedModel():
         self.translate_hierarchies(hierarchies,(-xc,-yc,-zc))
 
     def set_current_coordinates_as_reference_for_rmsd(self,label):
-        self.reference_structures[label]=[IMP.core.XYZ(p).get_coordinates() for p in IMP.atom.get_leaves(self.prot)]
+        # getting only coordinates from pdb
+        ps=IMP.pmi.tools.select(simo,resolution=1.0,representation_type="PDB")
+        # storing the reference coordinates and the particles
+        self.reference_structures[label]=([IMP.core.XYZ(p).get_coordinates() for p in ps],ps)
     
     def get_all_rmsds(self):
         rmsds={}
-        current_coordinates=[IMP.core.XYZ(p).get_coordinates() for p in IMP.atom.get_leaves(self.prot)]
         
         for label in self.reference_structures:
-            reference_coordinates=self.reference_structures[label]
+            
+            current_coordinates=[IMP.core.XYZ(p).get_coordinates() for p in self.reference_structures[label][1]]
+            reference_coordinates=self.reference_structures[label][0]
             if len(reference_coordinates)!=len(current_coordinates):
                print "calculate_all_rmsds: reference and actual coordinates are not the same"
                continue
             transformation=IMP.algebra.get_transformation_aligning_first_to_second(current_coordinates, reference_coordinates)
             rmsd_global=IMP.atom.get_rmsd(reference_coordinates,current_coordinates)
-            rmsd_relative=0#IMP.atom.get_rmsd(reference_coordinates,current_coordinates,transformation)
+            #warning: temporary we are calculating the drms, and not the rmsd, for the relative distance
+            rmsd_relative=IMP.atom.get_drms(reference_coordinates,current_coordinates)
             rmsds[label+"_GlobalRMSD"]=rmsd_global
-            rmsds[label+"_RelativeRMSD"]=rmsd_relative
+            rmsds[label+"_RelativeDRMS"]=rmsd_relative
         return rmsds            
 
     def setup_component_geometry(self,name,color=None,resolution=1.0):

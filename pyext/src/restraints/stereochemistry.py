@@ -28,11 +28,13 @@ class ExcludedVolumeSphere():
         
         ssps=IMP.core.SoftSpherePairScore(self.kappa)
         lsa = IMP.container.ListSingletonContainer(self.m)
+
         particles=IMP.pmi.tools.select(representation,resolution=resolution,hierarchies=hierarchies)
         lsa.add_particles(particles)          
            
         if other_hierarchies==None:
-           self.cpc=IMP.container.ClosePairContainer(lsa,0.0,10.0)
+           rbcpf=IMP.core.RigidClosePairsFinder()        
+           self.cpc=IMP.container.ClosePairContainer(lsa,0.0,rbcpf,10.0)
            evr=IMP.container.PairsRestraint(ssps,self.cpc)
 
         else:
@@ -42,7 +44,7 @@ class ExcludedVolumeSphere():
            self.cpc=IMP.container.CloseBipartitePairContainer(lsa,other_lsa,0.0,10.0)
            evr=IMP.container.PairsRestraint(ssps,self.cpc)
 
-        self.rs.add_restraint(evr)
+        self.rs.add_restraint(evr)  
 
     def add_excluded_particle_pairs(self, excluded_particle_pairs):
         # add pairs to be filtered when calculating  the score

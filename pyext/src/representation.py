@@ -33,6 +33,34 @@ class SimplifiedModel():
     How to use the SimplifiedModel class (typical use):
 
     see test/test_hierarchy_contruction.py
+    
+    examples:
+    
+    1) Create a chain of helices and flexible parts
+    
+    c_1_119   =simo.add_component_necklace("prot1",1,119,20)       
+    c_120_131 =simo.add_component_ideal_helix("prot1",resolutions=[1,10],resrange=(120,131))
+    c_132_138 =simo.add_component_beads("prot1",[(132,138)])
+    c_139_156 =simo.add_component_ideal_helix("prot1",resolutions=[1,10],resrange=(139,156))
+    c_157_174 =simo.add_component_beads("prot1",[(157,174)])
+    c_175_182 =simo.add_component_ideal_helix("prot1",resolutions=[1,10],resrange=(175,182))
+    c_183_194 =simo.add_component_beads("prot1",[(183,194)])
+    c_195_216 =simo.add_component_ideal_helix("prot1",resolutions=[1,10],resrange=(195,216))
+    c_217_250 =simo.add_component_beads("prot1",[(217,250)])
+
+
+    simo.set_rigid_body_from_hierarchies(c_120_131)
+    simo.set_rigid_body_from_hierarchies(c_139_156)
+    simo.set_rigid_body_from_hierarchies(c_175_182)
+    simo.set_rigid_body_from_hierarchies(c_195_216)
+
+    clist=[c_1_119,c_120_131,c_132_138,c_139_156,c_157_174,c_175_182,c_183_194,c_195_216,
+      c_217_250]
+
+    simo.set_chain_of_super_rigid_bodies(clist,2,3)
+
+    simo.set_super_rigid_bodies(["prot1"])
+    
     '''
 
     def __init__(self,m,upperharmonic=True,disorderedlength=False):

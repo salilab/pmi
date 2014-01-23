@@ -50,6 +50,7 @@ class GaussianEMRestraint():
         print 'done setup'
         self.rs = IMP.RestraintSet(self.m, 'GaussianEMRestraint')
         self.rs.add_restraint(self.gaussianEM_restraint)
+        self.rs.set_weight(10.0)
 
     def set_label(self, label):
         self.label = label

@@ -274,7 +274,11 @@ class ResidueDihedralRestraint():
 
 #
 class SecondaryStructure():
-    import IMP.isd2
+    try:
+       import IMP.isd2
+       noisd2=False
+    except:
+       noisd2=True 
     from math import pi
     from math import log    
     
@@ -286,8 +290,14 @@ class SecondaryStructure():
         mixture=False,
         nativeness=1.0,
             kt_caff=0.1):
+
+        if noisd2:
+           print "SecondaryStructure: ISD2 is needed"
+           exit()
+
         # check that the secondary structure string
         # is compatible with the ssstring
+
 
 
         self.particles=IMP.pmi.tools.select_by_tuple(representation,selection_tuple,resolution=1)

@@ -185,16 +185,16 @@ class Output():
             for pp in pps:
               imprmf.add_geometry(self.dictionary_rmfs[name],IMP.core.EdgePairGeometry(pp))  
 
-    def write_rmf(self,name,nframe):
-        imprmf.save_frame(self.dictionary_rmfs[name],nframe)
+    def write_rmf(self,name):
+        imprmf.save_frame(self.dictionary_rmfs[name])
         self.dictionary_rmfs[name].flush()
 
     def close_rmf(self,name):
         del self.dictionary_rmfs[name]
 
-    def write_rmfs(self,nframe):
+    def write_rmfs(self):
         for rmf in self.dictionary_rmfs.keys():
-            self.write_rmf(rmf,nframe)
+            self.write_rmf(rmf)
 
     def init_stat(self,name,listofobjects):
         if self.ascii:

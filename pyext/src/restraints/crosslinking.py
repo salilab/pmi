@@ -609,9 +609,6 @@ class ISDCrossLinkMS():
         # columnindexes is a list of column indexes for protein1, protein2, residue1, residue2
         # by default column 0 = protein1; column 1 = protein2; column 2 = residue1; column 3 = residue2;
         # column 4 = idscores
-        if noisd2:
-           print "ISDCrossLinkMS: ISD2 is needed"
-           exit()
         
         if columnmapping is None:
             columnmapping = {}

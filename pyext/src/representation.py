@@ -208,7 +208,6 @@ class SimplifiedModel():
         xyznter=tools.get_closest_residue_position(t,start,terminus="N")
         xyzcter=tools.get_closest_residue_position(t,end,terminus="C")      
         
-        print gaps,resrange[0],resrange[1],start,end
         #construct pdb fragments and intervening beads
         for n,g in enumerate(gaps):
             first=g[0]+offset

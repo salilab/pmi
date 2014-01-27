@@ -7,10 +7,13 @@ and analyse models
 Installation:
 
 Clone this repository into the imp modules directory:
-`cd {imp_source}/modules`
-`git clone https://github.com/salilab/pmi.git`
-`cd pmi`
-`git checkoutout 
+
+```
+cd {imp_source}/modules
+git clone https://github.com/salilab/pmi.git
+cd pmi
+git checkoutout zero-resolution-1.0
+```
 
 Build IMP folloring the [imp instructions](http://www.integrativemodeling.org/nightly/doc/html/md_doxygen_generated_installation.html#installation).
 

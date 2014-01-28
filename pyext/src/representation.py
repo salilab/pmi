@@ -33,6 +33,34 @@ class SimplifiedModel():
     How to use the SimplifiedModel class (typical use):
 
     see test/test_hierarchy_contruction.py
+    
+    examples:
+    
+    1) Create a chain of helices and flexible parts
+    
+    c_1_119   =simo.add_component_necklace("prot1",1,119,20)       
+    c_120_131 =simo.add_component_ideal_helix("prot1",resolutions=[1,10],resrange=(120,131))
+    c_132_138 =simo.add_component_beads("prot1",[(132,138)])
+    c_139_156 =simo.add_component_ideal_helix("prot1",resolutions=[1,10],resrange=(139,156))
+    c_157_174 =simo.add_component_beads("prot1",[(157,174)])
+    c_175_182 =simo.add_component_ideal_helix("prot1",resolutions=[1,10],resrange=(175,182))
+    c_183_194 =simo.add_component_beads("prot1",[(183,194)])
+    c_195_216 =simo.add_component_ideal_helix("prot1",resolutions=[1,10],resrange=(195,216))
+    c_217_250 =simo.add_component_beads("prot1",[(217,250)])
+
+
+    simo.set_rigid_body_from_hierarchies(c_120_131)
+    simo.set_rigid_body_from_hierarchies(c_139_156)
+    simo.set_rigid_body_from_hierarchies(c_175_182)
+    simo.set_rigid_body_from_hierarchies(c_195_216)
+
+    clist=[c_1_119,c_120_131,c_132_138,c_139_156,c_157_174,c_175_182,c_183_194,c_195_216,
+      c_217_250]
+
+    simo.set_chain_of_super_rigid_bodies(clist,2,3)
+
+    simo.set_super_rigid_bodies(["prot1"])
+    
     '''
 
     def __init__(self,m,upperharmonic=True,disorderedlength=False):
@@ -180,7 +208,6 @@ class SimplifiedModel():
         xyznter=tools.get_closest_residue_position(t,start,terminus="N")
         xyzcter=tools.get_closest_residue_position(t,end,terminus="C")      
         
-        print gaps,resrange[0],resrange[1],start,end
         #construct pdb fragments and intervening beads
         for n,g in enumerate(gaps):
             first=g[0]+offset
@@ -391,7 +418,7 @@ class SimplifiedModel():
             IMP.pmi.Uncertainty.setup_particle(prt,radius)
             IMP.pmi.Symmetric.setup_particle(prt,0)
             self.floppy_bodies.append(prt)
-
+            IMP.core.XYZ(prt).set_coordinates_are_optimized(True)
             outhiers+=[h]
 
         return outhiers
@@ -765,7 +792,9 @@ class SimplifiedModel():
         for fb in self.floppy_bodies:
 
             if avoidcollision:
-               if not IMP.core.NonRigidMember.get_is_setup(fb):
+               rm=not IMP.core.RigidMember.get_is_setup(fb)
+               nrm=not IMP.core.NonRigidMember.get_is_setup(fb)
+               if rm and nrm:
                   fbindexes=IMP.get_indexes([fb])
                   otherparticleindexes=list(set(allparticleindexes)-set(fbindexes))
                   if len(otherparticleindexes)==None: continue
@@ -776,7 +805,8 @@ class SimplifiedModel():
                fbxyz=IMP.core.XYZ(fb).get_coordinates()
                transformation=IMP.algebra.get_random_local_transformation(fbxyz,max_translation,max_rotation)
                IMP.core.transform(IMP.core.XYZ(fb),transformation)
-
+               
+               
                if avoidcollision:
                   self.m.update()
                   npairs=len(gcpf.get_close_pairs(self.m,otherparticleindexes,fbindexes))
@@ -823,22 +853,27 @@ class SimplifiedModel():
         self.translate_hierarchies(hierarchies,(-xc,-yc,-zc))
 
     def set_current_coordinates_as_reference_for_rmsd(self,label):
-        self.reference_structures[label]=[IMP.core.XYZ(p).get_coordinates() for p in IMP.atom.get_leaves(self.prot)]
+        # getting only coordinates from pdb
+        ps=IMP.pmi.tools.select(self,resolution=1.0)
+        # storing the reference coordinates and the particles
+        self.reference_structures[label]=([IMP.core.XYZ(p).get_coordinates() for p in ps],ps)
     
     def get_all_rmsds(self):
         rmsds={}
-        current_coordinates=[IMP.core.XYZ(p).get_coordinates() for p in IMP.atom.get_leaves(self.prot)]
         
         for label in self.reference_structures:
-            reference_coordinates=self.reference_structures[label]
+            
+            current_coordinates=[IMP.core.XYZ(p).get_coordinates() for p in self.reference_structures[label][1]]
+            reference_coordinates=self.reference_structures[label][0]
             if len(reference_coordinates)!=len(current_coordinates):
                print "calculate_all_rmsds: reference and actual coordinates are not the same"
                continue
             transformation=IMP.algebra.get_transformation_aligning_first_to_second(current_coordinates, reference_coordinates)
             rmsd_global=IMP.atom.get_rmsd(reference_coordinates,current_coordinates)
-            rmsd_relative=0#IMP.atom.get_rmsd(reference_coordinates,current_coordinates,transformation)
+            #warning: temporary we are calculating the drms, and not the rmsd, for the relative distance
+            rmsd_relative=IMP.atom.get_drms(reference_coordinates,current_coordinates)
             rmsds[label+"_GlobalRMSD"]=rmsd_global
-            rmsds[label+"_RelativeRMSD"]=rmsd_relative
+            rmsds[label+"_RelativeDRMS"]=rmsd_relative
         return rmsds            
 
     def setup_component_geometry(self,name,color=None,resolution=1.0):
@@ -930,9 +965,12 @@ class SimplifiedModel():
         pts=tools.ParticleToSampleList()
         for n,fb in enumerate(self.floppy_bodies):
             pts.add_particle(fb,"Floppy_Bodies",1.0,"Floppy_Body_"+str(n))
-        mc = IMP.pmi.samplers.MonteCarlo(self.m,[pts], temperature)
-        print "optimize_floppy_bodies: optimizing %i floppy bodies" % len(self.floppy_bodies)
-        mc.run(nsteps)
+        if len(pts.get_particles_to_sample())>0:
+           mc = IMP.pmi.samplers.MonteCarlo(self.m,[pts], temperature)
+           print "optimize_floppy_bodies: optimizing %i floppy bodies" % len(self.floppy_bodies)
+           mc.run(nsteps)
+        else:
+           print "optimize_floppy_bodies: no particle to optimize" 
 
     def create_rotational_symmetry(self,maincopy,copies):
         from math import pi

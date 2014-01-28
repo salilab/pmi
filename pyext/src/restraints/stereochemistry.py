@@ -28,11 +28,13 @@ class ExcludedVolumeSphere():
         
         ssps=IMP.core.SoftSpherePairScore(self.kappa)
         lsa = IMP.container.ListSingletonContainer(self.m)
+
         particles=IMP.pmi.tools.select(representation,resolution=resolution,hierarchies=hierarchies)
         lsa.add_particles(particles)          
            
         if other_hierarchies==None:
-           self.cpc=IMP.container.ClosePairContainer(lsa,0.0,10.0)
+           rbcpf=IMP.core.RigidClosePairsFinder()        
+           self.cpc=IMP.container.ClosePairContainer(lsa,0.0,rbcpf,10.0)
            evr=IMP.container.PairsRestraint(ssps,self.cpc)
 
         else:
@@ -42,7 +44,7 @@ class ExcludedVolumeSphere():
            self.cpc=IMP.container.CloseBipartitePairContainer(lsa,other_lsa,0.0,10.0)
            evr=IMP.container.PairsRestraint(ssps,self.cpc)
 
-        self.rs.add_restraint(evr)
+        self.rs.add_restraint(evr)  
 
     def add_excluded_particle_pairs(self, excluded_particle_pairs):
         # add pairs to be filtered when calculating  the score
@@ -274,7 +276,11 @@ class ResidueDihedralRestraint():
 
 #
 class SecondaryStructure():
-    import IMP.isd2
+    try:
+       import IMP.isd2
+       noisd2=False
+    except:
+       noisd2=True 
     from math import pi
     from math import log    
     
@@ -286,8 +292,14 @@ class SecondaryStructure():
         mixture=False,
         nativeness=1.0,
             kt_caff=0.1):
+
+        if noisd2:
+           print "SecondaryStructure: ISD2 is needed"
+           exit()
+
         # check that the secondary structure string
         # is compatible with the ssstring
+
 
 
         self.particles=IMP.pmi.tools.select_by_tuple(representation,selection_tuple,resolution=1)

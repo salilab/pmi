@@ -411,6 +411,9 @@ def get_closest_residue_position(hier,resindex,terminus="N"):
        
     if len(p)==1:
        return IMP.core.XYZ(p[0]).get_coordinates()
+    elif len(p) == 0:
+       print "get_closest_residue_position: got NO residues for hierarchy %s and residue %i" % (hier,resindex)
+       raise Exception, "get_closest_residue_position: got NO residues for hierarchy %s and residue %i" % (hier,resindex)
     else:
        print "get_closest_residue_position: got multiple residues for hierarchy %s and residue %i" % (hier,resindex)
        print "the list of particles is",[pp.get_name() for pp in p]
@@ -576,6 +579,14 @@ def select(representation,
                  if repr_type=="Beads" or "Res:" in repr_type:
                     h=representation.hier_representation[name][repr_type]
                     representation_type_particles+=IMP.atom.get_leaves(h)
+      
+      elif representation_type=="PDB":
+         for name in representation.hier_representation:
+             for repr_type in representation.hier_representation[name]:
+                 if repr_type=="Res:" in repr_type:
+                    h=representation.hier_representation[name][repr_type]
+                    representation_type_particles+=IMP.atom.get_leaves(h)
+
       else:
          for name in representation.hier_representation:
             h=representation.hier_representation[name][representation_type]

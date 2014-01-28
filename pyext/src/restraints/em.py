@@ -18,7 +18,7 @@ class GaussianEMRestraint():
 
         # some parameters
         self.label="None"
-        self.sigmaissampled = True
+        self.sigmaissampled = False
         self.sigmamaxtrans = 0.3
         self.sigmamin = 1.0
         self.sigmamax = 100.0
@@ -50,6 +50,9 @@ class GaussianEMRestraint():
         print 'done setup'
         self.rs = IMP.RestraintSet(self.m, 'GaussianEMRestraint')
         self.rs.add_restraint(self.gaussianEM_restraint)
+
+    def set_weight(weight)
+        self.rs.set_weight(weight)        
 
     def set_label(self, label):
         self.label = label

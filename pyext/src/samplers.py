@@ -312,7 +312,7 @@ class ConjugateGradients():
         return output
 
 class ReplicaExchange():
-    def __init__(self,model,tempmin,tempmax,samplerobject):
+    def __init__(self,model,tempmin,tempmax,samplerobject,test=True):
         '''
         sampler object should be MonteCarlo
         '''
@@ -329,6 +329,9 @@ class ReplicaExchange():
         self.rem = IMP.mpi.ReplicaExchange()
         # get number of replicas
         nproc = self.rem.get_number_of_replicas()
+        
+        if nproc %2 != 0 and test==False:
+           raise Exception, "number of replicas has to be even. set test=True to run with odd number of replicas."
         # create array of temperatures, in geometric progression
         temp = self.rem.create_temperatures(self.TEMPMIN_, self.TEMPMAX_, nproc)
         # get replica index

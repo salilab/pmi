@@ -568,7 +568,9 @@ def plot_xy_data(x,y):
         ax.plot(x,y)
         plt.show()  
 
-def plot_scatter_xy_data(x,y,labelx="None",labely="None",savefile=False,filename="None.eps"):
+def plot_scatter_xy_data(x,y,labelx="None",labely="None",
+                         xmin=None,xmax=None,ymin=None,ymax=None,
+                         savefile=False,filename="None.eps"):
     import matplotlib.pyplot as plt
     import sys
     from matplotlib import rc
@@ -589,8 +591,10 @@ def plot_scatter_xy_data(x,y,labelx="None",labely="None",savefile=False,filename
 
     fig.set_size_inches(20.0, 20.0)
     fig.subplots_adjust(left=0.161, right=0.980, top=0.95, bottom=0.11)
-    #axs0.set_ylim(-690,-460)
-    #axs0.set_xlim(0,20)
+    if ymin!=None and ymax!=None:
+       axs0.set_ylim(ymin,ymax)
+    if xmin!=None and xmax!=None:
+       axs0.set_xlim(xmin,xmax)
     plt.show()
     if savefile:
        fig.savefig(filename,dpi=300)

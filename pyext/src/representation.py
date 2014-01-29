@@ -1223,6 +1223,11 @@ class SimplifiedModel():
                 rb.set_is_rigid_member(p.get_index(),False)
                 p.set_name(p.get_name()+"_rigid_body_member")
 
+    def set_floppy_bodies_from_hierarchies(self,hiers):
+        for hier in hiers:
+            ps=IMP.atom.get_leaves(hier)
+            self.floppy_bodies+=ps
+
     def get_particles_from_selection(self,selection_tuples):
         #to be used for instance by CompositeRestraint
         #selection tuples must be [(r1,r2,"name1"),(r1,r2,"name2"),....]

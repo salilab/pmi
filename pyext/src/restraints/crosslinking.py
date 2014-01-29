@@ -185,7 +185,8 @@ class SimplifiedCrossLinkMS():
         expdistance,
         strength,
         resolution=None,
-        columnmapping=None):
+        columnmapping=None,
+        truncated=True):
         # columnindexes is a list of column indexes for protein1, protein2, residue1, residue2
         # by default column 0 = protein1; column 1 = protein2; column 2 =
         # residue1; column 3 = residue2
@@ -207,6 +208,7 @@ class SimplifiedCrossLinkMS():
         self.outputlevel = "low"
         self.expdistance = expdistance
         self.strength = strength
+        self.truncated=truncated
 
         # fill the cross-linker pmfs
         # to accelerate the init the list listofxlinkertypes might contain only
@@ -260,13 +262,19 @@ class SimplifiedCrossLinkMS():
 
             else:
 
-                limit = self.strength * (self.expdistance + 15) ** 2 + 10.0
-                hub = IMP.core.TruncatedHarmonicUpperBound(
-                    self.expdistance,
-                    self.strength,
-                    self.expdistance +
-                    15.,
-                    limit)
+                
+                if self.truncated:
+                   limit = self.strength * (self.expdistance + 15) ** 2 + 10.0
+                   hub = IMP.core.TruncatedHarmonicUpperBound(
+                      self.expdistance,
+                      self.strength,
+                      self.expdistance +
+                      15.,
+                      limit)
+                else:
+                   hub = IMP.core.HarmonicUpperBound(
+                      self.expdistance,
+                      self.strength)                   
                 df = IMP.core.SphereDistancePairScore(hub)
                 dr = IMP.core.PairRestraint(df, (p1, p2))
                 dr.set_name(c1 + ":" + str(r1) + "-" + c2 + ":" + str(r2))
@@ -319,12 +327,18 @@ class SimplifiedCrossLinkMS():
         d2 = IMP.core.XYZR.setup_particle(p2)
         d1.set_radius(radius1)
         d2.set_radius(radius2)
-        limit = self.strength * (self.expdistance + 1) ** 2 + 10.0
-        hub = IMP.core.TruncatedHarmonicUpperBound(
-            self.expdistance,
-            self.strength,
-            self.expdistance + 5.,
-            limit)
+        if self.truncated:
+           limit = self.strength * (self.expdistance + 15) ** 2 + 10.0
+           hub = IMP.core.TruncatedHarmonicUpperBound(
+              self.expdistance,
+              self.strength,
+              self.expdistance +
+              15.,
+              limit)
+        else:
+           hub = IMP.core.HarmonicUpperBound(
+              self.expdistance,
+              self.strength) 
         df = IMP.core.SphereDistancePairScore(hub)
         dr = IMP.core.PairRestraint(df, (p1, p2))
         dists = []

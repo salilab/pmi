@@ -577,8 +577,8 @@ def plot_scatter_xy_data(x,y,labelx="None",labely="None",savefile=False,filename
 
     axs0=axs
 
-    axs0.set_xlabel('labelx',size="xx-large")
-    axs0.set_ylabel('labely',size="xx-large")
+    axs0.set_xlabel(labelx,size="xx-large")
+    axs0.set_ylabel(labely,size="xx-large")
     axs0.tick_params(labelsize=18,pad=10)
 
     plot2=[]

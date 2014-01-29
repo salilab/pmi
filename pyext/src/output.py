@@ -510,7 +510,7 @@ class ProcessOutput():
         plt.show()     
 
 
-def plot_field_histogram(self,name,values,valuename=None):
+def plot_field_histogram(name,values,valuename=None):
         import matplotlib.pyplot as plt
         plt.hist([float(y) for y in values],bins=40,color='#66CCCC',normed=True)
         plt.title(name)

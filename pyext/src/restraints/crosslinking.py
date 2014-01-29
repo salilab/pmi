@@ -683,22 +683,32 @@ class ISDCrossLinkMS():
                 # skip character
                 if (tokens[0] == "#"):
                     continue
-                r1 = int(tokens[residue1])
-                c1 = tokens[protein1]
-                r2 = int(tokens[residue2])
-                c2 = tokens[protein2]
-                ids = float(tokens[idscore])
+                try:
+                  r1 = int(tokens[residue1])
+                  c1 = tokens[protein1]
+                  r2 = int(tokens[residue2])
+                  c2 = tokens[protein2]
+                  ids = float(tokens[idscore])
+                except:
+                  print "this line was not accessible "+str(entry)
+                  continue
+
             else:
                 if filters is not None:
                     if eval(IMP.pmi.tools.cross_link_db_filter_parser(filters)) == False:
                         exdb.write(str(entry) + "\n")
                         continue
-                
-                r1 = int(entry[residue1])
-                c1 = entry[protein1]
-                r2 = int(entry[residue2])
-                c2 = entry[protein2]
-                ids = float(entry[idscore])
+
+                try:
+                  r1 = int(entry[residue1])
+                  c1 = entry[protein1]
+                  r2 = int(entry[residue2])
+                  c2 = entry[protein2]
+                  ids = float(entry[idscore])
+                except:
+                  print "this line was not accessible "+str(entry)
+                  continue               
+
 
             ps1=IMP.pmi.tools.select(representation,resolution=resolution,name=c1,name_is_ambiguous=False,residue=r1)
             ps2=IMP.pmi.tools.select(representation,resolution=resolution,name=c2,name_is_ambiguous=False,residue=r2)

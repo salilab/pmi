@@ -568,6 +568,32 @@ def plot_xy_data(x,y):
         ax.plot(x,y)
         plt.show()  
 
+def plot_scatter_xy_data(x,y,labelx="None",labely="None",savefile=False,filename="None.eps"):
+    import matplotlib.pyplot as plt
+    import sys
+    from matplotlib import rc
+
+    fig, axs = plt.subplots(1)
+
+    axs0=axs
+
+    axs0.set_xlabel('labelx',size="xx-large")
+    axs0.set_ylabel('labely',size="xx-large")
+    axs0.tick_params(labelsize=18,pad=10)
+
+    plot2=[]
+
+    plot2.append(axs0.plot(x,  y,   'o', lw=0, ms=4, alpha=0.75,  c="w"))
+
+    axs0.legend(loc=0,frameon=False,scatterpoints=1,numpoints=1,columnspacing=1)
+
+    fig.set_size_inches(20.0, 20.0)
+    fig.subplots_adjust(left=0.161, right=0.980, top=0.95, bottom=0.11)
+    #axs0.set_ylim(-690,-460)
+    #axs0.set_xlim(0,20)
+    plt.show()
+    if savefile:
+       fig.savefig(filename,dpi=300)
 
 def get_graph_from_hierarchy(hier):
     graph=[]
@@ -585,6 +611,7 @@ def get_graph_from_hierarchy(hier):
         else:
            node_labels_dict[key]=""
     draw_graph(graph,labels_dict=node_labels_dict)
+
 
 
 

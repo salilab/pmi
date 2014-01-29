@@ -185,7 +185,7 @@ class SimplifiedCrossLinkMS():
         expdistance,
         strength,
         resolution=None,
-        columnmapping=None
+        columnmapping=None,
         truncated=True):
         # columnindexes is a list of column indexes for protein1, protein2, residue1, residue2
         # by default column 0 = protein1; column 1 = protein2; column 2 =

@@ -839,7 +839,7 @@ class ISDCrossLinkMS():
         self.sigmaminnuis = 0.0000001
         self.sigmamaxnuis = 1000.0
         self.sigmamin = 0.01
-        self.sigmamax = 5.0
+        self.sigmamax = 100.0
         self.sigmatrans = 0.5
         self.sigma = IMP.pmi.tools.SetupNuisance(self.m, self.sigmainit,
                                          self.sigmaminnuis, self.sigmamaxnuis, self.sigmaissampled).get_particle()

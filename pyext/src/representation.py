@@ -1226,7 +1226,9 @@ class SimplifiedModel():
     def set_floppy_bodies_from_hierarchies(self,hiers):
         for hier in hiers:
             ps=IMP.atom.get_leaves(hier)
-            self.floppy_bodies+=ps
+            for p in ps:
+               IMP.core.XYZ(p).set_coordinates_are_optimized(True)
+               self.floppy_bodies.append(p)
 
     def get_particles_from_selection(self,selection_tuples):
         #to be used for instance by CompositeRestraint

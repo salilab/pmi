@@ -33,12 +33,12 @@ class SimplifiedModel():
     How to use the SimplifiedModel class (typical use):
 
     see test/test_hierarchy_contruction.py
-    
+
     examples:
-    
+
     1) Create a chain of helices and flexible parts
-    
-    c_1_119   =simo.add_component_necklace("prot1",1,119,20)       
+
+    c_1_119   =simo.add_component_necklace("prot1",1,119,20)
     c_120_131 =simo.add_component_ideal_helix("prot1",resolutions=[1,10],resrange=(120,131))
     c_132_138 =simo.add_component_beads("prot1",[(132,138)])
     c_139_156 =simo.add_component_ideal_helix("prot1",resolutions=[1,10],resrange=(139,156))
@@ -60,7 +60,7 @@ class SimplifiedModel():
     simo.set_chain_of_super_rigid_bodies(clist,2,3)
 
     simo.set_super_rigid_bodies(["prot1"])
-    
+
     '''
 
     def __init__(self,m,upperharmonic=True,disorderedlength=False):
@@ -102,7 +102,7 @@ class SimplifiedModel():
         self.bblenght=100.0
         self.kappa=100.0
         self.m = m
-        
+
         self.representation_is_modified=False
         self.unmodeledregions_cr_dict={}
         self.sortedsegments_cr_dict={}
@@ -120,7 +120,7 @@ class SimplifiedModel():
         self.hier_resolution={}
         #reference structures is a dictionary that contains the coorindates of
         #structures that are used to calculate the rmsd
-        self.reference_structures={}            
+        self.reference_structures={}
         self.elements={}
         self.linker_restraints=IMP.RestraintSet(self.m,"linker_restraints")
         self.linker_restraints_dict={}
@@ -151,7 +151,7 @@ class SimplifiedModel():
         '''
         give the component name, the fasta filename,
         and the id stored in the fasta file (i.e., the header)
-        If the id is not provided, it will assume the same compoennt 
+        If the id is not provided, it will assume the same compoennt
         name.
         '''
         from Bio import SeqIO
@@ -172,17 +172,17 @@ class SimplifiedModel():
                                       color=None,pdbresrange=None,offset=0,
                                       show=False,isnucleicacid=False,
                                       attachbeads=False):
-        
+
         self.representation_is_modified=True
         outhiers=[]
 
         if color==None:
            color=self.color_dict[name]
-        
+
         if resolutions==None:
            resolutions=[1]
         print "autobuild_pdb_and_intervening_beads: constructing %s from pdb %s and chain %s" % (name,pdbname,str(chain))
-        
+
         #get the initial and end residues of the pdb
         t=IMP.atom.read_pdb( pdbname, self.m,
         IMP.atom.AndPDBSelector(IMP.atom.ChainPDBSelector(chain),IMP.atom.CAlphaPDBSelector()))
@@ -192,7 +192,7 @@ class SimplifiedModel():
         start = IMP.atom.Residue(t.get_children()[0].get_children()[0]).get_index()
         end   = IMP.atom.Residue(t.get_children()[0].get_children()[-1]).get_index()
 
-        #check if resrange was defined, otherwise 
+        #check if resrange was defined, otherwise
         #use the sequence, or the pdb resrange
 
         if resrange==None:
@@ -203,11 +203,11 @@ class SimplifiedModel():
         else:
            start=resrange[0]-offset
            end=resrange[1]-offset
- 
+
         gaps=tools.get_residue_gaps_in_hierarchy(t,resrange[0],resrange[1])
         xyznter=tools.get_closest_residue_position(t,start,terminus="N")
-        xyzcter=tools.get_closest_residue_position(t,end,terminus="C")      
-        
+        xyzcter=tools.get_closest_residue_position(t,end,terminus="C")
+
         #construct pdb fragments and intervening beads
         for n,g in enumerate(gaps):
             first=g[0]+offset
@@ -215,7 +215,7 @@ class SimplifiedModel():
             if g[2]=="cont":
                print "autobuild_pdb_and_intervening_beads: constructing fragment %s from pdb" % (str((first,last)))
                outhiers+=self.add_component_pdb(name,pdbname,
-                                                chain,resolutions=resolutions, 
+                                                chain,resolutions=resolutions,
                                                 color=color,cacenters=True,
                                                 resrange=(first,last),
                                                 offset=offset,isnucleicacid=isnucleicacid)
@@ -352,10 +352,10 @@ class SimplifiedModel():
         return outhiers
 
     def add_component_beads(self,name,ds,colors=None,incoord=None):
-        
+
         from math import pi
         self.representation_is_modified=True
-        
+
         protein_h=self.hier_dict[name]
         outhiers=[]
         if colors==None:
@@ -428,7 +428,7 @@ class SimplifiedModel():
         generates a string of beads with given length
         '''
         self.representation_is_modified=True
-        outhiers=[]        
+        outhiers=[]
         if length<end-begin+1:
           i=begin
           for i in range(begin,end,length)[0:-1]:
@@ -439,10 +439,10 @@ class SimplifiedModel():
         return outhiers
 
     def add_component_density(self,name,hierarchy,
-                              resolution,num_components=10,
+                              resolution=0.0,num_components=10,
                               inputfile=None,outputfile=None,
                               outputmap=None,
-                              kernel_type='GAUSSIAN',
+                              kernel_type=IMP.em.GAUSSIAN,
                               covariance_type='full',voxel_size=1.0,
                               sampled_points=1000000,num_iter=100):
         import IMP.isd2
@@ -461,40 +461,31 @@ class SimplifiedModel():
            protein_h.add_child(root)
 
         if inputfile==None:
-        
            print "add_component_density: getting the particles"
            fragment_particles=IMP.pmi.tools.select(self,resolution=resolution,hierarchies=hierarchy)
            print "add_component_density: create density from particles"
-           dmap=IMP.isd2.gmm_tools.create_density_from_particles(fragment_particles,
-                                                                 kernel_type=kernel_type,voxel_size=voxel_size)
+           dmap=IMP.em.SampledDensityMap(fragment_particles,resolution,voxel_size)
+           dmap.calcRMS()
 
-           print "add_component_density: transform density to points"                                                 
-           pts=IMP.isd2.gmm_tools.density2points(dmap,sampled_points)
-           print "add_component_density: transform points to gmm" 
-           gmm=IMP.isd2.gmm_tools.points2gmm(pts,num_components,covariance_type,num_iter)
-           print "add_component_density: finishing process" 
+           print "add_component_density: transform density to points"
+           pts=IMP.isd2.sample_points_from_density(dmap,sampled_points)
+           print "add_component_density: fit GMM to points"
            density_particles=[]
-           igmm=[]
-           for nps in xrange(num_components):
-               p=IMP.Particle(self.m)
-               covar=list(np.ndarray.flatten(gmm.covars_[nps]))
-               center=list(gmm.means_[nps])
-               weight=gmm.weights_[nps]
-               igmm.append(IMP.isd2.Gaussian.setup_particle(p,covar,center,weight))
-               density_particles.append(p)
+           gmm=IMP.isd2.gmm_tools.fit_gmm_to_points(pts,num_components,self.m,density_particles,
+                                                    num_iter,covariance_type)
+
            if outputfile!=None:
-               IMP.isd2.gmm_tools.write_gmm_to_txt(gmm,outputfile)
+               IMP.isd2.gmm_tools.write_gmm_to_text(density_particles,outputfile)
            if outputmap!=None:
-               IMP.isd2.gmm_tools.write_gmm_to_map(igmm,outputmap,dmap)
+               IMP.isd2.gmm_tools.write_gmm_to_map(density_particles,outputmap,
+                                                   IMP.em.get_bounding_box(dmap),
+                                                   voxel_size)
         else:
             #read the inputfile here
             print 'reading input file'
-            density_particles=[IMP.Particle(self.m) for i in xrange(num_components)]
-            igmm=IMP.isd2.gmm_tools.read_gmm_txt(density_particles,inputfile)
-            for p in density_particles:
-                dec=IMP.core.XYZR.setup_particle(p,2.0)
-                IMP.atom.Mass.setup_particle(p,IMP.isd2.Gaussian(p).get_weight())
-        
+            density_particles=[]
+            IMP.isd2.gmm_tools.decorate_gmm_from_text(inputfile,density_particles,self.m)
+
         s0=IMP.atom.Fragment.setup_particle(IMP.Particle(self.m))
         s0.set_name('_'.join([h.get_name() for h in hierarchy]))
         self.hier_representation[name]["Densities"].add_child(s0)
@@ -508,10 +499,10 @@ class SimplifiedModel():
 
     def get_component_density(self,name):
         return self.hier_representation[name]["Densities"]
-    
+
     def add_component_density_representation(self,name,hierarchy):
         '''
-        this function creates a bead representation for the gaussian so that 
+        this function creates a bead representation for the gaussian so that
         it can be displayed in chimera
         '''
         outhier=[]
@@ -531,8 +522,8 @@ class SimplifiedModel():
             rp=IMP.kernel.Particle(self.m)
             dec=IMP.core.XYZR.setup_particle(rp)
             dec.set_coordinates(IMP.core.XYZ(p).get_coordinates())
-            dec.set_radius(max(IMP.isd2.Gaussian(p).get_radii()))
-            representation_particles.append(rp)        
+            dec.set_radius(max(IMP.core.Gaussian(p).get_gaussian().get_variances()))
+            representation_particles.append(rp)
 
         s0=IMP.atom.Fragment.setup_particle(IMP.Particle(self.m))
         s0.set_name(hierarchy.get_name())
@@ -544,13 +535,13 @@ class SimplifiedModel():
            s0.add_child(rp)
 
         return outhier
-    
+
     def get_component_density_representation(self,name):
         return self.hier_representation[name]["Representations"]
-    
+
     def add_component_hierarchy_clone(self,name,hierarchy):
         '''
-        this function makes a copy of a hierarchy and append it to a 
+        this function makes a copy of a hierarchy and append it to a
         component
         '''
         outhier=[]
@@ -560,11 +551,11 @@ class SimplifiedModel():
         hierclone.set_name(hierclone.get_name()+"_clone")
         protein_h.add_child(hierclone)
         outhier.append(hierclone)
-        
+
         psmain=IMP.atom.get_leaves(hierarchy)
         psclone=IMP.atom.get_leaves(hierclone)
-        
-        #copying attributes        
+
+        #copying attributes
         for n,pmain in enumerate(psmain):
            pclone=psclone[n]
            if IMP.pmi.Resolution.particle_is_instance(pmain):
@@ -572,12 +563,12 @@ class SimplifiedModel():
               IMP.pmi.Resolution.setup_particle(pclone,resolution)
               for kk in tools.get_residue_indexes(pclone):
                  self.hier_db.add_particles(name,kk,IMP.pmi.Resolution(pclone).get_resolution(),[pclone])
-              
-           if IMP.pmi.Uncertainty.particle_is_instance(pmain):              
+
+           if IMP.pmi.Uncertainty.particle_is_instance(pmain):
               uncertainty=IMP.pmi.Uncertainty(pmain).get_uncertainty()
               IMP.pmi.Uncertainty.setup_particle(pclone,uncertainty)
 
-           if IMP.pmi.Symmetric.particle_is_instance(pmain):              
+           if IMP.pmi.Symmetric.particle_is_instance(pmain):
               symmetric=IMP.pmi.Symmetric(pmain).get_symmetric()
               IMP.pmi.Symmetric.setup_particle(pclone,symmetric)
 
@@ -723,7 +714,7 @@ class SimplifiedModel():
         if the representation was changed by any add_component_xxx, the function recalculates
         the maps
         '''
-        
+
         if self.representation_is_modified:
            rhbr=self.hier_db.get_all_root_hierarchies_by_resolution(resolution)
            self.hier_resolution[resolution]=rhbr
@@ -735,7 +726,7 @@ class SimplifiedModel():
            else:
               rhbr=self.hier_db.get_all_root_hierarchies_by_resolution(resolution)
               self.hier_resolution[resolution]=rhbr
-              return rhbr   
+              return rhbr
 
     def shuffle_configuration(self,max_translation=300.,max_rotation=2.0*pi,
                               avoidcollision=True,cutoff=10.0,niterations=100,
@@ -744,10 +735,10 @@ class SimplifiedModel():
         "it  works correctly if rigid bodies were initialized"
         "avoidcollision check if the particle/rigid body was placed close to another particle"
         "avoidcollision uses the optional arguments cutoff and niterations"
-        
-        if excluded_rigid_bodies==None: excluded_rigid_bodies=[]      
+
+        if excluded_rigid_bodies==None: excluded_rigid_bodies=[]
         if hierarchies_excluded_from_collision==None: hierarchies_excluded_from_collision=[]
-        
+
         if len(self.rigid_bodies)==0:
             print "shuffle_configuration: rigid bodies were not intialized"
 
@@ -762,33 +753,33 @@ class SimplifiedModel():
         for rb in self.rigid_bodies:
           if rb not in excluded_rigid_bodies:
             if avoidcollision:
-               
+
                rbindexes=rb.get_member_particle_indexes()
                rbindexes+=rb.get_body_member_particle_indexes()
                rbindexes=list(set(rbindexes)-set(hierarchies_excluded_from_collision_indexes))
                otherparticleindexes=list(set(allparticleindexes)-set(rbindexes))
                if len(otherparticleindexes)==None: continue
-               
+
             niter=0
-            while niter<niterations:                
+            while niter<niterations:
                rbxyz=(rb.get_x(), rb.get_y(), rb.get_z())
                transformation=IMP.algebra.get_random_local_transformation(rbxyz,max_translation,max_rotation)
-               
+
                IMP.core.transform(rb,transformation)
-               
+
                if avoidcollision:
                   self.m.update()
                   npairs=len(gcpf.get_close_pairs(self.m,otherparticleindexes,rbindexes))
                   if npairs==0: niter=niterations
                   else:
                      niter+=1
-                     print "shuffle_configuration: rigid body placed close to other %d particles, trying again..." % npairs 
-                     if niter==niterations: 
-                        print "shuffle_configuration: tried the maximum number of iterations to avoid collisions, increase the distance cutoff" 
+                     print "shuffle_configuration: rigid body placed close to other %d particles, trying again..." % npairs
+                     if niter==niterations:
+                        print "shuffle_configuration: tried the maximum number of iterations to avoid collisions, increase the distance cutoff"
                         exit()
                else:
                   break
-                
+
         for fb in self.floppy_bodies:
 
             if avoidcollision:
@@ -801,21 +792,21 @@ class SimplifiedModel():
                else: continue
 
             niter=0
-            while niter<niterations: 
+            while niter<niterations:
                fbxyz=IMP.core.XYZ(fb).get_coordinates()
                transformation=IMP.algebra.get_random_local_transformation(fbxyz,max_translation,max_rotation)
                IMP.core.transform(IMP.core.XYZ(fb),transformation)
-               
-               
+
+
                if avoidcollision:
                   self.m.update()
                   npairs=len(gcpf.get_close_pairs(self.m,otherparticleindexes,fbindexes))
                   if npairs==0: niter=niterations
                   else:
                      niter+=1
-                     print "shuffle_configuration: floppy body placed close to other %d particles, trying again..." % npairs              
-                     if niter==niterations: 
-                        print "shuffle_configuration: tried the maximum number of iterations to avoid collisions, increase the distance cutoff" 
+                     print "shuffle_configuration: floppy body placed close to other %d particles, trying again..." % npairs
+                     if niter==niterations:
+                        print "shuffle_configuration: tried the maximum number of iterations to avoid collisions, increase the distance cutoff"
                         exit()
                else:
                   break
@@ -825,9 +816,9 @@ class SimplifiedModel():
         this will apply a translation to a hierarchy along the input vector
         '''
         rbs=set()
-        xyzs=set()   
+        xyzs=set()
         transformation=IMP.algebra.Transformation3D(IMP.algebra.Vector3D(translation_vector))
-        for p in IMP.atom.get_leaves(hierarchy): 
+        for p in IMP.atom.get_leaves(hierarchy):
            if IMP.core.RigidMember.particle_is_instance(p):
               rb=IMP.core.RigidMember(p).get_rigid_body()
               rbs.add(rb)
@@ -837,10 +828,10 @@ class SimplifiedModel():
            IMP.core.transform(IMP.core.XYZ(xyz),transformation)
         for rb in rbs:
            IMP.core.transform(rb,transformation)
-    
+
     def translate_hierarchies(self,hierarchies,translation_vector):
         for h in hierarchies: self.translate_hierarchy(h,translation_vector)
-        
+
     def translate_hierarchies_to_reference_frame(self,hierarchies):
         xc=0;yc=0;zc=0
         nc=0
@@ -848,7 +839,7 @@ class SimplifiedModel():
             for p in IMP.atom.get_leaves(h):
                 coor=IMP.core.XYZ(p).get_coordinates()
                 nc+=1
-                xc+=coor[0];yc+=coor[1];zc+=coor[2] 
+                xc+=coor[0];yc+=coor[1];zc+=coor[2]
         xc=xc/nc;yc=yc/nc;zc=zc/nc
         self.translate_hierarchies(hierarchies,(-xc,-yc,-zc))
 
@@ -857,12 +848,12 @@ class SimplifiedModel():
         ps=IMP.pmi.tools.select(self,resolution=1.0)
         # storing the reference coordinates and the particles
         self.reference_structures[label]=([IMP.core.XYZ(p).get_coordinates() for p in ps],ps)
-    
+
     def get_all_rmsds(self):
         rmsds={}
-        
+
         for label in self.reference_structures:
-            
+
             current_coordinates=[IMP.core.XYZ(p).get_coordinates() for p in self.reference_structures[label][1]]
             reference_coordinates=self.reference_structures[label][0]
             if len(reference_coordinates)!=len(current_coordinates):
@@ -874,7 +865,7 @@ class SimplifiedModel():
             rmsd_relative=IMP.atom.get_drms(reference_coordinates,current_coordinates)
             rmsds[label+"_GlobalRMSD"]=rmsd_global
             rmsds[label+"_RelativeDRMS"]=rmsd_relative
-        return rmsds            
+        return rmsds
 
     def setup_component_geometry(self,name,color=None,resolution=1.0):
         if color==None:
@@ -959,7 +950,7 @@ class SimplifiedModel():
         self.linker_restraints.add_restraint(unmodeledregions_cr)
         self.sortedsegments_cr_dict[name]=sortedsegments_cr
         self.unmodeledregions_cr_dict[name]=unmodeledregions_cr
-    
+
     def optimize_floppy_bodies(self,nsteps,temperature=1.0):
         import IMP.pmi.samplers
         pts=tools.ParticleToSampleList()
@@ -970,7 +961,7 @@ class SimplifiedModel():
            print "optimize_floppy_bodies: optimizing %i floppy bodies" % len(self.floppy_bodies)
            mc.run(nsteps)
         else:
-           print "optimize_floppy_bodies: no particle to optimize" 
+           print "optimize_floppy_bodies: no particle to optimize"
 
     def create_rotational_symmetry(self,maincopy,copies):
         from math import pi
@@ -1019,12 +1010,12 @@ class SimplifiedModel():
                 longitudinal_copies,axis=(0,0,1),translation_value=4.8):
 
         from math import pi
-        self.representation_is_modified=True   
-             
+        self.representation_is_modified=True
+
         outhiers=[]
         protein_h=self.hier_dict[maincopy]
         mainparts=IMP.atom.get_leaves(protein_h)
-        
+
         for ilc in range(-longitudinal_copies,longitudinal_copies+1):
             for iac in range(axial_copies):
                 copyname=maincopy+"_a"+str(ilc)+"_l"+str(iac)
@@ -1167,11 +1158,11 @@ class SimplifiedModel():
         else:
            #these will be 2D rotation SRB
            self.super_rigid_bodies.append((super_rigid_xyzs,super_rigid_rbs,axis))
-    
-    def fix_rigid_bodies(self,rigid_bodies):
-        self.fixed_rigid_bodies+=rigid_bodies   
 
- 
+    def fix_rigid_bodies(self,rigid_bodies):
+        self.fixed_rigid_bodies+=rigid_bodies
+
+
     def set_chain_of_super_rigid_bodies(self,hiers,lmin=None,lmax=None,axis=None):
         '''
         this function takes a linear list of hierarchies (they are supposed
@@ -1295,7 +1286,7 @@ class SimplifiedModel():
             for pt in self.hier_geometry_pairs[name]:
 
                 p1=pt[0]
-                p2=pt[1]             
+                p2=pt[1]
                 IMP.atom.create_bond(IMP.atom.Bonded.setup_particle(p1),IMP.atom.Bonded.setup_particle(p2),1)
 
     def show_component_table(self,name):
@@ -1466,7 +1457,7 @@ class SimplifiedModel():
             ylist.append(None)
         pp.plot(xlist,ylist,'b-',alpha=0.1)
         pp.show()
-                                
+
     def get_prot_name_from_particle(self,particle):
             names=self.get_component_names()
             particle0=particle
@@ -1520,7 +1511,7 @@ class SimplifiedModel():
                  fbtmp.append(fb)
            else:
               fbtmp.append(fb)
-        
+
         for srb in self.super_rigid_bodies:
             rigid_bodies=list(srb[1])
             for rb in rigid_bodies:
@@ -1554,17 +1545,17 @@ class SimplifiedModel():
             output["SimplifiedModel_Link_UnmodeledRegions_"+name+"_"+self.label]=str(partialscore)
         for name in self.linker_restraints_dict:
             output[name+"_"+self.label]=str(self.linker_restraints_dict[name].unprotected_evaluate(None))
-        
+
         if len(self.reference_structures.keys())!=0:
            rmsds=self.get_all_rmsds()
            for label in rmsds:
                output["SimplifiedModel_"+label+"_"+self.label]=rmsds[label]
-           
+
         if self.output_level=="high":
             for p in IMP.atom.get_leaves(self.prot):
                 d=IMP.core.XYZR(p)
                 output["Coordinates_"+p.get_name()+"_"+self.label]=str(d)
-                
+
 
         output["_TotalScore"]=str(score)
         return output

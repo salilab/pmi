@@ -1223,6 +1223,13 @@ class SimplifiedModel():
                 rb.set_is_rigid_member(p.get_index(),False)
                 p.set_name(p.get_name()+"_rigid_body_member")
 
+    def set_floppy_bodies_from_hierarchies(self,hiers):
+        for hier in hiers:
+            ps=IMP.atom.get_leaves(hier)
+            for p in ps:
+               IMP.core.XYZ(p).set_coordinates_are_optimized(True)
+               self.floppy_bodies.append(p)
+
     def get_particles_from_selection(self,selection_tuples):
         #to be used for instance by CompositeRestraint
         #selection tuples must be [(r1,r2,"name1"),(r1,r2,"name2"),....]
@@ -1497,6 +1504,7 @@ class SimplifiedModel():
         #remove symmetric particles: they are not sampled
         rbtmp=[]
         fbtmp=[]
+        srbtmp=[]
         if not self.rigidbodiesarefixed:
             for rb in self.rigid_bodies:
                if IMP.pmi.Symmetric.particle_is_instance(rb):
@@ -1512,9 +1520,16 @@ class SimplifiedModel():
                  fbtmp.append(fb)
            else:
               fbtmp.append(fb)
+        
+        for srb in self.super_rigid_bodies:
+            rigid_bodies=list(srb[1])
+            for rb in rigid_bodies:
+                if rb not in self.fixed_rigid_bodies:
+                   srbtmp.append(srb)
 
         self.rigid_bodies=rbtmp
         self.floppy_bodies=fbtmp
+        self.super_rigid_bodies=srbtmp
 
         ps["Rigid_Bodies_SimplifiedModel"]=(self.rigid_bodies,self.maxtrans_rb,self.maxrot_rb)
         ps["Floppy_Bodies_SimplifiedModel"]=(self.floppy_bodies,self.maxtrans_fb)

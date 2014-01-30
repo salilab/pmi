@@ -185,7 +185,9 @@ class SimplifiedCrossLinkMS():
         expdistance,
         strength,
         resolution=None,
-        columnmapping=None):
+        columnmapping=None,
+        truncated=True,
+        spheredistancepairscore=True):
         # columnindexes is a list of column indexes for protein1, protein2, residue1, residue2
         # by default column 0 = protein1; column 1 = protein2; column 2 =
         # residue1; column 3 = residue2
@@ -207,6 +209,8 @@ class SimplifiedCrossLinkMS():
         self.outputlevel = "low"
         self.expdistance = expdistance
         self.strength = strength
+        self.truncated=truncated
+        self.spheredistancepairscore=spheredistancepairscore
 
         # fill the cross-linker pmfs
         # to accelerate the init the list listofxlinkertypes might contain only
@@ -260,14 +264,23 @@ class SimplifiedCrossLinkMS():
 
             else:
 
-                limit = self.strength * (self.expdistance + 15) ** 2 + 10.0
-                hub = IMP.core.TruncatedHarmonicUpperBound(
-                    self.expdistance,
-                    self.strength,
-                    self.expdistance +
-                    15.,
-                    limit)
-                df = IMP.core.SphereDistancePairScore(hub)
+                
+                if self.truncated:
+                   limit = self.strength * (self.expdistance + 15) ** 2 + 10.0
+                   hub = IMP.core.TruncatedHarmonicUpperBound(
+                      self.expdistance,
+                      self.strength,
+                      self.expdistance +
+                      15.,
+                      limit)
+                else:
+                   hub = IMP.core.HarmonicUpperBound(
+                      self.expdistance,
+                      self.strength)
+                if self.spheredistancepairscore:                
+                   df = IMP.core.SphereDistancePairScore(hub)
+                else:
+                   df = IMP.core.DistancePairScore(hub)                   
                 dr = IMP.core.PairRestraint(df, (p1, p2))
                 dr.set_name(c1 + ":" + str(r1) + "-" + c2 + ":" + str(r2))
 
@@ -319,12 +332,18 @@ class SimplifiedCrossLinkMS():
         d2 = IMP.core.XYZR.setup_particle(p2)
         d1.set_radius(radius1)
         d2.set_radius(radius2)
-        limit = self.strength * (self.expdistance + 1) ** 2 + 10.0
-        hub = IMP.core.TruncatedHarmonicUpperBound(
-            self.expdistance,
-            self.strength,
-            self.expdistance + 5.,
-            limit)
+        if self.truncated:
+           limit = self.strength * (self.expdistance + 15) ** 2 + 10.0
+           hub = IMP.core.TruncatedHarmonicUpperBound(
+              self.expdistance,
+              self.strength,
+              self.expdistance +
+              15.,
+              limit)
+        else:
+           hub = IMP.core.HarmonicUpperBound(
+              self.expdistance,
+              self.strength) 
         df = IMP.core.SphereDistancePairScore(hub)
         dr = IMP.core.PairRestraint(df, (p1, p2))
         dists = []
@@ -360,9 +379,13 @@ class SimplifiedCrossLinkMS():
                 str(resid2) + ":" + chain2
             output["SimplifiedCrossLinkMS_Score_" + crosslinker + "_" +
                    label] = str(self.weight * ln.unprotected_evaluate(None))
-
-            d0 = IMP.core.XYZ(p0)
-            d1 = IMP.core.XYZ(p1)
+            
+            if self.spheredistancepairscore:
+               d0 = IMP.core.XYZR(p0)
+               d1 = IMP.core.XYZR(p1)   
+            else:            
+               d0 = IMP.core.XYZ(p0)
+               d1 = IMP.core.XYZ(p1)
             output["SimplifiedCrossLinkMS_Distance_" +
                    label] = str(IMP.core.get_distance(d0, d1))
 
@@ -605,10 +628,11 @@ class ISDCrossLinkMS():
     def __init__(self, representation, restraints_file, length, resolution=None,slope=0.0,
                  columnmapping=None, csvfile=False, samplelength=False,
                  ids_map=None, radius_map=None, filters=None,label="None",filelabel="None",marginal=False,
-                 automatic_sigma_classification=False):
+                 automatic_sigma_classification=False,attributes_for_label=None):
         # columnindexes is a list of column indexes for protein1, protein2, residue1, residue2
         # by default column 0 = protein1; column 1 = protein2; column 2 = residue1; column 3 = residue2;
         # column 4 = idscores
+        # attributes_for_label: anithing in the csv database that must be added to the label
         
         if columnmapping is None:
             columnmapping = {}
@@ -683,22 +707,32 @@ class ISDCrossLinkMS():
                 # skip character
                 if (tokens[0] == "#"):
                     continue
-                r1 = int(tokens[residue1])
-                c1 = tokens[protein1]
-                r2 = int(tokens[residue2])
-                c2 = tokens[protein2]
-                ids = float(tokens[idscore])
+                try:
+                  r1 = int(tokens[residue1])
+                  c1 = tokens[protein1]
+                  r2 = int(tokens[residue2])
+                  c2 = tokens[protein2]
+                  ids = float(tokens[idscore])
+                except:
+                  print "this line was not accessible "+str(entry)
+                  continue
+
             else:
                 if filters is not None:
                     if eval(IMP.pmi.tools.cross_link_db_filter_parser(filters)) == False:
                         exdb.write(str(entry) + "\n")
                         continue
-                
-                r1 = int(entry[residue1])
-                c1 = entry[protein1]
-                r2 = int(entry[residue2])
-                c2 = entry[protein2]
-                ids = float(entry[idscore])
+
+                try:
+                  r1 = int(entry[residue1])
+                  c1 = entry[protein1]
+                  r2 = int(entry[residue2])
+                  c2 = entry[protein2]
+                  ids = float(entry[idscore])
+                except:
+                  print "this line was not accessible "+str(entry)
+                  continue               
+
 
             ps1=IMP.pmi.tools.select(representation,resolution=resolution,name=c1,name_is_ambiguous=False,residue=r1)
             ps2=IMP.pmi.tools.select(representation,resolution=resolution,name=c2,name_is_ambiguous=False,residue=r2)
@@ -789,6 +823,11 @@ class ISDCrossLinkMS():
                 xlattribute = "intrarb"
             else:
                 xlattribute = "interrb"
+                
+            if csvfile:
+               if attributes_for_label!=None:
+                  for a in attributes_for_label:
+                      xlattribute=xlattribute+"_"+str(entry[a])
 
             dr.set_name(
                 xlattribute + "-" + c1 + ":" + str(r1) + "-" + c2 + ":" + str(r2)+"_"+self.label)
@@ -839,7 +878,7 @@ class ISDCrossLinkMS():
         self.sigmaminnuis = 0.0000001
         self.sigmamaxnuis = 1000.0
         self.sigmamin = 0.01
-        self.sigmamax = 5.0
+        self.sigmamax = 100.0
         self.sigmatrans = 0.5
         self.sigma = IMP.pmi.tools.SetupNuisance(self.m, self.sigmainit,
                                          self.sigmaminnuis, self.sigmamaxnuis, self.sigmaissampled).get_particle()

@@ -827,7 +827,7 @@ class ISDCrossLinkMS():
             if csvfile:
                if attributes_for_label!=None:
                   for a in attributes_for_label:
-                      xlattribute=xlattribute+"_"+str(entry(a))
+                      xlattribute=xlattribute+"_"+str(entry[a])
 
             dr.set_name(
                 xlattribute + "-" + c1 + ":" + str(r1) + "-" + c2 + ":" + str(r2)+"_"+self.label)

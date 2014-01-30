@@ -1220,7 +1220,7 @@ class SimplifiedModel():
             if IMP.core.RigidMember.particle_is_instance(p):
                 print "I'm trying to make this particle flexible although it was assigned to a rigid body", p.get_name()
                 rb=IMP.core.RigidMember(p).get_rigid_body()
-                rb.set_is_rigid_member(p.get_particle_index(),False)
+                rb.set_is_rigid_member(p.get_index(),False)
                 p.set_name(p.get_name()+"_rigid_body_member")
 
     def set_floppy_bodies_from_hierarchies(self,hiers):

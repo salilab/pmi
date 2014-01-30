@@ -186,7 +186,8 @@ class SimplifiedCrossLinkMS():
         strength,
         resolution=None,
         columnmapping=None,
-        truncated=True):
+        truncated=True,
+        spheredistancepairscore=True):
         # columnindexes is a list of column indexes for protein1, protein2, residue1, residue2
         # by default column 0 = protein1; column 1 = protein2; column 2 =
         # residue1; column 3 = residue2
@@ -209,6 +210,7 @@ class SimplifiedCrossLinkMS():
         self.expdistance = expdistance
         self.strength = strength
         self.truncated=truncated
+        self.spheredistancepairscore=spheredistancepairscore
 
         # fill the cross-linker pmfs
         # to accelerate the init the list listofxlinkertypes might contain only
@@ -274,8 +276,11 @@ class SimplifiedCrossLinkMS():
                 else:
                    hub = IMP.core.HarmonicUpperBound(
                       self.expdistance,
-                      self.strength)                   
-                df = IMP.core.SphereDistancePairScore(hub)
+                      self.strength)
+                if self.spheredistancepairscore:                
+                   df = IMP.core.SphereDistancePairScore(hub)
+                else:
+                   df = IMP.core.DistancePairScore(hub)                   
                 dr = IMP.core.PairRestraint(df, (p1, p2))
                 dr.set_name(c1 + ":" + str(r1) + "-" + c2 + ":" + str(r2))
 

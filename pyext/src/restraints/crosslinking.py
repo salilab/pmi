@@ -379,9 +379,13 @@ class SimplifiedCrossLinkMS():
                 str(resid2) + ":" + chain2
             output["SimplifiedCrossLinkMS_Score_" + crosslinker + "_" +
                    label] = str(self.weight * ln.unprotected_evaluate(None))
-
-            d0 = IMP.core.XYZ(p0)
-            d1 = IMP.core.XYZ(p1)
+            
+            if self.spheredistancepairscore:
+               d0 = IMP.core.XYZR(p0)
+               d1 = IMP.core.XYZR(p1)   
+            else:            
+               d0 = IMP.core.XYZ(p0)
+               d1 = IMP.core.XYZ(p1)
             output["SimplifiedCrossLinkMS_Distance_" +
                    label] = str(IMP.core.get_distance(d0, d1))
 

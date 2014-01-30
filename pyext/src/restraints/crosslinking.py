@@ -628,10 +628,11 @@ class ISDCrossLinkMS():
     def __init__(self, representation, restraints_file, length, resolution=None,slope=0.0,
                  columnmapping=None, csvfile=False, samplelength=False,
                  ids_map=None, radius_map=None, filters=None,label="None",filelabel="None",marginal=False,
-                 automatic_sigma_classification=False):
+                 automatic_sigma_classification=False,attributes_for_label=None):
         # columnindexes is a list of column indexes for protein1, protein2, residue1, residue2
         # by default column 0 = protein1; column 1 = protein2; column 2 = residue1; column 3 = residue2;
         # column 4 = idscores
+        # attributes_for_label: anithing in the csv database that must be added to the label
         
         if columnmapping is None:
             columnmapping = {}
@@ -822,6 +823,11 @@ class ISDCrossLinkMS():
                 xlattribute = "intrarb"
             else:
                 xlattribute = "interrb"
+                
+            if csvfile:
+               if attributes_for_label!=None:
+                  for a in attributes_for_label:
+                      xlattribute=xlattribute+"_"+str(entry(a))
 
             dr.set_name(
                 xlattribute + "-" + c1 + ":" + str(r1) + "-" + c2 + ":" + str(r2)+"_"+self.label)

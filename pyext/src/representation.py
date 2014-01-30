@@ -88,6 +88,11 @@ class SimplifiedModel():
         self.rigid_bodies=[]
         self.fixed_rigid_bodies=[]
         self.floppy_bodies=[]
+        # self.super_rigid_bodies is a list of tuples.
+        # each tuple, corresponding to a particular super rigid body 
+        # the tuple is (super_rigid_xyzs,super_rigid_rbs)
+        # where super_rigid_xyzs are the flexible xyz particles 
+        # and super_rigid_rbs is the list of rigid bodies.
         self.super_rigid_bodies=[]
         self.output_level="low"
         self.label="None"
@@ -1512,15 +1517,19 @@ class SimplifiedModel():
            else:
               fbtmp.append(fb)
 
-        #for srb in self.super_rigid_bodies:
-        #    rigid_bodies=list(srb[1])
-        #    for rb in rigid_bodies:
-        #        if rb not in self.fixed_rigid_bodies:
-        #           srbtmp.append(srb)
+        for srb in self.super_rigid_bodies:
+            #going to prune the fixed rigid bodies out
+            #of the super rigid body list
+            rigid_bodies=list(srb[1])
+            filtered_rigid_bodies=[]
+            for rb in rigid_bodies:
+                if rb not in self.fixed_rigid_bodies:
+                   filtered_rigid_bodies.append(rb)
+            srbtmp.append((srb[0],filtered_rigid_bodies))
 
         self.rigid_bodies=rbtmp
         self.floppy_bodies=fbtmp
-        #self.super_rigid_bodies=srbtmp
+        self.super_rigid_bodies=srbtmp
 
         ps["Rigid_Bodies_SimplifiedModel"]=(self.rigid_bodies,self.maxtrans_rb,self.maxrot_rb)
         ps["Floppy_Bodies_SimplifiedModel"]=(self.floppy_bodies,self.maxtrans_fb)

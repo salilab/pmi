@@ -17,6 +17,19 @@ TransformMover::TransformMover(kernel::Model *m,
   IMP_LOG_VERBOSE("start TransformMover constructor");
   max_translation_ = max_translation;
   max_angle_ = max_angle;
+  constr_=0;
+  IMP_LOG_VERBOSE("finish mover construction" << std::endl);
+}
+
+TransformMover::TransformMover(kernel::Model *m, algebra::Vector3D axis,
+                               Float max_translation, Float max_angle)
+    : MonteCarloMover(m, "Transform mover") {
+  IMP_LOG_VERBOSE("start TransformMover constructor");
+  //this constructor defines a 2D rotation about an axis
+  axis_ = axis;
+  max_translation_ = max_translation;
+  max_angle_ = max_angle;
+  constr_=1;
   IMP_LOG_VERBOSE("finish mover construction" << std::endl);
 }
 
@@ -38,11 +51,11 @@ core::MonteCarloMoverResult TransformMover::do_propose() {
   
   algebra::Vector3D translation = algebra::get_random_vector_in(
       algebra::Sphere3D(algebra::get_zero_vector_d<3>(), max_translation_));
-  algebra::Vector3D axis =
-      algebra::get_random_vector_on(algebra::get_unit_sphere_d<3>());
+  if (constr_==0){
+  axis_=algebra::get_random_vector_on(algebra::get_unit_sphere_d<3>());}
   ::boost::uniform_real<> rand(-max_angle_, max_angle_);
   Float angle = rand(base::random_number_generator);
-  algebra::Rotation3D r = algebra::get_rotation_about_axis(axis, angle);
+  algebra::Rotation3D r = algebra::get_rotation_about_axis(axis_, angle);
   algebra::Transformation3D t_(r, translation); 
   
   algebra::Transformation3D tt = c_*t_*c_.get_inverse();

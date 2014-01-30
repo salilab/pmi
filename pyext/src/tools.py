@@ -29,14 +29,13 @@ class Stopwatch():
 
 class SetupNuisance():
     def __init__(self,m,initialvalue,minvalue,maxvalue,isoptimized=True):
-        global impisd2
-        import IMP.isd2 as impisd2
-        
-        nuisance=impisd2.Scale.setup_particle(IMP.Particle(m),initialvalue)
+        import IMP.isd
+
+        nuisance=IMP.isd.Scale.setup_particle(IMP.Particle(m),initialvalue)
         nuisance.set_lower(minvalue)
         nuisance.set_upper(maxvalue)
 
-        m.add_score_state(IMP.core.SingletonConstraint(impisd2.NuisanceRangeModifier(),None,nuisance))
+        #m.add_score_state(IMP.core.SingletonConstraint(IMP.isd.NuisanceRangeModifier(),None,nuisance))
         nuisance.set_is_optimized(nuisance.get_nuisance_key(),isoptimized)
         self.nuisance=nuisance
 
@@ -46,10 +45,9 @@ class SetupNuisance():
 class SetupWeight():
 
     def __init__(self,m,isoptimized=True):
-        global impisd2
-        import IMP.isd2 as impisd2    
+        import IMP.isd
         pw=IMP.Particle(m)
-        self.weight=impisd2.Weight.setup_particle(pw)
+        self.weight=IMP.isd.Weight.setup_particle(pw)
         self.weight.set_weights_are_optimized(True)
 
     def get_particle(self):
@@ -271,10 +269,10 @@ def get_cross_link_data(directory,filename,(distmin,distmax,ndist),
                                              (omegamin,omegamax,nomega),
                                             (sigmamin,sigmamax,nsigma),
                                             don=None,doff=None,prior=0,type_of_profile="gofr"):
-    
-    import IMP.isd2
-    
-    filen=IMP.isd2.get_data_path("CrossLinkPMFs.dict")
+
+    import IMP.isd
+
+    filen=IMP.isd.get_data_path("CrossLinkPMFs.dict")
     xlpot=open(filen)
 
     for line in xlpot:
@@ -289,9 +287,9 @@ def get_cross_link_data(directory,filename,(distmin,distmax,ndist),
     sigma_grid=get_log_grid(sigmamin, sigmamax, nsigma)
 
     if don!=None and doff!=None:
-        xlmsdata=IMP.isd2.CrossLinkData(dist_grid,omega_grid,sigma_grid,xpot,pot,don,doff,prior)
+        xlmsdata=IMP.isd.CrossLinkData(dist_grid,omega_grid,sigma_grid,xpot,pot,don,doff,prior)
     else:
-        xlmsdata=IMP.isd2.CrossLinkData(dist_grid,omega_grid,sigma_grid,xpot,pot)
+        xlmsdata=IMP.isd.CrossLinkData(dist_grid,omega_grid,sigma_grid,xpot,pot)
     return xlmsdata
 
     #-------------------------------
@@ -300,13 +298,13 @@ def get_cross_link_data(directory,filename,(distmin,distmax,ndist),
 def get_cross_link_data_from_length(length,(distmin,distmax,ndist),
                                (omegamin,omegamax,nomega),
                                (sigmamin,sigmamax,nsigma)):
-    import IMP.isd2
-    
+    import IMP.isd
+
     dist_grid=get_grid(distmin, distmax, ndist, False)
     omega_grid=get_log_grid(omegamin, omegamax, nomega)
     sigma_grid=get_log_grid(sigmamin, sigmamax, nsigma)
 
-    xlmsdata=IMP.isd2.CrossLinkData(dist_grid,omega_grid,sigma_grid,length)
+    xlmsdata=IMP.isd.CrossLinkData(dist_grid,omega_grid,sigma_grid,length)
     return xlmsdata
 
 
@@ -331,6 +329,47 @@ def get_log_grid(gmin,gmax,ngrid):
     #-------------------------------
 
 
+def cross_link_db_filter_parser(inputstring):
+    '''
+    example '"{ID_Score}" > 28 AND "{Sample}" ==
+     "%10_1%" OR ":Sample}" == "%10_2%" OR ":Sample}"
+    == "%10_3%" OR ":Sample}" == "%8_1%" OR ":Sample}" == "%8_2%"'
+    '''
+
+    import pyparsing as pp
+
+    operator = pp.Regex(">=|<=|!=|>|<|==|in").setName("operator")
+    value = pp.QuotedString('"') | pp.Regex(r"[+-]?\d+(:?\.\d*)?(:?[eE][+-]?\d+)?")
+    identifier = pp.Word(pp.alphas, pp.alphanums + "_")
+    comparison_term = identifier | value
+    condition = pp.Group(comparison_term + operator + comparison_term)
+
+    expr = pp.operatorPrecedence(condition,[
+                                ("OR", 2, pp.opAssoc.LEFT, ),
+                                ("AND", 2, pp.opAssoc.LEFT, ),
+                                ])
+
+    parsedstring=str(expr.parseString(inputstring)) \
+                         .replace("[","(") \
+                         .replace("]",")") \
+                         .replace(","," ") \
+                         .replace("'"," ") \
+                         .replace("%","'") \
+                         .replace("{","float(entry['") \
+                         .replace("}","'])") \
+                         .replace(":","str(entry['") \
+                         .replace("}","'])") \
+                         .replace("AND","and") \
+                         .replace("OR","or")
+    return parsedstring
+
+def open_file_or_inline_text(filename):
+    try:
+        fl=open(filename,"r")
+    except IOError:
+        fl=filename.split("\n")
+    return fl
+
 def get_drmsd(prot0, prot1):
     drmsd=0.; npairs=0.;
     for i in range(0,len(prot0)-1):
@@ -343,132 +382,423 @@ def get_drmsd(prot0, prot1):
 
     #-------------------------------
 
+def get_ids_from_fasta_file(fastafile):
+    ids=[]
+    ff=open(fastafile,"r")
+    for l in ff:
+        if l[0]==">": ids.append(l[1:-1])
+    return ids
+ 
+def get_closest_residue_position(hier,resindex,terminus="N"):
+    '''
+    this function works with plain hierarchies, as read from the pdb,
+    no multi-scale hierarchies
+    '''    
+    p=[]
+    niter=0
+    while len(p)==0:
+       niter+=1
+       sel=IMP.atom.Selection(hier,residue_index=resindex,
+                               atom_type=IMP.atom.AT_CA)
 
-def get_residue_index_and_chain_from_particle(p):
-    rind=IMP.atom.Residue(IMP.atom.Atom(p).get_parent()).get_index()
-    c=IMP.atom.Residue(IMP.atom.Atom(p).get_parent()).get_parent()
-    cid=IMP.atom.Chain(c).get_id()
-    return rind,cid
-
-def get_particles_by_resolution(prot,resolution):
-    #this function does not work with the root hierarchy, but 
-    #individual proteins
-    #for hier in prot.get_children():
-    particles = []
-    residues = set() 
-
-    for p in IMP.atom.get_leaves(prot):
-        residues.update(IMP.atom.Fragment(p).get_residue_indexes())
+       if terminus=="N": resindex+=1
+       if terminus=="C": resindex-=1
        
-    firstresn=min(residues)
-    lastresn=max(residues)
-    for nres in range(firstresn,lastresn+1):
-        s=IMP.atom.Selection(prot,residue_index=nres)
-        resolutions=[]
-
-        # calculate the closest resolution for each set of particles that represent a residue 
-        ps=s.get_selected_particles()
-
-        if len(ps)>0:
-            for p in ps:
-                resolutions.append(IMP.pmi.Resolution(IMP.pmi.Resolution(p)).get_resolution())
-            closestres=min(resolutions, key=lambda x:abs(float(x)-float(resolution)))
-            
-            # now we get the particle 
-            for p in ps:
-                if closestres==IMP.pmi.Resolution.get_resolution(IMP.pmi.Resolution(p)): 
-                    if not p in particles:  
-                        particles.append(p)     
-        else: 
-            print "get_particles_by_resolution> WARNING residue %d in molecule %s is missing" % (nres,prot.get_name())
-
-    return list(particles)
-    #-------------------------------
+       if niter>=10000: 
+          print "get_closest_residue_position: exiting while loop without result"
+          break
+       p=sel.get_selected_particles() 
+       
+    if len(p)==1:
+       return IMP.core.XYZ(p[0]).get_coordinates()
+    elif len(p) == 0:
+       print "get_closest_residue_position: got NO residues for hierarchy %s and residue %i" % (hier,resindex)
+       raise Exception, "get_closest_residue_position: got NO residues for hierarchy %s and residue %i" % (hier,resindex)
+    else:
+       print "get_closest_residue_position: got multiple residues for hierarchy %s and residue %i" % (hier,resindex)
+       print "the list of particles is",[pp.get_name() for pp in p]
+       exit()
     
 def get_position_terminal_residue(hier,terminus="C",resolution=1):
-    #this function get the xyz position of the 
-    #C or N terminal residue of a hierarchy, given the resolution.
-    #the argument of terminus can be either N or C
-    
+    '''
+    this function get the xyz position of the
+    C or N terminal residue of a hierarchy, given the resolution.
+    the argument of terminus can be either N or C
+    '''
     termresidue=None
-    termarticle=None
+    termparticle=None
     for p in IMP.atom.get_leaves(hier):
         if IMP.pmi.Resolution(p).get_resolution()==resolution:
-           residues=IMP.atom.Fragment(p).get_residue_indexes()  
+           residues=IMP.pmi.tools.get_residue_indexes(p)
            if terminus=="C":
                if max(residues)>=termresidue and termresidue!=None:
                   termresidue=max(residues)
-                  termparticle=p      
+                  termparticle=p
                elif termresidue==None:
                   termresidue=max(residues)
-                  termparticle=p                                      
+                  termparticle=p
            elif terminus=="N":
                if min(residues)<=termresidue and termresidue!=None:
                   termresidue=min(residues)
-                  termparticle=p      
+                  termparticle=p
                elif termresidue==None:
                   termresidue=min(residues)
-                  termparticle=p                     
-           else: 
+                  termparticle=p
+           else:
                print "get_position_terminal_residue> terminus argument should be either N or C"
-             
+               exit()
+
     return IMP.core.XYZ(termparticle).get_coordinates()
-               
 
-
-
-def select_calpha_or_residue(prot,chain,resid,ObjectName="None:",SelectResidue=False):
-    #use calphas
-    p=None
-    s=IMP.atom.Selection(prot, chains=chain,
-         residue_index=resid, atom_type=IMP.atom.AT_CA)
-
-    ps=s.get_selected_particles()
-    #check if the calpha selection is empty
-    if ps:
-        if len(ps)==1:
-            p=ps[0]
+def get_residue_gaps_in_hierarchy(hierarchy,start,end):
+    '''
+    returns the residue index gaps and contiguous segments as tuples given the hierarchy, the first 
+    residue and the last residue indexes. The list is organized as 
+    [[1,100,"cont"],[101,120,"gap"],[121,200,"cont"]]
+    '''
+    gaps=[]
+    for n,rindex in enumerate(range(start,end+1)):
+        sel=IMP.atom.Selection(hierarchy,residue_index=rindex,
+                               atom_type=IMP.atom.AT_CA)
+        
+        if len(sel.get_selected_particles())==0:
+           if n==0:
+              #set the initial condition
+              rindexgap=start
+              rindexcont=start-1
+           if rindexgap==rindex-1:
+              #residue is contiguous with the previously discovered gap
+              gaps[-1][1]+=1
+           else:
+              #residue is not contiguous with the previously discovered gap
+              #hence create a new gap tuple
+              gaps.append([rindex,rindex,"gap"])
+           #update the index of the last residue gap 
+           rindexgap=rindex
         else:
-            print ObjectName+" multiple residues selected for selection residue %s chain %s " % (resid,chain)
-    else:
-        #use the residue, in case of simplified representation
-        s=IMP.atom.Selection(prot, chains=chain,
-            residue_index=resid)
-        ps=s.get_selected_particles()
-        #check if the residue selection is empty
-        if ps:
-            if len(ps)==1:
-                p=ps[0]
-            else:
-                print ObjectName+" multiple residues selected for selection residue %s chain %s " % (resid,chain)
-
-        else:
-            print ObjectName+" residue %s chain %s does not exist" % (resid,chain)
-    return p
-
+           if n==0:
+              #set the initial condition
+              rindexgap=start-1
+              rindexcont=start
+           if rindexcont==rindex-1:
+              #residue is contiguous with the previously discovered continuous part
+              gaps[-1][1]+=1
+           else:
+              #residue is not contiguous with the previously discovered continuous part
+              #hence create a new cont tuple
+              gaps.append([rindex,rindex,"cont"])
+           #update the index of the last residue gap 
+           rindexcont=rindex           
+    return gaps
 
 class map():
       def __init__(self):
           self.map={}
-      
+
       def set_map_element(self,xvalue,yvalue):
           self.map[xvalue]=yvalue
-      
+
       def get_map_element(self,invalue):
           n=0
           mindist=1
           for x in self.map:
               dist=(invalue-x)*(invalue-x)
 
-              if n==0: 
+              if n==0:
                  mindist=dist
-                 minx=x             
-              if dist<mindist: 
+                 minx=x
+              if dist<mindist:
                  mindist=dist
                  minx=x
               n+=1
           return self.map[minx]
 
+def select(representation,
+           resolution=None,
+           hierarchies=None,
+           selection_arguments=None,
+           name=None,
+           name_is_ambiguous=False,
+           first_residue=None,
+           last_residue=None,
+           residue=None,
+           representation_type=None):
+    '''
+    this function uses representation=SimplifiedModel
+    it returns the corresponding selected particles
+    representation_type="Beads", "Res:X", "Densities", "Representation", "Molecule"
+    '''
+
+    if resolution==None:
+       allparticles=IMP.atom.get_leaves(representation.prot)
+    resolution_particles=None
+    hierarchies_particles=None
+    names_particles=None
+    residue_range_particles=None
+    residue_particles=None
+    representation_type_particles=None
+
+    
+    if resolution!=None:
+       resolution_particles=[]
+       hs=representation.get_hierarchies_at_given_resolution(resolution)
+       for h in hs:
+          resolution_particles+=IMP.atom.get_leaves(h)
+    
+    if hierarchies!=None:
+       hierarchies_particles=[]
+       for h in hierarchies:
+          hierarchies_particles+=IMP.atom.get_leaves(h)
+
+    if name!=None:
+       names_particles=[]
+       if name_is_ambiguous:
+          for namekey in representation.hier_dict:
+              if name in namekey:
+                 names_particles+=IMP.atom.get_leaves(representation.hier_dict[namekey])
+       elif name in representation.hier_dict:
+          names_particles+=IMP.atom.get_leaves(representation.hier_dict[name])
+       else:
+          print "select: component %s is not there" % name
+
+    if first_residue!=None and last_residue!=None:
+       sel = IMP.atom.Selection(representation.prot, 
+              residue_indexes=range(first_residue, last_residue + 1))
+       residue_range_particles=[IMP.atom.Hierarchy(p) for p in sel.get_selected_particles()]
+       
+
+    if residue!=None:
+       sel = IMP.atom.Selection(representation.prot, residue_index=residue)
+       residue_particles=[IMP.atom.Hierarchy(p) for p in sel.get_selected_particles()]
+    
+    if representation_type!=None:
+      representation_type_particles=[]
+      if representation_type=="Molecule":
+         for name in representation.hier_representation:
+             for repr_type in representation.hier_representation[name]:
+                 if repr_type=="Beads" or "Res:" in repr_type:
+                    h=representation.hier_representation[name][repr_type]
+                    representation_type_particles+=IMP.atom.get_leaves(h)
+      
+      elif representation_type=="PDB":
+         for name in representation.hier_representation:
+             for repr_type in representation.hier_representation[name]:
+                 if repr_type=="Res:" in repr_type:
+                    h=representation.hier_representation[name][repr_type]
+                    representation_type_particles+=IMP.atom.get_leaves(h)
+
+      else:
+         for name in representation.hier_representation:
+            h=representation.hier_representation[name][representation_type]
+            representation_type_particles+=IMP.atom.get_leaves(h)
+    
+    selections=[hierarchies_particles,names_particles,
+                residue_range_particles,residue_particles,representation_type_particles]
+    
+    if resolution==None:
+       selected_particles=set(allparticles)
+    else:
+       selected_particles=set(resolution_particles)
+    
+    for s in selections:
+        if s!=None:
+           selected_particles = (set(s) & selected_particles)  
+
+    return list(selected_particles)
+
+
+def select_by_tuple(representation,tupleselection,resolution=None,name_is_ambiguous=False):
+    if isinstance(tupleselection, tuple) and len(tupleselection) == 3:
+        particles=IMP.pmi.tools.select(representation,resolution=resolution,
+                                               name=tupleselection[2],
+                                               first_residue=tupleselection[0],
+                                               last_residue=tupleselection[1],
+                                               name_is_ambiguous=name_is_ambiguous)
+    elif isinstance(tupleselection, str):
+        particles=IMP.pmi.tools.select(representation,resolution=resolution,
+                                               name=tupleselection,
+                                               name_is_ambiguous=name_is_ambiguous)
+    #now order the result by residue number
+    particles=IMP.pmi.tools.sort_by_residues(particles)
+
+    return particles
+
+class HierarchyDatabase():
+     def __init__(self):
+        self.db={}
+        #this dictionary map a particle to its root hierarchy
+        self.root_hierarchy_dict={}
+        self.preroot_fragment_hierarchy_dict={}
+        self.particle_to_name={}
+        self.model=None
+
+     def add_name(self,name):
+        if name not in self.db:
+           self.db[name]={}
+
+     def add_residue_number(self,name,resn):
+        resn=int(resn)
+        self.add_name(name)
+        if resn not in self.db[name]:
+           self.db[name][resn]={}
+
+     def add_resolution(self,name,resn,resolution):
+        resn=int(resn)
+        resolution=float(resolution)
+        self.add_name(name)
+        self.add_residue_number(name,resn)
+        if resolution not in self.db[name][resn]:
+           self.db[name][resn][resolution]=[]
+
+     def add_particles(self,name,resn,resolution,particles):
+        resn=int(resn)
+        resolution=float(resolution)
+        self.add_name(name)
+        self.add_residue_number(name,resn)
+        self.add_resolution(name,resn,resolution)
+        self.db[name][resn][resolution]+=particles
+        for p in particles:
+            (rh,prf)=self.get_root_hierarchy(p)
+            self.root_hierarchy_dict[p]=rh
+            self.preroot_fragment_hierarchy_dict[p]=prf
+            self.particle_to_name[p]=name
+        if self.model==None: self.model=particles[0].get_model()
+
+     def get_model(self):
+        return self.model
+
+     def get_names(self):
+        names=self.db.keys()
+        names.sort()
+        return names
+
+     def get_particles(self,name,resn,resolution):
+        resn=int(resn)
+        resolution=float(resolution)
+        return self.db[name][resn][resolution]
+
+     def get_particles_at_closest_resolution(self,name,resn,resolution):
+        resn=int(resn)
+        resolution=float(resolution)
+        closestres=min(self.get_residue_resolutions(name,resn),
+                       key=lambda x:abs(float(x)-float(resolution)))
+        return self.get_particles(name,resn,closestres)
+
+     def get_residue_resolutions(self,name,resn):
+        resn=int(resn)
+        resolutions=self.db[name][resn].keys()
+        resolutions.sort()
+        return resolutions
+
+     def get_molecule_resolutions(self,name):
+        resolutions=set()
+        for resn in self.db[name]:
+            resolutions.update(self.db[name][resn].keys())
+        resolutions.sort()
+        return resolutions
+
+     def get_residue_numbers(self,name):
+        residue_numbers=self.db[name].keys()
+        residue_numbers.sort()
+        return residue_numbers
+
+     def get_particles_by_resolution(self,name,resolution):
+        resolution=float(resolution)
+        particles=[]
+        for resn in self.get_residue_numbers(name):
+            result=self.get_particles_at_closest_resolution(name,resn,resolution)
+            pstemp=[p for p in result if p not in particles]
+            particles+=pstemp
+        return particles
+
+     def get_all_particles_by_resolution(self,resolution):
+        resolution=float(resolution)
+        particles=[]
+        for name in self.get_names():
+          particles+=self.get_particles_by_resolution(name,resolution)
+        return particles
+
+     def get_root_hierarchy(self,particle):
+        prerootfragment=particle
+        while IMP.atom.Atom.particle_is_instance(particle) or \
+              IMP.atom.Residue.particle_is_instance(particle) or \
+              IMP.atom.Fragment.particle_is_instance(particle):
+           if IMP.atom.Atom.particle_is_instance(particle):
+              p=IMP.atom.Atom(particle).get_parent()
+           elif IMP.atom.Residue.particle_is_instance(particle):
+              p=IMP.atom.Residue(particle).get_parent()
+           elif IMP.atom.Fragment.particle_is_instance(particle):
+              p=IMP.atom.Fragment(particle).get_parent()
+           prerootfragment=particle
+           particle=p
+        return (IMP.atom.Hierarchy(particle),IMP.atom.Hierarchy(prerootfragment))
+
+     def get_all_root_hierarchies_by_resolution(self,resolution):
+        hierarchies=[]
+        resolution=float(resolution)
+        particles=self.get_all_particles_by_resolution(resolution)
+        for p in particles:
+            rh=self.root_hierarchy_dict[p]
+            if rh not in hierarchies: hierarchies.append(IMP.atom.Hierarchy(rh))
+        return hierarchies
+
+     def get_preroot_fragments_by_resolution(self,name,resolution):
+        fragments=[]
+        resolution=float(resolution)
+        particles=self.get_particles_by_resolution(name,resolution)
+        for p in particles:
+            fr=self.preroot_fragment_hierarchy_dict[p]
+            if fr not in fragments: fragments.append(fr)
+        return fragments
+
+     def show(self,name):
+        print name
+        for resn in self.get_residue_numbers(name):
+            print resn
+            for resolution in  self.get_residue_resolutions(name,resn):
+                print "----", resolution
+                for p in self.get_particles(name,resn,resolution):
+                    print "--------", p.get_name()
+
+def sublist_iterator(l,lmin=None,lmax=None):
+    '''
+    this iterator yields all sublists
+    of length >= lmin and <= lmax
+    '''
+    if lmin==None: lmin=0
+    if lmax==None: lmax=len(l)
+    n = len(l)+1
+    for i in xrange(n):
+        for j in xrange(i+1, n):
+           if len(l[i:j]) <= lmax and len(l[i:j]) >= lmin: yield l[i:j]
+
+def flatten_list(l):
+    return [item for sublist in l for item in sublist]
+
+def get_residue_indexes(hier):
+    '''
+    This "overloaded" function retrieves the residue indexes
+    for each particle which is an instance of Fragmen,Residue or Atom
+    '''
+    resind=[]
+    if IMP.atom.Fragment.particle_is_instance(hier):
+       resind=IMP.atom.Fragment(hier).get_residue_indexes()
+    elif IMP.atom.Residue.particle_is_instance(hier):
+       resind=[IMP.atom.Residue(hier).get_index()]
+    elif  IMP.atom.Atom.particle_is_instance(hier):
+       a=IMP.atom.Atom(hier)
+       resind=[IMP.atom.Residue(a.get_parent()).get_index()]
+    else:
+       print "get_residue_indexes> input is not Fragment, Residue or Atom"
+       exit()
+    return resind
+
+def sort_by_residues(particles):       
+    particles_residues=[(p,IMP.pmi.tools.get_residue_indexes(p)) for p in particles ]
+    sorted_particles_residues=sorted(particles_residues, key=lambda tup: tup[1])
+    particles=[p[0] for p in sorted_particles_residues]
+    return particles
+     
 def get_db_from_csv(csvfilename):
      import csv
      outputlist=[]
@@ -476,7 +806,7 @@ def get_db_from_csv(csvfilename):
      for l in csvr:
          outputlist.append(l)
      return outputlist
-          
+
 ########################
 ### Tools to simulate data
 ########################
@@ -564,5 +894,3 @@ def get_random_data_point(expected_value,ntrials,sensitivity,sigma,outlierprob,b
     rmean2/=float(ntrials)
     stddev=math.sqrt(max(rmean2-rmean*rmean,0.))
     return rmean,stddev
-        
-        

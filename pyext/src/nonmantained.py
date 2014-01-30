@@ -2239,3 +2239,38 @@ class CrossLinkMSSimple():
             output["CrossLinkMSSimple_Distance_"+label]=str(IMP.core.get_distance(d0,d1))
 
         return output
+
+def get_residue_index_and_chain_from_particle(p):
+    rind=IMP.atom.Residue(IMP.atom.Atom(p).get_parent()).get_index()
+    c=IMP.atom.Residue(IMP.atom.Atom(p).get_parent()).get_parent()
+    cid=IMP.atom.Chain(c).get_id()
+    return rind,cid
+
+def select_calpha_or_residue(prot,chain,resid,ObjectName="None:",SelectResidue=False):
+    #use calphas
+    p=None
+    s=IMP.atom.Selection(prot, chains=chain,
+         residue_index=resid, atom_type=IMP.atom.AT_CA)
+
+    ps=s.get_selected_particles()
+    #check if the calpha selection is empty
+    if ps:
+        if len(ps)==1:
+            p=ps[0]
+        else:
+            print ObjectName+" multiple residues selected for selection residue %s chain %s " % (resid,chain)
+    else:
+        #use the residue, in case of simplified representation
+        s=IMP.atom.Selection(prot, chains=chain,
+            residue_index=resid)
+        ps=s.get_selected_particles()
+        #check if the residue selection is empty
+        if ps:
+            if len(ps)==1:
+                p=ps[0]
+            else:
+                print ObjectName+" multiple residues selected for selection residue %s chain %s " % (resid,chain)
+
+        else:
+            print ObjectName+" residue %s chain %s does not exist" % (resid,chain)
+    return p

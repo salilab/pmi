@@ -21,7 +21,7 @@ class Output():
         self.dictionary_stats2={}
         self.best_score_list=None
         self.nbestscoring=None
-        self.suffix=None
+        self.suffixes=[]
         self.replica_exchange=False
         self.ascii=ascii
         self.initoutput={}
@@ -56,21 +56,23 @@ class Output():
         #impatom.write_pdb(self.dictionary_pdbs[name],flpdb)
         
         for n,p in enumerate(impatom.get_leaves(self.dictionary_pdbs[name])):
+           root=p
+           protname=root.get_name()
+           while not protname in self.dictchain[name]:
+              root0=root.get_parent()
+              protname=root0.get_name()
+              root=root0
         
-           if p.get_parent().get_name() in self.dictchain[name]:
-              protname=p.get_parent().get_name()
-           else:
-              p0=p.get_parent()
-              protname=p0.get_parent().get_name()
+           #resind=impatom.Fragment(p).get_residue_indexes()
         
-           resind=impatom.Fragment(p).get_residue_indexes()
-        
-           if len(resind)==1:
-           
-           
+           if impatom.Residue.particle_is_instance(p):
+              residue=impatom.Residue(p)
+              rt=residue.get_residue_type()
+              resind=residue.get_index()
               flpdb.write(impatom.get_pdb_string(impcore.XYZ(p).get_coordinates(),
-                             n,impatom.AT_CA,impatom.ResidueType((p.get_value(self.residuetypekey))),
-                             self.dictchain[name][protname],resind[0]))
+                             n,impatom.AT_CA,rt,
+                             self.dictchain[name][protname],
+                             resind))
         flpdb.write("ENDMOL\n")
         
         
@@ -83,11 +85,8 @@ class Output():
     def init_pdb_best_scoring(self,suffix,prot,nbestscoring,replica_exchange=False):
         # save only the nbestscoring conformations
         # create as many pdbs as needed
-        
-        
-        
-        
-        self.suffix=suffix
+
+        self.suffixes.append(suffix)
         self.replica_exchange=replica_exchange
         if not self.replica_exchange:
            #common usage
@@ -126,12 +125,13 @@ class Output():
             self.best_score_list.append(score)
             self.best_score_list.sort()
             index=self.best_score_list.index(score)
-            for i in range(len(self.best_score_list)-2,index-1,-1):
-                oldname=self.suffix+"."+str(i)+".pdb"
-                newname=self.suffix+"."+str(i+1)+".pdb"
-                os.rename(oldname, newname)
-            filetoadd=self.suffix+"."+str(index)+".pdb"
-            self.write_pdb(filetoadd,appendmode=False)
+            for suffix in self.suffixes:
+              for i in range(len(self.best_score_list)-2,index-1,-1):
+                  oldname=suffix+"."+str(i)+".pdb"
+                  newname=suffix+"."+str(i+1)+".pdb"
+                  os.rename(oldname, newname)
+              filetoadd=suffix+"."+str(index)+".pdb"
+              self.write_pdb(filetoadd,appendmode=False)
 
         else:
             if score<self.best_score_list[-1]:
@@ -139,14 +139,15 @@ class Output():
                 self.best_score_list.sort()
                 self.best_score_list.pop(-1)
                 index=self.best_score_list.index(score)
-                for i in range(len(self.best_score_list)-1,index-1,-1):
-                    oldname=self.suffix+"."+str(i)+".pdb"
-                    newname=self.suffix+"."+str(i+1)+".pdb"
+                for suffix in self.suffixes:                
+                  for i in range(len(self.best_score_list)-1,index-1,-1):
+                    oldname=suffix+"."+str(i)+".pdb"
+                    newname=suffix+"."+str(i+1)+".pdb"
                     os.rename(oldname, newname)
-                filenametoremove=self.suffix+"."+str(self.nbestscoring)+".pdb"
-                os.remove(filenametoremove)
-                filetoadd=self.suffix+"."+str(index)+".pdb"
-                self.write_pdb(filetoadd,appendmode=False)
+                  filenametoremove=suffix+"."+str(self.nbestscoring)+".pdb"
+                  os.remove(filenametoremove)
+                  filetoadd=suffix+"."+str(index)+".pdb"
+                  self.write_pdb(filetoadd,appendmode=False)
 
         if self.replica_exchange:
            #write the self.best_score_list to the file
@@ -154,13 +155,13 @@ class Output():
            best_score_file.write("self.best_score_list="+str(self.best_score_list))
            best_score_file.close()
 
-    def init_rmf(self,name,prot):
+    def init_rmf(self,name,hierarchies):
         if not self.rmf_library:
             print "Output error: neet rmf library to init rmf"
             exit()
 
         rh = RMF.create_rmf_file(name)
-        imprmf.add_hierarchy(rh, prot)
+        imprmf.add_hierarchies(rh, hierarchies)
         self.dictionary_rmfs[name]=rh
 
     def add_restraints_to_rmf(self,name,objectlist):
@@ -179,23 +180,21 @@ class Output():
     
     def add_particle_pair_from_restraints_to_rmf(self,name,objectlist):
         for o in objectlist:
-            print "here"
             
             pps=o.get_particle_pairs()
             for pp in pps:
-              print type(IMP.core.EdgePairGeometry(pp))
               imprmf.add_geometry(self.dictionary_rmfs[name],IMP.core.EdgePairGeometry(pp))  
 
-    def write_rmf(self,name,nframe):
-        imprmf.save_frame(self.dictionary_rmfs[name],nframe)
+    def write_rmf(self,name):
+        imprmf.save_frame(self.dictionary_rmfs[name])
         self.dictionary_rmfs[name].flush()
 
     def close_rmf(self,name):
         del self.dictionary_rmfs[name]
 
-    def write_rmfs(self,nframe):
+    def write_rmfs(self):
         for rmf in self.dictionary_rmfs.keys():
-            self.write_rmf(rmf,nframe)
+            self.write_rmf(rmf)
 
     def init_stat(self,name,listofobjects):
         if self.ascii:
@@ -454,8 +453,12 @@ class ProcessOutput():
     def get_keys(self):      
         return self.klist
         
-    def get_fields(self,fields):
-           
+    def get_fields(self,fields,filterout=None):
+           '''
+           this function get the wished field names and return a dictionary
+           you can give the optional argument filterout if you want to "grep" out
+           something from the file, so that it is faster
+           '''
            
            outdict={}
            for field in fields:
@@ -465,6 +468,9 @@ class ProcessOutput():
            f=open(self.filename,"r")
            line_number=0
            for line in f.readlines():
+              if filterout!=None: 
+                 if filterout in line:
+                    continue
               line_number+=1
               try:
                  d=eval(line)
@@ -504,7 +510,7 @@ class ProcessOutput():
         plt.show()     
 
 
-    def plot_field_histogram(self,name,values,valuename=None):
+def plot_field_histogram(name,values,valuename=None):
         import matplotlib.pyplot as plt
         plt.hist([float(y) for y in values],bins=40,color='#66CCCC',normed=True)
         plt.title(name)
@@ -513,12 +519,12 @@ class ProcessOutput():
         else:
            plt.xlabel(valuename)
         plt.ylabel("Frequency")
-        plt.savefig(name+".png",dpi=150,transparent="True")
+        plt.savefig(name+".png",dpi=150,transparent="False")
         plt.show()
     
     
 def plot_fields_box_plots(name,values,positions,
-                          valuename="None",positionname="None"):
+                          valuename="None",positionname="None",xlabels=None):
     '''
     This function plots time series as boxplots
     fields is a list of time series, positions are the x-values
@@ -529,7 +535,7 @@ def plot_fields_box_plots(name,values,positions,
     #import numpy as np
     
     bps=[]
-    fig = plt.figure(figsize=(10,10))
+    fig = plt.figure(figsize=(float(len(positions))/2,5.0))
     fig.canvas.set_window_title(name)
     ax1 = fig.add_subplot(111)
     
@@ -542,9 +548,12 @@ def plot_fields_box_plots(name,values,positions,
     plt.setp(bps[-1]['boxes'], color='black',lw=1.5)
     plt.setp(bps[-1]['whiskers'], color='black',ls=":",lw=1.5)
     
+    print ax1.xaxis.get_majorticklocs()
+    if xlabels!=None: ax1.set_xticklabels(xlabels)
+    plt.xticks(rotation=90)
     plt.xlabel(positionname)
     plt.ylabel(valuename)
-    plt.savefig(name+".png",dpi=150,transparent="True")
+    plt.savefig(name+".png",dpi=150,bbox_inches="tight")
     plt.show()
 
 
@@ -559,6 +568,36 @@ def plot_xy_data(x,y):
         ax.plot(x,y)
         plt.show()  
 
+def plot_scatter_xy_data(x,y,labelx="None",labely="None",
+                         xmin=None,xmax=None,ymin=None,ymax=None,
+                         savefile=False,filename="None.eps"):
+    import matplotlib.pyplot as plt
+    import sys
+    from matplotlib import rc
+
+    fig, axs = plt.subplots(1)
+
+    axs0=axs
+
+    axs0.set_xlabel(labelx,size="xx-large")
+    axs0.set_ylabel(labely,size="xx-large")
+    axs0.tick_params(labelsize=18,pad=10)
+
+    plot2=[]
+
+    plot2.append(axs0.plot(x,  y,   'o', lw=0, ms=4, alpha=0.75,  c="w"))
+
+    axs0.legend(loc=0,frameon=False,scatterpoints=1,numpoints=1,columnspacing=1)
+
+    fig.set_size_inches(20.0, 20.0)
+    fig.subplots_adjust(left=0.161, right=0.980, top=0.95, bottom=0.11)
+    if ymin!=None and ymax!=None:
+       axs0.set_ylim(ymin,ymax)
+    if xmin!=None and xmax!=None:
+       axs0.set_xlim(xmin,xmax)
+    plt.show()
+    if savefile:
+       fig.savefig(filename,dpi=300)
 
 def get_graph_from_hierarchy(hier):
     graph=[]
@@ -576,6 +615,7 @@ def get_graph_from_hierarchy(hier):
         else:
            node_labels_dict[key]=""
     draw_graph(graph,labels_dict=node_labels_dict)
+
 
 
 

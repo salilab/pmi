@@ -19,21 +19,21 @@ IMPPMI_BEGIN_NAMESPACE
 
 CompositeRestraint::CompositeRestraint(IMP::kernel::Model *m, 
                           IMP::kernel::ParticleIndexesAdaptor handle_particle_indexes,
-                          double coffd, double l, bool tabprob, std::string name):
+                          double coffd, double l, bool tabprob, double plateau, std::string name):
                           Restraint(m, name), 
                           handle_particle_indexes_(handle_particle_indexes), 
-                          coffd_(coffd), l_(l), tabprob_(tabprob) {
+                          coffd_(coffd), l_(l), tabprob_(tabprob), plateau_(plateau) {
                           
                           pis_.push_back(handle_particle_indexes_);
                           
                           if (tabprob_){
-                             unsigned exparg_grid_size=1001;
+                             exparg_grid_size_=1001;
                              argmax_=100.0;
-                             argmin_=0.0;
-                             invdx_=double(exparg_grid_size)/argmax_;
-                             for(unsigned k=0;k<exparg_grid_size;++k){
+                             argmin_=-100.0;
+                             invdx_=double(exparg_grid_size_)/argmax_;
+                             for(int k=-exparg_grid_size_;k<exparg_grid_size_;++k){
                                 double argvalue=double(k)/invdx_;
-                                prob_grid_.push_back(1.0/(1.0+std::exp(-argvalue)));
+                                prob_grid_.push_back((1.0-plateau_)/(1.0+std::exp(-argvalue)));
                                }
                              }
                           }                       

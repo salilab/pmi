@@ -2,15 +2,17 @@ import IMP
 import IMP.core
 
 class MonteCarlo():
+
+    #check that isd is installed
+    try:
+      import IMP.isd
+      isd_available = True
+    except ImportError:
+      isd_available = False
+
     def __init__(self,m,objects,temp,filterbyname=None):
         
-        #check that isd2 is installed
-        try:
-            global impisd2
-            import IMP.isd2 as impisd2 
-            self.isd2_available = True
-        except ImportError:
-            self.isd2_available = False
+
 
 
         #check that the objects containts get_particles_to_sample methods
@@ -58,16 +60,16 @@ class MonteCarlo():
                     self.mvs+=mvs
 
                 if "Nuisances" in k:
-                    if not self.isd2_available:
-                        print "MonteCarlo: isd2 module needed to use nuisances"
+                    if not self.isd_available:
+                        print "MonteCarlo: isd module needed to use nuisances"
                         exit()
                     mvs=self.get_nuisance_movers(pts[k][0],pts[k][1])
                     for mv in mvs: mv.set_name(k)
                     self.mvs+=mvs
 
                 if "Weights" in k:
-                    if not self.isd2_available:
-                        print "MonteCarlo: isd2 module needed to use weights"
+                    if not self.isd_available:
+                        print "MonteCarlo: isd module needed to use weights"
                         exit()
                     mvs=self.get_weight_movers(pts[k][0],pts[k][1])
                     for mv in mvs: mv.set_name(k)
@@ -80,6 +82,10 @@ class MonteCarlo():
         self.mc.set_return_best(False)
         self.mc.set_kt(self.temp)
         self.mc.add_mover(self.smv)
+    
+    def set_kt(self,temp):
+        self.temp=temp
+        self.mc.set_kt(temp)
 
     def get_mc(self):
         return self.mc
@@ -155,7 +161,7 @@ class MonteCarlo():
                     mvacc=mv.get_number_of_accepted()
                     mvprp=mv.get_number_of_proposed()
                     accept=float(mvacc)/float(mvprp)
-                    wmv=impisd2.WeightMover.get_from(mv)
+                    wmv=IMP.isd.WeightMover.get_from(mv)
                     stepsize = wmv.get_radius()
 
                     if 0.4 > accept or accept > 0.6:
@@ -171,6 +177,7 @@ class MonteCarlo():
     def get_nuisance_movers(self,nuisances,maxstep):
         mvs=[]
         for nuisance in nuisances:
+            print nuisance,maxstep
             mvs.append(IMP.core.NormalMover([nuisance],IMP.FloatKeys([IMP.FloatKey("nuisance")]),maxstep))
         return mvs
 
@@ -183,7 +190,12 @@ class MonteCarlo():
     def get_super_rigid_body_movers(self,rbs,maxtrans,maxrot):
         mvs=[]
         for rb in rbs:
-            srbm=IMP.pmi.TransformMover(self.m,maxtrans,maxrot)
+            if len(rb)==2:
+               #normal Super Rigid Body
+               srbm=IMP.pmi.TransformMover(self.m,maxtrans,maxrot)
+            if len(rb)==3:
+               #super rigid body with 2D rotation, rb[2] is the axis
+               srbm=IMP.pmi.TransformMover(self.m,IMP.algebra.Vector3D(rb[2]),maxtrans,maxrot)
             for xyz in rb[0]: srbm.add_xyz_particle(xyz)
             for rb  in rb[1]: srbm.add_rigid_body_particle(rb)  
             mvs.append(srbm)          
@@ -223,7 +235,7 @@ class MonteCarlo():
     def get_weight_movers(self,weights,maxstep):
         mvs=[]
         for weight in weights:
-            if(weight.get_number_of_states()>1): mvs.append(impisd2.WeightMover(weight,maxstep))
+            if(weight.get_number_of_states()>1): mvs.append(IMP.isd.WeightMover(weight,maxstep))
         return mvs
 
     def temp_simulated_annealing(self):
@@ -255,7 +267,7 @@ class MonteCarlo():
             if "Nuisances" in mvname:
                 output["MonteCarlo_StepSize_"+mvname+"_"+str(i)]=str(IMP.core.NormalMover.get_from(mv).get_sigma())
             if "Weights" in mvname:
-                output["MonteCarlo_StepSize_"+mvname+"_"+str(i)]=str(impisd2.WeightMover.get_from(mv).get_radius())
+                output["MonteCarlo_StepSize_"+mvname+"_"+str(i)]=str(IMP.isd.WeightMover.get_from(mv).get_radius())
         output["MonteCarlo_Temperature"]=str(self.mc.get_kt())
         output["MonteCarlo_Nframe"]=str(self.nframe)
         return output
@@ -294,7 +306,90 @@ class ConjugateGradients():
         output["ConjugatedGradients_Nframe"]=str(self.nframe)
         return output
 
+class ReplicaExchange():
+    def __init__(self,model,tempmin,tempmax,samplerobject,test=True):
+        '''
+        sampler object should be MonteCarlo
+        '''
+        global imppmi
+        import IMP.mpi as imppmi
+        
+        self.m=model
+        self.samplerobject=samplerobject
+        # min and max temperature
+        self.TEMPMIN_ = tempmin
+        self.TEMPMAX_ = tempmax
 
+        # initialize Replica Exchange class
+        self.rem = IMP.mpi.ReplicaExchange()
+        # get number of replicas
+        nproc = self.rem.get_number_of_replicas()
+
+        if nproc %2 != 0 and test==False:
+           raise Exception, "number of replicas has to be even. set test=True to run with odd number of replicas."
+        # create array of temperatures, in geometric progression
+        temp = self.rem.create_temperatures(self.TEMPMIN_, self.TEMPMAX_, nproc)
+        # get replica index
+        myindex = self.rem.get_my_index()
+        # set initial value of the parameter (temperature) to exchange
+        self.rem.set_my_parameter("temp", [temp[myindex]])
+        self.samplerobject.set_kt(temp[myindex])
+        self.nattempts=0
+        self.nmintemp=0
+        self.nmaxtemp=0
+        self.nsuccess=0
+    
+    def get_my_temp(self):
+        return self.rem.get_my_parameter("temp")[0]
+
+    def get_my_index(self):
+        return self.rem.get_my_index()
+    
+    def swap_temp(self,nframe,score=None):
+        if score==None:
+           score=self.m.evaluate(False)
+        # get my replica index and temperature
+        myindex = self.rem.get_my_index()
+        mytemp = self.rem.get_my_parameter("temp")[0]
+        
+        if mytemp==self.TEMPMIN_:
+           self.nmintemp+=1
+
+        if mytemp==self.TEMPMAX_:
+           self.nmaxtemp+=1
+        
+        # score divided by kbt
+        myscore = score / mytemp
+    
+        # get my friend index and temperature
+        findex = self.rem.get_friend_index(nframe)
+        ftemp = self.rem.get_friend_parameter("temp", findex)[0]
+        # score divided by kbt
+        fscore = score / ftemp
+
+        # try exchange
+        flag = self.rem.do_exchange(myscore, fscore, findex)
+        
+        self.nattempts+=1
+        # if accepted, change temperature
+        if (flag == True):
+           self.samplerobject.set_kt(ftemp)
+           self.nsuccess+=1
+           
+        
+        
+    def get_output(self):
+        output={}
+        acceptances=[]
+        if self.nattempts!=0:
+           output["ReplicaExchange_SwapSuccessRatio"]=str(float(self.nsuccess)/self.nattempts)
+           output["ReplicaExchange_MinTempFrequency"]=str(float(self.nmintemp)/self.nattempts)           
+           output["ReplicaExchange_MaxTempFrequency"]=str(float(self.nmaxtemp)/self.nattempts)
+        else:
+           output["ReplicaExchange_SwapSuccessRatio"]=str(0)
+           output["ReplicaExchange_MinTempFrequency"]=str(0)
+           output["ReplicaExchange_MaxTempFrequency"]=str(0)           
+        return output        
 
 
 

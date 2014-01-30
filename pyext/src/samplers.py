@@ -201,8 +201,11 @@ class MonteCarlo():
             if len(rb)==3:
                #super rigid body with 2D rotation, rb[2] is the axis
                srbm=IMP.pmi.TransformMover(self.m,IMP.algebra.Vector3D(rb[2]),maxtrans,maxrot)
-            for xyz in rb[0]: srbm.add_xyz_particle(xyz)
-            for rb  in rb[1]: srbm.add_rigid_body_particle(rb)
+            for xyz in rb[0]:
+                srbm.add_xyz_particle(xyz)
+            print len(rb[1])
+            for nr,r in enumerate(rb[1]):
+                srbm.add_rigid_body_particle(r)
             mvs.append(srbm)
         return mvs
 
@@ -329,7 +332,7 @@ class ReplicaExchange():
         self.rem = IMP.mpi.ReplicaExchange()
         # get number of replicas
         nproc = self.rem.get_number_of_replicas()
-        
+
         if nproc %2 != 0 and test==False:
            raise Exception, "number of replicas has to be even. set test=True to run with odd number of replicas."
         # create array of temperatures, in geometric progression

@@ -30,7 +30,7 @@ class GaussianEMRestraint():
         # setup target GMM
         self.m = densities[0].get_model()
         target_ps = []
-        IMP.isd2.gmm_tools.decorate_gmm_from_txt(target_fn, target_ps, self.m)
+        IMP.isd2.gmm_tools.decorate_gmm_from_text(target_fn, target_ps, self.m)
 
         # model GMM
         model_ps = []
@@ -47,7 +47,7 @@ class GaussianEMRestraint():
         self.gaussianEM_restraint = IMP.isd2.GaussianEMRestraint(self.m,
                                                                  IMP.get_indexes(model_ps),
                                                                  IMP.get_indexes(target_ps),
-                                                                 self.sigmaglobal.get_index(),
+                                                                 self.sigmaglobal.get_particle().get_index(),
                                                                  self.cutoff_dist_for_container,
                                                                  False, False)
         print 'done setup'

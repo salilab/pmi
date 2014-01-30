@@ -482,7 +482,7 @@ class SimplifiedModel():
                                                    voxel_size)
         else:
             #read the inputfile here
-            print 'reading input file'
+            #print 'reading input file'
             density_particles=[]
             IMP.isd2.gmm_tools.decorate_gmm_from_text(inputfile,density_particles,self.m)
 
@@ -494,7 +494,7 @@ class SimplifiedModel():
         for nps,p in enumerate(density_particles):
             s0.add_child(p)
             p.set_name(s0.get_name()+'_gaussian_%i'%nps)
-        print 'end setup'
+        #print 'end setup'
         return outhier
 
     def get_component_density(self,name):
@@ -860,7 +860,7 @@ class SimplifiedModel():
                print "calculate_all_rmsds: reference and actual coordinates are not the same"
                continue
             transformation=IMP.algebra.get_transformation_aligning_first_to_second(current_coordinates, reference_coordinates)
-            rmsd_global=IMP.atom.get_rmsd(reference_coordinates,current_coordinates)
+            rmsd_global=IMP.algebra.get_rmsd(reference_coordinates,current_coordinates)
             #warning: temporary we are calculating the drms, and not the rmsd, for the relative distance
             rmsd_relative=IMP.atom.get_drms(reference_coordinates,current_coordinates)
             rmsds[label+"_GlobalRMSD"]=rmsd_global
@@ -1512,15 +1512,15 @@ class SimplifiedModel():
            else:
               fbtmp.append(fb)
 
-        for srb in self.super_rigid_bodies:
-            rigid_bodies=list(srb[1])
-            for rb in rigid_bodies:
-                if rb not in self.fixed_rigid_bodies:
-                   srbtmp.append(srb)
+        #for srb in self.super_rigid_bodies:
+        #    rigid_bodies=list(srb[1])
+        #    for rb in rigid_bodies:
+        #        if rb not in self.fixed_rigid_bodies:
+        #           srbtmp.append(srb)
 
         self.rigid_bodies=rbtmp
         self.floppy_bodies=fbtmp
-        self.super_rigid_bodies=srbtmp
+        #self.super_rigid_bodies=srbtmp
 
         ps["Rigid_Bodies_SimplifiedModel"]=(self.rigid_bodies,self.maxtrans_rb,self.maxrot_rb)
         ps["Floppy_Bodies_SimplifiedModel"]=(self.floppy_bodies,self.maxtrans_fb)

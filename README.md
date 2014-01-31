@@ -4,7 +4,7 @@ PMI: Python Modeling Platform
 Repository of Python classes to represent, score, sample 
 and analyse models
 
-Installation:
+**Installation:**
 
 Clone this repository into the imp modules directory:
 
@@ -16,7 +16,7 @@ git clone https://github.com/salilab/pmi.git
 Build IMP folloring the [imp instructions](http://www.integrativemodeling.org/nightly/doc/html/md_doxygen_generated_installation.html#installation).
 
 
-_News January 30 2014:_
+**News January 30 2014:**
 
 Now the developed git branch is master and not resolution-zero.
 

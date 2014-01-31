@@ -6,15 +6,22 @@ import IMP.algebra
 import IMP.atom
 import IMP.display
 import IMP.pmi
-from math import pi
+from math import pi,sqrt
 
+from operator import itemgetter
+import IMP.pmi.tools
+import IMP.pmi.output
+import IMP.rmf
+import RMF 
 
-    
 
 
 
 class Representation():
 #Peter Cimermancic and Riccardo Pellarin
+
+    
+
     '''
     This class creates the molecular hierarchies, representation,
     sequence connectivity for the various involved proteins and
@@ -69,17 +76,6 @@ class Representation():
     '''
 
     def __init__(self,m,upperharmonic=True,disorderedlength=False):
-        global random, itemgetter,tools,nrrand,array,imprmf,RMF,sqrt,output
-        import random
-        from math import sqrt as sqrt
-        from operator import itemgetter
-        import IMP.pmi.tools as tools
-        import IMP.pmi.output as output
-        from numpy.random import rand as nrrand
-        from numpy import array
-        import IMP.rmf as imprmf
-        import RMF
-
 
         # this flag uses either harmonic (False) or upperharmonic (True)
         # in the intra-pair connectivity restraint. Harmonic is used whe you want to
@@ -122,7 +118,7 @@ class Representation():
         self.color_dict={}
         self.sequence_dict={}
         self.hier_geometry_pairs={}
-        self.hier_db=tools.HierarchyDatabase()
+        self.hier_db=IMP.pmi.tools.HierarchyDatabase()
         #this dictionary stores the hierarchies by component name and representation type
         #self.hier_representation[name][representation_type]
         #where representation type is Res:X, Beads, Densities, Representation, etc...
@@ -153,9 +149,11 @@ class Representation():
         self.prot.add_child(protein_h)
         self.color_dict[name]=color
         self.elements[name]=[]
+    
+    # Deprecation warning
         
     def add_component_name(self,*args, **kwargs):
-            tools.print_deprecation_warning("add_component_name","create_component")
+            IMP.pmi.tools.print_deprecation_warning("add_component_name","create_component")
             self.create_component(*args, **kwargs)
 
     def get_component_names(self):
@@ -181,7 +179,7 @@ class Representation():
         self.sequence_dict[name]=str(record_dict[id].seq)
         self.elements[name].append((length,length," ","end"))
 
-    def autobuild_pdb_and_intervening_beads(self,name,pdbname,chain,
+    def autobuild_model(self,name,pdbname,chain,
                                       resolutions=None,resrange=None,beadsize=20,
                                       color=None,pdbresrange=None,offset=0,
                                       show=False,isnucleicacid=False,
@@ -218,9 +216,9 @@ class Representation():
            start=resrange[0]-offset
            end=resrange[1]-offset
 
-        gaps=tools.get_residue_gaps_in_hierarchy(t,resrange[0],resrange[1])
-        xyznter=tools.get_closest_residue_position(t,start,terminus="N")
-        xyzcter=tools.get_closest_residue_position(t,end,terminus="C")
+        gaps=IMP.pmi.tools.get_residue_gaps_in_hierarchy(t,resrange[0],resrange[1])
+        xyznter=IMP.pmi.tools.get_closest_residue_position(t,start,terminus="N")
+        xyzcter=IMP.pmi.tools.get_closest_residue_position(t,end,terminus="C")
 
         #construct pdb fragments and intervening beads
         for n,g in enumerate(gaps):
@@ -245,6 +243,12 @@ class Representation():
                outhiers+=self.add_component_necklace(name,first,last,beadsize,incoord=xyznter)
 
         return outhiers
+
+    # Deprecation warning
+        
+    def autobuild_pdb_and_intervening_beads(self,*args, **kwargs):
+            IMP.pmi.tools.print_deprecation_warning("autobuild_pdb_and_intervening_beads","autobuild_model")
+            self.autobuild_model(*args, **kwargs)
 
     def add_component_pdb(self,name,pdbname,chain,resolutions,color=None,resrange=None,offset=0,
                                    cacenters=True,show=False,isnucleicacid=False,readnonwateratoms=False):
@@ -575,7 +579,7 @@ class Representation():
            if IMP.pmi.Resolution.particle_is_instance(pmain):
               resolution=IMP.pmi.Resolution(pmain).get_resolution()
               IMP.pmi.Resolution.setup_particle(pclone,resolution)
-              for kk in tools.get_residue_indexes(pclone):
+              for kk in IMP.pmi.tools.get_residue_indexes(pclone):
                  self.hier_db.add_particles(name,kk,IMP.pmi.Resolution(pclone).get_resolution(),[pclone])
 
            if IMP.pmi.Uncertainty.particle_is_instance(pmain):
@@ -914,8 +918,8 @@ class Representation():
             except:
                end   = fr
 
-            startres = tools.get_residue_indexes(start)[0]
-            endres   = tools.get_residue_indexes(end)[-1]
+            startres = IMP.pmi.tools.get_residue_indexes(start)[0]
+            endres   = IMP.pmi.tools.get_residue_indexes(end)[-1]
             SortedSegments.append((start,end,startres))
         SortedSegments = sorted(SortedSegments, key=itemgetter(2))
 
@@ -924,10 +928,10 @@ class Representation():
             last = SortedSegments[x][1]
             first= SortedSegments[x+1][0]
 
-            nreslast=len(tools.get_residue_indexes(last))
-            lastresn=tools.get_residue_indexes(last)[-1]
-            nresfirst=len(tools.get_residue_indexes(first))
-            firstresn=tools.get_residue_indexes(first)[0]
+            nreslast=len(IMP.pmi.tools.get_residue_indexes(last))
+            lastresn=IMP.pmi.tools.get_residue_indexes(last)[-1]
+            nresfirst=len(IMP.pmi.tools.get_residue_indexes(first))
+            firstresn=IMP.pmi.tools.get_residue_indexes(first)[0]
 
             residuegap=firstresn-lastresn-1
 
@@ -967,7 +971,7 @@ class Representation():
 
     def optimize_floppy_bodies(self,nsteps,temperature=1.0):
         import IMP.pmi.samplers
-        pts=tools.ParticleToSampleList()
+        pts=IMP.pmi.tools.ParticleToSampleList()
         for n,fb in enumerate(self.floppy_bodies):
             pts.add_particle(fb,"Floppy_Bodies",1.0,"Floppy_Body_"+str(n))
         if len(pts.get_particles_to_sample())>0:
@@ -1066,8 +1070,8 @@ class Representation():
         as stored in the rmf
         '''
         rh= RMF.open_rmf_file(rmfname)
-        imprmf.link_hierarchies(rh, [self.prot])
-        imprmf.load_frame(rh, frameindex)
+        IMP.rmf.link_hierarchies(rh, [self.prot])
+        IMP.rmf.load_frame(rh, frameindex)
         del rh
 
     def create_components_from_rmf(self,rmfname,frameindex):
@@ -1078,10 +1082,10 @@ class Representation():
         load the coordinates from the rmf file at frameindex.
         '''
         rh= RMF.open_rmf_file(rmfname)
-        self.prot=imprmf.create_hierarchies(rh, self.m)[0]
+        self.prot=IMP.rmf.create_hierarchies(rh, self.m)[0]
         IMP.atom.show_molecular_hierarchy(self.prot)
-        imprmf.link_hierarchies(rh, [self.prot])
-        imprmf.load_frame(rh, frameindex)
+        IMP.rmf.link_hierarchies(rh, [self.prot])
+        IMP.rmf.load_frame(rh, frameindex)
         del rh
         for p in self.prot.get_children():
             self.add_component_name(p.get_name())
@@ -1113,6 +1117,8 @@ class Representation():
         return rb
 
     def set_rigid_bodies(self,subunits,coords=None,nonrigidmembers=True):
+        from numpy import array
+        from numpy.random import rand as nrrand
         if coords==None: coords=()
         #sometimes, we know about structure of an interaction
         #and here we make such PPIs rigid
@@ -1185,9 +1191,9 @@ class Representation():
         by lmax and lmin
         '''
         try:
-          hiers=tools.flatten_list(hiers)
+          hiers=IMP.pmi.tools.flatten_list(hiers)
         except: pass
-        for hs in tools.sublist_iterator(hiers,lmin,lmax):
+        for hs in IMP.pmi.tools.sublist_iterator(hiers,lmin,lmax):
             self.set_super_rigid_body_from_hierarchies(hs,axis)
 
     def set_super_rigid_bodies(self,subunits,coords=None):
@@ -1273,7 +1279,7 @@ class Representation():
     def draw_hierarchy_graph(self):
         for c in IMP.atom.Hierarchy(self.prot).get_children():
             print "Drawing hierarchy graph for "+c.get_name()
-            output.get_graph_from_hierarchy(c)
+            IMP.pmi.output.get_graph_from_hierarchy(c)
 
     def get_geometries(self):
         #create segments at the lowest resolution
@@ -1487,14 +1493,14 @@ class Representation():
             particles=[]
             for name in names:
                 prot=self.hier_dict[name]
-                particles+=tools.get_particles_by_resolution(prot,resolution)
+                particles+=IMP.pmi.tools.get_particles_by_resolution(prot,resolution)
 
             random_residue_pairs=[]
             for i in range(number):
                 p1=choice(particles)
                 p2=choice(particles)
-                r1=choice(tools.get_residue_indexes(p1))
-                r2=choice(tools.get_residue_indexes(p2))
+                r1=choice(IMP.pmi.tools.get_residue_indexes(p1))
+                r2=choice(IMP.pmi.tools.get_residue_indexes(p2))
                 name1=self.get_prot_name_from_particle(p1)
                 name2=self.get_prot_name_from_particle(p2)
                 random_residue_pairs.append((name1,r1,name2,r2))
@@ -1578,9 +1584,10 @@ class Representation():
         output["_TotalScore"]=str(score)
         return output
         
-        
+# Deprecation warning for the old SimplifiedModel class
+
 class SimplifiedModel(Representation):
       def __init__(self,*args,**kwargs):
           Representation.__init__(self,*args,**kwargs)
-          tools.print_deprecation_warning("SimplifiedModel","Representation")
+          IMP.pmi.tools.print_deprecation_warning("SimplifiedModel","Representation")
 

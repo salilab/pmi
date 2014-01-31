@@ -899,7 +899,7 @@ is_already_printed={}
 
 def print_deprecation_warning(old_name,new_name):
     if old_name not in is_already_printed:
-       print "WARNING: "+oldname+" is deprecated, "+newname+" instead"
+       print "WARNING: "+old_name+" is deprecated, use "+new_name+" instead"
        is_already_printed[old_name]=True
 
 

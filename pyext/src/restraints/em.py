@@ -15,6 +15,7 @@ class GaussianEMRestraint():
         import IMP.isd2
         import IMP.isd2.gmm_tools
         import IMP.pmi.tools as tools
+        from math import sqrt
 
         # some parameters
         self.label="None"
@@ -31,6 +32,10 @@ class GaussianEMRestraint():
         self.m = densities[0].get_model()
         target_ps = []
         IMP.isd2.gmm_tools.decorate_gmm_from_text(target_fn, target_ps, self.m)
+        for p in target_ps:
+            rmax=sqrt(max(IMP.core.Gaussian(p).get_variances()))
+            print '-----> DENSITY RMAX',rmax
+            IMP.core.XYZR.setup_particle(p,rmax)
 
         # model GMM
         model_ps = []

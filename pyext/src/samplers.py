@@ -175,7 +175,7 @@ class MonteCarlo():
 
     def run(self,*args, **kwargs):
             IMP.pmi.tools.print_deprecation_warning("MonteCarlo.run","MonteCarlo.optimize")
-            self.autobuild_model(*args, **kwargs)
+            self.optimize(*args, **kwargs)
 
     def get_nuisance_movers(self,nuisances,maxstep):
         mvs=[]

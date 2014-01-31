@@ -32,10 +32,6 @@ simo = representation.SimplifiedModel(m)
 hierarchies={}
 
 
-
-
-
-
 for n in range(len(components)):
     simo.add_component_name(components[n],color=colors[n])
     simo.add_component_sequence(components[n],fastafile,id=fastids[n+2])
@@ -148,10 +144,10 @@ test(result_dict["resolution=100,resrange=(10,20),name=Rpb3"],len(tools.select(s
 test(result_dict["resolution=100,resrange=(10,20),name=Rpb3,ambiguous"],len(tools.select(simo,resolution=100,name="Rpb3",name_is_ambiguous=True,first_residue=10,last_residue=20)))
 
 for key in hierarchies:
-    for h in hierarchies[key]:
-       test(result_dict[str(h.get_name())+" "+"resolution=1"], len(tools.select(simo,resolution=1,hierarchies=[h])))
-       test(result_dict[str(h.get_name())+" "+"resolution=10"], len(tools.select(simo,resolution=10,hierarchies=[h])))
-       test(result_dict[str(h.get_name())+" "+"resolution=100"], len(tools.select(simo,resolution=100,hierarchies=[h])))
+       print key, hierarchies[key]
+       test(result_dict[str(hierarchies[key].get_name())+" "+"resolution=1"], len(tools.select(simo,resolution=1,hierarchies=hierarchies[key])))
+       test(result_dict[str(hierarchies[key].get_name())+" "+"resolution=10"], len(tools.select(simo,resolution=10,hierarchies=hierarchies[key])))
+       test(result_dict[str(hierarchies[key].get_name())+" "+"resolution=100"], len(tools.select(simo,resolution=100,hierarchies=hierarchies[key])))
 
 test(result_dict["Beads"],len(tools.select(simo,representation_type="Beads")))
 test(result_dict["Molecule"],len(tools.select(simo,representation_type="Molecule")))

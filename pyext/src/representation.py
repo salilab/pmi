@@ -253,7 +253,8 @@ class Representation():
 
     def autobuild_pdb_and_intervening_beads(self,*args, **kwargs):
             IMP.pmi.tools.print_deprecation_warning("autobuild_pdb_and_intervening_beads","autobuild_model")
-            self.autobuild_model(*args, **kwargs)
+            r=self.autobuild_model(*args, **kwargs)
+            return r
 
     def add_component_pdb(self,name,pdbname,chain,resolutions,color=None,resrange=None,offset=0,
                                    cacenters=True,show=False,isnucleicacid=False,readnonwateratoms=False):

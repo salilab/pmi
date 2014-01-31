@@ -16,7 +16,7 @@ git clone https://github.com/salilab/pmi.git
 Build IMP folloring the [imp instructions](http://www.integrativemodeling.org/nightly/doc/html/md_doxygen_generated_installation.html#installation).
 
 
-News January 30 2014:
+_News January 30 2014:_
 
 Now the developed git branch is master and not resolution-zero.
 

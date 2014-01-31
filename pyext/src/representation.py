@@ -12,7 +12,7 @@ from operator import itemgetter
 import IMP.pmi.tools
 import IMP.pmi.output
 import IMP.rmf
-import RMF 
+import RMF
 
 
 
@@ -20,7 +20,7 @@ import RMF
 class Representation():
 #Peter Cimermancic and Riccardo Pellarin
 
-    
+
 
     '''
     This class creates the molecular hierarchies, representation,
@@ -90,9 +90,9 @@ class Representation():
         self.fixed_rigid_bodies=[]
         self.floppy_bodies=[]
         # self.super_rigid_bodies is a list of tuples.
-        # each tuple, corresponding to a particular super rigid body 
+        # each tuple, corresponding to a particular super rigid body
         # the tuple is (super_rigid_xyzs,super_rigid_rbs)
-        # where super_rigid_xyzs are the flexible xyz particles 
+        # where super_rigid_xyzs are the flexible xyz particles
         # and super_rigid_rbs is the list of rigid bodies.
         self.super_rigid_bodies=[]
         self.output_level="low"
@@ -149,9 +149,9 @@ class Representation():
         self.prot.add_child(protein_h)
         self.color_dict[name]=color
         self.elements[name]=[]
-    
+
     # Deprecation warning
-        
+
     def add_component_name(self,*args, **kwargs):
             IMP.pmi.tools.print_deprecation_warning("add_component_name","create_component")
             self.create_component(*args, **kwargs)
@@ -245,7 +245,7 @@ class Representation():
         return outhiers
 
     # Deprecation warning
-        
+
     def autobuild_pdb_and_intervening_beads(self,*args, **kwargs):
             IMP.pmi.tools.print_deprecation_warning("autobuild_pdb_and_intervening_beads","autobuild_model")
             self.autobuild_model(*args, **kwargs)
@@ -471,7 +471,9 @@ class Representation():
         
         if kernel_type==None:
            kernel_type=IMP.em.GAUSSIAN
-        
+
+        from math import sqrt
+
         self.representation_is_modified=True
         outhier=[]
         protein_h=self.hier_dict[name]
@@ -507,6 +509,10 @@ class Representation():
             #print 'reading input file'
             density_particles=[]
             IMP.isd2.gmm_tools.decorate_gmm_from_text(inputfile,density_particles,self.m)
+            for p in density_particles:
+                rmax=sqrt(max(IMP.core.Gaussian(p).get_variances()))
+                print '-----> MODEL RMAX',rmax
+                IMP.core.XYZR.setup_particle(p,rmax)
 
         s0=IMP.atom.Fragment.setup_particle(IMP.Particle(self.m))
         s0.set_name('_'.join([h.get_name() for h in hierarchy]))
@@ -1587,11 +1593,10 @@ class Representation():
 
         output["_TotalScore"]=str(score)
         return output
-        
+
 # Deprecation warning for the old SimplifiedModel class
 
 class SimplifiedModel(Representation):
       def __init__(self,*args,**kwargs):
           Representation.__init__(self,*args,**kwargs)
           IMP.pmi.tools.print_deprecation_warning("SimplifiedModel","Representation")
-

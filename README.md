@@ -33,8 +33,10 @@ git branch
 If you want to update the code and you still are in resolution-zero branch,
 just run :
 
-```git checkout master
-git pull```
+```
+git checkout master
+git pull
+```
 
 Note that the interface is also changing,
 so you'll probably get deprecated warnings in your standard output more and more.

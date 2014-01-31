@@ -29,7 +29,8 @@ it was copied into resolution-zero-old.
 
 To see what branch you're in, run (into the pmi source code directory):
 
-git branch
+`git branch`
+
 If you want to update the code and you still are in resolution-zero branch,
 just run :
 

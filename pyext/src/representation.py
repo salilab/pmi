@@ -8,7 +8,12 @@ import IMP.display
 import IMP.pmi
 from math import pi
 
-class SimplifiedModel():
+
+    
+
+
+
+class Representation():
 #Peter Cimermancic and Riccardo Pellarin
     '''
     This class creates the molecular hierarchies, representation,
@@ -139,7 +144,7 @@ class SimplifiedModel():
 
         self.residuenamekey = IMP.kernel.StringKey("ResidueName")
 
-    def add_component_name(self,name,color=None):
+    def create_component(self,name,color=None):
         protein_h = IMP.atom.Molecule.setup_particle(IMP.Particle(self.m))
         protein_h.set_name(name)
         self.hier_dict[name]=protein_h
@@ -148,6 +153,10 @@ class SimplifiedModel():
         self.prot.add_child(protein_h)
         self.color_dict[name]=color
         self.elements[name]=[]
+        
+    def add_component_name(self,*args, **kwargs):
+            tools.print_deprecation_warning("add_component_name","create_component")
+            self.create_component(*args, **kwargs)
 
     def get_component_names(self):
         return self.hier_dict.keys()
@@ -1568,3 +1577,10 @@ class SimplifiedModel():
 
         output["_TotalScore"]=str(score)
         return output
+        
+        
+class SimplifiedModel(Representation):
+      def __init__(self,*args,**kwargs):
+          Representation.__init__(self,*args,**kwargs)
+          tools.print_deprecation_warning("SimplifiedModel","Representation")
+

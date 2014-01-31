@@ -894,3 +894,12 @@ def get_random_data_point(expected_value,ntrials,sensitivity,sigma,outlierprob,b
     rmean2/=float(ntrials)
     stddev=math.sqrt(max(rmean2-rmean*rmean,0.))
     return rmean,stddev
+    
+is_already_printed={}
+
+def print_deprecation_warning(old_name,new_name):
+    if old_name not in is_already_printed:
+       print "WARNING: "+oldname+" is deprecated, "+newname+" instead"
+       is_already_printed[old_name]=True
+
+

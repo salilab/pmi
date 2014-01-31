@@ -5,11 +5,11 @@ import IMP.algebra
 import IMP.atom
 import IMP.container
 
-import IMP.pmi.stereochemistry as stereochemistry
-import IMP.pmi.representation as representation
-import IMP.pmi.tools as tools
-import IMP.pmi.samplers as samplers
-import IMP.pmi.output as output
+import IMP.pmi.restraints.stereochemistry
+import IMP.pmi.representation
+import IMP.pmi.tools
+import IMP.pmi.samplers
+import IMP.pmi.output
 
 #input parameter
 
@@ -28,12 +28,12 @@ colors=[ 0.        ,  0.09090909,  0.18181818,  0.27272727,  0.36363636,
 
 beadsize=20
 
-fastids=tools.get_ids_from_fasta_file(fastafile)
+fastids=IMP.pmi.tools.get_ids_from_fasta_file(fastafile)
 
 
 
 m=IMP.Model()
-simo = representation.SimplifiedModel(m) 
+simo = IMP.pmi.representation.SimplifiedModel(m) 
 
 for n in range(len(components)):
     simo.add_component_name(components[n],color=colors[n])
@@ -42,14 +42,14 @@ for n in range(len(components)):
                                              resolutions=[1,10],beadsize=beadsize)
     simo.setup_component_sequence_connectivity(components[n],1)
     
-ev=IMP.pmi.stereochemistry.ExcludedVolumeSphere(simo,resolution=10)
+ev=IMP.pmi.restraints.stereochemistry.ExcludedVolumeSphere(simo,resolution=10)
 ev.add_to_model()
 
-o = output.Output()
+o = IMP.pmi.output.Output()
 o.init_rmf("conformations.rmf",[simo.prot])
-o.write_rmf("conformations.rmf",0)
+o.write_rmf("conformations.rmf")
 
 simo.optimize_floppy_bodies(1000)
 
-o.write_rmf("conformations.rmf",1)
+o.write_rmf("conformations.rmf")
 o.close_rmf("conformations.rmf")

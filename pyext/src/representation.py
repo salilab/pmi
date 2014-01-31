@@ -180,10 +180,15 @@ class Representation():
         self.elements[name].append((length,length," ","end"))
 
     def autobuild_model(self,name,pdbname,chain,
-                                      resolutions=None,resrange=None,beadsize=20,
+                                      resolutions=None,resrange=None,
+                                      missingbeadsize=20,
+                                      beadsize=None, #this is deprecated
                                       color=None,pdbresrange=None,offset=0,
                                       show=False,isnucleicacid=False,
                                       attachbeads=False):
+
+        if beadsize!=None:
+           IMP.pmi.tools.print_deprecation_warning("beadsize","missingbeadsize")
 
         self.representation_is_modified=True
         outhiers=[]
@@ -193,7 +198,7 @@ class Representation():
 
         if resolutions==None:
            resolutions=[1]
-        print "autobuild_pdb_and_intervening_beads: constructing %s from pdb %s and chain %s" % (name,pdbname,str(chain))
+        print "autobuild_model: constructing %s from pdb %s and chain %s" % (name,pdbname,str(chain))
 
         #get the initial and end residues of the pdb
         t=IMP.atom.read_pdb( pdbname, self.m,
@@ -225,22 +230,22 @@ class Representation():
             first=g[0]+offset
             last=g[1]+offset
             if g[2]=="cont":
-               print "autobuild_pdb_and_intervening_beads: constructing fragment %s from pdb" % (str((first,last)))
+               print "autobuild_model: constructing fragment %s from pdb" % (str((first,last)))
                outhiers+=self.add_component_pdb(name,pdbname,
                                                 chain,resolutions=resolutions,
                                                 color=color,cacenters=True,
                                                 resrange=(first,last),
                                                 offset=offset,isnucleicacid=isnucleicacid)
             elif g[2]=="gap" and n>0:
-               print "autobuild_pdb_and_intervening_beads: constructing fragment %s as a bead" % (str((first,last)))
+               print "autobuild_model: constructing fragment %s as a bead" % (str((first,last)))
                parts=self.hier_db.get_particles_at_closest_resolution(name,first-1,1)
                xyz=IMP.core.XYZ(parts[0]).get_coordinates()
-               outhiers+=self.add_component_necklace(name,first,last,beadsize,incoord=xyz)
+               outhiers+=self.add_component_necklace(name,first,last,missingbeadsize,incoord=xyz)
 
             elif g[2]=="gap" and n==0:
                #add pre-beads
-               print "autobuild_pdb_and_intervening_beads: constructing fragment %s as a bead" % (str((first,last)))
-               outhiers+=self.add_component_necklace(name,first,last,beadsize,incoord=xyznter)
+               print "autobuild_model: constructing fragment %s as a bead" % (str((first,last)))
+               outhiers+=self.add_component_necklace(name,first,last,missingbeadsize,incoord=xyznter)
 
         return outhiers
 
@@ -1193,17 +1198,17 @@ class Representation():
         self.fixed_rigid_bodies+=rigid_bodies
 
 
-    def set_chain_of_super_rigid_bodies(self,hiers,lmin=None,lmax=None,axis=None):
+    def set_chain_of_super_rigid_bodies(self,hiers,min_length=None,max_length=None,axis=None):
         '''
         this function takes a linear list of hierarchies (they are supposed
          to be sequence-contiguous) and
         produces a chain of super rigid bodies with given length range, specified
-        by lmax and lmin
+        by min_length and max_length
         '''
         try:
           hiers=IMP.pmi.tools.flatten_list(hiers)
         except: pass
-        for hs in IMP.pmi.tools.sublist_iterator(hiers,lmin,lmax):
+        for hs in IMP.pmi.tools.sublist_iterator(hiers,min_length,max_length):
             self.set_super_rigid_body_from_hierarchies(hs,axis)
 
     def set_super_rigid_bodies(self,subunits,coords=None):

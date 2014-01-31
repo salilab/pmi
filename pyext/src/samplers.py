@@ -97,12 +97,12 @@ class MonteCarlo():
         sf=IMP.core.RestraintsScoringFunction([rs])
         self.mc.set_scoring_function(sf)
 
-    def set_simulated_annealing(self,tempmin,tempmax,timemin,timemax):
+    def set_simulated_annealing(self,min_temp,max_temp,min_temp_time,max_temp_time):
         self.simulated_annealing=True
-        self.tempmin=tempmin
-        self.tempmax=tempmax
-        self.timemin=timemin
-        self.timemax=timemax
+        self.tempmin=min_temp
+        self.tempmax=max_temp
+        self.timemin=min_temp_time
+        self.timemax=max_temp_time
 
     def set_self_adaptive(self,isselfadaptive=True):
         self.selfadaptive=isselfadaptive
@@ -125,7 +125,7 @@ class MonteCarlo():
     def get_particle_types():
         return self.losp
 
-    def run(self,nstep):
+    def optimize(self,nstep):
         self.nframe+=1
         self.mc.optimize(nstep*self.get_number_of_movers())
 
@@ -173,6 +173,9 @@ class MonteCarlo():
                         accept = 1.0
                         wmv.set_radius(stepsize*2*accept)
 
+    def run(self,*args, **kwargs):
+            IMP.pmi.tools.print_deprecation_warning("MonteCarlo.run","MonteCarlo.optimize")
+            self.autobuild_model(*args, **kwargs)
 
     def get_nuisance_movers(self,nuisances,maxstep):
         mvs=[]

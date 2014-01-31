@@ -1,5 +1,5 @@
 # Info
-PMI: Python Modeling Interface
+***PMI: Python Modeling Interface***
 
 Repository of Python classes to represent, score, sample 
 and analyse models. It is based on the Integrative Modeling Platform 

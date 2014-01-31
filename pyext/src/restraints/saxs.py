@@ -14,12 +14,11 @@ class SAXSISDRestraint():
     import IMP.isd2 
     import IMP.pmi.tools
 
-    def __init__(self, model, hier, profile, weight=1,
+    def __init__(self, representation,profile,resolution=0,weight=1,
             ff_type=IMP.saxs.HEAVY_ATOMS):
 
         from numpy import array,eye
-        self.m = model
-        self.hier = hier
+        self.m = representation.prot.get_model()
         self.label = "None"
         self.rs = IMP.RestraintSet(self.m, 'saxs')
 
@@ -27,11 +26,7 @@ class SAXSISDRestraint():
         self.gammamaxtrans = 0.05
         self.prof = IMP.saxs.Profile(profile)
 
-        atoms = []
-
-        for h in hier:
-            IMP.atom.show_molecular_hierarchy(h)
-            atoms += IMP.atom.get_leaves(h)
+        atoms=IMP.pmi.tools.select(representation,resolution=resolution)
 
         # sigma nuisance
         self.sigma = IMP.pmi.tools.SetupNuisance(
@@ -52,7 +47,7 @@ class SAXSISDRestraint():
         
         print ff_type
         
-        for a in atoms: print IMP.atom.Residue(a).get_residue_type()
+        #for a in atoms: print IMP.atom.Residue(a).get_residue_type()
         
         self.th.calculate_profile(atoms, ff_type)
         print "setup gamma"

@@ -98,12 +98,12 @@ class Representation():
         self.output_level="low"
         self.label="None"
 
-        self.maxtrans_rb=0.15
-        self.maxrot_rb=0.03
+        self.maxtrans_rb=2.0
+        self.maxrot_rb=0.025
         self.maxtrans_srb=1.0
         self.maxrot_srb=0.025
         self.rigidbodiesarefixed=False
-        self.maxtrans_fb=0.15
+        self.maxtrans_fb=2.0
         self.resolution=10.0
         self.bblenght=100.0
         self.kappa=100.0

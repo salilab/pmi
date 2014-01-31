@@ -12,6 +12,8 @@ import IMP.pmi.tools as tools
 import IMP.pmi.samplers as samplers
 import IMP.pmi.output as output
 
+IMP.base.set_log_level(IMP.base.SILENT)
+
 #input parameter
 
 pdbfile=IMP.pmi.get_data_path("1WCM.pdb")
@@ -79,7 +81,7 @@ for d in data:
     
     r.set_rigid_bodies([component_name])
     
-    r.set_chain_of_super_rigid_bodies(hierarchies,min_length=2,max_length=3)
+    #r.set_chain_of_super_rigid_bodies(hierarchies,min_length=2,max_length=2)
     
     r.setup_component_sequence_connectivity(component_name,resolution=1)
     
@@ -90,7 +92,7 @@ r.set_floppy_bodies()
 
 
 
-r.shuffle_configuration(500,avoidcollision=True)
+r.shuffle_configuration(100,avoidcollision=True)
 
 log_objects.append(r)
 
@@ -101,10 +103,10 @@ log_objects.append(ev)
 xl = crosslinking.SigmoidalCrossLinkMS(
         r, 
         crosslink_file,
-        inflection=20,
+        inflection=25,
         slope=2.0,
         amplitude=5.0,
-        linear_slope=0.01,
+        linear_slope=0.03,
         resolution=1,
         columnmapping=columnmap,
         csvfile=True)  

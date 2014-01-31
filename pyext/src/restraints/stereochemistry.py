@@ -5,6 +5,12 @@ import IMP.base
 import IMP.algebra
 import IMP.atom
 import IMP.container
+try:
+   import IMP.isd2
+   noisd2=False
+except:
+   noisd2=True 
+
 
 class ExcludedVolumeSphere():
     '''
@@ -276,11 +282,7 @@ class ResidueDihedralRestraint():
 
 #
 class SecondaryStructure():
-    try:
-       import IMP.isd2
-       noisd2=False
-    except:
-       noisd2=True 
+
     from math import pi
     from math import log    
     

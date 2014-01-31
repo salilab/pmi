@@ -460,14 +460,18 @@ class Representation():
                               resolution=0.0,num_components=10,
                               inputfile=None,outputfile=None,
                               outputmap=None,
-                              kernel_type=IMP.em.GAUSSIAN,
+                              kernel_type=None,
                               covariance_type='full',voxel_size=1.0,
                               sampled_points=1000000,num_iter=100):
         import IMP.isd2
         import IMP.isd2.gmm_tools
         import numpy as np
         import sys
-
+        import IMP.em
+        
+        if kernel_type==None:
+           kernel_type=IMP.em.GAUSSIAN
+        
         self.representation_is_modified=True
         outhier=[]
         protein_h=self.hier_dict[name]

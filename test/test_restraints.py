@@ -127,7 +127,7 @@ restraints='''#
 Rpb3 Rpb4 100 150
 Rpb4 Rpb4 50 150 '''
 
-xl3 = IMP.pmi.restraints.crosslinking.SigmoidCrossLinkMS(simo,restraints,25,1,5,0.02,resolution=1)
+xl3 = IMP.pmi.restraints.crosslinking.SigmoidalCrossLinkMS(simo,restraints,25,1,5,0.02,resolution=1)
 xl3.add_to_model()
 print xl3.get_output()
 print m.evaluate(False)

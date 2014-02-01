@@ -301,7 +301,7 @@ class Representation():
            c=t
            chain=t.get_id()
            del s,t
-        
+
 
         if resrange!=None:
            if resrange[0]>start: start=resrange[0]
@@ -318,12 +318,6 @@ class Representation():
 
 
         ps=sel.get_selected_particles()
-        #check if there is any selected particle:
-        if len(ps)==0:
-           print "ERROR: add_component_pdb: selected zero atoms or residues for "+name+" check the resrange argument..."
-           exit()
-
-
         c0=IMP.atom.Chain.setup_particle(IMP.Particle(self.m),"X")
 
         for p in ps:
@@ -333,7 +327,6 @@ class Representation():
             c0.add_child(par)
         start=start+offset
         end=end+offset
-
 
         self.elements[name].append((start,end,pdbname.split("/")[-1]+":"+chain,"pdb"))
 
@@ -783,9 +776,16 @@ class Representation():
         if len(self.rigid_bodies)==0:
             print "shuffle_configuration: rigid bodies were not intialized"
 
-        gcpf=IMP.core.NearestNeighborsClosePairsFinder()
+        gcpf=IMP.core.GridClosePairsFinder()
         gcpf.set_distance(cutoff)
-        allparticleindexes=IMP.get_indexes(IMP.atom.get_leaves(self.prot))
+        ps=[]
+        for p in IMP.atom.get_leaves(self.prot):
+            if IMP.core.XYZ.particle_is_instance(p):
+               ps.append(p)    
+        allparticleindexes=IMP.get_indexes(ps)
+        
+
+
         hierarchies_excluded_from_collision_indexes=[]
         for h in hierarchies_excluded_from_collision:
             hierarchies_excluded_from_collision_indexes+=IMP.get_indexes(IMP.atom.get_leaves(h))
@@ -796,7 +796,7 @@ class Representation():
             if avoidcollision:
 
                rbindexes=rb.get_member_particle_indexes()
-               rbindexes+=rb.get_body_member_particle_indexes()
+
                rbindexes=list(set(rbindexes)-set(hierarchies_excluded_from_collision_indexes))
                otherparticleindexes=list(set(allparticleindexes)-set(rbindexes))
                if len(otherparticleindexes)==None: continue
@@ -815,6 +815,7 @@ class Representation():
                   else:
                      niter+=1
                      print "shuffle_configuration: rigid body placed close to other %d particles, trying again..." % npairs
+                     print "shuffle_configuration: rigid body name: "+rb.get_name()
                      if niter==niterations:
                         print "shuffle_configuration: tried the maximum number of iterations to avoid collisions, increase the distance cutoff"
                         exit()

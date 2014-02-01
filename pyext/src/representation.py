@@ -301,7 +301,7 @@ class Representation():
            c=t
            chain=t.get_id()
            del s,t
-
+        
 
         if resrange!=None:
            if resrange[0]>start: start=resrange[0]
@@ -318,6 +318,12 @@ class Representation():
 
 
         ps=sel.get_selected_particles()
+        #check if there is any selected particle:
+        if len(ps)==0:
+           print "ERROR: add_component_pdb: selected zero atoms or residues for "+name+" check the resrange argument..."
+           exit()
+
+
         c0=IMP.atom.Chain.setup_particle(IMP.Particle(self.m),"X")
 
         for p in ps:
@@ -327,6 +333,7 @@ class Representation():
             c0.add_child(par)
         start=start+offset
         end=end+offset
+
 
         self.elements[name].append((start,end,pdbname.split("/")[-1]+":"+chain,"pdb"))
 

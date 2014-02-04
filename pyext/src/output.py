@@ -548,13 +548,14 @@ def plot_fields_box_plots(name,values,positions,
     plt.setp(bps[-1]['boxes'], color='black',lw=1.5)
     plt.setp(bps[-1]['whiskers'], color='black',ls=":",lw=1.5)
     
-    print ax1.xaxis.get_majorticklocs()
+    #print ax1.xaxis.get_majorticklocs()
     if xlabels!=None: ax1.set_xticklabels(xlabels)
     plt.xticks(rotation=90)
     plt.xlabel(positionname)
     plt.ylabel(valuename)
-    plt.savefig(name+".png",dpi=150,bbox_inches="tight")
     plt.show()
+    #plt.savefig(name+".png",dpi=150,bbox_inches="tight")
+
 
 
 def plot_xy_data(x,y):

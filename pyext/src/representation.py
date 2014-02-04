@@ -455,7 +455,7 @@ class Representation():
         outhiers=[]
         if length<end-begin+1:
           i=begin
-          for i in range(begin,end,length)[0:-1]:
+          for i in range(begin,end,length):
              outhiers+=self.add_component_beads(name,[(i,i+length-1)],incoord=incoord)
           outhiers+=self.add_component_beads(name,[(i+length,end)],incoord=incoord)
         else:
@@ -1001,7 +1001,7 @@ class Representation():
         if len(pts.get_particles_to_sample())>0:
            mc = IMP.pmi.samplers.MonteCarlo(self.m,[pts], temperature)
            print "optimize_floppy_bodies: optimizing %i floppy bodies" % len(self.floppy_bodies)
-           mc.run(nsteps)
+           mc.optimize(nsteps)
         else:
            print "optimize_floppy_bodies: no particle to optimize"
 

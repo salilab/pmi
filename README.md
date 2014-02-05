@@ -16,6 +16,10 @@ git clone https://github.com/salilab/pmi.git
 
 Build IMP folloring the [imp instructions](http://www.integrativemodeling.org/nightly/doc/html/md_doxygen_generated_installation.html#installation).
 
+**News February 4 2014:**
+
+Best IMP version so far: b700fff93ca45ba1551c8aa9d697c805fcb126dc
+Previous versions might be considerably slow due to a bug imp/#724
 
 **News January 30 2014:**
 

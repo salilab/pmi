@@ -454,7 +454,6 @@ class Representation():
         self.representation_is_modified=True
         outhiers=[]
         for chunk in list(IMP.pmi.tools.list_chunks_iterator(range(begin,end+1),length)):
-            print chunk
             outhiers+=self.add_component_beads(name,[(chunk[0],chunk[-1])],incoord=incoord)
         return outhiers
 

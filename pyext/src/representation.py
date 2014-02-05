@@ -50,28 +50,28 @@ class Representation():
 
     1) Create a chain of helices and flexible parts
 
-    c_1_119   =simo.add_component_necklace("prot1",1,119,20)
-    c_120_131 =simo.add_component_ideal_helix("prot1",resolutions=[1,10],resrange=(120,131))
-    c_132_138 =simo.add_component_beads("prot1",[(132,138)])
-    c_139_156 =simo.add_component_ideal_helix("prot1",resolutions=[1,10],resrange=(139,156))
-    c_157_174 =simo.add_component_beads("prot1",[(157,174)])
-    c_175_182 =simo.add_component_ideal_helix("prot1",resolutions=[1,10],resrange=(175,182))
-    c_183_194 =simo.add_component_beads("prot1",[(183,194)])
-    c_195_216 =simo.add_component_ideal_helix("prot1",resolutions=[1,10],resrange=(195,216))
-    c_217_250 =simo.add_component_beads("prot1",[(217,250)])
+    c_1_119   =self.add_component_necklace("prot1",1,119,20)
+    c_120_131 =self.add_component_ideal_helix("prot1",resolutions=[1,10],resrange=(120,131))
+    c_132_138 =self.add_component_beads("prot1",[(132,138)])
+    c_139_156 =self.add_component_ideal_helix("prot1",resolutions=[1,10],resrange=(139,156))
+    c_157_174 =self.add_component_beads("prot1",[(157,174)])
+    c_175_182 =self.add_component_ideal_helix("prot1",resolutions=[1,10],resrange=(175,182))
+    c_183_194 =self.add_component_beads("prot1",[(183,194)])
+    c_195_216 =self.add_component_ideal_helix("prot1",resolutions=[1,10],resrange=(195,216))
+    c_217_250 =self.add_component_beads("prot1",[(217,250)])
 
 
-    simo.set_rigid_body_from_hierarchies(c_120_131)
-    simo.set_rigid_body_from_hierarchies(c_139_156)
-    simo.set_rigid_body_from_hierarchies(c_175_182)
-    simo.set_rigid_body_from_hierarchies(c_195_216)
+    self.set_rigid_body_from_hierarchies(c_120_131)
+    self.set_rigid_body_from_hierarchies(c_139_156)
+    self.set_rigid_body_from_hierarchies(c_175_182)
+    self.set_rigid_body_from_hierarchies(c_195_216)
 
     clist=[c_1_119,c_120_131,c_132_138,c_139_156,c_157_174,c_175_182,c_183_194,c_195_216,
       c_217_250]
 
-    simo.set_chain_of_super_rigid_bodies(clist,2,3)
+    self.set_chain_of_super_rigid_bodies(clist,2,3)
 
-    simo.set_super_rigid_bodies(["prot1"])
+    self.set_super_rigid_bodies(["prot1"])
 
     '''
 
@@ -81,7 +81,7 @@ class Representation():
         # in the intra-pair connectivity restraint. Harmonic is used whe you want to
         # remove the intra-ev term from energy calculations, e.g.:
         # upperharmonic=False
-        # ip=simo.get_connected_intra_pairs()
+        # ip=self.get_connected_intra_pairs()
         # ev.add_excluded_particle_pairs(ip)
 
         self.upperharmonic=upperharmonic
@@ -1617,7 +1617,29 @@ class Representation():
         output=self.get_output()
         output.update(self.get_particles_to_sample())
         output["Number_of_particles"]=len(IMP.atom.get_leaves(self.prot))
-        output["Hierarchy_Dictionary_0"]=self.hier_dict.keys()
+        output["Hierarchy_Dictionary"]=self.hier_dict.keys()
+        output["Number_of_floppy_bodies"]=len(self.floppy_bodies)
+        output["Number_of_rigid_bodies"]=len(self.rigid_bodies)        
+        output["Number_of_super_bodies"]=len(self.super_rigid_bodies) 
+        output["Selection_resolution_1"]=len(IMP.pmi.tools.select(self,resolution=1))
+        output["Selection_resolution_5"]=len(IMP.pmi.tools.select(self,resolution=5))
+        output["Selection_resolution_7"]=len(IMP.pmi.tools.select(self,resolution=5))
+        output["Selection_resolution_10"]=len(IMP.pmi.tools.select(self,resolution=10))        
+        output["Selection_resolution_100"]=len(IMP.pmi.tools.select(self,resolution=100))
+        output["Selection_All"]=len(IMP.pmi.tools.select(self))
+        output["Selection_resolution=1"]=len(IMP.pmi.tools.select(self,resolution=1))
+        output["Selection_resolution=1,resid=10"]=len(IMP.pmi.tools.select(self,resolution=1,residue=10))
+        for name in self.hier_dict:
+           output["Selection_resolution=1,resid=10,name="+name]=len(IMP.pmi.tools.select(self,resolution=1,name=name,residue=10))
+           output["Selection_resolution=1,resid=10,name="+name+",ambiguous"]=len(IMP.pmi.tools.select(self,resolution=1,name=name,name_is_ambiguous=True,residue=10))
+           output["Selection_resolution=1,resid=10,name="+name+",ambiguous"]=len(IMP.pmi.tools.select(self,resolution=1,name=name,name_is_ambiguous=True,residue=10))
+           output["Selection_resolution=1,resrange=(10,20),name="+name]=len(IMP.pmi.tools.select(self,resolution=1,name=name,first_residue=10,last_residue=20))
+           output["Selection_resolution=1,resrange=(10,20),name="+name+",ambiguous"]=len(IMP.pmi.tools.select(self,resolution=1,name=name,name_is_ambiguous=True,first_residue=10,last_residue=20))
+           output["Selection_resolution=10,resrange=(10,20),name="+name]=len(IMP.pmi.tools.select(self,resolution=10,name=name,first_residue=10,last_residue=20))
+           output["Selection_resolution=10,resrange=(10,20),name="+name+",ambiguous"]=len(IMP.pmi.tools.select(self,resolution=10,name=name,name_is_ambiguous=True,first_residue=10,last_residue=20))
+           output["Selection_resolution=100,resrange=(10,20),name="+name]=len(IMP.pmi.tools.select(self,resolution=100,name=name,first_residue=10,last_residue=20))
+           output["Selection_resolution=100,resrange=(10,20),name="+name+",ambiguous"]=len(IMP.pmi.tools.select(self,resolution=100,name=name,name_is_ambiguous=True,first_residue=10,last_residue=20))
+  
         return output
         
 

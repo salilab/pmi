@@ -266,9 +266,9 @@ class Output():
 
         for obj in self.dictionary_stats[name]:
            try:
-              output.update(obj.get_test_output())
+              d=obj.get_test_output()
            except:
-              output.update(obj.get_output()) 
+              d=obj.get_output()
             #remove all entries that begin with _ (private entries)
            dfiltered=dict((k, v) for k, v in d.iteritems() if k[0]!="_")
            output.update(dfiltered)

@@ -453,13 +453,9 @@ class Representation():
         '''
         self.representation_is_modified=True
         outhiers=[]
-        if length<end-begin+1:
-          i=begin
-          for i in range(begin,end,length):
-             outhiers+=self.add_component_beads(name,[(i,i+length-1)],incoord=incoord)
-          outhiers+=self.add_component_beads(name,[(i+length,end)],incoord=incoord)
-        else:
-          outhiers+=self.add_component_beads(name,[(begin,end)],incoord=incoord)
+        for chunk in list(IMP.pmi.tools.list_chunks_iterator(range(begin,end+1),length)):
+            print chunk
+            outhiers+=self.add_component_beads(name,[(chunk[0],chunk[-1])],incoord=incoord)
         return outhiers
 
     def add_component_density(self,name,hierarchy,

@@ -775,6 +775,12 @@ def sublist_iterator(l,lmin=None,lmax=None):
 def flatten_list(l):
     return [item for sublist in l for item in sublist]
 
+def list_chunks_iterator(list, length):
+    """ Yield successive length-sized chunks from a list.
+    """
+    for i in xrange(0, len(list), length):
+        yield list[i:i+length]
+
 def get_residue_indexes(hier):
     '''
     This "overloaded" function retrieves the residue indexes

@@ -1611,6 +1611,15 @@ class Representation():
 
         output["_TotalScore"]=str(score)
         return output
+     
+    def get_test_output(self):
+        # this method is called by test functions and return an enriched output
+        output=self.get_output()
+        output.update(self.get_particles_to_sample())
+        output["Number_of_particles"]=len(IMP.atom.get_leaves(self.prot))
+        output["Hierarchy_Dictionary_0"]=self.hier_dict.keys()
+        return output
+        
 
 # Deprecation warning for the old SimplifiedModel class
 

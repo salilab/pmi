@@ -259,15 +259,19 @@ class Output():
         flstat=open(name,'w')    
         output=self.initoutput
         for l in listofobjects:
-            if not "get_output" in dir(l):
-                print "Output: object ", l, " doesn't have get_output() method"
+            if not "get_test_output" in dir(l) and not "get_output" in dir(l):
+                print "Output: object ", l, " doesn't have get_output() or get_test_output() method"
                 exit()
         self.dictionary_stats[name]=listofobjects
+
         for obj in self.dictionary_stats[name]:
-            d=obj.get_output()
+           try:
+              output.update(obj.get_test_output())
+           except:
+              output.update(obj.get_output()) 
             #remove all entries that begin with _ (private entries)
-            dfiltered=dict((k, v) for k, v in d.iteritems() if k[0]!="_")
-            output.update(dfiltered)
+           dfiltered=dict((k, v) for k, v in d.iteritems() if k[0]!="_")
+           output.update(dfiltered)
         output.update({"ENVIRONMENT":str(self.get_environment_variables())})
         output.update({"IMP_VERSIONS":str(self.get_versions_of_relevant_modules())})             
         flstat.write("%s \n" % output)
@@ -278,11 +282,14 @@ class Output():
         from numpy.testing import assert_approx_equal as aae
         output=self.initoutput
         for l in listofobjects:
-            if not "get_output" in dir(l):
-                print "Output: object ", l, " doesn't have get_output() method"
+            if not "get_test_output" in dir(l) and not "get_output" in dir(l):
+                print "Output: object ", l, " doesn't have get_output() or get_test_output() method"
                 exit()
         for obj in listofobjects:
-            output.update(obj.get_output())
+           try:
+              output.update(obj.get_test_output())
+           except:
+              output.update(obj.get_output())              
         output.update({"ENVIRONMENT":str(self.get_environment_variables())})
         output.update({"IMP_VERSIONS":str(self.get_versions_of_relevant_modules())})   
 
@@ -291,9 +298,16 @@ class Output():
             test_dict=eval(l)
         for k in test_dict:
             if k in output:
-               if test_dict[k]!=output[k]: print str(k)+": test failed, old value: "+str(test_dict[k])+" new value "+str(output[k])
-               #aae(float(test_dict[k]),
-               #    float(output[k]),7,str(k)+": test failed, old value: "+str(test_dict[k])+" new value "+str(output[k]))
+               old_value=str(test_dict[k])
+               new_value=str(output[k])
+               
+               
+               if test_dict[k]!=output[k]: 
+                  if len(old_value)<50 and len(new_value)<50:
+                     print str(k)+": test failed, old value: "+old_value+" new value "+new_value
+                  else:
+                     print str(k)+": test failed, omitting results (too long)"
+                   
             else:
                print str(k)+" from old objects (file "+str(name)+") not in new objects"
                

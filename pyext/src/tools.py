@@ -56,8 +56,6 @@ class SetupWeight():
 
 
 class ParticleToSampleList():
-
-
     def __init__(self,label="None"):
 
         self.dictionary_particle_type={}
@@ -623,6 +621,15 @@ def select_by_tuple(representation,tupleselection,resolution=None,name_is_ambigu
 
     return particles
 
+
+def get_db_from_csv(csvfilename):
+     import csv
+     outputlist=[]
+     csvr=csv.DictReader(open(csvfilename))
+     for l in csvr:
+         outputlist.append(l)
+     return outputlist
+
 class HierarchyDatabase():
      def __init__(self):
         self.db={}
@@ -760,26 +767,6 @@ class HierarchyDatabase():
                 for p in self.get_particles(name,resn,resolution):
                     print "--------", p.get_name()
 
-def sublist_iterator(l,lmin=None,lmax=None):
-    '''
-    this iterator yields all sublists
-    of length >= lmin and <= lmax
-    '''
-    if lmin==None: lmin=0
-    if lmax==None: lmax=len(l)
-    n = len(l)+1
-    for i in xrange(n):
-        for j in xrange(i+1, n):
-           if len(l[i:j]) <= lmax and len(l[i:j]) >= lmin: yield l[i:j]
-
-def flatten_list(l):
-    return [item for sublist in l for item in sublist]
-
-def list_chunks_iterator(list, length):
-    """ Yield successive length-sized chunks from a list.
-    """
-    for i in xrange(0, len(list), length):
-        yield list[i:i+length]
 
 def get_residue_indexes(hier):
     '''
@@ -804,14 +791,32 @@ def sort_by_residues(particles):
     sorted_particles_residues=sorted(particles_residues, key=lambda tup: tup[1])
     particles=[p[0] for p in sorted_particles_residues]
     return particles
-     
-def get_db_from_csv(csvfilename):
-     import csv
-     outputlist=[]
-     csvr=csv.DictReader(open(csvfilename))
-     for l in csvr:
-         outputlist.append(l)
-     return outputlist
+
+########################
+### Lists and iterators
+########################
+
+def sublist_iterator(l,lmin=None,lmax=None):
+    '''
+    this iterator yields all sublists
+    of length >= lmin and <= lmax
+    '''
+    if lmin==None: lmin=0
+    if lmax==None: lmax=len(l)
+    n = len(l)+1
+    for i in xrange(n):
+        for j in xrange(i+1, n):
+           if len(l[i:j]) <= lmax and len(l[i:j]) >= lmin: yield l[i:j]
+
+def flatten_list(l):
+    return [item for sublist in l for item in sublist]
+
+def list_chunks_iterator(list, length):
+    """ Yield successive length-sized chunks from a list.
+    """
+    for i in xrange(0, len(list), length):
+        yield list[i:i+length]
+
 
 ########################
 ### Tools to simulate data

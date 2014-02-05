@@ -19,7 +19,7 @@ Build IMP following the [imp instructions](http://www.integrativemodeling.org/ni
 **News February 4 2014:**
 
 Best IMP version so far: `b700fff93ca45ba1551c8aa9d697c805fcb126dc`
-Previous versions might be considerably slow due to a bug imp/724#
+Previous versions might be considerably slow due to a [bug](https://github.com/salilab/imp/issues/724)
 
 **News January 30 2014:**
 

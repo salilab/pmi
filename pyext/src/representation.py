@@ -955,7 +955,7 @@ class Representation():
         for n in range(len(pbr)-1):
             self.hier_geometry_pairs[name].append((pbr[n],pbr[n+1],color))
 
-    def setup_component_sequence_connectivity(self,name,resolution=10):
+    def setup_component_sequence_connectivity(self,name,resolution=10,scale=1.0):
         '''
         This method generates restraints between contiguous fragments
         in the hierarchy. The linkers are generated at resolution 10 by default.
@@ -1007,7 +1007,7 @@ class Representation():
                   hu=IMP.core.Harmonic(optdist, self.kappa)
                dps=IMP.core.DistancePairScore(hu)
             else: #default
-               optdist=0.0+residuegap*3.6
+               optdist=(0.0+residuegap*3.6)*scale
                if self.upperharmonic: #default
                   hu=IMP.core.HarmonicUpperBound(optdist, self.kappa)
                else:

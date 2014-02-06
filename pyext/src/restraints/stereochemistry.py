@@ -36,11 +36,12 @@ class ExcludedVolumeSphere():
         lsa = IMP.container.ListSingletonContainer(self.m)
 
         particles=IMP.pmi.tools.select(representation,resolution=resolution,hierarchies=hierarchies)
+        
         lsa.add_particles(particles)          
            
         if other_hierarchies==None:
            rbcpf=IMP.core.RigidClosePairsFinder()        
-           self.cpc=IMP.container.ClosePairContainer(lsa,0.0,rbcpf,10.0)
+           self.cpc=IMP.container.ClosePairContainer(lsa,0.0,10.0)
            evr=IMP.container.PairsRestraint(ssps,self.cpc)
 
         else:

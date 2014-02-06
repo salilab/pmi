@@ -260,12 +260,27 @@ class Representation():
                                    cacenters=True,show=False,isnucleicacid=False,readnonwateratoms=False):
 
         '''
-        resrange specify the residue range to extract from the pdb
-        it is a tuple (beg,end). If not specified, it takes all residues belonging to
-         the specified chain.
+        This method reads a pdb, constructs the fragments corresponding to contiguous senquence stratches,
+        and returns a list of hierarchies.
+        
+        name:             (string) the name of the component
+        pdbname:          (string) the name of the pdb
+        chain:            (string or integer) can be either a string (eg, "A")
+                          or an integer (eg, 0 or 1) in case you want
+                          to get the corresponding chain number in the pdb.
+        resolutions:      (integers) a list of integers that corresponds to the resolutions that have to be
+                          generated
+        color:            (float from 0 to 1, optional default=None): the color applied to the hierarchies generated
+                          by this method
+        resrange:         (tuple of integers, optional, default=None): specifies the residue range to extract from the pdb
+                          it is a tuple (beg,end). If not specified, it takes all residues belonging to
+                          the specified chain.
+        offset:           (integer, optional, default=0): specifies the residue index offset to be applied when reading the pdb 
+        cacenters:        (boolean, optional, default=True): if True generates resolution=1 beads centered on C-alpha atoms.
+        show:             (boolean, optional, default=False): print out the molecular hierarchy at the end.
+        isnucleicacid:    (boolean, optional, default=False): use True if you're reading a pdb with nucleic acid.
+        readnonwateratoms:(boolean, optional, default=False): if True fixes some pathological pdb.
 
-        chain can be either a string (eg, A, B, C) or an integer (0,1,2) in case you want
-        to get the corresponding chain number in the pdb.
         '''
 
         self.representation_is_modified=True
@@ -462,13 +477,20 @@ class Representation():
           outhiers+=self.add_component_beads(name,[(begin,end)],incoord=incoord)
         return outhiers
 
-    def add_component_density(self,name,hierarchy,
+    def add_component_density(self,name,hierarchies=None,selection_tuples=None,
+                              particles=None,
                               resolution=0.0,num_components=10,
                               inputfile=None,outputfile=None,
                               outputmap=None,
                               kernel_type=None,
                               covariance_type='full',voxel_size=1.0,
                               sampled_points=1000000,num_iter=100):
+                              
+        '''
+        selection_tuples:   (list of tuples) example (first_residue,last_residue,component_name)
+        '''
+        
+        
         import IMP.isd2
         import IMP.isd2.gmm_tools
         import numpy as np
@@ -492,7 +514,22 @@ class Representation():
 
         if inputfile==None:
            print "add_component_density: getting the particles"
-           fragment_particles=IMP.pmi.tools.select(self,resolution=resolution,hierarchies=hierarchy)
+           if particles==None:
+              fragment_particles=[]
+           else:
+              fragment_particles=particles
+              
+           if hierarchies!=None:
+              fragment_particles+=IMP.pmi.tools.select(self,resolution=resolution,hierarchies=hierarchies)
+           if selection_tuples!=None:
+              for st in selection_tuples:
+                 fragment_particles+=IMP.pmi.tools.select_by_tuple(self,tupleselection=st,
+                                                                     resolution=resolution,
+                                                                     name_is_ambiguous=False)
+           if len(fragment_particles)==0:
+              print "add_component_density: no particle was selected"
+              return outhier
+           
            print "add_component_density: create density from particles"
            dmap=IMP.em.SampledDensityMap(fragment_particles,resolution,voxel_size)
            dmap.calcRMS()
@@ -924,6 +961,12 @@ class Representation():
             self.hier_geometry_pairs[name].append((pbr[n],pbr[n+1],color))
 
     def setup_component_sequence_connectivity(self,name,resolution=10):
+        '''
+        This method generates restraints between contiguous fragments
+        in the hierarchy. The linkers are generated at resolution 10 by default.
+        
+        '''
+    
         unmodeledregions_cr=IMP.RestraintSet(self.m,"unmodeledregions")
         sortedsegments_cr=IMP.RestraintSet(self.m,"sortedsegments")
 
@@ -1120,8 +1163,20 @@ class Representation():
         get the connectivity restraints
         '''
 
-    def set_rigid_body_from_hierarchies(self,hiers):
-        rigid_parts=set()
+    def set_rigid_body_from_hierarchies(self,hiers,particles=None):
+        '''
+        This method allows the construction of a rigid body given a list
+        of hierarchies and or a list of particles.
+        
+        hiers:         list of hierarchies
+        particles:     (optional, default=None) list of particles to add to the rigid body
+        '''
+        
+        if particles==None:
+           rigid_parts=set()
+        else:
+           rigid_parts=set(particles)
+           
         name=""
         print "set_rigid_body_from_hierarchies> setting up a new rigid body"
         for hier in hiers:
@@ -1140,13 +1195,21 @@ class Representation():
         self.rigid_bodies.append(rb)
         return rb
 
-    def set_rigid_bodies(self,subunits,coords=None,nonrigidmembers=True):
-        from numpy import array
-        from numpy.random import rand as nrrand
-        if coords==None: coords=()
-        #sometimes, we know about structure of an interaction
-        #and here we make such PPIs rigid
-        randomize_coords = lambda c: tuple(1.*(nrrand(3)-0.5)+array(c))
+    def set_rigid_bodies(self,subunits):
+        '''
+        This method allows the construction of a rigid body given a list
+        of tuples, that identify the residue ranges and the subunit names (the names used 
+        to create the component by using create_component.
+        
+        subunits: [(name_1,(first_residue_1,last_residue_1)),(name_2,(first_residue_2,last_residue_2)),.....]
+                  or
+                  [name_1,name_2,(name_3,(first_residue_3,last_residue_3)),.....]
+                  
+                   example: ["prot1","prot2",("prot3",(1,10))]
+        
+        sometimes, we know about structure of an interaction
+        and here we make such PPIs rigid
+        '''
 
         rigid_parts=set()
         for s in subunits:
@@ -1178,7 +1241,6 @@ class Representation():
         rb=IMP.atom.create_rigid_body(list(rigid_parts))
         rb.set_coordinates_are_optimized(True)
         rb.set_name(''.join(str(subunits))+"_rigid_body")
-        if type(coords)==tuple and len(coords)==3: rb.set_coordinates(randomize_coords(coords))
         self.rigid_bodies.append(rb)
         return rb
 
@@ -1269,18 +1331,15 @@ class Representation():
                IMP.core.XYZ(p).set_coordinates_are_optimized(True)
                self.floppy_bodies.append(p)
 
-    def get_particles_from_selection(self,selection_tuples):
-        #to be used for instance by CompositeRestraint
-        #selection tuples must be [(r1,r2,"name1"),(r1,r2,"name2"),....]
+    def get_hierachies_from_selection_tuples(self,selection_tuples,resolution=None):
+        '''
+        selection tuples must be [(r1,r2,"name1"),(r1,r2,"name2"),....]
+        return the particles
+        '''
         particles=[]
-
         for s in selection_tuples:
-            if type(s)==tuple and len(s)==3:
-              sel=IMP.atom.Selection(self.prot,molecule=s[2],residue_indexes=range(s[0],s[1]+1))
-            elif type(s)==str:
-              sel=IMP.atom.Selection(self.prot,molecule=s)
-            ps=sel.get_selected_particles()
-            print "get_particles_from_selection: "+str(s)+" selected "+str(len(ps))+" particles"
+            ps=IMP.pmi.tools.select_by_tuple(representation=self,tupleselection=s,
+                                          resolution=None,name_is_ambiguous=False)
             particles+=ps
         return particles
 

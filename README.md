@@ -20,7 +20,7 @@ Build IMP following the [imp instructions](http://www.integrativemodeling.org/ni
 
 Added a FAQ section in the wiki. There will be ipython notebook tutorials soon.
 Best IMP version so far: `ee1763c6859a29ab37415c8454d16549268d9668`
-Previous versions might be considerably slow due to a [bug](https://github.com/salilab/pmi/issues/17)
+Previous versions had a bug in the RigidClosePairsFinder [bug](https://github.com/salilab/pmi/issues/17)
 
 
 **News February 4 2014:**

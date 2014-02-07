@@ -616,6 +616,9 @@ def select_by_tuple(representation,tupleselection,resolution=None,name_is_ambigu
         particles=IMP.pmi.tools.select(representation,resolution=resolution,
                                                name=tupleselection,
                                                name_is_ambiguous=name_is_ambiguous)
+    else:
+        print 'you passed something bad to select_by_tuple()'
+        exit()
     #now order the result by residue number
     particles=IMP.pmi.tools.sort_by_residues(particles)
 
@@ -995,6 +998,38 @@ loop  : same format as helix, it's the contiguous loops
         sses['beta'].append(beta_dict[beta_sheet])
 
     return sses
+
+def dssp_dict_to_selection_tuples(dssp_dict):
+    ''' return dssp dict as a set of tuples, useful for making rigid bodies'''
+    ret=[]
+    for ng,sgroup in enumerate(dssp_dict['helix']):
+        chain,residues=sgroup[0]
+        start=residues[0]
+        stop=residues[-1]
+        ret.append([(start,stop,'chain%s'%chain)])
+    for ng,sgroup in enumerate(dssp_dict['beta']):
+        this_sheet=[]
+        for sse in sgroup:
+            chain,residues=sse
+            start=residues[0]
+            stop=residues[-1]
+            this_sheet.append((start,stop,'chain%s'%chain))
+        ret.append(this_sheet)
+    for ng,sgroup in enumerate(dssp_dict['loop']):
+        chain,residues=sgroup[0]
+        for r in residues:
+            ret.append(([(r,r,'chain%s'%chain)]))
+    return ret
+
+def dssp_dict_to_loop_tuples(dssp_dict):
+    ''' return dssp dict as a set of tuples, useful for making rigid bodies'''
+    ret=[]
+    for ng,sgroup in enumerate(dssp_dict['loop']):
+        chain,residues=sgroup[0]
+        start=residues[0]
+        stop=residues[-1]
+        ret.append((start-2,stop+2,'chain%s'%chain))
+    return ret
 
 def dssp_dict_to_chimera_colors(dssp_dict,chimera_model_num=0):
     ''' get chimera command to check if you've correctly made the dssp dictionary

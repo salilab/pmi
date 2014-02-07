@@ -262,7 +262,7 @@ class Representation():
         '''
         This method reads a pdb, constructs the fragments corresponding to contiguous senquence stratches,
         and returns a list of hierarchies.
-        
+
         name:             (string) the name of the component
         pdbname:          (string) the name of the pdb
         chain:            (string or integer) can be either a string (eg, "A")
@@ -275,7 +275,7 @@ class Representation():
         resrange:         (tuple of integers, optional, default=None): specifies the residue range to extract from the pdb
                           it is a tuple (beg,end). If not specified, it takes all residues belonging to
                           the specified chain.
-        offset:           (integer, optional, default=0): specifies the residue index offset to be applied when reading the pdb 
+        offset:           (integer, optional, default=0): specifies the residue index offset to be applied when reading the pdb
         cacenters:        (boolean, optional, default=True): if True generates resolution=1 beads centered on C-alpha atoms.
         show:             (boolean, optional, default=False): print out the molecular hierarchy at the end.
         isnucleicacid:    (boolean, optional, default=False): use True if you're reading a pdb with nucleic acid.
@@ -479,19 +479,20 @@ class Representation():
                               outputmap=None,
                               kernel_type=None,
                               covariance_type='full',voxel_size=1.0,
+                              out_name='',
                               sampled_points=1000000,num_iter=100):
-                              
+
         '''
         selection_tuples:   (list of tuples) example (first_residue,last_residue,component_name)
         '''
-        
-        
+
+
         import IMP.isd2
         import IMP.isd2.gmm_tools
         import numpy as np
         import sys
         import IMP.em
-        
+
         if kernel_type==None:
            kernel_type=IMP.em.GAUSSIAN
 
@@ -513,7 +514,7 @@ class Representation():
               fragment_particles=[]
            else:
               fragment_particles=particles
-              
+
            if hierarchies!=None:
               fragment_particles+=IMP.pmi.tools.select(self,resolution=resolution,hierarchies=hierarchies)
            if selection_tuples!=None:
@@ -524,7 +525,7 @@ class Representation():
            if len(fragment_particles)==0:
               print "add_component_density: no particle was selected"
               return outhier
-           
+
            print "add_component_density: create density from particles"
            dmap=IMP.em.SampledDensityMap(fragment_particles,resolution,voxel_size)
            dmap.calcRMS()
@@ -549,11 +550,13 @@ class Representation():
             IMP.isd2.gmm_tools.decorate_gmm_from_text(inputfile,density_particles,self.m)
             for p in density_particles:
                 rmax=sqrt(max(IMP.core.Gaussian(p).get_variances()))
-                print '-----> MODEL RMAX',rmax
                 IMP.core.XYZR.setup_particle(p,rmax)
 
         s0=IMP.atom.Fragment.setup_particle(IMP.Particle(self.m))
-        s0.set_name('_'.join([h.get_name() for h in hierarchy]))
+        #if hierarchy!=None:
+        #    s0.set_name('_'.join([h.get_name() for h in hierarchy]))
+        #else:
+        s0.set_name(out_name)
         self.hier_representation[name]["Densities"].add_child(s0)
         outhier.append(s0)
 
@@ -813,9 +816,9 @@ class Representation():
         ps=[]
         for p in IMP.atom.get_leaves(self.prot):
             if IMP.core.XYZ.particle_is_instance(p):
-               ps.append(p)    
+               ps.append(p)
         allparticleindexes=IMP.get_indexes(ps)
-        
+
 
 
         hierarchies_excluded_from_collision_indexes=[]
@@ -959,9 +962,9 @@ class Representation():
         '''
         This method generates restraints between contiguous fragments
         in the hierarchy. The linkers are generated at resolution 10 by default.
-        
+
         '''
-    
+
         unmodeledregions_cr=IMP.RestraintSet(self.m,"unmodeledregions")
         sortedsegments_cr=IMP.RestraintSet(self.m,"sortedsegments")
 
@@ -1162,16 +1165,16 @@ class Representation():
         '''
         This method allows the construction of a rigid body given a list
         of hierarchies and or a list of particles.
-        
+
         hiers:         list of hierarchies
         particles:     (optional, default=None) list of particles to add to the rigid body
         '''
-        
+
         if particles==None:
            rigid_parts=set()
         else:
            rigid_parts=set(particles)
-           
+
         name=""
         print "set_rigid_body_from_hierarchies> setting up a new rigid body"
         for hier in hiers:
@@ -1193,15 +1196,15 @@ class Representation():
     def set_rigid_bodies(self,subunits):
         '''
         This method allows the construction of a rigid body given a list
-        of tuples, that identify the residue ranges and the subunit names (the names used 
+        of tuples, that identify the residue ranges and the subunit names (the names used
         to create the component by using create_component.
-        
+
         subunits: [(name_1,(first_residue_1,last_residue_1)),(name_2,(first_residue_2,last_residue_2)),.....]
                   or
                   [name_1,name_2,(name_3,(first_residue_3,last_residue_3)),.....]
-                  
+
                    example: ["prot1","prot2",("prot3",(1,10))]
-        
+
         sometimes, we know about structure of an interaction
         and here we make such PPIs rigid
         '''
@@ -1245,6 +1248,7 @@ class Representation():
         super_rigid_rbs=set()
         name=""
         print "set_super_rigid_body_from_hierarchies> setting up a new SUPER rigid body"
+
         for hier in hiers:
             ps=IMP.atom.get_leaves(hier)
             for p in ps:
@@ -1326,12 +1330,13 @@ class Representation():
                IMP.core.XYZ(p).set_coordinates_are_optimized(True)
                self.floppy_bodies.append(p)
 
-    def get_hierachies_from_selection_tuples(self,selection_tuples,resolution=None):
+    def get_particles_from_selection_tuples(self,selection_tuples,resolution=None):
         '''
         selection tuples must be [(r1,r2,"name1"),(r1,r2,"name2"),....]
         return the particles
         '''
         particles=[]
+        print selection_tuples
         for s in selection_tuples:
             ps=IMP.pmi.tools.select_by_tuple(representation=self,tupleselection=s,
                                           resolution=None,name_is_ambiguous=False)
@@ -1665,7 +1670,7 @@ class Representation():
 
         output["_TotalScore"]=str(score)
         return output
-     
+
     def get_test_output(self):
         # this method is called by test functions and return an enriched output
         output=self.get_output()
@@ -1673,12 +1678,12 @@ class Representation():
         output["Number_of_particles"]=len(IMP.atom.get_leaves(self.prot))
         output["Hierarchy_Dictionary"]=self.hier_dict.keys()
         output["Number_of_floppy_bodies"]=len(self.floppy_bodies)
-        output["Number_of_rigid_bodies"]=len(self.rigid_bodies)        
-        output["Number_of_super_bodies"]=len(self.super_rigid_bodies) 
+        output["Number_of_rigid_bodies"]=len(self.rigid_bodies)
+        output["Number_of_super_bodies"]=len(self.super_rigid_bodies)
         output["Selection_resolution_1"]=len(IMP.pmi.tools.select(self,resolution=1))
         output["Selection_resolution_5"]=len(IMP.pmi.tools.select(self,resolution=5))
         output["Selection_resolution_7"]=len(IMP.pmi.tools.select(self,resolution=5))
-        output["Selection_resolution_10"]=len(IMP.pmi.tools.select(self,resolution=10))        
+        output["Selection_resolution_10"]=len(IMP.pmi.tools.select(self,resolution=10))
         output["Selection_resolution_100"]=len(IMP.pmi.tools.select(self,resolution=100))
         output["Selection_All"]=len(IMP.pmi.tools.select(self))
         output["Selection_resolution=1"]=len(IMP.pmi.tools.select(self,resolution=1))
@@ -1693,9 +1698,9 @@ class Representation():
            output["Selection_resolution=10,resrange=(10,20),name="+name+",ambiguous"]=len(IMP.pmi.tools.select(self,resolution=10,name=name,name_is_ambiguous=True,first_residue=10,last_residue=20))
            output["Selection_resolution=100,resrange=(10,20),name="+name]=len(IMP.pmi.tools.select(self,resolution=100,name=name,first_residue=10,last_residue=20))
            output["Selection_resolution=100,resrange=(10,20),name="+name+",ambiguous"]=len(IMP.pmi.tools.select(self,resolution=100,name=name,name_is_ambiguous=True,first_residue=10,last_residue=20))
-  
+
         return output
-        
+
 
 # Deprecation warning for the old SimplifiedModel class
 

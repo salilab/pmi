@@ -6,7 +6,6 @@ import IMP.algebra
 import IMP.atom
 import IMP.container
 
-
 class SAXSISDRestraint():
 
     import IMP.saxs 
@@ -17,7 +16,6 @@ class SAXSISDRestraint():
     def __init__(self, representation,profile,resolution=0,weight=1,
             ff_type=IMP.saxs.HEAVY_ATOMS):
 
-        from numpy import array,eye
         self.m = representation.prot.get_model()
         self.label = "None"
         self.rs = IMP.RestraintSet(self.m, 'saxs')
@@ -26,47 +24,39 @@ class SAXSISDRestraint():
         self.gammamaxtrans = 0.05
         self.prof = IMP.saxs.Profile(profile)
 
-        atoms=IMP.pmi.tools.select(representation,resolution=resolution)
+        self.atoms=IMP.pmi.tools.select(representation,resolution=resolution)
+
+        # gamma nuisance
+        self.gamma = IMP.pmi.tools.SetupNuisance(
+                self.m, 1., 0., None, False).get_particle()
 
         # sigma nuisance
-        self.sigma = IMP.pmi.tools.SetupNuisance(
-            self.m,
-            10.0,
-            0.00001,
-            100,
-            True).get_particle(
-        )
+        self.sigma = IMP.pmi.tools.SetupNuisance(self.m, 10.0, 0., None, False
+                      ).get_particle()
 
-        # gamma nuisance, initial value is ML estimate with diagonal covariance
-        print "create profile"
-        self.th = IMP.saxs.Profile(self.prof.get_min_q(),
-                                            self.prof.get_max_q(), self.prof.get_delta_q())
-        print "calculate profile"
-        
-        print len(atoms)
-        
-        print ff_type
-        
-        #for a in atoms: print IMP.atom.Residue(a).get_residue_type()
-        
-        self.th.calculate_profile(atoms, ff_type)
-        print "setup gamma"
-        gammahat = array([self.prof.get_intensity(i) / self.th.get_intensity(i)
-                          for i in xrange(self.prof.size() - 1)]).mean()
-        self.gamma = IMP.pmi.tools.SetupNuisance(
-                self.m, gammahat, 1e-12, 1e8, True).get_particle()
+        # tau nuisance, optimized
+        self.tau = IMP.pmi.tools.SetupNuisance(self.m, .1, 0., None, True
+                      ).get_particle()
 
+        #c1 and c2, optimized
+        self.c1 = IMP.pmi.tools.SetupNuisance(self.m, 1.0, 0.95, 1.05,
+                True).get_particle()
+        self.c2 = IMP.pmi.tools.SetupNuisance(self.m, 0.0, -2., 4.,
+                True).get_particle()
+
+        #weight, optimized
         self.w = IMP.pmi.tools.SetupWeight(self.m).get_particle()
+        IMP.isd.Weight(self.w).set_weights_are_optimized(True)
 
         # take identity covariance matrix for the start
-        self.cov = eye(self.prof.size()).tolist()
+        self.cov = [[1 if i==j else 0 for j in xrange(self.prof.size())]
+                for i in xrange(self.prof.size())]
 
-        print "create restraint"
-        self.saxs = IMP.isd2.SAXSRestraint(self.prof, self.sigma,
-                                           self.gamma, self.w)
-        self.saxs.add_scatterer(atoms, self.cov, ff_type)
+        print "create saxs restraint"
+        self.saxs = IMP.isd2.SAXSRestraint(self.prof, self.sigma, self.tau,
+                                           self.gamma, self.w, self.c1, self.c2)
+        self.saxs.add_scatterer(self.atoms, self.cov, ff_type)
 
-        print "done"
         self.rs.add_restraint(self.saxs)
         self.rs.set_weight(weight)
 
@@ -74,31 +64,54 @@ class SAXSISDRestraint():
         #        'exp':prof,'th':tmp}
 
         self.rs2 = IMP.RestraintSet(self.m, 'jeffreys')
-        j2 = IMP.isd.JeffreysRestraint(self.m, self.gamma)
+        #jeffreys restraints for nuisances
+        j1 = IMP.isd.JeffreysRestraint(self.m, self.sigma)
+        self.rs2.add_restraint(j1)
+        j2 = IMP.isd.JeffreysRestraint(self.m, self.tau)
         self.rs2.add_restraint(j2)
+        j3 = IMP.isd.JeffreysRestraint(self.m, self.gamma)
+        self.rs2.add_restraint(j3)
 
-    def update_covariance_matrices(self, tau):
-        import numpy
-        tau = 0.1
-        self.th.calculate_varianced_profile(
-            self.atoms,
-            impsaxs.HEAVY_ATOMS,
-            tau)
-        prof = numpy.zeros(self.th.size())
-        Sigma = numpy.zeros((self.th.size(), self.th.size()))
-        # absolute variance matrix
-        for i in xrange(self.th.size()):
-            prof[i] = self.th.get_intensity(i)
-            for j in xrange(i, self.th.size()):
-                Sigma[i, j] = self.th.get_variance(i, j)
-                if j != i:
-                    Sigma[j, i] = Sigma[i, j]
-        # relative matrix
-        for i in xrange(prof.shape):
-            for j in xrange(prof.shape):
-                Sigma[i, j] = Sigma[i, j] / (prof[i] * prof[j])
-        self.cov = Sigma.tolist()
+    def optimize_sigma(self):
+        """set sigma to the value that maximizes its conditional likelihood"""
+        from math import sqrt
+        sigma2hat = self.saxs.get_sigmasq_scale_parameter() \
+                        /(self.saxs.get_sigmasq_shape_parameter()+1)
+        IMP.isd.Scale(self.sigma).set_scale(sqrt(sigma2hat))
+
+    def optimize_gamma(self):
+        """set gamma to the value that maximizes its conditional likelihood"""
+        from math import exp
+        gammahat = exp(self.saxs.get_loggamma_variance_parameter()
+                * self.saxs.get_loggamma_jOg_parameter())
+        IMP.isd.Scale(self.gamma).set_scale(gammahat)
+
+    def draw_sigma(self):
+        """draw 1/sigma2 from gamma distribution"""
+        self.saxs.draw_sigma()
+
+    def draw_gamma(self):
+        """draw gamma from lognormal distribution"""
+        self.saxs.draw_gamma()
+
+    def update_covariance_matrix(self):
+        c1 = IMP.isd.Nuisance(self.c1).get_nuisance()
+        c2 = IMP.isd.Nuisance(self.c2).get_nuisance()
+        tau = IMP.isd.Nuisance(self.tau).get_nuisance()
+        self.cov = IMP.isd2.compute_relative_covariance(self.atoms, c1, c2,
+                tau, self.prof)
+        for i in xrange(len(self.cov)):
+            for j in xrange(len(self.cov)):
+                self.cov[i][j] = self.cov[i][j]/tau**2
         self.saxs.set_cov(0, self.cov)
+
+    def write_covariance_matrix(self,fname):
+        fl=open(fname,'w')
+        for line in self.cov:
+            for i in line:
+                fl.write('%G ' % i)
+            fl.write('\n')
+
 
     def get_gamma_value(self):
         return self.gamma.get_scale()

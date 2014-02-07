@@ -16,6 +16,13 @@ git clone https://github.com/salilab/pmi.git
 
 Build IMP following the [imp instructions](http://www.integrativemodeling.org/nightly/doc/html/md_doxygen_generated_installation.html#installation).
 
+**News February 6 2014**
+
+Added a FAQ section in the wiki. There will be ipython notebook tutorials soon.
+Best IMP version so far: `ee1763c6859a29ab37415c8454d16549268d9668`
+Previous versions had a bug in the RigidClosePairsFinder [bug](https://github.com/salilab/pmi/issues/19)
+
+
 **News February 4 2014:**
 
 Best IMP version so far: `b700fff93ca45ba1551c8aa9d697c805fcb126dc`

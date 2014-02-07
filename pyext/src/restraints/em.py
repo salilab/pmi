@@ -34,7 +34,6 @@ class GaussianEMRestraint():
         IMP.isd2.gmm_tools.decorate_gmm_from_text(target_fn, target_ps, self.m)
         for p in target_ps:
             rmax=sqrt(max(IMP.core.Gaussian(p).get_variances()))
-            print '-----> DENSITY RMAX',rmax
             IMP.core.XYZR.setup_particle(p,rmax)
 
         # model GMM
@@ -59,7 +58,7 @@ class GaussianEMRestraint():
         self.rs = IMP.RestraintSet(self.m, 'GaussianEMRestraint')
         self.rs.add_restraint(self.gaussianEM_restraint)
 
-    def set_weight(weight):
+    def set_weight(self,weight):
         self.rs.set_weight(weight)
 
     def set_label(self, label):

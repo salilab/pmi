@@ -32,8 +32,10 @@ class SetupNuisance():
         import IMP.isd
 
         nuisance=IMP.isd.Scale.setup_particle(IMP.Particle(m),initialvalue)
-        nuisance.set_lower(minvalue)
-        nuisance.set_upper(maxvalue)
+        if minvalue:
+            nuisance.set_lower(minvalue)
+        if maxvalue:
+            nuisance.set_upper(maxvalue)
 
         #m.add_score_state(IMP.core.SingletonConstraint(IMP.isd.NuisanceRangeModifier(),None,nuisance))
         nuisance.set_is_optimized(nuisance.get_nuisance_key(),isoptimized)
@@ -386,12 +388,12 @@ def get_ids_from_fasta_file(fastafile):
     for l in ff:
         if l[0]==">": ids.append(l[1:-1])
     return ids
- 
+
 def get_closest_residue_position(hier,resindex,terminus="N"):
     '''
     this function works with plain hierarchies, as read from the pdb,
     no multi-scale hierarchies
-    '''    
+    '''
     p=[]
     niter=0
     while len(p)==0:
@@ -401,12 +403,12 @@ def get_closest_residue_position(hier,resindex,terminus="N"):
 
        if terminus=="N": resindex+=1
        if terminus=="C": resindex-=1
-       
-       if niter>=10000: 
+
+       if niter>=10000:
           print "get_closest_residue_position: exiting while loop without result"
           break
-       p=sel.get_selected_particles() 
-       
+       p=sel.get_selected_particles()
+
     if len(p)==1:
        return IMP.core.XYZ(p[0]).get_coordinates()
     elif len(p) == 0:
@@ -416,7 +418,7 @@ def get_closest_residue_position(hier,resindex,terminus="N"):
        print "get_closest_residue_position: got multiple residues for hierarchy %s and residue %i" % (hier,resindex)
        print "the list of particles is",[pp.get_name() for pp in p]
        exit()
-    
+
 def get_position_terminal_residue(hier,terminus="C",resolution=1):
     '''
     this function get the xyz position of the
@@ -450,15 +452,15 @@ def get_position_terminal_residue(hier,terminus="C",resolution=1):
 
 def get_residue_gaps_in_hierarchy(hierarchy,start,end):
     '''
-    returns the residue index gaps and contiguous segments as tuples given the hierarchy, the first 
-    residue and the last residue indexes. The list is organized as 
+    returns the residue index gaps and contiguous segments as tuples given the hierarchy, the first
+    residue and the last residue indexes. The list is organized as
     [[1,100,"cont"],[101,120,"gap"],[121,200,"cont"]]
     '''
     gaps=[]
     for n,rindex in enumerate(range(start,end+1)):
         sel=IMP.atom.Selection(hierarchy,residue_index=rindex,
                                atom_type=IMP.atom.AT_CA)
-        
+
         if len(sel.get_selected_particles())==0:
            if n==0:
               #set the initial condition
@@ -471,7 +473,7 @@ def get_residue_gaps_in_hierarchy(hierarchy,start,end):
               #residue is not contiguous with the previously discovered gap
               #hence create a new gap tuple
               gaps.append([rindex,rindex,"gap"])
-           #update the index of the last residue gap 
+           #update the index of the last residue gap
            rindexgap=rindex
         else:
            if n==0:
@@ -485,8 +487,8 @@ def get_residue_gaps_in_hierarchy(hierarchy,start,end):
               #residue is not contiguous with the previously discovered continuous part
               #hence create a new cont tuple
               gaps.append([rindex,rindex,"cont"])
-           #update the index of the last residue gap 
-           rindexcont=rindex           
+           #update the index of the last residue gap
+           rindexcont=rindex
     return gaps
 
 class map():
@@ -536,13 +538,13 @@ def select(representation,
     residue_particles=None
     representation_type_particles=None
 
-    
+
     if resolution!=None:
        resolution_particles=[]
        hs=representation.get_hierarchies_at_given_resolution(resolution)
        for h in hs:
           resolution_particles+=IMP.atom.get_leaves(h)
-    
+
     if hierarchies!=None:
        hierarchies_particles=[]
        for h in hierarchies:
@@ -560,15 +562,15 @@ def select(representation,
           print "select: component %s is not there" % name
 
     if first_residue!=None and last_residue!=None:
-       sel = IMP.atom.Selection(representation.prot, 
+       sel = IMP.atom.Selection(representation.prot,
               residue_indexes=range(first_residue, last_residue + 1))
        residue_range_particles=[IMP.atom.Hierarchy(p) for p in sel.get_selected_particles()]
-       
+
 
     if residue!=None:
        sel = IMP.atom.Selection(representation.prot, residue_index=residue)
        residue_particles=[IMP.atom.Hierarchy(p) for p in sel.get_selected_particles()]
-    
+
     if representation_type!=None:
       representation_type_particles=[]
       if representation_type=="Molecule":
@@ -577,7 +579,7 @@ def select(representation,
                  if repr_type=="Beads" or "Res:" in repr_type:
                     h=representation.hier_representation[name][repr_type]
                     representation_type_particles+=IMP.atom.get_leaves(h)
-      
+
       elif representation_type=="PDB":
          for name in representation.hier_representation:
              for repr_type in representation.hier_representation[name]:
@@ -589,18 +591,18 @@ def select(representation,
          for name in representation.hier_representation:
             h=representation.hier_representation[name][representation_type]
             representation_type_particles+=IMP.atom.get_leaves(h)
-    
+
     selections=[hierarchies_particles,names_particles,
                 residue_range_particles,residue_particles,representation_type_particles]
-    
+
     if resolution==None:
        selected_particles=set(allparticles)
     else:
        selected_particles=set(resolution_particles)
-    
+
     for s in selections:
         if s!=None:
-           selected_particles = (set(s) & selected_particles)  
+           selected_particles = (set(s) & selected_particles)
 
     return list(selected_particles)
 
@@ -616,6 +618,9 @@ def select_by_tuple(representation,tupleselection,resolution=None,name_is_ambigu
         particles=IMP.pmi.tools.select(representation,resolution=resolution,
                                                name=tupleselection,
                                                name_is_ambiguous=name_is_ambiguous)
+    else:
+        print 'you passed something bad to select_by_tuple()'
+        exit()
     #now order the result by residue number
     particles=IMP.pmi.tools.sort_by_residues(particles)
 
@@ -786,7 +791,7 @@ def get_residue_indexes(hier):
        exit()
     return resind
 
-def sort_by_residues(particles):       
+def sort_by_residues(particles):
     particles_residues=[(p,IMP.pmi.tools.get_residue_indexes(p)) for p in particles ]
     sorted_particles_residues=sorted(particles_residues, key=lambda tup: tup[1])
     particles=[p[0] for p in sorted_particles_residues]
@@ -905,7 +910,7 @@ def get_random_data_point(expected_value,ntrials,sensitivity,sigma,outlierprob,b
     rmean2/=float(ntrials)
     stddev=math.sqrt(max(rmean2-rmean*rmean,0.))
     return rmean,stddev
-    
+
 is_already_printed={}
 
 def print_deprecation_warning(old_name,new_name):
@@ -914,3 +919,129 @@ def print_deprecation_warning(old_name,new_name):
        is_already_printed[old_name]=True
 
 
+def parse_dssp(dssp_fn):
+    ''' read dssp file, get SSEs. values are all PDB residue numbering. returns dict with:
+helix : [ [['A',[5,6,7]]] , [['B',[15,16,17]]] , ...] list of residues in the helix (chain, res)
+beta  : [ [ ['A',[1,2,3]], ['A',[100,101,102]] ], ...] each sublist is a sheet
+loop  : same format as helix, it's the contiguous loops
+'''
+
+    from collections import defaultdict
+
+    ### setup
+    sses={'helix': [],
+          'beta': [],
+          'loop': []}
+    helix_classes='GHI'
+    strand_classes='EB'
+    loop_classes=[' ','','T','S']
+    sse_dict={}
+    for h in helix_classes:
+        sse_dict[h]='helix'
+    for s in strand_classes:
+        sse_dict[s]='beta'
+    for l in loop_classes:
+        sse_dict[l]='loop'
+
+    ### read file and parse
+    start=False
+    beta_dict=defaultdict(list) # temporary beta dictionary indexed by DSSP's ID
+    prev_sstype=None
+    cur_sse=[]
+    prev_beta_id=None
+    for line in open(dssp_fn,'r'):
+        fields=line.split()
+        chain_break=False
+        if len(fields)<2:
+            continue
+        if fields[1] == "RESIDUE":
+            # Start parsing from here
+            start = True
+            continue
+        if not start:
+            continue
+        if line[9]==" ":
+            chain_break=True
+
+        ### gather line info
+        if not chain_break:
+            pdb_res_num=int(line[5:10])
+            chain=line[11]
+            sstype=line[16]
+            beta_id=line[33]
+
+        ### decide whether to extend or store the SSE
+        if prev_sstype==None:
+            cur_sse=[chain,[pdb_res_num]]
+        elif sstype!=prev_sstype or chain_break:
+            # add cur_sse to the right place
+            if sse_dict[prev_sstype] in ['helix','loop']:
+                sses[sse_dict[prev_sstype]].append([cur_sse])
+            if sse_dict[prev_sstype]=='beta':
+                beta_dict[prev_beta_id].append(cur_sse)
+            cur_sse=[chain,[pdb_res_num]]
+        else:
+            cur_sse[1].append(pdb_res_num)
+        if chain_break:
+            prev_sstype=None
+            prev_beta_id=None
+        else:
+            prev_sstype=sstype
+            prev_beta_id=beta_id
+
+    ### final SSE processing
+    if sse_dict[prev_sstype] in ['helix','loop']:
+        sses[sse_dict[prev_sstype]].append([cur_sse])
+    if sse_dict[prev_sstype]=='beta':
+        beta_dict[prev_beta_id].append(cur_sse)
+
+    ### gather betas
+    for beta_sheet in beta_dict:
+        sses['beta'].append(beta_dict[beta_sheet])
+
+    return sses
+
+def dssp_dict_to_selection_tuples(dssp_dict):
+    ''' return dssp dict as a set of tuples, useful for making rigid bodies'''
+    ret=[]
+    for ng,sgroup in enumerate(dssp_dict['helix']):
+        chain,residues=sgroup[0]
+        start=residues[0]
+        stop=residues[-1]
+        ret.append([(start,stop,'chain%s'%chain)])
+    for ng,sgroup in enumerate(dssp_dict['beta']):
+        this_sheet=[]
+        for sse in sgroup:
+            chain,residues=sse
+            start=residues[0]
+            stop=residues[-1]
+            this_sheet.append((start,stop,'chain%s'%chain))
+        ret.append(this_sheet)
+    for ng,sgroup in enumerate(dssp_dict['loop']):
+        chain,residues=sgroup[0]
+        for r in residues:
+            ret.append(([(r,r,'chain%s'%chain)]))
+    return ret
+
+def dssp_dict_to_loop_tuples(dssp_dict):
+    ''' return dssp dict as a set of tuples, useful for making rigid bodies'''
+    ret=[]
+    for ng,sgroup in enumerate(dssp_dict['loop']):
+        chain,residues=sgroup[0]
+        start=residues[0]
+        stop=residues[-1]
+        ret.append((start-2,stop+2,'chain%s'%chain))
+    return ret
+
+def dssp_dict_to_chimera_colors(dssp_dict,chimera_model_num=0):
+    ''' get chimera command to check if you've correctly made the dssp dictionary
+    colors each helix and beta sheet'''
+    cmds={'helix':'color green ','beta':'color blue ','loop':'color red '}
+    for skey in dssp_dict.keys():
+        for sgroup in dssp_dict[skey]:
+            for sse in sgroup:
+                chain,residues=sse
+                start=str(residues[0])
+                stop=str(residues[-1])
+                cmds[skey]+='#%i:%s-%s.%s '%(chimera_model_num,start,stop,chain)
+    print '; '.join([cmds[k] for k in cmds])

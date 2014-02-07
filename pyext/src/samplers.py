@@ -11,13 +11,12 @@ class MonteCarlo():
       isd_available = False
 
     def __init__(self,m,objects,temp,filterbyname=None):
+        '''
+        check that the objects containts get_particles_to_sample methods
+        and the particle type is supported
+        list of particles to sample self.losp
+        '''
         
-
-
-
-        #check that the objects containts get_particles_to_sample methods
-        #and the particle type is supported
-        #list of particles to sample:
         self.losp=["Rigid_Bodies","Floppy_Bodies","Nuisances","X_coord","Weights"]
         self.simulated_annealing=False
         self.selfadaptive=False

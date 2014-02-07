@@ -41,7 +41,7 @@ class ExcludedVolumeSphere():
            
         if other_hierarchies==None:
            rbcpf=IMP.core.RigidClosePairsFinder()        
-           self.cpc=IMP.container.ClosePairContainer(lsa,0.0,10.0)
+           self.cpc=IMP.container.ClosePairContainer(lsa,0.0,rbcpf,10.0)
            evr=IMP.container.PairsRestraint(ssps,self.cpc)
 
         else:

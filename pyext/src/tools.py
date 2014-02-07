@@ -32,8 +32,10 @@ class SetupNuisance():
         import IMP.isd
 
         nuisance=IMP.isd.Scale.setup_particle(IMP.Particle(m),initialvalue)
-        nuisance.set_lower(minvalue)
-        nuisance.set_upper(maxvalue)
+        if minvalue:
+            nuisance.set_lower(minvalue)
+        if maxvalue:
+            nuisance.set_upper(maxvalue)
 
         #m.add_score_state(IMP.core.SingletonConstraint(IMP.isd.NuisanceRangeModifier(),None,nuisance))
         nuisance.set_is_optimized(nuisance.get_nuisance_key(),isoptimized)

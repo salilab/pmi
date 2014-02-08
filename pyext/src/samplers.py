@@ -519,3 +519,104 @@ class PyMC():
         output["PyMC_Temperature"]=str(self.kT)
         output["PyMC_Nframe"]=str(self.nframe)
         return output
+
+class OutputAndSampleMacro():
+
+  def __init__(self):
+    '''
+    runs a macro, corresponding to typical 
+    output and sample procedures
+    '''
+  def setup_replica_exchange_0(self,model,representation,sample_objects,output_objects,**kwargs):
+    return _ReplicaExchange_0(model,representation,sample_objects,output_objects,**kwargs)
+ 
+    
+  class _ReplicaExchange_0():
+    
+    def __init__(self,model,
+                      representation,
+                      sample_objects,
+                      output_objects,
+                      crosslink_restraints=None,                      
+                      monte_carlo_temperature=1.0,
+                      replica_exchange_minimum_temperature=1.0,
+                      replica_exchange_maximum_temperature=2.5,
+                      number_of_best_scoring_models=500,
+                      montecarlo_steps=10,
+                      number_of_frames=1000):
+
+       self.model=model
+       self.representation=representation
+       self.crosslink_restraints=crosslink_restraints
+       self.sample_objects=sample_objects
+       self.output_objects=output_objects
+       self.vars={}
+       self.vars["monte_carlo_temperature"]=monte_carlo_temperature
+       self.vars["replica_exchange_minimum_temperature"]=replica_exchange_minimum_temperature
+       self.vars["replica_exchange_maximum_temperature"]=replica_exchange_maximum_temperature
+       self.vars["number_of_best_scoring_models"]=number_of_best_scoring_models
+       self.vars["montecarlo_steps"]=montecarlo_steps
+       self.vars["number_of_frames"]=number_of_frames
+
+    def show_info(self):
+      print "ReplicaExchange_0: it generates initial.*.rmf3, stat.*.out, rmfs/*.rmf3 for each replica "
+      print "--- it stores the best scoring pdb models in pdbs/"
+      print "--- the stat.*.out and rmfs/*.rmf3 are saved only at the lowest temperature"      
+      print "--- variables:"
+      for v in self.vars: 
+          print "------",v, self.vars[v]
+       
+    def execute_macro(self):
+      self.show_info()
+          
+      mc = IMP.pmi.samplers.MonteCarlo(self.model,self.sampleobjects,self.vars["monte_carlo_temperature"])
+      outputobjects.append(mc)
+
+      rex= IMP.pmi.samplers.ReplicaExchange(self.model,
+         self.vars["replica_exchange_minimum_temperature"],
+         self.vars["replica_exchange_maximum_temperature"],mc)
+      
+      myindex=rex.get_my_index()
+      self.outputobjects.append(rex)
+
+      sw = IMP.pmi.tools.Stopwatch()
+      self.outputobjects.append(sw)
+
+      output = IMP.pmi.output.Output()
+      output.init_stat2("stat."+str(myindex)+".out", self.outputobjects, 
+                  extralabels=["rmf_file","rmf_frame_index"])
+      output.init_pdb_best_scoring("pdbs/models",self.representation.prot,
+                  self.vars["number_of_best_scoring_models"],
+                  replica_exchange=True)
+      output.init_rmf("initial."+str(myindex)+".rmf3", [self.representation.prot])
+      output.write_rmf("initial."+str(myindex)+".rmf3")
+      if self.crosslink_restraints:
+         output.add_restraints_to_rmf("initial."+str(myindex)+".rmf3",self.crosslink_restraints)
+      output.close_rmf("initial."+str(myindex)+".rmf3")
+
+      rmfdir="rmfs/"
+      rmfname=rmfdir+"/"+str(myindex)+".rmf3"
+      output.init_rmf(rmfname, [self.representation.prot])
+      if self.crosslink_restraints:
+         output.add_restraints_to_rmf(rmfname,self.crosslink_restraints)
+
+      ntimes_at_low_temp=0
+
+      for i in range(self.vars["number_of_frames"]):
+
+        mc.optimize(self.vars["montecarlo_steps"])
+        score=m.evaluate(False)
+        if rex.get_my_temp()==1.0:
+           output.write_pdb_best_scoring(score)
+           output.write_rmf(rmfname)
+
+           output.set_output_entry("rmf_file",rmfname)
+           output.set_output_entry("rmf_frame_index",ntimes_at_low_temp)
+           output.write_stats2()       
+           ntimes_at_low_temp+=1    
+
+        rex.swap_temp(i,score)
+
+
+
+

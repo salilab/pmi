@@ -480,7 +480,8 @@ class Representation():
                               kernel_type=None,
                               covariance_type='full',voxel_size=1.0,
                               out_name='',
-                              sampled_points=1000000,num_iter=100):
+                              sampled_points=1000000,num_iter=100,
+                              mass_multiplier=1.0):
 
         '''
         selection_tuples:   (list of tuples) example (first_residue,last_residue,component_name)
@@ -534,7 +535,8 @@ class Representation():
            pts=IMP.isd2.sample_points_from_density(dmap,sampled_points)
            print "add_component_density: fit GMM to points"
            density_particles=[]
-           gmm=IMP.isd2.gmm_tools.fit_gmm_to_points(pts,num_components,self.m,density_particles,
+           gmm=IMP.isd2.gmm_tools.fit_gmm_to_points(pts,num_components,self.m,
+                                                    density_particles,
                                                     num_iter,covariance_type)
 
            if outputfile!=None:
@@ -551,6 +553,11 @@ class Representation():
             for p in density_particles:
                 rmax=sqrt(max(IMP.core.Gaussian(p).get_variances()))
                 IMP.core.XYZR.setup_particle(p,rmax)
+
+        if mass_multiplier!=1.0:
+            for p in density_particles:
+                mp=IMP.atom.Mass(p)
+                mp.set_mass(mp.get_mass()*mass_multiplier)
 
         s0=IMP.atom.Fragment.setup_particle(IMP.Particle(self.m))
         #if hierarchy!=None:

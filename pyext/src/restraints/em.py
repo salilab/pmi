@@ -9,7 +9,7 @@ import IMP.container
 
 class GaussianEMRestraint():
 
-    def __init__(self, densities, target_fn):
+    def __init__(self, densities, target_fn,target_mass=1.0):
         global sys, impisd2, tools
         import sys
         import IMP.isd2
@@ -25,7 +25,7 @@ class GaussianEMRestraint():
         self.sigmamax = 100.0
         self.sigmainit = 2.0
         self.cutoff_dist_for_container = 10.0
-        self.tabexp = True
+        self.tabexp = False
         self.label="None"
 
         # setup target GMM
@@ -35,6 +35,8 @@ class GaussianEMRestraint():
         for p in target_ps:
             rmax=sqrt(max(IMP.core.Gaussian(p).get_variances()))
             IMP.core.XYZR.setup_particle(p,rmax)
+            mp=IMP.atom.Mass(p)
+            mp.set_mass(mp.get_mass()*target_mass)
 
         # model GMM
         model_ps = []
@@ -47,14 +49,15 @@ class GaussianEMRestraint():
                                                self.sigmaissampled).get_particle()
 
         # create restraint
-        print 'target', len(target_ps), 'model', len(model_ps)
+        print 'target num particles',len(target_ps),'total weight',sum([IMP.atom.Mass(p).get_mass() for p in target_ps])
+        print 'model num particles',len(model_ps),'total weight',sum([IMP.atom.Mass(p).get_mass() for p in model_ps])
         self.gaussianEM_restraint = IMP.isd2.GaussianEMRestraint(self.m,
                                                                  IMP.get_indexes(model_ps),
                                                                  IMP.get_indexes(target_ps),
                                                                  self.sigmaglobal.get_particle().get_index(),
                                                                  self.cutoff_dist_for_container,
                                                                  False, False)
-        print 'done setup'
+        print 'done EM setup'
         self.rs = IMP.RestraintSet(self.m, 'GaussianEMRestraint')
         self.rs.add_restraint(self.gaussianEM_restraint)
 

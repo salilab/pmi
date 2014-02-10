@@ -328,6 +328,11 @@ class Output():
            import IMP.isd2
            versions["ISD2_VERSION"]=IMP.isd2.get_module_version()             
         except (ImportError):
+           pass
+        try:
+           import IMP.isd_emxl
+           versions["ISD_EMXL_VERSION"]=IMP.isd_emxl.get_module_version()
+        except (ImportError):
            pass         
         return versions
 

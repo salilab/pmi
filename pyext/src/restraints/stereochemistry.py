@@ -10,7 +10,11 @@ try:
    noisd2=False
 except:
    noisd2=True 
-
+try:
+   import IMP.isd_emxl
+   no_isd_emxl=False
+except:
+   no_isd_emxl=True
 
 class ExcludedVolumeSphere():
     '''
@@ -296,8 +300,8 @@ class SecondaryStructure():
         nativeness=1.0,
             kt_caff=0.1):
 
-        if noisd2:
-           print "SecondaryStructure: ISD2 is needed"
+        if no_isd_emxl:
+           print "SecondaryStructure: IMP.isd_emxl is needed"
            exit()
 
         # check that the secondary structure string
@@ -310,8 +314,8 @@ class SecondaryStructure():
         self.dihe_dict = {}
         self.ang_dict = {}
         self.do_mix = {}
-        self.anglfilename = IMP.isd2.get_data_path("CAAngleRestraint.dat")
-        self.dihefilename = IMP.isd2.get_data_path("CADihedralRestraint.dat")
+        self.anglfilename = IMP.isd_emxl.get_data_path("CAAngleRestraint.dat")
+        self.dihefilename = IMP.isd_emxl.get_data_path("CADihedralRestraint.dat")
         self.nativeness = nativeness
         self.kt_caff = kt_caff
         self.anglrs = IMP.RestraintSet(self.m, "Angles")
@@ -371,7 +375,7 @@ class SecondaryStructure():
             pairslist.append(IMP.ParticlePair(ps[3], ps[0]))
             pairslist.append(IMP.ParticlePair(ps[1], ps[4]))
             pairslist.append(IMP.ParticlePair(ps[4], ps[1]))
-            dr = IMP.isd2.CADihedralRestraint(
+            dr = IMP.isd_emxl.CADihedralRestraint(
                 ps[0],
                 ps[1],
                 ps[2],
@@ -389,7 +393,7 @@ class SecondaryStructure():
                 self.ssstring[res:res + 2], True)
             pairslist.append(IMP.ParticlePair(ps[0], ps[2]))
             pairslist.append(IMP.ParticlePair(ps[2], ps[0]))
-            dr = IMP.isd2.CAAngleRestraint(ps[0], ps[1], ps[2], psi, score_ang)
+            dr = IMP.isd_emxl.CAAngleRestraint(ps[0], ps[1], ps[2], psi, score_ang)
             dr.set_name('Angle restraint')
             anglrslist.append(dr)
         return (bondrslist, anglrslist, diherslist, pairslist)

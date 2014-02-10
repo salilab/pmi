@@ -618,10 +618,10 @@ class SigmoidalCrossLinkMS():
 class ISDCrossLinkMS():
     import IMP.isd 
     try:
-       import IMP.isd2
-       noisd2=False
+       import IMP.isd_emxl
+       no_isd_emxl=False
     except:
-       noisd2=True 
+       no_isd_emxl=True 
     import IMP.pmi.tools
     from math import log
 
@@ -763,19 +763,19 @@ class ISDCrossLinkMS():
             
             if not self.marginal:
               if not self.samplelength:
-                dr = IMP.isd2.CrossLinkMSRestraint(self.m, length)
+                dr = IMP.isd_emxl.CrossLinkMSRestraint(self.m, length)
               else:
                 # this will create a xl length particle that will be sampled
                 self.create_length()
-                dr = IMP.isd2.CrossLinkMSRestraint(self.m, self.length)
+                dr = IMP.isd_emxl.CrossLinkMSRestraint(self.m, self.length)
 
             else:
               if not self.samplelength:
-                dr = IMP.isd2.CrossLinkMSMarginalRestraint(self.m, length)
+                dr = IMP.isd_emxl.CrossLinkMSMarginalRestraint(self.m, length)
               else:
                 # this will create a xl length particle that will be sampled
                 self.create_length()
-                dr = IMP.isd2.CrossLinkMSMarginalRestraint(self.m, self.length)
+                dr = IMP.isd_emxl.CrossLinkMSMarginalRestraint(self.m, self.length)
 
             mappedr1 = self.radius_map.get_map_element(
                 IMP.pmi.Uncertainty(p1).get_uncertainty())
@@ -850,7 +850,7 @@ class ISDCrossLinkMS():
                  mappedr2,
                  psival))
 
-        lw = IMP.isd2.LogWrapper(restraints)
+        lw = IMP.isd_emxl.LogWrapper(restraints)
         self.rs.add_restraint(lw)
         
 
@@ -865,7 +865,7 @@ class ISDCrossLinkMS():
         self.length = IMP.pmi.tools.SetupNuisance(self.m, self.lengthinit,
                                           self.lengthminnuis, self.lengthmaxnuis, self.lengthissampled).get_particle()
         self.rslen.add_restraint(
-            IMP.isd2.UniformPrior(
+            IMP.isd_emxl.UniformPrior(
                 self.m,
                 self.length,
                 1000000000.0,
@@ -887,13 +887,13 @@ class ISDCrossLinkMS():
             self.sigmatrans,
             self.sigmaissampled)
         self.rssig.add_restraint(
-            IMP.isd2.UniformPrior(
+            IMP.isd_emxl.UniformPrior(
                 self.m,
                 self.sigma,
                 1000000000.0,
                 self.sigmamax,
                 self.sigmamin))
-        # self.rssig.add_restraint(IMP.isd2.JeffreysRestraint(self.sigma))
+        # self.rssig.add_restraint(IMP.isd.JeffreysRestraint(self.sigma))
 
     def get_sigma(self, resolution):
         if not resolution in self.sigma_dictionary:
@@ -919,7 +919,7 @@ class ISDCrossLinkMS():
             self.psitrans,
             self.psiissampled)
         self.rspsi.add_restraint(
-            IMP.isd2.UniformPrior(
+            IMP.isd_emxl.UniformPrior(
                 self.m,
                 self.psi,
                 1000000000.0,

@@ -328,6 +328,11 @@ class Output():
            import IMP.isd2
            versions["ISD2_VERSION"]=IMP.isd2.get_module_version()             
         except (ImportError):
+           pass
+        try:
+           import IMP.isd_emxl
+           versions["ISD_EMXL_VERSION"]=IMP.isd_emxl.get_module_version()
+        except (ImportError):
            pass         
         return versions
 
@@ -498,25 +503,31 @@ class ProcessOutput():
            f.close()
            return outdict        
 
-    def plot_fields(self,fields):
+def plot_fields(fields,framemin=None,framemax=None):
         import matplotlib.pyplot as plt
+        
+        
         
         plt.rc('lines', linewidth=4)
         fig, axs  = plt.subplots(nrows=len(fields))
         fig.set_size_inches(10.5,5.5*len(fields))
         plt.rc('axes', color_cycle=['r'])
         
+        
         n=0
         for key in fields:
-           x = range(len(fields[key]))
-           y=[float(y) for y in fields[key]]
+           if framemin==None: framemin=0
+           if framemax==None: framemax=len(fields[key])
+           x = range(framemin,framemax)
+           y=[float(y) for y in fields[key][framemin:framemax]]
            if len(fields)>1:
               axs[n].plot(x,y)
-              axs[n].set_title(key)
+              axs[n].set_title(key,size="xx-large")
+              axs[n].tick_params(labelsize=18,pad=10)
            else:
               axs.plot(x,y)
-              axs.set_title(key)
-           
+              axs.set_title(key,size="xx-large")
+              axs.tick_params(labelsize=18,pad=10)           
            n+=1
 
         # Tweak spacing between subplots to prevent labels from overlapping
@@ -526,13 +537,16 @@ class ProcessOutput():
 
 def plot_field_histogram(name,values,valuename=None):
         import matplotlib.pyplot as plt
+        fig = plt.figure(figsize=(10.0, 10.0))
+        
         plt.hist([float(y) for y in values],bins=40,color='#66CCCC',normed=True)
-        plt.title(name)
+        plt.title(name,size="xx-large")
+        plt.tick_params(labelsize=18,pad=10)
         if valuename==None:
-           plt.xlabel(name)
+           plt.xlabel(name,size="xx-large")
         else:
-           plt.xlabel(valuename)
-        plt.ylabel("Frequency")
+           plt.xlabel(valuename,size="xx-large")
+        plt.ylabel("Frequency",size="xx-large")
         plt.savefig(name+".png",dpi=150,transparent="False")
         plt.show()
     
@@ -551,9 +565,12 @@ def plot_fields_box_plots(name,values,positions,
     bps=[]
     fig = plt.figure(figsize=(float(len(positions))/2,5.0))
     fig.canvas.set_window_title(name)
+
+
     ax1 = fig.add_subplot(111)
     
     plt.subplots_adjust(left=0.161, right=0.990, top=0.95, bottom=0.11)
+
     
 
     bps.append(plt.boxplot( values, notch=0, sym='', vert=1, 
@@ -604,7 +621,7 @@ def plot_scatter_xy_data(x,y,labelx="None",labely="None",
 
     axs0.legend(loc=0,frameon=False,scatterpoints=1,numpoints=1,columnspacing=1)
 
-    fig.set_size_inches(20.0, 20.0)
+    fig.set_size_inches(10.0, 10.0)
     fig.subplots_adjust(left=0.161, right=0.980, top=0.95, bottom=0.11)
     if ymin!=None and ymax!=None:
        axs0.set_ylim(ymin,ymax)

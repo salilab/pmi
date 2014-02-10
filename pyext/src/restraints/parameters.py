@@ -5,13 +5,11 @@ import IMP.base
 import IMP.algebra
 import IMP.atom
 import IMP.container
-
+import IMP.isd
 
 class WeightRestraint():
 
     def __init__(self, weight, lower, upper, kappa):
-        global impisd2
-        import IMP.isd2 as impisd2
 
         self.weight = weight
         self.m = self.weight.get_model()
@@ -21,7 +19,7 @@ class WeightRestraint():
         self.upper = upper
         self.kappa = kappa
         self.rs.add_restraint(
-            impisd2.WeightRestraint(
+            IMP.isd.WeightRestraint(
                 self.weight,
                 self.lower,
                 self.upper,
@@ -48,13 +46,11 @@ class WeightRestraint():
 class JeffreysPrior():
 
     def __init__(self, nuisance):
-        global impisd2
-        import IMP.isd2 as impisd2
 
         self.m = nuisance.get_model()
         self.label = "None"
         self.rs = IMP.RestraintSet(self.m, 'jeffrey_prior')
-        jp = impisd2.JeffreysRestraint(self.m,nuisance)
+        jp = IMP.isd.JeffreysRestraint(self.m,nuisance)
         self.rs.add_restraint(jp)
 
     def add_to_model(self):

@@ -1,5 +1,9 @@
-
-
+import IMP.pmi.representation
+import IMP.pmi.tools
+import IMP.pmi.samplers
+import IMP.pmi.output
+import os
+     
 class ReplicaExchange0():
     
     def __init__(self,model,
@@ -55,12 +59,9 @@ class ReplicaExchange0():
           print "------",v.ljust(30), self.vars[v]
        
     def execute_macro(self):
-      import IMP.pmi.tools
-      import IMP.pmi.samplers
-      import IMP.pmi.output
-      import os
+
       
-      self.show_info()
+
       
       if self.vars["do_clean_first"]:
         #to write
@@ -124,6 +125,9 @@ class ReplicaExchange0():
          output.add_restraints_to_rmf(rmfname,self.crosslink_restraints)
 
       ntimes_at_low_temp=0
+      
+      if myindex==0:
+         self.show_info()
 
       for i in range(self.vars["number_of_frames"]):
 
@@ -169,7 +173,7 @@ data = [("Rpb1",     pdbfile,   "A",     0.00000000,  (fastafile,    0)),
     
     def __init__(self,data,resolutions=[1,10],missing_bead_size=20):
 
-      self.r=representation.Representation(m) 
+      self.r=IMP.pmi.representation.Representation(m) 
       self.data=data
       hierarchies={}
 

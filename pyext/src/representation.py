@@ -476,17 +476,21 @@ class Representation():
                               outputmap=None,
                               kernel_type=None,
                               covariance_type='full',voxel_size=1.0,
-                              out_name='',
+                              out_hier_name='',
                               sampled_points=1000000,num_iter=100,
-                              mass_multiplier=1.0):
+                              multiply_by_total_mass=True,
+                              transform=None):
 
         '''
-        selection_tuples:   (list of tuples) example (first_residue,last_residue,component_name)
+        This function sets up a GMM for this component.
+        Can specify input GMM file or it will be computed.
+        selection_tuples:       (list of tuples) example (first_residue,last_residue,component_name)
+        multiply_by_total_mass: compute total mass, multiply the GMM (only on creation!)
+        transform:              for input file only, apply a transformation (eg for multiple copies same GMM)
         '''
 
-
-        import IMP.isd2
-        import IMP.isd2.gmm_tools
+        import IMP.isd_emxl
+        import IMP.isd_emxl.gmm_tools
         import numpy as np
         import sys
         import IMP.em
@@ -497,7 +501,7 @@ class Representation():
         from math import sqrt
 
         self.representation_is_modified=True
-        outhier=[]
+        out_hier=[]
         protein_h=self.hier_dict[name]
 
         if "Densities" not in self.hier_representation[name]:
@@ -507,14 +511,14 @@ class Representation():
            protein_h.add_child(root)
 
         if inputfile==None:
-           print "add_component_density: getting the particles"
            if particles==None:
               fragment_particles=[]
            else:
               fragment_particles=particles
 
            if hierarchies!=None:
-              fragment_particles+=IMP.pmi.tools.select(self,resolution=resolution,hierarchies=hierarchies)
+              fragment_particles+=IMP.pmi.tools.select(self,resolution=resolution,
+                                                       hierarchies=hierarchies)
            if selection_tuples!=None:
               for st in selection_tuples:
                  fragment_particles+=IMP.pmi.tools.select_by_tuple(self,tupleselection=st,
@@ -522,53 +526,52 @@ class Representation():
                                                                      name_is_ambiguous=False)
            if len(fragment_particles)==0:
               print "add_component_density: no particle was selected"
-              return outhier
+              return out_hier
 
-           print "add_component_density: create density from particles"
+           # compute mass
+           mass_multiplier=1.0
+           if multiply_by_total_mass:
+               mass_multiplier=sum((IMP.atom.Mass(p).get_mass() for p in set(fragment_particles)))
+               print 'add_component_density: will multiply by mass',mass_multiplier
+
+           # simulate density from ps, then calculate points to fit
+           print 'add_component_density: sampling points'
            dmap=IMP.em.SampledDensityMap(fragment_particles,resolution,voxel_size)
            dmap.calcRMS()
+           pts=IMP.isd_emxl.sample_points_from_density(dmap,sampled_points)
 
-           print "add_component_density: transform density to points"
-           pts=IMP.isd2.sample_points_from_density(dmap,sampled_points)
-           print "add_component_density: fit GMM to points"
+           # fit GMM
            density_particles=[]
-           gmm=IMP.isd2.gmm_tools.fit_gmm_to_points(pts,num_components,self.m,
+           print 'add_component_density: fitting GMM'
+           IMP.isd_emxl.gmm_tools.fit_gmm_to_points(pts,num_components,self.m,
                                                     density_particles,
-                                                    num_iter,covariance_type)
+                                                    num_iter,covariance_type,
+                                                    mass_multiplier=mass_multiplier)
 
            if outputfile!=None:
-               IMP.isd2.gmm_tools.write_gmm_to_text(density_particles,outputfile)
+               IMP.isd_emxl.gmm_tools.write_gmm_to_text(density_particles,outputfile)
            if outputmap!=None:
-               IMP.isd2.gmm_tools.write_gmm_to_map(density_particles,outputmap,
+               IMP.isd_emxl.gmm_tools.write_gmm_to_map(density_particles,outputmap,
                                                    IMP.em.get_bounding_box(dmap),
                                                    voxel_size)
         else:
-            #read the inputfile here
-            #print 'reading input file'
+            # read the inputfile here
             density_particles=[]
-            IMP.isd2.gmm_tools.decorate_gmm_from_text(inputfile,density_particles,self.m)
+            IMP.isd_emxl.gmm_tools.decorate_gmm_from_text(inputfile,density_particles,
+                                                          self.m,transform)
             for p in density_particles:
                 rmax=sqrt(max(IMP.core.Gaussian(p).get_variances()))
                 IMP.core.XYZR.setup_particle(p,rmax)
 
-        if mass_multiplier!=1.0:
-            for p in density_particles:
-                mp=IMP.atom.Mass(p)
-                mp.set_mass(mp.get_mass()*mass_multiplier)
-
+        # prepare output hierarchy
         s0=IMP.atom.Fragment.setup_particle(IMP.Particle(self.m))
-        #if hierarchy!=None:
-        #    s0.set_name('_'.join([h.get_name() for h in hierarchy]))
-        #else:
-        s0.set_name(out_name)
+        s0.set_name(out_hier_name)
         self.hier_representation[name]["Densities"].add_child(s0)
-        outhier.append(s0)
-
+        out_hier.append(s0)
         for nps,p in enumerate(density_particles):
             s0.add_child(p)
             p.set_name(s0.get_name()+'_gaussian_%i'%nps)
-        #print 'end setup'
-        return outhier
+        return out_hier
 
     def get_component_density(self,name):
         return self.hier_representation[name]["Densities"]
@@ -1342,7 +1345,7 @@ class Representation():
         particles=[]
         print selection_tuples
         for s in selection_tuples:
-            ps=IMP.pmi.tools.select_by_tuple(representation=self,tupleselection=s,
+            ps=IMP.pmi.tools.select_by_tuple(representation=self,tupleselection=tuple(s),
                                           resolution=None,name_is_ambiguous=False)
             particles+=ps
         return particles

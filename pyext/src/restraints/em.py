@@ -10,10 +10,10 @@ import IMP.container
 class GaussianEMRestraint():
 
     def __init__(self, densities, target_fn,target_mass=1.0):
-        global sys, impisd2, tools
+        global sys, tools
         import sys
-        import IMP.isd2
-        import IMP.isd2.gmm_tools
+        import IMP.isd_emxl
+        import IMP.isd_emxl.gmm_tools
         import IMP.pmi.tools as tools
         from math import sqrt
 
@@ -31,7 +31,7 @@ class GaussianEMRestraint():
         # setup target GMM
         self.m = densities[0].get_model()
         target_ps = []
-        IMP.isd2.gmm_tools.decorate_gmm_from_text(target_fn, target_ps, self.m)
+        IMP.isd_emxl.gmm_tools.decorate_gmm_from_text(target_fn, target_ps, self.m)
         for p in target_ps:
             rmax=sqrt(max(IMP.core.Gaussian(p).get_variances()))
             IMP.core.XYZR.setup_particle(p,rmax)
@@ -51,12 +51,12 @@ class GaussianEMRestraint():
         # create restraint
         print 'target num particles',len(target_ps),'total weight',sum([IMP.atom.Mass(p).get_mass() for p in target_ps])
         print 'model num particles',len(model_ps),'total weight',sum([IMP.atom.Mass(p).get_mass() for p in model_ps])
-        self.gaussianEM_restraint = IMP.isd2.GaussianEMRestraint(self.m,
-                                                                 IMP.get_indexes(model_ps),
-                                                                 IMP.get_indexes(target_ps),
-                                                                 self.sigmaglobal.get_particle().get_index(),
-                                                                 self.cutoff_dist_for_container,
-                                                                 False, False)
+        self.gaussianEM_restraint = IMP.isd_emxl.GaussianEMRestraint(self.m,
+                                                                     IMP.get_indexes(model_ps),
+                                                                     IMP.get_indexes(target_ps),
+                                                                     self.sigmaglobal.get_particle().get_index(),
+                                                                     self.cutoff_dist_for_container,
+                                                                     False, False)
         print 'done EM setup'
         self.rs = IMP.RestraintSet(self.m, 'GaussianEMRestraint')
         self.rs.add_restraint(self.gaussianEM_restraint)

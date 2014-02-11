@@ -918,11 +918,24 @@ def print_deprecation_warning(old_name,new_name):
        print "WARNING: "+old_name+" is deprecated, use "+new_name+" instead"
        is_already_printed[old_name]=True
 
+def print_multicolumn(list_of_strings,ncolumns=2,truncate=40): 
 
-def parse_dssp(dssp_fn):
-    ''' read dssp file, get SSEs. values are all PDB residue numbering. returns dict with:
-helix : [ [['A',[5,6,7]]] , [['B',[15,16,17]]] , ...] list of residues in the helix (chain, res)
-beta  : [ [ ['A',[1,2,3]], ['A',[100,101,102]] ], ...] each sublist is a sheet
+    l=list_of_strings
+        
+    cols = ncolumns
+    #add empty entries after l
+    for i in range( len(l) % cols):    l.append(" ")
+    
+
+    split=[l[i:i+len(l)/cols] for i in range(0,len(l),len(l)/cols)]
+    for row in zip(*split):
+       print "".join(str.ljust(i,truncate) for i in row)
+
+
+def parse_dssp(dssp_fn,limit_to_chains=''):
+    ''' read dssp file, get SSEs. values are all PDB residue numbering. returns dict of sel tuples
+helix : [ [ ['A',5,7] ] , [['B',15,17]] , ...] two helices A:5-7,B:15-17
+beta  : [ [ ['A',1,3] , ['A',100,102] ] , ...] one sheet: A:1-3 & A:100-102
 loop  : same format as helix, it's the contiguous loops
 '''
 
@@ -962,26 +975,28 @@ loop  : same format as helix, it's the contiguous loops
             continue
         if line[9]==" ":
             chain_break=True
+        elif limit_to_chains!='' and line[11] not in limit_to_chains:
+            break
 
         ### gather line info
         if not chain_break:
             pdb_res_num=int(line[5:10])
-            chain=line[11]
+            chain='chain'+line[11]
             sstype=line[16]
             beta_id=line[33]
 
         ### decide whether to extend or store the SSE
         if prev_sstype==None:
-            cur_sse=[chain,[pdb_res_num]]
+            cur_sse=[pdb_res_num,pdb_res_num,chain]
         elif sstype!=prev_sstype or chain_break:
             # add cur_sse to the right place
             if sse_dict[prev_sstype] in ['helix','loop']:
                 sses[sse_dict[prev_sstype]].append([cur_sse])
             if sse_dict[prev_sstype]=='beta':
                 beta_dict[prev_beta_id].append(cur_sse)
-            cur_sse=[chain,[pdb_res_num]]
+            cur_sse=[pdb_res_num,pdb_res_num,chain]
         else:
-            cur_sse[1].append(pdb_res_num)
+            cur_sse[1]=pdb_res_num
         if chain_break:
             prev_sstype=None
             prev_beta_id=None
@@ -990,10 +1005,11 @@ loop  : same format as helix, it's the contiguous loops
             prev_beta_id=beta_id
 
     ### final SSE processing
-    if sse_dict[prev_sstype] in ['helix','loop']:
-        sses[sse_dict[prev_sstype]].append([cur_sse])
-    if sse_dict[prev_sstype]=='beta':
-        beta_dict[prev_beta_id].append(cur_sse)
+    if prev_sstype!=None:
+        if sse_dict[prev_sstype] in ['helix','loop']:
+            sses[sse_dict[prev_sstype]].append([cur_sse])
+        if sse_dict[prev_sstype]=='beta':
+            beta_dict[prev_beta_id].append(cur_sse)
 
     ### gather betas
     for beta_sheet in beta_dict:
@@ -1001,47 +1017,14 @@ loop  : same format as helix, it's the contiguous loops
 
     return sses
 
-def dssp_dict_to_selection_tuples(dssp_dict):
-    ''' return dssp dict as a set of tuples, useful for making rigid bodies'''
-    ret=[]
-    for ng,sgroup in enumerate(dssp_dict['helix']):
-        chain,residues=sgroup[0]
-        start=residues[0]
-        stop=residues[-1]
-        ret.append([(start,stop,'chain%s'%chain)])
-    for ng,sgroup in enumerate(dssp_dict['beta']):
-        this_sheet=[]
-        for sse in sgroup:
-            chain,residues=sse
-            start=residues[0]
-            stop=residues[-1]
-            this_sheet.append((start,stop,'chain%s'%chain))
-        ret.append(this_sheet)
-    for ng,sgroup in enumerate(dssp_dict['loop']):
-        chain,residues=sgroup[0]
-        for r in residues:
-            ret.append(([(r,r,'chain%s'%chain)]))
-    return ret
-
-def dssp_dict_to_loop_tuples(dssp_dict):
-    ''' return dssp dict as a set of tuples, useful for making rigid bodies'''
-    ret=[]
-    for ng,sgroup in enumerate(dssp_dict['loop']):
-        chain,residues=sgroup[0]
-        start=residues[0]
-        stop=residues[-1]
-        ret.append((start-2,stop+2,'chain%s'%chain))
-    return ret
-
-def dssp_dict_to_chimera_colors(dssp_dict,chimera_model_num=0):
+def sse_selections_to_chimera_colors(dssp_dict,chimera_model_num=0):
     ''' get chimera command to check if you've correctly made the dssp dictionary
     colors each helix and beta sheet'''
     cmds={'helix':'color green ','beta':'color blue ','loop':'color red '}
     for skey in dssp_dict.keys():
         for sgroup in dssp_dict[skey]:
             for sse in sgroup:
-                chain,residues=sse
-                start=str(residues[0])
-                stop=str(residues[-1])
+                start,stop,chain=sse
+                chain=chain.strip('chain')
                 cmds[skey]+='#%i:%s-%s.%s '%(chimera_model_num,start,stop,chain)
     print '; '.join([cmds[k] for k in cmds])

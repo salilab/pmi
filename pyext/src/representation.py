@@ -192,6 +192,8 @@ class Representation():
 
         if color==None:
            color=self.color_dict[name]
+        else:
+           self.color_dict[name]=color
 
         if resolutions==None:
            resolutions=[1]

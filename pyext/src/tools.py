@@ -918,6 +918,19 @@ def print_deprecation_warning(old_name,new_name):
        print "WARNING: "+old_name+" is deprecated, use "+new_name+" instead"
        is_already_printed[old_name]=True
 
+def print_multicolumn(list_of_strings,ncolumns=2,truncate=40): 
+
+    l=list_of_strings
+        
+    cols = ncolumns
+    #add empty entries after l
+    for i in range( len(l) % cols):    l.append(" ")
+    
+
+    split=[l[i:i+len(l)/cols] for i in range(0,len(l),len(l)/cols)]
+    for row in zip(*split):
+       print "".join(str.ljust(i,truncate) for i in row)
+
 
 def parse_dssp(dssp_fn):
     ''' read dssp file, get SSEs. values are all PDB residue numbering. returns dict with:

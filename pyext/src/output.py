@@ -471,6 +471,10 @@ class ProcessOutput():
             
     def get_keys(self):      
         return self.klist
+
+    def show_keys(self,ncolumns=2,truncate=65):
+        import IMP.pmi.tools
+        IMP.pmi.tools.print_multicolumn(self.get_keys(),ncolumns,truncate)    
         
     def get_fields(self,fields,filterout=None):
            '''
@@ -537,7 +541,7 @@ def plot_fields(fields,framemin=None,framemax=None):
 
 def plot_field_histogram(name,values,valuename=None):
         import matplotlib.pyplot as plt
-        fig = plt.figure(figsize=(10.0, 10.0))
+        fig = plt.figure(figsize=(8.0, 8.0))
         
         plt.hist([float(y) for y in values],bins=40,color='#66CCCC',normed=True)
         plt.title(name,size="xx-large")
@@ -591,9 +595,9 @@ def plot_fields_box_plots(name,values,positions,
 
 def plot_xy_data(x,y):
         import matplotlib.pyplot as plt
-        plt.rc('lines', linewidth=4)
+        plt.rc('lines', linewidth=2)
         fig, ax  = plt.subplots(nrows=1)
-        fig.set_size_inches(10.5,5.5)
+        fig.set_size_inches(8,4.5)
         plt.rc('axes', color_cycle=['r'])
         print x
         print y
@@ -621,7 +625,7 @@ def plot_scatter_xy_data(x,y,labelx="None",labely="None",
 
     axs0.legend(loc=0,frameon=False,scatterpoints=1,numpoints=1,columnspacing=1)
 
-    fig.set_size_inches(10.0, 10.0)
+    fig.set_size_inches(8.0, 8.0)
     fig.subplots_adjust(left=0.161, right=0.980, top=0.95, bottom=0.11)
     if ymin!=None and ymax!=None:
        axs0.set_ylim(ymin,ymax)

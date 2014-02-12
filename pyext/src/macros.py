@@ -118,7 +118,7 @@ class ReplicaExchange0():
                                    replica_exchange=True)
 
       print "Setting up and writing initial rmf coordinate file"
-      init_suffix=global_dir+self.vars["initial_rmf_name_suffix"]
+      init_suffix=globaldir+self.vars["initial_rmf_name_suffix"]
       output.init_rmf(init_suffix+"."+str(myindex)+".rmf3",
                       [self.representation.prot])
       if self.crosslink_restraints:

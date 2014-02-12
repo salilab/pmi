@@ -16,6 +16,11 @@ git clone https://github.com/salilab/pmi.git
 
 Build IMP following the [imp instructions](http://www.integrativemodeling.org/nightly/doc/html/md_doxygen_generated_installation.html#installation).
 
+
+**News February 10 2014**
+
+Checkout the macros in macros.py
+
 **News February 6 2014**
 
 Added a FAQ section in the wiki. There will be ipython notebook tutorials soon.

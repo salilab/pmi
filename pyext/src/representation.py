@@ -97,10 +97,10 @@ class Representation():
 
         self.maxtrans_rb=2.0
         self.maxrot_rb=0.025
-        self.maxtrans_srb=1.0
+        self.maxtrans_srb=2.0
         self.maxrot_srb=0.025
         self.rigidbodiesarefixed=False
-        self.maxtrans_fb=2.0
+        self.maxtrans_fb=3.0
         self.resolution=10.0
         self.bblenght=100.0
         self.kappa=100.0
@@ -192,6 +192,8 @@ class Representation():
 
         if color==None:
            color=self.color_dict[name]
+        else:
+           self.color_dict[name]=color
 
         if resolutions==None:
            resolutions=[1]
@@ -806,12 +808,17 @@ class Representation():
 
     def shuffle_configuration(self,max_translation=300.,max_rotation=2.0*pi,
                               avoidcollision=True,cutoff=10.0,niterations=100,
+                              bounding_box=None,
                               excluded_rigid_bodies=None,hierarchies_excluded_from_collision=None):
-        "shuffle configuration, used to restart the optimization"
-        "it  works correctly if rigid bodies were initialized"
-        "avoidcollision check if the particle/rigid body was placed close to another particle"
-        "avoidcollision uses the optional arguments cutoff and niterations"
-
+        '''
+        shuffle configuration, used to restart the optimization
+        it  works correctly if rigid bodies were initialized
+        avoidcollision check if the particle/rigid body was placed close to another particle
+        avoidcollision uses the optional arguments cutoff and niterations
+        
+        bounding box is defined by ((x1,y1,z1),(x2,y2,z2))
+        
+        '''
         if excluded_rigid_bodies==None: excluded_rigid_bodies=[]
         if hierarchies_excluded_from_collision==None: hierarchies_excluded_from_collision=[]
 
@@ -825,7 +832,13 @@ class Representation():
             if IMP.core.XYZ.particle_is_instance(p):
                ps.append(p)
         allparticleindexes=IMP.get_indexes(ps)
-
+        
+        
+        if bounding_box!=None:
+           ((x1,y1,z1),(x2,y2,z2))=bounding_box
+           ub=IMP.algebra.Vector3D(x1,y1,z1)
+           lb=IMP.algebra.Vector3D(x2,y2,z2)
+           bb=IMP.algebra.BoundingBox3D(ub,lb)
 
 
         hierarchies_excluded_from_collision_indexes=[]
@@ -846,7 +859,14 @@ class Representation():
             niter=0
             while niter<niterations:
                rbxyz=(rb.get_x(), rb.get_y(), rb.get_z())
-               transformation=IMP.algebra.get_random_local_transformation(rbxyz,max_translation,max_rotation)
+               
+               if bounding_box!=None:
+                  #overrides the perturbation
+                  translation=IMP.algebra.get_random_vector_in(bb)
+                  rotation=IMP.algebra.get_random_rotation_3d()
+                  transformation=IMP.algebra.Transformation3D(rotation,translation)
+               else:
+                  transformation=IMP.algebra.get_random_local_transformation(rbxyz,max_translation,max_rotation)
 
                IMP.core.transform(rb,transformation)
 
@@ -878,9 +898,14 @@ class Representation():
             niter=0
             while niter<niterations:
                fbxyz=IMP.core.XYZ(fb).get_coordinates()
-               transformation=IMP.algebra.get_random_local_transformation(fbxyz,max_translation,max_rotation)
-               IMP.core.transform(IMP.core.XYZ(fb),transformation)
+               if bounding_box!=None:
+                  #overrides the perturbation
+                  translation=IMP.algebra.get_random_vector_in(bb)
+                  transformation=IMP.algebra.Transformation3D(translation)
+               else:
+                  transformation=IMP.algebra.get_random_local_transformation(fbxyz,max_translation,max_rotation)
 
+               IMP.core.transform(IMP.core.XYZ(fb),transformation)
 
                if avoidcollision:
                   self.m.update()

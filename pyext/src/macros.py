@@ -1,4 +1,10 @@
-class ReplicaExchange_0():
+import IMP.pmi.representation
+import IMP.pmi.tools
+import IMP.pmi.samplers
+import IMP.pmi.output
+import os
+     
+class ReplicaExchange0():
     
     def __init__(self,model,
                       representation,
@@ -43,19 +49,19 @@ class ReplicaExchange_0():
        
 
     def show_info(self):
-      print "ReplicaExchange_0: it generates initial.*.rmf3, stat.*.out, rmfs/*.rmf3 for each replica "
+      print "ReplicaExchange0: it generates initial.*.rmf3, stat.*.out, rmfs/*.rmf3 for each replica "
       print "--- it stores the best scoring pdb models in pdbs/"
       print "--- the stat.*.out and rmfs/*.rmf3 are saved only at the lowest temperature"      
       print "--- variables:"
       keys=self.vars.keys()
       keys.sort()
       for v in keys: 
-          print "------",v, self.vars[v]
+          print "------",v.ljust(30), self.vars[v]
        
     def execute_macro(self):
-      import os
+
       
-      self.show_info()
+
       
       if self.vars["do_clean_first"]:
         #to write
@@ -68,12 +74,15 @@ class ReplicaExchange_0():
         if not os.path.exists(self.vars["best_pdb_dir"]):
            os.makedirs(self.vars["best_pdb_dir"])           
       
-          
+      
+      print "Setting up MonteCarlo"
       mc = IMP.pmi.samplers.MonteCarlo(self.model,
                                        self.sample_objects,
                                        self.vars["monte_carlo_temperature"])
       self.output_objects.append(mc)
 
+
+      print "Setting up ReplicaExchange"
       rex= IMP.pmi.samplers.ReplicaExchange(self.model,
          self.vars["replica_exchange_minimum_temperature"],
          self.vars["replica_exchange_maximum_temperature"],mc)
@@ -84,26 +93,30 @@ class ReplicaExchange_0():
       sw = IMP.pmi.tools.Stopwatch()
       self.output_objects.append(sw)
 
+      print "Setting up stat file"
       output = IMP.pmi.output.Output()
       output.init_stat2(self.vars["stat_file_name_suffix"]+"."+str(myindex)+".out", 
                   self.output_objects, 
                   extralabels=["rmf_file","rmf_frame_index"])
-      
+
+      print "Setting up best pdb files"      
       output.init_pdb_best_scoring(self.vars["best_pdb_dir"]+"/"+
                                    self.vars["best_pdb_name_suffix"],
                                    self.representation.prot,
                                    self.vars["number_of_best_scoring_models"],
                                    replica_exchange=True)
-      
-      init_suffix=self.vars["initial_rmf_name_suffix"]                         
+
+      print "Setting up and writing initial rmf coordinate file"       
+      init_suffix=self.vars["initial_rmf_name_suffix"]                        
       output.init_rmf(init_suffix+"."+str(myindex)+".rmf3", 
                       [self.representation.prot])
-      output.write_rmf(init_suffix+"."+str(myindex)+".rmf3")
       if self.crosslink_restraints:
          output.add_restraints_to_rmf(init_suffix+"."+str(myindex)+".rmf3",
-                                      self.crosslink_restraints)
+                                      self.crosslink_restraints)                         
+      output.write_rmf(init_suffix+"."+str(myindex)+".rmf3")
       output.close_rmf(init_suffix+"."+str(myindex)+".rmf3")
 
+      print "Setting up production rmf files"
       rmfdir=self.vars["rmf_dir"]
       rmfname=rmfdir+"/"+str(myindex)+".rmf3"
       output.init_rmf(rmfname, [self.representation.prot])
@@ -112,12 +125,17 @@ class ReplicaExchange_0():
          output.add_restraints_to_rmf(rmfname,self.crosslink_restraints)
 
       ntimes_at_low_temp=0
+      
+      if myindex==0:
+         self.show_info()
 
       for i in range(self.vars["number_of_frames"]):
 
         mc.optimize(self.vars["monte_carlo_steps"])
-        score=m.evaluate(False)
-        if rex.get_my_temp()==1.0:
+        score=self.model.evaluate(False)
+        if rex.get_my_temp()==self.vars["replica_exchange_minimum_temperature"]:
+           print "--- frame %s score %s " % (str(i),str(score))
+ 
            output.write_pdb_best_scoring(score)
            output.write_rmf(rmfname)
 
@@ -155,7 +173,7 @@ data = [("Rpb1",     pdbfile,   "A",     0.00000000,  (fastafile,    0)),
     
     def __init__(self,data,resolutions=[1,10],missing_bead_size=20):
 
-      self.r=representation.Representation(m) 
+      self.r=IMP.pmi.representation.Representation(m) 
       self.data=data
       hierarchies={}
 

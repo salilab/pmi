@@ -822,6 +822,12 @@ class Representation():
         hierarchies_excluded_from_collision_indexes=[]
         for h in hierarchies_excluded_from_collision:
             hierarchies_excluded_from_collision_indexes+=IMP.get_indexes(IMP.atom.get_leaves(h))
+        
+        # remove the densities particles out of the calculation
+        for name in self.hier_representation:
+            IMP.atom.get_leaves(self.hier_representation[name]["Densities"])
+            hierarchies_excluded_from_collision_indexes+=IMP.get_indexes(ps)
+        
         allparticleindexes=list(set(allparticleindexes)-set(hierarchies_excluded_from_collision_indexes))
 
         for rb in self.rigid_bodies:

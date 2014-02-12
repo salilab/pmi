@@ -1,6 +1,3 @@
-'''
-Model the glycophorin dimer using cysteine crosslinking data
-'''
 import IMP
 import IMP.core
 import IMP.base

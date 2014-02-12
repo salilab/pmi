@@ -173,7 +173,7 @@ class Representation():
         except KeyError:
            print "add_component_sequence: id %s not found in fasta file" % id
            exit()
-        self.sequence_dict[name]=str(record_dict[id].seq)
+        self.sequence_dict[name]=str(record_dict[id].seq).replace("*","")
         self.elements[name].append((length,length," ","end"))
 
     def autobuild_model(self,name,pdbname,chain,

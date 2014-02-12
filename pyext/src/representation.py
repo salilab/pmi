@@ -538,7 +538,7 @@ class Representation():
 
            # simulate density from ps, then calculate points to fit
            print 'add_component_density: sampling points'
-           dmap=IMP.em.SampledDensityMap(fragment_particles,resolution,voxel_size)
+           dmap=IMP.em.SampledDensityMap(fragment_particles,1.0,voxel_size)
            dmap.calcRMS()
            pts=IMP.isd_emxl.sample_points_from_density(dmap,sampled_points)
 

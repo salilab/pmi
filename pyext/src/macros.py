@@ -151,10 +151,10 @@ class ReplicaExchange0():
 
            output.set_output_entry("rmf_file",rmfname)
            output.set_output_entry("rmf_frame_index",ntimes_at_low_temp)
-           output.set_output_entry("score",score)
            output.write_stat2(low_temp_stat_file)
            ntimes_at_low_temp+=1
 
+        output.set_output_entry("score",score)
         output.write_stat2(replica_stat_file)
         rex.swap_temp(i,score)
 
@@ -162,12 +162,12 @@ class ReplicaExchange1():
     '''
     Multiple state variant of the above class
     '''
-    
+
     def __init__(self,model,
                       representations,
                       sample_objects,
                       output_objects,
-                      crosslink_restraints=None,                      
+                      crosslink_restraints=None,
                       monte_carlo_temperature=1.0,
                       replica_exchange_minimum_temperature=1.0,
                       replica_exchange_maximum_temperature=2.5,
@@ -187,7 +187,7 @@ class ReplicaExchange1():
        self.representations=representations
        self.crosslink_restraints=crosslink_restraints
        self.sample_objects=sample_objects
-       self.output_objects=output_objects      
+       self.output_objects=output_objects
        self.vars={}
        self.vars["number_of_states"]=len(self.representations)
        self.vars["monte_carlo_temperature"]=monte_carlo_temperature
@@ -197,43 +197,43 @@ class ReplicaExchange1():
        self.vars["monte_carlo_steps"]=monte_carlo_steps
        self.vars["number_of_frames"]=number_of_frames
        self.vars["write_initial_rmf"]=write_initial_rmf
-       self.vars["initial_rmf_name_suffix"]=initial_rmf_name_suffix  
-       self.vars["best_pdb_name_suffix"]=best_pdb_name_suffix  
-       self.vars["stat_file_name_suffix"]=stat_file_name_suffix            
+       self.vars["initial_rmf_name_suffix"]=initial_rmf_name_suffix
+       self.vars["best_pdb_name_suffix"]=best_pdb_name_suffix
+       self.vars["stat_file_name_suffix"]=stat_file_name_suffix
        self.vars["do_clean_first"]=do_clean_first
        self.vars["do_create_directories"]=do_create_directories
        self.vars["rmf_dir"]=rmf_dir
-       self.vars["best_pdb_dir"]=best_pdb_dir           
-       
+       self.vars["best_pdb_dir"]=best_pdb_dir
+
 
     def show_info(self):
       print "ReplicaExchange0: it generates initial.*.rmf3, stat.*.out, rmfs/*.rmf3 for each replica "
       print "--- it stores the best scoring pdb models in pdbs/"
-      print "--- the stat.*.out and rmfs/*.rmf3 are saved only at the lowest temperature"      
+      print "--- the stat.*.out and rmfs/*.rmf3 are saved only at the lowest temperature"
       print "--- variables:"
       keys=self.vars.keys()
       keys.sort()
-      for v in keys: 
+      for v in keys:
           print "------",v.ljust(30), self.vars[v]
-       
+
     def execute_macro(self):
 
-      
 
-      
+
+
       if self.vars["do_clean_first"]:
         #to write
         pass
-      
-      
+
+
       if self.vars["do_create_directories"]:
         for n in range(self.vars["number_of_states"]):
           if not os.path.exists(self.vars["rmf_dir"]+str(n)):
              os.makedirs(self.vars["rmf_dir"]+str(n))
           if not os.path.exists(self.vars["best_pdb_dir"]+str(n)):
-             os.makedirs(self.vars["best_pdb_dir"]+str(n))           
-      
-      
+             os.makedirs(self.vars["best_pdb_dir"]+str(n))
+
+
       print "Setting up MonteCarlo"
       mc = IMP.pmi.samplers.MonteCarlo(self.model,
                                        self.sample_objects,
@@ -245,7 +245,7 @@ class ReplicaExchange1():
       rex= IMP.pmi.samplers.ReplicaExchange(self.model,
          self.vars["replica_exchange_minimum_temperature"],
          self.vars["replica_exchange_maximum_temperature"],mc)
-      
+
       myindex=rex.get_my_index()
       self.output_objects.append(rex)
 
@@ -254,11 +254,11 @@ class ReplicaExchange1():
 
       print "Setting up stat file"
       output = IMP.pmi.output.Output()
-      output.init_stat2(self.vars["stat_file_name_suffix"]+"."+str(myindex)+".out", 
-                  self.output_objects, 
+      output.init_stat2(self.vars["stat_file_name_suffix"]+"."+str(myindex)+".out",
+                  self.output_objects,
                   extralabels=["rmf_file","rmf_frame_index"])
 
-      print "Setting up best pdb files"   
+      print "Setting up best pdb files"
       for n in range(self.vars["number_of_states"]):
          output.init_pdb_best_scoring(self.vars["best_pdb_dir"]+str(n)+"/"+
                                    self.vars["best_pdb_name_suffix"],
@@ -266,13 +266,13 @@ class ReplicaExchange1():
                                    self.vars["number_of_best_scoring_models"],
                                    replica_exchange=True)
 
-      print "Setting up and writing initial rmf coordinate file"       
-      init_suffix=self.vars["initial_rmf_name_suffix"]                        
-      output.init_rmf(init_suffix+"."+str(myindex)+".rmf3", 
+      print "Setting up and writing initial rmf coordinate file"
+      init_suffix=self.vars["initial_rmf_name_suffix"]
+      output.init_rmf(init_suffix+"."+str(myindex)+".rmf3",
                       [r.prot for r in self.representations])
       if self.crosslink_restraints:
          output.add_restraints_to_rmf(init_suffix+"."+str(myindex)+".rmf3",
-                                      self.crosslink_restraints)                         
+                                      self.crosslink_restraints)
       output.write_rmf(init_suffix+"."+str(myindex)+".rmf3")
       output.close_rmf(init_suffix+"."+str(myindex)+".rmf3")
 
@@ -280,12 +280,12 @@ class ReplicaExchange1():
       rmfdir=self.vars["rmf_dir"]
       rmfname=rmfdir+"/"+str(myindex)+".rmf3"
       output.init_rmf(rmfname, [r.prot for r in self.representations])
-      
+
       if self.crosslink_restraints:
          output.add_restraints_to_rmf(rmfname,self.crosslink_restraints)
 
       ntimes_at_low_temp=0
-      
+
       if myindex==0:
          self.show_info()
 
@@ -295,14 +295,14 @@ class ReplicaExchange1():
         score=self.model.evaluate(False)
         if rex.get_my_temp()==self.vars["replica_exchange_minimum_temperature"]:
            print "--- frame %s score %s " % (str(i),str(score))
- 
+
            output.write_pdb_best_scoring(score)
            output.write_rmf(rmfname)
 
            output.set_output_entry("rmf_file",rmfname)
            output.set_output_entry("rmf_frame_index",ntimes_at_low_temp)
-           output.write_stats2()       
-           ntimes_at_low_temp+=1    
+           output.write_stats2()
+           ntimes_at_low_temp+=1
 
         rex.swap_temp(i,score)
 

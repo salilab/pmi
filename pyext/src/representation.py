@@ -136,7 +136,10 @@ class Representation():
         self.onetothree = dict((v,k) for k, v in self.threetoone.iteritems())
 
         self.residuenamekey = IMP.kernel.StringKey("ResidueName")
-
+    
+    def set_label(self,label):
+        self.label=label
+    
     def create_component(self,name,color=None):
         protein_h = IMP.atom.Molecule.setup_particle(IMP.Particle(self.m))
         protein_h.set_name(name)
@@ -809,7 +812,8 @@ class Representation():
     def shuffle_configuration(self,max_translation=300.,max_rotation=2.0*pi,
                               avoidcollision=True,cutoff=10.0,niterations=100,
                               bounding_box=None,
-                              excluded_rigid_bodies=None,hierarchies_excluded_from_collision=None):
+                              excluded_rigid_bodies=None,
+                              hierarchies_excluded_from_collision=None):
         '''
         shuffle configuration, used to restart the optimization
         it  works correctly if rigid bodies were initialized

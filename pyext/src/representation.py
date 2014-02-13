@@ -72,7 +72,7 @@ class Representation():
 
     '''
 
-    def __init__(self,m,upperharmonic=True,disorderedlength=False):
+    def __init__(self,m,upperharmonic=True,disorderedlength=True):
 
         # this flag uses either harmonic (False) or upperharmonic (True)
         # in the intra-pair connectivity restraint. Harmonic is used whe you want to
@@ -96,9 +96,9 @@ class Representation():
         self.label="None"
 
         self.maxtrans_rb=2.0
-        self.maxrot_rb=0.025
+        self.maxrot_rb=0.04
         self.maxtrans_srb=2.0
-        self.maxrot_srb=0.025
+        self.maxrot_srb=0.2
         self.rigidbodiesarefixed=False
         self.maxtrans_fb=3.0
         self.resolution=10.0
@@ -176,7 +176,7 @@ class Representation():
         except KeyError:
            print "add_component_sequence: id %s not found in fasta file" % id
            exit()
-        self.sequence_dict[name]=str(record_dict[id].seq)
+        self.sequence_dict[name]=str(record_dict[id].seq).replace("*","")
         self.elements[name].append((length,length," ","end"))
 
     def autobuild_model(self,name,pdbname,chain,
@@ -371,7 +371,15 @@ class Representation():
         self.elements[name].append((start,end," ","helix"))
         c0=IMP.atom.Chain.setup_particle(IMP.Particle(self.m),"X")
         for n,res in enumerate(range(start,end+1)):
-            r=IMP.atom.Residue.setup_particle(IMP.Particle(self.m),IMP.atom.ALA,res)
+            if name in self.sequence_dict:
+               try:
+                  rtstr=self.onetothree[self.sequence_dict[name][ds_frag[0]]]
+               except:
+                  rtstr="UNK"
+               rt=IMP.atom.ResidueType(rtstr)
+            else:
+              rt=IMP.atom.ResidueType("ALA")            
+            r=IMP.atom.Residue.setup_particle(IMP.Particle(self.m),rt,res)
             p=IMP.Particle(self.m)
             d=IMP.core.XYZR.setup_particle(p)
             x=2.3*cos(n*2*pi/3.6)
@@ -449,10 +457,19 @@ class Representation():
             IMP.core.XYZR.setup_particle(prt)
             ptem=IMP.core.XYZR(prt)
             mass =IMP.atom.get_mass_from_number_of_residues(resolution)
-            volume=IMP.atom.get_volume_from_mass(mass)
-            radius=0.8*(3.0/4.0/pi*volume)**(1.0/3.0)
-            IMP.atom.Mass.setup_particle(prt,mass)
-            ptem.set_radius(radius)
+            if resolution==1:
+               try:
+                   vol=IMP.atom.get_volume_from_residue_type(rt)
+               except IMP.base.ValueException:
+                   vol=IMP.atom.get_volume_from_residue_type(IMP.atom.ResidueType("ALA"))
+               radius=IMP.algebra.get_ball_radius_from_volume_3d(vol)
+               IMP.atom.Mass.setup_particle(prt,mass)
+               ptem.set_radius(radius)
+            else:
+               volume=IMP.atom.get_volume_from_mass(mass)
+               radius=0.8*(3.0/4.0/pi*volume)**(1.0/3.0)
+               IMP.atom.Mass.setup_particle(prt,mass)
+               ptem.set_radius(radius)
             try:
                 if tuple(incoord)!=None: ptem.set_coordinates(incoord)
             except TypeError: pass
@@ -541,7 +558,7 @@ class Representation():
 
            # simulate density from ps, then calculate points to fit
            print 'add_component_density: sampling points'
-           dmap=IMP.em.SampledDensityMap(fragment_particles,resolution,voxel_size)
+           dmap=IMP.em.SampledDensityMap(fragment_particles,1.0,voxel_size)
            dmap.calcRMS()
            pts=IMP.isd_emxl.sample_points_from_density(dmap,sampled_points)
 
@@ -580,45 +597,6 @@ class Representation():
 
     def get_component_density(self,name):
         return self.hier_representation[name]["Densities"]
-
-    def add_component_density_representation(self,name,hierarchy):
-        '''
-        this function creates a bead representation for the gaussian so that
-        it can be displayed in chimera
-        '''
-        outhier=[]
-        protein_h=self.hier_dict[name]
-        self.representation_is_modified=True
-
-
-        if "Representations" not in self.hier_representation[name]:
-           root=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
-           root.set_name("Representations")
-           self.hier_representation[name]["Representations"]=root
-           protein_h.add_child(root)
-
-        #construct representation beads to be displayed in chimera
-        representation_particles=[]
-        for p in IMP.atom.get_leaves(hierarchy):
-            rp=IMP.kernel.Particle(self.m)
-            dec=IMP.core.XYZR.setup_particle(rp)
-            dec.set_coordinates(IMP.core.XYZ(p).get_coordinates())
-            dec.set_radius(max(IMP.core.Gaussian(p).get_gaussian().get_variances()))
-            representation_particles.append(rp)
-
-        s0=IMP.atom.Fragment.setup_particle(IMP.Particle(self.m))
-        s0.set_name(hierarchy.get_name())
-        self.hier_representation[name]["Representations"].add_child(s0)
-        outhier.append(s0)
-
-        for nps,rp in enumerate(representation_particles):
-           rp.set_name(s0.get_name()+'_representation_%i'%nps)
-           s0.add_child(rp)
-
-        return outhier
-
-    def get_component_density_representation(self,name):
-        return self.hier_representation[name]["Representations"]
 
     def add_component_hierarchy_clone(self,name,hierarchy):
         '''
@@ -848,6 +826,12 @@ class Representation():
         hierarchies_excluded_from_collision_indexes=[]
         for h in hierarchies_excluded_from_collision:
             hierarchies_excluded_from_collision_indexes+=IMP.get_indexes(IMP.atom.get_leaves(h))
+        
+        # remove the densities particles out of the calculation
+        for name in self.hier_representation:
+            IMP.atom.get_leaves(self.hier_representation[name]["Densities"])
+            hierarchies_excluded_from_collision_indexes+=IMP.get_indexes(ps)
+        
         allparticleindexes=list(set(allparticleindexes)-set(hierarchies_excluded_from_collision_indexes))
 
         for rb in self.rigid_bodies:
@@ -1430,7 +1414,12 @@ class Representation():
 
                 p1=pt[0]
                 p2=pt[1]
-                IMP.atom.create_bond(IMP.atom.Bonded.setup_particle(p1),IMP.atom.Bonded.setup_particle(p2),1)
+                if not IMP.atom.Bonded.particle_is_instance(p1):
+                   IMP.atom.Bonded.setup_particle(p1)
+                if not IMP.atom.Bonded.particle_is_instance(p2):
+                   IMP.atom.Bonded.setup_particle(p2)                
+                
+                IMP.atom.create_bond(IMP.atom.Bonded(p1),IMP.atom.Bonded(p2),1)
 
     def show_component_table(self,name):
         if name in self.sequence_dict:

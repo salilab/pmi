@@ -829,8 +829,11 @@ class Representation():
         
         # remove the densities particles out of the calculation
         for name in self.hier_representation:
+          try:
             IMP.atom.get_leaves(self.hier_representation[name]["Densities"])
             hierarchies_excluded_from_collision_indexes+=IMP.get_indexes(ps)
+          except:
+            pass
         
         allparticleindexes=list(set(allparticleindexes)-set(hierarchies_excluded_from_collision_indexes))
 

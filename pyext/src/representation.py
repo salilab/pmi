@@ -1265,7 +1265,7 @@ class Representation():
         self.rigid_bodies.append(rb)
         return rb
 
-    def set_super_rigid_body_from_hierarchies(self,hiers,axis=None):
+    def set_super_rigid_body_from_hierarchies(self,hiers,axis=None,min_size=0):
         #axis is the rotation axis for 2D rotation
         super_rigid_xyzs=set()
         super_rigid_rbs=set()
@@ -1281,12 +1281,13 @@ class Representation():
               else:
                  super_rigid_xyzs.add(p)
             print "set_rigid_body_from_hierarchies> adding %s to the rigid body" % hier.get_name()
+        if len(super_rigid_rbs)<min_size:
+            return
         if axis==None:
            self.super_rigid_bodies.append((super_rigid_xyzs,super_rigid_rbs))
         else:
            #these will be 2D rotation SRB
            self.super_rigid_bodies.append((super_rigid_xyzs,super_rigid_rbs,axis))
-
     def fix_rigid_bodies(self,rigid_bodies):
         self.fixed_rigid_bodies+=rigid_bodies
 
@@ -1300,9 +1301,10 @@ class Representation():
         '''
         try:
           hiers=IMP.pmi.tools.flatten_list(hiers)
-        except: pass
+        except: 
+            pass
         for hs in IMP.pmi.tools.sublist_iterator(hiers,min_length,max_length):
-            self.set_super_rigid_body_from_hierarchies(hs,axis)
+            self.set_super_rigid_body_from_hierarchies(hs,axis,min_length)
 
     def set_super_rigid_bodies(self,subunits,coords=None):
         super_rigid_xyzs=set()
@@ -1331,7 +1333,7 @@ class Representation():
                       else:
                          super_rigid_xyzs.add(p)
         self.super_rigid_bodies.append((super_rigid_xyzs,super_rigid_rbs))
-
+    
     def set_floppy_bodies(self):
         for p in self.floppy_bodies:
             name=p.get_name()

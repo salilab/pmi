@@ -16,7 +16,7 @@ class MonteCarlo():
         and the particle type is supported
         list of particles to sample self.losp
         '''
-        
+
         self.losp=["Rigid_Bodies","Floppy_Bodies","Nuisances","X_coord","Weights"]
         self.simulated_annealing=False
         self.selfadaptive=False
@@ -81,7 +81,7 @@ class MonteCarlo():
         self.mc.set_return_best(False)
         self.mc.set_kt(self.temp)
         self.mc.add_mover(self.smv)
-    
+
     def set_kt(self,temp):
         self.temp=temp
         self.mc.set_kt(temp)
@@ -199,8 +199,8 @@ class MonteCarlo():
                #super rigid body with 2D rotation, rb[2] is the axis
                srbm=IMP.pmi.TransformMover(self.m,IMP.algebra.Vector3D(rb[2]),maxtrans,maxrot)
             for xyz in rb[0]: srbm.add_xyz_particle(xyz)
-            for rb  in rb[1]: srbm.add_rigid_body_particle(rb)  
-            mvs.append(srbm)          
+            for rb  in rb[1]: srbm.add_rigid_body_particle(rb)
+            mvs.append(srbm)
         return mvs
 
 
@@ -315,7 +315,7 @@ class ReplicaExchange():
         '''
         global imppmi
         import IMP.mpi as imppmi
-        
+
         self.m=model
         self.samplerobject=samplerobject
         # min and max temperature
@@ -340,29 +340,29 @@ class ReplicaExchange():
         self.nmintemp=0
         self.nmaxtemp=0
         self.nsuccess=0
-    
+
     def get_my_temp(self):
         return self.rem.get_my_parameter("temp")[0]
 
     def get_my_index(self):
         return self.rem.get_my_index()
-    
+
     def swap_temp(self,nframe,score=None):
         if score==None:
            score=self.m.evaluate(False)
         # get my replica index and temperature
         myindex = self.rem.get_my_index()
         mytemp = self.rem.get_my_parameter("temp")[0]
-        
+
         if mytemp==self.TEMPMIN_:
            self.nmintemp+=1
 
         if mytemp==self.TEMPMAX_:
            self.nmaxtemp+=1
-        
+
         # score divided by kbt
         myscore = score / mytemp
-    
+
         # get my friend index and temperature
         findex = self.rem.get_friend_index(nframe)
         ftemp = self.rem.get_friend_parameter("temp", findex)[0]
@@ -371,27 +371,28 @@ class ReplicaExchange():
 
         # try exchange
         flag = self.rem.do_exchange(myscore, fscore, findex)
-        
+
         self.nattempts+=1
         # if accepted, change temperature
         if (flag == True):
            self.samplerobject.set_kt(ftemp)
            self.nsuccess+=1
-           
-        
-        
+
+
+
     def get_output(self):
         output={}
         acceptances=[]
         if self.nattempts!=0:
            output["ReplicaExchange_SwapSuccessRatio"]=str(float(self.nsuccess)/self.nattempts)
-           output["ReplicaExchange_MinTempFrequency"]=str(float(self.nmintemp)/self.nattempts)           
+           output["ReplicaExchange_MinTempFrequency"]=str(float(self.nmintemp)/self.nattempts)
            output["ReplicaExchange_MaxTempFrequency"]=str(float(self.nmaxtemp)/self.nattempts)
         else:
            output["ReplicaExchange_SwapSuccessRatio"]=str(0)
            output["ReplicaExchange_MinTempFrequency"]=str(0)
-           output["ReplicaExchange_MaxTempFrequency"]=str(0)           
-        return output        
+           output["ReplicaExchange_MaxTempFrequency"]=str(0)
+        output["ReplicaExchange_CurrentTemp"]=str(self.get_my_temp())
+        return output
 
 
 
@@ -522,10 +523,3 @@ class PyMC():
 
 
 #######################################3
-
-
-
-
-
-
-

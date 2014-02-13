@@ -101,14 +101,14 @@ class ReplicaExchange0():
 
       print "Setting up stat file"
       output = IMP.pmi.output.Output()
-      output.init_stat2(globaldir+self.vars["stat_file_name_suffix"]+"."+str(myindex)+".out",
+      low_temp_stat_file=globaldir+self.vars["stat_file_name_suffix"]+"."+str(myindex)+".out"
+      output.init_stat2(low_temp_stat_file,
                   self.output_objects,
                   extralabels=["rmf_file","rmf_frame_index"])
 
       print "Setting up replica stat file"
-      output = IMP.pmi.output.Output()
-      output.init_stat2(globaldir+self.vars["replica_stat_file_suffix"]+"."+str(myindex)+".out",
-                  [rex],extralabels=["score"])
+      replica_stat_file=globaldir+self.vars["replica_stat_file_suffix"]+"."+str(myindex)+".out"
+      output.init_stat2(replica_stat_file,[rex],extralabels=["score"])
 
       print "Setting up best pdb files"
       output.init_pdb_best_scoring(pdb_dir+"/"+
@@ -152,9 +152,10 @@ class ReplicaExchange0():
            output.set_output_entry("rmf_file",rmfname)
            output.set_output_entry("rmf_frame_index",ntimes_at_low_temp)
            output.set_output_entry("score",score)
-           output.write_stats2()
+           output.write_stat2(low_temp_stat_file)
            ntimes_at_low_temp+=1
 
+        output.write_stat2(replica_stat_file)
         rex.swap_temp(i,score)
 
 class ReplicaExchange1():

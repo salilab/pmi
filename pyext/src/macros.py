@@ -143,6 +143,7 @@ class ReplicaExchange0():
 
         mc.optimize(self.vars["monte_carlo_steps"])
         score=self.model.evaluate(False)
+        output.set_output_entry("score",score)
         if rex.get_my_temp()==self.vars["replica_exchange_minimum_temperature"]:
            print "--- frame %s score %s " % (str(i),str(score))
 
@@ -154,7 +155,6 @@ class ReplicaExchange0():
            output.write_stat2(low_temp_stat_file)
            ntimes_at_low_temp+=1
 
-        output.set_output_entry("score",score)
         output.write_stat2(replica_stat_file)
         rex.swap_temp(i,score)
 

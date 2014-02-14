@@ -800,6 +800,9 @@ class ISDCrossLinkMS():
               p2i = p2.get_particle_index()
               s1i = sigma1.get_particle().get_index()
               s2i = sigma2.get_particle().get_index()
+              
+              print nstate,p1i,p2i,p1.get_name(),p2.get_name()
+              
               if not self.marginal:
                  psii = psi.get_particle().get_index()
                  dr.add_contribution((p1i, p2i), (s1i, s2i), psii)
@@ -837,7 +840,7 @@ class ISDCrossLinkMS():
                    for a in attributes_for_label:
                       xlattribute=xlattribute+"_"+str(entry[a])
               
-              xlattribute=xlattribute+"State:"+str(nstate)
+              xlattribute=xlattribute+"-State:"+str(nstate)
               
               dr.set_name(
                 xlattribute + "-" + c1 + ":" + str(r1) + "-" + c2 + ":" + str(r2)+"_"+self.label)

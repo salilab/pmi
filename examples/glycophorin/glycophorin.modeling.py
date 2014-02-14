@@ -31,9 +31,9 @@ r = representation.Representation(m)
 r.add_component_name("chainA",color=0.25)
 r.add_component_sequence("chainA",fastafile,id=fastids[0])
 a1=[]
-for i in range(62,78+1):
+for i in range(62,72+1):
  a1+=r.add_component_beads("chainA",[(i,i)])
-a2 =r.add_component_ideal_helix("chainA",resolutions=[1],resrange=(79,99))
+a2 =r.add_component_ideal_helix("chainA",resolutions=[1],resrange=(73,99))
 a3=[]
 for i in range(100,101+1):
   a3+=r.add_component_beads("chainA",[(i,i)])
@@ -44,9 +44,9 @@ r.show_component_table("chainA")
 r.add_component_name("chainB",color=0.5)
 r.add_component_sequence("chainB",fastafile,id=fastids[1])
 b1=[]
-for i in range(62,78+1):
+for i in range(62,72+1):
    b1+=r.add_component_beads("chainB",[(i,i)])
-b2=r.add_component_ideal_helix("chainB",resolutions=[1],resrange=(79,99))
+b2=r.add_component_ideal_helix("chainB",resolutions=[1],resrange=(73,99))
 b3=[]
 for i in range(100,101+1):
    b3+=r.add_component_beads("chainB",[(i,i)])
@@ -71,8 +71,8 @@ sample_objects.append(r)
 
 listofexcludedpairs = []
 
-lof = [(62, 80, "chainA"), (96, 101, "chainA"),
-       (62, 80, "chainB"), (96, 101, "chainB")]
+lof = [(62, 75, "chainA"), (96, 101, "chainA"),
+       (62, 75, "chainB"), (96, 101, "chainB")]
 
 # add bonds and angles
 for l in lof:
@@ -105,12 +105,12 @@ mc=macros.ReplicaExchange0(m,r,
                       sample_objects,
                       log_objects,
                       crosslink_restraints=None,
-                      monte_carlo_temperature=0.1,
+                      monte_carlo_temperature=1.0,
                       replica_exchange_minimum_temperature=1.0,
                       replica_exchange_maximum_temperature=2.5,
                       number_of_best_scoring_models=500,
                       monte_carlo_steps=10,
-                      number_of_frames=1000,
+                      number_of_frames=10000,
                       write_initial_rmf=True,
                       initial_rmf_name_suffix="initial",
                       stat_file_name_suffix="stat",

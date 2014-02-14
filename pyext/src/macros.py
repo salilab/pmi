@@ -63,7 +63,7 @@ class ReplicaExchange0():
 
     def execute_macro(self):
 
-
+      temp_index_factor=100000.0
 
 
       if self.vars["do_clean_first"]:
@@ -96,10 +96,9 @@ class ReplicaExchange0():
       myindex=rex.get_my_index()
       self.output_objects.append(rex)
       
-      # must reset the minimum and maximum temperature due to the 
+      # must reset the minimum temperature due to the 
       # different binary length of rem.get_my_parameter double and python float
-      self.vars["replica_exchange_minimum_temperature"]=rex.rem.get_my_parameter("temp")[0]
-      self.vars["replica_exchange_maximum_temperature"]=rex.rem.get_my_parameter("temp")[-1]
+      min_temp_index=int(min(rex.get_temperatures())*temp_index_factor)
 
       sw = IMP.pmi.tools.Stopwatch()
       self.output_objects.append(sw)
@@ -149,7 +148,10 @@ class ReplicaExchange0():
         mc.optimize(self.vars["monte_carlo_steps"])
         score=self.model.evaluate(False)
         output.set_output_entry("score",score)
-        if rex.get_my_temp()==self.vars["replica_exchange_minimum_temperature"]:
+        
+        my_temp_index=int(rex.get_my_temp()*temp_index_factor)
+        
+        if min_temp_index==my_temp_index:
            print "--- frame %s score %s " % (str(i),str(score))
 
            output.write_pdb_best_scoring(score)
@@ -162,6 +164,11 @@ class ReplicaExchange0():
 
         output.write_stat2(replica_stat_file)
         rex.swap_temp(i,score)
+
+
+
+
+
 
 class ReplicaExchange1():
     '''
@@ -254,10 +261,9 @@ class ReplicaExchange1():
       myindex=rex.get_my_index()
       self.output_objects.append(rex)
       
-      # must reset the minimum and maximum temperature due to the 
-      # different binary length of rem.get_my_parameter and python float
-      self.vars["replica_exchange_minimum_temperature"]=rex.rem.get_my_parameter("temp")[0]
-      self.vars["replica_exchange_maximum_temperature"]=rex.rem.get_my_parameter("temp")[-1]
+      # must reset the minimum temperature due to the 
+      # different binary length of rem.get_my_parameter double and python float
+      min_temp_index=int(min(rex.get_temperatures())*temp_index_factor)
 
       sw = IMP.pmi.tools.Stopwatch()
       self.output_objects.append(sw)
@@ -303,7 +309,9 @@ class ReplicaExchange1():
 
         mc.optimize(self.vars["monte_carlo_steps"])
         score=self.model.evaluate(False)
-        if rex.get_my_temp()==self.vars["replica_exchange_minimum_temperature"]:
+        my_temp_index=int(rex.get_my_temp()*temp_index_factor)
+        
+        if min_temp_index==my_temp_index:
            print "--- frame %s score %s " % (str(i),str(score))
 
            output.write_pdb_best_scoring(score)

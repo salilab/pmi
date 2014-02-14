@@ -97,7 +97,7 @@ class ReplicaExchange0():
       self.output_objects.append(rex)
       
       # must reset the minimum and maximum temperature due to the 
-      # different binary length of rem.get_my_parameter and python float
+      # different binary length of rem.get_my_parameter double and python float
       self.vars["replica_exchange_minimum_temperature"]=rex.rem.get_my_parameter("temp")[0]
       self.vars["replica_exchange_maximum_temperature"]=rex.rem.get_my_parameter("temp")[-1]
 
@@ -317,12 +317,12 @@ class ReplicaExchange1():
         rex.swap_temp(i,score)
 
 
-class BuildModel0():
-    '''
-    The macro construct a component for each subunit (no splitting, nothing fancy)
-    You can pass the resolutions and the bead size for the missing residue regions.
-    To use this macro, you must provide the following data structure:
-        Component  pdbfile    chainid  rgb color     fastafile     sequence id
+def BuildModel0(m,data,resolutions=[1,10],missing_bead_size=20):
+      '''
+      The macro construct a component for each subunit (no splitting, nothing fancy)
+      You can pass the resolutions and the bead size for the missing residue regions.
+      To use this macro, you must provide the following data structure:
+      Component  pdbfile    chainid  rgb color     fastafile     sequence id
                                                                         in fastafile
 data = [("Rpb1",     pdbfile,   "A",     0.00000000,  (fastafile,    0)),
         ("Rpb2",     pdbfile,   "B",     0.09090909,  (fastafile,    1)),
@@ -336,21 +336,18 @@ data = [("Rpb1",     pdbfile,   "A",     0.00000000,  (fastafile,    0)),
         ("Rpb10",    pdbfile,   "L",     0.81818182,  (fastafile,    9)),
         ("Rpb11",    pdbfile,   "J",     0.90909091,  (fastafile,   10)),
         ("Rpb12",    pdbfile,   "K",     1.00000000,  (fastafile,   11))]
-    '''
+      '''
 
-
-    def __init__(self,data,resolutions=[1,10],missing_bead_size=20):
-
-      self.r=IMP.pmi.representation.Representation(m)
-      self.data=data
+      r=IMP.pmi.representation.Representation(m)
       hierarchies={}
-
-      for d in self.data:
+      
+      for d in data:
             component_name=d[0]
             pdb_file=d[1]
             chain_id=d[2]
             color_id=d[3]
             fasta_file=d[4][0]
+            fastids=IMP.pmi.tools.get_ids_from_fasta_file(fasta_file)
             fasta_file_id=d[4][1]
             #avoid to add a component with the same name
             r.create_component(component_name,
@@ -382,5 +379,5 @@ data = [("Rpb1",     pdbfile,   "A",     0.00000000,  (fastafile,    0)),
 
       #set current coordinates as reference for RMSD calculation
       r.set_current_coordinates_as_reference_for_rmsd("Reference")
-
+      
       return r

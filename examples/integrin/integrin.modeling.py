@@ -98,5 +98,25 @@ xl.add_to_model()
 log_objects.append(xl)
 sample_objects.append(xl)
 
-mc=macros.ReplicaExchange0(m,r,sample_objects,log_objects,number_of_frames=100000)
+mc=macros.ReplicaExchange0(m,r,
+                      sample_objects,
+                      log_objects,
+                      crosslink_restraints=None,
+                      monte_carlo_temperature=1.0,
+                      replica_exchange_minimum_temperature=1.0,
+                      replica_exchange_maximum_temperature=2.5,
+                      number_of_best_scoring_models=500,
+                      monte_carlo_steps=10,
+                      number_of_frames=10000,
+                      write_initial_rmf=True,
+                      initial_rmf_name_suffix="initial",
+                      stat_file_name_suffix="stat",
+                      best_pdb_name_suffix="model",
+                      do_clean_first=True,
+                      do_create_directories=True,
+                      global_output_directory="./output/",
+                      rmf_dir="/rmfs/",
+                      best_pdb_dir="/pdbs/",
+                      replica_stat_file_suffix="stat_replica" )
+
 mc.execute_macro()

@@ -231,7 +231,7 @@ class ReplicaExchange1():
     def execute_macro(self):
 
 
-
+      temp_index_factor=100000.0
 
       if self.vars["do_clean_first"]:
         #to write

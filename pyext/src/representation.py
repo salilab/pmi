@@ -1033,7 +1033,7 @@ class Representation():
                   hu=IMP.core.Harmonic(optdist, self.kappa)
                dps=IMP.core.DistancePairScore(hu)
             else: #default
-               optdist=(0.0+residuegap*3.6)*scale
+               optdist=(0.0+(float(residuegap)+1.0)*3.6)*scale
                if self.upperharmonic: #default
                   hu=IMP.core.HarmonicUpperBound(optdist, self.kappa)
                else:

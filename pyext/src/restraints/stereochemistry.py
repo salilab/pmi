@@ -96,7 +96,11 @@ class ResidueBondRestraint():
     import IMP.pmi.tools
     from math import pi as pi
     
-    def __init__(self,representation,selection_tuple,distance=3.78,strength=10.0):
+    def __init__(self,representation,selection_tuple,distance=3.78,strength=10.0,jitter=None):
+        '''
+        jitter: defines the +- added to the optimal distance in the harmonic well restraint
+                used to increase the tolerance
+        '''
         self.m=representation.prot.get_model()
         self.rs = IMP.RestraintSet(self.m, "Bonds")
         self.weight=1
@@ -105,8 +109,10 @@ class ResidueBondRestraint():
         
         particles=IMP.pmi.tools.select_by_tuple(representation,selection_tuple,resolution=1)
         
-        ts=IMP.core.Harmonic(distance,strength)
-        
+        if not jitter:
+           ts=IMP.core.Harmonic(distance,strength)
+        else:
+           ts=IMP.core.HarmonicWell((distance-jitter,distance+jitter),strength)
 
         for ps in IMP.pmi.tools.sublist_iterator(particles,2,2):
             pair=[]

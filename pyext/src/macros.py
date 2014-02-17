@@ -63,7 +63,7 @@ class ReplicaExchange0():
 
     def execute_macro(self):
 
-
+      temp_index_factor=100000.0
 
 
       if self.vars["do_clean_first"]:
@@ -95,6 +95,10 @@ class ReplicaExchange0():
 
       myindex=rex.get_my_index()
       self.output_objects.append(rex)
+      
+      # must reset the minimum temperature due to the 
+      # different binary length of rem.get_my_parameter double and python float
+      min_temp_index=int(min(rex.get_temperatures())*temp_index_factor)
 
       sw = IMP.pmi.tools.Stopwatch()
       self.output_objects.append(sw)
@@ -144,7 +148,10 @@ class ReplicaExchange0():
         mc.optimize(self.vars["monte_carlo_steps"])
         score=self.model.evaluate(False)
         output.set_output_entry("score",score)
-        if rex.get_my_temp()==self.vars["replica_exchange_minimum_temperature"]:
+        
+        my_temp_index=int(rex.get_my_temp()*temp_index_factor)
+        
+        if min_temp_index==my_temp_index:
            print "--- frame %s score %s " % (str(i),str(score))
 
            output.write_pdb_best_scoring(score)
@@ -157,6 +164,11 @@ class ReplicaExchange0():
 
         output.write_stat2(replica_stat_file)
         rex.swap_temp(i,score)
+
+
+
+
+
 
 class ReplicaExchange1():
     '''
@@ -219,7 +231,7 @@ class ReplicaExchange1():
     def execute_macro(self):
 
 
-
+      temp_index_factor=100000.0
 
       if self.vars["do_clean_first"]:
         #to write
@@ -248,6 +260,10 @@ class ReplicaExchange1():
 
       myindex=rex.get_my_index()
       self.output_objects.append(rex)
+      
+      # must reset the minimum temperature due to the 
+      # different binary length of rem.get_my_parameter double and python float
+      min_temp_index=int(min(rex.get_temperatures())*temp_index_factor)
 
       sw = IMP.pmi.tools.Stopwatch()
       self.output_objects.append(sw)
@@ -293,7 +309,9 @@ class ReplicaExchange1():
 
         mc.optimize(self.vars["monte_carlo_steps"])
         score=self.model.evaluate(False)
-        if rex.get_my_temp()==self.vars["replica_exchange_minimum_temperature"]:
+        my_temp_index=int(rex.get_my_temp()*temp_index_factor)
+        
+        if min_temp_index==my_temp_index:
            print "--- frame %s score %s " % (str(i),str(score))
 
            output.write_pdb_best_scoring(score)
@@ -307,12 +325,12 @@ class ReplicaExchange1():
         rex.swap_temp(i,score)
 
 
-class BuildModel0():
-    '''
-    The macro construct a component for each subunit (no splitting, nothing fancy)
-    You can pass the resolutions and the bead size for the missing residue regions.
-    To use this macro, you must provide the following data structure:
-        Component  pdbfile    chainid  rgb color     fastafile     sequence id
+def BuildModel0(m,data,resolutions=[1,10],missing_bead_size=20):
+      '''
+      The macro construct a component for each subunit (no splitting, nothing fancy)
+      You can pass the resolutions and the bead size for the missing residue regions.
+      To use this macro, you must provide the following data structure:
+      Component  pdbfile    chainid  rgb color     fastafile     sequence id
                                                                         in fastafile
 data = [("Rpb1",     pdbfile,   "A",     0.00000000,  (fastafile,    0)),
         ("Rpb2",     pdbfile,   "B",     0.09090909,  (fastafile,    1)),
@@ -326,21 +344,18 @@ data = [("Rpb1",     pdbfile,   "A",     0.00000000,  (fastafile,    0)),
         ("Rpb10",    pdbfile,   "L",     0.81818182,  (fastafile,    9)),
         ("Rpb11",    pdbfile,   "J",     0.90909091,  (fastafile,   10)),
         ("Rpb12",    pdbfile,   "K",     1.00000000,  (fastafile,   11))]
-    '''
+      '''
 
-
-    def __init__(self,data,resolutions=[1,10],missing_bead_size=20):
-
-      self.r=IMP.pmi.representation.Representation(m)
-      self.data=data
+      r=IMP.pmi.representation.Representation(m)
       hierarchies={}
-
-      for d in self.data:
+      
+      for d in data:
             component_name=d[0]
             pdb_file=d[1]
             chain_id=d[2]
             color_id=d[3]
             fasta_file=d[4][0]
+            fastids=IMP.pmi.tools.get_ids_from_fasta_file(fasta_file)
             fasta_file_id=d[4][1]
             #avoid to add a component with the same name
             r.create_component(component_name,
@@ -372,5 +387,5 @@ data = [("Rpb1",     pdbfile,   "A",     0.00000000,  (fastafile,    0)),
 
       #set current coordinates as reference for RMSD calculation
       r.set_current_coordinates_as_reference_for_rmsd("Reference")
-
+      
       return r

@@ -262,7 +262,7 @@ class Representation():
                                    cacenters=True,show=False,isnucleicacid=False,readnonwateratoms=False):
 
         '''
-        This method reads a pdb, constructs the fragments corresponding to contiguous senquence stratches,
+        This method reads a pdb, constructs the fragments corresponding to contiguous senquence stretches,
         and returns a list of hierarchies.
 
         name:             (string) the name of the component
@@ -318,8 +318,7 @@ class Representation():
            c=t
            chain=t.get_id()
            del s,t
-
-
+        
         if resrange!=None:
            if resrange[0]>start: start=resrange[0]
            if resrange[1]<end:   end=resrange[1]
@@ -335,6 +334,10 @@ class Representation():
 
 
         ps=sel.get_selected_particles()
+        if len(ps)==0: 
+           print "ERROR add_component_pdb: %s no residue found in pdb %s chain %s that overlaps with the queried stretch %s-%s" \
+                 % (name,pdbname,str(chain),str(resrange[0]),str(resrange[1]))
+           exit()
         c0=IMP.atom.Chain.setup_particle(IMP.Particle(self.m),"X")
 
         for p in ps:
@@ -1033,7 +1036,7 @@ class Representation():
                   hu=IMP.core.Harmonic(optdist, self.kappa)
                dps=IMP.core.DistancePairScore(hu)
             else: #default
-               optdist=(0.0+residuegap*3.6)*scale
+               optdist=(0.0+(float(residuegap)+1.0)*3.6)*scale
                if self.upperharmonic: #default
                   hu=IMP.core.HarmonicUpperBound(optdist, self.kappa)
                else:

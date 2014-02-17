@@ -120,6 +120,6 @@ o = output.Output()
 
 print "Starting test"
 o.write_test("test.current.dict",log_objects)
-o.test("test.IMP-ead0367.PMI-cf3a0c.dict",log_objects)
+o.test("test.IMP-ee1763c6.PMI-4669cfca.dict",log_objects)
 
 

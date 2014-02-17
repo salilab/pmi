@@ -332,14 +332,19 @@ class ReplicaExchange():
         # create array of temperatures, in geometric progression
         temp = self.rem.create_temperatures(self.TEMPMIN_, self.TEMPMAX_, nproc)
         # get replica index
+        self.temperatures=temp
+        
         myindex = self.rem.get_my_index()
         # set initial value of the parameter (temperature) to exchange
-        self.rem.set_my_parameter("temp", [temp[myindex]])
-        self.samplerobject.set_kt(temp[myindex])
+        self.rem.set_my_parameter("temp", [self.temperatures[myindex]])
+        self.samplerobject.set_kt(self.temperatures[myindex])
         self.nattempts=0
         self.nmintemp=0
         self.nmaxtemp=0
         self.nsuccess=0
+
+    def get_temperatures(self):
+        return self.temperatures
 
     def get_my_temp(self):
         return self.rem.get_my_parameter("temp")[0]

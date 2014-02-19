@@ -1,4 +1,5 @@
 import IMP
+import IMP.test
 import IMP.core
 import IMP.base
 import IMP.algebra
@@ -13,16 +14,18 @@ import IMP.pmi.restraints.em
 import IMP.pmi.representation
 import IMP.pmi.tools
 
+import numpy as np
+
 def get_random_gaussian_3d(center):
-    std=np.random.random_sample(3,) * 20
+    std=np.random.random_sample(3,) * 10
     var=[s**2 for s in std]
     rot=IMP.algebra.get_random_rotation_3d()
-    trans=IMP.algebra.Transformation3D(center,rot)
+    trans=IMP.algebra.Transformation3D(rot,center)
     return IMP.algebra.Gaussian3D(IMP.algebra.ReferenceFrame3D(trans),var)
 
 class TestEMRestraint(IMP.test.TestCase):
     def setUp(self):
-         IMP.test.TestCase.setUp(self)
+        IMP.test.TestCase.setUp(self)
 
         self.m = IMP.Model()
         self.p0 = IMP.Particle(self.m)
@@ -33,26 +36,30 @@ class TestEMRestraint(IMP.test.TestCase):
         IMP.atom.Mass.setup_particle(self.p1,np.random.rand()*10)
 
     def test_move_to_center(self):
-        gem=IMP.pmi.restraints.em(IMP.core.Hierarchy.setup_particle(self.p0),
+        target_h=[IMP.atom.Fragment.setup_particle(IMP.Particle(self.m))]
+        target_h[0].add_child(self.p0)
+        gem=IMP.pmi.restraints.em.GaussianEMRestraint(target_h,
                                   target_ps=[self.p1],
-                                  cutoff_dist_for_container=0.0,
+                                  cutoff_dist_for_container=10000.0,
                                   target_radii_scale=10.0,
                                   model_radii_scale=10.0)
         gem.add_to_model()
-
+        self.m.update()
+        print 'eval 0'
         s0=self.m.evaluate(False)
-        print 'init score',s0
+        print '>s0',s0,'\n'
 
-        trans=IMP.algebra.Transformation3D(np.random.random_sample(3,)*5)
-        IMP.atom.transform(IMP.atom.RigidBody(self.p0),trans)
+        trans=IMP.algebra.Transformation3D(IMP.algebra.Vector3D(np.random.random_sample(3,)*10))
+        print 'random trans',trans
+        IMP.core.transform(IMP.core.RigidBody(self.p0),trans)
+        self.m.update()
         s1=self.m.evaluate(False)
-        print 'transforming with',trans
-        print 'score after translating',s1
+        print '>s1',s1,'\n'
 
         gem.center_model_on_target_density()
+        self.m.update()
         s2=self.m.evaluate(False)
-        print 'score after re-centering',s2
-
+        print '>s2',s2
         self.assertAlmostEqual(s0,s2)
 
 if __name__ == '__main__':

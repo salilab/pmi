@@ -40,24 +40,29 @@ class GaussianEMRestraint():
             self.target_ps = []
             IMP.isd_emxl.gmm_tools.decorate_gmm_from_text(target_fn, target_ps, self.m)
             for p in target_ps:
-                rmax=sqrt(max(IMP.core.Gaussian(p).get_variances()))*radii_scale
+                rmax=sqrt(max(IMP.core.Gaussian(p).get_variances()))*target_radii_scale
                 IMP.core.XYZR.setup_particle(p,rmax)
-                IMP.atom.Mass(p).set_mass(mp.get_mass()*target_mass_scale)
+                mp=IMP.atom.Mass(p)
+                mp.set_mass(mp.get_mass()*target_mass_scale)
         elif target_ps!=[]:
-            self.target_ps=target_ps
+            self.target_ps=[]
+            for p in target_ps:
+                rmax=sqrt(max(IMP.core.Gaussian(p).get_variances()))*target_radii_scale
+                IMP.core.XYZR.setup_particle(p,rmax)
+                self.target_ps.append(p)
         else:
             print 'Gaussian EM restraint: must provide target density file or properly set up target densities'
             return
 
 
         # setup model GMM
-        model_ps = []
+        self.model_ps = []
         for h in self.densities:
-            model_ps += IMP.core.get_leaves(h)
+            self.model_ps += IMP.atom.get_leaves(h)
         if model_radii_scale!=1.0:
-            for p in model_ps:
+            for p in self.model_ps:
                 rmax=sqrt(max(IMP.core.Gaussian(p).get_variances()))*model_radii_scale
-                IMP.core.XYZR.setup_particl(p,rmax)
+                IMP.core.XYZR.setup_particle(p,rmax)
 
 
         # sigma particle
@@ -67,12 +72,13 @@ class GaussianEMRestraint():
 
         # create restraint
         print 'target num particles',len(target_ps), \
-            'total weight',sum([IMP.atom.Mass(p).get_mass() for p in target_ps])
-        print 'model num particles',len(model_ps), \
-            'total weight',sum([IMP.atom.Mass(p).get_mass() for p in model_ps])
+            'total weight',sum([IMP.atom.Mass(p).get_mass() for p in self.target_ps])
+        print 'model num particles',len(self.model_ps), \
+            'total weight',sum([IMP.atom.Mass(p).get_mass() for p in self.model_ps])
+
         self.gaussianEM_restraint = IMP.isd_emxl.GaussianEMRestraint(self.m,
-                                                                     IMP.get_indexes(model_ps),
-                                                                     IMP.get_indexes(target_ps),
+                                                                     IMP.get_indexes(self.model_ps),
+                                                                     IMP.get_indexes(self.target_ps),
                                                                      self.sigmaglobal.get_particle().get_index(),
                                                                      cutoff_dist_for_container,
                                                                      False, False)
@@ -80,26 +86,29 @@ class GaussianEMRestraint():
         self.rs = IMP.RestraintSet(self.m, 'GaussianEMRestraint')
         self.rs.add_restraint(self.gaussianEM_restraint)
 
-    def center_model_on_target_density():
+    def center_model_on_target_density(self):
         target_com=IMP.algebra.Vector3D(0,0,0)
         target_mass=0.0
         for p in self.target_ps:
             mass=IMP.atom.Mass(p).get_mass()
             pos=IMP.core.XYZ(p).get_coordinates()
-            target_com+=pos/mass
+            target_com+=pos*mass
             target_mass+=mass
         target_com/=target_mass
-
+        print 'target com',target_com
         model_com=IMP.algebra.Vector3D(0,0,0)
         model_mass=0.0
-        for h in self.densities:
-            for p in IMP.core.get_leaves(h):
-                mass=IMP.atom.Mass(p).get_mass()
-                pos=IMP.core.XYZ(p).get_coordinates()
-                model_com+=pos/mass
-                model_mass+=mass
+        for p in self.model_ps:
+            mass=IMP.atom.Mass(p).get_mass()
+            pos=IMP.core.XYZ(p).get_coordinates()
+            model_com+=pos*mass
+            model_mass+=mass
         model_com/=model_mass
-        IMP.pmi.tools.translate_hierarchies(densities,IMP.algebra.Transformation3D(target_com-model_com))
+        print 'model com',model_com
+
+        v=target_com-model_com
+        print 'translating with',v
+        IMP.pmi.tools.translate_hierarchies(self.densities,v)
 
     def set_weight(self,weight):
         self.rs.set_weight(weight)

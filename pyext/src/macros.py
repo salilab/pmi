@@ -95,8 +95,8 @@ class ReplicaExchange0():
 
       myindex=rex.get_my_index()
       self.output_objects.append(rex)
-      
-      # must reset the minimum temperature due to the 
+
+      # must reset the minimum temperature due to the
       # different binary length of rem.get_my_parameter double and python float
       min_temp_index=int(min(rex.get_temperatures())*temp_index_factor)
 
@@ -148,9 +148,9 @@ class ReplicaExchange0():
         mc.optimize(self.vars["monte_carlo_steps"])
         score=self.model.evaluate(False)
         output.set_output_entry("score",score)
-        
+
         my_temp_index=int(rex.get_my_temp()*temp_index_factor)
-        
+
         if min_temp_index==my_temp_index:
            print "--- frame %s score %s " % (str(i),str(score))
 
@@ -260,8 +260,8 @@ class ReplicaExchange1():
 
       myindex=rex.get_my_index()
       self.output_objects.append(rex)
-      
-      # must reset the minimum temperature due to the 
+
+      # must reset the minimum temperature due to the
       # different binary length of rem.get_my_parameter double and python float
       min_temp_index=int(min(rex.get_temperatures())*temp_index_factor)
 
@@ -310,7 +310,7 @@ class ReplicaExchange1():
         mc.optimize(self.vars["monte_carlo_steps"])
         score=self.model.evaluate(False)
         my_temp_index=int(rex.get_my_temp()*temp_index_factor)
-        
+
         if min_temp_index==my_temp_index:
            print "--- frame %s score %s " % (str(i),str(score))
 
@@ -348,7 +348,7 @@ data = [("Rpb1",     pdbfile,   "A",     0.00000000,  (fastafile,    0)),
 
       r=IMP.pmi.representation.Representation(m)
       hierarchies={}
-      
+
       for d in data:
             component_name=d[0]
             pdb_file=d[1]
@@ -387,5 +387,5 @@ data = [("Rpb1",     pdbfile,   "A",     0.00000000,  (fastafile,    0)),
 
       #set current coordinates as reference for RMSD calculation
       r.set_current_coordinates_as_reference_for_rmsd("Reference")
-      
+
       return r

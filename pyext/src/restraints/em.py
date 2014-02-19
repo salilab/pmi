@@ -40,20 +40,19 @@ class GaussianEMRestraint():
         if target_fn!='':
             self.target_ps = []
             IMP.isd_emxl.gmm_tools.decorate_gmm_from_text(target_fn, self.target_ps, self.m)
-            for p in self.target_ps:
-                rmax=sqrt(max(IMP.core.Gaussian(p).get_variances()))*target_radii_scale
-                IMP.core.XYZR.setup_particle(p,rmax)
-                mp=IMP.atom.Mass(p)
-                mp.set_mass(mp.get_mass()*target_mass_scale)
         elif target_ps!=[]:
-            self.target_ps=[]
-            for p in target_ps:
-                rmax=sqrt(max(IMP.core.Gaussian(p).get_variances()))*target_radii_scale
-                IMP.core.XYZR.setup_particle(p,rmax)
-                self.target_ps.append(p)
+            self.target_ps=target_ps
         else:
             print 'Gaussian EM restraint: must provide target density file or properly set up target densities'
             return
+        for p in self.target_ps:
+            rmax=sqrt(max(IMP.core.Gaussian(p).get_variances()))*target_radii_scale
+            if not IMP.core.XYZR.get_is_setup(p):
+                IMP.core.XYZR.setup_particle(p,rmax)
+            else:
+                IMP.core.XYZR.setup_particle(p,rmax)
+            mp=IMP.atom.Mass(p)
+            mp.set_mass(mp.get_mass()*target_mass_scale)
 
 
         # setup model GMM
@@ -63,8 +62,10 @@ class GaussianEMRestraint():
         if model_radii_scale!=1.0:
             for p in self.model_ps:
                 rmax=sqrt(max(IMP.core.Gaussian(p).get_variances()))*model_radii_scale
-                IMP.core.XYZR.setup_particle(p,rmax)
-
+                if not IMP.core.XYZR.get_is_setup(p):
+                    IMP.core.XYZR.setup_particle(p,rmax)
+                else:
+                    IMP.core.XYZR.setup_particle(p,rmax)
 
         # sigma particle
         self.sigmaglobal = tools.SetupNuisance(self.m, self.sigmainit,

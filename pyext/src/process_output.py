@@ -2,12 +2,13 @@
 
 # This application works with either argparse (python 2.7) or optparse (python 2.6)
 
+argparse=None
 try:
    import argparse
 except ImportError:
    from optparse import OptionParser
    from optparse import Option, OptionValueError
-
+   
 
 import difflib
 

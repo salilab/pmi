@@ -132,12 +132,13 @@ class SAXSISDRestraint():
     def update_covariance_matrix(self):
         c1 = IMP.isd.Nuisance(self.c1).get_nuisance()
         c2 = IMP.isd.Nuisance(self.c2).get_nuisance()
-        tau = IMP.isd.Nuisance(self.tau).get_nuisance()
+        #tau = IMP.isd.Nuisance(self.tau).get_nuisance()
+        tau = 1.0
         self.cov = IMP.isd2.compute_relative_covariance(self.atoms, c1, c2,
                 tau, self.prof)
-        for i in xrange(len(self.cov)):
-            for j in xrange(len(self.cov)):
-                self.cov[i][j] = self.cov[i][j]/tau**2
+        #for i in xrange(len(self.cov)):
+        #    for j in xrange(len(self.cov)):
+        #        self.cov[i][j] = self.cov[i][j]/tau**2
         self.saxs.set_cov(0, self.cov)
 
     def write_covariance_matrix(self,fname):

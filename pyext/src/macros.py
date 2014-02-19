@@ -26,13 +26,15 @@ class ReplicaExchange0():
                       global_output_directory="./",
                       rmf_dir="rmfs/",
                       best_pdb_dir="pdbs/",
-                      replica_stat_file_suffix="stat_replica" ):
+                      replica_stat_file_suffix="stat_replica",
+                      replica_exchange_object=None):
 
        self.model=model
        self.representation=representation
        self.crosslink_restraints=crosslink_restraints
        self.sample_objects=sample_objects
        self.output_objects=output_objects
+       self.replica_exchange_object=replica_exchange_object
        self.vars={}
        self.vars["monte_carlo_temperature"]=monte_carlo_temperature
        self.vars["replica_exchange_minimum_temperature"]=replica_exchange_minimum_temperature
@@ -60,6 +62,9 @@ class ReplicaExchange0():
       keys.sort()
       for v in keys:
           print "------",v.ljust(30), self.vars[v]
+
+    def get_replica_exchange_object(self):
+        return self.replica_exchange_object
 
     def execute_macro(self):
 
@@ -90,8 +95,10 @@ class ReplicaExchange0():
 
       print "Setting up ReplicaExchange"
       rex= IMP.pmi.samplers.ReplicaExchange(self.model,
-         self.vars["replica_exchange_minimum_temperature"],
-         self.vars["replica_exchange_maximum_temperature"],mc)
+                                            self.vars["replica_exchange_minimum_temperature"],
+                                            self.vars["replica_exchange_maximum_temperature"],mc,
+                                            replica_exchange_object=self.replica_exchange_object)
+      self.replica_exchange_object=rex.rem
 
       myindex=rex.get_my_index()
       self.output_objects.append(rex)

@@ -36,10 +36,11 @@ class GaussianEMRestraint():
 
         # setup target GMM
         self.m = self.densities[0].get_model()
+        print 'will scale target mass by',target_mass_scale
         if target_fn!='':
             self.target_ps = []
-            IMP.isd_emxl.gmm_tools.decorate_gmm_from_text(target_fn, target_ps, self.m)
-            for p in target_ps:
+            IMP.isd_emxl.gmm_tools.decorate_gmm_from_text(target_fn, self.target_ps, self.m)
+            for p in self.target_ps:
                 rmax=sqrt(max(IMP.core.Gaussian(p).get_variances()))*target_radii_scale
                 IMP.core.XYZR.setup_particle(p,rmax)
                 mp=IMP.atom.Mass(p)
@@ -71,7 +72,7 @@ class GaussianEMRestraint():
                                                self.sigmaissampled).get_particle()
 
         # create restraint
-        print 'target num particles',len(target_ps), \
+        print 'target num particles',len(self.target_ps), \
             'total weight',sum([IMP.atom.Mass(p).get_mass() for p in self.target_ps])
         print 'model num particles',len(self.model_ps), \
             'total weight',sum([IMP.atom.Mass(p).get_mass() for p in self.model_ps])

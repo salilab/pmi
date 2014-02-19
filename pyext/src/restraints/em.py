@@ -50,7 +50,7 @@ class GaussianEMRestraint():
             if not IMP.core.XYZR.get_is_setup(p):
                 IMP.core.XYZR.setup_particle(p,rmax)
             else:
-                IMP.core.XYZR.setup_particle(p,rmax)
+                IMP.core.XYZR(p).set_radius(rmax)
             mp=IMP.atom.Mass(p)
             mp.set_mass(mp.get_mass()*target_mass_scale)
 
@@ -65,7 +65,7 @@ class GaussianEMRestraint():
                 if not IMP.core.XYZR.get_is_setup(p):
                     IMP.core.XYZR.setup_particle(p,rmax)
                 else:
-                    IMP.core.XYZR.setup_particle(p,rmax)
+                    IMP.core.XYZR(p).set_radius(rmax)
 
         # sigma particle
         self.sigmaglobal = tools.SetupNuisance(self.m, self.sigmainit,

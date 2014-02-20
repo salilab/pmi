@@ -121,7 +121,7 @@ class Representation():
         #where representation type is Res:X, Beads, Densities, Representation, etc...
         self.hier_representation={}
         self.hier_resolution={}
-        #reference structures is a dictionary that contains the coorindates of
+        #reference structures is a dictionary that contains the coordinates of
         #structures that are used to calculate the rmsd
         self.reference_structures={}
         self.elements={}
@@ -916,7 +916,7 @@ class Representation():
 
 
 
-    def set_current_coordinates_as_reference_for_rmsd(self,label):
+    def set_current_coordinates_as_reference_for_rmsd(self,label="None"):
         # getting only coordinates from pdb
         ps=IMP.pmi.tools.select(self,resolution=1.0)
         # storing the reference coordinates and the particles
@@ -1691,6 +1691,8 @@ class Representation():
         output["Selection_All"]=len(IMP.pmi.tools.select(self))
         output["Selection_resolution=1"]=len(IMP.pmi.tools.select(self,resolution=1))
         output["Selection_resolution=1,resid=10"]=len(IMP.pmi.tools.select(self,resolution=1,residue=10))
+        for resolution in self.hier_resolution:
+           output["Hier_resolution_dictionary"+str(resolution)]=len(self.hier_resolution[resolution])
         for name in self.hier_dict:
            output["Selection_resolution=1,resid=10,name="+name]=len(IMP.pmi.tools.select(self,resolution=1,name=name,residue=10))
            output["Selection_resolution=1,resid=10,name="+name+",ambiguous"]=len(IMP.pmi.tools.select(self,resolution=1,name=name,name_is_ambiguous=True,residue=10))

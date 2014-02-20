@@ -309,10 +309,12 @@ class ConjugateGradients():
         return output
 
 class ReplicaExchange():
-    def __init__(self,model,tempmin,tempmax,samplerobject,test=True):
+    def __init__(self,model,tempmin,tempmax,samplerobject,test=True,replica_exchange_object=None):
+
         '''
         sampler object should be MonteCarlo
         '''
+
         global imppmi
         import IMP.mpi as imppmi
 
@@ -322,8 +324,14 @@ class ReplicaExchange():
         self.TEMPMIN_ = tempmin
         self.TEMPMAX_ = tempmax
 
-        # initialize Replica Exchange class
-        self.rem = IMP.mpi.ReplicaExchange()
+        if replica_exchange_object==None:
+            # initialize Replica Exchange class
+            self.rem = IMP.mpi.ReplicaExchange()
+        else:
+            # get the replica exchange class instance from elsewhere
+            print 'got existing rex object'
+            self.rem = replica_exchange_object
+
         # get number of replicas
         nproc = self.rem.get_number_of_replicas()
 
@@ -333,7 +341,7 @@ class ReplicaExchange():
         temp = self.rem.create_temperatures(self.TEMPMIN_, self.TEMPMAX_, nproc)
         # get replica index
         self.temperatures=temp
-        
+
         myindex = self.rem.get_my_index()
         # set initial value of the parameter (temperature) to exchange
         self.rem.set_my_parameter("temp", [self.temperatures[myindex]])

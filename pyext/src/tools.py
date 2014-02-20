@@ -822,6 +822,49 @@ def list_chunks_iterator(list, length):
     for i in xrange(0, len(list), length):
         yield list[i:i+length]
 
+#########################
+# COORDINATE MANIPULATION
+#########################
+
+
+def translate_hierarchy(hierarchy,translation_vector):
+    '''
+    this will apply a translation to a hierarchy along the input vector
+    '''
+    rbs=set()
+    xyzs=set()
+    if type(translation_vector)==list:
+        transformation=IMP.algebra.Transformation3D(IMP.algebra.Vector3D(translation_vector))
+    else:
+        transformation=IMP.algebra.Transformation3D(translation_vector)
+    for p in IMP.atom.get_leaves(hierarchy):
+       if IMP.core.RigidBody.get_is_setup(p):
+          rbs.add(IMP.core.RigidBody(p))
+       elif IMP.core.RigidMember.particle_is_instance(p):
+          rb=IMP.core.RigidMember(p).get_rigid_body()
+          rbs.add(rb)
+       else:
+          xyzs.add(p)
+    for xyz in xyzs:
+       IMP.core.transform(IMP.core.XYZ(xyz),transformation)
+    for rb in rbs:
+       IMP.core.transform(rb,transformation)
+
+def translate_hierarchies(hierarchies,translation_vector):
+    for h in hierarchies:
+        IMP.pmi.tools.translate_hierarchy(h,translation_vector)
+
+def translate_hierarchies_to_reference_frame(hierarchies):
+        xc=0;yc=0;zc=0
+        nc=0
+        for h in hierarchies:
+            for p in IMP.atom.get_leaves(h):
+                coor=IMP.core.XYZ(p).get_coordinates()
+                nc+=1
+                xc+=coor[0];yc+=coor[1];zc+=coor[2]
+        xc=xc/nc;yc=yc/nc;zc=zc/nc
+        IMP.pmi.tools.translate_hierarchies(hierarchies,(-xc,-yc,-zc))
+
 
 ########################
 ### Tools to simulate data
@@ -918,14 +961,14 @@ def print_deprecation_warning(old_name,new_name):
        print "WARNING: "+old_name+" is deprecated, use "+new_name+" instead"
        is_already_printed[old_name]=True
 
-def print_multicolumn(list_of_strings,ncolumns=2,truncate=40): 
+def print_multicolumn(list_of_strings,ncolumns=2,truncate=40):
 
     l=list_of_strings
-        
+
     cols = ncolumns
     #add empty entries after l
     for i in range( len(l) % cols):    l.append(" ")
-    
+
 
     split=[l[i:i+len(l)/cols] for i in range(0,len(l),len(l)/cols)]
     for row in zip(*split):

@@ -914,37 +914,7 @@ class Representation():
                else:
                   break
 
-    def translate_hierarchy(self,hierarchy,translation_vector):
-        '''
-        this will apply a translation to a hierarchy along the input vector
-        '''
-        rbs=set()
-        xyzs=set()
-        transformation=IMP.algebra.Transformation3D(IMP.algebra.Vector3D(translation_vector))
-        for p in IMP.atom.get_leaves(hierarchy):
-           if IMP.core.RigidMember.particle_is_instance(p):
-              rb=IMP.core.RigidMember(p).get_rigid_body()
-              rbs.add(rb)
-           else:
-              xyzs.add(p)
-        for xyz in xyzs:
-           IMP.core.transform(IMP.core.XYZ(xyz),transformation)
-        for rb in rbs:
-           IMP.core.transform(rb,transformation)
 
-    def translate_hierarchies(self,hierarchies,translation_vector):
-        for h in hierarchies: self.translate_hierarchy(h,translation_vector)
-
-    def translate_hierarchies_to_reference_frame(self,hierarchies):
-        xc=0;yc=0;zc=0
-        nc=0
-        for h in hierarchies:
-            for p in IMP.atom.get_leaves(h):
-                coor=IMP.core.XYZ(p).get_coordinates()
-                nc+=1
-                xc+=coor[0];yc+=coor[1];zc+=coor[2]
-        xc=xc/nc;yc=yc/nc;zc=zc/nc
-        self.translate_hierarchies(hierarchies,(-xc,-yc,-zc))
 
     def set_current_coordinates_as_reference_for_rmsd(self,label):
         # getting only coordinates from pdb

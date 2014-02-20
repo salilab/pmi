@@ -28,13 +28,15 @@ class ReplicaExchange0():
                       global_output_directory="./",
                       rmf_dir="rmfs/",
                       best_pdb_dir="pdbs/",
-                      replica_stat_file_suffix="stat_replica" ):
+                      replica_stat_file_suffix="stat_replica",
+                      replica_exchange_object=None):
 
        self.model=model
        self.representation=representation
        self.crosslink_restraints=crosslink_restraints
        self.sample_objects=sample_objects
        self.output_objects=output_objects
+       self.replica_exchange_object=replica_exchange_object
        self.vars={}
        self.vars["monte_carlo_temperature"]=monte_carlo_temperature
        self.vars["replica_exchange_minimum_temperature"]=replica_exchange_minimum_temperature
@@ -62,6 +64,9 @@ class ReplicaExchange0():
       keys.sort()
       for v in keys:
           print "------",v.ljust(30), self.vars[v]
+
+    def get_replica_exchange_object(self):
+        return self.replica_exchange_object
 
     def execute_macro(self):
 
@@ -92,13 +97,15 @@ class ReplicaExchange0():
 
       print "Setting up ReplicaExchange"
       rex= IMP.pmi.samplers.ReplicaExchange(self.model,
-         self.vars["replica_exchange_minimum_temperature"],
-         self.vars["replica_exchange_maximum_temperature"],mc)
+                                            self.vars["replica_exchange_minimum_temperature"],
+                                            self.vars["replica_exchange_maximum_temperature"],mc,
+                                            replica_exchange_object=self.replica_exchange_object)
+      self.replica_exchange_object=rex.rem
 
       myindex=rex.get_my_index()
       self.output_objects.append(rex)
-      
-      # must reset the minimum temperature due to the 
+
+      # must reset the minimum temperature due to the
       # different binary length of rem.get_my_parameter double and python float
       min_temp_index=int(min(rex.get_temperatures())*temp_index_factor)
 
@@ -150,9 +157,9 @@ class ReplicaExchange0():
         mc.optimize(self.vars["monte_carlo_steps"])
         score=self.model.evaluate(False)
         output.set_output_entry("score",score)
-        
+
         my_temp_index=int(rex.get_my_temp()*temp_index_factor)
-        
+
         if min_temp_index==my_temp_index:
            print "--- frame %s score %s " % (str(i),str(score))
 
@@ -262,8 +269,8 @@ class ReplicaExchange1():
 
       myindex=rex.get_my_index()
       self.output_objects.append(rex)
-      
-      # must reset the minimum temperature due to the 
+
+      # must reset the minimum temperature due to the
       # different binary length of rem.get_my_parameter double and python float
       min_temp_index=int(min(rex.get_temperatures())*temp_index_factor)
 
@@ -312,7 +319,7 @@ class ReplicaExchange1():
         mc.optimize(self.vars["monte_carlo_steps"])
         score=self.model.evaluate(False)
         my_temp_index=int(rex.get_my_temp()*temp_index_factor)
-        
+
         if min_temp_index==my_temp_index:
            print "--- frame %s score %s " % (str(i),str(score))
 
@@ -350,7 +357,7 @@ data = [("Rpb1",     pdbfile,   "A",     0.00000000,  (fastafile,    0)),
 
       r=IMP.pmi.representation.Representation(m)
       hierarchies={}
-      
+
       for d in data:
             component_name=d[0]
             pdb_file=d[1]
@@ -389,7 +396,7 @@ data = [("Rpb1",     pdbfile,   "A",     0.00000000,  (fastafile,    0)),
 
       #set current coordinates as reference for RMSD calculation
       r.set_current_coordinates_as_reference_for_rmsd("Reference")
-      
+
       return r
 
 

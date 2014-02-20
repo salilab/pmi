@@ -4,6 +4,8 @@ import IMP.pmi.samplers
 import IMP.pmi.output
 import os
 
+
+
 class ReplicaExchange0():
 
     def __init__(self,model,
@@ -389,3 +391,151 @@ data = [("Rpb1",     pdbfile,   "A",     0.00000000,  (fastafile,    0)),
       r.set_current_coordinates_as_reference_for_rmsd("Reference")
       
       return r
+
+
+
+
+
+class AnalysisReplicaExchange0():
+
+
+    
+    def __init__(self,model,
+                      stat_file_name_suffix="stat",
+                      best_pdb_name_suffix="model",
+                      do_clean_first=True,
+                      do_create_directories=True,
+                      global_output_directory="./",
+                      rmf_dir="rmfs/",
+                      best_pdb_dir="pdbs/",
+                      replica_stat_file_suffix="stat_replica",
+                      global_analysis_result_directory="./analysis/"):
+
+                      import glob
+                      self.model=model
+                      rmf_dir=global_output_directory+rmf_dir
+                      self.rmf_files=glob.glob(rmf_dir+"/*.rmf")
+                      stat_dir=global_output_directory
+                      self.stat_files=glob.glob(stat_dir+"/stat.*.out")
+                      
+                      
+    def clustering(self,score_key,
+                        rmf_file_key,
+                        rmf_file_frame_key,
+                        alignment_components=None,
+                        number_of_best_scoring_models=10,
+                        rmsd_calculation_components=None,
+                        distance_matrix_file=None,
+                        load_distance_matrix_file=False):
+                        
+        from operator import itemgetter
+        import IMP.pmi.analysis
+        import IMP.rmf
+        import RMF
+        import numpy as np
+
+
+        if alignment_components==None:
+           alignment_flag=0
+        else:
+           alignment_flag=1           
+        
+        print "setup clustering class"
+        Clusters = IMP.pmi.analysis.Clustering()
+
+
+      
+        score_list=[]
+        rmf_file_list=[]
+        rmf_file_frame_list=[]
+        if score_key!=None:
+           for sf in self.stat_files[0:1]:
+              print "getting data from file %s" % sf
+              po=IMP.pmi.output.ProcessOutput(sf)
+              fields=po.get_fields([score_key,rmf_file_key,rmf_file_frame_key])
+              #check that all lengths are all equal
+              length_set=set()
+              for f in fields: length_set.add(len(fields[f]))
+              if len(length_set)>1: print "AnalysisReplicaExchange0.clustering: the statfile is not synchronous"; exit()
+              # append to the lists
+              score_list+=fields[score_key]
+              rmf_file_list+=fields[rmf_file_key]
+              rmf_file_frame_list+=fields[rmf_file_frame_key]                            
+        
+        # sort by score and ge the best scoring ones
+        score_rmf_tuples=zip(score_list,rmf_file_list,rmf_file_frame_list)
+        sorted_score_rmf_tuples=sorted(score_rmf_tuples,key=itemgetter(0))
+        best_score_rmf_tuples=sorted_score_rmf_tuples[0:number_of_best_scoring_models]
+        
+        
+        
+        if not load_distance_matrix_file:          
+          for cnt,tpl in enumerate(best_score_rmf_tuples):
+
+              rmf_file=tpl[1]
+              frame_number=tpl[2]
+              print "getting coordinates for frame %i rmf file %s" % (frame_number,rmf_file)
+                          
+              # load the frame
+              rh= RMF.open_rmf_file_read_only(rmf_file)
+              prot=IMP.rmf.create_hierarchies(rh, self.model)[0]     
+              IMP.rmf.link_hierarchies(rh, [prot])
+              try: 
+                IMP.rmf.load_frame(rh, frame_number)        
+              except:
+                print "Unable to open frame %i of file %s" % (frame_number,rmf_file)
+                continue           
+              self.model.update()        
+              
+              Clusters.set_prot(prot)
+              
+              # let's get all particles at highest resolution
+              part_dict=IMP.pmi.analysis.get_particles_at_resolution_one(prot)
+              
+              template_coordinate_dict= {}
+              
+              # let's try to align
+              if alignment_flag==1:
+                 for pr in alignment_components:
+                     coords = np.array([np.array(IMP.core.XYZ(i).get_coordinates()) for i in part_dict[pr]]) 
+                     template_coordinate_dict[pr] = coords
+
+              # set the first model as template coordinates
+              if len(Clusters.all_coords)==0:
+                  Clusters.set_template(template_coordinate_dict)
+
+              # set particles to calculate RMSDs on
+              # (if global, list all proteins, or just a few for local) 
+              # setting all the coordinates for rmsd calculation
+                
+              model_coordinate_dict = {}
+              if rmsd_calculation_components==None: rmsd_calculation_components=alignment_components
+              
+              for pr in rmsd_calculation_components:
+                  coords = np.array([np.array(IMP.core.XYZ(i).get_coordinates()) for i in part_dict[pr]])
+                  model_coordinate_dict[pr] = coords 
+                 
+                  
+              Clusters.fill(rmf_file+'|'+str(frame_number), model_coordinate_dict, alignment=alignment_flag)
+
+          print "Global calculating the distance matrix"
+          
+          # calculate distance matrix, all against all
+
+          Clusters.dist_matrix(file_name=distance_matrix_file)
+          Clusters.plot_matrix()
+           
+        else:
+          Clusters.load_distance_matrix_file(file_name=distance_matrix_file)
+          Clusters.plot_matrix()           
+        
+        #this list 
+        for cl in Clusters.get_cluster_labels():
+          print Clusters.get_cluster_label_average_rmsd(cl)
+          print Clusters.get_cluster_label_size(cl)
+          print Clusters.get_cluster_label_names(cl)
+         
+    
+    
+    
+    

@@ -72,7 +72,7 @@ class Alignment():
             for p in order: query_xyz += [i for i in self.query[p]]
             query_xyz = array(query_xyz)
             if len(template_xyz) != len(query_xyz):
-                print '''ERROR: the number of coordinates
+                print '''Alignment.get_rmsd: ERROR: the number of coordinates
                                in template and query does not match!''';exit()
             dist = sqrt(sum(diagonal(cdist(template_xyz,query_xyz)**2)) / len(template_xyz))
             if dist < self.rmsd: self.rmsd = dist
@@ -168,9 +168,10 @@ class Clustering():
 
     def __init__(self):
 
-        global impem,deepcopy,cdist,array,argwhere,mgrid,shape,reshape,zeros,sqrt,diagonal,argsort
+        global impem,deepcopy,cdist,array,argwhere,mgrid,shape,reshape,zeros,sqrt,diagonal,argsort,npsum
         import IMP.em as impem
         from numpy import array,argwhere,mgrid,shape,reshape,zeros,diagonal,argsort
+        from numpy import sum as npsum
         from copy import deepcopy
         from scipy.spatial.distance import cdist
         from math import sqrt
@@ -194,9 +195,7 @@ class Clustering():
 
             qry_coords = {}
             for pr in self.tmpl_coords.keys():
-                parts = IMP.atom.Selection(self.prot,molecule=pr).get_selected_particles()
-                coords = array([array(IMP.core.XYZ(i).get_coordinates()) for i in parts])
-                qry_coords[pr] = coords
+                qry_coords[pr] = Coords[pr]
             Ali = Alignment(self.tmpl_coords, qry_coords)
             rmsd_tm, transformation = Ali.align()
        
@@ -205,35 +204,74 @@ class Clustering():
                 assmb_coords[pr] = [transformation.get_transformed(i) for i in Coords[pr]]
             self.all_coords[frame]= assmb_coords
 
-    def dist_matrix(self):
+    def dist_matrix(self,threshold=0.5,file_name='cluster.rawmatrix.pkl'):
 
-        K= self.all_coords.keys()
-        M = zeros((len(K), len(K)))
-        for f1 in xrange(len(K)-1):
-            for f2 in xrange(f1,len(K)):
+        self.model_list_names= self.all_coords.keys()
+        self.raw_distance_matrix = zeros((len(self.model_list_names), len(self.model_list_names)))
+        for f1 in xrange(len(self.model_list_names)-1):
+            for f2 in xrange(f1,len(self.model_list_names)):
 
-                Ali = Alignment(self.all_coords[K[f1]], self.all_coords[K[f2]])
+                Ali = Alignment(self.all_coords[self.model_list_names[f1]], self.all_coords[self.model_list_names[f2]])
                 r= Ali.get_rmsd()
-                M[f1,f2]= r
-                M[f2,f1]= r
+                self.raw_distance_matrix[f1,f2]= r
+                self.raw_distance_matrix[f2,f1]= r
 
-        print M.max()
         from scipy.cluster import hierarchy as hrc
-        import pylab as pl
+
+        self.cluster_labels = hrc.fclusterdata(self.raw_distance_matrix,threshold)    
+
         import pickle
-        C = hrc.fclusterdata(M,0.5)
-        outf = open('tmp_cluster_493.pkl','w')
-        pickle.dump((K,M),outf)
-        outf.close()
-        C = list(argsort(C))
-        M= M[C,:][:,C]
+       
+        outf = open(file_name,'w')    
+        pickle.dump((self.cluster_labels,self.model_list_names,self.raw_distance_matrix),outf)            
+        outf.close()        
+
+    def load_distance_matrix_file(self,file_name='cluster.rawmatrix.pkl'):
+        import pickle        
+        inputf = open(file_name,'r')    
+        (self.cluster_labels,self.model_list_names,self.raw_distance_matrix)=pickle.load(inputf)            
+        inputf.close()      
+   
+    def plot_matrix(self):
+        import pylab as pl        
+        plot_cluster_labels = list(argsort(self.cluster_labels)) 
+        plot_raw_distance_matrix= self.raw_distance_matrix[plot_cluster_labels,:][:,plot_cluster_labels]
+        
         fig = pl.figure()
         ax = fig.add_subplot(111)
-        cax = ax.imshow(M, interpolation='nearest')
-        ax.set_yticks(range(len(K)))
-        ax.set_yticklabels( [K[i] for i in C] )
+        cax = ax.imshow(plot_raw_distance_matrix, interpolation='nearest')
+        ax.set_yticks(range(len(self.model_list_names)))
+        ax.set_yticklabels( [self.model_list_names[i] for i in plot_cluster_labels] )
         fig.colorbar(cax)
         pl.show()
+    
+    def get_cluster_labels(self):
+        #this list 
+        return self.cluster_labels   
+    
+    def get_number_of_clusters(self):
+        return len(set(self.cluster_labels))
+    
+    def get_cluster_label_indexes(self, label):
+        return [i for i,l in enumerate(self.cluster_labels) if l==label]
+        
+    def get_cluster_label_names(self, label):
+        return [self.model_list_names[i] for i in self.get_cluster_label_indexes(label)]
+    
+    def get_cluster_label_average_rmsd(self,label):
+        indexes=self.get_cluster_label_indexes(label)
+        sub_distance_matrix= self.raw_distance_matrix[indexes,:][:,indexes]
+        
+        print sub_distance_matrix
+        
+        average_rmsd=npsum(sub_distance_matrix)/(len(sub_distance_matrix)**2 - len(sub_distance_matrix))
+        return average_rmsd
+    
+    def get_cluster_label_size(self,label):
+        return len(self.get_cluster_label_indexes(label))
+        
+  
+        
 
 # ----------------------------------
 class GetModelDensity():
@@ -557,5 +595,32 @@ class GetContactMap():
                 cnt+=1
                 if x2==0: ax.set_ylabel(C[x1], rotation=90)
         plt.show()
+        
+        
+###############################################
+# these are post production function analysis
+###############################################
 
+def get_particles_at_resolution_one(prot):
+    '''
+    this fucntion get the particles by resolution, without a Representation class initialized
+    it is mainly used when the hierarchy is read from an rmf file
+    it returns a dictionary of component names and their particles
+    '''
+    particle_dict={}
+    allparticles=[]
+    for c in prot.get_children():
+        name=c.get_name()
+        particle_dict[name]=IMP.atom.get_leaves(c)
+        for s in c.get_children():
+            if "_Res:1" in s.get_name() and "_Res:10" not in s.get_name(): 
+                allparticles+=IMP.atom.get_leaves(s)
+            if "Beads" in s.get_name():
+                allparticles+=IMP.atom.get_leaves(s)
+    
+    
+    particle_align=[]
+    for name in particle_dict:
+        particle_dict[name]=IMP.pmi.tools.sort_by_residues(list(set(particle_dict[name]) & set(allparticles)))
 
+    return particle_dict

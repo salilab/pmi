@@ -450,15 +450,24 @@ class AnalysisReplicaExchange0():
                         rmsd_calculation_components=None,
                         distance_matrix_file=None,
                         load_distance_matrix_file=False,
-                        number_of_processes=1):
-                        
+                        is_mpi=False):     
+        
         from operator import itemgetter
         import IMP.pmi.analysis
         import IMP.rmf
         import RMF
         import numpy as np
+        
+        if is_mpi:
+           from mpi4py import MPI
+           comm = MPI.COMM_WORLD
+           rank = comm.Get_rank()
+           number_of_processes=comm.size
+        else:
+           rank=0
+           number_of_processes=1
 
-
+    
         if alignment_components==None:
            alignment_flag=0
         else:
@@ -466,14 +475,14 @@ class AnalysisReplicaExchange0():
         
         print "setup clustering class"
         Clusters = IMP.pmi.analysis.Clustering()
-
-
-      
+    
+    
+        mystatfiles=IMP.pmi.tools.chunk_list_into_segments(self.stat_files,number_of_processes)[rank]
         score_list=[]
         rmf_file_list=[]
         rmf_file_frame_list=[]
         if score_key!=None:
-           for sf in self.stat_files[0:1]:
+           for sf in mystatfiles:
               print "getting data from file %s" % sf
               po=IMP.pmi.output.ProcessOutput(sf)
               fields=po.get_fields([score_key,rmf_file_key,rmf_file_frame_key])
@@ -484,8 +493,23 @@ class AnalysisReplicaExchange0():
               # append to the lists
               score_list+=fields[score_key]
               rmf_file_list+=fields[rmf_file_key]
-              rmf_file_frame_list+=fields[rmf_file_frame_key]                            
+              rmf_file_frame_list+=fields[rmf_file_frame_key] 
         
+        if number_of_processes>1:
+            if rank!=0:
+                  comm.send([score_list,rmf_file_list,rmf_file_frame_list], dest=0, tag=11)
+               
+            elif rank==0:
+                  for i in range(1,number_of_processes):
+                      [score_list_tmp,rmf_file_list_tmp,rmf_file_frame_list_tmp]=comm.recv(source=i, tag=11)
+                      score_list+=score_list_tmp
+                      rmf_file_list+=rmf_file_list_tmp
+                      rmf_file_frame_list+=rmf_file_frame_list_tmp
+                      comm.send([score_list,rmf_file_list,rmf_file_frame_list], dest=i, tag=11)
+
+            if rank!=0:
+                  [score_list,rmf_file_list,rmf_file_frame_list]=comm.recv(source=0, tag=11)
+
         # sort by score and ge the best scoring ones
         score_rmf_tuples=zip(score_list,rmf_file_list,rmf_file_frame_list)
         sorted_score_rmf_tuples=sorted(score_rmf_tuples,key=itemgetter(0))
@@ -495,15 +519,16 @@ class AnalysisReplicaExchange0():
         
         if not load_distance_matrix_file:          
           for cnt,tpl in enumerate(best_score_rmf_tuples):
-
+    
               rmf_file=tpl[1]
               frame_number=tpl[2]
               print "getting coordinates for frame %i rmf file %s" % (frame_number,rmf_file)
                           
               # load the frame
               rh= RMF.open_rmf_file_read_only(rmf_file)
-              prot=IMP.rmf.create_hierarchies(rh, self.model)[0]     
-              IMP.rmf.link_hierarchies(rh, [prot])
+              prots=IMP.rmf.create_hierarchies(rh, self.model)  
+              IMP.rmf.link_hierarchies(rh, prots)
+              prot=prots[0]
               try: 
                 IMP.rmf.load_frame(rh, frame_number)        
               except:
@@ -523,11 +548,11 @@ class AnalysisReplicaExchange0():
                  for pr in alignment_components:
                      coords = np.array([np.array(IMP.core.XYZ(i).get_coordinates()) for i in part_dict[pr]]) 
                      template_coordinate_dict[pr] = coords
-
+    
               # set the first model as template coordinates
               if len(Clusters.all_coords)==0:
                   Clusters.set_template(template_coordinate_dict)
-
+    
               # set particles to calculate RMSDs on
               # (if global, list all proteins, or just a few for local) 
               # setting all the coordinates for rmsd calculation
@@ -541,13 +566,16 @@ class AnalysisReplicaExchange0():
                  
                   
               Clusters.fill(rmf_file+'|'+str(frame_number), model_coordinate_dict)
-
+    
           print "Global calculating the distance matrix"
           
           # calculate distance matrix, all against all
           
-          Clusters.dist_matrix(file_name=distance_matrix_file,number_of_processes=number_of_processes)
+          Clusters.dist_matrix(file_name=distance_matrix_file,is_mpi=is_mpi)
           Clusters.plot_matrix()
+          
+          
+          
            
         else:
           Clusters.load_distance_matrix_file(file_name=distance_matrix_file)
@@ -560,6 +588,6 @@ class AnalysisReplicaExchange0():
           print Clusters.get_cluster_label_names(cl)
          
     
-    
-    
-    
+
+
+

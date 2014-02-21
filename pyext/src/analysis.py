@@ -194,56 +194,59 @@ class Clustering():
         self.all_coords[frame]= Coords
 
        
-    def dist_matrix(self,threshold=0.5,file_name='cluster.rawmatrix.pkl',number_of_processes=1):
+    def dist_matrix(self,threshold=0.5,file_name='cluster.rawmatrix.pkl',is_mpi=False):
         from itertools import combinations
         from scipy.cluster import hierarchy as hrc
         import pickle
-
         
+        if is_mpi:
+          from mpi4py import MPI
+          comm = MPI.COMM_WORLD
+          rank = comm.Get_rank()
+          number_of_processes = comm.size
+        else:
+          number_of_processes = 1
+          rank=0
         
         self.model_list_names= self.all_coords.keys()
         model_indexes=range(len(self.model_list_names))
         model_indexes_unique_pairs=list(combinations(model_indexes,2))
-        
-        print number_of_processes
-        
+                
         if number_of_processes>1:
-           import IMP.parallel
-           pm=IMP.parallel.Manager()
            
            model_indexes_unique_pairs_chuncks=IMP.pmi.tools.chunk_list_into_segments(model_indexes_unique_pairs,number_of_processes)
-           print model_indexes_unique_pairs_chuncks
-           
-           for np in range(number_of_processes):
-               s=IMP.parallel.LocalSlave()
-               pm.add_slave(s)
-           co=pm.get_context()
-           for np in range(number_of_processes):
-               co.add_task(IMP.pmi.analysis.matrix_calculation(self.all_coords,
+
+           raw_distance_dict=IMP.pmi.analysis.matrix_calculation(self.all_coords,
                                                                self.tmpl_coords,
-                                                               model_indexes_unique_pairs_chuncks[np],
-                                                               do_alignment=True))
-           raw_distance_dict={}
-           for res in co.get_results_unordered():
-               raw_distance_dict.update(res)
+                                                               model_indexes_unique_pairs_chuncks[rank],
+                                                               do_alignment=True)
+           
+           if rank!=0:
+              comm.send(raw_distance_dict, dest=0, tag=11)
+           
+           if rank==0:
+              for i in range(1,number_of_processes):
+                  res=comm.recv(source=i, tag=11)
+                  raw_distance_dict.update(res)
            
         else:
-           self.raw_distance_matrix = zeros((len(self.model_list_names), len(self.model_list_names)))
+           
            raw_distance_dict=matrix_calculation(self.all_coords,
                                                     self.tmpl_coords,
                                                     model_indexes_unique_pairs,
                                                     do_alignment=True)
-
-        for item in raw_distance_dict:
-                (f1,f2)=item
-                self.raw_distance_matrix[f1,f2]= raw_distance_dict[item]
-                self.raw_distance_matrix[f2,f1]= raw_distance_dict[item]           
-
-        self.cluster_labels = hrc.fclusterdata(self.raw_distance_matrix,threshold)    
-
-        outf = open(file_name,'w')    
-        pickle.dump((self.cluster_labels,self.model_list_names,self.raw_distance_matrix),outf)            
-        outf.close()        
+        if rank==0:
+            self.raw_distance_matrix = zeros((len(self.model_list_names), len(self.model_list_names)))
+            for item in raw_distance_dict:
+                    (f1,f2)=item
+                    self.raw_distance_matrix[f1,f2]= raw_distance_dict[item]
+                    self.raw_distance_matrix[f2,f1]= raw_distance_dict[item]           
+    
+            self.cluster_labels = hrc.fclusterdata(self.raw_distance_matrix,threshold)    
+    
+            outf = open(file_name,'w')    
+            pickle.dump((self.cluster_labels,self.model_list_names,self.raw_distance_matrix),outf)            
+            outf.close()        
 
     def load_distance_matrix_file(self,file_name='cluster.rawmatrix.pkl'):
         import pickle        

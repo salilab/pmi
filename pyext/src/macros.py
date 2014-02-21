@@ -75,19 +75,6 @@ class ReplicaExchange0():
       temp_index_factor=100000.0
 
 
-      if self.vars["do_clean_first"]:
-        #to write
-        pass
-
-      globaldir=self.vars["global_output_directory"]+"/"
-      rmf_dir=globaldir+self.vars["rmf_dir"]
-      pdb_dir=globaldir+self.vars["best_pdb_dir"]
-
-
-      if self.vars["do_create_directories"]:
-        if not os.path.exists(globaldir): os.makedirs(globaldir)
-        if not os.path.exists(rmf_dir): os.makedirs(rmf_dir)
-        if not os.path.exists(pdb_dir): os.makedirs(pdb_dir)
 
 
       print "Setting up MonteCarlo"
@@ -96,6 +83,7 @@ class ReplicaExchange0():
                                        self.vars["monte_carlo_temperature"])
       self.output_objects.append(mc)
 
+# -------------------------------------------------------------------------
 
       print "Setting up ReplicaExchange"
       rex= IMP.pmi.samplers.ReplicaExchange(self.model,
@@ -110,6 +98,25 @@ class ReplicaExchange0():
       # must reset the minimum temperature due to the
       # different binary length of rem.get_my_parameter double and python float
       min_temp_index=int(min(rex.get_temperatures())*temp_index_factor)
+
+# -------------------------------------------------------------------------
+
+      if my_index==0:
+        if self.vars["do_clean_first"]:
+          #to write
+          pass
+
+        globaldir=self.vars["global_output_directory"]+"/"
+        rmf_dir=globaldir+self.vars["rmf_dir"]
+        pdb_dir=globaldir+self.vars["best_pdb_dir"]
+
+
+        if self.vars["do_create_directories"]:
+          if not os.path.exists(globaldir): os.makedirs(globaldir)
+          if not os.path.exists(rmf_dir): os.makedirs(rmf_dir)
+          if not os.path.exists(pdb_dir): os.makedirs(pdb_dir)
+
+# -------------------------------------------------------------------------
 
       sw = IMP.pmi.tools.Stopwatch()
       self.output_objects.append(sw)

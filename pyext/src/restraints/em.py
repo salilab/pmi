@@ -109,8 +109,13 @@ class GaussianEMRestraint():
         print 'model com',model_com
 
         v=target_com-model_com
-        print 'translating with',v
-        IMP.pmi.tools.translate_hierarchies(self.densities,v)
+        print 'translating with',-v
+        transformation=IMP.algebra.Transformation3D(IMP.algebra.Vector3D(-v))
+        for p in self.target_ps:
+            
+            IMP.core.transform(IMP.core.RigidBody(p),transformation)
+            
+        #IMP.pmi.tools.translate_hierarchies(self.densities,v)
 
     def set_weight(self,weight):
         self.rs.set_weight(weight)
@@ -130,6 +135,13 @@ class GaussianEMRestraint():
 
     def get_hierarchy(self):
         return self.prot
+    
+    def get_density_as_hierarchy(self):
+        f=IMP.atom.Fragment().setup_particle(IMP.Particle(self.m))
+        f.set_name("GaussianEMRestraint_density_"+self.label)
+        for p in self.target_ps:
+            f.add_child(p)
+        return f
 
     def get_restraint_set(self):
         return self.rs

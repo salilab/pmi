@@ -29,11 +29,13 @@ class ReplicaExchange0():
                       rmf_dir="rmfs/",
                       best_pdb_dir="pdbs/",
                       replica_stat_file_suffix="stat_replica",
+                      em_object_for_rmf=None,
                       replica_exchange_object=None):
 
        self.model=model
        self.representation=representation
        self.crosslink_restraints=crosslink_restraints
+       self.em_object_for_rmf=em_object_for_rmf
        self.sample_objects=sample_objects
        self.output_objects=output_objects
        self.replica_exchange_object=replica_exchange_object
@@ -130,6 +132,8 @@ class ReplicaExchange0():
                                    self.vars["number_of_best_scoring_models"],
                                    replica_exchange=True)
 
+#----------------------------------------------
+
       print "Setting up and writing initial rmf coordinate file"
       init_suffix=globaldir+self.vars["initial_rmf_name_suffix"]
       output.init_rmf(init_suffix+"."+str(myindex)+".rmf3",
@@ -139,10 +143,17 @@ class ReplicaExchange0():
                                       self.crosslink_restraints)
       output.write_rmf(init_suffix+"."+str(myindex)+".rmf3")
       output.close_rmf(init_suffix+"."+str(myindex)+".rmf3")
-
+      
+#----------------------------------------------
+      
       print "Setting up production rmf files"
+      if self.em_object_for_rmf!=None:
+         output_hierarchies=[self.representation.prot,self.em_object_for_rmf.get_density_as_hierarchy()]
+      else:
+         output_hierarchies=[self.representation.prot]
+      
       rmfname=rmf_dir+"/"+str(myindex)+".rmf3"
-      output.init_rmf(rmfname, [self.representation.prot])
+      output.init_rmf(rmfname, output_hierarchies)
 
       if self.crosslink_restraints:
          output.add_restraints_to_rmf(rmfname,self.crosslink_restraints)
@@ -433,7 +444,8 @@ class AnalysisReplicaExchange0():
                         number_of_best_scoring_models=10,
                         rmsd_calculation_components=None,
                         distance_matrix_file=None,
-                        load_distance_matrix_file=False):
+                        load_distance_matrix_file=False,
+                        number_of_processes=1):
                         
         from operator import itemgetter
         import IMP.pmi.analysis
@@ -523,13 +535,13 @@ class AnalysisReplicaExchange0():
                   model_coordinate_dict[pr] = coords 
                  
                   
-              Clusters.fill(rmf_file+'|'+str(frame_number), model_coordinate_dict, alignment=alignment_flag)
+              Clusters.fill(rmf_file+'|'+str(frame_number), model_coordinate_dict)
 
           print "Global calculating the distance matrix"
           
           # calculate distance matrix, all against all
-
-          Clusters.dist_matrix(file_name=distance_matrix_file)
+          
+          Clusters.dist_matrix(file_name=distance_matrix_file,number_of_processes=number_of_processes)
           Clusters.plot_matrix()
            
         else:

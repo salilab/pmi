@@ -185,43 +185,62 @@ class Clustering():
 
         self.tmpl_coords = part_coords
 
-    def fill(self, frame, Coords, alignment=0):
+    def fill(self, frame, Coords):
+        """
+        fill stores coordinates of a model into a dictionary all_coords,
+        containint coordinates for all models.
+        """
 
-        if alignment==0:
+        self.all_coords[frame]= Coords
 
-            self.all_coords[frame]= Coords
-
-        elif alignment==1:
-
-            qry_coords = {}
-            for pr in self.tmpl_coords.keys():
-                qry_coords[pr] = Coords[pr]
-            Ali = Alignment(self.tmpl_coords, qry_coords)
-            rmsd_tm, transformation = Ali.align()
        
-            assmb_coords = {}
-            for pr in Coords:
-                assmb_coords[pr] = [transformation.get_transformed(i) for i in Coords[pr]]
-            self.all_coords[frame]= assmb_coords
-
-    def dist_matrix(self,threshold=0.5,file_name='cluster.rawmatrix.pkl'):
-
-        self.model_list_names= self.all_coords.keys()
-        self.raw_distance_matrix = zeros((len(self.model_list_names), len(self.model_list_names)))
-        for f1 in xrange(len(self.model_list_names)-1):
-            for f2 in xrange(f1,len(self.model_list_names)):
-
-                Ali = Alignment(self.all_coords[self.model_list_names[f1]], self.all_coords[self.model_list_names[f2]])
-                r= Ali.get_rmsd()
-                self.raw_distance_matrix[f1,f2]= r
-                self.raw_distance_matrix[f2,f1]= r
-
+    def dist_matrix(self,threshold=0.5,file_name='cluster.rawmatrix.pkl',number_of_processes=1):
+        from itertools import combinations
         from scipy.cluster import hierarchy as hrc
+        import pickle
+
+        
+        
+        self.model_list_names= self.all_coords.keys()
+        model_indexes=range(len(self.model_list_names))
+        model_indexes_unique_pairs=list(combinations(model_indexes,2))
+        
+        print number_of_processes
+        
+        if number_of_processes>1:
+           import IMP.parallel
+           pm=IMP.parallel.Manager()
+           
+           model_indexes_unique_pairs_chuncks=IMP.pmi.tools.chunk_list_into_segments(model_indexes_unique_pairs,number_of_processes)
+           print model_indexes_unique_pairs_chuncks
+           
+           for np in range(number_of_processes):
+               s=IMP.parallel.LocalSlave()
+               pm.add_slave(s)
+           co=pm.get_context()
+           for np in range(number_of_processes):
+               co.add_task(IMP.pmi.analysis.matrix_calculation(self.all_coords,
+                                                               self.tmpl_coords,
+                                                               model_indexes_unique_pairs_chuncks[np],
+                                                               do_alignment=True))
+           raw_distance_dict={}
+           for res in co.get_results_unordered():
+               raw_distance_dict.update(res)
+           
+        else:
+           self.raw_distance_matrix = zeros((len(self.model_list_names), len(self.model_list_names)))
+           raw_distance_dict=matrix_calculation(self.all_coords,
+                                                    self.tmpl_coords,
+                                                    model_indexes_unique_pairs,
+                                                    do_alignment=True)
+
+        for item in raw_distance_dict:
+                (f1,f2)=item
+                self.raw_distance_matrix[f1,f2]= raw_distance_dict[item]
+                self.raw_distance_matrix[f2,f1]= raw_distance_dict[item]           
 
         self.cluster_labels = hrc.fclusterdata(self.raw_distance_matrix,threshold)    
 
-        import pickle
-       
         outf = open(file_name,'w')    
         pickle.dump((self.cluster_labels,self.model_list_names,self.raw_distance_matrix),outf)            
         outf.close()        
@@ -271,7 +290,50 @@ class Clustering():
         return len(self.get_cluster_label_indexes(label))
         
   
+def matrix_calculation(all_coords, template_coords, list_of_pairs, do_alignment=False):
+
+        import IMP
+        import IMP.pmi
+        import IMP.pmi.analysis
         
+        model_list_names = all_coords.keys()
+        rmsd_protein_names = all_coords[model_list_names[0]].keys()
+        alignment_template_protein_names=template_coords.keys()
+        raw_distance_dict={}
+        for (f1,f2) in list_of_pairs:
+
+                if not do_alignment:
+                    # here we only get the rmsd, 
+                    # we need that for instance when you want to cluster conformations
+                    # globally, eg the EM map is a reference
+                    Ali = IMP.pmi.analysis.Alignment(all_coords[model_list_names[f1]], all_coords[model_list_names[f2]])
+                    r= Ali.get_rmsd()
+                    
+                elif do_alignment:
+                    # here we actually align the conformations first
+                    # and than calculate the rmsd. We need that when the 
+                    # protein(s) is the reference
+                    coords_f1 = dict([(pr,all_coords[model_list_names[f1]][pr]) for pr in alignment_template_protein_names])
+                    coords_f2 = dict([(pr,all_coords[model_list_names[f2]][pr]) for pr in alignment_template_protein_names])
+                    
+                    Ali = IMP.pmi.analysis.Alignment(coords_f1, coords_f2)
+                    template_rmsd, transformation = Ali.align()
+                    
+                    # here we calculate the rmsd
+                    # we will align two models based n the nuber of subunits provided
+                    # and transform coordinates of model 2 to model 1
+                    coords_f1 = dict([(pr,all_coords[model_list_names[f1]][pr]) for pr in rmsd_protein_names])
+                    coords_f2 = {}
+                    for pr in rmsd_protein_names:
+                        coords_f2[pr] = [transformation.get_transformed(i) for i in all_coords[model_list_names[f2]][pr]]
+                    
+                    Ali = IMP.pmi.analysis.Alignment(coords_f1, coords_f2)
+                    rmsd= Ali.get_rmsd()
+                   
+                raw_distance_dict[(f1,f2)]= rmsd
+                raw_distance_dict[(f2,f1)]= rmsd
+        return raw_distance_dict         
+      
 
 # ----------------------------------
 class GetModelDensity():

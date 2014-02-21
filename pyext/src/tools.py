@@ -821,6 +821,17 @@ def list_chunks_iterator(list, length):
     """
     for i in xrange(0, len(list), length):
         yield list[i:i+length]
+        
+def chunk_list_into_segments(seq, num):
+  avg = len(seq) / float(num)
+  out = []
+  last = 0.0
+
+  while last < len(seq):
+    out.append(seq[int(last):int(last + avg)])
+    last += avg
+
+  return out        
 
 #########################
 # COORDINATE MANIPULATION

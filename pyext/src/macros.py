@@ -101,7 +101,7 @@ class ReplicaExchange0():
 
 # -------------------------------------------------------------------------
 
-      if my_index==0:
+      if myindex==0:
         if self.vars["do_clean_first"]:
           #to write
           pass

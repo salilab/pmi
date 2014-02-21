@@ -136,10 +136,10 @@ class Representation():
         self.onetothree = dict((v,k) for k, v in self.threetoone.iteritems())
 
         self.residuenamekey = IMP.kernel.StringKey("ResidueName")
-    
+
     def set_label(self,label):
         self.label=label
-    
+
     def create_component(self,name,color=None):
         protein_h = IMP.atom.Molecule.setup_particle(IMP.Particle(self.m))
         protein_h.set_name(name)
@@ -318,7 +318,7 @@ class Representation():
            c=t
            chain=t.get_id()
            del s,t
-        
+
         if resrange!=None:
            if resrange[0]>start: start=resrange[0]
            if resrange[1]<end:   end=resrange[1]
@@ -334,7 +334,7 @@ class Representation():
 
 
         ps=sel.get_selected_particles()
-        if len(ps)==0: 
+        if len(ps)==0:
            print "ERROR add_component_pdb: %s no residue found in pdb %s chain %s that overlaps with the queried stretch %s-%s" \
                  % (name,pdbname,str(chain),str(resrange[0]),str(resrange[1]))
            exit()
@@ -381,7 +381,7 @@ class Representation():
                   rtstr="UNK"
                rt=IMP.atom.ResidueType(rtstr)
             else:
-              rt=IMP.atom.ResidueType("ALA")            
+              rt=IMP.atom.ResidueType("ALA")
             r=IMP.atom.Residue.setup_particle(IMP.Particle(self.m),rt,res)
             p=IMP.Particle(self.m)
             d=IMP.core.XYZR.setup_particle(p)
@@ -579,14 +579,12 @@ class Representation():
                IMP.isd_emxl.gmm_tools.write_gmm_to_map(density_particles,outputmap,
                                                    IMP.em.get_bounding_box(dmap),
                                                    voxel_size)
+
         else:
             # read the inputfile here
             density_particles=[]
             IMP.isd_emxl.gmm_tools.decorate_gmm_from_text(inputfile,density_particles,
                                                           self.m,transform)
-            for p in density_particles:
-                rmax=sqrt(max(IMP.core.Gaussian(p).get_variances()))
-                IMP.core.XYZR.setup_particle(p,rmax)
 
         # prepare output hierarchy
         s0=IMP.atom.Fragment.setup_particle(IMP.Particle(self.m))
@@ -800,9 +798,9 @@ class Representation():
         it  works correctly if rigid bodies were initialized
         avoidcollision check if the particle/rigid body was placed close to another particle
         avoidcollision uses the optional arguments cutoff and niterations
-        
+
         bounding box is defined by ((x1,y1,z1),(x2,y2,z2))
-        
+
         '''
         if excluded_rigid_bodies==None: excluded_rigid_bodies=[]
         if hierarchies_excluded_from_collision==None: hierarchies_excluded_from_collision=[]
@@ -817,8 +815,8 @@ class Representation():
             if IMP.core.XYZ.particle_is_instance(p):
                ps.append(p)
         allparticleindexes=IMP.get_indexes(ps)
-        
-        
+
+
         if bounding_box!=None:
            ((x1,y1,z1),(x2,y2,z2))=bounding_box
            ub=IMP.algebra.Vector3D(x1,y1,z1)
@@ -829,7 +827,7 @@ class Representation():
         hierarchies_excluded_from_collision_indexes=[]
         for h in hierarchies_excluded_from_collision:
             hierarchies_excluded_from_collision_indexes+=IMP.get_indexes(IMP.atom.get_leaves(h))
-        
+
         # remove the densities particles out of the calculation
         for name in self.hier_representation:
           try:
@@ -837,7 +835,7 @@ class Representation():
             hierarchies_excluded_from_collision_indexes+=IMP.get_indexes(ps)
           except:
             pass
-        
+
         allparticleindexes=list(set(allparticleindexes)-set(hierarchies_excluded_from_collision_indexes))
 
         for rb in self.rigid_bodies:
@@ -853,7 +851,7 @@ class Representation():
             niter=0
             while niter<niterations:
                rbxyz=(rb.get_x(), rb.get_y(), rb.get_z())
-               
+
                if bounding_box!=None:
                   #overrides the perturbation
                   translation=IMP.algebra.get_random_vector_in(bb)
@@ -1274,7 +1272,7 @@ class Representation():
         '''
         try:
           hiers=IMP.pmi.tools.flatten_list(hiers)
-        except: 
+        except:
             pass
         for hs in IMP.pmi.tools.sublist_iterator(hiers,min_length,max_length):
             self.set_super_rigid_body_from_hierarchies(hs,axis,min_length)
@@ -1306,7 +1304,7 @@ class Representation():
                       else:
                          super_rigid_xyzs.add(p)
         self.super_rigid_bodies.append((super_rigid_xyzs,super_rigid_rbs))
-    
+
     def set_floppy_bodies(self):
         for p in self.floppy_bodies:
             name=p.get_name()
@@ -1395,8 +1393,8 @@ class Representation():
                 if not IMP.atom.Bonded.particle_is_instance(p1):
                    IMP.atom.Bonded.setup_particle(p1)
                 if not IMP.atom.Bonded.particle_is_instance(p2):
-                   IMP.atom.Bonded.setup_particle(p2)                
-                
+                   IMP.atom.Bonded.setup_particle(p2)
+
                 IMP.atom.create_bond(IMP.atom.Bonded(p1),IMP.atom.Bonded(p2),1)
 
     def show_component_table(self,name):

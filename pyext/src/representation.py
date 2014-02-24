@@ -504,14 +504,31 @@ class Representation():
                               out_hier_name='',
                               sampled_points=1000000,num_iter=100,
                               multiply_by_total_mass=True,
-                              transform=None):
+                              transform=None,
+                              intermediate_map_fn=None):
 
         '''
         This function sets up a GMM for this component.
         Can specify input GMM file or it will be computed.
+        name:                   component name
+        hierarchies:            set up GMM for some hierarchies
         selection_tuples:       (list of tuples) example (first_residue,last_residue,component_name)
-        multiply_by_total_mass: compute total mass, multiply the GMM (only on creation!)
+        particles:              set up GMM for particles directly
+        resolution:             usual PMI resolution for selecting particles from the hierarchies
+        inputfile:              read the GMM from this file
+        outputfile:             fit and write the GMM to this file (text)
+        outputmap:              after fitting, create GMM density file (mrc)
+        kernel_type:            for creating the intermediate density (points are sampled to make GMM)
+                                  options are IMP.em.GAUSSIAN, IMP.em.SPHERE, and IMP.em.BINARIZED_SPHERE
+        covariance_type:        for fitting the GMM. options are 'full', 'diagonal' and 'spherical'
+        voxel_size:             for creating the intermediate density map and output map.
+                                  lower number increases accuracy but also rasterizing time grows
+        out_hier_name:          name of the output density hierarchy
+        sampled_points:         number of points to sample. more will increase accuracy and fitting time
+        num_iter:               num GMM iterations. more will increase accuracy and fitting time
+        multiply_by_total_mass: multiply the weights of the GMM by this value (only works on creation!)
         transform:              for input file only, apply a transformation (eg for multiple copies same GMM)
+        intermediate_map_fn:    for debugging, this will write the itermediate (simulated) map
         '''
 
         import IMP.isd_emxl
@@ -561,8 +578,11 @@ class Representation():
 
            # simulate density from ps, then calculate points to fit
            print 'add_component_density: sampling points'
-           dmap=IMP.em.SampledDensityMap(fragment_particles,1.0,voxel_size)
+           dmap=IMP.em.SampledDensityMap(fragment_particles,1.0,voxel_size,
+                                         IMP.atom.Mass.get_mass_key(),3,kernel_type)
            dmap.calcRMS()
+           if intermediate_map_fn!=None:
+               IMP.em.write_map(dmap,intermediate_map_fn)
            pts=IMP.isd_emxl.sample_points_from_density(dmap,sampled_points)
 
            # fit GMM

@@ -52,4 +52,5 @@ bead_density=simo.add_component_density('chainA',particles=ps,
                                         #inputfile='%s/%s.txt'%(model_gmm_dir,name))
                                         outputfile='%s/test_beads.txt'%(model_gmm_dir),
                                         outputmap='%s/test_beads.mrc'%(model_gmm_dir),
-                                        multiply_by_total_mass=True)
+                                        multiply_by_total_mass=True,
+                                        intermediate_map_fn='intermediate_beads.mrc')

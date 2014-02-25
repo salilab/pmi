@@ -176,10 +176,7 @@ class Clustering():
         from scipy.spatial.distance import cdist
         from math import sqrt
         self.all_coords = {}
-
-    def set_prot(self, prot):
-
-        self.prot = prot
+        self.structure_cluster_ids=None
 
     def set_template(self, part_coords):
 
@@ -194,10 +191,8 @@ class Clustering():
         self.all_coords[frame]= Coords
 
        
-    def dist_matrix(self,threshold=0.5,file_name='cluster.rawmatrix.pkl',is_mpi=False):
+    def dist_matrix(self,is_mpi=False):
         from itertools import combinations
-        from scipy.cluster import hierarchy as hrc
-        import pickle
         
         if is_mpi:
           from mpi4py import MPI
@@ -211,82 +206,87 @@ class Clustering():
         self.model_list_names= self.all_coords.keys()
         model_indexes=range(len(self.model_list_names))
         model_indexes_unique_pairs=list(combinations(model_indexes,2))
-                
-        if number_of_processes>1:
-           
-           model_indexes_unique_pairs_chuncks=IMP.pmi.tools.chunk_list_into_segments(model_indexes_unique_pairs,number_of_processes)
+        
+        my_model_indexes_unique_pairs=IMP.pmi.tools.chunk_list_into_segments(model_indexes_unique_pairs,number_of_processes)[rank]
 
-           raw_distance_dict=IMP.pmi.analysis.matrix_calculation(self.all_coords,
-                                                               self.tmpl_coords,
-                                                               model_indexes_unique_pairs_chuncks[rank],
-                                                               do_alignment=True)
-           
-           if rank!=0:
-              comm.send(raw_distance_dict, dest=0, tag=11)
-           
-           if rank==0:
-              for i in range(1,number_of_processes):
-                  res=comm.recv(source=i, tag=11)
-                  raw_distance_dict.update(res)
-           
-        else:
-           
-           raw_distance_dict=matrix_calculation(self.all_coords,
-                                                    self.tmpl_coords,
-                                                    model_indexes_unique_pairs,
-                                                    do_alignment=True)
-        if rank==0:
-            self.raw_distance_matrix = zeros((len(self.model_list_names), len(self.model_list_names)))
-            for item in raw_distance_dict:
-                    (f1,f2)=item
-                    self.raw_distance_matrix[f1,f2]= raw_distance_dict[item]
-                    self.raw_distance_matrix[f2,f1]= raw_distance_dict[item]           
+        print rank,len(my_model_indexes_unique_pairs)
+        
+        raw_distance_dict=IMP.pmi.analysis.matrix_calculation(self.all_coords,
+                                                           self.tmpl_coords,
+                                                           my_model_indexes_unique_pairs,
+                                                           do_alignment=True)
+        
+        if number_of_processes>1:
+            raw_distance_dict=IMP.pmi.tools.scatter_and_gather(raw_distance_dict)        
+
+
+        self.raw_distance_matrix = zeros((len(self.model_list_names), len(self.model_list_names)))
+        for item in raw_distance_dict:
+                (f1,f2)=item
+                self.raw_distance_matrix[f1,f2]= raw_distance_dict[item]
+                self.raw_distance_matrix[f2,f1]= raw_distance_dict[item]           
     
-            self.cluster_labels = hrc.fclusterdata(self.raw_distance_matrix,threshold)    
-    
-            outf = open(file_name,'w')    
-            pickle.dump((self.cluster_labels,self.model_list_names,self.raw_distance_matrix),outf)            
-            outf.close()        
+    def do_cluster(self,number_of_clusters):
+        from sklearn.cluster import KMeans
+        kmeans=KMeans(n_clusters=number_of_clusters)
+        kmeans.fit_predict(self.raw_distance_matrix)
+        
+        self.structure_cluster_ids=kmeans.labels_
+
+    def save_distance_matrix_file(self,file_name='cluster.rawmatrix.pkl'):
+        import pickle    
+        outf = open(file_name,'w')    
+        pickle.dump((self.structure_cluster_ids,self.model_list_names,self.raw_distance_matrix),outf)            
+        outf.close()        
 
     def load_distance_matrix_file(self,file_name='cluster.rawmatrix.pkl'):
         import pickle        
         inputf = open(file_name,'r')    
-        (self.cluster_labels,self.model_list_names,self.raw_distance_matrix)=pickle.load(inputf)            
+        (self.structure_cluster_ids,self.model_list_names,self.raw_distance_matrix)=pickle.load(inputf)            
         inputf.close()      
    
     def plot_matrix(self):
-        import pylab as pl        
-        plot_cluster_labels = list(argsort(self.cluster_labels)) 
-        plot_raw_distance_matrix= self.raw_distance_matrix[plot_cluster_labels,:][:,plot_cluster_labels]
+        import pylab as pl    
+        from scipy.cluster import hierarchy as hrc    
+        #plot_cluster_labels = list(self.structure_cluster_ids) 
+        #plot_raw_distance_matrix= self.raw_distance_matrix[plot_cluster_labels,:][:,plot_cluster_labels]
         
         fig = pl.figure()
-        ax = fig.add_subplot(111)
-        cax = ax.imshow(plot_raw_distance_matrix, interpolation='nearest')
+        ax = fig.add_subplot(211)
+        dendrogram = hrc.dendrogram(hrc.linkage(self.raw_distance_matrix),color_threshold=7)
+        leaves_order = dendrogram['leaves']
+
+        ax = fig.add_subplot(212)
+        cax = ax.imshow(self.raw_distance_matrix[leaves_order,:][:,leaves_order], interpolation='nearest')
         ax.set_yticks(range(len(self.model_list_names)))
-        ax.set_yticklabels( [self.model_list_names[i] for i in plot_cluster_labels] )
+        ax.set_yticklabels( [self.model_list_names[i] for i in leaves_order] )
         fig.colorbar(cax)
+
         pl.show()
+
     
     def get_cluster_labels(self):
         #this list 
-        return self.cluster_labels   
+        return list(set(self.structure_cluster_ids))
     
     def get_number_of_clusters(self):
-        return len(set(self.cluster_labels))
+        return len(self.get_cluster_labels())
     
     def get_cluster_label_indexes(self, label):
-        return [i for i,l in enumerate(self.cluster_labels) if l==label]
+        return [i for i,l in enumerate(self.structure_cluster_ids) if l==label]
         
     def get_cluster_label_names(self, label):
         return [self.model_list_names[i] for i in self.get_cluster_label_indexes(label)]
     
     def get_cluster_label_average_rmsd(self,label):
+        
         indexes=self.get_cluster_label_indexes(label)
-        sub_distance_matrix= self.raw_distance_matrix[indexes,:][:,indexes]
         
-        print sub_distance_matrix
-        
-        average_rmsd=npsum(sub_distance_matrix)/(len(sub_distance_matrix)**2 - len(sub_distance_matrix))
+        if len(indexes)>1:
+           sub_distance_matrix= self.raw_distance_matrix[indexes,:][:,indexes]
+           average_rmsd=npsum(sub_distance_matrix)/(len(sub_distance_matrix)**2 - len(sub_distance_matrix))
+        else:
+           average_rmsd=0.0
         return average_rmsd
     
     def get_cluster_label_size(self,label):

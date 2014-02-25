@@ -798,6 +798,41 @@ def sort_by_residues(particles):
     return particles
 
 ########################
+### Parallel Computation
+########################
+
+def scatter_and_gather(data):
+  from mpi4py import MPI
+  comm = MPI.COMM_WORLD
+  rank = comm.Get_rank()
+  number_of_processes=comm.size
+  # synchronize data over the parallel run
+  # the root is node 0
+
+  if rank!=0:
+        comm.send(data, dest=0, tag=11)
+     
+  elif rank==0:
+        for i in range(1,number_of_processes):
+            data_tmp=comm.recv(source=i, tag=11)
+            if type(data)==list:
+               data+=data_tmp
+            elif type(data)==dict:
+               data.update(data_tmp)
+            else:
+               print "tools.scatter_and_gather: data not supported, use list or dictionaries"
+               exit()
+        
+        for i in range(1,number_of_processes):
+            comm.send(data, dest=i, tag=11)
+            
+  if rank!=0:
+        data=comm.recv(source=0, tag=11)
+
+  return data
+
+
+########################
 ### Lists and iterators
 ########################
 

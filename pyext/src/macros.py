@@ -105,14 +105,25 @@ class ReplicaExchange0():
       rmf_dir=globaldir+self.vars["rmf_dir"]
       pdb_dir=globaldir+self.vars["best_pdb_dir"]
 
-      if myindex==0:
-        if self.vars["do_clean_first"]:
-          #to write
-          pass
-        if self.vars["do_create_directories"]:
-          if not os.path.exists(globaldir): os.makedirs(globaldir)
-          if not os.path.exists(rmf_dir): os.makedirs(rmf_dir)
-          if not os.path.exists(pdb_dir): os.makedirs(pdb_dir)
+      if self.vars["do_clean_first"]:
+        #to write
+        pass
+      if self.vars["do_create_directories"]:
+        try:
+            os.makedirs(globaldir)
+        except:
+            pass
+
+        try:
+            os.makedirs(rmf_dir)
+        except:
+            pass
+        
+        try:
+            os.makedirs(pdb_dir)
+        except:
+            pass
+
 
 # -------------------------------------------------------------------------
 

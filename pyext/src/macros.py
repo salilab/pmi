@@ -535,12 +535,13 @@ class AnalysisReplicaExchange0():
                          feature_keyword_list_dict[k]+=fields[k]
                       else:
                          feature_keyword_list_dict[k]=fields[k]
-                       
+                    
 
 # --------------------------------------------------------------------------------------------
 # broadcast the conformation features
         
             if number_of_processes>1:
+                    comm.Barrier()
                     score_list=IMP.pmi.tools.scatter_and_gather(score_list)
                     rmf_file_list=IMP.pmi.tools.scatter_and_gather(rmf_file_list)
                     rmf_file_frame_list=IMP.pmi.tools.scatter_and_gather(rmf_file_frame_list)  

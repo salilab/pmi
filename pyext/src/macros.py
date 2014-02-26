@@ -487,7 +487,9 @@ class AnalysisReplicaExchange0():
         if alignment_components==None:
            alignment_flag=0
         else:
-           alignment_flag=1           
+           alignment_flag=1 
+        
+        if feature_keys==None: feature_keys=[]          
         
         print "setup clustering class"
         Clusters = IMP.pmi.analysis.Clustering()
@@ -504,16 +506,29 @@ class AnalysisReplicaExchange0():
                   print "getting data from file %s" % sf
                   po=IMP.pmi.output.ProcessOutput(sf)
                   keywords=po.get_keys()
-                  feature_keywords=[k for k in feature_keys if k in keywords]
-                  fields=po.get_fields([score_key,rmf_file_key,rmf_file_frame_key]+feature_keywords)
+                  feature_keywords=[score_key,rmf_file_key,rmf_file_frame_key]
+                  for k in keywords:
+                      for fk in feature_keys:
+                          if fk in k: feature_keywords.append(k)
+                  fields=po.get_fields(feature_keywords)
                   #check that all lengths are all equal
                   length_set=set()
                   for f in fields: length_set.add(len(fields[f]))
-                  if len(length_set)>1: print "AnalysisReplicaExchange0.clustering: the statfile is not synchronous"; exit()
+                  
+                  # if some of the fields are missing, truncate
+                  # the feature files to the shortest one
+                  
+                  if len(length_set)>1: 
+                     print "AnalysisReplicaExchange0.clustering: the statfile is not synchronous"
+                     minlen=min(length_set)
+                     for f in fields: 
+                         fields[f]=fields[f][0:minlen]
+                     
                   # append to the lists
                   score_list+=fields[score_key]
                   rmf_file_list+=fields[rmf_file_key]
                   rmf_file_frame_list+=fields[rmf_file_frame_key] 
+                                    
                   for k in feature_keywords:
                       if k in feature_keyword_list_dict:
                          feature_keyword_list_dict[k]+=fields[k]
@@ -524,17 +539,33 @@ class AnalysisReplicaExchange0():
 # --------------------------------------------------------------------------------------------
 # broadcast the conformation features
         
-        if number_of_processes>1:
-                score_list=IMP.pmi.tools.scatter_and_gather(score_list)
-                rmf_file_list=IMP.pmi.tools.scatter_and_gather(rmf_file_list)
-                rmf_file_frame_list=IMP.pmi.tools.scatter_and_gather(rmf_file_frame_list)  
-                for k in feature_keyword_list_dict:
-                    feature_keyword_list_dict[k]=IMP.pmi.tools.scatter_and_gather(feature_keyword_list_dict[k])
-        
-        # sort by score and ge the best scoring ones
-        score_rmf_tuples=zip(score_list,rmf_file_list,rmf_file_frame_list,range(len(score_list)))
-        sorted_score_rmf_tuples=sorted(score_rmf_tuples,key=itemgetter(0))
-        best_score_rmf_tuples=sorted_score_rmf_tuples[0:number_of_best_scoring_models]
+            if number_of_processes>1:
+                    score_list=IMP.pmi.tools.scatter_and_gather(score_list)
+                    rmf_file_list=IMP.pmi.tools.scatter_and_gather(rmf_file_list)
+                    rmf_file_frame_list=IMP.pmi.tools.scatter_and_gather(rmf_file_frame_list)  
+                    for k in feature_keyword_list_dict:
+                        feature_keyword_list_dict[k]=IMP.pmi.tools.scatter_and_gather(feature_keyword_list_dict[k])
+            
+            # sort by score and ge the best scoring ones
+            score_rmf_tuples=zip(score_list,rmf_file_list,rmf_file_frame_list,range(len(score_list)))
+            sorted_score_rmf_tuples=sorted(score_rmf_tuples,key=itemgetter(0))
+            best_score_rmf_tuples=sorted_score_rmf_tuples[0:number_of_best_scoring_models]
+            
+            
+# prune the feature_keyword_list_dict, keep only the best scoring models
+# and sort it
+            
+            best_score_feature_keyword_list_dict={}
+            for tpl in best_score_rmf_tuples:
+                
+                index=tpl[3]
+                for f in feature_keyword_list_dict:
+                    if f in best_score_feature_keyword_list_dict:
+                       best_score_feature_keyword_list_dict[f].append(feature_keyword_list_dict[f][index])
+                    else:
+                       best_score_feature_keyword_list_dict[f]=[feature_keyword_list_dict[f][index]]
+            
+            del feature_keyword_list_dict
         
 # --------------------------------------------------------------------------------------------        
 # read the coordinates
@@ -552,7 +583,6 @@ class AnalysisReplicaExchange0():
             for cnt,tpl in enumerate(my_best_score_rmf_tuples):
                 rmf_file=tpl[1]
                 frame_number=tpl[2]
-                index=tpl[3]
                 
                 prot=IMP.pmi.analysis.get_hier_from_rmf(self.model,frame_number,rmf_file)
                 if not prot: continue
@@ -568,7 +598,7 @@ class AnalysisReplicaExchange0():
                 all_coordinates.append(model_coordinate_dict)
                 frame_name=rmf_file+'|'+str(frame_number)
                 all_rmf_file_names.append(frame_name)
-                rmf_file_name_index_dict[frame_name]=index
+                rmf_file_name_index_dict[frame_name]=cnt
 
 
 # --------------------------------------------------------------------------------------------
@@ -581,7 +611,7 @@ class AnalysisReplicaExchange0():
 
             if rank==0:
                # save needed informations in external files
-               self.save_objects([feature_keyword_list_dict,rmf_file_name_index_dict],".macro.pkl")
+               self.save_objects([best_score_feature_keyword_list_dict,rmf_file_name_index_dict],".macro.pkl")
 
 
 # -----------------------------------------------------------------------------------------------              
@@ -625,7 +655,7 @@ class AnalysisReplicaExchange0():
         else:
             Clusters.load_distance_matrix_file(file_name=distance_matrix_file)
             Clusters.do_cluster(number_of_clusters)
-            [feature_keyword_list_dict,rmf_file_name_index_dict]=self.save_objects(".macro.pkl")
+            [best_score_feature_keyword_list_dict,rmf_file_name_index_dict]=self.load_objects(".macro.pkl")
             if rank==0:
                Clusters.plot_matrix()           
 
@@ -654,12 +684,15 @@ class AnalysisReplicaExchange0():
                   #extract the features
                   tmp_dict={}
                   index=rmf_file_name_index_dict[structure_name]
-                  for k in feature_keyword_list_dict:
-                      tmp_dict[k]=feature_keyword_list_dict[k][index]
-                  clusstat.write(str(tmp_dict)+"\n")
+                  for key in best_score_feature_keyword_list_dict:
+                      tmp_dict[key]=best_score_feature_keyword_list_dict[key][index]
                   
                   rmf_name=structure_name.split("|")[0]
                   rmf_frame_number=int(structure_name.split("|")[1])
+                  
+                  clusstat.write(str(tmp_dict)+"\n")                  
+                  
+                  
                   prot=IMP.pmi.analysis.get_hier_from_rmf(self.model,rmf_frame_number,rmf_name)
                   if not prot: continue
                   

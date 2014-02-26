@@ -456,6 +456,7 @@ class AnalysisReplicaExchange0():
     def clustering(self,score_key,
                         rmf_file_key,
                         rmf_file_frame_key,
+                        feature_keys=None,
                         alignment_components=None,
                         number_of_best_scoring_models=10,
                         rmsd_calculation_components=None,
@@ -463,6 +464,11 @@ class AnalysisReplicaExchange0():
                         load_distance_matrix_file=False,
                         is_mpi=False,
                         number_of_clusters=1):     
+        
+        '''
+        the features are keywords for which you want to calculate average, medians, etc,
+        plots.
+        '''
         
         from operator import itemgetter
         import IMP.pmi.analysis
@@ -493,10 +499,13 @@ class AnalysisReplicaExchange0():
             rmf_file_list=[]
             rmf_file_frame_list=[]
             if score_key!=None:
+               feature_keyword_list_dict={}
                for sf in my_stat_files:
                   print "getting data from file %s" % sf
                   po=IMP.pmi.output.ProcessOutput(sf)
-                  fields=po.get_fields([score_key,rmf_file_key,rmf_file_frame_key])
+                  keywords=po.get_keys()
+                  feature_keywords=[k for k in feature_keys if k in keywords]
+                  fields=po.get_fields([score_key,rmf_file_key,rmf_file_frame_key]+feature_keywords)
                   #check that all lengths are all equal
                   length_set=set()
                   for f in fields: length_set.add(len(fields[f]))
@@ -505,19 +514,27 @@ class AnalysisReplicaExchange0():
                   score_list+=fields[score_key]
                   rmf_file_list+=fields[rmf_file_key]
                   rmf_file_frame_list+=fields[rmf_file_frame_key] 
+                  for k in feature_keywords:
+                      if k in feature_keyword_list_dict:
+                         feature_keyword_list_dict[k]+=fields[k]
+                      else:
+                         feature_keyword_list_dict[k]=fields[k]
+                       
 
 # --------------------------------------------------------------------------------------------
 # broadcast the conformation features
         
-            if number_of_processes>1:
-                    score_list=IMP.pmi.tools.scatter_and_gather(score_list)
-                    rmf_file_list=IMP.pmi.tools.scatter_and_gather(rmf_file_list)
-                    rmf_file_frame_list=IMP.pmi.tools.scatter_and_gather(rmf_file_frame_list)  
-            
-            # sort by score and ge the best scoring ones
-            score_rmf_tuples=zip(score_list,rmf_file_list,rmf_file_frame_list)
-            sorted_score_rmf_tuples=sorted(score_rmf_tuples,key=itemgetter(0))
-            best_score_rmf_tuples=sorted_score_rmf_tuples[0:number_of_best_scoring_models]
+        if number_of_processes>1:
+                score_list=IMP.pmi.tools.scatter_and_gather(score_list)
+                rmf_file_list=IMP.pmi.tools.scatter_and_gather(rmf_file_list)
+                rmf_file_frame_list=IMP.pmi.tools.scatter_and_gather(rmf_file_frame_list)  
+                for k in feature_keyword_list_dict:
+                    feature_keyword_list_dict[k]=IMP.pmi.tools.scatter_and_gather(feature_keyword_list_dict[k])
+        
+        # sort by score and ge the best scoring ones
+        score_rmf_tuples=zip(score_list,rmf_file_list,rmf_file_frame_list,range(len(score_list)))
+        sorted_score_rmf_tuples=sorted(score_rmf_tuples,key=itemgetter(0))
+        best_score_rmf_tuples=sorted_score_rmf_tuples[0:number_of_best_scoring_models]
         
 # --------------------------------------------------------------------------------------------        
 # read the coordinates
@@ -530,9 +547,12 @@ class AnalysisReplicaExchange0():
             
             all_coordinates=[]
             all_rmf_file_names=[]
+            # it will be used to extract the features
+            rmf_file_name_index_dict={}
             for cnt,tpl in enumerate(my_best_score_rmf_tuples):
                 rmf_file=tpl[1]
                 frame_number=tpl[2]
+                index=tpl[3]
                 
                 prot=IMP.pmi.analysis.get_hier_from_rmf(self.model,frame_number,rmf_file)
                 if not prot: continue
@@ -546,7 +566,9 @@ class AnalysisReplicaExchange0():
                     model_coordinate_dict[pr] = coords 
 
                 all_coordinates.append(model_coordinate_dict)
-                all_rmf_file_names.append(rmf_file+'|'+str(frame_number))
+                frame_name=rmf_file+'|'+str(frame_number)
+                all_rmf_file_names.append(frame_name)
+                rmf_file_name_index_dict[frame_name]=index
 
 
 # --------------------------------------------------------------------------------------------
@@ -555,7 +577,12 @@ class AnalysisReplicaExchange0():
             if number_of_processes>1:
                 all_coordinates=IMP.pmi.tools.scatter_and_gather(all_coordinates)
                 all_rmf_file_names=IMP.pmi.tools.scatter_and_gather(all_rmf_file_names)
-                
+                rmf_file_name_index_dict=IMP.pmi.tools.scatter_and_gather(rmf_file_name_index_dict)
+
+            if rank==0:
+               # save needed informations in external files
+               self.save_objects([feature_keyword_list_dict,rmf_file_name_index_dict],".macro.pkl")
+
 
 # -----------------------------------------------------------------------------------------------              
 
@@ -591,19 +618,25 @@ class AnalysisReplicaExchange0():
                Clusters.plot_matrix()
             Clusters.save_distance_matrix_file(file_name=distance_matrix_file)               
           
-# -----------------------------------------------------------------------------------------------            
-           
+# -----------------------------------------------------------------------------------------------           
+# load the distance matrix from file
+
+     
         else:
             Clusters.load_distance_matrix_file(file_name=distance_matrix_file)
             Clusters.do_cluster(number_of_clusters)
+            [feature_keyword_list_dict,rmf_file_name_index_dict]=self.save_objects(".macro.pkl")
             if rank==0:
                Clusters.plot_matrix()           
+
+# -----------------------------------------------------------------------------------------------  
+# now save all informations about the clusters
         
         if rank==0:
           o=IMP.pmi.output.Output()
         
           for n,cl in enumerate(Clusters.get_cluster_labels()):
-
+              
               print Clusters.get_cluster_label_average_rmsd(cl)
               print Clusters.get_cluster_label_size(cl)
               print Clusters.get_cluster_label_names(cl)
@@ -611,8 +644,20 @@ class AnalysisReplicaExchange0():
               try:
                  os.mkdir(dircluster)
               except:
-                 pass              
+                 pass 
+              
+              clusstat=open(dircluster+"stat.out","w")   
+                              
               for k,structure_name in enumerate(Clusters.get_cluster_label_names(cl)):
+                  
+                  
+                  #extract the features
+                  tmp_dict={}
+                  index=rmf_file_name_index_dict[structure_name]
+                  for k in feature_keyword_list_dict:
+                      tmp_dict[k]=feature_keyword_list_dict[k][index]
+                  clusstat.write(str(tmp_dict)+"\n")
+                  
                   rmf_name=structure_name.split("|")[0]
                   rmf_frame_number=int(structure_name.split("|")[1])
                   prot=IMP.pmi.analysis.get_hier_from_rmf(self.model,rmf_frame_number,rmf_name)
@@ -642,7 +687,18 @@ class AnalysisReplicaExchange0():
                   o.close_rmf(dircluster+str(k)+".rmf3")     
 
 
+    def save_objects(self,objects,file_name):
+        import pickle    
+        outf = open(file_name,'w')
+        pickle.dump(objects,outf)            
+        outf.close()        
 
+    def load_objects(self,file_name):
+        import pickle        
+        inputf = open(file_name,'r')    
+        objects=pickle.load(inputf)         
+        inputf.close()
+        return objects
 
 
 

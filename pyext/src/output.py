@@ -495,6 +495,7 @@ class ProcessOutput():
                  if filterout in line:
                     continue
               line_number+=1
+              if line_number%100==0: print "ProcessOutput.get_fields: read line %s from file %s" % (str(line_number),self.filename)
               try:
                  d=eval(line)
               except:

@@ -551,7 +551,6 @@ class AnalysisReplicaExchange0():
             sorted_score_rmf_tuples=sorted(score_rmf_tuples,key=itemgetter(0))
             best_score_rmf_tuples=sorted_score_rmf_tuples[0:number_of_best_scoring_models]
             
-            
 # prune the feature_keyword_list_dict, keep only the best scoring models
 # and sort it
             

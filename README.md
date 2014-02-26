@@ -16,6 +16,13 @@ git clone https://github.com/salilab/pmi.git
 
 Build IMP following the [imp instructions](http://www.integrativemodeling.org/nightly/doc/html/md_doxygen_generated_installation.html#installation).
 
+**News February 25 2014**
+
+First working version of the [clustering analysis](http://nbviewer.ipython.org/github/salilab/pmi/blob/master/examples/analysis/clustering_analysis.ipynb?create=1). For the moment each cluster directory will only contain pdbs and rmfs
+of the structures, but soon I'll add statistics, features and localization densities.
+
+To have full speed install the mpi4py python library
+
 
 **News February 10 2014**
 

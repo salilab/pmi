@@ -463,7 +463,8 @@ class AnalysisReplicaExchange0():
                         distance_matrix_file=None,
                         load_distance_matrix_file=False,
                         is_mpi=False,
-                        number_of_clusters=1):     
+                        number_of_clusters=1,
+                        display_plot=False):     
         
         '''
         the features are keywords for which you want to calculate average, medians, etc,

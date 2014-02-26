@@ -643,8 +643,9 @@ class AnalysisReplicaExchange0():
             Clusters.dist_matrix(is_mpi=is_mpi)
 
             Clusters.do_cluster(number_of_clusters)
-            if rank==0:
-               Clusters.plot_matrix()
+            if display_plot:
+               if rank==0:
+                  Clusters.plot_matrix()
             Clusters.save_distance_matrix_file(file_name=distance_matrix_file)               
           
 # -----------------------------------------------------------------------------------------------           
@@ -655,8 +656,9 @@ class AnalysisReplicaExchange0():
             Clusters.load_distance_matrix_file(file_name=distance_matrix_file)
             Clusters.do_cluster(number_of_clusters)
             [best_score_feature_keyword_list_dict,rmf_file_name_index_dict]=self.load_objects(".macro.pkl")
-            if rank==0:
-               Clusters.plot_matrix()           
+            if display_plot:
+               if rank==0:
+                  Clusters.plot_matrix()           
 
 # -----------------------------------------------------------------------------------------------  
 # now save all informations about the clusters

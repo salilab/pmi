@@ -796,6 +796,12 @@ def sort_by_residues(particles):
     sorted_particles_residues=sorted(particles_residues, key=lambda tup: tup[1])
     particles=[p[0] for p in sorted_particles_residues]
     return particles
+    
+def get_residue_to_particle_map(particles):
+    # this function returns a dictionary that map particles to residue indexes
+    particles=sort_by_residues(particles)
+    particles_residues=[(p,IMP.pmi.tools.get_residue_indexes(p)) for p in particles ]
+    return dict(zip(particles_residues,particles))
 
 ########################
 ### Parallel Computation

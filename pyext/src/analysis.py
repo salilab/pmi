@@ -204,21 +204,24 @@ class Clustering():
           rank=0
         
         self.model_list_names= self.all_coords.keys()
-        model_indexes=range(len(self.model_list_names))
-        model_indexes_unique_pairs=list(combinations(model_indexes,2))
+        self.model_indexes=range(len(self.model_list_names))
+        self.model_indexes_dict=dict(zip(self.model_list_names,self.model_indexes))
+        model_indexes_unique_pairs=list(combinations(self.model_indexes,2))
         
         my_model_indexes_unique_pairs=IMP.pmi.tools.chunk_list_into_segments(model_indexes_unique_pairs,number_of_processes)[rank]
 
         print rank,len(my_model_indexes_unique_pairs)
         
-        raw_distance_dict=IMP.pmi.analysis.matrix_calculation(self.all_coords,
+        (raw_distance_dict,self.transformation_distance_dict)=self.matrix_calculation(self.all_coords,
                                                            self.tmpl_coords,
                                                            my_model_indexes_unique_pairs,
                                                            do_alignment=True)
         
         if number_of_processes>1:
-            raw_distance_dict=IMP.pmi.tools.scatter_and_gather(raw_distance_dict)        
-
+            raw_distance_dict=IMP.pmi.tools.scatter_and_gather(raw_distance_dict)     
+            pickable_transformations=self.get_pickable_transformation_distance_dict()
+            pickable_transformations=IMP.pmi.tools.scatter_and_gather(pickable_transformations) 
+            self.set_transformation_distance_dict_from_pickable(pickable_transformations)   
 
         self.raw_distance_matrix = zeros((len(self.model_list_names), len(self.model_list_names)))
         for item in raw_distance_dict:
@@ -233,23 +236,51 @@ class Clustering():
         
         self.structure_cluster_ids=kmeans.labels_
 
+    def get_pickable_transformation_distance_dict(self):
+        pickable_transformations={}
+        for label in self.transformation_distance_dict:
+            tr=self.transformation_distance_dict[label]
+            trans=tuple(tr.get_translation())
+            rot=tuple(tr.get_rotation().get_quaternion())
+            pickable_transformations[label]=(rot,trans)
+        return pickable_transformations        
+    
+    def set_transformation_distance_dict_from_pickable(self,pickable_transformations):
+        self.transformation_distance_dict={}
+        for label in pickable_transformations:
+            tr=pickable_transformations[label]
+            trans=IMP.algebra.Vector3D(tr[1])
+            rot=IMP.algebra.Rotation3D(tr[0])
+            self.transformation_distance_dict[label]=IMP.algebra.Transformation3D(rot,trans)
+
+
     def save_distance_matrix_file(self,file_name='cluster.rawmatrix.pkl'):
         import pickle    
-        outf = open(file_name,'w')    
-        pickle.dump((self.structure_cluster_ids,self.model_list_names,self.raw_distance_matrix),outf)            
+        outf = open(file_name,'w')
+        
+        #to pickle the transformation dictionary 
+        #you have to save the arrays correposnding to
+        # the transformations
+        
+        
+        pickable_transformations=self.get_pickable_transformation_distance_dict()
+        pickle.dump((self.structure_cluster_ids,self.model_list_names,self.raw_distance_matrix,pickable_transformations),outf)            
         outf.close()        
 
     def load_distance_matrix_file(self,file_name='cluster.rawmatrix.pkl'):
         import pickle        
         inputf = open(file_name,'r')    
-        (self.structure_cluster_ids,self.model_list_names,self.raw_distance_matrix)=pickle.load(inputf)            
+        (self.structure_cluster_ids,self.model_list_names,self.raw_distance_matrix,pickable_transformation)=pickle.load(inputf) 
+        
+        self.set_transformation_distance_dict_from_pickable(pickable_transformation)
+        self.model_indexes=range(len(self.model_list_names))
+        self.model_indexes_dict=dict(zip(self.model_list_names,self.model_indexes))
+        
         inputf.close()      
    
     def plot_matrix(self):
         import pylab as pl    
         from scipy.cluster import hierarchy as hrc    
-        #plot_cluster_labels = list(self.structure_cluster_ids) 
-        #plot_raw_distance_matrix= self.raw_distance_matrix[plot_cluster_labels,:][:,plot_cluster_labels]
         
         fig = pl.figure()
         ax = fig.add_subplot(211)
@@ -263,7 +294,9 @@ class Clustering():
         fig.colorbar(cax)
 
         pl.show()
-
+    
+    def get_model_index_from_name(self,name):
+        return self.model_indexes_dict[name]
     
     def get_cluster_labels(self):
         #this list 
@@ -292,50 +325,58 @@ class Clustering():
     def get_cluster_label_size(self,label):
         return len(self.get_cluster_label_indexes(label))
         
-  
-def matrix_calculation(all_coords, template_coords, list_of_pairs, do_alignment=False):
-
-        import IMP
-        import IMP.pmi
-        import IMP.pmi.analysis
+    def get_transformation_to_first_member(self,cluster_label,structure_index):
+        reference=self.get_cluster_label_indexes(cluster_label)[0]
+        return self.transformation_distance_dict[(reference,structure_index)]
         
-        model_list_names = all_coords.keys()
-        rmsd_protein_names = all_coords[model_list_names[0]].keys()
-        alignment_template_protein_names=template_coords.keys()
-        raw_distance_dict={}
-        for (f1,f2) in list_of_pairs:
+    
+    def matrix_calculation(self,all_coords, template_coords, list_of_pairs, do_alignment=False):
 
-                if not do_alignment:
-                    # here we only get the rmsd, 
-                    # we need that for instance when you want to cluster conformations
-                    # globally, eg the EM map is a reference
-                    Ali = IMP.pmi.analysis.Alignment(all_coords[model_list_names[f1]], all_coords[model_list_names[f2]])
-                    r= Ali.get_rmsd()
-                    
-                elif do_alignment:
-                    # here we actually align the conformations first
-                    # and than calculate the rmsd. We need that when the 
-                    # protein(s) is the reference
-                    coords_f1 = dict([(pr,all_coords[model_list_names[f1]][pr]) for pr in alignment_template_protein_names])
-                    coords_f2 = dict([(pr,all_coords[model_list_names[f2]][pr]) for pr in alignment_template_protein_names])
-                    
-                    Ali = IMP.pmi.analysis.Alignment(coords_f1, coords_f2)
-                    template_rmsd, transformation = Ali.align()
-                    
-                    # here we calculate the rmsd
-                    # we will align two models based n the nuber of subunits provided
-                    # and transform coordinates of model 2 to model 1
-                    coords_f1 = dict([(pr,all_coords[model_list_names[f1]][pr]) for pr in rmsd_protein_names])
-                    coords_f2 = {}
-                    for pr in rmsd_protein_names:
-                        coords_f2[pr] = [transformation.get_transformed(i) for i in all_coords[model_list_names[f2]][pr]]
-                    
-                    Ali = IMP.pmi.analysis.Alignment(coords_f1, coords_f2)
-                    rmsd= Ali.get_rmsd()
-                   
-                raw_distance_dict[(f1,f2)]= rmsd
-                raw_distance_dict[(f2,f1)]= rmsd
-        return raw_distance_dict         
+            import IMP
+            import IMP.pmi
+            import IMP.pmi.analysis
+            
+            model_list_names = all_coords.keys()
+            rmsd_protein_names = all_coords[model_list_names[0]].keys()
+            alignment_template_protein_names=template_coords.keys()
+            raw_distance_dict={}
+            transformation_distance_dict={}
+            for (f1,f2) in list_of_pairs:
+
+                    if not do_alignment:
+                        # here we only get the rmsd, 
+                        # we need that for instance when you want to cluster conformations
+                        # globally, eg the EM map is a reference
+                        Ali = IMP.pmi.analysis.Alignment(all_coords[model_list_names[f1]], all_coords[model_list_names[f2]])
+                        r= Ali.get_rmsd()
+                        
+                    elif do_alignment:
+                        # here we actually align the conformations first
+                        # and than calculate the rmsd. We need that when the 
+                        # protein(s) is the reference
+                        coords_f1 = dict([(pr,all_coords[model_list_names[f1]][pr]) for pr in alignment_template_protein_names])
+                        coords_f2 = dict([(pr,all_coords[model_list_names[f2]][pr]) for pr in alignment_template_protein_names])
+                        
+                        Ali = IMP.pmi.analysis.Alignment(coords_f1, coords_f2)
+                        template_rmsd, transformation = Ali.align()
+                        
+                        # here we calculate the rmsd
+                        # we will align two models based n the nuber of subunits provided
+                        # and transform coordinates of model 2 to model 1
+                        coords_f1 = dict([(pr,all_coords[model_list_names[f1]][pr]) for pr in rmsd_protein_names])
+                        coords_f2 = {}
+                        for pr in rmsd_protein_names:
+                            coords_f2[pr] = [transformation.get_transformed(i) for i in all_coords[model_list_names[f2]][pr]]
+                        
+                        Ali = IMP.pmi.analysis.Alignment(coords_f1, coords_f2)
+                        rmsd= Ali.get_rmsd()
+                       
+                    raw_distance_dict[(f1,f2)]= rmsd
+                    raw_distance_dict[(f2,f1)]= rmsd
+                    transformation_distance_dict[(f1,f2)]= transformation
+                    transformation_distance_dict[(f2,f1)]= transformation
+            
+            return raw_distance_dict,transformation_distance_dict         
       
 
 # ----------------------------------
@@ -666,6 +707,31 @@ class GetContactMap():
 # these are post production function analysis
 ###############################################
 
+
+
+def get_hier_from_rmf(model,frame_number,rmf_file):
+      import IMP.rmf
+      import RMF    
+      print "getting coordinates for frame %i rmf file %s" % (frame_number,rmf_file)
+                  
+      # load the frame
+      rh= RMF.open_rmf_file_read_only(rmf_file)
+      try:
+        prots=IMP.rmf.create_hierarchies(rh, model)  
+      except:
+        print "Unable to open rmf file %s" % (rmf_file)
+        prot=None                   
+      IMP.rmf.link_hierarchies(rh, prots)
+      prot=prots[0]
+      try: 
+        IMP.rmf.load_frame(rh, frame_number)        
+      except:
+        print "Unable to open frame %i of file %s" % (frame_number,rmf_file)
+        prot=None           
+      model.update()
+      return prot
+
+
 def get_particles_at_resolution_one(prot):
     '''
     this fucntion get the particles by resolution, without a Representation class initialized
@@ -686,6 +752,13 @@ def get_particles_at_resolution_one(prot):
     
     particle_align=[]
     for name in particle_dict:
+        
         particle_dict[name]=IMP.pmi.tools.sort_by_residues(list(set(particle_dict[name]) & set(allparticles)))
-
+    
     return particle_dict
+
+def select_by_tuple(first_res_last_res_name_tuple):
+    first_res=first_res_last_res_hier_tuple[0]
+    last_res=first_res_last_res_hier_tuple[1]
+    name=first_res_last_res_hier_tuple[2]
+

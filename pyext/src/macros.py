@@ -455,8 +455,6 @@ class AnalysisReplicaExchange0():
         
         from operator import itemgetter
         import IMP.pmi.analysis
-        import IMP.rmf
-        import RMF
         import numpy as np
         
         if is_mpi:
@@ -524,24 +522,9 @@ class AnalysisReplicaExchange0():
             for cnt,tpl in enumerate(my_best_score_rmf_tuples):
                 rmf_file=tpl[1]
                 frame_number=tpl[2]
-                print "getting coordinates for frame %i rmf file %s" % (frame_number,rmf_file)
-                            
-                # load the frame
-                rh= RMF.open_rmf_file_read_only(rmf_file)
-                try:
-                  prots=IMP.rmf.create_hierarchies(rh, self.model)  
-                except:
-                  print "Unable to open rmf file %s" % (rmf_file)
-                  continue                   
-                IMP.rmf.link_hierarchies(rh, prots)
-                prot=prots[0]
-                try: 
-                  IMP.rmf.load_frame(rh, frame_number)        
-                except:
-                  print "Unable to open frame %i of file %s" % (frame_number,rmf_file)
-                  continue           
-                self.model.update()
                 
+                prot=IMP.pmi.analysis.get_hier_from_rmf(self.model,frame_number,rmf_file)
+                if not prot: continue
                 # getting the particles                
                 part_dict=IMP.pmi.analysis.get_particles_at_resolution_one(prot)
                 
@@ -570,7 +553,7 @@ class AnalysisReplicaExchange0():
                 template_coordinate_dict= {}
                 # let's try to align
                 if alignment_flag==1 and len(Clusters.all_coords)==0:
-                   for pr in alignment_components:
+                   for pr in alignment_components: 
                        template_coordinate_dict[pr] = model_coordinate_dict[pr]
                 # set the first model as template coordinates
                    Clusters.set_template(template_coordinate_dict)
@@ -606,15 +589,60 @@ class AnalysisReplicaExchange0():
                Clusters.plot_matrix()           
         
         if rank==0:
-          print rank, Clusters.get_cluster_labels()
-          for cl in Clusters.get_cluster_labels():
-              print "   "
-              print cl
+          o=IMP.pmi.output.Output()
+        
+          for n,cl in enumerate(Clusters.get_cluster_labels()):
+
               print Clusters.get_cluster_label_average_rmsd(cl)
               print Clusters.get_cluster_label_size(cl)
               print Clusters.get_cluster_label_names(cl)
-         
-    
+              dircluster="cluster."+str(n)+"/"
+              try:
+                 os.mkdir(dircluster)
+              except:
+                 pass              
+              for k,structure_name in enumerate(Clusters.get_cluster_label_names(cl)):
+                  rmf_name=structure_name.split("|")[0]
+                  rmf_frame_number=int(structure_name.split("|")[1])
+                  prot=IMP.pmi.analysis.get_hier_from_rmf(self.model,rmf_frame_number,rmf_name)
+                  if not prot: continue
+                  
+                  if k>0:
+                      model_index=Clusters.get_model_index_from_name(structure_name)
+                      transformation=Clusters.get_transformation_to_first_member(cl,model_index)
+                      
+                      rbs=[]           
+                      for p in IMP.atom.get_leaves(prot):              
+                          if IMP.core.RigidBody.particle_is_instance(p):                 
+                             rb=IMP.core.RigidMember(p).get_rigid_body()                     
+                             if rb not in rbs:                      
+                                rbs.append(rb)              
+                                IMP.core.transform(rb,transformation)
+                                
+                          else:                 
+                             IMP.core.transform(IMP.core.XYZ(p),transformation)              
+                        #IMP.em.add_to_map(dmap_dict[name],particle_dict[name])
+
+                  o.init_pdb(dircluster+str(k)+".pdb",prot)        
+                  o.write_pdb(dircluster+str(k)+".pdb")
+                  o.init_rmf(dircluster+str(k)+".rmf3",[prot])   
+                  #IMP.rmf.add_restraints(o.dictionary_rmfs[dircluster+str(n)+".rmf3"],rs)    
+                  o.write_rmf(dircluster+str(k)+".rmf3")
+                  o.close_rmf(dircluster+str(k)+".rmf3")     
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

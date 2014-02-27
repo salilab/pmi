@@ -476,7 +476,7 @@ class ProcessOutput():
         import IMP.pmi.tools
         IMP.pmi.tools.print_multicolumn(self.get_keys(),ncolumns,truncate)    
         
-    def get_fields(self,fields,filterout=None):
+    def get_fields(self,fields,filterout=None,get_every=10):
            '''
            this function get the wished field names and return a dictionary
            you can give the optional argument filterout if you want to "grep" out
@@ -495,6 +495,8 @@ class ProcessOutput():
                  if filterout in line:
                     continue
               line_number+=1
+              
+              if line_number%get_every!=0: continue
               if line_number%100==0: print "ProcessOutput.get_fields: read line %s from file %s" % (str(line_number),self.filename)
               try:
                  d=eval(line)

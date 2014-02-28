@@ -597,8 +597,8 @@ class Representation():
                IMP.isd_emxl.gmm_tools.write_gmm_to_text(density_particles,outputfile)
            if outputmap!=None:
                IMP.isd_emxl.gmm_tools.write_gmm_to_map(density_particles,outputmap,
-                                                   IMP.em.get_bounding_box(dmap),
-                                                   voxel_size)
+                                                       voxel_size,
+                                                       IMP.em.get_bounding_box(dmap))
 
         else:
             # read the inputfile here
@@ -618,6 +618,66 @@ class Representation():
 
     def get_component_density(self,name):
         return self.hier_representation[name]["Densities"]
+
+    def setup_all_atom_gaussians(self,name,hierarchies=None,
+                                 selection_tuples=None,
+                                 particles=None,
+                                 resolution=0.0,
+                                 output_map=None,
+                                 voxel_size=1.0):
+        '''This function decorates all specified particles as Gaussians directly.
+        name:                   component name
+        hierarchies:            set up GMM for some hierarchies
+        selection_tuples:       (list of tuples) example (first_residue,last_residue,component_name)
+        particles:              set up GMM for particles directly
+        resolution:             usual PMI resolution for selecting particles from the hierarchies
+        intermediate_map_fn:    for debugging, this will write the itermediate (simulated) map
+        '''
+        import IMP.isd_emxl
+        import IMP.isd_emxl.gmm_tools
+        import IMP.em
+        import numpy as np
+        import sys
+        from math import sqrt
+        self.representation_is_modified=True
+
+        if "Densities" not in self.hier_representation[name]:
+           root=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
+           root.set_name("Densities")
+           self.hier_representation[name]["Densities"]=root
+           protein_h.add_child(root)
+
+        # get list of all particles to decorate
+        if particles==None:
+            fragment_particles=[]
+        else:
+            fragment_particles=particles
+
+        if hierarchies!=None:
+            fragment_particles+=IMP.pmi.tools.select(self,resolution=resolution,
+                                                   hierarchies=hierarchies)
+        if selection_tuples!=None:
+            for st in selection_tuples:
+                fragment_particles+=IMP.pmi.tools.select_by_tuple(self,tupleselection=st,
+                                                                 resolution=resolution,
+                                                                 name_is_ambiguous=False)
+        if len(fragment_particles)==0:
+            print "add_component_density: no particle was selected"
+            return
+
+        # create a sphereical gaussian for each particle based on atom type
+        for p in fragment_particles:
+            center=IMP.core.XYZ(p).get_coordinates()
+            rad=IMP.core.XYZR(p).get_radius()
+            mass=IMP.atom.Mass(p).get_mass()
+            trans=IMP.algebra.Transformation3D(IMP.algebra.get_identity_rotation_3d(),center)
+            shape=IMP.algebra.Gaussian3D(IMP.algebra.ReferenceFrame3D(trans),[rad]*3)
+            IMP.core.Gaussian.setup_particle(p,shape)
+        if output_map!=None:
+            IMP.isd_emxl.gmm_tools.write_gmm_to_map(fragment_particles,outputmap,voxel_size,
+                                                    IMP.em.get_bounding_box(dmap))
+
+
 
     def add_component_hierarchy_clone(self,name,hierarchy):
         '''

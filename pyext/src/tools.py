@@ -814,7 +814,7 @@ def scatter_and_gather(data):
   number_of_processes=comm.size
   # synchronize data over the parallel run
   # the root is node 0
-
+  comm.Barrier()
   if rank!=0:
         comm.send(data, dest=0, tag=11)
      

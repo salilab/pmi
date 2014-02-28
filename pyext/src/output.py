@@ -1,3 +1,6 @@
+import IMP.pmi.tools
+
+
 class Output():
     
     def __init__(self,ascii=True):
@@ -48,34 +51,83 @@ class Output():
             self.dictchain[name][i.get_name()]=self.chainids[n]
 
     def write_pdb(self,name,appendmode=True):
+       
         if appendmode:
             flpdb=open(name,'a')
         else:
             flpdb=open(name,'w')
             
         #impatom.write_pdb(self.dictionary_pdbs[name],flpdb)
-        
+        index_residue_pair_list={}
+        atom_index=0
         for n,p in enumerate(impatom.get_leaves(self.dictionary_pdbs[name])):
+           
+           # this loop gets the protein name from the
+           # particle leave by descending into the hierarchy
+           
            root=p
            protname=root.get_name()
+           is_a_bead=False
            while not protname in self.dictchain[name]:
               root0=root.get_parent()
               protname=root0.get_name()
+              # check if that is a bead
+              # this piece of code might be dangerous if 
+              # the hierarchy was called Bead :)
+              if "Beads" in protname: is_a_bead=True
               root=root0
-        
+           
            #resind=impatom.Fragment(p).get_residue_indexes()
-        
+
            if impatom.Residue.particle_is_instance(p):
+              atom_index+=1
               residue=impatom.Residue(p)
               rt=residue.get_residue_type()
               resind=residue.get_index()
               flpdb.write(impatom.get_pdb_string(impcore.XYZ(p).get_coordinates(),
-                             n,impatom.AT_CA,rt,
+                             atom_index,impatom.AT_CA,rt,
                              self.dictchain[name][protname],
                              resind))
+              if protname not in index_residue_pair_list:
+                 index_residue_pair_list[protname]=[(atom_index,resind)]
+              else:
+                 index_residue_pair_list[protname].append((atom_index,resind))
+           
+           else:
+              if is_a_bead:
+                 atom_index+=1              
+                 rt=impatom.ResidueType('BEA')
+                 resindexes=IMP.pmi.tools.get_residue_indexes(p)
+                 resind=resindexes[len(resindexes)/2]
+                 flpdb.write(impatom.get_pdb_string(impcore.XYZ(p).get_coordinates(),
+                             atom_index,impatom.AT_CA,rt,
+                             self.dictchain[name][protname],
+                             resind)) 
+              if protname not in index_residue_pair_list:
+                 index_residue_pair_list[protname]=[(atom_index,resind)]
+              else:
+                 index_residue_pair_list[protname].append((atom_index,resind))
+
+        '''                 
+        #now write the connectivity     
+        for protname in index_residue_pair_list:
+        
+           ls=index_residue_pair_list[protname]
+           #sort by residue
+           ls=sorted(ls, key=lambda tup: tup[1])
+           #get the index list
+           indexes=map(list, zip(*ls))[0]
+           # get the contiguous pairs
+           indexes_pairs=list(IMP.pmi.tools.sublist_iterator(indexes,lmin=2,lmax=2))
+           #write the connection record only if the residue gap is larger than 1
+
+           for ip in indexes_pairs:
+               if abs(ip[1]-ip[0])>1:
+                  flpdb.write('{:6s}{:5d}{:5d}'.format('CONECT',ip[0],ip[1]))
+                  flpdb.write("\n")
+        '''
+        
         flpdb.write("ENDMOL\n")
-        
-        
         flpdb.close()
 
     def write_pdbs(self,appendmode=True):
@@ -476,7 +528,7 @@ class ProcessOutput():
         import IMP.pmi.tools
         IMP.pmi.tools.print_multicolumn(self.get_keys(),ncolumns,truncate)    
         
-    def get_fields(self,fields,filterout=None,get_every=10):
+    def get_fields(self,fields,filterout=None,get_every=1):
            '''
            this function get the wished field names and return a dictionary
            you can give the optional argument filterout if you want to "grep" out

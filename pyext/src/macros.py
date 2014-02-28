@@ -464,7 +464,8 @@ class AnalysisReplicaExchange0():
                         load_distance_matrix_file=False,
                         is_mpi=False,
                         number_of_clusters=1,
-                        display_plot=False):     
+                        display_plot=False,
+                        get_every=1):     
         
         '''
         the features are keywords for which you want to calculate average, medians, etc,
@@ -511,7 +512,7 @@ class AnalysisReplicaExchange0():
                   for k in keywords:
                       for fk in feature_keys:
                           if fk in k: feature_keywords.append(k)
-                  fields=po.get_fields(feature_keywords)
+                  fields=po.get_fields(feature_keywords,get_every=get_every)
                   #check that all lengths are all equal
                   length_set=set()
                   for f in fields: length_set.add(len(fields[f]))
@@ -541,7 +542,6 @@ class AnalysisReplicaExchange0():
 # broadcast the conformation features
         
             if number_of_processes>1:
-                    comm.Barrier()
                     score_list=IMP.pmi.tools.scatter_and_gather(score_list)
                     rmf_file_list=IMP.pmi.tools.scatter_and_gather(rmf_file_list)
                     rmf_file_frame_list=IMP.pmi.tools.scatter_and_gather(rmf_file_frame_list)  

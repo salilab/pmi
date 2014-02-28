@@ -210,7 +210,7 @@ class Clustering():
         
         my_model_indexes_unique_pairs=IMP.pmi.tools.chunk_list_into_segments(model_indexes_unique_pairs,number_of_processes)[rank]
 
-        print rank,len(my_model_indexes_unique_pairs)
+        print "process %s assigned with %s pairs" % (str(rank),str(len(my_model_indexes_unique_pairs)))
         
         (raw_distance_dict,self.transformation_distance_dict)=self.matrix_calculation(self.all_coords,
                                                            self.tmpl_coords,

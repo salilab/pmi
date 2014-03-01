@@ -55,29 +55,43 @@ simo.setup_bonds()
 ############ SETUP DENSITIES  ############
 sse_selections=tools.parse_dssp(sse_fn,'A')
 res_densities=[]
-all_tuples=sse_selections['helix']+sse_selections['beta']
-for l in sse_selections['loop']:
+
+for key in ('helix','beta'):
+  for sse_tuple in sse_selections[key]:
+    ps=simo.get_particles_from_selection_tuples(sse_tuple)
+    name=key
+    for t in sse_tuple:
+      name+='_%s-%i-%i'%(t[2].strip('chain'),t[0],t[1])
+    res_density=simo.add_component_density(sse_tuple[0][2],particles=ps,
+                                           num_components=4,resolution=0,
+                                           out_hier_name=name,
+                                           inputfile='%s/%s.txt'%(model_gmm_dir,name))
+                                           #outputfile='%s/%s.txt'%(model_gmm_dir,name),
+                                           #outputmap='%s/%s.mrc'%(model_gmm_dir,name),
+                                           #multiply_by_total_mass=True)
+    res_densities+=res_density
+    simo.set_rigid_body_from_hierarchies(res_density,particles=ps)
+
+# add density for each individual loop residue
+for nl,l in enumerate(sse_selections['loop']):
   start,stop,chain=l[0]
   for r in range(start,stop+1):
-    all_tuples.append([[r,r,chain]])
+    sse_tuple=[[r,r,chain]]
+    ps=simo.get_particles_from_selection_tuples(sse_tuple)
+    name='res'
+    for t in sse_tuple:
+      name+='_%s-%i'%(t[2].strip('chain'),t[0])
+    res_density=simo.add_component_density(sse_tuple[0][2],particles=ps,
+                                           num_components=2,resolution=0,
+                                           out_hier_name=name,
+                                           inputfile='%s/%s.txt'%(model_gmm_dir,name))
+                                           #outputfile='%s/%s.txt'%(model_gmm_dir,name),
+                                           #outputmap='%s/%s.mrc'%(model_gmm_dir,name),
+                                           #multiply_by_total_mass=True)
+    res_densities+=res_density
+    simo.set_rigid_body_from_hierarchies(res_density,particles=ps)
 
-for sse_tuple in all_tuples:
-  ps=simo.get_particles_from_selection_tuples(sse_tuple)
-  print 'working with tuple',sse_tuple,'num ps',len(ps)
-  name='model'
-  for t in sse_tuple:
-    name+='_%s-%i-%i'%(t[2].strip('chain'),t[0],t[1])
 
-  res_density=simo.add_component_density('chainA',particles=ps,
-                                         num_components=2,resolution=0,
-                                         out_hier_name='chainA',
-                                         inputfile='%s/%s.txt'%(model_gmm_dir,name))
-                                         #outputfile='%s/%s.txt'%(model_gmm_dir,name),
-                                         #outputmap='%s/%s.mrc'%(model_gmm_dir,name),
-                                         #multiply_by_total_mass=True)
-
-  res_densities+=res_density
-  simo.set_rigid_body_from_hierarchies(res_density,particles=ps)
 
 # rigid body params
 simo.set_super_rigid_body_from_hierarchies(chainA)

@@ -380,128 +380,78 @@ class Clustering():
       
 
 # ----------------------------------
+
 class GetModelDensity():
 
-    def __init__(self, dens_thresh=0.1, margin=20., voxel=5.):
-
-        global impem,deepcopy,cdist,array,argwhere,mgrid,shape,reshape
-        import IMP.em as impem
-        from numpy import array,argwhere,mgrid,shape,reshape
-        from copy import deepcopy
-        from scipy.spatial.distance import cdist
-
-
-        self.dens_thresh= dens_thresh
-        self.margin= margin
-        self.voxel= voxel
-        self.mgr= None
-        self.densities= {}
-
-    def set_grid(self, part_coords):
-
-        coords = array([array(list(j)) for j in part_coords])
-        minx,maxx,miny,maxy,minz,maxz = min(coords[:,0]),max(coords[:,0]),\
-                                        min(coords[:,1]),max(coords[:,1]),\
-                                        min(coords[:,2]),max(coords[:,2])
-        minx-=self.margin
-        maxx+=self.margin
-        miny-=self.margin
-        maxy+=self.margin
-        minz-=self.margin
-        maxz+=self.margin
-        grid= mgrid[minx:maxx:self.voxel,\
-                   miny:maxy:self.voxel,\
-                   minz:maxz:self.voxel]
-        grid= reshape(grid, (3,-1)).T
-        self.grid= grid
-        return self.grid
-
-    def set_template(self, part_coords):
-
-        self.tmpl_coords = part_coords
-
-    def fill(self, Coords, prot, alignment=0):
-
-        if alignment==0:
-
-            transformation = ''
-            self.get_subunits_densities(prot, transformation)
-
-        elif alignment==1:
-
-            qry_coords = {}
-            for pr in self.tmpl_coords.keys():
-                parts = IMP.atom.Selection(prot,molecule=pr).get_selected_particles()
-                coords = array([array(IMP.core.XYZ(i).get_coordinates()) for i in parts])
-                qry_coords[pr] = coords
-            Ali = Alignment(self.tmpl_coords, qry_coords)
-            rmsd_tm, transformation = Ali.align()
+    def __init__(self, custom_ranges,representation=None, voxel=5.0):
+        '''
+        custom_ranges ={'kin28':[['kin28',1,-1]],
+                'density_name_1' :[('ccl1')],
+                'density_name_2' :[(1,142,'tfb3d1'),(143,700,'tfb3d2')],
+                
        
-            self.get_subunits_densities(prot, transformation)
-
-
-    def get_subunit_density(self, name, prot, transformation):
-
-        crds= []
-        radii= []
+        '''
+        global impem
+        import IMP.em as impem
         
-        for part in [IMP.atom.get_leaves(c) for c in prot.get_children()\
-                     if c.get_name()==name][-1]:
-            p= IMP.core.XYZR(part)
-            if transformation!='': crds.append(array(list(transformation.get_transformed((p.get_x(),p.get_y(),p.get_z())))))
-            else:  crds.append(array([p.get_x(),p.get_y(),p.get_z()]))
-            radii.append(p.get_radius())
+        self.representation=representation           
+        self.voxel=voxel
+        self.densities= {}
+        self.count_models=0.0
+        self.custom_ranges=custom_ranges
 
-        crds= array(crds)
-        radii= array(radii)
-        dists= cdist(self.grid, crds)-radii
-        dens= set(list(argwhere(dists<0)[:,0]))
-        return dens
+    def add_subunits_density(self,hierarchy=None):
+          # the hierarchy is optional, if passed
+          self.count_models+=1.0
+          for density_name in self.custom_ranges:
+              parts=[]
+              for seg in self.custom_ranges[density_name]:
+                  if not hierarchy:
+                     parts+=IMP.tools.select_by_tuple(self.representation,seg,resolution=1,name_is_ambiguous=False)
+                  else:
+                     all_particles_by_segments=[]
+                     if type(seg)==str:
+                        s=IMP.atom.Selection(hierarchy,molecule=seg)
+                     if type(seg)==tuple:   
+                        s=IMP.atom.Selection(hierarchy,residue_indexes=range(seg[0],seg[1]+1),molecule=seg[2])
+                     all_particles_by_segments+=s.get_selected_particles()   
+              
+              if hierarchy:       
+                 part_dict=get_particles_at_resolution_one(hierarchy)
+                 all_particles_by_resolution=[]
+                 for name in part_dict:
+                     all_particles_by_resolution+=part_dict[name]
+                 parts=list(set(all_particles_by_segments) & set(all_particles_by_resolution))
+                 
+                 print density_name
+                 for p in parts:
+                     
+                     print p.get_name()
+                 
+              self.create_density_from_particles(parts, density_name)
+          
+    def normalize_density(self):
+        pass
 
-    def get_subunits_densities(self, prot, transformation):
+    def create_density_from_particles(self,ps, name,
+                                  resolution=1,
+                                  kernel_type='GAUSSIAN'):
+        '''pass XYZR particles with mass and create a density from them.
+        kernel type options are GAUSSIAN, BINARIZED_SPHERE, and SPHERE.'''
+      
+        kd={'GAUSSIAN':IMP.em.GAUSSIAN, 'BINARIZED_SPHERE':IMP.em.BINARIZED_SPHERE,
+        'SPHERE':IMP.em.SPHERE}
+   
+        dmap=impem.SampledDensityMap(ps,resolution,self.voxel)
+        dmap.calcRMS()
+        if name not in self.densities: self.densities[name] = dmap
+        else: self.densities[name].add(dmap)
 
-        for sbucp in set([i.get_name().split('..')[0] for i in prot.get_children()]):
-            for sbu in prot.get_children():
-                subname= sbu.get_name()
-                if subname.split('..')[0]!=sbucp: continue
+    def write_mrc(self, prefix):
 
-                dens= self.get_subunit_density(subname, prot, transformation)
-                if sbucp not in self.densities:
-                    self.densities[sbucp]= array([1 if i in dens else 0 for i in xrange(len(self.grid))])
-                else:
-                    self.densities[sbucp]+= array([1 if i in dens else 0 for i in xrange(len(self.grid))])
-        return self.densities
-
-    def write_mrc(self, outname):
-
-        for subunit in self.densities:
-            mdl= IMP.Model()
-            apix=self.voxel
-            resolution=6.
-            bbox= IMP.algebra.BoundingBox3D(IMP.algebra.Vector3D(\
-                          self.grid[:,0].min(),self.grid[:,1].min(),self.grid[:,2].min()),\
-                          IMP.algebra.Vector3D(\
-                          self.grid[:,0].max(),self.grid[:,1].max(),self.grid[:,2].max()))
-            dheader = impem.create_density_header(bbox,apix)
-            dheader.set_resolution(resolution)
-
-            dmap = impem.SampledDensityMap(dheader)
-            ps = []
-            freqs= self.densities[subunit]
-            for x,i in enumerate(self.grid):
-                if freqs[x]==0.: continue
-                p=IMP.Particle(mdl)
-                IMP.core.XYZR.setup_particle(p,\
-                                     IMP.algebra.Sphere3D(i,\
-                                     1.))#freqs[x]))
-                s=IMP.atom.Mass.setup_particle(p,freqs[x])
-                ps.append(p)
-            dmap.set_particles(ps)
-            dmap.resample()
-            dmap.calcRMS() # computes statistic stuff about the map and insert it in the header
-            print subunit, len(ps), subunit.rsplit('.',1)[0].split('/')[-1]
-            impem.write_map(dmap,outname+"_"+subunit.rsplit('.',1)[0].split('/')[-1]+".mrc",impem.MRCReaderWriter())
-
+        for density_name in self.densities:
+            self.densities[subunit].multiply(1./self.count_models)
+            impem.write_map(self.densities[subunit],prefix+"_"+density_name+".mrc",impem.MRCReaderWriter())
 
 # ----------------------------------
 
@@ -720,7 +670,8 @@ def get_hier_from_rmf(model,frame_number,rmf_file):
         prots=IMP.rmf.create_hierarchies(rh, model)  
       except:
         print "Unable to open rmf file %s" % (rmf_file)
-        prot=None                   
+        prot=None
+        return prot                   
       IMP.rmf.link_hierarchies(rh, prots)
       prot=prots[0]
       try: 

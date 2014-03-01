@@ -465,11 +465,19 @@ class AnalysisReplicaExchange0():
                         is_mpi=False,
                         number_of_clusters=1,
                         display_plot=False,
-                        get_every=1):     
+                        get_every=1,
+                        density_custom_ranges=None,
+                        density_file_prefix=""):     
         
         '''
         the features are keywords for which you want to calculate average, medians, etc,
         plots.
+        
+        density_calculation_components is a list of tuples or strings:
+                                      ["Rpb1", (20,100,"Rpb2"), .....]
+                                      if that is None, don't calculate the density.
+        
+        
         '''
         
         from operator import itemgetter
@@ -664,8 +672,17 @@ class AnalysisReplicaExchange0():
 
 # -----------------------------------------------------------------------------------------------  
 # now save all informations about the clusters
-        
+
+# -----------------------------------------------------------------------------------------------
+# fisrt initialize the Density class if requested
+#
         if rank==0:
+          if density_custom_ranges:
+             #convert to the data structure of IMP.pmi.analysis.GetModelDensity constructor
+                                
+             DensModule = IMP.pmi.analysis.GetModelDensity(density_custom_ranges)
+       
+
           o=IMP.pmi.output.Output()
         
           for n,cl in enumerate(Clusters.get_cluster_labels()):
@@ -699,6 +716,8 @@ class AnalysisReplicaExchange0():
                   prot=IMP.pmi.analysis.get_hier_from_rmf(self.model,rmf_frame_number,rmf_name)
                   if not prot: continue
                   
+
+                  
                   if k>0:
                       model_index=Clusters.get_model_index_from_name(structure_name)
                       transformation=Clusters.get_transformation_to_first_member(cl,model_index)
@@ -715,6 +734,10 @@ class AnalysisReplicaExchange0():
                              IMP.core.transform(IMP.core.XYZ(p),transformation)              
                         #IMP.em.add_to_map(dmap_dict[name],particle_dict[name])
 
+                  # add the density                  
+                  if density_custom_ranges:
+                     DensModule.add_subunits_density(prot)
+
                   o.init_pdb(dircluster+str(k)+".pdb",prot)        
                   o.write_pdb(dircluster+str(k)+".pdb")
                   o.init_rmf(dircluster+str(k)+".rmf3",[prot])   
@@ -722,6 +745,7 @@ class AnalysisReplicaExchange0():
                   o.write_rmf(dircluster+str(k)+".rmf3")
                   o.close_rmf(dircluster+str(k)+".rmf3")     
 
+              DensModule.write_mrc(dircluster+"/"+density_file_prefix)
 
     def save_objects(self,objects,file_name):
         import pickle    

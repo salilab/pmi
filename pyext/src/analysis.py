@@ -405,15 +405,20 @@ class GetModelDensity():
           self.count_models+=1.0
           for density_name in self.custom_ranges:
               parts=[]
+              if hierarchy:
+                 all_particles_by_segments=[]
+                 
               for seg in self.custom_ranges[density_name]:
                   if not hierarchy:
                      parts+=IMP.tools.select_by_tuple(self.representation,seg,resolution=1,name_is_ambiguous=False)
                   else:
-                     all_particles_by_segments=[]
+                     
                      if type(seg)==str:
-                        s=IMP.atom.Selection(hierarchy,molecule=seg)
+                        children=[child for child in hierarchy.get_children() if child.get_name()==seg]
+                        s=IMP.atom.Selection(children)
                      if type(seg)==tuple:   
-                        s=IMP.atom.Selection(hierarchy,residue_indexes=range(seg[0],seg[1]+1),molecule=seg[2])
+                        children=[child for child in hierarchy.get_children() if child.get_name()==seg[2]]
+                        s=IMP.atom.Selection(children,residue_indexes=range(seg[0],seg[1]+1))
                      all_particles_by_segments+=s.get_selected_particles()   
               
               if hierarchy:       
@@ -423,10 +428,6 @@ class GetModelDensity():
                      all_particles_by_resolution+=part_dict[name]
                  parts=list(set(all_particles_by_segments) & set(all_particles_by_resolution))
                  
-                 print density_name
-                 for p in parts:
-                     
-                     print p.get_name()
                  
               self.create_density_from_particles(parts, density_name)
           
@@ -450,8 +451,8 @@ class GetModelDensity():
     def write_mrc(self, prefix):
 
         for density_name in self.densities:
-            self.densities[subunit].multiply(1./self.count_models)
-            impem.write_map(self.densities[subunit],prefix+"_"+density_name+".mrc",impem.MRCReaderWriter())
+            self.densities[density_name].multiply(1./self.count_models)
+            impem.write_map(self.densities[density_name],prefix+"_"+density_name+".mrc",impem.MRCReaderWriter())
 
 # ----------------------------------
 

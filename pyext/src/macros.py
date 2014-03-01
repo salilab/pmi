@@ -557,7 +557,8 @@ class AnalysisReplicaExchange0():
             
             # sort by score and ge the best scoring ones
             score_rmf_tuples=zip(score_list,rmf_file_list,rmf_file_frame_list,range(len(score_list)))
-            sorted_score_rmf_tuples=sorted(score_rmf_tuples,key=itemgetter(0))
+            #numerically sorting in ascending order
+            sorted_score_rmf_tuples=sorted(score_rmf_tuples,key=lambda x: float(x[0]))
             best_score_rmf_tuples=sorted_score_rmf_tuples[0:number_of_best_scoring_models]
             
 # prune the feature_keyword_list_dict, keep only the best scoring models

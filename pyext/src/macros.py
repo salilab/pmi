@@ -466,8 +466,7 @@ class AnalysisReplicaExchange0():
                         number_of_clusters=1,
                         display_plot=False,
                         get_every=1,
-                        density_custom_ranges=None,
-                        density_file_prefix=""):     
+                        density_custom_ranges=None):     
         
         '''
         the features are keywords for which you want to calculate average, medians, etc,
@@ -745,7 +744,7 @@ class AnalysisReplicaExchange0():
                   o.write_rmf(dircluster+str(k)+".rmf3")
                   o.close_rmf(dircluster+str(k)+".rmf3")     
 
-              DensModule.write_mrc(dircluster+"/"+density_file_prefix)
+              DensModule.write_mrc(path=dircluster)
 
     def save_objects(self,objects,file_name):
         import pickle    

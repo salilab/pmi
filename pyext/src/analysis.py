@@ -448,11 +448,11 @@ class GetModelDensity():
         if name not in self.densities: self.densities[name] = dmap
         else: self.densities[name].add(dmap)
 
-    def write_mrc(self, prefix):
+    def write_mrc(self, path="./"):
 
         for density_name in self.densities:
             self.densities[density_name].multiply(1./self.count_models)
-            impem.write_map(self.densities[density_name],prefix+"_"+density_name+".mrc",impem.MRCReaderWriter())
+            impem.write_map(self.densities[density_name],path+"/"+density_name+".mrc",impem.MRCReaderWriter())
 
 # ----------------------------------
 

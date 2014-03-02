@@ -352,9 +352,16 @@ class Clustering():
                         # here we only get the rmsd, 
                         # we need that for instance when you want to cluster conformations
                         # globally, eg the EM map is a reference
-                        Ali = IMP.pmi.analysis.Alignment(all_coords[model_list_names[f1]], all_coords[model_list_names[f2]])
-                        rmsd= Ali.get_rmsd()
                         transformation=IMP.algebra.get_identity_transformation_3d()
+                        
+                        coords_f1 = dict([(pr,all_coords[model_list_names[f1]][pr]) for pr in rmsd_protein_names])
+                        coords_f2 = {}
+                        for pr in rmsd_protein_names:
+                            coords_f2[pr] = all_coords[model_list_names[f2]][pr]
+                            
+                        Ali = IMP.pmi.analysis.Alignment(coords_f1, coords_f2)
+                        rmsd= Ali.get_rmsd()
+                        
                         
                     elif do_alignment:
                         # here we actually align the conformations first

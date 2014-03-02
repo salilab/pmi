@@ -563,7 +563,7 @@ class AnalysisReplicaExchange0():
             # we have to define a best score rank when we process in parallel
             # to get the correct position in the best_score_rmf_tuples
             for n,tpl in enumerate(best_score_rmf_tuples):
-                tpl_new=tpl+(n)
+                tpl_new=tpl+tuple([n])
                 best_score_rmf_tuples[n]=tpl_new
             
 # prune the feature_keyword_list_dict, keep only the best scoring models

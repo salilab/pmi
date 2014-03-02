@@ -560,6 +560,11 @@ class AnalysisReplicaExchange0():
             #numerically sorting in ascending order
             sorted_score_rmf_tuples=sorted(score_rmf_tuples,key=lambda x: float(x[0]))
             best_score_rmf_tuples=sorted_score_rmf_tuples[0:number_of_best_scoring_models]
+            # we have to define a best score rank when we process in parallel
+            # to get the correct position in the best_score_rmf_tuples
+            for n,tpl in best_score_rmf_tuples:
+                tpl_new=tuple(list(tpl).append(n))
+                best_score_rmf_tuples[n]=tpl_new
             
 # prune the feature_keyword_list_dict, keep only the best scoring models
 # and sort it
@@ -575,7 +580,10 @@ class AnalysisReplicaExchange0():
                        best_score_feature_keyword_list_dict[f]=[feature_keyword_list_dict[f][index]]
             
             del feature_keyword_list_dict
-        
+            
+            
+            # here I've tested that feature_keyword_list_dict is correct on 2 CPUs
+            
 # --------------------------------------------------------------------------------------------        
 # read the coordinates
 # --------------------------------------------------------------------------------------------
@@ -607,7 +615,7 @@ class AnalysisReplicaExchange0():
                 all_coordinates.append(model_coordinate_dict)
                 frame_name=rmf_file+'|'+str(frame_number)
                 all_rmf_file_names.append(frame_name)
-                rmf_file_name_index_dict[frame_name]=cnt
+                rmf_file_name_index_dict[frame_name]=tpl[4]
 
 
 # --------------------------------------------------------------------------------------------

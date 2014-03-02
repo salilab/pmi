@@ -674,18 +674,17 @@ class AnalysisReplicaExchange0():
 # now save all informations about the clusters
 
 # -----------------------------------------------------------------------------------------------
-# fisrt initialize the Density class if requested
 #
         if rank==0:
-          if density_custom_ranges:
-             #convert to the data structure of IMP.pmi.analysis.GetModelDensity constructor
-                                
-             DensModule = IMP.pmi.analysis.GetModelDensity(density_custom_ranges)
-       
 
           o=IMP.pmi.output.Output()
         
           for n,cl in enumerate(Clusters.get_cluster_labels()):
+              
+              # first initialize the Density class if requested
+              
+              if density_custom_ranges:
+                DensModule = IMP.pmi.analysis.GetModelDensity(density_custom_ranges)
               
               print Clusters.get_cluster_label_average_rmsd(cl)
               print Clusters.get_cluster_label_size(cl)
@@ -712,11 +711,8 @@ class AnalysisReplicaExchange0():
                   
                   clusstat.write(str(tmp_dict)+"\n")                  
                   
-                  
                   prot=IMP.pmi.analysis.get_hier_from_rmf(self.model,rmf_frame_number,rmf_name)
                   if not prot: continue
-                  
-
                   
                   if k>0:
                       model_index=Clusters.get_model_index_from_name(structure_name)
@@ -744,8 +740,11 @@ class AnalysisReplicaExchange0():
                   #IMP.rmf.add_restraints(o.dictionary_rmfs[dircluster+str(n)+".rmf3"],rs)    
                   o.write_rmf(dircluster+str(k)+".rmf3")
                   o.close_rmf(dircluster+str(k)+".rmf3")     
+              
+              if density_custom_ranges:
+                 DensModule.write_mrc(path=dircluster)
+                 del DensModule
 
-              DensModule.write_mrc(path=dircluster)
 
     def save_objects(self,objects,file_name):
         import pickle    

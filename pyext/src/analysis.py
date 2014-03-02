@@ -338,13 +338,13 @@ class Clustering():
             
             model_list_names = all_coords.keys()
             rmsd_protein_names = all_coords[model_list_names[0]].keys()
-            alignment_template_protein_names=template_coords.keys()
             raw_distance_dict={}
             transformation_distance_dict={}
             if template_coords==None: 
                do_alignment=False
             else:
                do_alignment=True
+               alignment_template_protein_names=template_coords.keys()
             
             for (f1,f2) in list_of_pairs:
 

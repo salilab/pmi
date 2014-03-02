@@ -354,7 +354,7 @@ class Clustering():
                         # globally, eg the EM map is a reference
                         Ali = IMP.pmi.analysis.Alignment(all_coords[model_list_names[f1]], all_coords[model_list_names[f2]])
                         rmsd= Ali.get_rmsd()
-                        transformation=IMP.algebra.Transformation3D.get_identity_transformation_3d()
+                        transformation=IMP.algebra.get_identity_transformation_3d()
                         
                     elif do_alignment:
                         # here we actually align the conformations first

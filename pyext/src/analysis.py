@@ -177,7 +177,8 @@ class Clustering():
         from math import sqrt
         self.all_coords = {}
         self.structure_cluster_ids=None
-
+        self.tmpl_coords=None
+        
     def set_template(self, part_coords):
 
         self.tmpl_coords = part_coords
@@ -214,8 +215,7 @@ class Clustering():
         
         (raw_distance_dict,self.transformation_distance_dict)=self.matrix_calculation(self.all_coords,
                                                            self.tmpl_coords,
-                                                           my_model_indexes_unique_pairs,
-                                                           do_alignment=True)
+                                                           my_model_indexes_unique_pairs)
         
         if number_of_processes>1:
             raw_distance_dict=IMP.pmi.tools.scatter_and_gather(raw_distance_dict)     
@@ -330,7 +330,7 @@ class Clustering():
         return self.transformation_distance_dict[(reference,structure_index)]
         
     
-    def matrix_calculation(self,all_coords, template_coords, list_of_pairs, do_alignment=False):
+    def matrix_calculation(self,all_coords, template_coords, list_of_pairs):
 
             import IMP
             import IMP.pmi
@@ -341,6 +341,11 @@ class Clustering():
             alignment_template_protein_names=template_coords.keys()
             raw_distance_dict={}
             transformation_distance_dict={}
+            if template_coords==None: 
+               do_alignment=False
+            else:
+               do_alignment=True
+            
             for (f1,f2) in list_of_pairs:
 
                     if not do_alignment:
@@ -348,7 +353,7 @@ class Clustering():
                         # we need that for instance when you want to cluster conformations
                         # globally, eg the EM map is a reference
                         Ali = IMP.pmi.analysis.Alignment(all_coords[model_list_names[f1]], all_coords[model_list_names[f2]])
-                        r= Ali.get_rmsd()
+                        rmsd= Ali.get_rmsd()
                         
                     elif do_alignment:
                         # here we actually align the conformations first

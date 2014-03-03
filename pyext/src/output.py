@@ -59,8 +59,7 @@ class Output():
             flpdb=open(name,'a')
         else:
             flpdb=open(name,'w')
-            
-            
+
         for tupl in self.particle_infos_for_pdb[name]:
                
                  (p,atom_index,atom_type,residue_type,chain_id,residue_index)=tupl
@@ -89,18 +88,8 @@ class Output():
            # this loop gets the protein name from the
            # particle leave by descending into the hierarchy
            
-           root=p
-           protname=root.get_name()
-           is_a_bead=False
-           while not protname in self.dictchain[name]:
-              root0=root.get_parent()
-              protname=root0.get_name()
-              # check if that is a bead
-              # this piece of code might be dangerous if 
-              # the hierarchy was called Bead :)
-              if "Beads" in protname: is_a_bead=True
-              root=root0
-           
+           (protname,is_a_bead)=IMP.pmi.tools.get_prot_name_from_particle(p,self.dictchain[name])
+
            if protname not in resindexes_dict:
               resindexes_dict[protname]=[]
            
@@ -212,6 +201,8 @@ class Output():
             self.dictchain[name]={}
             for n,i in enumerate(self.dictionary_pdbs[name].get_children()):
                 self.dictchain[name][i.get_name()]=self.chainids[n]
+            
+            self.set_particle_infos_for_pdb_writing(name)                
 
     def write_pdb_best_scoring(self,score):
         if self.nbestscoring==None:

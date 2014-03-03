@@ -619,12 +619,12 @@ class Representation():
     def get_component_density(self,name):
         return self.hier_representation[name]["Densities"]
 
-    def setup_all_atom_gaussians(self,name,hierarchies=None,
-                                 selection_tuples=None,
-                                 particles=None,
-                                 resolution=0.0,
-                                 output_map=None,
-                                 voxel_size=1.0):
+    def add_all_atom_densities(self,name,hierarchies=None,
+                               selection_tuples=None,
+                               particles=None,
+                               resolution=0.0,
+                               output_map=None,
+                               voxel_size=1.0):
         '''This function decorates all specified particles as Gaussians directly.
         name:                   component name
         hierarchies:            set up GMM for some hierarchies
@@ -649,18 +649,20 @@ class Representation():
 
         if not hierarchies is None:
             fragment_particles+=IMP.pmi.tools.select(self,resolution=resolution,
-                                                   hierarchies=hierarchies)
+                                                     hierarchies=hierarchies)
+
         if not selection_tuples is None:
             for st in selection_tuples:
                 fragment_particles+=IMP.pmi.tools.select_by_tuple(self,tupleselection=st,
                                                                   resolution=resolution,
                                                                   name_is_ambiguous=False)
+
         if len(fragment_particles)==0:
             print "add_component_density: no particle was selected"
             return
 
         # create a sphereical gaussian for each particle based on atom type
-        print 'settin up all atom gaussians num_particles',len(fragment_particles)
+        print 'setting up all atom gaussians num_particles',len(fragment_particles)
         for p in fragment_particles:
             center=IMP.core.XYZ(p).get_coordinates()
             rad=IMP.core.XYZR(p).get_radius()
@@ -670,8 +672,7 @@ class Representation():
             IMP.core.Gaussian.setup_particle(p,shape)
         if not output_map is None:
             print 'writing map to',output_map
-            IMP.isd_emxl.gmm_tools.write_gmm_to_map(fragment_particles,outputmap,voxel_size,
-                                                    IMP.em.get_bounding_box(dmap))
+            IMP.isd_emxl.gmm_tools.write_gmm_to_map(fragment_particles,output_map,voxel_size)
 
 
 

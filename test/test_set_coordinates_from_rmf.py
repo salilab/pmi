@@ -26,8 +26,6 @@ beadsize=20
 
 fastids=IMP.pmi.tools.get_ids_from_fasta_file(fastafile)
 
-
-
 m=IMP.Model()
 simo = IMP.pmi.representation.SimplifiedModel(m) 
 

@@ -59,3 +59,9 @@ simo.setup_component_sequence_connectivity("Rpb4",1)
 output=IMP.pmi.output.Output()
 output.init_pdb("test_pdb_writing.pdb",simo.prot)
 output.write_pdbs()
+output.init_pdb_best_scoring("test_pdb_writing",simo.prot,10)
+for i in range(20):
+    score=-float(i)
+    output.write_pdb_best_scoring(score)   
+    
+

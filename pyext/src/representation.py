@@ -710,6 +710,44 @@ class Representation():
 
         return outhier
 
+    def set_coordinates_from_rmf(self,component_name,rmf_file_name,rmf_frame_number,rmf_component_name=None):
+        '''This function read and replace coordinates from an rmf file
+        It looks for the component with the same name, unless the rmf_component_name
+        is defined. Replace the coordinates of particles with the same name
+        It assumes that the rmf and the represdentation have the particles in the same order'''
+        
+        import IMP.pmi.analysis
+        
+        prot=IMP.pmi.analysis.get_hier_from_rmf(self.m,rmf_frame_number,rmf_file_name)
+        if not prot: 
+           print "set_coordinates_from_rmf: cannot read hiearchy from rmf"
+           exit()
+        if len(self.rigid_bodies)!=0:
+           print "set_coordinates_from_rmf: cannot proceed if rigid bodies were initialized. Use the function before defining the rigid bodies"
+           exit()
+        allpsrmf=IMP.atom.get_leaves(prot)
+        psrmf=[]
+        for p in allpsrmf:
+           (protname,is_a_bead)=IMP.pmi.tools.get_prot_name_from_particle(p,self.hier_dict.keys())
+           if rmf_component_name!=None and protname==rmf_component_name:
+              psrmf.append(p)
+           elif rmf_component_name==None and protname==component_name:
+              psrmf.append(p)
+              
+           
+        psrepr=IMP.atom.get_leaves(self.hier_dict[component_name])
+        
+        if len(psrmf) != len(psrepr):
+           print "set_coordinates_from_rmf: cannot proceed the rmf and the representation don't have the same number of particles"
+           exit()           
+        
+        for n,prmf in enumerate(psrmf):
+            prmfname=prmf.get_name()
+            preprname=psrepr[n].get_name()
+            "set_coordinates_from_rmf: WARNING rmf particle and representation particles have not the same name %s %s " % (prmfname,preprname)
+            xyz=IMP.core.XYZ(prmf).get_coordinates()
+            IMP.core.XYZ(psrepr[n]).set_coordinates(xyz)
+       
     def check_root(self,name,protein_h,resolution):
         '''
         checks whether the root hierarchy exists, and if not

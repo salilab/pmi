@@ -772,6 +772,21 @@ class HierarchyDatabase():
                 for p in self.get_particles(name,resn,resolution):
                     print "--------", p.get_name()
 
+def  get_prot_name_from_particle(p,list_of_names):
+     ''' this function returns the component name provided a particle and a list of names'''
+     root=p
+     protname=root.get_name()
+     is_a_bead=False
+     while not protname in list_of_names:
+        root0=root.get_parent()
+        protname=root0.get_name()
+        # check if that is a bead
+        # this piece of code might be dangerous if 
+        # the hierarchy was called Bead :)
+        if "Beads" in protname: is_a_bead=True
+        root=root0
+     return (protname,is_a_bead)
+
 
 def get_residue_indexes(hier):
     '''

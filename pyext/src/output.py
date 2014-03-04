@@ -31,6 +31,7 @@ class Output():
         self.residuetypekey=imp.StringKey("ResidueName")
         self.chainids="ABCDEFGHIJKLMNOPQRSTUVXYWZabcdefghijklmnopqrstuvxywz"
         self.dictchain={}
+        self.particle_infos_for_pdb={}
 
     def get_pdb_names(self):
         return self.dictionary_pdbs.keys()
@@ -49,6 +50,8 @@ class Output():
         
         for n,i in enumerate(self.dictionary_pdbs[name].get_children()):
             self.dictchain[name][i.get_name()]=self.chainids[n]
+        
+        self.set_particle_infos_for_pdb_writing(name)
 
     def write_pdb(self,name,appendmode=True):
        
@@ -56,57 +59,93 @@ class Output():
             flpdb=open(name,'a')
         else:
             flpdb=open(name,'w')
-            
-        #impatom.write_pdb(self.dictionary_pdbs[name],flpdb)
-        index_residue_pair_list={}
+
+        for tupl in self.particle_infos_for_pdb[name]:
+               
+                 (p,atom_index,atom_type,residue_type,chain_id,residue_index)=tupl
+                 flpdb.write(impatom.get_pdb_string(impcore.XYZ(p).get_coordinates(),
+                             atom_index,atom_type,residue_type,
+                             chain_id,residue_index)) 
+ 
+        flpdb.write("ENDMOL\n")
+        flpdb.close() 
+    
+    def set_particle_infos_for_pdb_writing(self,name):
+        #index_residue_pair_list={}
+
+        # the resindexes dictionary keep track of residues that have been already
+        # added to avoid duplication
+        # highest resolution have highest priority
+        resindexes_dict={}
+        
+        # this dictionary dill contain the sequence of tuples needed to 
+        # write the pdb
+        self.particle_infos_for_pdb[name]=[]
+        
         atom_index=0
         for n,p in enumerate(impatom.get_leaves(self.dictionary_pdbs[name])):
            
            # this loop gets the protein name from the
            # particle leave by descending into the hierarchy
            
-           root=p
-           protname=root.get_name()
-           is_a_bead=False
-           while not protname in self.dictchain[name]:
-              root0=root.get_parent()
-              protname=root0.get_name()
-              # check if that is a bead
-              # this piece of code might be dangerous if 
-              # the hierarchy was called Bead :)
-              if "Beads" in protname: is_a_bead=True
-              root=root0
-           
-           #resind=impatom.Fragment(p).get_residue_indexes()
+           (protname,is_a_bead)=IMP.pmi.tools.get_prot_name_from_particle(p,self.dictchain[name])
 
-           if impatom.Residue.particle_is_instance(p):
-              atom_index+=1
-              residue=impatom.Residue(p)
+           if protname not in resindexes_dict:
+              resindexes_dict[protname]=[]
+           
+           if impatom.Atom.particle_is_instance(p):
+              atom_index+=1              
+              residue=impatom.Residue(impatom.Atom(p).get_parent())
               rt=residue.get_residue_type()
               resind=residue.get_index()
-              flpdb.write(impatom.get_pdb_string(impcore.XYZ(p).get_coordinates(),
-                             atom_index,impatom.AT_CA,rt,
-                             self.dictchain[name][protname],
-                             resind))
-              if protname not in index_residue_pair_list:
-                 index_residue_pair_list[protname]=[(atom_index,resind)]
-              else:
-                 index_residue_pair_list[protname].append((atom_index,resind))
-           
+              atomtype=impatom.Atom(p).get_atom_type()
+              self.particle_infos_for_pdb[name].append((p,atom_index,
+                     atomtype,rt,self.dictchain[name][protname],resind))           
+              resindexes_dict[protname].append(resind)
+              
+              
+           elif impatom.Residue.particle_is_instance(p):
+
+              residue=impatom.Residue(p)
+              resind=residue.get_index()
+              # skip if the residue was already added by atomistic resolution 0
+              if resind in resindexes_dict[protname]: continue
+              else: 
+                 resindexes_dict[protname].append(resind)
+              atom_index+=1
+              rt=residue.get_residue_type()
+              self.particle_infos_for_pdb[name].append((p,atom_index,
+                     impatom.AT_CA,rt,self.dictchain[name][protname],resind))
+              
+              #if protname not in index_residue_pair_list:
+              #   index_residue_pair_list[protname]=[(atom_index,resind)]
+              #else:
+              #   index_residue_pair_list[protname].append((atom_index,resind))
+
+           elif impatom.Fragment.particle_is_instance(p) and not is_a_bead:
+              resindexes=IMP.pmi.tools.get_residue_indexes(p)
+              resind=resindexes[len(resindexes)/2]
+              if resind in resindexes_dict[protname]: continue
+              else: 
+                 resindexes_dict[protname].append(resind)           
+              atom_index+=1
+              rt=impatom.ResidueType('BEA')
+              self.particle_infos_for_pdb[name].append((p,atom_index,
+                     impatom.AT_CA,rt,self.dictchain[name][protname],resind))
+
+
            else:
               if is_a_bead:
                  atom_index+=1              
                  rt=impatom.ResidueType('BEA')
                  resindexes=IMP.pmi.tools.get_residue_indexes(p)
                  resind=resindexes[len(resindexes)/2]
-                 flpdb.write(impatom.get_pdb_string(impcore.XYZ(p).get_coordinates(),
-                             atom_index,impatom.AT_CA,rt,
-                             self.dictchain[name][protname],
-                             resind)) 
-              if protname not in index_residue_pair_list:
-                 index_residue_pair_list[protname]=[(atom_index,resind)]
-              else:
-                 index_residue_pair_list[protname].append((atom_index,resind))
+                 self.particle_infos_for_pdb[name].append((p,atom_index,
+                      impatom.AT_CA,rt,self.dictchain[name][protname],resind))
+              #if protname not in index_residue_pair_list:
+              #   index_residue_pair_list[protname]=[(atom_index,resind)]
+              #else:
+              #   index_residue_pair_list[protname].append((atom_index,resind))
 
         '''                 
         #now write the connectivity     
@@ -127,8 +166,7 @@ class Output():
                   flpdb.write("\n")
         '''
         
-        flpdb.write("ENDMOL\n")
-        flpdb.close()
+
 
     def write_pdbs(self,appendmode=True):
         for pdb in self.dictionary_pdbs.keys():
@@ -163,6 +201,8 @@ class Output():
             self.dictchain[name]={}
             for n,i in enumerate(self.dictionary_pdbs[name].get_children()):
                 self.dictchain[name][i.get_name()]=self.chainids[n]
+            
+            self.set_particle_infos_for_pdb_writing(name)                
 
     def write_pdb_best_scoring(self,score):
         if self.nbestscoring==None:

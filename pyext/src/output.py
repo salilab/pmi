@@ -51,7 +51,6 @@ class Output():
         for n,i in enumerate(self.dictionary_pdbs[name].get_children()):
             self.dictchain[name][i.get_name()]=self.chainids[n]
         
-        self.set_particle_infos_for_pdb_writing(name)
 
     def write_pdb(self,name,appendmode=True):
        
@@ -59,8 +58,10 @@ class Output():
             flpdb=open(name,'a')
         else:
             flpdb=open(name,'w')
-
-        for tupl in self.particle_infos_for_pdb[name]:
+         
+        particle_infos_for_pdb=self.get_particle_infos_for_pdb_writing(name)
+        
+        for tupl in particle_infos_for_pdb:
                
                  (p,atom_index,atom_type,residue_type,chain_id,residue_index)=tupl
                  flpdb.write(impatom.get_pdb_string(impcore.XYZ(p).get_coordinates(),
@@ -70,7 +71,7 @@ class Output():
         flpdb.write("ENDMOL\n")
         flpdb.close() 
     
-    def set_particle_infos_for_pdb_writing(self,name):
+    def get_particle_infos_for_pdb_writing(self,name):
         #index_residue_pair_list={}
 
         # the resindexes dictionary keep track of residues that have been already
@@ -80,7 +81,7 @@ class Output():
         
         # this dictionary dill contain the sequence of tuples needed to 
         # write the pdb
-        self.particle_infos_for_pdb[name]=[]
+        particle_infos_for_pdb=[]
         
         atom_index=0
         for n,p in enumerate(impatom.get_leaves(self.dictionary_pdbs[name])):
@@ -99,7 +100,7 @@ class Output():
               rt=residue.get_residue_type()
               resind=residue.get_index()
               atomtype=impatom.Atom(p).get_atom_type()
-              self.particle_infos_for_pdb[name].append((p,atom_index,
+              particle_infos_for_pdb.append((p,atom_index,
                      atomtype,rt,self.dictchain[name][protname],resind))           
               resindexes_dict[protname].append(resind)
               
@@ -114,7 +115,7 @@ class Output():
                  resindexes_dict[protname].append(resind)
               atom_index+=1
               rt=residue.get_residue_type()
-              self.particle_infos_for_pdb[name].append((p,atom_index,
+              particle_infos_for_pdb.append((p,atom_index,
                      impatom.AT_CA,rt,self.dictchain[name][protname],resind))
               
               #if protname not in index_residue_pair_list:
@@ -130,7 +131,7 @@ class Output():
                  resindexes_dict[protname].append(resind)           
               atom_index+=1
               rt=impatom.ResidueType('BEA')
-              self.particle_infos_for_pdb[name].append((p,atom_index,
+              particle_infos_for_pdb.append((p,atom_index,
                      impatom.AT_CA,rt,self.dictchain[name][protname],resind))
 
 
@@ -140,13 +141,15 @@ class Output():
                  rt=impatom.ResidueType('BEA')
                  resindexes=IMP.pmi.tools.get_residue_indexes(p)
                  resind=resindexes[len(resindexes)/2]
-                 self.particle_infos_for_pdb[name].append((p,atom_index,
+                 particle_infos_for_pdb.append((p,atom_index,
                       impatom.AT_CA,rt,self.dictchain[name][protname],resind))
               #if protname not in index_residue_pair_list:
               #   index_residue_pair_list[protname]=[(atom_index,resind)]
               #else:
               #   index_residue_pair_list[protname].append((atom_index,resind))
 
+
+        return particle_infos_for_pdb
         '''                 
         #now write the connectivity     
         for protname in index_residue_pair_list:
@@ -201,8 +204,7 @@ class Output():
             self.dictchain[name]={}
             for n,i in enumerate(self.dictionary_pdbs[name].get_children()):
                 self.dictchain[name][i.get_name()]=self.chainids[n]
-            
-            self.set_particle_infos_for_pdb_writing(name)                
+                            
 
     def write_pdb_best_scoring(self,score):
         if self.nbestscoring==None:

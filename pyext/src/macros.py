@@ -30,8 +30,17 @@ class ReplicaExchange0():
                       replica_stat_file_suffix="stat_replica",
                       em_object_for_rmf=None,
                       replica_exchange_object=None):
-
+       
+       '''
+       representation    IMP.pmi.Representation()      can be a list of representations (enables the multi state modeling)
+       '''
+       
+       
        self.model=model
+       if type(representation)==list:
+          self.is_multi_state=True
+       else:
+          self.is_multi_state=False
        self.representation=representation
        self.crosslink_restraints=crosslink_restraints
        self.em_object_for_rmf=em_object_for_rmf
@@ -39,6 +48,10 @@ class ReplicaExchange0():
        self.output_objects=output_objects
        self.replica_exchange_object=replica_exchange_object
        self.vars={}
+       if self.is_multi_state:
+          self.vars["number_of_states"]=len(self.representation)
+       else:
+	      self.vars["number_of_states"]=1
        self.vars["monte_carlo_temperature"]=monte_carlo_temperature
        self.vars["replica_exchange_minimum_temperature"]=replica_exchange_minimum_temperature
        self.vars["replica_exchange_maximum_temperature"]=replica_exchange_maximum_temperature
@@ -103,26 +116,34 @@ class ReplicaExchange0():
       globaldir=self.vars["global_output_directory"]+"/"
       rmf_dir=globaldir+self.vars["rmf_dir"]
       pdb_dir=globaldir+self.vars["best_pdb_dir"]
+      
 
       if self.vars["do_clean_first"]:
-        #to write
-        pass
+         pass
+      
+
       if self.vars["do_create_directories"]:
+      
         try:
-            os.makedirs(globaldir)
+           os.makedirs(globaldir)
         except:
-            pass
+           pass
+        try:
+           os.makedirs(rmf_dir)
+        except:
+           pass
 
-        try:
-            os.makedirs(rmf_dir)
-        except:
-            pass
-        
-        try:
-            os.makedirs(pdb_dir)
-        except:
-            pass
-
+        if not self.is_multi_state:
+           try:
+              os.makedirs(pdb_dir)
+           except:
+              pass
+        else:
+           for n in range(self.vars["number_of_states"]):
+             try:
+                os.makedirs(pdb_dir+"/"+str(n))
+             except:
+                pass
 
 # -------------------------------------------------------------------------
 
@@ -141,18 +162,41 @@ class ReplicaExchange0():
       output.init_stat2(replica_stat_file,[rex],extralabels=["score"])
 
       print "Setting up best pdb files"
-      output.init_pdb_best_scoring(pdb_dir+"/"+
+      if not self.is_multi_state:
+         output.init_pdb_best_scoring(pdb_dir+"/"+
                                    self.vars["best_pdb_name_suffix"],
                                    self.representation.prot,
                                    self.vars["number_of_best_scoring_models"],
                                    replica_exchange=True)
+      else:
+         for n in range(self.vars["number_of_states"]):
+            output.init_pdb_best_scoring(pdb_dir+"/"+str(n)+"/"+
+                                   self.vars["best_pdb_name_suffix"],
+                                   self.representation[n].prot,
+                                   self.vars["number_of_best_scoring_models"],
+                                   replica_exchange=True)
+
+# ---------------------------------------------
+
+      if self.em_object_for_rmf!=None:
+         if not self.is_multi_state:
+	    output_hierarchies=[self.representation.prot,self.em_object_for_rmf.get_density_as_hierarchy()]
+         else:
+	    output_hierarchies=[r.prot for r in self.representation]
+	    output_hierarchies.append(self.em_object_for_rmf.get_density_as_hierarchy())
+      else:
+	 if not self.is_multi_state:
+            output_hierarchies=[self.representation.prot]
+	 else:
+	    output_hierarchies=[r.prot for r in self.representation]
+
 
 #----------------------------------------------
 
       print "Setting up and writing initial rmf coordinate file"
       init_suffix=globaldir+self.vars["initial_rmf_name_suffix"]
       output.init_rmf(init_suffix+"."+str(myindex)+".rmf3",
-                      [self.representation.prot])
+                      output_hierarchies)
       if self.crosslink_restraints:
          output.add_restraints_to_rmf(init_suffix+"."+str(myindex)+".rmf3",
                                       self.crosslink_restraints)
@@ -162,10 +206,6 @@ class ReplicaExchange0():
 #----------------------------------------------
       
       print "Setting up production rmf files"
-      if self.em_object_for_rmf!=None:
-         output_hierarchies=[self.representation.prot,self.em_object_for_rmf.get_density_as_hierarchy()]
-      else:
-         output_hierarchies=[self.representation.prot]
       
       rmfname=rmf_dir+"/"+str(myindex)+".rmf3"
       output.init_rmf(rmfname, output_hierarchies)
@@ -199,7 +239,6 @@ class ReplicaExchange0():
 
         output.write_stat2(replica_stat_file)
         rex.swap_temp(i,score)
-
 
 
 # -----------------------------------------------------------------------

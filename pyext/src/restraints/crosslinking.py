@@ -649,6 +649,7 @@ class ISDCrossLinkMS():
             columnmapping["Residue1"] = 2
             columnmapping["Residue2"] = 3
             columnmapping["IDScore"] = 4
+            columnmapping["XLUniqueID"] = 5
 
         if csvfile:
             # in case the file is a cvs file
@@ -706,9 +707,16 @@ class ISDCrossLinkMS():
         residue1 = columnmapping["Residue1"]
         residue2 = columnmapping["Residue2"]
         idscore = columnmapping["IDScore"]
+        xluniqueid = columnmapping["XLUniqueID"]
 
         restraints = []
-
+        
+        # we need this dictionary to create ambiguity (i.e., multistate)
+        # if one id is already present in the dictionary, add the term to the
+        # corresponding already geenrated restraint
+        
+        uniqueid_restraints_map={} 
+        
         for entry in db:
             if not csvfile:
                 tokens = entry.split()
@@ -721,6 +729,7 @@ class ISDCrossLinkMS():
                   r2 = int(tokens[residue2])
                   c2 = tokens[protein2]
                   ids = float(tokens[idscore])
+                  xlid = int(tokens[xluniqueid])                  
                 except:
                   print "this line was not accessible "+str(entry)
                   continue
@@ -737,6 +746,7 @@ class ISDCrossLinkMS():
                   r2 = int(entry[residue2])
                   c2 = entry[protein2]
                   ids = float(entry[idscore])
+                  xlid = int(tokens[xluniqueid])   
                 except:
                   print "this line was not accessible "+str(entry)
                   continue               
@@ -771,22 +781,28 @@ class ISDCrossLinkMS():
               # remove in the future!!!
               if p1 == p2:
                 continue
-            
-              if not self.marginal:
-                if not self.samplelength:
-                  dr = IMP.isd_emxl.CrossLinkMSRestraint(self.m, length, inner_slope)
-                else:
-                  # this will create a xl length particle that will be sampled
-                  self.create_length()
-                  dr = IMP.isd_emxl.CrossLinkMSRestraint(self.m, self.length)
-
+              
+              if xlid in uniqueid_restraints_map:
+                 dr=uniqueid_restraints_map[xlid]
+              
               else:
-                if not self.samplelength:
-                  dr = IMP.isd_emxl.CrossLinkMSMarginalRestraint(self.m, length)
-                else:
-                  # this will create a xl length particle that will be sampled
-                  self.create_length()
-                  dr = IMP.isd_emxl.CrossLinkMSMarginalRestraint(self.m, self.length)
+                  if not self.marginal:
+                    if not self.samplelength:
+                      dr = IMP.isd_emxl.CrossLinkMSRestraint(self.m, length, inner_slope)
+                    else:
+                      # this will create a xl length particle that will be sampled
+                      self.create_length()
+                      dr = IMP.isd_emxl.CrossLinkMSRestraint(self.m, self.length)
+    
+                  else:
+                    if not self.samplelength:
+                      dr = IMP.isd_emxl.CrossLinkMSMarginalRestraint(self.m, length)
+                    else:
+                      # this will create a xl length particle that will be sampled
+                      self.create_length()
+                      dr = IMP.isd_emxl.CrossLinkMSMarginalRestraint(self.m, self.length)
+                      
+                  uniqueid_restraints_map[xlid]=dr
 
               mappedr1 = self.radius_map.get_map_element(
                   IMP.pmi.Uncertainty(p1).get_uncertainty())

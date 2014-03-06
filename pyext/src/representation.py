@@ -719,13 +719,17 @@ class Representation():
         import IMP.pmi.analysis
         
         prot=IMP.pmi.analysis.get_hier_from_rmf(self.m,rmf_frame_number,rmf_file_name)
+        
+        
         if not prot: 
            print "set_coordinates_from_rmf: cannot read hiearchy from rmf"
            exit()
-        if len(self.rigid_bodies)!=0:
-           print "set_coordinates_from_rmf: cannot proceed if rigid bodies were initialized. Use the function before defining the rigid bodies"
-           exit()
+        #if len(self.rigid_bodies)!=0:
+        #   print "set_coordinates_from_rmf: cannot proceed if rigid bodies were initialized. Use the function before defining the rigid bodies"
+        #   exit()
+        
         allpsrmf=IMP.atom.get_leaves(prot)
+        
         psrmf=[]
         for p in allpsrmf:
            (protname,is_a_bead)=IMP.pmi.tools.get_prot_name_from_particle(p,self.hier_dict.keys())
@@ -737,16 +741,30 @@ class Representation():
            
         psrepr=IMP.atom.get_leaves(self.hier_dict[component_name])
         
+       
+        
         if len(psrmf) != len(psrepr):
            print "set_coordinates_from_rmf: cannot proceed the rmf and the representation don't have the same number of particles"
+           print "particles in rmf: %s particles in the representation: %s" % (str(len(psrmf)),str(len(psrepr)))
            exit()           
         
         for n,prmf in enumerate(psrmf):
             prmfname=prmf.get_name()
             preprname=psrepr[n].get_name()
-            "set_coordinates_from_rmf: WARNING rmf particle and representation particles have not the same name %s %s " % (prmfname,preprname)
-            xyz=IMP.core.XYZ(prmf).get_coordinates()
-            IMP.core.XYZ(psrepr[n]).set_coordinates(xyz)
+            if IMP.core.RigidMember.get_is_setup(psrepr[n]):
+               print "set_coordinates_from_rmf: component %s cannot proceed if rigid bodies were initialized. Use the function before defining the rigid bodies" % component_name
+               exit()
+            if IMP.core.NonRigidMember.get_is_setup(psrepr[n]):
+               print "set_coordinates_from_rmf: component %s cannot proceed if rigid bodies were initialized. Use the function before defining the rigid bodies" % component_name
+               exit()
+            
+            if prmfname!=preprname:
+               print "set_coordinates_from_rmf: WARNING rmf particle and representation particles have not the same name %s %s " % (prmfname,preprname)
+            if IMP.core.XYZ.get_is_setup(prmf) and IMP.core.XYZ.get_is_setup(psrepr[n]):
+               xyz=IMP.core.XYZ(prmf).get_coordinates()
+               IMP.core.XYZ(psrepr[n]).set_coordinates(xyz)
+            else:
+               print "set_coordinates_from_rmf: WARNING particles are not XYZ decorated %s %s " % (str(IMP.core.XYZ.get_is_setup(prmf)) , str(IMP.core.XYZ.get_is_setup(psrepr[n])))
        
     def check_root(self,name,protein_h,resolution):
         '''
@@ -1242,7 +1260,10 @@ class Representation():
         i.e. all components were added
         as stored in the rmf
         '''
-        rh= RMF.open_rmf_file(rmfname)
+        import IMP.rmf
+        import RMF
+        
+        rh= RMF.open_rmf_file_read_only(rmfname)
         IMP.rmf.link_hierarchies(rh, [self.prot])
         IMP.rmf.load_frame(rh, frameindex)
         del rh

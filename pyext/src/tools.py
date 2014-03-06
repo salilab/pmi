@@ -779,7 +779,11 @@ def  get_prot_name_from_particle(p,list_of_names):
      is_a_bead=False
      while not protname in list_of_names:
         root0=root.get_parent()
+        if root0 == IMP.atom.Hierarchy():
+           return (None,None)
         protname=root0.get_name()
+      
+        
         # check if that is a bead
         # this piece of code might be dangerous if 
         # the hierarchy was called Bead :)

@@ -784,11 +784,13 @@ class ISDCrossLinkMS():
                 continue
               
               if xlid in uniqueid_restraints_map:
+                 print "getting a crosslink restraint from id %s" % str(xlid)
                  dr=uniqueid_restraints_map[xlid]
               
               else:
                   if not self.marginal:
                     if not self.samplelength:
+                      print "generating a new crosslink restraint"
                       dr = IMP.isd_emxl.CrossLinkMSRestraint(self.m, length, inner_slope)
                     else:
                       # this will create a xl length particle that will be sampled

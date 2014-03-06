@@ -170,7 +170,7 @@ class Representation():
         handle = open(filename, "rU")
         record_dict = SeqIO.to_dict(SeqIO.parse(handle, "fasta"))
         handle.close()
-        if id==None: id=name
+        if id is None: id=name
         try:
            length=len(record_dict[id].seq)
         except KeyError:
@@ -187,18 +187,18 @@ class Representation():
                                       show=False,isnucleicacid=False,
                                       attachbeads=False):
 
-        if beadsize!=None:
+        if not beadsize is None:
            IMP.pmi.tools.print_deprecation_warning("beadsize","missingbeadsize")
 
         self.representation_is_modified=True
         outhiers=[]
 
-        if color==None:
+        if color is None:
            color=self.color_dict[name]
         else:
            self.color_dict[name]=color
 
-        if resolutions==None:
+        if resolutions is None:
            resolutions=[1]
         print "autobuild_model: constructing %s from pdb %s and chain %s" % (name,pdbname,str(chain))
 
@@ -214,7 +214,7 @@ class Representation():
         #check if resrange was defined, otherwise
         #use the sequence, or the pdb resrange
 
-        if resrange==None:
+        if resrange is None:
            if name in self.sequence_dict:
               resrange=(1,len(self.sequence_dict[name]))
            else:
@@ -286,7 +286,7 @@ class Representation():
         '''
 
         self.representation_is_modified=True
-        if color==None:
+        if color is None:
            # if the color is not passed, then get the stored color
            color=self.color_dict[name]
         protein_h=self.hier_dict[name]
@@ -319,7 +319,7 @@ class Representation():
            chain=t.get_id()
            del s,t
 
-        if resrange!=None:
+        if not resrange is None:
            if resrange[0]>start: start=resrange[0]
            if resrange[1]<end:   end=resrange[1]
 
@@ -366,7 +366,7 @@ class Representation():
 
         protein_h=self.hier_dict[name]
         outhiers=[]
-        if color==None:
+        if color is None:
            color=self.color_dict[name]
 
         start=resrange[0]
@@ -410,7 +410,7 @@ class Representation():
 
         protein_h=self.hier_dict[name]
         outhiers=[]
-        if colors==None:
+        if colors is None:
            colors=[self.color_dict[name]]
 
         for n,dss in enumerate(ds):
@@ -474,7 +474,7 @@ class Representation():
                IMP.atom.Mass.setup_particle(prt,mass)
                ptem.set_radius(radius)
             try:
-                if tuple(incoord)!=None: ptem.set_coordinates(incoord)
+                if not tuple(incoord) is None: ptem.set_coordinates(incoord)
             except TypeError: pass
             IMP.pmi.Uncertainty.setup_particle(prt,radius)
             IMP.pmi.Symmetric.setup_particle(prt,0)
@@ -619,12 +619,12 @@ class Representation():
     def get_component_density(self,name):
         return self.hier_representation[name]["Densities"]
 
-    def setup_all_atom_gaussians(self,name,hierarchies=None,
-                                 selection_tuples=None,
-                                 particles=None,
-                                 resolution=0.0,
-                                 output_map=None,
-                                 voxel_size=1.0):
+    def add_all_atom_densities(self,name,hierarchies=None,
+                               selection_tuples=None,
+                               particles=None,
+                               resolution=0.0,
+                               output_map=None,
+                               voxel_size=1.0):
         '''This function decorates all specified particles as Gaussians directly.
         name:                   component name
         hierarchies:            set up GMM for some hierarchies
@@ -649,18 +649,20 @@ class Representation():
 
         if not hierarchies is None:
             fragment_particles+=IMP.pmi.tools.select(self,resolution=resolution,
-                                                   hierarchies=hierarchies)
+                                                     hierarchies=hierarchies)
+
         if not selection_tuples is None:
             for st in selection_tuples:
                 fragment_particles+=IMP.pmi.tools.select_by_tuple(self,tupleselection=st,
                                                                   resolution=resolution,
                                                                   name_is_ambiguous=False)
+
         if len(fragment_particles)==0:
             print "add_component_density: no particle was selected"
             return
 
         # create a sphereical gaussian for each particle based on atom type
-        print 'settin up all atom gaussians num_particles',len(fragment_particles)
+        print 'setting up all atom gaussians num_particles',len(fragment_particles)
         for p in fragment_particles:
             center=IMP.core.XYZ(p).get_coordinates()
             rad=IMP.core.XYZR(p).get_radius()
@@ -670,8 +672,7 @@ class Representation():
             IMP.core.Gaussian.setup_particle(p,shape)
         if not output_map is None:
             print 'writing map to',output_map
-            IMP.isd_emxl.gmm_tools.write_gmm_to_map(fragment_particles,outputmap,voxel_size,
-                                                    IMP.em.get_bounding_box(dmap))
+            IMP.isd_emxl.gmm_tools.write_gmm_to_map(fragment_particles,output_map,voxel_size)
 
 
 
@@ -715,13 +716,13 @@ class Representation():
         It looks for the component with the same name, unless the rmf_component_name
         is defined. Replace the coordinates of particles with the same name
         It assumes that the rmf and the represdentation have the particles in the same order'''
-        
+
         import IMP.pmi.analysis
-        
+
         prot=IMP.pmi.analysis.get_hier_from_rmf(self.m,rmf_frame_number,rmf_file_name)
-        
-        
-        if not prot: 
+
+        if not prot:
+
            print "set_coordinates_from_rmf: cannot read hiearchy from rmf"
            exit()
         #if len(self.rigid_bodies)!=0:
@@ -733,12 +734,12 @@ class Representation():
         psrmf=[]
         for p in allpsrmf:
            (protname,is_a_bead)=IMP.pmi.tools.get_prot_name_from_particle(p,self.hier_dict.keys())
-           if rmf_component_name!=None and protname==rmf_component_name:
+           if not rmf_component_name is None and protname==rmf_component_name:
               psrmf.append(p)
-           elif rmf_component_name==None and protname==component_name:
+           elif rmf_component_name is None and protname==component_name:
               psrmf.append(p)
-              
-           
+
+
         psrepr=IMP.atom.get_leaves(self.hier_dict[component_name])
         
        
@@ -934,8 +935,8 @@ class Representation():
         bounding box is defined by ((x1,y1,z1),(x2,y2,z2))
 
         '''
-        if excluded_rigid_bodies==None: excluded_rigid_bodies=[]
-        if hierarchies_excluded_from_collision==None: hierarchies_excluded_from_collision=[]
+        if excluded_rigid_bodies is None: excluded_rigid_bodies=[]
+        if hierarchies_excluded_from_collision is None: hierarchies_excluded_from_collision=[]
 
         if len(self.rigid_bodies)==0:
             print "shuffle_configuration: rigid bodies were not intialized"
@@ -949,7 +950,7 @@ class Representation():
         allparticleindexes=IMP.get_indexes(ps)
 
 
-        if bounding_box!=None:
+        if not bounding_box is None:
            ((x1,y1,z1),(x2,y2,z2))=bounding_box
            ub=IMP.algebra.Vector3D(x1,y1,z1)
            lb=IMP.algebra.Vector3D(x2,y2,z2)
@@ -978,13 +979,13 @@ class Representation():
 
                rbindexes=list(set(rbindexes)-set(hierarchies_excluded_from_collision_indexes))
                otherparticleindexes=list(set(allparticleindexes)-set(rbindexes))
-               if len(otherparticleindexes)==None: continue
+               if len(otherparticleindexes) is None: continue
 
             niter=0
             while niter<niterations:
                rbxyz=(rb.get_x(), rb.get_y(), rb.get_z())
 
-               if bounding_box!=None:
+               if not bounding_box is None:
                   #overrides the perturbation
                   translation=IMP.algebra.get_random_vector_in(bb)
                   rotation=IMP.algebra.get_random_rotation_3d()
@@ -1008,21 +1009,21 @@ class Representation():
                else:
                   break
 
+        print 'shuffling',len(self.floppy_bodies),'floppy bodies'
         for fb in self.floppy_bodies:
-
             if avoidcollision:
                rm=not IMP.core.RigidMember.get_is_setup(fb)
                nrm=not IMP.core.NonRigidMember.get_is_setup(fb)
                if rm and nrm:
                   fbindexes=IMP.get_indexes([fb])
                   otherparticleindexes=list(set(allparticleindexes)-set(fbindexes))
-                  if len(otherparticleindexes)==None: continue
+                  if len(otherparticleindexes) is None: continue
                else: continue
 
             niter=0
             while niter<niterations:
                fbxyz=IMP.core.XYZ(fb).get_coordinates()
-               if bounding_box!=None:
+               if not bounding_box is None:
                   #overrides the perturbation
                   translation=IMP.algebra.get_random_vector_in(bb)
                   transformation=IMP.algebra.Transformation3D(translation)
@@ -1071,7 +1072,7 @@ class Representation():
         return rmsds
 
     def setup_component_geometry(self,name,color=None,resolution=1.0):
-        if color==None:
+        if color is None:
            color=self.color_dict[name]
         #this function stores all particle pairs
         #ordered by residue number, to be used
@@ -1299,7 +1300,7 @@ class Representation():
         particles:     (optional, default=None) list of particles to add to the rigid body
         '''
 
-        if particles==None:
+        if particles is None:
            rigid_parts=set()
         else:
            rigid_parts=set(particles)
@@ -1389,7 +1390,7 @@ class Representation():
             print "set_rigid_body_from_hierarchies> adding %s to the rigid body" % hier.get_name()
         if len(super_rigid_rbs)<min_size:
             return
-        if axis==None:
+        if axis is None:
            self.super_rigid_bodies.append((super_rigid_xyzs,super_rigid_rbs))
         else:
            #these will be 2D rotation SRB

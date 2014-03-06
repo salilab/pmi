@@ -625,7 +625,7 @@ class ISDCrossLinkMS():
     import IMP.pmi.tools
     from math import log
 
-    def __init__(self, representation, restraints_file, length, resolution=None,slope=0.0,
+    def __init__(self, representation, restraints_file, length, resolution=None,slope=0.0,inner_slope=0.0,
                  columnmapping=None, csvfile=False, samplelength=False,
                  ids_map=None, radius_map=None, filters=None,label="None",filelabel="None",marginal=False,
                  automatic_sigma_classification=False,attributes_for_label=None):
@@ -633,7 +633,10 @@ class ISDCrossLinkMS():
         # by default column 0 = protein1; column 1 = protein2; column 2 = residue1; column 3 = residue2;
         # column 4 = idscores
         # attributes_for_label: anithing in the csv database that must be added to the label
-
+        # slope is the slope defined on the linear function
+        # inner_slope is the slope defined on the restraint dierectly
+        # suggestion: do not use both!
+        
         if type(representation)!=list:
            representations=[representation]
         else:
@@ -771,7 +774,7 @@ class ISDCrossLinkMS():
             
               if not self.marginal:
                 if not self.samplelength:
-                  dr = IMP.isd_emxl.CrossLinkMSRestraint(self.m, length)
+                  dr = IMP.isd_emxl.CrossLinkMSRestraint(self.m, length, inner_slope)
                 else:
                   # this will create a xl length particle that will be sampled
                   self.create_length()

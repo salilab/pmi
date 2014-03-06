@@ -19,6 +19,7 @@ import RMF
 
 class Representation():
     #Authors: Peter Cimermancic, Riccardo Pellarin, Charles Greenberg
+    
     '''
     This class creates the molecular hierarchies, representation,
     sequence connectivity for the various involved proteins and

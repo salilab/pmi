@@ -629,7 +629,7 @@ class ISDCrossLinkMS():
                  columnmapping=None, csvfile=False, samplelength=False,
                  ids_map=None, radius_map=None, filters=None,label="None",filelabel="None",marginal=False,
                  automatic_sigma_classification=False,attributes_for_label=None):
-        # columnindexes is a list of column indexes for protein1, protein2, residue1, residue2
+        # columnindexes is a list of column indexes for protein1, protein2, residue1, residue2,idscore, XL unique id
         # by default column 0 = protein1; column 1 = protein2; column 2 = residue1; column 3 = residue2;
         # column 4 = idscores
         # attributes_for_label: anithing in the csv database that must be added to the label
@@ -708,7 +708,7 @@ class ISDCrossLinkMS():
         residue2 = columnmapping["Residue2"]
         idscore = columnmapping["IDScore"]
         xluniqueid = columnmapping["XLUniqueID"]
-
+       
         restraints = []
         
         # we need this dictionary to create ambiguity (i.e., multistate)
@@ -721,6 +721,7 @@ class ISDCrossLinkMS():
             if not csvfile:
                 tokens = entry.split()
                 # skip character
+                
                 if (tokens[0] == "#"):
                     continue
                 try:
@@ -739,14 +740,14 @@ class ISDCrossLinkMS():
                     if eval(IMP.pmi.tools.cross_link_db_filter_parser(filters)) == False:
                         exdb.write(str(entry) + "\n")
                         continue
-
+                
                 try:
                   r1 = int(entry[residue1])
                   c1 = entry[protein1]
                   r2 = int(entry[residue2])
                   c2 = entry[protein2]
                   ids = float(entry[idscore])
-                  xlid = int(tokens[xluniqueid])   
+                  xlid = int(entry[xluniqueid])   
                 except:
                   print "this line was not accessible "+str(entry)
                   continue               

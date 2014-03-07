@@ -88,7 +88,7 @@ class GaussianEMRestraint():
         self.rs = IMP.RestraintSet(self.m, 'GaussianEMRestraint')
         self.rs.add_restraint(self.gaussianEM_restraint)
 
-    def center_model_on_target_density(self):
+    def center_target_density_on_model(self):
         target_com=IMP.algebra.Vector3D(0,0,0)
         target_mass=0.0
         for p in self.target_ps:
@@ -116,6 +116,50 @@ class GaussianEMRestraint():
             IMP.core.transform(IMP.core.RigidBody(p),transformation)
             
         #IMP.pmi.tools.translate_hierarchies(self.densities,v)
+
+    def center_model_on_target_density(self,representation):
+        target_com=IMP.algebra.Vector3D(0,0,0)
+        target_mass=0.0
+        for p in self.target_ps:
+            mass=IMP.atom.Mass(p).get_mass()
+            pos=IMP.core.XYZ(p).get_coordinates()
+            target_com+=pos*mass
+            target_mass+=mass
+        target_com/=target_mass
+        print 'target com',target_com
+        model_com=IMP.algebra.Vector3D(0,0,0)
+        model_mass=0.0
+        for p in self.model_ps:
+            mass=IMP.atom.Mass(p).get_mass()
+            pos=IMP.core.XYZ(p).get_coordinates()
+            model_com+=pos*mass
+            model_mass+=mass
+        model_com/=model_mass
+        print 'model com',model_com
+
+        v=target_com-model_com
+        print 'translating with',v
+        transformation=IMP.algebra.Transformation3D(IMP.algebra.Vector3D(v))
+        
+        rigid_bodies=set()
+        XYZRs=set()
+        
+        for p in IMP.atom.get_leaves(representation.prot):
+            if IMP.core.RigidMember.get_is_setup(p):
+               rb=IMP.core.RigidMember(p).get_rigid_body()
+               rigid_bodies.add(rb)
+            elif IMP.core.NonRigidMember.get_is_setup(p):
+               rb=IMP.core.RigidMember(p).get_rigid_body()               
+               rigid_bodies.add(rb)
+            elif IMP.core.XYZR.get_is_setup(p):
+               XYZRs.add(p)
+               
+        for rb in list(rigid_bodies):
+            IMP.core.transform(rb,transformation)
+
+        for p in list(XYZRs):
+            IMP.core.transform(p,transformation)
+        
 
     def set_weight(self,weight):
         self.rs.set_weight(weight)

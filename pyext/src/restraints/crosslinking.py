@@ -501,7 +501,7 @@ class SigmoidalCrossLinkMS():
                 continue
 
             else:
-
+                
                 dr = IMP.pmi.SigmoidRestraintSphere(
                     self.m,
                     p1,

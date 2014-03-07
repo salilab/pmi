@@ -20,7 +20,7 @@ r.create_component("particle1",color=0.1)
 p11=r.add_component_beads("particle1",[(1,10)])
 r.create_component("particle2",color=0.5)
 p21=r.add_component_beads("particle2",[(1,10)])
-r.create_component("particle3",color=0.9)
+r.create_component("particle3",color=1.0)
 p31=r.add_component_beads("particle3",[(1,10)])
 
 representations.append(r)
@@ -31,7 +31,7 @@ r.create_component("particle1",color=0.1)
 p12=r.add_component_beads("particle1",[(1,10)])
 r.create_component("particle2",color=0.5)
 p22=r.add_component_beads("particle2",[(1,10)])
-r.create_component("particle3",color=0.9)
+r.create_component("particle3",color=0.3)
 p32=r.add_component_beads("particle3",[(1,10)])
 
 representations.append(r)
@@ -82,14 +82,14 @@ eb.add_to_model()
 import IMP.pmi.restraints.crosslinking
 
 restraints='''#
-particle2 particle3 1 5 1 1
-particle1 particle3 1 2 1 2 '''
+particle2 particle3 5 5 1 1
+particle1 particle3 5 5 1 2 '''
 
 xl = IMP.pmi.restraints.crosslinking.ISDCrossLinkMS(representations, 
                                    restraints,
                                    length=10.0,
                                    slope=0.0,
- 				                   inner_slope=0.01,
+ 				                   inner_slope=0.015,
                                    resolution=1.0)
 
 psi=xl.get_psi(0.05)
@@ -117,7 +117,12 @@ print m.evaluate(False)
 
 import IMP.pmi.samplers
 
-print xyz11.get_coordinates()
+import IMP.pmi.output
+
+o=IMP.pmi.output.Output()
+o.init_rmf("trajectory.rmf3",[representations[0].prot,representations[1].prot])
+
+print o.dictionary_rmfs
 
 mc = IMP.pmi.samplers.MonteCarlo(m,representations, 1.0)
 mc.set_simulated_annealing(min_temp=1.0,
@@ -127,21 +132,18 @@ mc.set_simulated_annealing(min_temp=1.0,
 
 # <codecell>
 
-import IMP.pmi.output
-
-print xyz32.get_coordinates()
-
-o = IMP.pmi.output.Output()
 o.init_stat2("modeling.stat",[mc,xl]+representations)
 
 for i in range(0,10000):
    mc.optimize(10)
+   o.write_rmf("trajectory.rmf3")
    o.write_stats2()
    if i%100==0: print i
+   
+o.close_rmf("trajectory.rmf3")
 
 # <codecell>
 
-import IMP.pmi.output
 
 po=IMP.pmi.output.ProcessOutput("modeling.stat")
 
@@ -155,9 +157,9 @@ fs=po.get_fields(['ISDCrossLinkMS_Distance_interrb-State:0-1:particle1_2:particl
              'ISDCrossLinkMS_Distance_interrb-State:0-1:particle2_5:particle3-1-1-0.05_None',
              'ISDCrossLinkMS_Distance_interrb-State:1-1:particle1_2:particle3-1-1-0.05_None',
              'ISDCrossLinkMS_Distance_interrb-State:1-1:particle2_5:particle3-1-1-0.05_None',
-              'ISDCrossLinkMS_Data_Score_None',
-              'ISDCrossLinkMS_Linear_Score_None',
-              'ISDCrossLinkMS_Psi_0.05_None'])
+             'ISDCrossLinkMS_Data_Score_None',
+             'ISDCrossLinkMS_Linear_Score_None',
+             'ISDCrossLinkMS_Psi_0.05_None'])
 
 # <codecell>
 
@@ -174,10 +176,15 @@ IMP.pmi.output.plot_scatter_xy_data(fs['ISDCrossLinkMS_Distance_interrb-State:0-
 IMP.pmi.output.plot_scatter_xy_data(fs['ISDCrossLinkMS_Distance_interrb-State:1-1:particle2_5:particle3-1-1-0.05_None'],
                                     fs['ISDCrossLinkMS_Distance_interrb-State:1-1:particle1_2:particle3-1-1-0.05_None'])
 
-
 IMP.pmi.output.plot_scatter_xy_data(fs['ISDCrossLinkMS_Distance_interrb-State:0-1:particle1_2:particle3-1-1-0.05_None'],
                                     fs['ISDCrossLinkMS_Distance_interrb-State:1-1:particle2_5:particle3-1-1-0.05_None'])
 
+
+IMP.pmi.output.plot_scatter_xy_data(fs['ISDCrossLinkMS_Distance_interrb-State:1-1:particle2_5:particle3-1-1-0.05_None'],
+                                    fs['ISDCrossLinkMS_Distance_interrb-State:0-1:particle1_2:particle3-1-1-0.05_None'])
+
+IMP.pmi.output.plot_scatter_xy_data(fs['ISDCrossLinkMS_Distance_interrb-State:0-1:particle2_5:particle3-1-1-0.05_None'],
+                                    fs['ISDCrossLinkMS_Distance_interrb-State:1-1:particle1_2:particle3-1-1-0.05_None'])
 # <codecell>
 
 IMP.pmi.output.plot_fields(fs)

@@ -1812,7 +1812,8 @@ class Representation():
     def get_test_output(self):
         # this method is called by test functions and return an enriched output
         output=self.get_output()
-        output.update(self.get_particles_to_sample())
+        for n,p in enumerate(self.get_particles_to_sample()):
+            output["Particle_to_sample_"+str(n)]=str(p)
         output["Number_of_particles"]=len(IMP.atom.get_leaves(self.prot))
         output["Hierarchy_Dictionary"]=self.hier_dict.keys()
         output["Number_of_floppy_bodies"]=len(self.floppy_bodies)

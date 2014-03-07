@@ -758,8 +758,7 @@ class ISDCrossLinkMS():
               #loop over every state
               ps1=IMP.pmi.tools.select(r,resolution=resolution,name=c1,name_is_ambiguous=False,residue=r1)
               ps2=IMP.pmi.tools.select(r,resolution=resolution,name=c2,name_is_ambiguous=False,residue=r2)
-
-
+                        
               if len(ps1) > 1:
                   print "ISDCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s" % (r1, c1, str(ps1))
                   exit()

@@ -615,7 +615,7 @@ class Representation():
                                                        out_fn=outputmap,
                                                        voxel_size=voxel_size,
                                                        bounding_box=IMP.em.get_bounding_box(dmap))
-
+           del dmap
         else:
             # read the inputfile here
             IMP.isd_emxl.gmm_tools.decorate_gmm_from_text(inputfile,density_particles,

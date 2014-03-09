@@ -45,7 +45,7 @@ class ExcludedVolumeSphere():
 
         lsa.add_particles(particles)
 
-        if other_hierarchies==None:
+        if other_hierarchies is None:
            rbcpf=IMP.core.RigidClosePairsFinder()
            self.cpc=IMP.container.ClosePairContainer(lsa,0.0,rbcpf,10.0)
            evr=IMP.container.PairsRestraint(ssps,self.cpc)
@@ -237,7 +237,7 @@ class ResidueDihedralRestraint():
 
         particles=IMP.pmi.tools.select_by_tuple(representation,selection_tuple,resolution=1)
 
-        if stringsequence==None:
+        if stringsequence is None:
            stringsequence="T"*(len(particles)-3)
 
         for n,ps in enumerate(IMP.pmi.tools.sublist_iterator(particles,4,4)):

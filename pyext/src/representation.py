@@ -613,7 +613,8 @@ class Representation():
            if not outputmap is None:
                IMP.isd_emxl.gmm_tools.write_gmm_to_map(ps=density_particles,
                                                        out_fn=outputmap,
-                                                       voxel_size=voxel_size)
+                                                       voxel_size=voxel_size,
+                                                       bounding_box=IMP.em.get_bounding_box(dmap))
 
         else:
             # read the inputfile here

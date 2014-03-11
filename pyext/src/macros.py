@@ -621,7 +621,7 @@ class AnalysisReplicaExchange0():
                   clusstat.write(str(tmp_dict)+"\n")
 
                   prot=IMP.pmi.analysis.get_hier_from_rmf(self.model,rmf_frame_number,rmf_name)
-                  restraints=IMP.rmf.create_restraints(rmf_name)
+                  restraints=IMP.rmf.create_restraints(rmf_name,self.model)
                   if not prot: continue
 
                   if k>0:

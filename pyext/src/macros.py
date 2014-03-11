@@ -579,88 +579,94 @@ class AnalysisReplicaExchange0():
 
 # -----------------------------------------------------------------------------------------------
 #
-
-        my_clusters=IMP.pmi.tools.chunk_list_into_segments(Clusters.get_cluster_labels(),number_of_processes)[rank]
-    
-        o=IMP.pmi.output.Output()
         
-        for n,cl in enumerate(my_clusters):
-              
-              # first initialize the Density class if requested
-
-              if density_custom_ranges:
-
-                DensModule = IMP.pmi.analysis.GetModelDensity(density_custom_ranges,voxel=voxel_size)
-
-
-              dircluster=outputdir+"/cluster."+str(n)+"/"
-              try:
-                 os.mkdir(outputdir)
-              except:
-                 pass                 
-              
-              try:
-                 os.mkdir(dircluster)
-              except:
-                 pass
-              
-              rmsd_dict={"AVERAGE_RMSD":str(Clusters.get_cluster_label_average_rmsd(cl))}
-
-              clusstat=open(dircluster+"stat.out","w")
-
-              for k,structure_name in enumerate(Clusters.get_cluster_label_names(cl)):
-
-
-                  #extract the features
-                  tmp_dict={}
-                  tmp_dict.update(rmsd_dict)
-                  index=rmf_file_name_index_dict[structure_name]
-                  for key in best_score_feature_keyword_list_dict:
-                      tmp_dict[key]=best_score_feature_keyword_list_dict[key][index]
-
-                  rmf_name=structure_name.split("|")[0]
-                  rmf_frame_number=int(structure_name.split("|")[1])
-
-                  clusstat.write(str(tmp_dict)+"\n")
-
-                  prot=IMP.pmi.analysis.get_hier_from_rmf(self.model,rmf_frame_number,rmf_name)
+        if number_of_processes>len(Clusters.get_cluster_labels()):
+           number_of_processes_cl=len(Clusters.get_cluster_labels())
+           
+           
+        if rank<len(Clusters.get_cluster_labels()):
+        
+            my_clusters=IMP.pmi.tools.chunk_list_into_segments(Clusters.get_cluster_labels(),number_of_processes_cl)[rank]
+        
+            o=IMP.pmi.output.Output()
+            
+            for n,cl in enumerate(my_clusters):
                   
-                  if not prot: continue
-                  
-                  #rh= RMF.open_rmf_file_read_only(rmf_name)
-                  #restraints=IMP.rmf.create_restraints(rh,self.model)
-                  #del rh
-                  
-                  if k>0:
-                      model_index=Clusters.get_model_index_from_name(structure_name)
-                      transformation=Clusters.get_transformation_to_first_member(cl,model_index)
-
-                      rbs=[]
-                      for p in IMP.atom.get_leaves(prot):
-                          if IMP.core.RigidBody.particle_is_instance(p):
-                             rb=IMP.core.RigidMember(p).get_rigid_body()
-                             if rb not in rbs:
-                                rbs.append(rb)
-                                IMP.core.transform(rb,transformation)
-
-                          else:
-                             IMP.core.transform(IMP.core.XYZ(p),transformation)
-                        #IMP.em.add_to_map(dmap_dict[name],particle_dict[name])
+                  # first initialize the Density class if requested
     
-                  # add the density                  
                   if density_custom_ranges:
-                     DensModule.add_subunits_density(prot)
     
-                  o.init_pdb(dircluster+str(k)+".pdb",prot)        
-                  o.write_pdb(dircluster+str(k)+".pdb")
-                  o.init_rmf(dircluster+str(k)+".rmf3",[prot])
-                  #IMP.rmf.add_restraints(o.dictionary_rmfs[dircluster+str(n)+".rmf3"],restraints)
-                  o.write_rmf(dircluster+str(k)+".rmf3")
-                  o.close_rmf(dircluster+str(k)+".rmf3")
-
-              if density_custom_ranges:
-                 DensModule.write_mrc(path=dircluster)
-                 del DensModule
+                    DensModule = IMP.pmi.analysis.GetModelDensity(density_custom_ranges,voxel=voxel_size)
+    
+    
+                  dircluster=outputdir+"/cluster."+str(n)+"/"
+                  try:
+                     os.mkdir(outputdir)
+                  except:
+                     pass                 
+                  
+                  try:
+                     os.mkdir(dircluster)
+                  except:
+                     pass
+                  
+                  rmsd_dict={"AVERAGE_RMSD":str(Clusters.get_cluster_label_average_rmsd(cl))}
+    
+                  clusstat=open(dircluster+"stat.out","w")
+    
+                  for k,structure_name in enumerate(Clusters.get_cluster_label_names(cl)):
+    
+    
+                      #extract the features
+                      tmp_dict={}
+                      tmp_dict.update(rmsd_dict)
+                      index=rmf_file_name_index_dict[structure_name]
+                      for key in best_score_feature_keyword_list_dict:
+                          tmp_dict[key]=best_score_feature_keyword_list_dict[key][index]
+    
+                      rmf_name=structure_name.split("|")[0]
+                      rmf_frame_number=int(structure_name.split("|")[1])
+    
+                      clusstat.write(str(tmp_dict)+"\n")
+    
+                      prot=IMP.pmi.analysis.get_hier_from_rmf(self.model,rmf_frame_number,rmf_name)
+                      
+                      if not prot: continue
+                      
+                      #rh= RMF.open_rmf_file_read_only(rmf_name)
+                      #restraints=IMP.rmf.create_restraints(rh,self.model)
+                      #del rh
+                      
+                      if k>0:
+                          model_index=Clusters.get_model_index_from_name(structure_name)
+                          transformation=Clusters.get_transformation_to_first_member(cl,model_index)
+    
+                          rbs=[]
+                          for p in IMP.atom.get_leaves(prot):
+                              if IMP.core.RigidBody.particle_is_instance(p):
+                                 rb=IMP.core.RigidMember(p).get_rigid_body()
+                                 if rb not in rbs:
+                                    rbs.append(rb)
+                                    IMP.core.transform(rb,transformation)
+    
+                              else:
+                                 IMP.core.transform(IMP.core.XYZ(p),transformation)
+                            #IMP.em.add_to_map(dmap_dict[name],particle_dict[name])
+        
+                      # add the density                  
+                      if density_custom_ranges:
+                         DensModule.add_subunits_density(prot)
+        
+                      o.init_pdb(dircluster+str(k)+".pdb",prot)        
+                      o.write_pdb(dircluster+str(k)+".pdb")
+                      o.init_rmf(dircluster+str(k)+".rmf3",[prot])
+                      #IMP.rmf.add_restraints(o.dictionary_rmfs[dircluster+str(n)+".rmf3"],restraints)
+                      o.write_rmf(dircluster+str(k)+".rmf3")
+                      o.close_rmf(dircluster+str(k)+".rmf3")
+    
+                  if density_custom_ranges:
+                     DensModule.write_mrc(path=dircluster)
+                     del DensModule
 
 
     def save_objects(self,objects,file_name):

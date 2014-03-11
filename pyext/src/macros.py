@@ -358,7 +358,8 @@ class AnalysisReplicaExchange0():
                         number_of_clusters=1,
                         display_plot=False,
                         get_every=1,
-                        density_custom_ranges=None):     
+                        density_custom_ranges=None,
+                        voxel_size=5.0):     
         
         '''
         the features are keywords for which you want to calculate average, medians, etc,
@@ -575,16 +576,16 @@ class AnalysisReplicaExchange0():
 
 # -----------------------------------------------------------------------------------------------
 #
-        if rank==0:
-
-          o=IMP.pmi.output.Output()
+        my_clusters=IMP.pmi.tools.chunk_list_into_segments(Clusters.get_cluster_labels(),number_of_processes)[rank]
+    
+        o=IMP.pmi.output.Output()
         
-          for n,cl in enumerate(Clusters.get_cluster_labels()):
+        for n,cl in enumerate(my_clusters):
               
               # first initialize the Density class if requested
               
               if density_custom_ranges:
-                DensModule = IMP.pmi.analysis.GetModelDensity(density_custom_ranges)
+                DensModule = IMP.pmi.analysis.GetModelDensity(density_custom_ranges,voxel=voxel_size)
               
               print Clusters.get_cluster_label_average_rmsd(cl)
               print Clusters.get_cluster_label_size(cl)
@@ -629,11 +630,11 @@ class AnalysisReplicaExchange0():
                           else:                 
                              IMP.core.transform(IMP.core.XYZ(p),transformation)              
                         #IMP.em.add_to_map(dmap_dict[name],particle_dict[name])
-
+    
                   # add the density                  
                   if density_custom_ranges:
                      DensModule.add_subunits_density(prot)
-
+    
                   o.init_pdb(dircluster+str(k)+".pdb",prot)        
                   o.write_pdb(dircluster+str(k)+".pdb")
                   o.init_rmf(dircluster+str(k)+".rmf3",[prot])   

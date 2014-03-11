@@ -578,13 +578,13 @@ class AnalysisReplicaExchange0():
 # now save all informations about the clusters
 
 # -----------------------------------------------------------------------------------------------
-#          
-           
+#
+        
         if rank==0:
         
-            o=IMP.pmi.output.Output(Clusters.get_cluster_labels())
+            o=IMP.pmi.output.Output()
             
-            for n,cl in enumerate(my_clusters):
+            for n,cl in enumerate(Clusters.get_cluster_labels()):
                   
                   # first initialize the Density class if requested
     

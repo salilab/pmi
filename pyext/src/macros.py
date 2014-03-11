@@ -376,6 +376,8 @@ class AnalysisReplicaExchange0():
         from operator import itemgetter
         import IMP.pmi.analysis
         import numpy as np
+        import RMF
+        import IMP.rmf
 
         if is_mpi:
            from mpi4py import MPI

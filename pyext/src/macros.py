@@ -626,9 +626,9 @@ class AnalysisReplicaExchange0():
                   
                   if not prot: continue
                   
-                  rh= RMF.open_rmf_file_read_only(rmf_name)
-                  restraints=IMP.rmf.create_restraints(rh,self.model)
-                  del rh
+                  #rh= RMF.open_rmf_file_read_only(rmf_name)
+                  #restraints=IMP.rmf.create_restraints(rh,self.model)
+                  #del rh
                   
                   if k>0:
                       model_index=Clusters.get_model_index_from_name(structure_name)
@@ -653,7 +653,7 @@ class AnalysisReplicaExchange0():
                   o.init_pdb(dircluster+str(k)+".pdb",prot)        
                   o.write_pdb(dircluster+str(k)+".pdb")
                   o.init_rmf(dircluster+str(k)+".rmf3",[prot])
-                  IMP.rmf.add_restraints(o.dictionary_rmfs[dircluster+str(n)+".rmf3"],restraints)
+                  #IMP.rmf.add_restraints(o.dictionary_rmfs[dircluster+str(n)+".rmf3"],restraints)
                   o.write_rmf(dircluster+str(k)+".rmf3")
                   o.close_rmf(dircluster+str(k)+".rmf3")
 

@@ -694,7 +694,8 @@ def get_hier_from_rmf(model,frame_number,rmf_file):
       except:
         print "Unable to open frame %i of file %s" % (frame_number,rmf_file)
         prot=None           
-      model.update()   
+      model.update() 
+      del rh  
       return prot
 
 

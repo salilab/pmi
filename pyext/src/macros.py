@@ -621,9 +621,13 @@ class AnalysisReplicaExchange0():
                   clusstat.write(str(tmp_dict)+"\n")
 
                   prot=IMP.pmi.analysis.get_hier_from_rmf(self.model,rmf_frame_number,rmf_name)
-                  restraints=IMP.rmf.create_restraints(rmf_name,self.model)
+                  
                   if not prot: continue
-
+                  
+                  rh= RMF.open_rmf_file_read_only(rmf_name)
+                  restraints=IMP.rmf.create_restraints(rh,self.model)
+                  del rh
+                  
                   if k>0:
                       model_index=Clusters.get_model_index_from_name(structure_name)
                       transformation=Clusters.get_transformation_to_first_member(cl,model_index)

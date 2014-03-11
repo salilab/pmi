@@ -580,14 +580,21 @@ class AnalysisReplicaExchange0():
 # -----------------------------------------------------------------------------------------------
 #
         
-        if rank==0:
+        if number_of_processes>len(Clusters.get_cluster_labels()):
+           number_of_processes_cl=len(Clusters.get_cluster_labels())
+           
+           
+        if rank<len(Clusters.get_cluster_labels()):
+            my_clusters_index=IMP.pmi.tools.chunk_list_into_segments(range(len(Clusters.get_cluster_labels())),number_of_processes_cl)[rank]
+            my_clusters=IMP.pmi.tools.chunk_list_into_segments(Clusters.get_cluster_labels(),number_of_processes_cl)[rank]
         
             o=IMP.pmi.output.Output()
             
-            for n,cl in enumerate(Clusters.get_cluster_labels()):
+            for k,cl in enumerate(Clusters.get_cluster_labels()):
                   
+                  n=my_clusters_index[k]
                   # first initialize the Density class if requested
-    
+     
                   if density_custom_ranges:
     
                     DensModule = IMP.pmi.analysis.GetModelDensity(density_custom_ranges,voxel=voxel_size)

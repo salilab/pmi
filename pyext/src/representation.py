@@ -19,7 +19,7 @@ import RMF
 
 class Representation():
     #Authors: Peter Cimermancic, Riccardo Pellarin, Charles Greenberg
-    
+
     '''
     This class creates the molecular hierarchies, representation,
     sequence connectivity for the various involved proteins and
@@ -506,7 +506,8 @@ class Representation():
                               sampled_points=1000000,num_iter=100,
                               multiply_by_total_mass=True,
                               transform=None,
-                              intermediate_map_fn=None):
+                              intermediate_map_fn=None,
+                              density_ps_to_copy=None):
 
         '''
         This function sets up a GMM for this component.
@@ -530,6 +531,7 @@ class Representation():
         multiply_by_total_mass: multiply the weights of the GMM by this value (only works on creation!)
         transform:              for input file only, apply a transformation (eg for multiple copies same GMM)
         intermediate_map_fn:    for debugging, this will write the itermediate (simulated) map
+        density_ps_to_copy:     in case you already created the appropriate GMM (eg, for beads)
         '''
 
         import IMP.isd_emxl
@@ -553,7 +555,16 @@ class Representation():
            self.hier_representation[name]["Densities"]=root
            protein_h.add_child(root)
 
-        if inputfile is None:
+        density_particles=[]
+        if not density_ps_to_copy is None:
+            for ip in density_ps_to_copy:
+                p=IMP.Particle(self.m)
+                shape=IMP.core.Gaussian(ip).get_gaussian()
+                mass=IMP.atom.Mass(ip).get_mass()
+                IMP.core.Gaussian.setup_particle(p,shape)
+                IMP.atom.Mass.setup_particle(p,mass)
+                density_particles.append(p)
+        elif inputfile is None:
            if particles is None:
               fragment_particles=[]
            else:
@@ -585,25 +596,28 @@ class Representation():
            if not intermediate_map_fn is None:
                IMP.em.write_map(dmap,intermediate_map_fn)
            pts=IMP.isd_emxl.sample_points_from_density(dmap,sampled_points)
+           #pts=[IMP.core.XYZ(p).get_coordinates() for p in fragment_particles]
 
            # fit GMM
-           density_particles=[]
-           print 'add_component_density: fitting GMM'
-           IMP.isd_emxl.gmm_tools.fit_gmm_to_points(pts,num_components,self.m,
-                                                    density_particles,
-                                                    num_iter,covariance_type,
+           print 'add_component_density: fitting GMM to',len(pts),'points'
+           IMP.isd_emxl.gmm_tools.fit_gmm_to_points(points=pts,
+                                                    n_components=num_components,
+                                                    mdl=self.m,
+                                                    ps=density_particles,
+                                                    num_iter=num_iter,
+                                                    covariance_type=covariance_type,
                                                     mass_multiplier=mass_multiplier)
 
            if not outputfile is None:
                IMP.isd_emxl.gmm_tools.write_gmm_to_text(density_particles,outputfile)
            if not outputmap is None:
-               IMP.isd_emxl.gmm_tools.write_gmm_to_map(density_particles,outputmap,
-                                                       voxel_size,
-                                                       IMP.em.get_bounding_box(dmap))
-
+               IMP.isd_emxl.gmm_tools.write_gmm_to_map(ps=density_particles,
+                                                       out_fn=outputmap,
+                                                       voxel_size=voxel_size,
+                                                       bounding_box=IMP.em.get_bounding_box(dmap))
+           del dmap
         else:
             # read the inputfile here
-            density_particles=[]
             IMP.isd_emxl.gmm_tools.decorate_gmm_from_text(inputfile,density_particles,
                                                           self.m,transform)
 
@@ -729,9 +743,9 @@ class Representation():
         #if len(self.rigid_bodies)!=0:
         #   print "set_coordinates_from_rmf: cannot proceed if rigid bodies were initialized. Use the function before defining the rigid bodies"
         #   exit()
-        
+
         allpsrmf=IMP.atom.get_leaves(prot)
-        
+
         psrmf=[]
         for p in allpsrmf:
            (protname,is_a_bead)=IMP.pmi.tools.get_prot_name_from_particle(p,self.hier_dict.keys())
@@ -742,14 +756,14 @@ class Representation():
 
 
         psrepr=IMP.atom.get_leaves(self.hier_dict[component_name])
-        
-       
-        
+
+
+
         if len(psrmf) != len(psrepr):
            print "set_coordinates_from_rmf: cannot proceed the rmf and the representation don't have the same number of particles"
            print "particles in rmf: %s particles in the representation: %s" % (str(len(psrmf)),str(len(psrepr)))
-           exit()           
-        
+           exit()
+
         for n,prmf in enumerate(psrmf):
             prmfname=prmf.get_name()
             preprname=psrepr[n].get_name()
@@ -759,7 +773,7 @@ class Representation():
             if IMP.core.NonRigidMember.get_is_setup(psrepr[n]):
                print "set_coordinates_from_rmf: component %s cannot proceed if rigid bodies were initialized. Use the function before defining the rigid bodies" % component_name
                exit()
-            
+
             if prmfname!=preprname:
                print "set_coordinates_from_rmf: WARNING rmf particle and representation particles have not the same name %s %s " % (prmfname,preprname)
             if IMP.core.XYZ.get_is_setup(prmf) and IMP.core.XYZ.get_is_setup(psrepr[n]):
@@ -767,7 +781,7 @@ class Representation():
                IMP.core.XYZ(psrepr[n]).set_coordinates(xyz)
             else:
                print "set_coordinates_from_rmf: WARNING particles are not XYZ decorated %s %s " % (str(IMP.core.XYZ.get_is_setup(prmf)) , str(IMP.core.XYZ.get_is_setup(psrepr[n])))
-       
+
     def check_root(self,name,protein_h,resolution):
         '''
         checks whether the root hierarchy exists, and if not
@@ -1264,7 +1278,7 @@ class Representation():
         '''
         import IMP.rmf
         import RMF
-        
+
         rh= RMF.open_rmf_file_read_only(rmfname)
         IMP.rmf.link_hierarchies(rh, [self.prot])
         IMP.rmf.load_frame(rh, frameindex)

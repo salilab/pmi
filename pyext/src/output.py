@@ -2,7 +2,7 @@ import IMP.pmi.tools
 
 
 class Output():
-    
+
     def __init__(self,ascii=True):
         global os,RMF,imprmf,cPickle,impatom,impcore,imp
         import cPickle as cPickle
@@ -47,30 +47,30 @@ class Output():
         flpdb.close()
         self.dictionary_pdbs[name]=prot
         self.dictchain[name]={}
-        
+
         for n,i in enumerate(self.dictionary_pdbs[name].get_children()):
             self.dictchain[name][i.get_name()]=self.chainids[n]
-        
+
 
     def write_pdb(self,name,appendmode=True):
-       
+
         if appendmode:
             flpdb=open(name,'a')
         else:
             flpdb=open(name,'w')
-         
+
         particle_infos_for_pdb=self.get_particle_infos_for_pdb_writing(name)
-        
+
         for tupl in particle_infos_for_pdb:
-               
+
                  (p,atom_index,atom_type,residue_type,chain_id,residue_index)=tupl
                  flpdb.write(impatom.get_pdb_string(impcore.XYZ(p).get_coordinates(),
                              atom_index,atom_type,residue_type,
-                             chain_id,residue_index)) 
- 
+                             chain_id,residue_index))
+
         flpdb.write("ENDMOL\n")
-        flpdb.close() 
-    
+        flpdb.close()
+
     def get_particle_infos_for_pdb_writing(self,name):
         #index_residue_pair_list={}
 
@@ -78,46 +78,46 @@ class Output():
         # added to avoid duplication
         # highest resolution have highest priority
         resindexes_dict={}
-        
-        # this dictionary dill contain the sequence of tuples needed to 
+
+        # this dictionary dill contain the sequence of tuples needed to
         # write the pdb
         particle_infos_for_pdb=[]
-        
+
         atom_index=0
         for n,p in enumerate(impatom.get_leaves(self.dictionary_pdbs[name])):
-           
+
            # this loop gets the protein name from the
            # particle leave by descending into the hierarchy
-           
+
            (protname,is_a_bead)=IMP.pmi.tools.get_prot_name_from_particle(p,self.dictchain[name])
 
            if protname not in resindexes_dict:
               resindexes_dict[protname]=[]
-           
+
            if impatom.Atom.particle_is_instance(p):
-              atom_index+=1              
+              atom_index+=1
               residue=impatom.Residue(impatom.Atom(p).get_parent())
               rt=residue.get_residue_type()
               resind=residue.get_index()
               atomtype=impatom.Atom(p).get_atom_type()
               particle_infos_for_pdb.append((p,atom_index,
-                     atomtype,rt,self.dictchain[name][protname],resind))           
+                     atomtype,rt,self.dictchain[name][protname],resind))
               resindexes_dict[protname].append(resind)
-              
-              
+
+
            elif impatom.Residue.particle_is_instance(p):
 
               residue=impatom.Residue(p)
               resind=residue.get_index()
               # skip if the residue was already added by atomistic resolution 0
               if resind in resindexes_dict[protname]: continue
-              else: 
+              else:
                  resindexes_dict[protname].append(resind)
               atom_index+=1
               rt=residue.get_residue_type()
               particle_infos_for_pdb.append((p,atom_index,
                      impatom.AT_CA,rt,self.dictchain[name][protname],resind))
-              
+
               #if protname not in index_residue_pair_list:
               #   index_residue_pair_list[protname]=[(atom_index,resind)]
               #else:
@@ -127,8 +127,8 @@ class Output():
               resindexes=IMP.pmi.tools.get_residue_indexes(p)
               resind=resindexes[len(resindexes)/2]
               if resind in resindexes_dict[protname]: continue
-              else: 
-                 resindexes_dict[protname].append(resind)           
+              else:
+                 resindexes_dict[protname].append(resind)
               atom_index+=1
               rt=impatom.ResidueType('BEA')
               particle_infos_for_pdb.append((p,atom_index,
@@ -137,7 +137,7 @@ class Output():
 
            else:
               if is_a_bead:
-                 atom_index+=1              
+                 atom_index+=1
                  rt=impatom.ResidueType('BEA')
                  resindexes=IMP.pmi.tools.get_residue_indexes(p)
                  resind=resindexes[len(resindexes)/2]
@@ -150,10 +150,10 @@ class Output():
 
 
         return particle_infos_for_pdb
-        '''                 
-        #now write the connectivity     
+        '''
+        #now write the connectivity
         for protname in index_residue_pair_list:
-        
+
            ls=index_residue_pair_list[protname]
            #sort by residue
            ls=sorted(ls, key=lambda tup: tup[1])
@@ -168,7 +168,7 @@ class Output():
                   flpdb.write('{:6s}{:5d}{:5d}'.format('CONECT',ip[0],ip[1]))
                   flpdb.write("\n")
         '''
-        
+
 
 
     def write_pdbs(self,appendmode=True):
@@ -187,14 +187,14 @@ class Output():
            #initialize the array of scores internally
            self.best_score_list=[]
         else:
-           #otherwise the replicas must cominucate 
+           #otherwise the replicas must cominucate
            #through a common file to know what are the best scores
            self.best_score_file_name="best.scores.rex.py"
            self.best_score_list=[]
            best_score_file=open(self.best_score_file_name,"w")
            best_score_file.write("self.best_score_list="+str(self.best_score_list))
            best_score_file.close()
-        
+
         self.nbestscoring=nbestscoring
         for i in range(self.nbestscoring):
             name=suffix+"."+str(i)+".pdb"
@@ -204,17 +204,17 @@ class Output():
             self.dictchain[name]={}
             for n,i in enumerate(self.dictionary_pdbs[name].get_children()):
                 self.dictchain[name][i.get_name()]=self.chainids[n]
-                            
+
 
     def write_pdb_best_scoring(self,score):
-        if self.nbestscoring==None:
+        if self.nbestscoring is None:
             print "Output.write_pdb_best_scoring: init_pdb_best_scoring not run"
 
         #update the score list
         if self.replica_exchange:
            #read the self.best_score_list from the file
            execfile(self.best_score_file_name)
-        
+
         if len(self.best_score_list)<self.nbestscoring:
             self.best_score_list.append(score)
             self.best_score_list.sort()
@@ -233,7 +233,7 @@ class Output():
                 self.best_score_list.sort()
                 self.best_score_list.pop(-1)
                 index=self.best_score_list.index(score)
-                for suffix in self.suffixes:                
+                for suffix in self.suffixes:
                   for i in range(len(self.best_score_list)-1,index-1,-1):
                     oldname=suffix+"."+str(i)+".pdb"
                     newname=suffix+"."+str(i+1)+".pdb"
@@ -271,13 +271,13 @@ class Output():
             geos=o.get_geometries()
             imprmf.add_geometries(self.dictionary_rmfs[name],geos)
 
-    
+
     def add_particle_pair_from_restraints_to_rmf(self,name,objectlist):
         for o in objectlist:
-            
+
             pps=o.get_particle_pairs()
             for pp in pps:
-              imprmf.add_geometry(self.dictionary_rmfs[name],IMP.core.EdgePairGeometry(pp))  
+              imprmf.add_geometry(self.dictionary_rmfs[name],IMP.core.EdgePairGeometry(pp))
 
     def write_rmf(self,name):
         imprmf.save_frame(self.dictionary_rmfs[name])
@@ -347,10 +347,10 @@ class Output():
         output=output.Output()
         output.write_test("test_modeling11_models.rmf_45492_11Sep13_veena_imp-020713.dat",outputobjects)
         run the test:
-        output=output.Output()        
+        output=output.Output()
         output.test("test_modeling11_models.rmf_45492_11Sep13_veena_imp-020713.dat",outputobjects)
         '''
-        flstat=open(name,'w')    
+        flstat=open(name,'w')
         output=self.initoutput
         for l in listofobjects:
             if not "get_test_output" in dir(l) and not "get_output" in dir(l):
@@ -367,10 +367,10 @@ class Output():
            dfiltered=dict((k, v) for k, v in d.iteritems() if k[0]!="_")
            output.update(dfiltered)
         output.update({"ENVIRONMENT":str(self.get_environment_variables())})
-        output.update({"IMP_VERSIONS":str(self.get_versions_of_relevant_modules())})             
+        output.update({"IMP_VERSIONS":str(self.get_versions_of_relevant_modules())})
         flstat.write("%s \n" % output)
-        flstat.close()        
-        
+        flstat.close()
+
 
     def test(self,name,listofobjects):
         from numpy.testing import assert_approx_equal as aae
@@ -383,73 +383,73 @@ class Output():
            try:
               output.update(obj.get_test_output())
            except:
-              output.update(obj.get_output())              
+              output.update(obj.get_output())
         output.update({"ENVIRONMENT":str(self.get_environment_variables())})
-        output.update({"IMP_VERSIONS":str(self.get_versions_of_relevant_modules())})   
+        output.update({"IMP_VERSIONS":str(self.get_versions_of_relevant_modules())})
 
-        flstat=open(name,'r')  
+        flstat=open(name,'r')
         for l in flstat:
             test_dict=eval(l)
         for k in test_dict:
             if k in output:
                old_value=str(test_dict[k])
                new_value=str(output[k])
-               
-               
-               if test_dict[k]!=output[k]: 
+
+
+               if test_dict[k]!=output[k]:
                   if len(old_value)<50 and len(new_value)<50:
                      print str(k)+": test failed, old value: "+old_value+" new value "+new_value
                   else:
                      print str(k)+": test failed, omitting results (too long)"
-                   
+
             else:
                print str(k)+" from old objects (file "+str(name)+") not in new objects"
-               
+
     def get_environment_variables(self):
-        import os 
+        import os
         return str(os.environ)
-    
+
     def get_versions_of_relevant_modules(self):
         import IMP
-        versions={}        
-        versions["IMP_VERSION"]=IMP.kernel.get_module_version()     
+        versions={}
+        versions["IMP_VERSION"]=IMP.kernel.get_module_version()
         try:
            import IMP.pmi
-           versions["PMI_VERSION"]=IMP.pmi.get_module_version() 
+           versions["PMI_VERSION"]=IMP.pmi.get_module_version()
         except (ImportError):
-           pass                      
+           pass
         try:
            import IMP.isd2
-           versions["ISD2_VERSION"]=IMP.isd2.get_module_version()             
+           versions["ISD2_VERSION"]=IMP.isd2.get_module_version()
         except (ImportError):
            pass
         try:
            import IMP.isd_emxl
            versions["ISD_EMXL_VERSION"]=IMP.isd_emxl.get_module_version()
         except (ImportError):
-           pass         
+           pass
         return versions
 
-       
-    
+
+
 
 #-------------------
-      
+
     def init_stat2(self,name,listofobjects,extralabels=None,listofsummedobjects=None):
-        #this is a new stat file that should be less 
+        #this is a new stat file that should be less
         #space greedy!
         #listofsummedobjects must be in the form [([obj1,obj2,obj3,obj4...],label)]
         #extralabels
-        
-        if listofsummedobjects==None: listofsummedobjects=[]
-        if extralabels==None: extralabels=[]
+
+        if listofsummedobjects is None: listofsummedobjects=[]
+        if extralabels is None: extralabels=[]
         flstat=open(name,'w')
         output={}
         stat2_keywords={"STAT2HEADER":"STAT2HEADER"}
         stat2_keywords.update({"STAT2HEADER_ENVIRON":str(self.get_environment_variables())})
-        stat2_keywords.update({"STAT2HEADER_IMP_VERSIONS":str(self.get_versions_of_relevant_modules())})        
+        stat2_keywords.update({"STAT2HEADER_IMP_VERSIONS":str(self.get_versions_of_relevant_modules())})
         stat2_inverse={}
-        
+
         for l in listofobjects:
             if not "get_output" in dir(l):
                 print "Output: object ", l, " doesn't have get_output() method"
@@ -459,8 +459,8 @@ class Output():
                 #remove all entries that begin with _ (private entries)
                 dfiltered=dict((k, v) for k, v in d.iteritems() if k[0]!="_")
                 output.update(dfiltered)
-        
-        #check for customizable entries     
+
+        #check for customizable entries
         for l in listofsummedobjects:
           for t in l[0]:
             if not "get_output" in dir(t):
@@ -471,15 +471,15 @@ class Output():
                   print "Output: object ", t, " doesn't have _TotalScore entry to be summed"
                   exit()
                 else:
-                  output.update({l[1]:0.0})            
-        
+                  output.update({l[1]:0.0})
+
         for k in extralabels:
-            output.update({k:0.0})  
-        
+            output.update({k:0.0})
+
         for n,k in enumerate(output):
             stat2_keywords.update({n:k})
             stat2_inverse.update({k:n})
-        
+
         flstat.write("%s \n" % stat2_keywords)
         flstat.close()
         self.dictionary_stats2[name]=(listofobjects,stat2_inverse,listofsummedobjects,extralabels)
@@ -492,9 +492,9 @@ class Output():
         for obj in listofobjects:
             od=obj.get_output()
             dfiltered=dict((k, v) for k, v in od.iteritems() if k[0]!="_")
-            for k in dfiltered: 
+            for k in dfiltered:
                output.update({stat2_inverse[k]:od[k]})
-        
+
         #writing summedobjects
         for l in listofsummedobjects:
            partial_score=0.0
@@ -502,14 +502,14 @@ class Output():
              d=t.get_output()
              partial_score+=float(d["_TotalScore"])
            output.update({stat2_inverse[l[1]]:str(partial_score)})
-        
+
         #writing extralabels
         for k in extralabels:
            if k in self.initoutput:
               output.update({stat2_inverse[k]:self.initoutput[k]})
            else:
-              output.update({stat2_inverse[k]:"None"})              
-        
+              output.update({stat2_inverse[k]:"None"})
+
         if appendmode:
             writeflag='a'
         else:
@@ -524,25 +524,25 @@ class Output():
             self.write_stat2(stat)
 
 class ProcessOutput():
-    
+
     def __init__(self,filename):
         self.filename=filename
         self.isstat1=False
         self.isstat2=False
-        
+
         #open the file
-        if self.filename!=None:
+        if not self.filename is None:
            f=open(self.filename,"r")
         else:
            print "Error: No file name provided. Use -h for help"
            exit()
-        
+
         #get the keys from the first line
         for line in f.readlines():
             d=eval(line)
             self.klist=d.keys()
             #check if it is a stat2 file
-            if "STAT2HEADER" in self.klist: 
+            if "STAT2HEADER" in self.klist:
                 import operator
                 self.isstat2=True
                 for k in self.klist:
@@ -559,37 +559,37 @@ class ProcessOutput():
             else:
                 self.isstat1=True
                 self.klist.sort()
-                
+
             break
-        f.close()    
-            
-    def get_keys(self):      
+        f.close()
+
+    def get_keys(self):
         return self.klist
 
     def show_keys(self,ncolumns=2,truncate=65):
         import IMP.pmi.tools
-        IMP.pmi.tools.print_multicolumn(self.get_keys(),ncolumns,truncate)    
-        
+        IMP.pmi.tools.print_multicolumn(self.get_keys(),ncolumns,truncate)
+
     def get_fields(self,fields,filterout=None,get_every=1):
            '''
            this function get the wished field names and return a dictionary
            you can give the optional argument filterout if you want to "grep" out
            something from the file, so that it is faster
            '''
-           
+
            outdict={}
            for field in fields:
                outdict[field]=[]
-           
+
            #print fields values
            f=open(self.filename,"r")
            line_number=0
            for line in f.readlines():
-              if filterout!=None: 
+              if not filterout is None:
                  if filterout in line:
                     continue
               line_number+=1
-              
+
               if line_number%get_every!=0: continue
               if line_number%100==0: print "ProcessOutput.get_fields: read line %s from file %s" % (str(line_number),self.filename)
               try:
@@ -598,27 +598,27 @@ class ProcessOutput():
                  print "# Warning: skipped line number " + str(line_number) + " not a valid line"
                  continue
               if   self.isstat1: [outdict[field].append(d[field]) for field in fields]
-              elif self.isstat2: 
+              elif self.isstat2:
                    if line_number==1: continue
                    [outdict[field].append(d[self.invstat2_dict[field]]) for field in fields]
            f.close()
-           return outdict        
+           return outdict
 
 def plot_fields(fields,framemin=None,framemax=None):
         import matplotlib.pyplot as plt
-        
-        
-        
+
+
+
         plt.rc('lines', linewidth=4)
         fig, axs  = plt.subplots(nrows=len(fields))
         fig.set_size_inches(10.5,5.5*len(fields))
         plt.rc('axes', color_cycle=['r'])
-        
-        
+
+
         n=0
         for key in fields:
-           if framemin==None: framemin=0
-           if framemax==None: framemax=len(fields[key])
+           if framemin is None: framemin=0
+           if framemax is None: framemax=len(fields[key])
            x = range(framemin,framemax)
            y=[float(y) for y in fields[key][framemin:framemax]]
            if len(fields)>1:
@@ -628,30 +628,30 @@ def plot_fields(fields,framemin=None,framemax=None):
            else:
               axs.plot(x,y)
               axs.set_title(key,size="xx-large")
-              axs.tick_params(labelsize=18,pad=10)           
+              axs.tick_params(labelsize=18,pad=10)
            n+=1
 
         # Tweak spacing between subplots to prevent labels from overlapping
         plt.subplots_adjust(hspace=0.3)
-        plt.show()     
+        plt.show()
 
 
 def plot_field_histogram(name,values,valuename=None):
         import matplotlib.pyplot as plt
         fig = plt.figure(figsize=(8.0, 8.0))
-        
+
         plt.hist([float(y) for y in values],bins=40,color='#66CCCC',normed=True)
         plt.title(name,size="xx-large")
         plt.tick_params(labelsize=18,pad=10)
-        if valuename==None:
+        if valuename is None:
            plt.xlabel(name,size="xx-large")
         else:
            plt.xlabel(valuename,size="xx-large")
         plt.ylabel("Frequency",size="xx-large")
         plt.savefig(name+".png",dpi=150,transparent="False")
         plt.show()
-    
-    
+
+
 def plot_fields_box_plots(name,values,positions,
                           valuename="None",positionname="None",xlabels=None):
     '''
@@ -662,26 +662,26 @@ def plot_fields_box_plots(name,values,positions,
     import matplotlib.pyplot as plt
     from matplotlib.patches import Polygon
     #import numpy as np
-    
+
     bps=[]
     fig = plt.figure(figsize=(float(len(positions))/2,5.0))
     fig.canvas.set_window_title(name)
 
 
     ax1 = fig.add_subplot(111)
-    
+
     plt.subplots_adjust(left=0.161, right=0.990, top=0.95, bottom=0.11)
 
-    
 
-    bps.append(plt.boxplot( values, notch=0, sym='', vert=1, 
-                              whis=1.5,positions=positions))  
-    
+
+    bps.append(plt.boxplot( values, notch=0, sym='', vert=1,
+                              whis=1.5,positions=positions))
+
     plt.setp(bps[-1]['boxes'], color='black',lw=1.5)
     plt.setp(bps[-1]['whiskers'], color='black',ls=":",lw=1.5)
-    
+
     #print ax1.xaxis.get_majorticklocs()
-    if xlabels!=None: ax1.set_xticklabels(xlabels)
+    if not xlabels is None: ax1.set_xticklabels(xlabels)
     plt.xticks(rotation=90)
     plt.xlabel(positionname)
     plt.ylabel(valuename)
@@ -699,7 +699,7 @@ def plot_xy_data(x,y):
         print x
         print y
         ax.plot(x,y)
-        plt.show()  
+        plt.show()
 
 def plot_scatter_xy_data(x,y,labelx="None",labely="None",
                          xmin=None,xmax=None,ymin=None,ymax=None,
@@ -724,9 +724,9 @@ def plot_scatter_xy_data(x,y,labelx="None",labely="None",
 
     fig.set_size_inches(8.0, 8.0)
     fig.subplots_adjust(left=0.161, right=0.980, top=0.95, bottom=0.11)
-    if ymin!=None and ymax!=None:
+    if (not ymin is None) and (not ymax is None):
        axs0.set_ylim(ymin,ymax)
-    if xmin!=None and xmax!=None:
+    if (not xmin is None) and (xmax is None):
        axs0.set_xlim(xmin,xmax)
     plt.show()
     if savefile:
@@ -737,13 +737,13 @@ def get_graph_from_hierarchy(hier):
     depth_dict={}
     depth=0
     (graph,depth,depth_dict)=recursive_graph(hier,graph,depth,depth_dict)
-    
+
     #filters node labels according to depth_dict
     node_labels_dict={}
     node_size_dict={}
     for key in depth_dict:
         node_size_dict=10/depth_dict[key]
-        if depth_dict[key]<3: 
+        if depth_dict[key]<3:
            node_labels_dict[key]=key
         else:
            node_labels_dict[key]=""
@@ -758,26 +758,26 @@ def recursive_graph(hier,graph,depth,depth_dict):
     index=str(hier.get_particle().get_index())
     name1=nameh+"|#"+index
     depth_dict[name1]=depth
-    
+
     children=IMP.atom.Hierarchy(hier).get_children()
-    
-    if len(children)==1 or children==None:
+
+    if len(children)==1 or children is None:
        depth=depth-1
        return (graph,depth,depth_dict)
-    
+
     else:
       for c in children:
         (graph,depth,depth_dict)=recursive_graph(c,graph,depth,depth_dict)
         nameh=IMP.atom.Hierarchy(c).get_name()
         index=str(c.get_particle().get_index())
-        namec=nameh+"|#"+index        
+        namec=nameh+"|#"+index
         graph.append((name1,namec))
-      
+
       depth=depth-1
       return (graph,depth,depth_dict)
 
 
-     
+
 def draw_graph(graph, labels_dict=None, graph_layout='spring',
                node_size=5, node_color='blue', node_alpha=0.3,
                node_text_size=11,
@@ -808,7 +808,7 @@ def draw_graph(graph, labels_dict=None, graph_layout='spring',
         graph_pos=nx.shell_layout(G)
 
     # draw graph
-    nx.draw_networkx_nodes(G,graph_pos,node_size=node_size, 
+    nx.draw_networkx_nodes(G,graph_pos,node_size=node_size,
                            alpha=node_alpha, node_color=node_color)
     nx.draw_networkx_edges(G,graph_pos,width=edge_tickness,
                            alpha=edge_alpha,edge_color=edge_color)
@@ -816,15 +816,15 @@ def draw_graph(graph, labels_dict=None, graph_layout='spring',
                             font_family=text_font)
     plt.show()
 
-    
-    
+
+
 def draw_table():
-    
+
     #still an example!
-    
+
     from ipyD3 import d3object
     from IPython.display import display
-    
+
     d3 = d3object(width=800,
               height=400,
               style='JFTable',
@@ -844,7 +844,7 @@ def draw_table():
     sRows=[['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'Deecember']]
     sColumns=[['Prod {0}'.format(i) for i in xrange(1,9)],
           [None, '', None, None, 'Group 1', None, None, 'Group 2']]
-    d3.addSimpleTable(   data, 
+    d3.addSimpleTable(   data,
                      fontSizeCells=[12,],
                      sRows=sRows,
                      sColumns=sColumns,
@@ -854,7 +854,7 @@ def draw_table():
                      addBorders=1,
                      addOutsideBorders=-1,
                      rectWidth=45,
-                     rectHeight=0                   
+                     rectHeight=0
                  )
     html=d3.render(mode=['html', 'show'])
     display(html)

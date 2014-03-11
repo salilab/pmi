@@ -324,7 +324,7 @@ class ReplicaExchange():
         self.TEMPMIN_ = tempmin
         self.TEMPMAX_ = tempmax
 
-        if replica_exchange_object==None:
+        if replica_exchange_object is None:
             # initialize Replica Exchange class
             self.rem = IMP.mpi.ReplicaExchange()
         else:
@@ -361,7 +361,7 @@ class ReplicaExchange():
         return self.rem.get_my_index()
 
     def swap_temp(self,nframe,score=None):
-        if score==None:
+        if score is None:
            score=self.m.evaluate(False)
         # get my replica index and temperature
         myindex = self.rem.get_my_index()

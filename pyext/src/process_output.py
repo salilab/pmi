@@ -8,7 +8,7 @@ try:
 except ImportError:
    from optparse import OptionParser
    from optparse import Option, OptionValueError
-   
+
 
 import difflib
 
@@ -57,7 +57,7 @@ isstat1=False
 isstat2=False
 
 #open the file
-if result.filename!=None:
+if not result.filename is None:
    f=open(result.filename,"r")
 else:
    print "Error: No file name provided. Use -h for help"
@@ -68,7 +68,7 @@ for line in f.readlines():
     d=eval(line)
     klist=d.keys()
     #check if it is a stat2 file
-    if "STAT2HEADER" in klist: 
+    if "STAT2HEADER" in klist:
         import operator
         isstat2=True
         for k in klist:
@@ -85,14 +85,14 @@ for line in f.readlines():
     else:
         isstat1=True
         klist.sort()
-        
+
     break
-f.close()    
-    
-#print the keys    
-if result.print_fields:    
+f.close()
+
+#print the keys
+if result.print_fields:
      for key in klist:
-        if len(key)<=100: 
+        if len(key)<=100:
            print key
         else:
            print key[0:100],"... omitting the rest of the string (>100 characters)"
@@ -103,7 +103,7 @@ match_strictness=1.0
 if result.soft_match: match_strictness=0.1
 
 #print the queried fields
-if result.fields!=None:
+if not result.fields is None:
    field_list=[]
    #check whether the fields exist and convert them to best maching existing field names
    for field in result.fields:
@@ -113,11 +113,11 @@ if result.fields!=None:
          exit()
       else:
          field_list.append(found_entries[0])
-   
-   #print comment line   
+
+   #print comment line
    s0=' '.join(["%20s" % (field) for field in field_list])
    print "# "+s0
-   
+
    #print fields values
    f=open(result.filename,"r")
    line_number=0
@@ -129,37 +129,37 @@ if result.fields!=None:
          print "# Warning: skipped line number " + str(line_number) + " not a valid line"
          continue
       if   isstat1: s0=' '.join(["%20s" % (str(d[field])) for field in field_list])
-      elif isstat2: 
+      elif isstat2:
            if line_number==1: continue
            s0=' '.join(["%20s" % (str(d[invstat2_dict[field]])) for field in field_list])
       print "> "+s0
    f.close()
 
 
-if result.single_column_field!=None:
+if not result.single_column_field is None:
    field_list=[]
    for k in klist:
        if result.single_column_field in k:
            field_list.append(k)
-              
+
    f=open(result.filename,"r")
    line_number=0
    for line in f.readlines():
-      line_number+=1   
+      line_number+=1
       try:
          d=eval(line)
       except:
          print "# Warning: skipped line number " + str(line_number) + " not a valid line"
-         continue   
-      if isstat1:   
+         continue
+      if isstat1:
          for key in field_list: print key, d[key]
       elif isstat2:
          if line_number==1: continue
-         for key in field_list: print key, d[invstat2_dict[key]]         
-      print " "               
-   f.close()      
+         for key in field_list: print key, d[invstat2_dict[key]]
+      print " "
+   f.close()
 
-if (result.search_field!=None and result.search_value!=None):
+if (not result.search_field is None) and (not result.search_value is None):
    #check whether the fields exist and convert them to best maching existing field names
    found_entries=difflib.get_close_matches(result.search_field,klist,1,match_strictness)
    if len(found_entries)==0:
@@ -177,7 +177,7 @@ if (result.search_field!=None and result.search_value!=None):
       except:
          print "# Warning: skipped line number " + str(line_number) + " not a valid line"
          continue
-         
+
       if isstat1:
         if (str(d[corrected_field])==result.search_value):
            for key in klist:
@@ -186,10 +186,10 @@ if (result.search_field!=None and result.search_value!=None):
         if linenumber==1: continue
         if (str(d[invstat2_dict[corrected_field]])==result.search_value):
            for key in klist:
-             print key, d[invstat2_dict[key]]        
+             print key, d[invstat2_dict[key]]
    f.close()
 
-if (result.print_raw_number!=None):
+if not result.print_raw_number is None:
    #check whether the fields exist and convert them to best maching existing field names
    f=open(result.filename,"r")
    line_number=0
@@ -215,6 +215,3 @@ if (result.print_raw_number!=None):
          for key in klist:
             print key, d[invstat2_dict[key]]
    f.close()
-       
-
-

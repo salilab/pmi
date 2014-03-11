@@ -3,18 +3,18 @@ class Rods():
         self.m=m
         self.hier=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
         self.rigid_bodies=[]
-        self.floppy_bodies=[]        
+        self.floppy_bodies=[]
         self.maxtrans_rb=2.0
-        self.maxtrans_fb=2.0  
+        self.maxtrans_fb=2.0
         self.maxrot_rb=0.15
-    
+
     def add_protein(self,name,(firstres,lastres)):
         from math import pi,cos,sin
         h = IMP.atom.Molecule.setup_particle(IMP.Particle(self.m))
         h.set_name(name)
         nres=lastres-firstres
         radius=(nres)*5/2/pi
-        
+
         for res in range(firstres,lastres):
             alpha=2*pi/nres*(res-firstres)
             x=radius*cos(alpha)
@@ -22,21 +22,21 @@ class Rods():
             p=IMP.Particle(self.m)
             r=IMP.atom.Residue.setup_particle(p,IMP.atom.ALA,res)
             d=IMP.core.XYZR.setup_particle(p,5.0)
-            d.set_coordinates(IMP.algebra.Vector3D((x,y,0)))   
-            d.set_coordinates_are_optimized(True)                     
+            d.set_coordinates(IMP.algebra.Vector3D((x,y,0)))
+            d.set_coordinates_are_optimized(True)
             h.add_child(r)
         self.hier.add_child(h)
-    
+
     def get_hierarchy(self):
         return self.hier
-    
+
     def set_rod(self,chainname,(firstres,lastres)):
         prb=IMP.Particle(self.m)
         sel=IMP.atom.Selection(self.hier,molecule=chainname,residue_indexes=range(firstres,lastres+1))
         ps=sel.get_selected_particles()
         rb=IMP.core.RigidBody.setup_particle(prb,ps)
         self.rigid_bodies.append(rb)
-    
+
     def get_particles_to_sample(self):
         #get the list of samplable particles with their type
         #and the mover displacement. Everything wrapped in a dictionary,
@@ -44,7 +44,7 @@ class Rods():
         ps={}
         ps["Floppy_Bodies_Rods"]=(self.floppy_bodies,self.maxtrans_fb)
         ps["Rigid_Bodies_Rods"]=(self.rigid_bodies,self.maxtrans_rb,self.maxrot_rb)
-        return ps                
+        return ps
 
 
 class Beads():
@@ -74,14 +74,14 @@ class Beads():
         #r.add_child(a)
         #self.hier.add_child(r)
         self.hier.add_child(p)
-        if color!=None: self.set_color(label,color)
+        if not color is None: self.set_color(label,color)
         return self.particle_database[label]
-    
+
     def set_color(self,label,value):
         p=self.particle_database[label]
         clr=IMP.display.get_rgb_color(value)
-        IMP.display.Colored.setup_particle(p,clr) 
-    
+        IMP.display.Colored.setup_particle(p,clr)
+
     def set_floppy_bodies_max_trans(self,maxtrans):
         self.maxtrans_fb=maxtrans
 
@@ -105,7 +105,7 @@ class Beads():
 class MultipleStates():
     def __init__(self,nstates,m):
         global itertools, tools, restraints
-        
+
         import itertools
         import IMP.pmi.tools as tools
         import IMP.pmi.restraints as restraints
@@ -115,7 +115,7 @@ class MultipleStates():
         for ncopy in range(nstates):
             self.floppy_bodies.append([])
             self.rigid_bodies.append([])
-        
+
         self.rigid_bodies_are_sampled=True
         self.floppy_bodies_are_sampled=True
         self.prot=[]
@@ -137,13 +137,13 @@ class MultipleStates():
 
     def set_label(self,label):
         self.label=label
-    
+
     def set_rigid_bodies_are_sampled(self,input=True):
         self.rigid_bodies_are_sampled=input
 
     def set_floppy_bodies_are_sampled(self,input=True):
         self.floppy_bodies_are_sampled=input
-            
+
     def get_rigid_bodies(self):
         return  self.rigid_bodies
 
@@ -224,23 +224,23 @@ class MultipleStates():
     def add_beads(self,segments,xyzs=None,radii=None,colors=None):
         '''
         this method generate beads in missing portions.
-        The segments argument must be a list of selections 
+        The segments argument must be a list of selections
         in the form [(firstres,lastres,chain)]
         each selection will generate a bead
         '''
-        if xyzs==None: xyzs=[]
-        if radii==None: radii=[]
-        if colors==None: colors=[]
-        
+        if xyzs is None: xyzs=[]
+        if radii is None: radii=[]
+        if colors is None: colors=[]
+
         from math import pi
-        
+
         for n,s in enumerate(segments):
           firstres=s[0]
           lastres=s[1]
           chainid=s[2]
           nres=s[1]-s[0]
-          for prot in self.prot:         
-            for prot in self.prot: 
+          for prot in self.prot:
+            for prot in self.prot:
                 cps=IMP.atom.get_by_type(prot, IMP.atom.CHAIN_TYPE)
                 for c in cps:
                    chain=IMP.atom.Chain(c)
@@ -266,18 +266,18 @@ class MultipleStates():
                           z=0
                        else:
                           x=xyzs[n][0]
-                          y=xyzs[n][1]         
+                          y=xyzs[n][1]
                           z=xyzs[n][2]
-                       
+
                        if n+1<=len(colors):
                           clr=IMP.display.get_rgb_color(colors[n])
                           IMP.display.Colored.setup_particle(prt,clr)
-                                                                  
+
                        d=IMP.atom.XYZR.setup_particle(p,IMP.algebra.Sphere3D(x,y,z,radius))
-                       
-    
+
+
     def renumber_residues(self,chainid,newfirstresiduenumber):
-            for prot in self.prot: 
+            for prot in self.prot:
                 cps=IMP.atom.get_by_type(prot, IMP.atom.CHAIN_TYPE)
                 for c in cps:
                     if IMP.atom.Chain(c).get_id()==chainid:
@@ -287,9 +287,9 @@ class MultipleStates():
                        offs=newfirstresiduenumber-ri
                        for p in ps:
                            r=IMP.atom.Residue(p)
-                           ri=r.get_index()                            
+                           ri=r.get_index()
                            r.set_index(ri+offs)
-                
+
     def destroy_everything_but_the_residues(self,segments):
         #segments are defined as a list of tuples ex [(res1,res2,chain),....]
         for prot in self.prot:
@@ -373,10 +373,10 @@ class MultipleStates():
                     pruned_residue_list.append(r)
                     r0=r
 
-            
+
             r0=pruned_residue_list[0]
             linkdomaindef=[]
-            
+
             for i in range(1,len(pruned_residue_list)):
                 r=pruned_residue_list[i]
                 if r[1]==r0[1] and r[1]==False and IMP.core.RigidMember(r[3]).get_rigid_body() == IMP.core.RigidMember(r0[3]).get_rigid_body():
@@ -384,15 +384,15 @@ class MultipleStates():
                 else:
                     linkdomaindef.append((r0[0],r[0],r[2]))
                     r0=r
-            
+
             print " creating linker between atoms defined by: "+str(linkdomaindef)
-            
+
             ld=restraints.LinkDomains(prot,linkdomaindef,1.0,3.0)
             ld.set_label(str(ncopy))
             ld.add_to_model()
             linker_restraint_objects.append(ld)
             prs=ld.get_pairs()
-        
+
         return linker_restraint_objects
 
 
@@ -530,7 +530,7 @@ class MultipleStates():
         hier=IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m)) #create an empty hierarchy
         for pdb in list_pdb_file:
             if type(pdb)==str:
-                h=IMP.atom.read_pdb(pdb, self.m,IMP.atom.AndPDBSelector(IMP.atom.CAlphaPDBSelector(), 
+                h=IMP.atom.read_pdb(pdb, self.m,IMP.atom.AndPDBSelector(IMP.atom.CAlphaPDBSelector(),
                                                                       IMP.atom.ATOMPDBSelector()))
 
                 '''
@@ -560,7 +560,7 @@ class MultipleStates():
 
                 hier.add_child(h) #add read chains into hierarchy
             if type(pdb)==tuple:
-                h=IMP.atom.read_pdb(pdb[0], self.m,IMP.atom.AndPDBSelector(IMP.atom.CAlphaPDBSelector(), 
+                h=IMP.atom.read_pdb(pdb[0], self.m,IMP.atom.AndPDBSelector(IMP.atom.CAlphaPDBSelector(),
                                                                       IMP.atom.ATOMPDBSelector()))
 
                 '''
@@ -643,7 +643,7 @@ class MultipleStates():
 
         if len(self.xyzmodellist)==0:
             print "MultipleStates: hierarchies were not intialized"
-            
+
         if len(self.xyzreflist)==0:
             print "MultipleStates: reference hierarchies were not intialized"
 
@@ -671,7 +671,7 @@ class MultipleStates():
         output={}
         if len(self.refprot)!=0:
             drms=self.calculate_drms()
-            output.update(drms)          
+            output.update(drms)
         output["MultipleStates_Total_Score_"+self.label]=str(self.m.evaluate(False))
         return output
 
@@ -789,8 +789,8 @@ class LinkDomains():
             output["LinkDomains_Distance_"+label+"_"+self.label]=str(IMP.core.get_distance(d0,d1))
 
         return output
-        
-        
+
+
 ###########################################################################
 
 
@@ -858,7 +858,7 @@ class UpperBound():
         output={}
         self.m.update()
         score=self.rs.unprotected_evaluate(None)
-        output["_TotalScore"]=str(score)        
+        output["_TotalScore"]=str(score)
         output["UpperBound_"+self.label]=str(score)
         return output
 
@@ -912,7 +912,7 @@ class ExcludedVolumeResidue():
         self.m.update()
         output={}
         score=self.rs.unprotected_evaluate(None)
-        output["_TotalScore"]=str(score)        
+        output["_TotalScore"]=str(score)
         output["ExcludedVolumeResidue_"+self.label]=str(score)
         return output
 
@@ -972,7 +972,7 @@ class BipartiteExcludedVolumeResidue():
         self.m.update()
         output={}
         score=self.rs.unprotected_evaluate(None)
-        output["_TotalScore"]=str(score)        
+        output["_TotalScore"]=str(score)
         output["BipartiteExcludedVolumeResidue_"+self.label]=str(score)
         return output
 
@@ -1020,7 +1020,7 @@ class TemplateRestraint():
         self.m.update()
         output={}
         score=self.rs.unprotected_evaluate(None)
-        output["_TotalScore"]=str(score)        
+        output["_TotalScore"]=str(score)
         output["TemplateRestraint_"+self.label]=str(score)
         return output
 
@@ -1064,7 +1064,7 @@ class MarginalChi3Restraint():
         self.m.update()
         output={}
         score=self.rs.unprotected_evaluate(None)
-        output["_TotalScore"]=str(score)        
+        output["_TotalScore"]=str(score)
         output["MarginalChi3Restraint_"+self.label]=str(score)
         output["MarginalChi3Restraint_Sigma_"+self.label]=str(self.sigma.get_scale())
         return output
@@ -1083,8 +1083,8 @@ class CrossLinkMS():
         global impisd2,tools
         import IMP.isd2 as impisd2
         import IMP.pmi.tools as tools
-        
-        if map_between_protein_names_and_chains==None:
+
+        if map_between_protein_names_and_chains is None:
            map_between_protein_names_and_chains={}
 
         self.rs=IMP.RestraintSet('data')
@@ -1149,7 +1149,7 @@ class CrossLinkMS():
 
     def add_restraints(self,restraint_file=None,oldfile=True):
 
-        if restraint_file==None:
+        if restraint_file is None:
             #get the restraints from simulated data
             restraint_list=self.allpairs_database
 
@@ -1167,7 +1167,7 @@ class CrossLinkMS():
             #force_restraint=True makes all intra rigid body restraint to be accepted
             force_restraint=False
 
-            if restraint_file==None:
+            if restraint_file is None:
                 if line["Is_Detected"]==True:
                     crosslinker=line["Crosslinker"]
                     (r1,c1)=line["Identified_Pair1"]
@@ -1389,7 +1389,7 @@ class CrossLinkMS():
 
         #dictionary of random reaction rates
         #check if they were already initialized
-        if self.reaction_rates==None:
+        if self.reaction_rates is None:
             self.reaction_rates={}
 
             s0=IMP.atom.Selection(self.prots[0],
@@ -1405,7 +1405,7 @@ class CrossLinkMS():
                 else:
                     self.reaction_rates[(r1,c1)]=self.ratemax
 
-        if self.allpairs_database==None:
+        if self.allpairs_database is None:
             self.allpairs_database=[]
 
         #generate the restraints
@@ -1499,7 +1499,7 @@ class CrossLinkMS():
 
     def show_simulated_data(self,what="Inter"):
         #"what" can be "All", "Detected", "FalsePositive", "TruePositive", "Intra", "Inter"
-        if self.allpairs_database!=None:
+        if not self.allpairs_database is None:
             detectedlist=[]
             for el in self.allpairs_database:
                 printbool=False
@@ -1605,8 +1605,8 @@ class CrossLinkMS():
         output={}
         score=self.rs.unprotected_evaluate(None)
         score2=self.rs2.unprotected_evaluate(None)
-        output["_TotalScore"]=str(score+score2)        
-        
+        output["_TotalScore"]=str(score+score2)
+
         output["CrossLinkMS_Likelihood_"+self.label]=str(score)
         output["CrossLinkMS_Prior_"+self.label]=str(score2)
         output["CrossLinkMS_Sigma"]=str(self.sigmaglobal.get_scale())
@@ -1650,35 +1650,35 @@ class BinomialXLMSRestraint():
 
     def __init__(self,m,prots,
                  listofxlinkertypes=["BS3","BS2G","EGS"],map_between_protein_names_and_chains=None,typeofprofile='pfes'):
-        
-        if map_between_protein_names_and_chains==None:
+
+        if map_between_protein_names_and_chains is None:
            map_between_protein_names_and_chains={}
-        
+
         global impisd2, tools, exp
         import IMP.isd2 as impisd2
         import IMP.pmi.tools as tools
-        
+
         self.setup=0
-           
+
         self.label="None"
         self.rs = IMP.RestraintSet('xlms')
-        self.rs2 = IMP.RestraintSet('jeffreys') 
-        self.m=m       
+        self.rs2 = IMP.RestraintSet('jeffreys')
+        self.m=m
         self.prots=prots
         self.pairs=[]
-        
+
         self.weightmaxtrans=0.05
         self.weightissampled=False
-       
+
         self.sigmainit=5.0
         self.sigmamin=1.0
         self.sigmaminnuis=0.0
         self.sigmamax=10.0
-        self.sigmamaxnuis=11.0 
+        self.sigmamaxnuis=11.0
         self.nsigma=100
         self.sigmaissampled=True
         self.sigmamaxtrans=0.1
-        
+
         self.betainit=1.0
         self.betamin=1.0
         self.betamax=4.0
@@ -1686,26 +1686,26 @@ class BinomialXLMSRestraint():
            self.betaissampled=True
            print "BinomialXLMSRestraint: beta is sampled"
         if self.setup==0:
-           self.betaissampled=False      
-           print "BinomialXLMSRestraint: beta is NOT sampled"     
+           self.betaissampled=False
+           print "BinomialXLMSRestraint: beta is NOT sampled"
         self.betamaxtrans=0.01
-        
+
         '''
         self.deltainit=0.001
         self.deltamin=0.001
         self.deltamax=0.1
         self.deltaissampled=False
         self.deltamaxtrans=0.001
-        
+
         self.laminit=5.0
         self.lammin=0.01
         self.lamminnuis=0.00001
         self.lammax=10.0
         self.lammaxnuis=100.0
-        self.lamissampled=False        
-        self.lammaxtrans=0.1        
+        self.lamissampled=False
+        self.lammaxtrans=0.1
         '''
-        
+
         self.epsilon=0.01
         self.psi_dictionary={}
 
@@ -1713,8 +1713,8 @@ class BinomialXLMSRestraint():
              self.sigmaminnuis,self.sigmamaxnuis,self.sigmaissampled).get_particle()
 
         self.beta=tools.SetupNuisance(self.m,self.betainit,
-             self.betamin,self.betamax,self.betaissampled).get_particle()    
-        
+             self.betamin,self.betamax,self.betaissampled).get_particle()
+
         '''
         self.delta=tools.SetupNuisance(self.m,self.deltainit,
              self.deltamin,self.deltamax,self.deltaissampled).get_particle()
@@ -1723,7 +1723,7 @@ class BinomialXLMSRestraint():
              self.lamminnuis,self.lammaxnuis,self.lamissampled).get_particle()
 
         self.weight=tools.SetupWeight(m,False).get_particle()
-        
+
         for n in range(len(self.prots)):
             self.weight.add_weight()
         '''
@@ -1739,25 +1739,25 @@ class BinomialXLMSRestraint():
         #{"Nsp1":"A","Nup82":"B"} etc.
         self.mbpnc=map_between_protein_names_and_chains
         #check whther the file was initialized
-    
+
     def create_psi(self,index,value):
-        if value==None:
+        if value is None:
            self.psiinit=0.01
            self.psiissampled=True
-           print "BinomialXLMSRestraint: psi "+str(index)+" is sampled"           
+           print "BinomialXLMSRestraint: psi "+str(index)+" is sampled"
         else:
-           self.psiinit=value 
+           self.psiinit=value
            self.psiissampled=False
-           print "BinomialXLMSRestraint: psi "+str(index)+" is NOT sampled"               
+           print "BinomialXLMSRestraint: psi "+str(index)+" is NOT sampled"
         self.psiminnuis=0.0000001
         self.psimaxnuis=0.4999999
         self.psimin=    0.01
         self.psimax=    0.49
-        self.psitrans=  0.01 
+        self.psitrans=  0.01
         self.psi=tools.SetupNuisance(self.m,self.psiinit,
              self.psiminnuis,self.psimaxnuis,self.psiissampled).get_particle()
-        self.psi_dictionary[index]=(self.psi,self.psitrans,self.psiissampled)    
-        
+        self.psi_dictionary[index]=(self.psi,self.psitrans,self.psiissampled)
+
     def get_psi(self,index,value):
         if not index in self.psi_dictionary:
            self.create_psi(index,value)
@@ -1784,7 +1784,7 @@ class BinomialXLMSRestraint():
         if "Short" in self.listofxlinkertypes:
             #setup a "short" xl with an half length of 10 Ang
             crosslinker_dict["Short"]=tools.get_cross_link_data_from_length(10.0,disttuple,omegatuple,sigmatuple)
-        return crosslinker_dict        
+        return crosslinker_dict
 
     def add_restraints(self,restraint_file=None,oldfile=False):
 
@@ -1793,7 +1793,7 @@ class BinomialXLMSRestraint():
         restraint_list = f.readlines()
 
         self.index=0
-            
+
         self.added_pairs_list=[]
         self.missing_residues=[]
         for line in restraint_list:
@@ -1806,21 +1806,21 @@ class BinomialXLMSRestraint():
 
         self.rs2.add_restraint(impisd2.UniformPrior(self.sigma,1000000000.0,self.sigmamax,self.sigmamin))
         #self.rs2.add_restraint(impisd2.JeffreysRestraint(self.sigma))
-        
+
         for psiindex in self.psi_dictionary:
           if self.psi_dictionary[psiindex][2]:
             psip=self.psi_dictionary[psiindex][0]
-            
+
             if self.setup==0:
-               print "BinomialXLMSRestraint: setup 0, adding BinomialJeffreysPrior to psi particle "+str(psiindex) 
+               print "BinomialXLMSRestraint: setup 0, adding BinomialJeffreysPrior to psi particle "+str(psiindex)
                self.rs2.add_restraint(impisd2.BinomialJeffreysPrior(psip))
                #self.rs2.add_restraint(impisd2.JeffreysRestraint(psip))
-            
+
             self.rs2.add_restraint(impisd2.UniformPrior(psip,1000000000.0,self.psimax,self.psimin))
-        
+
     def add_crosslink_according_to_new_file(self,totallist,constructor=0):
-        #the constructor variable specify what constroctor to use in 
-        #the restraint   0: use predetermined f.p.r. (psi) 
+        #the constructor variable specify what constroctor to use in
+        #the restraint   0: use predetermined f.p.r. (psi)
         #1: infer the f.p.r. defining a psi nuisance defined by a class
         force_restraint=False
         ambiguous_list=totallist[0]
@@ -1835,23 +1835,23 @@ class BinomialXLMSRestraint():
         c2s=[]
         psis=[]
         psivalues=[]
-        self.index+=1 
+        self.index+=1
         for pair in ambiguous_list:
             error=False
-           
-            
-            
+
+
+
             try:
                c1=self.mbpnc[pair[0][0]]
             except:
                print "BinomialXLMSRestraint: WARNING> protein name "+pair[0][0]+" was not defined"
-               continue 
-            try:                         
-               c2=self.mbpnc[pair[1][0]]   
+               continue
+            try:
+               c2=self.mbpnc[pair[1][0]]
             except:
                print "BinomialXLMSRestraint: WARNING> protein name "+pair[1][0]+" was not defined"
-               continue                         
-            
+               continue
+
             r1=int(pair[0][1])
             r2=int(pair[1][1])
             psi=float(pair[2])
@@ -1859,7 +1859,7 @@ class BinomialXLMSRestraint():
                psivalue=float(pair[3])
             except:
                psivalue=None
-            
+
             print '''CrossLinkMS: attempting to add restraint between
                      residue %d of chain %s and residue %d of chain %s''' % (r1,c1,r2,c2)
 
@@ -1877,9 +1877,9 @@ class BinomialXLMSRestraint():
             except:
                 print "BinomialXLMSRestraint: WARNING> residue %d of chain %s is not there" % (r2,c2)
                 error=True
-                self.missing_residues.append((r2,c2))            
+                self.missing_residues.append((r2,c2))
             if error: continue
-            
+
 
             s1=IMP.atom.Selection(self.prots[0], residue_index=r1, chains=c1, atom_type=IMP.atom.AT_CA)
             p1=s1.get_selected_particles()[0]
@@ -1910,53 +1910,53 @@ class BinomialXLMSRestraint():
             c2s.append(c2)
             psis.append(psi)
             psivalues.append(psivalue)
-            
+
             print "BinomialXLMSRestraint: added pair %d %s %d %s" % (r1,c1,r2,c2)
-                       
+
             self.added_pairs_list.append((p1,p2,crosslinker))
 
 
         if len(p1s)>0:
             rs_name= '{:05}'.format(self.index % 100000)
-            
-            if self.setup==0:  
-               print "BinomialXLMSRestraint: constructor 0" 
+
+            if self.setup==0:
+               print "BinomialXLMSRestraint: constructor 0"
                ln=impisd2.BinomialCrossLinkMSRestraint(self.m,self.sigma,self.epsilon,self.crosslinker_dict[crosslinker])
 
-            if self.setup==1:  
-               print "BinomialXLMSRestraint: constructor 1" 
+            if self.setup==1:
+               print "BinomialXLMSRestraint: constructor 1"
                ln=impisd2.BinomialCrossLinkMSRestraint(self.m,self.sigma,self.beta,self.epsilon,self.crosslinker_dict[crosslinker])
 
             for i in range(len(p1s)):
                 ln.add_contribution()
 
-                psi=self.get_psi(psis[i],psivalues[i]) 
-                                
+                psi=self.get_psi(psis[i],psivalues[i])
+
                 ln.add_particle_pair(i,(p1s[i].get_index(),p2s[i].get_index()),psi[0].get_particle().get_index())
                 self.pairs.append((p1s[i], p2s[i], crosslinker, rs_name,
                      self.index, 100, (r1s[i],c1s[i],i), (r2s[i],c2s[i],i), crosslinker, i, ln))
-                     
+
                 h=IMP.core.Linear(0,0.03)
                 dps=IMP.core.DistancePairScore(h)
-                pr=IMP.core.PairRestraint(dps,IMP.ParticlePair(p1s[i],p2s[i]))  
+                pr=IMP.core.PairRestraint(dps,IMP.ParticlePair(p1s[i],p2s[i]))
                 self.rs2.add_restraint(pr)
-                
+
             self.rs.add_restraint(ln)
 
         print "BinomialXLMSRestraint: missing residues"
         for ms in self.missing_residues:
             print "BinomialXLMSRestraint:missing "+str(ms)
 
-            
+
         #self.rs2.add_restraint(impisd2.IntensityThresholdRestraint(self.delta))
         #self.rs2.add_restraint(impisd2.UniformPrior(self.delta,1000000000.0,self.delta.get_upper(),self.delta.get_lower()))
-        
 
-        
+
+
         #exit()
             #self.rs2.add_restraint(impisd2.UniformPrior(psip,1000000000.0,0.5,0.01))
-            
-            
+
+
     def set_label(self,label):
         self.label=label
 
@@ -1992,7 +1992,7 @@ class BinomialXLMSRestraint():
         f.close()
 
     def print_chimera_pseudobonds_with_psiindexes(self,filesuffix,model=0):
-        
+
         f=open(filesuffix+".chimera","w")
         atype="ca"
         for p in self.pairs:
@@ -2007,7 +2007,7 @@ class BinomialXLMSRestraint():
         output={}
         score=self.rs.unprotected_evaluate(None)
         score2=self.rs2.unprotected_evaluate(None)
-        output["_TotalScore"]=str(score+score2)        
+        output["_TotalScore"]=str(score+score2)
         output["CrossLinkMS_Likelihood_"+self.label]=str(score)
         output["CrossLinkMS_Prior_"+self.label]=str(score2)
 
@@ -2039,7 +2039,7 @@ class BinomialXLMSRestraint():
                 d0=IMP.core.XYZ(p0)
                 d1=IMP.core.XYZ(p1)
                 output["CrossLinkMS_Distance_"+str(index)+"_"+label_copy]=str(IMP.core.get_distance(d0,d1))
-        
+
         output["CrossLinkMS_Sigma_"+self.label]=str(self.sigma.get_scale())
         '''
         output["CrossLinkMS_Delta_"+self.label]=str(self.delta.get_scale())
@@ -2060,22 +2060,22 @@ class BinomialXLMSRestraint():
            ps["Nuisances_CrossLinkMS_Sigma_"+self.label]=([self.sigma],self.sigmamaxtrans)
         '''
         if self.deltaissampled:
-           ps["Nuisances_CrossLinkMS_Delta_"+self.label]=([self.delta],self.deltamaxtrans)           
+           ps["Nuisances_CrossLinkMS_Delta_"+self.label]=([self.delta],self.deltamaxtrans)
         if self.lamissampled:
-           ps["Nuisances_CrossLinkMS_Lambda_"+self.label]=([self.lam],self.lammaxtrans)  
+           ps["Nuisances_CrossLinkMS_Lambda_"+self.label]=([self.lam],self.lammaxtrans)
         '''
         if self.betaissampled:
            ps["Nuisances_CrossLinkMS_Beta_"+self.label]=([self.beta],self.betamaxtrans)
-        
+
         for psiindex in self.psi_dictionary:
           if self.psi_dictionary[psiindex][2]:
             ps["Nuisances_CrossLinkMS_Psi_"+str(psiindex)+"_"+self.label]=([self.psi_dictionary[psiindex][0]],self.psi_dictionary[psiindex][1])
-        
+
         '''
         if self.weightissampled:
            ps["Weights_CrossLinkMS_"+self.label]=([self.weight],self.weightmaxtrans)
         '''
-        return ps    
+        return ps
 
 ##############################################################
 
@@ -2101,7 +2101,7 @@ class CrossLinkMSSimple():
         else:
             hf=IMP.core.Harmonic(12.0,1.0/25.0)
         dps=IMP.core.DistancePairScore(hf)
-        
+
         #small linear contribution for long range
         h=IMP.core.Linear(0,0.03)
         dps2=IMP.core.DistancePairScore(h)
@@ -2183,9 +2183,9 @@ class CrossLinkMSSimple():
             ln.set_weight(1.0)
 
             self.rs.add_restraint(ln)
-            
 
-            pr=IMP.core.PairRestraint(dps2,IMP.ParticlePair(p1,p2))  
+
+            pr=IMP.core.PairRestraint(dps2,IMP.ParticlePair(p1,p2))
 
             self.rs.add_restraint(pr)
 
@@ -2217,7 +2217,7 @@ class CrossLinkMSSimple():
         self.m.update()
         output={}
         score=self.rs.unprotected_evaluate(None)
-        output["_TotalScore"]=str(score)            
+        output["_TotalScore"]=str(score)
         output["CrossLinkMSSimple_Score_"+self.label]=str(score)
         for i in range(len(self.pairs)):
 

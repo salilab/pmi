@@ -340,7 +340,7 @@ class Clustering():
             rmsd_protein_names = all_coords[model_list_names[0]].keys()
             raw_distance_dict={}
             transformation_distance_dict={}
-            if template_coords==None: 
+            if template_coords is None: 
                do_alignment=False
             else:
                do_alignment=True

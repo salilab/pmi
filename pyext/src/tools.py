@@ -286,7 +286,7 @@ def get_cross_link_data(directory,filename,(distmin,distmax,ndist),
     omega_grid=get_log_grid(omegamin, omegamax, nomega)
     sigma_grid=get_log_grid(sigmamin, sigmamax, nsigma)
 
-    if don!=None and doff!=None:
+    if not don is None and not doff is None:
         xlmsdata=IMP.isd.CrossLinkData(dist_grid,omega_grid,sigma_grid,xpot,pot,don,doff,prior)
     else:
         xlmsdata=IMP.isd.CrossLinkData(dist_grid,omega_grid,sigma_grid,xpot,pot)
@@ -431,17 +431,17 @@ def get_position_terminal_residue(hier,terminus="C",resolution=1):
         if IMP.pmi.Resolution(p).get_resolution()==resolution:
            residues=IMP.pmi.tools.get_residue_indexes(p)
            if terminus=="C":
-               if max(residues)>=termresidue and termresidue!=None:
+               if max(residues)>=termresidue and not termresidue is None:
                   termresidue=max(residues)
                   termparticle=p
-               elif termresidue==None:
+               elif termresidue is None:
                   termresidue=max(residues)
                   termparticle=p
            elif terminus=="N":
-               if min(residues)<=termresidue and termresidue!=None:
+               if min(residues)<=termresidue and not termresidue is None:
                   termresidue=min(residues)
                   termparticle=p
-               elif termresidue==None:
+               elif termresidue is None:
                   termresidue=min(residues)
                   termparticle=p
            else:
@@ -529,7 +529,7 @@ def select(representation,
     representation_type="Beads", "Res:X", "Densities", "Representation", "Molecule"
     '''
 
-    if resolution==None:
+    if resolution is None:
        allparticles=IMP.atom.get_leaves(representation.prot)
     resolution_particles=None
     hierarchies_particles=None
@@ -539,18 +539,18 @@ def select(representation,
     representation_type_particles=None
 
 
-    if resolution!=None:
+    if not resolution is None:
        resolution_particles=[]
        hs=representation.get_hierarchies_at_given_resolution(resolution)
        for h in hs:
           resolution_particles+=IMP.atom.get_leaves(h)
 
-    if hierarchies!=None:
+    if not hierarchies is None:
        hierarchies_particles=[]
        for h in hierarchies:
           hierarchies_particles+=IMP.atom.get_leaves(h)
 
-    if name!=None:
+    if not name is None:
        names_particles=[]
        if name_is_ambiguous:
           for namekey in representation.hier_dict:
@@ -561,17 +561,17 @@ def select(representation,
        else:
           print "select: component %s is not there" % name
 
-    if first_residue!=None and last_residue!=None:
+    if not first_residue is None and not last_residue is None:
        sel = IMP.atom.Selection(representation.prot,
               residue_indexes=range(first_residue, last_residue + 1))
        residue_range_particles=[IMP.atom.Hierarchy(p) for p in sel.get_selected_particles()]
 
 
-    if residue!=None:
+    if not residue is None:
        sel = IMP.atom.Selection(representation.prot, residue_index=residue)
        residue_particles=[IMP.atom.Hierarchy(p) for p in sel.get_selected_particles()]
 
-    if representation_type!=None:
+    if not representation_type is None:
       representation_type_particles=[]
       if representation_type=="Molecule":
          for name in representation.hier_representation:
@@ -595,13 +595,13 @@ def select(representation,
     selections=[hierarchies_particles,names_particles,
                 residue_range_particles,residue_particles,representation_type_particles]
 
-    if resolution==None:
+    if resolution is None:
        selected_particles=set(allparticles)
     else:
        selected_particles=set(resolution_particles)
 
     for s in selections:
-        if s!=None:
+        if not s is None:
            selected_particles = (set(s) & selected_particles)
 
     return list(selected_particles)
@@ -674,7 +674,7 @@ class HierarchyDatabase():
             self.root_hierarchy_dict[p]=rh
             self.preroot_fragment_hierarchy_dict[p]=prf
             self.particle_to_name[p]=name
-        if self.model==None: self.model=particles[0].get_model()
+        if self.model is None: self.model=particles[0].get_model()
 
      def get_model(self):
         return self.model
@@ -782,10 +782,10 @@ def  get_prot_name_from_particle(p,list_of_names):
         if root0 == IMP.atom.Hierarchy():
            return (None,None)
         protname=root0.get_name()
-      
-        
+
+
         # check if that is a bead
-        # this piece of code might be dangerous if 
+        # this piece of code might be dangerous if
         # the hierarchy was called Bead :)
         if "Beads" in protname: is_a_bead=True
         root=root0
@@ -815,7 +815,7 @@ def sort_by_residues(particles):
     sorted_particles_residues=sorted(particles_residues, key=lambda tup: tup[1])
     particles=[p[0] for p in sorted_particles_residues]
     return particles
-    
+
 def get_residue_to_particle_map(particles):
     # this function returns a dictionary that map particles to residue indexes
     particles=sort_by_residues(particles)
@@ -836,7 +836,7 @@ def scatter_and_gather(data):
   comm.Barrier()
   if rank!=0:
         comm.send(data, dest=0, tag=11)
-     
+
   elif rank==0:
         for i in range(1,number_of_processes):
             data_tmp=comm.recv(source=i, tag=11)
@@ -847,10 +847,10 @@ def scatter_and_gather(data):
             else:
                print "tools.scatter_and_gather: data not supported, use list or dictionaries"
                exit()
-        
+
         for i in range(1,number_of_processes):
             comm.send(data, dest=i, tag=11)
-            
+
   if rank!=0:
         data=comm.recv(source=0, tag=11)
 
@@ -866,8 +866,8 @@ def sublist_iterator(l,lmin=None,lmax=None):
     this iterator yields all sublists
     of length >= lmin and <= lmax
     '''
-    if lmin==None: lmin=0
-    if lmax==None: lmax=len(l)
+    if lmin is None: lmin=0
+    if lmax is None: lmax=len(l)
     n = len(l)+1
     for i in xrange(n):
         for j in xrange(i+1, n):
@@ -881,7 +881,7 @@ def list_chunks_iterator(list, length):
     """
     for i in xrange(0, len(list), length):
         yield list[i:i+length]
-        
+
 def chunk_list_into_segments(seq, num):
   avg = len(seq) / float(num)
   out = []
@@ -891,7 +891,7 @@ def chunk_list_into_segments(seq, num):
     out.append(seq[int(last):int(last + avg)])
     last += avg
 
-  return out        
+  return out
 
 #########################
 # COORDINATE MANIPULATION
@@ -1100,7 +1100,7 @@ loop  : same format as helix, it's the contiguous loops
             beta_id=line[33]
 
         ### decide whether to extend or store the SSE
-        if prev_sstype==None:
+        if prev_sstype is None:
             cur_sse=[pdb_res_num,pdb_res_num,chain]
         elif sstype!=prev_sstype or chain_break:
             # add cur_sse to the right place
@@ -1119,7 +1119,7 @@ loop  : same format as helix, it's the contiguous loops
             prev_beta_id=beta_id
 
     ### final SSE processing
-    if prev_sstype!=None:
+    if not prev_sstype is None:
         if sse_dict[prev_sstype] in ['helix','loop']:
             sses[sse_dict[prev_sstype]].append([cur_sse])
         if sse_dict[prev_sstype]=='beta':

@@ -592,9 +592,7 @@ class AnalysisReplicaExchange0():
 
                 DensModule = IMP.pmi.analysis.GetModelDensity(density_custom_ranges,voxel=voxel_size)
 
-              print Clusters.get_cluster_label_average_rmsd(cl)
-              print Clusters.get_cluster_label_size(cl)
-              print Clusters.get_cluster_label_names(cl)
+
               dircluster=outputdir+"/cluster."+str(n)+"/"
               try:
                  os.mkdir(outputdir)
@@ -605,6 +603,8 @@ class AnalysisReplicaExchange0():
                  os.mkdir(dircluster)
               except:
                  pass
+              
+              rmsd_dict={"AVERAGE_RMSD":str(Clusters.get_cluster_label_average_rmsd(cl))}
 
               clusstat=open(dircluster+"stat.out","w")
 
@@ -613,6 +613,7 @@ class AnalysisReplicaExchange0():
 
                   #extract the features
                   tmp_dict={}
+                  tmp_dict.update(rmsd_dict)
                   index=rmf_file_name_index_dict[structure_name]
                   for key in best_score_feature_keyword_list_dict:
                       tmp_dict[key]=best_score_feature_keyword_list_dict[key][index]

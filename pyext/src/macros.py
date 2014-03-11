@@ -578,17 +578,11 @@ class AnalysisReplicaExchange0():
 # now save all informations about the clusters
 
 # -----------------------------------------------------------------------------------------------
-#
-        
-        if number_of_processes>len(Clusters.get_cluster_labels()):
-           number_of_processes_cl=len(Clusters.get_cluster_labels())
+#          
            
-           
-        if rank<len(Clusters.get_cluster_labels()):
+        if rank==0:
         
-            my_clusters=IMP.pmi.tools.chunk_list_into_segments(Clusters.get_cluster_labels(),number_of_processes_cl)[rank]
-        
-            o=IMP.pmi.output.Output()
+            o=IMP.pmi.output.Output(Clusters.get_cluster_labels())
             
             for n,cl in enumerate(my_clusters):
                   

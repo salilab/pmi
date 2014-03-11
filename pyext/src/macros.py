@@ -595,6 +595,11 @@ class AnalysisReplicaExchange0():
               print Clusters.get_cluster_label_names(cl)
               dircluster=outputdir+"/cluster."+str(n)+"/"
               try:
+                 os.mkdir(outputdir)
+              except:
+                 pass                 
+              
+              try:
                  os.mkdir(dircluster)
               except:
                  pass

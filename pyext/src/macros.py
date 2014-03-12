@@ -590,7 +590,7 @@ class AnalysisReplicaExchange0():
         
             o=IMP.pmi.output.Output()
             
-            for k,cl in enumerate(Clusters.get_cluster_labels()):
+            for k,cl in enumerate(my_clusters):
                   
                   n=my_clusters_index[k]
                   # first initialize the Density class if requested

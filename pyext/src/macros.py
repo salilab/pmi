@@ -568,6 +568,7 @@ class AnalysisReplicaExchange0():
 
         else:
             Clusters.load_distance_matrix_file(file_name=distance_matrix_file)
+            print "clustering with %s clusters" % str(number_of_clusters)
             Clusters.do_cluster(number_of_clusters)
             [best_score_feature_keyword_list_dict,rmf_file_name_index_dict]=self.load_objects(".macro.pkl")
             if display_plot:
@@ -582,9 +583,11 @@ class AnalysisReplicaExchange0():
         
         if number_of_processes>len(Clusters.get_cluster_labels()):
            number_of_processes_cl=len(Clusters.get_cluster_labels())
-           
+           print "found %s clusters" % str(len(Clusters.get_cluster_labels()))           
+           print "selected %s processes" % str(number_of_processes_cl)           
            
         if rank<len(Clusters.get_cluster_labels()):
+            print "rank %s engaged for retrieving cluster data" 
             my_clusters_index=IMP.pmi.tools.chunk_list_into_segments(range(len(Clusters.get_cluster_labels())),number_of_processes_cl)[rank]
             my_clusters=IMP.pmi.tools.chunk_list_into_segments(Clusters.get_cluster_labels(),number_of_processes_cl)[rank]
         

@@ -586,7 +586,7 @@ class AnalysisReplicaExchange0():
         
             for k,cl in enumerate(Clusters.get_cluster_labels()):
                   
-                  n=my_clusters_index[k]
+                  n=k
                   # first initialize the Density class if requested
      
                   if density_custom_ranges:

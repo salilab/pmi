@@ -584,16 +584,19 @@ class AnalysisReplicaExchange0():
   
         if rank==0:
             o=IMP.pmi.output.Output()
-            for k,cl in enumerate(Clusters.get_cluster_labels()):
+            for n,cl in enumerate(Clusters.get_cluster_labels()):
+            
+                  print "rank %s " % str(rank)                  
+                  print "cluster %s " % str(n)
+                  print "cluster label %s " % str(cl)
+                  print Clusters.get_cluster_label_names(cl)
                   
-                  n=k
                   # first initialize the Density class if requested
      
                   if density_custom_ranges:
     
                     DensModule = IMP.pmi.analysis.GetModelDensity(density_custom_ranges,voxel=voxel_size)
-    
-    
+
                   dircluster=outputdir+"/cluster."+str(n)+"/"
                   try:
                      os.mkdir(outputdir)

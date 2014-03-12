@@ -581,22 +581,10 @@ class AnalysisReplicaExchange0():
 # -----------------------------------------------------------------------------------------------
 #
         
-        print rmf_file_name_index_dict
+
+        if rank==0:
         
-        
-        if number_of_processes>len(Clusters.get_cluster_labels()):
-           number_of_processes_cl=len(Clusters.get_cluster_labels())
-           print "found %s clusters" % str(len(Clusters.get_cluster_labels()))           
-           print "selected %s processes" % str(number_of_processes_cl)           
-           
-        if rank<len(Clusters.get_cluster_labels()):
-            print "rank %s engaged for retrieving cluster data" % rank
-            my_clusters_index=IMP.pmi.tools.chunk_list_into_segments(range(len(Clusters.get_cluster_labels())),number_of_processes_cl)[rank]
-            my_clusters=IMP.pmi.tools.chunk_list_into_segments(Clusters.get_cluster_labels(),number_of_processes_cl)[rank]
-        
-            o=IMP.pmi.output.Output()
-            
-            for k,cl in enumerate(my_clusters):
+            for k,cl in enumerate(Clusters.get_cluster_labels()):
                   
                   n=my_clusters_index[k]
                   # first initialize the Density class if requested

@@ -255,8 +255,9 @@ class Clustering():
 
 
     def save_distance_matrix_file(self,file_name='cluster.rawmatrix.pkl'):
-        import pickle    
-        outf = open(file_name,'w')
+        #import pickle 
+        import numpy as np   
+        outf = open(file_name+".data",'w')
         
         #to pickle the transformation dictionary 
         #you have to save the arrays correposnding to
@@ -264,14 +265,34 @@ class Clustering():
         
         
         pickable_transformations=self.get_pickable_transformation_distance_dict()
-        pickle.dump((self.structure_cluster_ids,self.model_list_names,self.raw_distance_matrix,pickable_transformations),outf)            
-        outf.close()        
+        #pickle.dump((self.structure_cluster_ids,self.model_list_names,self.raw_distance_matrix,pickable_transformations),outf)            
+        outf.write(str(self.structure_cluster_ids))
+        outf.write("\n")
+        outf.write(str(self.model_list_names))
+        outf.write("\n")
+        outf.write(str(self.raw_distance_matrix))
+        outf.write("\n")
+        outf.write(str(pickable_transformations))
+        outf.write("\n") 
+        outf.close()     
+        
+        np.save(file_name+".npy", self.raw_distance_matrix)
+        
+           
 
     def load_distance_matrix_file(self,file_name='cluster.rawmatrix.pkl'):
-        import pickle        
-        inputf = open(file_name,'r')    
-        (self.structure_cluster_ids,self.model_list_names,self.raw_distance_matrix,pickable_transformation)=pickle.load(inputf) 
+        #import pickle        
+        import numpy as np        
         
+        inputf = open(file_name+".data",'r')   
+        
+        for n,line in enumerate(inputf):
+           if n==0: self.structure_cluster_ids=eval(line)
+           if n==1: self.model_list_names=eval(line)
+           if n==2: pickable_transformation=eval(line)
+           
+        self.raw_distance_matrix=np.load(file_name+".npy")   
+             
         self.set_transformation_distance_dict_from_pickable(pickable_transformation)
         self.model_indexes=range(len(self.model_list_names))
         self.model_indexes_dict=dict(zip(self.model_list_names,self.model_indexes))

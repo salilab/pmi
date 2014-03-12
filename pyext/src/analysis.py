@@ -281,7 +281,7 @@ class Clustering():
                    
         self.raw_distance_matrix=np.load(file_name+".npy")   
              
-        self.set_transformation_distance_dict_from_pickable(pickable_transformation)
+        self.set_transformation_distance_dict_from_pickable(pickable_transformations)
         self.model_indexes=range(len(self.model_list_names))
         self.model_indexes_dict=dict(zip(self.model_list_names,self.model_indexes))
         

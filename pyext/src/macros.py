@@ -581,9 +581,9 @@ class AnalysisReplicaExchange0():
 # -----------------------------------------------------------------------------------------------
 #
         
-
+  
         if rank==0:
-        
+            o=IMP.pmi.output.Output()
             for k,cl in enumerate(Clusters.get_cluster_labels()):
                   
                   n=k

@@ -669,7 +669,7 @@ class AnalysisReplicaExchange0():
                      DensModule.write_mrc(path=dircluster)
                      del DensModule
                      
-            comm.Barrier()
+        comm.Barrier()
 
 
     def save_objects(self,objects,file_name):

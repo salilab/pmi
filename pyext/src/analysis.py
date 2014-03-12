@@ -276,7 +276,7 @@ class Clustering():
         import numpy as np        
         
         inputf = open(file_name+".data",'r')   
-        pickle.load((self.structure_cluster_ids,self.model_list_names,pickable_transformations),inputf)
+        (self.structure_cluster_ids,self.model_list_names,pickable_transformations)=pickle.load(inputf)
         inputf.close() 
                    
         self.raw_distance_matrix=np.load(file_name+".npy")   

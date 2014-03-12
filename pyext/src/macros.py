@@ -581,6 +581,9 @@ class AnalysisReplicaExchange0():
 # -----------------------------------------------------------------------------------------------
 #
         
+        print rmf_file_name_index_dict
+        
+        
         if number_of_processes>len(Clusters.get_cluster_labels()):
            number_of_processes_cl=len(Clusters.get_cluster_labels())
            print "found %s clusters" % str(len(Clusters.get_cluster_labels()))           

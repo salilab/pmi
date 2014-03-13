@@ -726,13 +726,25 @@ class CrossLinkTable():
               self.prot_length_dict[name]=max(residue_indexes)
    
    def set_crosslinks(self,data_file,search_label='ISDCrossLinkMS_Distance_',mapping=None):
+       
        # example key ISDCrossLinkMS_Distance_intrarb_937-State:0-108:RPS3_55:RPS30-1-1-0.1_None
+       # mapping is a dictionary that maps standard keywords to entry positions in the key string
+       # confidence class is a filter that 
+       
        import IMP.pmi.output
+       import numpy as np
        
        po=IMP.pmi.output.ProcessOutput(data_file)
        keys=po.get_keys()
        xl_keys=[k for k in keys if search_label in k]
        fs=po.get_fields(xl_keys)
+       
+       # this dictionary stores the occurency of given crosslinks
+       self.cross_link_frequency={}
+       
+       # this dictionary stores the series of distances for given crosslinked residues
+       self.cross_link_distances={}       
+       
        
        for key in fs:
            keysplit=key.replace("_"," ").replace("-"," ").replace(":"," ").split()
@@ -741,22 +753,53 @@ class CrossLinkTable():
                c1=keysplit[7]
                r2=int(keysplit[8])
                c2=keysplit[9]
+               try:
+                 confidence=keysplit[12]
+               except:
+                 confidence='0.0'
+               try:
+                 unique_identifier=keysplit[3]
+               except:
+                 unique_identifier='0'
            else:
                r1=int(keysplit[mapping["Residue1"]])
                c1=keysplit[mapping["Protein1"]]
                r2=int(keysplit[mapping["Residue2"]])
-               c2=keysplit[mapping["Protein2"]]               
+               c2=keysplit[mapping["Protein2"]]
+               try:              
+                  confidence=keysplit[mapping["Confidence"]]
+               except:
+                  confidence='0.0'
            
            self.crosslinkedprots.add(c1)
            self.crosslinkedprots.add(c2)
-                      
-           conf=float(keysplit[12])
+           
+           # check if the input confidence class corresponds to the
+           # one of the cross-link
+           
+              
            dists=map(float, fs[key])
            mdist=self.median(dists)
+           stdv=np.std(np.array(dists))
            if self.mindist>mdist: self.mindist=mdist
-           if self.maxdist<mdist: self.maxdist=mdist           
-           self.crosslinks.append((r1,c1,r2,c2,mdist))
-           self.crosslinks.append((r2,c2,r1,c1,mdist))
+           if self.maxdist<mdist: self.maxdist=mdist    
+           
+           if (r1,c1,r2,c2) not in self.cross_link_frequency:
+              self.cross_link_frequency[(r1,c1,r2,c2)]=1
+              self.cross_link_frequency[(r2,c2,r1,c1)]=1
+           else:
+              self.cross_link_frequency[(r2,c2,r1,c1)]+=1
+              self.cross_link_frequency[(r1,c1,r2,c2)]+=1
+
+           if (r1,c1,r2,c2) not in self.cross_link_distances:
+              self.cross_link_distances[(r1,c1,r2,c2,mdist,confidence)]=dists
+              self.cross_link_distances[(r2,c2,r1,c1,mdist,confidence)]=dists
+           else:
+              self.cross_link_distances[(r2,c2,r1,c1)]+=dists
+              self.cross_link_distances[(r1,c1,r2,c2)]+=dists
+                  
+           self.crosslinks.append((r1,c1,r2,c2,mdist,stdv,confidence,unique_identifier,'original'))
+           self.crosslinks.append((r2,c2,r1,c1,mdist,stdv,confidence,unique_identifier,'reversed'))
    
    def median(self,mylist):
        sorts = sorted(mylist)
@@ -770,7 +813,35 @@ class CrossLinkTable():
        elif dist>threshold+tolerance: return "Red"       
        else: return "Orange"
     
-   def plot(self,prot_listx=None,prot_listy=None,layout=True,crosslinkedonly=True,filename=None):
+   def write_cross_link_database(self,filename,format='csv'):
+       import csv
+       
+       fieldnames=["Unique ID","Protein1","Residue1","Protein2","Residue2",
+                   "Median Distance","Standard Deviation","Confidence","Frequency","Arrangement"]
+       dw = csv.DictWriter(open(filename,"w"), delimiter=',', fieldnames=fieldnames)
+       dw.writeheader()
+       for xl in self.crosslinks:
+          (r1,c1,r2,c2,mdist,stdv,confidence,unique_identifier,descriptor)=xl
+          if descriptor=='original':
+             outdict={}
+             outdict["Unique ID"]=unique_identifier
+             outdict["Protein1"]=c1
+             outdict["Protein2"]=c2             
+             outdict["Residue1"]=r1 
+             outdict["Residue2"]=r2
+             outdict["Median Distance"]=mdist   
+             outdict["Standard Deviation"]=stdv   
+             outdict["Confidence"]=confidence
+             outdict["Frequency"]=self.cross_link_frequency[(r1,c1,r2,c2)]
+             if c1==c2: arrangement="Intra"
+             else: arrangement="Inter"
+             outdict["Arrangement"]=arrangement
+             
+             dw.writerow(outdict)
+                                  
+   
+   def plot(self,prot_listx=None,prot_listy=None,layout=True,crosslinkedonly=True,
+       filename=None,confidence_classes=None,alphablend=0.1):
         # layout can be: 
         #                "lowerdiagonal"  print only the lower diagonal plot
         #                "upperdiagonal"  print only the upper diagonal plot
@@ -856,7 +927,11 @@ class CrossLinkTable():
         
         for xl in self.crosslinks:
             
-            (r1,c1,r2,c2,mdist)=xl
+            (r1,c1,r2,c2,mdist,stdv,confidence,unique_identifier,descriptor)=xl
+            
+            
+            if confidence_classes!=None:
+               if confidence not in confidence_classes: continue
             
             try:
                pos1=r1+resoffsetx[c1]
@@ -871,7 +946,13 @@ class CrossLinkTable():
                if pos1<pos2: continue
             if layout=='upperdiagonal':
                if pos1>pos2: continue
-            ax.plot([pos1], [pos2], 'k.', c=self.colormap(mdist),alpha=.2,markersize=15)
+            
+            if confidence=='0.01': markersize=15
+            elif confidence=='0.05': markersize=10
+            elif confidence=='0.1': markersize=7                        
+            else: markersize=15
+            
+            ax.plot([pos1], [pos2], 'k.', c=self.colormap(mdist),alpha=alphablend,markersize=markersize)
         
         fig.set_size_inches(0.002*nresx, 0.002*nresy)
         
@@ -880,7 +961,31 @@ class CrossLinkTable():
         
         plt.show()        
    
-   
+
+   def plot_bars(self,filename,prots1,prots2,arrangement="inter",confidence_input="None"):
+       import IMP.pmi.output
+       
+       data=[]
+       for xl in self.cross_link_distances:
+           (r1,c1,r2,c2,mdist,confidence)=xl
+           if c1 in prots1 and c2 in prots2:
+              if arrangement == "inter" and c1==c2: continue
+              if arrangement == "intra" and c1!=c2: continue
+              if confidence_input==confidence:
+                 label=str(c1)+":"+str(r1)+"-"+str(c2)+":"+str(r1)
+                 values=self.cross_link_distances[xl]
+                 frequency=self.cross_link_frequency[(r1,c1,r2,c2)]
+                 data.append((label,values,mdist,frequency))
+                 
+              
+       sort_by_dist = sorted(data, key=lambda tup: tup[2])
+       sort_by_dist = zip(*sort_by_dist)
+       values=sort_by_dist[1]
+       positions=range(len(values))
+       labels=sort_by_dist[0]
+       
+       IMP.pmi.output.plot_fields_box_plots(filename,values,positions,
+                          valuename="Distance (Ang)",positionname="Unique "+arrangement+" Crosslinks",xlabels=labels)
    
 ###############################################
 # these are post production function analysis

@@ -670,9 +670,7 @@ def plot_fields_box_plots(name,values,positions,
 
     ax1 = fig.add_subplot(111)
 
-    plt.subplots_adjust(left=0.161, right=0.990, top=0.95, bottom=0.11)
-
-
+    plt.subplots_adjust(left=0.05, right=0.990, top=0.95, bottom=0.4)
 
     bps.append(plt.boxplot( values, notch=0, sym='', vert=1,
                               whis=1.5,positions=positions))
@@ -685,9 +683,9 @@ def plot_fields_box_plots(name,values,positions,
     plt.xticks(rotation=90)
     plt.xlabel(positionname)
     plt.ylabel(valuename)
-    plt.show()
-    #plt.savefig(name+".png",dpi=150,bbox_inches="tight")
 
+    plt.savefig(name+".png",dpi=150)
+    plt.show()
 
 
 def plot_xy_data(x,y):

@@ -652,7 +652,7 @@ def plot_field_histogram(name,values,valuename=None):
         plt.show()
 
 
-def plot_fields_box_plots(name,values,positions,frequencies,
+def plot_fields_box_plots(name,values,positions,frequencies=None,
                           valuename="None",positionname="None",xlabels=None):
     '''
     This function plots time series as boxplots
@@ -670,15 +670,16 @@ def plot_fields_box_plots(name,values,positions,frequencies,
 
     ax1 = fig.add_subplot(111)
 
-    plt.subplots_adjust(left=0.05, right=0.990, top=0.95, bottom=0.4)
+    plt.subplots_adjust(left=0.2, right=0.990, top=0.95, bottom=0.4)
 
     bps.append(plt.boxplot( values, notch=0, sym='', vert=1,
                               whis=1.5,positions=positions))
 
     plt.setp(bps[-1]['boxes'], color='black',lw=1.5)
     plt.setp(bps[-1]['whiskers'], color='black',ls=":",lw=1.5)
-
-    ax1.plot(positions, frequencies, 'k.', alpha=0.5, markersize=20)
+    
+    if frequencies!=None:
+       ax1.plot(positions, frequencies, 'k.', alpha=0.5, markersize=20)
 
     #print ax1.xaxis.get_majorticklocs()
     if not xlabels is None: ax1.set_xticklabels(xlabels)

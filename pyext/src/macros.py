@@ -583,7 +583,7 @@ class AnalysisReplicaExchange0():
         
   
         if rank==0:
-            o=IMP.pmi.output.Output()
+            
             
             print Clusters.get_cluster_labels()
             
@@ -662,7 +662,8 @@ class AnalysisReplicaExchange0():
                       # add the density                  
                       if density_custom_ranges:
                          DensModule.add_subunits_density(prot)
-        
+                      
+                      o=IMP.pmi.output.Output()
                       o.init_pdb(dircluster+str(k)+".pdb",prot)        
                       o.write_pdb(dircluster+str(k)+".pdb")
                       if k==0:
@@ -670,6 +671,8 @@ class AnalysisReplicaExchange0():
                          #IMP.rmf.add_restraints(o.dictionary_rmfs[dircluster+str(n)+".rmf3"],restraints)
                          o.write_rmf(dircluster+str(k)+".rmf3")
                          o.close_rmf(dircluster+str(k)+".rmf3")
+                      
+                      del o
     
                   if density_custom_ranges:
                      DensModule.write_mrc(path=dircluster)

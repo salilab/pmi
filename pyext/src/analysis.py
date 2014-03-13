@@ -983,10 +983,14 @@ class CrossLinkTable():
        values=sort_by_dist[1]
        positions=range(len(values))
        labels=sort_by_dist[0]
+       frequencies=map(float,sort_by_dist[3])
+       frequencies=[f*10.0 for f in frequencies]
        
-       IMP.pmi.output.plot_fields_box_plots(filename,values,positions,
+       IMP.pmi.output.plot_fields_box_plots(filename,values,positions,frequencies,
                           valuename="Distance (Ang)",positionname="Unique "+arrangement+" Crosslinks",xlabels=labels)
-   
+       
+       
+       
 ###############################################
 # these are post production function analysis
 ###############################################

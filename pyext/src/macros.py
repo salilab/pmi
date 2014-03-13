@@ -644,6 +644,11 @@ class AnalysisReplicaExchange0():
     
                           rbs=[]
                           for p in IMP.atom.get_leaves(prot):
+                              if not IMP.core.XYZR.particle_is_instance(p):
+                                 IMP.core.XYZR.setup_particle(p)
+                                 p.set_radius(0.0001)
+                                 p.set_coordinates((0,0,0))
+                                                                 
                               if IMP.core.RigidBody.particle_is_instance(p):
                                  rb=IMP.core.RigidMember(p).get_rigid_body()
                                  if rb not in rbs:
@@ -660,10 +665,11 @@ class AnalysisReplicaExchange0():
         
                       o.init_pdb(dircluster+str(k)+".pdb",prot)        
                       o.write_pdb(dircluster+str(k)+".pdb")
-                      o.init_rmf(dircluster+str(k)+".rmf3",[prot])
-                      #IMP.rmf.add_restraints(o.dictionary_rmfs[dircluster+str(n)+".rmf3"],restraints)
-                      o.write_rmf(dircluster+str(k)+".rmf3")
-                      o.close_rmf(dircluster+str(k)+".rmf3")
+                      if k==0:
+                         o.init_rmf(dircluster+str(k)+".rmf3",[prot])
+                         #IMP.rmf.add_restraints(o.dictionary_rmfs[dircluster+str(n)+".rmf3"],restraints)
+                         o.write_rmf(dircluster+str(k)+".rmf3")
+                         o.close_rmf(dircluster+str(k)+".rmf3")
     
                   if density_custom_ranges:
                      DensModule.write_mrc(path=dircluster)

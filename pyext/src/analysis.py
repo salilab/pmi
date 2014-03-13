@@ -725,7 +725,7 @@ class CrossLinkTable():
            if len(residue_indexes)!=0:
               self.prot_length_dict[name]=max(residue_indexes)
    
-   def set_crosslinks(self,data_file,search_label='ISDCrossLinkMS_Distance_'):
+   def set_crosslinks(self,data_file,search_label='ISDCrossLinkMS_Distance_',mapping=None):
        # example key ISDCrossLinkMS_Distance_intrarb_937-State:0-108:RPS3_55:RPS30-1-1-0.1_None
        import IMP.pmi.output
        
@@ -736,10 +736,17 @@ class CrossLinkTable():
        
        for key in fs:
            keysplit=key.replace("_"," ").replace("-"," ").replace(":"," ").split()
-           r1=int(keysplit[6])
-           c1=keysplit[7]
-           r2=int(keysplit[8])
-           c2=keysplit[9]
+           if mapping is None:
+               r1=int(keysplit[6])
+               c1=keysplit[7]
+               r2=int(keysplit[8])
+               c2=keysplit[9]
+           else:
+               r1=int(keysplit[mapping["Residue1"]])
+               c1=keysplit[mapping["Protein1"]]
+               r2=int(keysplit[mapping["Residue2"]])
+               c2=keysplit[mapping["Protein2"]]               
+           
            self.crosslinkedprots.add(c1)
            self.crosslinkedprots.add(c2)
                       

@@ -770,6 +770,11 @@ class CrossLinkTable():
                   confidence=keysplit[mapping["Confidence"]]
                except:
                   confidence='0.0'
+               try:              
+                  unique_identifier=keysplit[mapping["Unique Identifier"]]
+               except:
+                  unique_identifier='0'
+
            
            self.crosslinkedprots.add(c1)
            self.crosslinkedprots.add(c2)

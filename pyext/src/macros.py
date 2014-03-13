@@ -646,8 +646,8 @@ class AnalysisReplicaExchange0():
                           for p in IMP.atom.get_leaves(prot):
                               if not IMP.core.XYZR.particle_is_instance(p):
                                  IMP.core.XYZR.setup_particle(p)
-                                 p.set_radius(0.0001)
-                                 p.set_coordinates((0,0,0))
+                                 IMP.core.XYZR(p).set_radius(0.0001)
+                                 IMP.core.XYZR(p).set_coordinates((0,0,0))
                                                                  
                               if IMP.core.RigidBody.particle_is_instance(p):
                                  rb=IMP.core.RigidMember(p).get_rigid_body()

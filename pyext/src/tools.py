@@ -807,7 +807,7 @@ def get_residue_indexes(hier):
        resind=[IMP.atom.Residue(a.get_parent()).get_index()]
     else:
        print "get_residue_indexes> input is not Fragment, Residue or Atom"
-       exit()
+       resind=[]
     return resind
 
 def sort_by_residues(particles):

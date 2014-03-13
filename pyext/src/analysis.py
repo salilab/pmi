@@ -497,7 +497,28 @@ class GetContactMap():
         self.resmap = {}
 
     def set_prot(self, prot):
+        import IMP.pmi.tools
         self.prot = prot
+        self.protnames=[]
+        for i in self.prot.get_children():
+           name=i.get_name()
+           residue_indexes=[]
+           for p in IMP.atom.get_leaves(i):
+              print p.get_name()
+              residue_indexes+=IMP.pmi.tools.get_residue_indexes(p)
+              #residue_indexes.add( )
+           
+           if len(residue_indexes)!=0:
+               self.protnames.append(name)
+               for res in range(min(residue_indexes),max(residue_indexes)+1):
+                  new_name=name+":"+str(res)
+                  if name not in self.resmap:
+                     self.resmap[name]={}
+                  if res not in self.resmap:
+                     self.resmap[name][res]={}
+                     
+                  self.resmap[name][res] = new_name
+                  self.namelist.append(new_name)
 
     def get_subunit_coords(self,frame, align=0):
         coords= []
@@ -543,21 +564,24 @@ class GetContactMap():
         self.contactmap += distances
 
 
-    def add_xlinks(self, filname):
+    def add_xlinks(self, filname,identification_string='ISDCrossLinkMS_Distance_'):
+        # 'ISDCrossLinkMS_Distance_interrb_6629-State:0-20:RPS30_218:eIF3j-1-1-0.1_None'
         self.xlinks = 1
         data = open(filname)
         D = data.readlines()
         data.close()
 
         for d in D:
-            d = d.strip().split()
-            t1, t2 = (d[0],d[1]), (d[1],d[0])
-            if t1 not in self.XL:
-                self.XL[t1] = [(int(d[2])+1, int(d[3])+1)]
-                self.XL[t2] = [(int(d[3])+1, int(d[2])+1)]
-            else:
-                self.XL[t1].append((int(d[2])+1, int(d[3])+1))
-                self.XL[t2].append((int(d[3])+1, int(d[2])+1))
+            if identification_string in d:
+                d = d.replace("_"," ").replace("-"," ").replace(":"," ").split()
+                
+                t1, t2 = (d[0],d[1]), (d[1],d[0])
+                if t1 not in self.XL:
+                    self.XL[t1] = [(int(d[2])+1, int(d[3])+1)]
+                    self.XL[t2] = [(int(d[3])+1, int(d[2])+1)]
+                else:
+                    self.XL[t1].append((int(d[2])+1, int(d[3])+1))
+                    self.XL[t2].append((int(d[3])+1, int(d[2])+1))
 
         
 
@@ -567,7 +591,9 @@ class GetContactMap():
         M= self.contactmap
         C,R = [],[]
         L= sum(self.expanded.values())
-
+        proteins=self.protnames
+    
+        
         # exp new
         if skip_cmap==0:
             Matrices = {}
@@ -593,7 +619,6 @@ class GetContactMap():
         if skip_xl==0:
             if self.XL=={}: print "ERROR: cross-links were not provided, use add_xlinks function!"; exit()
             Matrices_xl = {}
-            proteins = [p.get_name() for p in self.prot.get_children()]
             missing_xl = []
             for p1 in xrange(len(proteins)):
                 for p2 in xrange(p1,len(proteins)):
@@ -621,16 +646,18 @@ class GetContactMap():
                     Matrices_xl[(pn1,pn2)]=mtr                
 
         # expand the matrix to individual residues
-        NewM = []
-        for x1 in xrange(len(K)):
-            lst = []
-            for x2 in xrange(len(K)):
-                lst += [M[x1,x2]]*self.expanded[K[x2]]
-            for i in xrange(self.expanded[K[x1]]): NewM.append(array(lst))
-        NewM = array(NewM)
+        #NewM = []
+        #for x1 in xrange(len(K)):
+        #    lst = []
+        #    for x2 in xrange(len(K)):
+        #        lst += [M[x1,x2]]*self.expanded[K[x2]]
+        #    for i in xrange(self.expanded[K[x1]]): NewM.append(array(lst))
+        #NewM = array(NewM)
 
         # make list of protein names and create coordinate lists  
         C = proteins
+        # W is the component length list,
+        # R is the contiguous coordinates list
         W,R = [],[]
         for i,c in enumerate(C):
             cl = max(self.resmap[c].keys())
@@ -647,7 +674,7 @@ class GetContactMap():
         gs = gridspec.GridSpec(len(W), len(W),
                        width_ratios=W,
                        height_ratios=W)
-
+        
         cnt = 0
         for x1,r1 in enumerate(R):
             if x1==0: s1=0
@@ -674,8 +701,180 @@ class GetContactMap():
                 cnt+=1
                 if x2==0: ax.set_ylabel(C[x1], rotation=90)
         plt.show()
+
+
+# ------------------------------------------------------------------
+
+class CrossLinkTable():
+   def __init__(self):
+       self.crosslinks=[]
+       self.crosslinkedprots=set()
+       self.mindist=+10000000.0
+       self.maxdist=-10000000.0
+   
+   def set_hierarchy(self,prot):
+       import IMP.pmi.tools
+       self.prot_length_dict={}
+
+       for i in prot.get_children():
+           name=i.get_name()
+           residue_indexes=[]
+           for p in IMP.atom.get_leaves(i):
+              residue_indexes+=IMP.pmi.tools.get_residue_indexes(p)
+           
+           if len(residue_indexes)!=0:
+              self.prot_length_dict[name]=max(residue_indexes)
+   
+   def set_crosslinks(self,data_file,search_label='ISDCrossLinkMS_Distance_'):
+       # example key ISDCrossLinkMS_Distance_intrarb_937-State:0-108:RPS3_55:RPS30-1-1-0.1_None
+       import IMP.pmi.output
+       
+       po=IMP.pmi.output.ProcessOutput(data_file)
+       keys=po.get_keys()
+       xl_keys=[k for k in keys if search_label in k]
+       fs=po.get_fields(xl_keys)
+       
+       for key in fs:
+           keysplit=key.replace("_"," ").replace("-"," ").replace(":"," ").split()
+           r1=int(keysplit[6])
+           c1=keysplit[7]
+           r2=int(keysplit[8])
+           c2=keysplit[9]
+           self.crosslinkedprots.add(c1)
+           self.crosslinkedprots.add(c2)
+                      
+           conf=float(keysplit[12])
+           dists=map(float, fs[key])
+           mdist=self.median(dists)
+           if self.mindist>mdist: self.mindist=mdist
+           if self.maxdist<mdist: self.maxdist=mdist           
+           self.crosslinks.append((r1,c1,r2,c2,mdist))
+           self.crosslinks.append((r2,c2,r1,c1,mdist))
+   
+   def median(self,mylist):
+       sorts = sorted(mylist)
+       length = len(sorts)
+       if not length % 2:
+          return (sorts[length / 2] + sorts[length / 2 - 1]) / 2.0
+       return sorts[length / 2] 
+
+   def colormap(self,dist, threshold=35,tolerance=5):
+       if dist<threshold-tolerance: return "Green"
+       elif dist>threshold+tolerance: return "Red"       
+       else: return "Orange"
+    
+   def plot(self,prot_listx=None,prot_listy=None,layout=True,crosslinkedonly=True,filename=None):
+        # layout can be: 
+        #                "lowerdiagonal"  print only the lower diagonal plot
+        #                "upperdiagonal"  print only the upper diagonal plot
+        #                "whole"  print all
+        # crosslinkedonly: plot only components that have crosslinks
+    
+        import matplotlib.pyplot as plt
+        import matplotlib.cm as cm
+        import numpy as np
+        
+        fig = plt.figure(figsize = (10,10))
+        ax = fig.add_subplot(111)
+
+        ax.set_xticks([])
+        ax.set_yticks([])
+        
+        # set the list of proteins on the x axis
+        if prot_listx==None:
+           if crosslinkedonly:
+              prot_listx=list(self.crosslinkedprots)
+           else:
+              prot_listx=self.prot_length_dict.keys()
+           prot_listx.sort()
+                
+        nresx=sum([self.prot_length_dict[name] for name in prot_listx])
+        
+        # set the list of proteins on the y axis
+
+        if prot_listy==None:
+           if crosslinkedonly:
+              prot_listy=list(self.crosslinkedprots)
+           else:
+              prot_listy=self.prot_length_dict.keys()
+           prot_listy.sort()  
+     
+        
+
+     
+        nresy=sum([self.prot_length_dict[name] for name in prot_listy])
+
+        # this is the residue offset for each protein
+        resoffsetx={}
+        res=0
+        for prot in prot_listx:
+           resoffsetx[prot]=res
+           res += self.prot_length_dict[prot]
+
+        resoffsety={}
+        res=0
+        for prot in prot_listy:
+           resoffsety[prot]=res
+           res += self.prot_length_dict[prot]
+
+        # plot protein boundaries
+        
+        xticks=[]
+        xlabels=[]
+        for n,prot in enumerate(prot_listx):
+            res = resoffsetx[prot]
+            leng=self.prot_length_dict[prot]
+            ax.plot([res,res], [0,nresy], 'k-', lw=0.2)
+            xticks.append(float(res)+float(leng)/2)
+            xlabels.append(prot)
+
+            
+        yticks=[]
+        ylabels=[]
+        for n,prot in enumerate(prot_listy):
+            res = resoffsety[prot]
+            leng=self.prot_length_dict[prot]
+            ax.plot([0,nresx], [res,res], 'k-', lw=0.2)
+            yticks.append(float(res)+float(leng)/2)
+            ylabels.append(prot)            
         
         
+        ax.set_xticks(xticks)
+        ax.set_xticklabels(xlabels, rotation=90)
+        ax.set_yticks(yticks)
+        ax.set_yticklabels(ylabels)  
+        
+        # set the crosslinks
+        
+        
+        for xl in self.crosslinks:
+            
+            (r1,c1,r2,c2,mdist)=xl
+            
+            try:
+               pos1=r1+resoffsetx[c1]
+            except:
+               continue
+            try:
+               pos2=r2+resoffsety[c2]
+            except:
+               continue
+               
+            if layout=='lowerdiagonal':
+               if pos1<pos2: continue
+            if layout=='upperdiagonal':
+               if pos1>pos2: continue
+            ax.plot([pos1], [pos2], 'k.', c=self.colormap(mdist),alpha=.2,markersize=15)
+        
+        fig.set_size_inches(0.002*nresx, 0.002*nresy)
+        
+        if filename:
+            plt.savefig(filename+".png",dpi=150,transparent="False")
+        
+        plt.show()        
+   
+   
+   
 ###############################################
 # these are post production function analysis
 ###############################################

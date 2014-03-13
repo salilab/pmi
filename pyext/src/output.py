@@ -648,7 +648,7 @@ def plot_field_histogram(name,values,valuename=None):
         else:
            plt.xlabel(valuename,size="xx-large")
         plt.ylabel("Frequency",size="xx-large")
-        plt.savefig(name+".png",dpi=150,transparent="False")
+        plt.savefig(name+".png",dpi=150,transparent=False)
         plt.show()
 
 

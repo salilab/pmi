@@ -879,7 +879,7 @@ class CrossLinkTable():
              dw.writerow(outdict)
                                   
    
-   def plot(self,prot_listx=None,prot_listy=None,no_dist_info=False,layout="whole",crosslinkedonly=True,
+   def plot(self,prot_listx=None,prot_listy=None,no_dist_info=False,filter=None,layout="whole",crosslinkedonly=True,
        filename=None,confidence_classes=None,alphablend=0.1):
         # layout can be: 
         #                "lowerdiagonal"  print only the lower diagonal plot
@@ -887,6 +887,10 @@ class CrossLinkTable():
         #                "whole"  print all
         # crosslinkedonly: plot only components that have crosslinks
         # no_dist_info: if True will plot only the cross-links as grey spots
+        # filter = tuple the tuple contains a keyword to be search in the database
+        #                a relationship ">","==","<"
+        #                and a value 
+        #                example ("ID_Score",">",40)                 
     
         import matplotlib.pyplot as plt
         import matplotlib.cm as cm
@@ -988,7 +992,21 @@ class CrossLinkTable():
                pos2=r2+resoffsety[c2]
             except:
                continue
-            
+               
+            if not filter is None:
+               xldb=self.external_csv_data[unique_identifier]
+               xldb.update({"Distance":mdist})
+               xldb.update({"Distance_stdv":stdv}) 
+               
+               if filter[1]==">":
+                  if float(xldb[filter[0]])<=float(filter[2]): continue
+
+               if filter[1]=="<":
+                  if float(xldb[filter[0]])>=float(filter[2]): continue
+
+               if filter[1]=="==":
+                  if float(xldb[filter[0]])!=float(filter[2]): continue
+               
             # all that below is used for plotting the diagonal
             # when you have a rectangolar plots
             
@@ -1065,11 +1083,18 @@ class CrossLinkTable():
     
    def crosslink_distance_histogram(self,filename,
                                     prot_list=None,
+                                    prot_list2=None,
                                     confidence_classes=None,
-                                    bins=40,color='#66CCCC',
-                                    format="png"):
+                                    bins=40,
+                                    color='#66CCCC',
+                                    yplotrange=[0,1],
+                                    format="png",
+                                    normalized=False):
        if prot_list is None:
           prot_list=self.prot_length_dict.keys()
+    
+
+          
        
        distances=[]
        for xl in self.crosslinks:
@@ -1079,8 +1104,17 @@ class CrossLinkTable():
                if confidence not in confidence_classes:
                   continue
            
-           if not c1 in prot_list: continue
-           if not c2 in prot_list: continue           
+           if prot_list2 is None:
+              if not c1 in prot_list: continue
+              if not c2 in prot_list: continue     
+           else:
+              if c1 in prot_list and c2 in prot_list2:
+                 pass
+              elif c1 in prot_list2 and c2 in prot_list: 
+                 pass
+              else:
+                 continue
+                  
            
            distances.append(mdist)
            
@@ -1088,10 +1122,18 @@ class CrossLinkTable():
                                            bins=bins,color=color,
                                            format=format,
                                            reference_xline=35.0,
-                                           yplotrange=[0,0.08])
+                                           yplotrange=yplotrange,normalized=normalized)
        
     
-   def scatter_plot_xl_features(self,filename,feature1="FDR",feature2="ID_Score"):
+   def scatter_plot_xl_features(self,filename,
+                                     feature1=None,
+                                     feature2=None,
+                                     prot_list=None,
+                                     prot_list2=None,
+                                     yplotrange=None,
+                                     reference_ylines=None,
+                                     distance_color=True,
+                                     format="png"):
         import matplotlib.pyplot as plt
         import matplotlib.cm as cm
         import numpy as np
@@ -1102,15 +1144,40 @@ class CrossLinkTable():
         for xl in self.crosslinks:
             (r1,c1,r2,c2,mdist,stdv,confidence,unique_identifier,arrangement)=xl
             
-            xldb=self.external_csv_data[unique_identifier]
-
-            fdr=1/(float(xldb[feature1])+1)
-            idscore=float(xldb[feature2])
+            if prot_list2 is None:
+              if not c1 in prot_list: continue
+              if not c2 in prot_list: continue     
+            else:
+              if c1 in prot_list and c2 in prot_list2:
+                 pass
+              elif c1 in prot_list2 and c2 in prot_list: 
+                 pass
+              else:
+                 continue
             
-            ax.plot([fdr], [idscore], 'o', c=self.colormap(mdist),alpha=0.1,markersize=7)
+            xldb=self.external_csv_data[unique_identifier]
+            xldb.update({"Distance":mdist})
+            xldb.update({"Distance_stdv":stdv})   
+
+            xvalue=float(xldb[feature1])
+            yvalue=float(xldb[feature2])
+            
+            if distance_color:
+               color=self.colormap(mdist)
+            else:
+               color="gray"
+            
+            ax.plot([xvalue], [yvalue], 'o', c=color,alpha=0.1,markersize=7)
+        
+        
+        if not yplotrange is None:        
+           ax.set_ylim(yplotrange)
+        if not reference_ylines is None:
+           for rl in reference_ylines:
+              ax.axhline(rl, color='red', linestyle='dashed', linewidth=1)
         
         if filename:
-            plt.savefig(filename+".png",dpi=150,transparent="False")
+            plt.savefig(filename+"."+format,dpi=150,transparent="False")
         
         plt.show()
         

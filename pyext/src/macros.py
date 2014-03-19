@@ -346,7 +346,7 @@ class AnalysisReplicaExchange0():
                       self.stat_files=[]
                       self.root_directory_dict={}       # it contains the position of the root directories
                       for rd in merge_directories:
-                         stat_files=glob.glob(rd+"/"+stat_dir+"/stat.*.out")[0:1]
+                         stat_files=glob.glob(rd+"/"+stat_dir+"/stat.*.out")
                          self.stat_files+=stat_files
                          for s in stat_files:
                            self.root_directory_dict[s]=rd

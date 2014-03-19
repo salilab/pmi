@@ -637,11 +637,11 @@ def plot_fields(fields,framemin=None,framemax=None):
 
 
 def plot_field_histogram(name,values,valuename=None,bins=40,color='#66CCCC',format="png",
-                         reference_xline=None,yplotrange=None):
+                         reference_xline=None,yplotrange=None,normalized=True):
         import matplotlib.pyplot as plt
         fig = plt.figure(figsize=(8.0, 8.0))
 
-        plt.hist([float(y) for y in values],bins=bins,color=color,normed=True)
+        plt.hist([float(y) for y in values],bins=bins,color=color,normed=normalized)
         #plt.title(name,size="xx-large")
         plt.tick_params(labelsize=12,pad=10)
         if valuename is None:

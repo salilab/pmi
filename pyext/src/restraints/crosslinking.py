@@ -625,10 +625,25 @@ class ISDCrossLinkMS():
     import IMP.pmi.tools
     from math import log
 
-    def __init__(self, representation, restraints_file, length, resolution=None,slope=0.0,inner_slope=0.0,
-                 columnmapping=None, csvfile=False, samplelength=False,
-                 ids_map=None, radius_map=None, filters=None,label="None",filelabel="None",marginal=False,
-                 automatic_sigma_classification=False,attributes_for_label=None):
+    def __init__(self, representation, 
+                       restraints_file, 
+                       length, 
+                       jackknifing=None,    # jackknifing (Float [0,1]) default=None; percentage of data to be removed randomly
+                       resolution=None,     # resolution (Non-negative Integer) default=None; percentage of data to be removed randomly
+                       slope=0.0,
+                       inner_slope=0.0,
+                       columnmapping=None, 
+                       csvfile=False, 
+                       samplelength=False,
+                       ids_map=None, 
+                       radius_map=None, 
+                       filters=None,
+                       label="None",
+                       filelabel="None",
+                       marginal=False,
+                       automatic_sigma_classification=False,
+                       attributes_for_label=None):
+                       
         # columnindexes is a list of column indexes for protein1, protein2, residue1, residue2,idscore, XL unique id
         # by default column 0 = protein1; column 1 = protein2; column 2 = residue1; column 3 = residue2;
         # column 4 = idscores
@@ -707,7 +722,10 @@ class ISDCrossLinkMS():
         residue1 = columnmapping["Residue1"]
         residue2 = columnmapping["Residue2"]
         idscore = columnmapping["IDScore"]
-        xluniqueid = columnmapping["XLUniqueID"]
+        try:
+           xluniqueid = columnmapping["XLUniqueID"]
+        except:
+           xluniqueid=None
 
         restraints = []
 
@@ -717,7 +735,18 @@ class ISDCrossLinkMS():
 
         uniqueid_restraints_map={}
 
-        for entry in db:
+        for nxl, entry in enumerate(db):
+            
+            if not jackknifing is None:
+            
+               # to be implemented
+               # the problem is that in the replica exchange
+               # you have to broadcast the same restraints to every
+               # replica
+               
+               print "jackknifing not yet implemented"; exit()
+            
+            
             if not csvfile:
                 tokens = entry.split()
                 # skip character
@@ -730,7 +759,8 @@ class ISDCrossLinkMS():
                   r2 = int(tokens[residue2])
                   c2 = tokens[protein2]
                   ids = float(tokens[idscore])
-                  xlid = int(tokens[xluniqueid])
+                  if xluniqueid==None: xlid=nxl
+                  else: xlid = int(tokens[xluniqueid])
                 except:
                   print "this line was not accessible "+str(entry)
                   continue
@@ -747,7 +777,8 @@ class ISDCrossLinkMS():
                   r2 = int(entry[residue2])
                   c2 = entry[protein2]
                   ids = float(entry[idscore])
-                  xlid = int(entry[xluniqueid])
+                  if xluniqueid==None: xlid=nxl
+                  else: xlid = int(entry[xluniqueid])
                 except:
                   print "this line was not accessible "+str(entry)
                   continue

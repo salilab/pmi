@@ -328,6 +328,7 @@ class AnalysisReplicaExchange0():
 
     def __init__(self,model,
                       stat_file_name_suffix="stat",
+                      merge_directories=["./"],         # if you want to merge two calculation directories
                       best_pdb_name_suffix="model",
                       do_clean_first=True,
                       do_create_directories=True,
@@ -342,8 +343,13 @@ class AnalysisReplicaExchange0():
                       rmf_dir=global_output_directory+rmf_dir
                       self.rmf_files=glob.glob(rmf_dir+"/*.rmf")
                       stat_dir=global_output_directory
-                      self.stat_files=glob.glob(stat_dir+"/stat.*.out")
-
+                      self.stat_files=[]
+                      self.root_directory_dict={}       # it contains the position of the root directories
+                      for rd in merge_directories:
+                         stat_files=glob.glob(rd+"/"+stat_dir+"/stat.*.out")[0:1]
+                         self.stat_files+=stat_files
+                         for s in stat_files:
+                           self.root_directory_dict[s]=rd
 
     def clustering(self,score_key,
                         rmf_file_key,
@@ -358,6 +364,7 @@ class AnalysisReplicaExchange0():
                         is_mpi=False,
                         number_of_clusters=1,
                         display_plot=False,
+                        exit_after_display=True,
                         get_every=1,
                         density_custom_ranges=None,
                         voxel_size=5.0):     
@@ -408,6 +415,9 @@ class AnalysisReplicaExchange0():
             if not score_key is None:
                feature_keyword_list_dict={}
                for sf in my_stat_files:
+                  
+                  root_directory_of_stat_file=self.root_directory_dict[sf]
+                  
                   print "getting data from file %s" % sf
                   po=IMP.pmi.output.ProcessOutput(sf)
                   keywords=po.get_keys()
@@ -431,7 +441,12 @@ class AnalysisReplicaExchange0():
 
                   # append to the lists
                   score_list+=fields[score_key]
-                  rmf_file_list+=fields[rmf_file_key]
+                  rmffilelist=[]
+                  for rmf in fields[rmf_file_key]:
+                      rmffilelist.append(root_directory_of_stat_file+"/"+rmf)
+                      
+                  rmf_file_list+=rmffilelist
+                  
                   rmf_file_frame_list+=fields[rmf_file_frame_key]
 
                   for k in feature_keywords:
@@ -450,9 +465,11 @@ class AnalysisReplicaExchange0():
                     rmf_file_frame_list=IMP.pmi.tools.scatter_and_gather(rmf_file_frame_list)
                     for k in feature_keyword_list_dict:
                         feature_keyword_list_dict[k]=IMP.pmi.tools.scatter_and_gather(feature_keyword_list_dict[k])
-
+            
+            
             # sort by score and ge the best scoring ones
             score_rmf_tuples=zip(score_list,rmf_file_list,rmf_file_frame_list,range(len(score_list)))
+            
             #numerically sorting in ascending order
             sorted_score_rmf_tuples=sorted(score_rmf_tuples,key=lambda x: float(x[0]))
             best_score_rmf_tuples=sorted_score_rmf_tuples[0:number_of_best_scoring_models]
@@ -488,7 +505,8 @@ class AnalysisReplicaExchange0():
             my_best_score_rmf_tuples=IMP.pmi.tools.chunk_list_into_segments(best_score_rmf_tuples,
                                                                             number_of_processes)[rank]
             # reading the coordinates
-
+            
+            
             all_coordinates=[]
             all_rmf_file_names=[]
             # it will be used to extract the features
@@ -560,6 +578,9 @@ class AnalysisReplicaExchange0():
             if display_plot:
                if rank==0:
                   Clusters.plot_matrix()
+               comm.Barrier()
+               if exit_after_display:
+                  exit()
             Clusters.save_distance_matrix_file(file_name=distance_matrix_file)
 
 # -----------------------------------------------------------------------------------------------
@@ -574,6 +595,9 @@ class AnalysisReplicaExchange0():
             if display_plot:
                if rank==0:
                   Clusters.plot_matrix()
+               comm.Barrier()
+               if exit_after_display:
+                  exit()
 
 # -----------------------------------------------------------------------------------------------
 # now save all informations about the clusters

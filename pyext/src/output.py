@@ -636,19 +636,26 @@ def plot_fields(fields,framemin=None,framemax=None):
         plt.show()
 
 
-def plot_field_histogram(name,values,valuename=None):
+def plot_field_histogram(name,values,valuename=None,bins=40,color='#66CCCC',format="png",
+                         reference_xline=None,yplotrange=None):
         import matplotlib.pyplot as plt
         fig = plt.figure(figsize=(8.0, 8.0))
 
-        plt.hist([float(y) for y in values],bins=40,color='#66CCCC',normed=True)
-        plt.title(name,size="xx-large")
-        plt.tick_params(labelsize=18,pad=10)
+        plt.hist([float(y) for y in values],bins=bins,color=color,normed=True)
+        #plt.title(name,size="xx-large")
+        plt.tick_params(labelsize=12,pad=10)
         if valuename is None:
            plt.xlabel(name,size="xx-large")
         else:
            plt.xlabel(valuename,size="xx-large")
         plt.ylabel("Frequency",size="xx-large")
-        plt.savefig(name+".png",dpi=150,transparent=False)
+        
+        if not yplotrange is None:        
+           plt.ylim(yplotrange)
+        if not reference_xline is None:
+           plt.axvline(reference_xline, color='red', linestyle='dashed', linewidth=1)
+        
+        plt.savefig(name+"."+format,dpi=150,transparent=True)
         plt.show()
 
 

@@ -287,22 +287,23 @@ class Clustering():
         
      
    
-    def plot_matrix(self):
+    def plot_matrix(self,figurename="clustermatrix.png"):
         import pylab as pl    
         from scipy.cluster import hierarchy as hrc    
         
         fig = pl.figure()
         ax = fig.add_subplot(211)
-        dendrogram = hrc.dendrogram(hrc.linkage(self.raw_distance_matrix),color_threshold=7)
+        dendrogram = hrc.dendrogram(hrc.linkage(self.raw_distance_matrix),color_threshold=7,no_labels=True)
         leaves_order = dendrogram['leaves']
 
         ax = fig.add_subplot(212)
         cax = ax.imshow(self.raw_distance_matrix[leaves_order,:][:,leaves_order], interpolation='nearest')
-        ax.set_yticks(range(len(self.model_list_names)))
-        ax.set_yticklabels( [self.model_list_names[i] for i in leaves_order] )
+        #ax.set_yticks(range(len(self.model_list_names)))
+        #ax.set_yticklabels( [self.model_list_names[i] for i in leaves_order] )
         fig.colorbar(cax)
-
+        pl.savefig(figurename,dpi=300)
         pl.show()
+
     
     def get_model_index_from_name(self,name):
         return self.model_indexes_dict[name]
@@ -708,6 +709,7 @@ class GetContactMap():
 class CrossLinkTable():
    def __init__(self):
        self.crosslinks=[]
+       self.external_csv_data=None
        self.crosslinkedprots=set()
        self.mindist=+10000000.0
        self.maxdist=-10000000.0
@@ -725,11 +727,18 @@ class CrossLinkTable():
            if len(residue_indexes)!=0:
               self.prot_length_dict[name]=max(residue_indexes)
    
-   def set_crosslinks(self,data_file,search_label='ISDCrossLinkMS_Distance_',mapping=None):
+   
+   
+   def set_crosslinks(self,data_file,search_label='ISDCrossLinkMS_Distance_',
+                      mapping=None,
+                      external_csv_data_file=None,
+                      external_csv_data_file_unique_id_key="Unique ID"):
        
        # example key ISDCrossLinkMS_Distance_intrarb_937-State:0-108:RPS3_55:RPS30-1-1-0.1_None
        # mapping is a dictionary that maps standard keywords to entry positions in the key string
        # confidence class is a filter that 
+       # external datafile is a datafile that contains further information on the crosslinks
+       # it will use the unique id to create the dictionary keys
        
        import IMP.pmi.output
        import numpy as np
@@ -744,6 +753,8 @@ class CrossLinkTable():
        
        # this dictionary stores the series of distances for given crosslinked residues
        self.cross_link_distances={}       
+       
+       
        
        
        for key in fs:
@@ -782,9 +793,10 @@ class CrossLinkTable():
            # check if the input confidence class corresponds to the
            # one of the cross-link
            
-              
+           
            dists=map(float, fs[key])
            mdist=self.median(dists)
+           
            stdv=np.std(np.array(dists))
            if self.mindist>mdist: self.mindist=mdist
            if self.maxdist<mdist: self.maxdist=mdist    
@@ -805,6 +817,19 @@ class CrossLinkTable():
                   
            self.crosslinks.append((r1,c1,r2,c2,mdist,stdv,confidence,unique_identifier,'original'))
            self.crosslinks.append((r2,c2,r1,c1,mdist,stdv,confidence,unique_identifier,'reversed'))
+
+       # -------------
+
+       if not external_csv_data_file is None:
+           # this dictionary stores the further information on crosslinks
+           # labeled by unique ID
+           self.external_csv_data={}
+           xldb=IMP.pmi.tools.get_db_from_csv(external_csv_data_file)
+           
+           for xl in xldb:
+               self.external_csv_data[xl[external_csv_data_file_unique_id_key]]=xl
+       
+   
    
    def median(self,mylist):
        sorts = sorted(mylist)
@@ -813,9 +838,9 @@ class CrossLinkTable():
           return (sorts[length / 2] + sorts[length / 2 - 1]) / 2.0
        return sorts[length / 2] 
 
-   def colormap(self,dist, threshold=35,tolerance=5):
+   def colormap(self,dist, threshold=35,tolerance=0):
        if dist<threshold-tolerance: return "Green"
-       elif dist>threshold+tolerance: return "Red"       
+       elif dist>=threshold+tolerance: return "Orange"       
        else: return "Orange"
     
    def write_cross_link_database(self,filename,format='csv'):
@@ -823,6 +848,13 @@ class CrossLinkTable():
        
        fieldnames=["Unique ID","Protein1","Residue1","Protein2","Residue2",
                    "Median Distance","Standard Deviation","Confidence","Frequency","Arrangement"]
+       
+       if not self.external_csv_data is None:
+             keys=self.external_csv_data.keys()
+             innerkeys=self.external_csv_data[keys[0]].keys()
+             innerkeys.sort()
+             fieldnames+=innerkeys        
+       
        dw = csv.DictWriter(open(filename,"w"), delimiter=',', fieldnames=fieldnames)
        dw.writeheader()
        for xl in self.crosslinks:
@@ -841,17 +873,20 @@ class CrossLinkTable():
              if c1==c2: arrangement="Intra"
              else: arrangement="Inter"
              outdict["Arrangement"]=arrangement
+             if not self.external_csv_data is None:
+                outdict.update(self.external_csv_data[unique_identifier])
              
              dw.writerow(outdict)
                                   
    
-   def plot(self,prot_listx=None,prot_listy=None,layout=True,crosslinkedonly=True,
+   def plot(self,prot_listx=None,prot_listy=None,no_dist_info=False,layout="whole",crosslinkedonly=True,
        filename=None,confidence_classes=None,alphablend=0.1):
         # layout can be: 
         #                "lowerdiagonal"  print only the lower diagonal plot
         #                "upperdiagonal"  print only the upper diagonal plot
         #                "whole"  print all
         # crosslinkedonly: plot only components that have crosslinks
+        # no_dist_info: if True will plot only the cross-links as grey spots
     
         import matplotlib.pyplot as plt
         import matplotlib.cm as cm
@@ -899,6 +934,12 @@ class CrossLinkTable():
         for prot in prot_listy:
            resoffsety[prot]=res
            res += self.prot_length_dict[prot]
+           
+        resoffsetdiagonal={}
+        res=0        
+        for prot in IMP.pmi.tools.OrderedSet(prot_listx+prot_listy):
+           resoffsetdiagonal[prot]=res
+           res += self.prot_length_dict[prot]           
 
         # plot protein boundaries
         
@@ -929,8 +970,9 @@ class CrossLinkTable():
         
         # set the crosslinks
         
-        
+        already_added_xls=[]
         for xl in self.crosslinks:
+            
             
             (r1,c1,r2,c2,mdist,stdv,confidence,unique_identifier,descriptor)=xl
             
@@ -946,18 +988,34 @@ class CrossLinkTable():
                pos2=r2+resoffsety[c2]
             except:
                continue
-               
+            
+            # all that below is used for plotting the diagonal
+            # when you have a rectangolar plots
+            
+            pos_for_diagonal1=r1+resoffsetdiagonal[c1]
+            pos_for_diagonal2=r2+resoffsetdiagonal[c2]
+                           
             if layout=='lowerdiagonal':
-               if pos1<pos2: continue
+               if pos_for_diagonal1<=pos_for_diagonal2: continue
             if layout=='upperdiagonal':
-               if pos1>pos2: continue
+               if pos_for_diagonal1>=pos_for_diagonal2: continue
             
-            if confidence=='0.01': markersize=15
-            elif confidence=='0.05': markersize=10
-            elif confidence=='0.1': markersize=7                        
-            else: markersize=15
+            already_added_xls.append((r1,c1,r2,c2))
             
-            ax.plot([pos1], [pos2], 'k.', c=self.colormap(mdist),alpha=alphablend,markersize=markersize)
+            if not no_dist_info:
+                if confidence=='0.01': markersize=15
+                elif confidence=='0.05': markersize=10
+                elif confidence=='0.1': markersize=7                        
+                else: markersize=15
+            else:
+                markersize=5
+            
+            if not no_dist_info:
+                color=self.colormap(mdist)
+            else:
+                color="gray"       
+            
+            ax.plot([pos1], [pos2], 'o', c=color,alpha=alphablend,markersize=markersize)
         
         fig.set_size_inches(0.002*nresx, 0.002*nresy)
         
@@ -967,7 +1025,7 @@ class CrossLinkTable():
         plt.show()        
    
 
-   def plot_bars(self,filename,prots1,prots2,arrangement="inter",confidence_input="None"):
+   def plot_bars(self,filename,prots1,prots2,nxl_per_row=20,arrangement="inter",confidence_input="None"):
        import IMP.pmi.output
        
        data=[]
@@ -977,7 +1035,7 @@ class CrossLinkTable():
               if arrangement == "inter" and c1==c2: continue
               if arrangement == "intra" and c1!=c2: continue
               if confidence_input==confidence:
-                 label=str(c1)+":"+str(r1)+"-"+str(c2)+":"+str(r1)
+                 label=str(c1)+":"+str(r1)+"-"+str(c2)+":"+str(r2)
                  values=self.cross_link_distances[xl]
                  frequency=self.cross_link_frequency[(r1,c1,r2,c2)]
                  data.append((label,values,mdist,frequency))
@@ -991,11 +1049,71 @@ class CrossLinkTable():
        frequencies=map(float,sort_by_dist[3])
        frequencies=[f*10.0 for f in frequencies]
        
-       IMP.pmi.output.plot_fields_box_plots(filename,values,positions,frequencies,
-                          valuename="Distance (Ang)",positionname="Unique "+arrangement+" Crosslinks",xlabels=labels)
        
+       nchunks=int(float(len(values))/nxl_per_row)
+       values_chunks=IMP.pmi.tools.chunk_list_into_segments(values,nchunks)
+       positions_chunks=IMP.pmi.tools.chunk_list_into_segments(positions,nchunks)
+       frequencies_chunks=IMP.pmi.tools.chunk_list_into_segments(frequencies,nchunks)
+       labels_chunks=IMP.pmi.tools.chunk_list_into_segments(labels,nchunks)
        
+       for n,v in enumerate(values_chunks):
+          p=positions_chunks[n]
+          f=frequencies_chunks[n]
+          l=labels_chunks[n]
+          IMP.pmi.output.plot_fields_box_plots(filename+"."+str(n),v,p,f,
+                          valuename="Distance (Ang)",positionname="Unique "+arrangement+" Crosslinks",xlabels=l)
+    
+   def crosslink_distance_histogram(self,filename,
+                                    prot_list=None,
+                                    confidence_classes=None,
+                                    bins=40,color='#66CCCC',
+                                    format="png"):
+       if prot_list is None:
+          prot_list=self.prot_length_dict.keys()
        
+       distances=[]
+       for xl in self.crosslinks:
+           (r1,c1,r2,c2,mdist,stdv,confidence,unique_identifier,descriptor)=xl
+           
+           if not confidence_classes is None:
+               if confidence not in confidence_classes:
+                  continue
+           
+           if not c1 in prot_list: continue
+           if not c2 in prot_list: continue           
+           
+           distances.append(mdist)
+           
+       IMP.pmi.output.plot_field_histogram(filename,distances,valuename="C-alpha C-alpha distance [Ang]",
+                                           bins=bins,color=color,
+                                           format=format,
+                                           reference_xline=35.0,
+                                           yplotrange=[0,0.08])
+       
+    
+   def scatter_plot_xl_features(self,filename,feature1="FDR",feature2="ID_Score"):
+        import matplotlib.pyplot as plt
+        import matplotlib.cm as cm
+        import numpy as np
+        
+        fig = plt.figure(figsize = (10,10))
+        ax = fig.add_subplot(111)
+        
+        for xl in self.crosslinks:
+            (r1,c1,r2,c2,mdist,stdv,confidence,unique_identifier,arrangement)=xl
+            
+            xldb=self.external_csv_data[unique_identifier]
+
+            fdr=1/(float(xldb[feature1])+1)
+            idscore=float(xldb[feature2])
+            
+            ax.plot([fdr], [idscore], 'o', c=self.colormap(mdist),alpha=0.1,markersize=7)
+        
+        if filename:
+            plt.savefig(filename+".png",dpi=150,transparent="False")
+        
+        plt.show()
+        
 ###############################################
 # these are post production function analysis
 ###############################################

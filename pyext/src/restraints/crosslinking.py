@@ -879,8 +879,8 @@ class ISDCrossLinkMS():
               restraints.append(dr)
 
               # check if the two residues belong to the same rigid body
-              if(IMP.core.RigidMember.particle_is_instance(p1) and
-                 IMP.core.RigidMember.particle_is_instance(p2) and
+              if(IMP.core.RigidMember.get_is_setup(p1) and
+                 IMP.core.RigidMember.get_is_setup(p2) and
                  IMP.core.RigidMember(p1).get_rigid_body() ==
                  IMP.core.RigidMember(p2).get_rigid_body()):
                  xlattribute = "intrarb"

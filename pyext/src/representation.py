@@ -710,17 +710,17 @@ class Representation():
         #copying attributes
         for n,pmain in enumerate(psmain):
            pclone=psclone[n]
-           if IMP.pmi.Resolution.particle_is_instance(pmain):
+           if IMP.pmi.Resolution.get_is_setup(pmain):
               resolution=IMP.pmi.Resolution(pmain).get_resolution()
               IMP.pmi.Resolution.setup_particle(pclone,resolution)
               for kk in IMP.pmi.tools.get_residue_indexes(pclone):
                  self.hier_db.add_particles(name,kk,IMP.pmi.Resolution(pclone).get_resolution(),[pclone])
 
-           if IMP.pmi.Uncertainty.particle_is_instance(pmain):
+           if IMP.pmi.Uncertainty.get_is_setup(pmain):
               uncertainty=IMP.pmi.Uncertainty(pmain).get_uncertainty()
               IMP.pmi.Uncertainty.setup_particle(pclone,uncertainty)
 
-           if IMP.pmi.Symmetric.particle_is_instance(pmain):
+           if IMP.pmi.Symmetric.get_is_setup(pmain):
               symmetric=IMP.pmi.Symmetric(pmain).get_symmetric()
               IMP.pmi.Symmetric.setup_particle(pclone,symmetric)
 
@@ -960,7 +960,7 @@ class Representation():
         gcpf.set_distance(cutoff)
         ps=[]
         for p in IMP.atom.get_leaves(self.prot):
-            if IMP.core.XYZ.particle_is_instance(p):
+            if IMP.core.XYZ.get_is_setup(p):
                ps.append(p)
         allparticleindexes=IMP.get_indexes(ps)
 
@@ -1258,9 +1258,9 @@ class Representation():
                 lc=IMP.container.ListSingletonContainer(self.m)
                 for n,p in enumerate(mainparts):
                     pc=copyparts[n]
-                    if not IMP.pmi.Symmetric.particle_is_instance(p):
+                    if not IMP.pmi.Symmetric.get_is_setup(p):
                        IMP.pmi.Symmetric.setup_particle(p,0)
-                    if not IMP.pmi.Symmetric.particle_is_instance(pc):
+                    if not IMP.pmi.Symmetric.get_is_setup(pc):
                        IMP.pmi.Symmetric.setup_particle(pc,1)
                     IMP.core.Reference.setup_particle(pc,p)
                     lc.add_particle(pc)
@@ -1325,7 +1325,7 @@ class Representation():
         for hier in hiers:
             ps=IMP.atom.get_leaves(hier)
             for p in ps:
-              if IMP.core.RigidMember.particle_is_instance(p):
+              if IMP.core.RigidMember.get_is_setup(p):
                  rb=IMP.core.RigidMember(p).get_rigid_body()
                  print "set_rigid_body_from_hierarchies> WARNING particle %s already belongs to rigid body %s" % (p.get_name(),rb.get_name())
               else:
@@ -1362,7 +1362,7 @@ class Representation():
                   print "set_rigid_bodies: selected particle does not exists"
                for p in sel.get_selected_particles():
                   #if not p in self.floppy_bodies:
-                      if IMP.core.RigidMember.particle_is_instance(p):
+                      if IMP.core.RigidMember.get_is_setup(p):
                          rb=IMP.core.RigidMember(p).get_rigid_body()
                          print "set_rigid_body_from_hierarchies> WARNING particle %s already belongs to rigid body %s" % (p.get_name(),rb.get_name())
                       else:
@@ -1375,7 +1375,7 @@ class Representation():
                   print "set_rigid_bodies: selected particle does not exists"
                for p in sel.get_selected_particles():
                   #if not p in self.floppy_bodies:
-                      if IMP.core.RigidMember.particle_is_instance(p):
+                      if IMP.core.RigidMember.get_is_setup(p):
                          rb=IMP.core.RigidMember(p).get_rigid_body()
                          print "set_rigid_body_from_hierarchies> WARNING particle %s already belongs to rigid body %s" % (p.get_name(),rb.get_name())
                       else:
@@ -1397,7 +1397,7 @@ class Representation():
         for hier in hiers:
             ps=IMP.atom.get_leaves(hier)
             for p in ps:
-              if IMP.core.RigidMember.particle_is_instance(p):
+              if IMP.core.RigidMember.get_is_setup(p):
                  rb=IMP.core.RigidMember(p).get_rigid_body()
                  super_rigid_rbs.add(rb)
               else:
@@ -1438,7 +1438,7 @@ class Representation():
                if len(sel.get_selected_particles())==0:
                   print "set_rigid_bodies: selected particle does not exists"
                for p in sel.get_selected_particles():
-                      if IMP.core.RigidMember.particle_is_instance(p):
+                      if IMP.core.RigidMember.get_is_setup(p):
                          rb=IMP.core.RigidMember(p).get_rigid_body()
                          super_rigid_rbs.add(rb)
                       else:
@@ -1449,7 +1449,7 @@ class Representation():
                   print "set_rigid_bodies: selected particle does not exists"
                for p in sel.get_selected_particles():
                   #if not p in self.floppy_bodies:
-                      if IMP.core.RigidMember.particle_is_instance(p):
+                      if IMP.core.RigidMember.get_is_setup(p):
                          rb=IMP.core.RigidMember(p).get_rigid_body()
                          super_rigid_rbs.add(rb)
                       else:
@@ -1460,7 +1460,7 @@ class Representation():
         for p in self.floppy_bodies:
             name=p.get_name()
             p.set_name(name+"_floppy_body")
-            if IMP.core.RigidMember.particle_is_instance(p):
+            if IMP.core.RigidMember.get_is_setup(p):
                 print "I'm trying to make this particle flexible although it was assigned to a rigid body", p.get_name()
                 rb=IMP.core.RigidMember(p).get_rigid_body()
                 try:
@@ -1541,9 +1541,9 @@ class Representation():
 
                 p1=pt[0]
                 p2=pt[1]
-                if not IMP.atom.Bonded.particle_is_instance(p1):
+                if not IMP.atom.Bonded.get_is_setup(p1):
                    IMP.atom.Bonded.setup_particle(p1)
-                if not IMP.atom.Bonded.particle_is_instance(p2):
+                if not IMP.atom.Bonded.get_is_setup(p2):
                    IMP.atom.Bonded.setup_particle(p2)
 
                 IMP.atom.create_bond(IMP.atom.Bonded(p1),IMP.atom.Bonded(p2),1)
@@ -1757,7 +1757,7 @@ class Representation():
         srbtmp=[]
         if not self.rigidbodiesarefixed:
             for rb in self.rigid_bodies:
-               if IMP.pmi.Symmetric.particle_is_instance(rb):
+               if IMP.pmi.Symmetric.get_is_setup(rb):
                   if IMP.pmi.Symmetric(rb).get_symmetric()!=1:
                      rbtmp.append(rb)
                else:
@@ -1765,7 +1765,7 @@ class Representation():
                      rbtmp.append(rb)
 
         for fb in self.floppy_bodies:
-           if IMP.pmi.Symmetric.particle_is_instance(fb):
+           if IMP.pmi.Symmetric.get_is_setup(fb):
               if IMP.pmi.Symmetric(fb).get_symmetric()!=1:
                  fbtmp.append(fb)
            else:

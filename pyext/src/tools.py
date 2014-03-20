@@ -732,14 +732,14 @@ class HierarchyDatabase():
 
      def get_root_hierarchy(self,particle):
         prerootfragment=particle
-        while IMP.atom.Atom.particle_is_instance(particle) or \
-              IMP.atom.Residue.particle_is_instance(particle) or \
-              IMP.atom.Fragment.particle_is_instance(particle):
-           if IMP.atom.Atom.particle_is_instance(particle):
+        while IMP.atom.Atom.get_is_setup(particle) or \
+              IMP.atom.Residue.get_is_setup(particle) or \
+              IMP.atom.Fragment.get_is_setup(particle):
+           if IMP.atom.Atom.get_is_setup(particle):
               p=IMP.atom.Atom(particle).get_parent()
-           elif IMP.atom.Residue.particle_is_instance(particle):
+           elif IMP.atom.Residue.get_is_setup(particle):
               p=IMP.atom.Residue(particle).get_parent()
-           elif IMP.atom.Fragment.particle_is_instance(particle):
+           elif IMP.atom.Fragment.get_is_setup(particle):
               p=IMP.atom.Fragment(particle).get_parent()
            prerootfragment=particle
            particle=p
@@ -798,11 +798,11 @@ def get_residue_indexes(hier):
     for each particle which is an instance of Fragmen,Residue or Atom
     '''
     resind=[]
-    if IMP.atom.Fragment.particle_is_instance(hier):
+    if IMP.atom.Fragment.get_is_setup(hier):
        resind=IMP.atom.Fragment(hier).get_residue_indexes()
-    elif IMP.atom.Residue.particle_is_instance(hier):
+    elif IMP.atom.Residue.get_is_setup(hier):
        resind=[IMP.atom.Residue(hier).get_index()]
-    elif  IMP.atom.Atom.particle_is_instance(hier):
+    elif  IMP.atom.Atom.get_is_setup(hier):
        a=IMP.atom.Atom(hier)
        resind=[IMP.atom.Residue(a.get_parent()).get_index()]
     else:
@@ -911,7 +911,7 @@ def translate_hierarchy(hierarchy,translation_vector):
     for p in IMP.atom.get_leaves(hierarchy):
        if IMP.core.RigidBody.get_is_setup(p):
           rbs.add(IMP.core.RigidBody(p))
-       elif IMP.core.RigidMember.particle_is_instance(p):
+       elif IMP.core.RigidMember.get_is_setup(p):
           rb=IMP.core.RigidMember(p).get_rigid_body()
           rbs.add(rb)
        else:

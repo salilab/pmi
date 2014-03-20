@@ -2,7 +2,7 @@
  *  \file pmi/SigmoidRestraintSphere.h
  *  \brief Simple Sigmoidal score calculated between sphere surfaces.
  *
- *  Copyright 2007-2013 IMP Inventors. All rights reserved.
+ *  Copyright 2007-2014 IMP Inventors. All rights reserved.
  *
  */
 
@@ -10,7 +10,6 @@
 #define IMPPMI_SIGMOID_RESTRAINT_SPHERE_H
 #include "pmi_config.h"
 #include <IMP/Restraint.h>
-#include <IMP/restraint_macros.h>
 
 
 IMPPMI_BEGIN_NAMESPACE

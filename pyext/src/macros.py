@@ -668,12 +668,12 @@ class AnalysisReplicaExchange0():
     
                           rbs=[]
                           for p in IMP.atom.get_leaves(prot):
-                              if not IMP.core.XYZR.particle_is_instance(p):
+                              if not IMP.core.XYZR.get_is_setup(p):
                                  IMP.core.XYZR.setup_particle(p)
                                  IMP.core.XYZR(p).set_radius(0.0001)
                                  IMP.core.XYZR(p).set_coordinates((0,0,0))
                                                                  
-                              if IMP.core.RigidBody.particle_is_instance(p):
+                              if IMP.core.RigidBody.get_is_setup(p):
                                  rb=IMP.core.RigidMember(p).get_rigid_body()
                                  if rb not in rbs:
                                     rbs.append(rb)

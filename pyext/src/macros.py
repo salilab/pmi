@@ -348,6 +348,9 @@ class AnalysisReplicaExchange0():
     def clustering(self,score_key,
                         rmf_file_key,
                         rmf_file_frame_key,
+                        prefiltervalue=None, # give a float value, create filtered files for 
+                                             # which the score key is below a certain 
+                                             # threshold (faster and less memory greedy)
                         feature_keys=None,
                         alignment_components=None,
                         number_of_best_scoring_models=10,
@@ -397,6 +400,7 @@ class AnalysisReplicaExchange0():
     
         if not load_distance_matrix_file:    
             my_stat_files=IMP.pmi.tools.chunk_list_into_segments(self.stat_files,number_of_processes)[rank]
+            
 
             score_list=[]
             rmf_file_list=[]
@@ -411,7 +415,10 @@ class AnalysisReplicaExchange0():
                   for k in keywords:
                       for fk in feature_keys:
                           if fk in k: feature_keywords.append(k)
-                  fields=po.get_fields(feature_keywords,get_every=get_every)
+                  if prefiltervalue is None:
+                     fields=po.get_fields(feature_keywords,get_every=get_every)
+                  else:
+                     fields=po.get_fields(feature_keywords,filtertuple=(score_key,"<",prefiltervalue),get_every=get_every)                     
                   #check that all lengths are all equal
                   length_set=set()
                   for f in fields: length_set.add(len(fields[f]))

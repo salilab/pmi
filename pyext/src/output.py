@@ -570,11 +570,14 @@ class ProcessOutput():
         import IMP.pmi.tools
         IMP.pmi.tools.print_multicolumn(self.get_keys(),ncolumns,truncate)    
         
-    def get_fields(self,fields,filterout=None,get_every=1):
+    def get_fields(self,fields,filtertuple=None,filterout=None,get_every=1):
            '''
            this function get the wished field names and return a dictionary
            you can give the optional argument filterout if you want to "grep" out
            something from the file, so that it is faster
+           
+           filtertuple  a tuple that contains ("TheKeyToBeFiltered",relationship,value)
+                        relationship = "<", "==", or ">"
            '''
            
            outdict={}
@@ -584,7 +587,7 @@ class ProcessOutput():
            #print fields values
            f=open(self.filename,"r")
            line_number=0
-           for line in f.readlines():
+           for line in f.readlines():              
               if filterout!=None: 
                  if filterout in line:
                     continue
@@ -597,6 +600,17 @@ class ProcessOutput():
               except:
                  print "# Warning: skipped line number " + str(line_number) + " not a valid line"
                  continue
+              if not filtertuple is None:
+                   keytobefiltered=filtertuple[0]
+                   relationship=filtertuple[1]
+                   value=filtertuple[2]
+                   if relationship=="<":
+                      if d[keytobefiltered]>=value: continue
+                   if relationship==">":
+                      if d[keytobefiltered]<=value: continue
+                   if relationship=="==":
+                      if d[keytobefiltered]!=value: continue
+              
               if   self.isstat1: [outdict[field].append(d[field]) for field in fields]
               elif self.isstat2: 
                    if line_number==1: continue

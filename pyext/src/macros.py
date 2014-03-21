@@ -30,12 +30,12 @@ class ReplicaExchange0():
                       replica_stat_file_suffix="stat_replica",
                       em_object_for_rmf=None,
                       replica_exchange_object=None):
-       
+
        '''
        representation    IMP.pmi.Representation()      can be a list of representations (enables the multi state modeling)
        '''
-       
-       
+
+
        self.model=model
        if type(representation)==list:
           self.is_multi_state=True
@@ -116,14 +116,14 @@ class ReplicaExchange0():
       globaldir=self.vars["global_output_directory"]+"/"
       rmf_dir=globaldir+self.vars["rmf_dir"]
       pdb_dir=globaldir+self.vars["best_pdb_dir"]
-      
+
 
       if self.vars["do_clean_first"]:
          pass
-      
+
 
       if self.vars["do_create_directories"]:
-      
+
         try:
            os.makedirs(globaldir)
         except:
@@ -178,7 +178,7 @@ class ReplicaExchange0():
 
 # ---------------------------------------------
 
-      if self.em_object_for_rmf!=None:
+      if not self.em_object_for_rmf is None:
          if not self.is_multi_state:
 	    output_hierarchies=[self.representation.prot,self.em_object_for_rmf.get_density_as_hierarchy()]
          else:
@@ -202,11 +202,11 @@ class ReplicaExchange0():
                                       self.crosslink_restraints)
       output.write_rmf(init_suffix+"."+str(myindex)+".rmf3")
       output.close_rmf(init_suffix+"."+str(myindex)+".rmf3")
-      
+
 #----------------------------------------------
-      
+
       print "Setting up production rmf files"
-      
+
       rmfname=rmf_dir+"/"+str(myindex)+".rmf3"
       output.init_rmf(rmfname, output_hierarchies)
 
@@ -249,7 +249,7 @@ def BuildModel0(m,data,resolutions=[1,10],missing_bead_size=20, residue_per_gaus
       The macro construct a component for each subunit (no splitting, nothing fancy)
       You can pass the resolutions and the bead size for the missing residue regions.
       To use this macro, you must provide the following data structure:
-      
+
       Component  pdbfile    chainid  rgb color     fastafile     sequence id
                                                                         in fastafile
 
@@ -265,14 +265,14 @@ data = [("Rpb1",     pdbfile,   "A",     0.00000000,  (fastafile,    0)),
         ("Rpb10",    pdbfile,   "L",     0.81818182,  (fastafile,    9)),
         ("Rpb11",    pdbfile,   "J",     0.90909091,  (fastafile,   10)),
         ("Rpb12",    pdbfile,   "K",     1.00000000,  (fastafile,   11))]
-      
+
       '''
-      
-      
-      
+
+
+
       r=IMP.pmi.representation.Representation(m)
-      
-      # the dictionary for the hierarchies, 
+
+      # the dictionary for the hierarchies,
       hierarchies={}
 
       for d in data:
@@ -282,7 +282,7 @@ data = [("Rpb1",     pdbfile,   "A",     0.00000000,  (fastafile,    0)),
             chain_id=d[2]
             color_id=d[3]
             fasta_file=d[4][0]
-            # this function 
+            # this function
             fastids=IMP.pmi.tools.get_ids_from_fasta_file(fasta_file)
             fasta_file_id=d[4][1]
             #avoid to add a component with the same name
@@ -325,9 +325,10 @@ data = [("Rpb1",     pdbfile,   "A",     0.00000000,  (fastafile,    0)),
 class AnalysisReplicaExchange0():
 
 
-    
+
     def __init__(self,model,
                       stat_file_name_suffix="stat",
+                      merge_directories=["./"],         # if you want to merge two calculation directories
                       best_pdb_name_suffix="model",
                       do_clean_first=True,
                       do_create_directories=True,
@@ -342,9 +343,14 @@ class AnalysisReplicaExchange0():
                       rmf_dir=global_output_directory+rmf_dir
                       self.rmf_files=glob.glob(rmf_dir+"/*.rmf")
                       stat_dir=global_output_directory
-                      self.stat_files=glob.glob(stat_dir+"/stat.*.out")
-                      
-                      
+                      self.stat_files=[]
+                      self.root_directory_dict={}       # it contains the position of the root directories
+                      for rd in merge_directories:
+                         stat_files=glob.glob(rd+"/"+stat_dir+"/stat.*.out")
+                         self.stat_files+=stat_files
+                         for s in stat_files:
+                           self.root_directory_dict[s]=rd
+
     def clustering(self,score_key,
                         rmf_file_key,
                         rmf_file_frame_key,
@@ -352,6 +358,7 @@ class AnalysisReplicaExchange0():
                                              # which the score key is below a certain 
                                              # threshold (faster and less memory greedy)
                         feature_keys=None,
+                        outputdir="./",
                         alignment_components=None,
                         number_of_best_scoring_models=10,
                         rmsd_calculation_components=None,
@@ -360,24 +367,28 @@ class AnalysisReplicaExchange0():
                         is_mpi=False,
                         number_of_clusters=1,
                         display_plot=False,
+                        exit_after_display=True,
                         get_every=1,
-                        density_custom_ranges=None):     
+                        density_custom_ranges=None,
+                        voxel_size=5.0):     
         
         '''
         the features are keywords for which you want to calculate average, medians, etc,
         plots.
-        
+
         density_calculation_components is a list of tuples or strings:
                                       ["Rpb1", (20,100,"Rpb2"), .....]
                                       if that is None, don't calculate the density.
-        
-        
+
+
         '''
-        
+
         from operator import itemgetter
         import IMP.pmi.analysis
         import numpy as np
-        
+        import RMF
+        import IMP.rmf
+
         if is_mpi:
            from mpi4py import MPI
            comm = MPI.COMM_WORLD
@@ -387,27 +398,30 @@ class AnalysisReplicaExchange0():
            rank=0
            number_of_processes=1
 
-    
-        if alignment_components==None:
+
+        if alignment_components is None:
            alignment_flag=0
         else:
-           alignment_flag=1 
-        
-        if feature_keys==None: feature_keys=[]          
-        
+           alignment_flag=1
+
+        if feature_keys is None: feature_keys=[]
+
         print "setup clustering class"
         Clusters = IMP.pmi.analysis.Clustering()
-    
-        if not load_distance_matrix_file:    
+
+        if not load_distance_matrix_file:
             my_stat_files=IMP.pmi.tools.chunk_list_into_segments(self.stat_files,number_of_processes)[rank]
             
 
             score_list=[]
             rmf_file_list=[]
             rmf_file_frame_list=[]
-            if score_key!=None:
+            if not score_key is None:
                feature_keyword_list_dict={}
                for sf in my_stat_files:
+                  
+                  root_directory_of_stat_file=self.root_directory_dict[sf]
+                  
                   print "getting data from file %s" % sf
                   po=IMP.pmi.output.ProcessOutput(sf)
                   keywords=po.get_keys()
@@ -422,40 +436,47 @@ class AnalysisReplicaExchange0():
                   #check that all lengths are all equal
                   length_set=set()
                   for f in fields: length_set.add(len(fields[f]))
-                  
+
                   # if some of the fields are missing, truncate
                   # the feature files to the shortest one
-                  
-                  if len(length_set)>1: 
+
+                  if len(length_set)>1:
                      print "AnalysisReplicaExchange0.clustering: the statfile is not synchronous"
                      minlen=min(length_set)
-                     for f in fields: 
+                     for f in fields:
                          fields[f]=fields[f][0:minlen]
-                     
+
                   # append to the lists
                   score_list+=fields[score_key]
-                  rmf_file_list+=fields[rmf_file_key]
-                  rmf_file_frame_list+=fields[rmf_file_frame_key] 
-                                    
+                  rmffilelist=[]
+                  for rmf in fields[rmf_file_key]:
+                      rmffilelist.append(root_directory_of_stat_file+"/"+rmf)
+                      
+                  rmf_file_list+=rmffilelist
+                  
+                  rmf_file_frame_list+=fields[rmf_file_frame_key]
+
                   for k in feature_keywords:
                       if k in feature_keyword_list_dict:
                          feature_keyword_list_dict[k]+=fields[k]
                       else:
                          feature_keyword_list_dict[k]=fields[k]
-                    
+
 
 # --------------------------------------------------------------------------------------------
 # broadcast the conformation features
-        
+
             if number_of_processes>1:
                     score_list=IMP.pmi.tools.scatter_and_gather(score_list)
                     rmf_file_list=IMP.pmi.tools.scatter_and_gather(rmf_file_list)
-                    rmf_file_frame_list=IMP.pmi.tools.scatter_and_gather(rmf_file_frame_list)  
+                    rmf_file_frame_list=IMP.pmi.tools.scatter_and_gather(rmf_file_frame_list)
                     for k in feature_keyword_list_dict:
                         feature_keyword_list_dict[k]=IMP.pmi.tools.scatter_and_gather(feature_keyword_list_dict[k])
             
+            
             # sort by score and ge the best scoring ones
             score_rmf_tuples=zip(score_list,rmf_file_list,rmf_file_frame_list,range(len(score_list)))
+            
             #numerically sorting in ascending order
             sorted_score_rmf_tuples=sorted(score_rmf_tuples,key=lambda x: float(x[0]))
             best_score_rmf_tuples=sorted_score_rmf_tuples[0:number_of_best_scoring_models]
@@ -464,26 +485,26 @@ class AnalysisReplicaExchange0():
             for n,tpl in enumerate(best_score_rmf_tuples):
                 tpl_new=tpl+tuple([n])
                 best_score_rmf_tuples[n]=tpl_new
-            
+
 # prune the feature_keyword_list_dict, keep only the best scoring models
 # and sort it
-            
+
             best_score_feature_keyword_list_dict={}
             for tpl in best_score_rmf_tuples:
-                
+
                 index=tpl[3]
                 for f in feature_keyword_list_dict:
                     if f in best_score_feature_keyword_list_dict:
                        best_score_feature_keyword_list_dict[f].append(feature_keyword_list_dict[f][index])
                     else:
                        best_score_feature_keyword_list_dict[f]=[feature_keyword_list_dict[f][index]]
-            
+
             del feature_keyword_list_dict
-            
-            
+
+
             # here I've tested that feature_keyword_list_dict is correct on 2 CPUs
-            
-# --------------------------------------------------------------------------------------------        
+
+# --------------------------------------------------------------------------------------------
 # read the coordinates
 # --------------------------------------------------------------------------------------------
 
@@ -492,6 +513,7 @@ class AnalysisReplicaExchange0():
                                                                             number_of_processes)[rank]
             # reading the coordinates
             
+            
             all_coordinates=[]
             all_rmf_file_names=[]
             # it will be used to extract the features
@@ -499,17 +521,17 @@ class AnalysisReplicaExchange0():
             for cnt,tpl in enumerate(my_best_score_rmf_tuples):
                 rmf_file=tpl[1]
                 frame_number=tpl[2]
-                
+
                 prot=IMP.pmi.analysis.get_hier_from_rmf(self.model,frame_number,rmf_file)
                 if not prot: continue
-                # getting the particles                
+                # getting the particles
                 part_dict=IMP.pmi.analysis.get_particles_at_resolution_one(prot)
-                
+
                 # getting the coordinates
                 model_coordinate_dict={}
                 for pr in part_dict:
                     coords = np.array([np.array(IMP.core.XYZ(i).get_coordinates()) for i in part_dict[pr]])
-                    model_coordinate_dict[pr] = coords 
+                    model_coordinate_dict[pr] = coords
 
                 all_coordinates.append(model_coordinate_dict)
                 frame_name=rmf_file+'|'+str(frame_number)
@@ -530,147 +552,175 @@ class AnalysisReplicaExchange0():
                self.save_objects([best_score_feature_keyword_list_dict,rmf_file_name_index_dict],".macro.pkl")
 
 
-# -----------------------------------------------------------------------------------------------              
+# -----------------------------------------------------------------------------------------------
 
             for n,model_coordinate_dict in enumerate(all_coordinates):
-                
+
                 template_coordinate_dict= {}
                 # let's try to align
                 if alignment_flag==1 and len(Clusters.all_coords)==0:
-                   for pr in alignment_components: 
+                   for pr in alignment_components:
                        template_coordinate_dict[pr] = model_coordinate_dict[pr]
                 # set the first model as template coordinates
                    Clusters.set_template(template_coordinate_dict)
-      
+
                 # set particles to calculate RMSDs on
-                # (if global, list all proteins, or just a few for local) 
+                # (if global, list all proteins, or just a few for local)
                 # setting all the coordinates for rmsd calculation
                 rmsd_coordinate_dict = {}
-                if rmsd_calculation_components==None: rmsd_calculation_components=alignment_components
-                
+                if rmsd_calculation_components is None: rmsd_calculation_components=alignment_components
+
                 for pr in rmsd_calculation_components:
                     rmsd_coordinate_dict[pr] = model_coordinate_dict[pr]
 
                 Clusters.fill(all_rmf_file_names[n], rmsd_coordinate_dict)
-    
+
             print "Global calculating the distance matrix"
-            
+
             # calculate distance matrix, all against all
-            
+
             Clusters.dist_matrix(is_mpi=is_mpi)
 
             Clusters.do_cluster(number_of_clusters)
             if display_plot:
                if rank==0:
                   Clusters.plot_matrix()
-            Clusters.save_distance_matrix_file(file_name=distance_matrix_file)               
-          
-# -----------------------------------------------------------------------------------------------           
+               comm.Barrier()
+               if exit_after_display:
+                  exit()
+            Clusters.save_distance_matrix_file(file_name=distance_matrix_file)
+
+# -----------------------------------------------------------------------------------------------
 # load the distance matrix from file
 
-     
+
         else:
             Clusters.load_distance_matrix_file(file_name=distance_matrix_file)
+            print "clustering with %s clusters" % str(number_of_clusters)
             Clusters.do_cluster(number_of_clusters)
             [best_score_feature_keyword_list_dict,rmf_file_name_index_dict]=self.load_objects(".macro.pkl")
             if display_plot:
                if rank==0:
-                  Clusters.plot_matrix()           
+                  Clusters.plot_matrix()
+               comm.Barrier()
+               if exit_after_display:
+                  exit()
 
-# -----------------------------------------------------------------------------------------------  
+# -----------------------------------------------------------------------------------------------
 # now save all informations about the clusters
 
 # -----------------------------------------------------------------------------------------------
 #
-        if rank==0:
-
-          o=IMP.pmi.output.Output()
         
-          for n,cl in enumerate(Clusters.get_cluster_labels()):
-              
-              # first initialize the Density class if requested
-              
-              if density_custom_ranges:
-                DensModule = IMP.pmi.analysis.GetModelDensity(density_custom_ranges)
-              
-              print Clusters.get_cluster_label_average_rmsd(cl)
-              print Clusters.get_cluster_label_size(cl)
-              print Clusters.get_cluster_label_names(cl)
-              dircluster="cluster."+str(n)+"/"
-              try:
-                 os.mkdir(dircluster)
-              except:
-                 pass 
-              
-              clusstat=open(dircluster+"stat.out","w")   
-                              
-              for k,structure_name in enumerate(Clusters.get_cluster_label_names(cl)):
+  
+        if rank==0:
+            
+            
+            print Clusters.get_cluster_labels()
+            
+            for n,cl in enumerate(Clusters.get_cluster_labels()):
+            
+                  print "rank %s " % str(rank)                  
+                  print "cluster %s " % str(n)
+                  print "cluster label %s " % str(cl)
+                  print Clusters.get_cluster_label_names(cl)
                   
-                  
-                  #extract the features
-                  tmp_dict={}
-                  index=rmf_file_name_index_dict[structure_name]
-                  for key in best_score_feature_keyword_list_dict:
-                      tmp_dict[key]=best_score_feature_keyword_list_dict[key][index]
-                  
-                  rmf_name=structure_name.split("|")[0]
-                  rmf_frame_number=int(structure_name.split("|")[1])
-                  
-                  clusstat.write(str(tmp_dict)+"\n")                  
-                  
-                  prot=IMP.pmi.analysis.get_hier_from_rmf(self.model,rmf_frame_number,rmf_name)
-                  if not prot: continue
-                  
-                  if k>0:
-                      model_index=Clusters.get_model_index_from_name(structure_name)
-                      transformation=Clusters.get_transformation_to_first_member(cl,model_index)
-                      
-                      rbs=[]           
-                      for p in IMP.atom.get_leaves(prot):              
-                          if IMP.core.RigidBody.particle_is_instance(p):                 
-                             rb=IMP.core.RigidMember(p).get_rigid_body()                     
-                             if rb not in rbs:                      
-                                rbs.append(rb)              
-                                IMP.core.transform(rb,transformation)
-                                
-                          else:                 
-                             IMP.core.transform(IMP.core.XYZ(p),transformation)              
-                        #IMP.em.add_to_map(dmap_dict[name],particle_dict[name])
-
-                  # add the density                  
+                  # first initialize the Density class if requested
+     
                   if density_custom_ranges:
-                     DensModule.add_subunits_density(prot)
+    
+                    DensModule = IMP.pmi.analysis.GetModelDensity(density_custom_ranges,voxel=voxel_size)
 
-                  o.init_pdb(dircluster+str(k)+".pdb",prot)        
-                  o.write_pdb(dircluster+str(k)+".pdb")
-                  o.init_rmf(dircluster+str(k)+".rmf3",[prot])   
-                  #IMP.rmf.add_restraints(o.dictionary_rmfs[dircluster+str(n)+".rmf3"],rs)    
-                  o.write_rmf(dircluster+str(k)+".rmf3")
-                  o.close_rmf(dircluster+str(k)+".rmf3")     
-              
-              if density_custom_ranges:
-                 DensModule.write_mrc(path=dircluster)
-                 del DensModule
+                  dircluster=outputdir+"/cluster."+str(n)+"/"
+                  try:
+                     os.mkdir(outputdir)
+                  except:
+                     pass                 
+                  
+                  try:
+                     os.mkdir(dircluster)
+                  except:
+                     pass
+                  
+                  rmsd_dict={"AVERAGE_RMSD":str(Clusters.get_cluster_label_average_rmsd(cl))}
+    
+                  clusstat=open(dircluster+"stat.out","w")
+    
+                  for k,structure_name in enumerate(Clusters.get_cluster_label_names(cl)):
+    
+    
+                      #extract the features
+                      tmp_dict={}
+                      tmp_dict.update(rmsd_dict)
+                      index=rmf_file_name_index_dict[structure_name]
+                      for key in best_score_feature_keyword_list_dict:
+                          tmp_dict[key]=best_score_feature_keyword_list_dict[key][index]
+    
+                      rmf_name=structure_name.split("|")[0]
+                      rmf_frame_number=int(structure_name.split("|")[1])
+    
+                      clusstat.write(str(tmp_dict)+"\n")
+    
+                      prot=IMP.pmi.analysis.get_hier_from_rmf(self.model,rmf_frame_number,rmf_name)
+                      
+                      if not prot: continue
+                      
+                      #rh= RMF.open_rmf_file_read_only(rmf_name)
+                      #restraints=IMP.rmf.create_restraints(rh,self.model)
+                      #del rh
+                      
+                      if k>0:
+                          model_index=Clusters.get_model_index_from_name(structure_name)
+                          transformation=Clusters.get_transformation_to_first_member(cl,model_index)
+    
+                          rbs=[]
+                          for p in IMP.atom.get_leaves(prot):
+                              if not IMP.core.XYZR.get_is_setup(p):
+                                 IMP.core.XYZR.setup_particle(p)
+                                 IMP.core.XYZR(p).set_radius(0.0001)
+                                 IMP.core.XYZR(p).set_coordinates((0,0,0))
+                                                                 
+                              if IMP.core.RigidBody.get_is_setup(p):
+                                 rb=IMP.core.RigidMember(p).get_rigid_body()
+                                 if rb not in rbs:
+                                    rbs.append(rb)
+                                    IMP.core.transform(rb,transformation)
+    
+                              else:
+                                 IMP.core.transform(IMP.core.XYZ(p),transformation)
+                            #IMP.em.add_to_map(dmap_dict[name],particle_dict[name])
+        
+                      # add the density                  
+                      if density_custom_ranges:
+                         DensModule.add_subunits_density(prot)
+                      
+                      o=IMP.pmi.output.Output()
+                      o.init_pdb(dircluster+str(k)+".pdb",prot)        
+                      o.write_pdb(dircluster+str(k)+".pdb")
+                      if k==0:
+                         o.init_rmf(dircluster+str(k)+".rmf3",[prot])
+                         #IMP.rmf.add_restraints(o.dictionary_rmfs[dircluster+str(n)+".rmf3"],restraints)
+                         o.write_rmf(dircluster+str(k)+".rmf3")
+                         o.close_rmf(dircluster+str(k)+".rmf3")
+                      
+                      del o
+    
+                  if density_custom_ranges:
+                     DensModule.write_mrc(path=dircluster)
+                     del DensModule
+                     
+        comm.Barrier()
 
 
     def save_objects(self,objects,file_name):
-        import pickle    
+        import pickle
         outf = open(file_name,'w')
-        pickle.dump(objects,outf)            
-        outf.close()        
+        pickle.dump(objects,outf)
+        outf.close()
 
     def load_objects(self,file_name):
-        import pickle        
-        inputf = open(file_name,'r')    
-        objects=pickle.load(inputf)         
+        import pickle
+        inputf = open(file_name,'r')
+        objects=pickle.load(inputf)
         inputf.close()
         return objects
-
-
-
-
-
-
-
-
-

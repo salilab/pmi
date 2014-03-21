@@ -45,7 +45,7 @@ class ExcludedVolumeSphere():
 
         lsa.add_particles(particles)
 
-        if other_hierarchies==None:
+        if other_hierarchies is None:
            rbcpf=IMP.core.RigidClosePairsFinder()
            self.cpc=IMP.container.ClosePairContainer(lsa,0.0,rbcpf,10.0)
            evr=IMP.container.PairsRestraint(ssps,self.cpc)
@@ -120,7 +120,7 @@ class ResidueBondRestraint():
             pair=[]
             if len(ps)!=2: print "ResidueBondRestraint: wrong length of pair"; exit()
             for p in ps:
-                if not IMP.atom.Residue.particle_is_instance(p):
+                if not IMP.atom.Residue.get_is_setup(p):
                    print "ResidueBondRestraint: not a residue"; exit()
                 else:
                    pair.append(p)
@@ -181,7 +181,7 @@ class ResidueAngleRestraint():
             triplet=[]
             if len(ps)!=3: print "ResidueAngleRestraint: wrong length of triplet"; exit()
             for p in ps:
-                if not IMP.atom.Residue.particle_is_instance(p):
+                if not IMP.atom.Residue.get_is_setup(p):
                    print "ResidueAngleRestraint: not a residue"; exit()
                 else:
                    triplet.append(p)
@@ -237,14 +237,14 @@ class ResidueDihedralRestraint():
 
         particles=IMP.pmi.tools.select_by_tuple(representation,selection_tuple,resolution=1)
 
-        if stringsequence==None:
+        if stringsequence is None:
            stringsequence="T"*(len(particles)-3)
 
         for n,ps in enumerate(IMP.pmi.tools.sublist_iterator(particles,4,4)):
             quadruplet=[]
             if len(ps)!=4: print "ResidueDihedralRestraint: wrong length of quadruplet"; exit()
             for p in ps:
-                if not IMP.atom.Residue.particle_is_instance(p):
+                if not IMP.atom.Residue.get_is_setup(p):
                    print "ResidueDihedralRestraint: not a residue"; exit()
                 else:
                    quadruplet.append(p)
@@ -525,7 +525,7 @@ class ElasticNetworkRestraint():
     import IMP.pmi.tools
     from math import pi as pi
 
-    def __init__(self,representation,selection_tuples,strength=10.0,jitter=None):
+    def __init__(self,representation,selection_tuples,strength=10.0,dist_cutoff=10.0):
         '''
         jitter: defines the +- added to the optimal distance in the harmonic well restraint
                 used to increase the tolerance
@@ -538,30 +538,23 @@ class ElasticNetworkRestraint():
 
         particles=[]
         for st in selection_tuples:
-           for p in IMP.pmi.tools.select_by_tuple(representation,st,resolution=0):
-              if IMP.atom.Atom(p).get_atom_type()==IMP.atom.AtomType("CA"):
-                 particles.append(p.get_particle())
-        print [type(p) for p in particles]
-        for pidx in itertools.combinations(xrange(len(particles)),2):
-           print pidx[0],pidx[1]
-           print type(particles[pidx[0]])
-           print type(particles[pidx[1]])
-           pair=[particles[pidx[0]],particles[pidx[1]]]
-           sys.stdout.flush()
+           for p in IMP.pmi.tools.select_by_tuple(representation,st,resolution=1):
+              #if IMP.atom.Atom(p).get_atom_type()==IMP.atom.AtomType("CA"):
+              particles.append(p.get_particle())
+        #print 'got',len(particles),'particles'
+        #exit()
+        for pair in itertools.combinations(particles,2):
            distance=IMP.algebra.get_distance(IMP.core.XYZ(pair[0]).get_coordinates(),
                                              IMP.core.XYZ(pair[1]).get_coordinates())
-           print distance
-           if jitter is None:
-              print 'setting up harmonic'
-              ts=IMP.core.HarmonicDistancePairScore(distance,strength)
-           #else:
-           #   ts=IMP.core.HarmonicWell((distance-jitter,distance+jitter),strength)
+           if distance>=dist_cutoff:
+              continue
+           ts=IMP.core.HarmonicDistancePairScore(distance,strength)
 
-           print "ElasticNetworkConstraint: adding a restraint between %s and %s" % (pair[0].get_name(),pair[1].get_name())
-           self.rs.add_restraint(IMP.core.DistanceRestraint(ts,pair[0],pair[1]))
+           print "ElasticNetworkConstraint: adding a restraint between %s and %s with distance %.3f" % (pair[0].get_name(),pair[1].get_name(),distance)
+           self.rs.add_restraint(IMP.core.PairRestraint(ts,pair))
            self.pairslist.append(IMP.ParticlePair(pair[0], pair[1]))
            self.pairslist.append(IMP.ParticlePair(pair[1], pair[0]))
-           print 'added'
+        print 'created',self.rs.get_number_of_restraints(),'restraints'
     def set_label(self, label):
         self.label = label
         self.rs.set_name(label)

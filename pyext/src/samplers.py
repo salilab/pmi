@@ -208,7 +208,7 @@ class MonteCarlo():
         mvs=[]
         for fb in fbs:
             #check is that is a rigid body member:
-            if IMP.core.NonRigidMember.particle_is_instance(fb):
+            if IMP.core.NonRigidMember.get_is_setup(fb):
             #if so force the particles to move anyway
                 floatkeys=[IMP.FloatKey(4),IMP.FloatKey(5),IMP.FloatKey(6)]
                 for fk in floatkeys:
@@ -224,7 +224,7 @@ class MonteCarlo():
         Xfloatkey=IMP.core.XYZ.get_xyz_keys()[0]
         for fb in fbs:
             #check is that is a rigid body member:
-            if IMP.core.NonRigidMember.particle_is_instance(fb):
+            if IMP.core.NonRigidMember.get_is_setup(fb):
                 print "particle is part of a rigid body"
                 exit()
             else:
@@ -324,7 +324,7 @@ class ReplicaExchange():
         self.TEMPMIN_ = tempmin
         self.TEMPMAX_ = tempmax
 
-        if replica_exchange_object==None:
+        if replica_exchange_object is None:
             # initialize Replica Exchange class
             self.rem = IMP.mpi.ReplicaExchange()
         else:
@@ -361,7 +361,7 @@ class ReplicaExchange():
         return self.rem.get_my_index()
 
     def swap_temp(self,nframe,score=None):
-        if score==None:
+        if score is None:
            score=self.m.evaluate(False)
         # get my replica index and temperature
         myindex = self.rem.get_my_index()

@@ -19,7 +19,7 @@ import RMF
 
 class Representation():
     #Authors: Peter Cimermancic, Riccardo Pellarin, Charles Greenberg
-    
+
     '''
     This class creates the molecular hierarchies, representation,
     sequence connectivity for the various involved proteins and
@@ -506,7 +506,8 @@ class Representation():
                               sampled_points=1000000,num_iter=100,
                               multiply_by_total_mass=True,
                               transform=None,
-                              intermediate_map_fn=None):
+                              intermediate_map_fn=None,
+                              density_ps_to_copy=None):
 
         '''
         This function sets up a GMM for this component.
@@ -530,6 +531,7 @@ class Representation():
         multiply_by_total_mass: multiply the weights of the GMM by this value (only works on creation!)
         transform:              for input file only, apply a transformation (eg for multiple copies same GMM)
         intermediate_map_fn:    for debugging, this will write the itermediate (simulated) map
+        density_ps_to_copy:     in case you already created the appropriate GMM (eg, for beads)
         '''
 
         import IMP.isd_emxl
@@ -553,7 +555,16 @@ class Representation():
            self.hier_representation[name]["Densities"]=root
            protein_h.add_child(root)
 
-        if inputfile is None:
+        density_particles=[]
+        if not density_ps_to_copy is None:
+            for ip in density_ps_to_copy:
+                p=IMP.Particle(self.m)
+                shape=IMP.core.Gaussian(ip).get_gaussian()
+                mass=IMP.atom.Mass(ip).get_mass()
+                IMP.core.Gaussian.setup_particle(p,shape)
+                IMP.atom.Mass.setup_particle(p,mass)
+                density_particles.append(p)
+        elif inputfile is None:
            if particles is None:
               fragment_particles=[]
            else:
@@ -585,25 +596,28 @@ class Representation():
            if not intermediate_map_fn is None:
                IMP.em.write_map(dmap,intermediate_map_fn)
            pts=IMP.isd_emxl.sample_points_from_density(dmap,sampled_points)
+           #pts=[IMP.core.XYZ(p).get_coordinates() for p in fragment_particles]
 
            # fit GMM
-           density_particles=[]
-           print 'add_component_density: fitting GMM'
-           IMP.isd_emxl.gmm_tools.fit_gmm_to_points(pts,num_components,self.m,
-                                                    density_particles,
-                                                    num_iter,covariance_type,
+           print 'add_component_density: fitting GMM to',len(pts),'points'
+           IMP.isd_emxl.gmm_tools.fit_gmm_to_points(points=pts,
+                                                    n_components=num_components,
+                                                    mdl=self.m,
+                                                    ps=density_particles,
+                                                    num_iter=num_iter,
+                                                    covariance_type=covariance_type,
                                                     mass_multiplier=mass_multiplier)
 
            if not outputfile is None:
                IMP.isd_emxl.gmm_tools.write_gmm_to_text(density_particles,outputfile)
            if not outputmap is None:
-               IMP.isd_emxl.gmm_tools.write_gmm_to_map(density_particles,outputmap,
-                                                       voxel_size,
-                                                       IMP.em.get_bounding_box(dmap))
-
+               IMP.isd_emxl.gmm_tools.write_gmm_to_map(ps=density_particles,
+                                                       out_fn=outputmap,
+                                                       voxel_size=voxel_size,
+                                                       bounding_box=IMP.em.get_bounding_box(dmap))
+           del dmap
         else:
             # read the inputfile here
-            density_particles=[]
             IMP.isd_emxl.gmm_tools.decorate_gmm_from_text(inputfile,density_particles,
                                                           self.m,transform)
 
@@ -696,17 +710,17 @@ class Representation():
         #copying attributes
         for n,pmain in enumerate(psmain):
            pclone=psclone[n]
-           if IMP.pmi.Resolution.particle_is_instance(pmain):
+           if IMP.pmi.Resolution.get_is_setup(pmain):
               resolution=IMP.pmi.Resolution(pmain).get_resolution()
               IMP.pmi.Resolution.setup_particle(pclone,resolution)
               for kk in IMP.pmi.tools.get_residue_indexes(pclone):
                  self.hier_db.add_particles(name,kk,IMP.pmi.Resolution(pclone).get_resolution(),[pclone])
 
-           if IMP.pmi.Uncertainty.particle_is_instance(pmain):
+           if IMP.pmi.Uncertainty.get_is_setup(pmain):
               uncertainty=IMP.pmi.Uncertainty(pmain).get_uncertainty()
               IMP.pmi.Uncertainty.setup_particle(pclone,uncertainty)
 
-           if IMP.pmi.Symmetric.particle_is_instance(pmain):
+           if IMP.pmi.Symmetric.get_is_setup(pmain):
               symmetric=IMP.pmi.Symmetric(pmain).get_symmetric()
               IMP.pmi.Symmetric.setup_particle(pclone,symmetric)
 
@@ -729,9 +743,9 @@ class Representation():
         #if len(self.rigid_bodies)!=0:
         #   print "set_coordinates_from_rmf: cannot proceed if rigid bodies were initialized. Use the function before defining the rigid bodies"
         #   exit()
-        
+
         allpsrmf=IMP.atom.get_leaves(prot)
-        
+
         psrmf=[]
         for p in allpsrmf:
            (protname,is_a_bead)=IMP.pmi.tools.get_prot_name_from_particle(p,self.hier_dict.keys())
@@ -742,14 +756,14 @@ class Representation():
 
 
         psrepr=IMP.atom.get_leaves(self.hier_dict[component_name])
-        
-       
-        
+
+
+
         if len(psrmf) != len(psrepr):
            print "set_coordinates_from_rmf: cannot proceed the rmf and the representation don't have the same number of particles"
            print "particles in rmf: %s particles in the representation: %s" % (str(len(psrmf)),str(len(psrepr)))
-           exit()           
-        
+           exit()
+
         for n,prmf in enumerate(psrmf):
             prmfname=prmf.get_name()
             preprname=psrepr[n].get_name()
@@ -759,7 +773,7 @@ class Representation():
             if IMP.core.NonRigidMember.get_is_setup(psrepr[n]):
                print "set_coordinates_from_rmf: component %s cannot proceed if rigid bodies were initialized. Use the function before defining the rigid bodies" % component_name
                exit()
-            
+
             if prmfname!=preprname:
                print "set_coordinates_from_rmf: WARNING rmf particle and representation particles have not the same name %s %s " % (prmfname,preprname)
             if IMP.core.XYZ.get_is_setup(prmf) and IMP.core.XYZ.get_is_setup(psrepr[n]):
@@ -767,7 +781,7 @@ class Representation():
                IMP.core.XYZ(psrepr[n]).set_coordinates(xyz)
             else:
                print "set_coordinates_from_rmf: WARNING particles are not XYZ decorated %s %s " % (str(IMP.core.XYZ.get_is_setup(prmf)) , str(IMP.core.XYZ.get_is_setup(psrepr[n])))
-       
+
     def check_root(self,name,protein_h,resolution):
         '''
         checks whether the root hierarchy exists, and if not
@@ -946,7 +960,7 @@ class Representation():
         gcpf.set_distance(cutoff)
         ps=[]
         for p in IMP.atom.get_leaves(self.prot):
-            if IMP.core.XYZ.particle_is_instance(p):
+            if IMP.core.XYZ.get_is_setup(p):
                ps.append(p)
         allparticleindexes=IMP.get_indexes(ps)
 
@@ -1244,9 +1258,9 @@ class Representation():
                 lc=IMP.container.ListSingletonContainer(self.m)
                 for n,p in enumerate(mainparts):
                     pc=copyparts[n]
-                    if not IMP.pmi.Symmetric.particle_is_instance(p):
+                    if not IMP.pmi.Symmetric.get_is_setup(p):
                        IMP.pmi.Symmetric.setup_particle(p,0)
-                    if not IMP.pmi.Symmetric.particle_is_instance(pc):
+                    if not IMP.pmi.Symmetric.get_is_setup(pc):
                        IMP.pmi.Symmetric.setup_particle(pc,1)
                     IMP.core.Reference.setup_particle(pc,p)
                     lc.add_particle(pc)
@@ -1264,7 +1278,7 @@ class Representation():
         '''
         import IMP.rmf
         import RMF
-        
+
         rh= RMF.open_rmf_file_read_only(rmfname)
         IMP.rmf.link_hierarchies(rh, [self.prot])
         IMP.rmf.load_frame(rh, frameindex)
@@ -1311,7 +1325,7 @@ class Representation():
         for hier in hiers:
             ps=IMP.atom.get_leaves(hier)
             for p in ps:
-              if IMP.core.RigidMember.particle_is_instance(p):
+              if IMP.core.RigidMember.get_is_setup(p):
                  rb=IMP.core.RigidMember(p).get_rigid_body()
                  print "set_rigid_body_from_hierarchies> WARNING particle %s already belongs to rigid body %s" % (p.get_name(),rb.get_name())
               else:
@@ -1348,7 +1362,7 @@ class Representation():
                   print "set_rigid_bodies: selected particle does not exists"
                for p in sel.get_selected_particles():
                   #if not p in self.floppy_bodies:
-                      if IMP.core.RigidMember.particle_is_instance(p):
+                      if IMP.core.RigidMember.get_is_setup(p):
                          rb=IMP.core.RigidMember(p).get_rigid_body()
                          print "set_rigid_body_from_hierarchies> WARNING particle %s already belongs to rigid body %s" % (p.get_name(),rb.get_name())
                       else:
@@ -1361,7 +1375,7 @@ class Representation():
                   print "set_rigid_bodies: selected particle does not exists"
                for p in sel.get_selected_particles():
                   #if not p in self.floppy_bodies:
-                      if IMP.core.RigidMember.particle_is_instance(p):
+                      if IMP.core.RigidMember.get_is_setup(p):
                          rb=IMP.core.RigidMember(p).get_rigid_body()
                          print "set_rigid_body_from_hierarchies> WARNING particle %s already belongs to rigid body %s" % (p.get_name(),rb.get_name())
                       else:
@@ -1383,7 +1397,7 @@ class Representation():
         for hier in hiers:
             ps=IMP.atom.get_leaves(hier)
             for p in ps:
-              if IMP.core.RigidMember.particle_is_instance(p):
+              if IMP.core.RigidMember.get_is_setup(p):
                  rb=IMP.core.RigidMember(p).get_rigid_body()
                  super_rigid_rbs.add(rb)
               else:
@@ -1424,7 +1438,7 @@ class Representation():
                if len(sel.get_selected_particles())==0:
                   print "set_rigid_bodies: selected particle does not exists"
                for p in sel.get_selected_particles():
-                      if IMP.core.RigidMember.particle_is_instance(p):
+                      if IMP.core.RigidMember.get_is_setup(p):
                          rb=IMP.core.RigidMember(p).get_rigid_body()
                          super_rigid_rbs.add(rb)
                       else:
@@ -1435,7 +1449,7 @@ class Representation():
                   print "set_rigid_bodies: selected particle does not exists"
                for p in sel.get_selected_particles():
                   #if not p in self.floppy_bodies:
-                      if IMP.core.RigidMember.particle_is_instance(p):
+                      if IMP.core.RigidMember.get_is_setup(p):
                          rb=IMP.core.RigidMember(p).get_rigid_body()
                          super_rigid_rbs.add(rb)
                       else:
@@ -1446,7 +1460,7 @@ class Representation():
         for p in self.floppy_bodies:
             name=p.get_name()
             p.set_name(name+"_floppy_body")
-            if IMP.core.RigidMember.particle_is_instance(p):
+            if IMP.core.RigidMember.get_is_setup(p):
                 print "I'm trying to make this particle flexible although it was assigned to a rigid body", p.get_name()
                 rb=IMP.core.RigidMember(p).get_rigid_body()
                 try:
@@ -1527,9 +1541,9 @@ class Representation():
 
                 p1=pt[0]
                 p2=pt[1]
-                if not IMP.atom.Bonded.particle_is_instance(p1):
+                if not IMP.atom.Bonded.get_is_setup(p1):
                    IMP.atom.Bonded.setup_particle(p1)
-                if not IMP.atom.Bonded.particle_is_instance(p2):
+                if not IMP.atom.Bonded.get_is_setup(p2):
                    IMP.atom.Bonded.setup_particle(p2)
 
                 IMP.atom.create_bond(IMP.atom.Bonded(p1),IMP.atom.Bonded(p2),1)
@@ -1743,7 +1757,7 @@ class Representation():
         srbtmp=[]
         if not self.rigidbodiesarefixed:
             for rb in self.rigid_bodies:
-               if IMP.pmi.Symmetric.particle_is_instance(rb):
+               if IMP.pmi.Symmetric.get_is_setup(rb):
                   if IMP.pmi.Symmetric(rb).get_symmetric()!=1:
                      rbtmp.append(rb)
                else:
@@ -1751,7 +1765,7 @@ class Representation():
                      rbtmp.append(rb)
 
         for fb in self.floppy_bodies:
-           if IMP.pmi.Symmetric.particle_is_instance(fb):
+           if IMP.pmi.Symmetric.get_is_setup(fb):
               if IMP.pmi.Symmetric(fb).get_symmetric()!=1:
                  fbtmp.append(fb)
            else:
@@ -1812,7 +1826,8 @@ class Representation():
     def get_test_output(self):
         # this method is called by test functions and return an enriched output
         output=self.get_output()
-        output.update(self.get_particles_to_sample())
+        for n,p in enumerate(self.get_particles_to_sample()):
+            output["Particle_to_sample_"+str(n)]=str(p)
         output["Number_of_particles"]=len(IMP.atom.get_leaves(self.prot))
         output["Hierarchy_Dictionary"]=self.hier_dict.keys()
         output["Number_of_floppy_bodies"]=len(self.floppy_bodies)

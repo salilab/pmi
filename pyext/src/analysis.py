@@ -255,45 +255,55 @@ class Clustering():
 
 
     def save_distance_matrix_file(self,file_name='cluster.rawmatrix.pkl'):
-        import pickle    
-        outf = open(file_name,'w')
+        import pickle 
+        import numpy as np   
+        outf = open(file_name+".data",'w')
         
         #to pickle the transformation dictionary 
         #you have to save the arrays correposnding to
         # the transformations
         
-        
         pickable_transformations=self.get_pickable_transformation_distance_dict()
-        pickle.dump((self.structure_cluster_ids,self.model_list_names,self.raw_distance_matrix,pickable_transformations),outf)            
-        outf.close()        
+        pickle.dump((self.structure_cluster_ids,self.model_list_names,pickable_transformations),outf)            
+    
+        
+        np.save(file_name+".npy", self.raw_distance_matrix)
+        
+           
 
     def load_distance_matrix_file(self,file_name='cluster.rawmatrix.pkl'):
         import pickle        
-        inputf = open(file_name,'r')    
-        (self.structure_cluster_ids,self.model_list_names,self.raw_distance_matrix,pickable_transformation)=pickle.load(inputf) 
+        import numpy as np        
         
-        self.set_transformation_distance_dict_from_pickable(pickable_transformation)
+        inputf = open(file_name+".data",'r')   
+        (self.structure_cluster_ids,self.model_list_names,pickable_transformations)=pickle.load(inputf)
+        inputf.close() 
+                   
+        self.raw_distance_matrix=np.load(file_name+".npy")   
+             
+        self.set_transformation_distance_dict_from_pickable(pickable_transformations)
         self.model_indexes=range(len(self.model_list_names))
         self.model_indexes_dict=dict(zip(self.model_list_names,self.model_indexes))
         
-        inputf.close()      
+     
    
-    def plot_matrix(self):
+    def plot_matrix(self,figurename="clustermatrix.png"):
         import pylab as pl    
         from scipy.cluster import hierarchy as hrc    
         
         fig = pl.figure()
         ax = fig.add_subplot(211)
-        dendrogram = hrc.dendrogram(hrc.linkage(self.raw_distance_matrix),color_threshold=7)
+        dendrogram = hrc.dendrogram(hrc.linkage(self.raw_distance_matrix),color_threshold=7,no_labels=True)
         leaves_order = dendrogram['leaves']
 
         ax = fig.add_subplot(212)
         cax = ax.imshow(self.raw_distance_matrix[leaves_order,:][:,leaves_order], interpolation='nearest')
-        ax.set_yticks(range(len(self.model_list_names)))
-        ax.set_yticklabels( [self.model_list_names[i] for i in leaves_order] )
+        #ax.set_yticks(range(len(self.model_list_names)))
+        #ax.set_yticklabels( [self.model_list_names[i] for i in leaves_order] )
         fig.colorbar(cax)
-
+        pl.savefig(figurename,dpi=300)
         pl.show()
+
     
     def get_model_index_from_name(self,name):
         return self.model_indexes_dict[name]
@@ -340,7 +350,7 @@ class Clustering():
             rmsd_protein_names = all_coords[model_list_names[0]].keys()
             raw_distance_dict={}
             transformation_distance_dict={}
-            if template_coords==None: 
+            if template_coords is None: 
                do_alignment=False
             else:
                do_alignment=True
@@ -488,7 +498,28 @@ class GetContactMap():
         self.resmap = {}
 
     def set_prot(self, prot):
+        import IMP.pmi.tools
         self.prot = prot
+        self.protnames=[]
+        for i in self.prot.get_children():
+           name=i.get_name()
+           residue_indexes=[]
+           for p in IMP.atom.get_leaves(i):
+              print p.get_name()
+              residue_indexes+=IMP.pmi.tools.get_residue_indexes(p)
+              #residue_indexes.add( )
+           
+           if len(residue_indexes)!=0:
+               self.protnames.append(name)
+               for res in range(min(residue_indexes),max(residue_indexes)+1):
+                  new_name=name+":"+str(res)
+                  if name not in self.resmap:
+                     self.resmap[name]={}
+                  if res not in self.resmap:
+                     self.resmap[name][res]={}
+                     
+                  self.resmap[name][res] = new_name
+                  self.namelist.append(new_name)
 
     def get_subunit_coords(self,frame, align=0):
         coords= []
@@ -534,21 +565,24 @@ class GetContactMap():
         self.contactmap += distances
 
 
-    def add_xlinks(self, filname):
+    def add_xlinks(self, filname,identification_string='ISDCrossLinkMS_Distance_'):
+        # 'ISDCrossLinkMS_Distance_interrb_6629-State:0-20:RPS30_218:eIF3j-1-1-0.1_None'
         self.xlinks = 1
         data = open(filname)
         D = data.readlines()
         data.close()
 
         for d in D:
-            d = d.strip().split()
-            t1, t2 = (d[0],d[1]), (d[1],d[0])
-            if t1 not in self.XL:
-                self.XL[t1] = [(int(d[2])+1, int(d[3])+1)]
-                self.XL[t2] = [(int(d[3])+1, int(d[2])+1)]
-            else:
-                self.XL[t1].append((int(d[2])+1, int(d[3])+1))
-                self.XL[t2].append((int(d[3])+1, int(d[2])+1))
+            if identification_string in d:
+                d = d.replace("_"," ").replace("-"," ").replace(":"," ").split()
+                
+                t1, t2 = (d[0],d[1]), (d[1],d[0])
+                if t1 not in self.XL:
+                    self.XL[t1] = [(int(d[2])+1, int(d[3])+1)]
+                    self.XL[t2] = [(int(d[3])+1, int(d[2])+1)]
+                else:
+                    self.XL[t1].append((int(d[2])+1, int(d[3])+1))
+                    self.XL[t2].append((int(d[3])+1, int(d[2])+1))
 
         
 
@@ -558,7 +592,9 @@ class GetContactMap():
         M= self.contactmap
         C,R = [],[]
         L= sum(self.expanded.values())
-
+        proteins=self.protnames
+    
+        
         # exp new
         if skip_cmap==0:
             Matrices = {}
@@ -584,7 +620,6 @@ class GetContactMap():
         if skip_xl==0:
             if self.XL=={}: print "ERROR: cross-links were not provided, use add_xlinks function!"; exit()
             Matrices_xl = {}
-            proteins = [p.get_name() for p in self.prot.get_children()]
             missing_xl = []
             for p1 in xrange(len(proteins)):
                 for p2 in xrange(p1,len(proteins)):
@@ -612,16 +647,18 @@ class GetContactMap():
                     Matrices_xl[(pn1,pn2)]=mtr                
 
         # expand the matrix to individual residues
-        NewM = []
-        for x1 in xrange(len(K)):
-            lst = []
-            for x2 in xrange(len(K)):
-                lst += [M[x1,x2]]*self.expanded[K[x2]]
-            for i in xrange(self.expanded[K[x1]]): NewM.append(array(lst))
-        NewM = array(NewM)
+        #NewM = []
+        #for x1 in xrange(len(K)):
+        #    lst = []
+        #    for x2 in xrange(len(K)):
+        #        lst += [M[x1,x2]]*self.expanded[K[x2]]
+        #    for i in xrange(self.expanded[K[x1]]): NewM.append(array(lst))
+        #NewM = array(NewM)
 
         # make list of protein names and create coordinate lists  
         C = proteins
+        # W is the component length list,
+        # R is the contiguous coordinates list
         W,R = [],[]
         for i,c in enumerate(C):
             cl = max(self.resmap[c].keys())
@@ -638,7 +675,7 @@ class GetContactMap():
         gs = gridspec.GridSpec(len(W), len(W),
                        width_ratios=W,
                        height_ratios=W)
-
+        
         cnt = 0
         for x1,r1 in enumerate(R):
             if x1==0: s1=0
@@ -665,7 +702,586 @@ class GetContactMap():
                 cnt+=1
                 if x2==0: ax.set_ylabel(C[x1], rotation=90)
         plt.show()
+
+
+# ------------------------------------------------------------------
+
+class CrossLinkTable():
+   def __init__(self):
+       self.crosslinks=[]
+       self.external_csv_data=None
+       self.crosslinkedprots=set()
+       self.mindist=+10000000.0
+       self.maxdist=-10000000.0
+   
+   def set_hierarchy(self,prot):
+       import IMP.pmi.tools
+       self.prot_length_dict={}
+
+       for i in prot.get_children():
+           name=i.get_name()
+           residue_indexes=[]
+           for p in IMP.atom.get_leaves(i):
+              residue_indexes+=IMP.pmi.tools.get_residue_indexes(p)
+           
+           if len(residue_indexes)!=0:
+              self.prot_length_dict[name]=max(residue_indexes)
+   
+   
+   
+   def set_crosslinks(self,data_file,search_label='ISDCrossLinkMS_Distance_',
+                      mapping=None,
+                      external_csv_data_file=None,
+                      external_csv_data_file_unique_id_key="Unique ID"):
+       
+       # example key ISDCrossLinkMS_Distance_intrarb_937-State:0-108:RPS3_55:RPS30-1-1-0.1_None
+       # mapping is a dictionary that maps standard keywords to entry positions in the key string
+       # confidence class is a filter that 
+       # external datafile is a datafile that contains further information on the crosslinks
+       # it will use the unique id to create the dictionary keys
+       
+       import IMP.pmi.output
+       import numpy as np
+       
+       po=IMP.pmi.output.ProcessOutput(data_file)
+       keys=po.get_keys()
+       xl_keys=[k for k in keys if search_label in k]
+       fs=po.get_fields(xl_keys)
+       
+       # this dictionary stores the occurency of given crosslinks
+       self.cross_link_frequency={}
+       
+       # this dictionary stores the series of distances for given crosslinked residues
+       self.cross_link_distances={}       
+       
+       
+       
+       
+       for key in fs:
+           keysplit=key.replace("_"," ").replace("-"," ").replace(":"," ").split()
+           if mapping is None:
+               r1=int(keysplit[6])
+               c1=keysplit[7]
+               r2=int(keysplit[8])
+               c2=keysplit[9]
+               try:
+                 confidence=keysplit[12]
+               except:
+                 confidence='0.0'
+               try:
+                 unique_identifier=keysplit[3]
+               except:
+                 unique_identifier='0'
+           else:
+               r1=int(keysplit[mapping["Residue1"]])
+               c1=keysplit[mapping["Protein1"]]
+               r2=int(keysplit[mapping["Residue2"]])
+               c2=keysplit[mapping["Protein2"]]
+               try:              
+                  confidence=keysplit[mapping["Confidence"]]
+               except:
+                  confidence='0.0'
+               try:              
+                  unique_identifier=keysplit[mapping["Unique Identifier"]]
+               except:
+                  unique_identifier='0'
+
+           
+           self.crosslinkedprots.add(c1)
+           self.crosslinkedprots.add(c2)
+           
+           # check if the input confidence class corresponds to the
+           # one of the cross-link
+           
+           
+           dists=map(float, fs[key])
+           mdist=self.median(dists)
+           
+           stdv=np.std(np.array(dists))
+           if self.mindist>mdist: self.mindist=mdist
+           if self.maxdist<mdist: self.maxdist=mdist    
+           
+           if (r1,c1,r2,c2) not in self.cross_link_frequency:
+              self.cross_link_frequency[(r1,c1,r2,c2)]=1
+              self.cross_link_frequency[(r2,c2,r1,c1)]=1
+           else:
+              self.cross_link_frequency[(r2,c2,r1,c1)]+=1
+              self.cross_link_frequency[(r1,c1,r2,c2)]+=1
+
+           if (r1,c1,r2,c2) not in self.cross_link_distances:
+              self.cross_link_distances[(r1,c1,r2,c2,mdist,confidence)]=dists
+              self.cross_link_distances[(r2,c2,r1,c1,mdist,confidence)]=dists
+           else:
+              self.cross_link_distances[(r2,c2,r1,c1)]+=dists
+              self.cross_link_distances[(r1,c1,r2,c2)]+=dists
+                  
+           self.crosslinks.append((r1,c1,r2,c2,mdist,stdv,confidence,unique_identifier,'original'))
+           self.crosslinks.append((r2,c2,r1,c1,mdist,stdv,confidence,unique_identifier,'reversed'))
+
+       # -------------
+
+       if not external_csv_data_file is None:
+           # this dictionary stores the further information on crosslinks
+           # labeled by unique ID
+           self.external_csv_data={}
+           xldb=IMP.pmi.tools.get_db_from_csv(external_csv_data_file)
+           
+           for xl in xldb:
+               self.external_csv_data[xl[external_csv_data_file_unique_id_key]]=xl
+       
+   
+   
+   def median(self,mylist):
+       sorts = sorted(mylist)
+       length = len(sorts)
+       if not length % 2:
+          return (sorts[length / 2] + sorts[length / 2 - 1]) / 2.0
+       return sorts[length / 2] 
+
+   def colormap(self,dist, threshold=35,tolerance=0):
+       if dist<threshold-tolerance: return "Green"
+       elif dist>=threshold+tolerance: return "Orange"       
+       else: return "Orange"
+    
+   def write_cross_link_database(self,filename,format='csv'):
+       import csv
+       
+       fieldnames=["Unique ID","Protein1","Residue1","Protein2","Residue2",
+                   "Median Distance","Standard Deviation","Confidence","Frequency","Arrangement"]
+       
+       if not self.external_csv_data is None:
+             keys=self.external_csv_data.keys()
+             innerkeys=self.external_csv_data[keys[0]].keys()
+             innerkeys.sort()
+             fieldnames+=innerkeys        
+       
+       dw = csv.DictWriter(open(filename,"w"), delimiter=',', fieldnames=fieldnames)
+       dw.writeheader()
+       for xl in self.crosslinks:
+          (r1,c1,r2,c2,mdist,stdv,confidence,unique_identifier,descriptor)=xl
+          if descriptor=='original':
+             outdict={}
+             outdict["Unique ID"]=unique_identifier
+             outdict["Protein1"]=c1
+             outdict["Protein2"]=c2             
+             outdict["Residue1"]=r1 
+             outdict["Residue2"]=r2
+             outdict["Median Distance"]=mdist   
+             outdict["Standard Deviation"]=stdv   
+             outdict["Confidence"]=confidence
+             outdict["Frequency"]=self.cross_link_frequency[(r1,c1,r2,c2)]
+             if c1==c2: arrangement="Intra"
+             else: arrangement="Inter"
+             outdict["Arrangement"]=arrangement
+             if not self.external_csv_data is None:
+                outdict.update(self.external_csv_data[unique_identifier])
+             
+             dw.writerow(outdict)
+                                  
+   
+   def plot(self,prot_listx=None,prot_listy=None,no_dist_info=False,
+       no_confidence_info=False,filter=None,layout="whole",crosslinkedonly=True,
+       filename=None,confidence_classes=None,alphablend=0.1):
+        # layout can be: 
+        #                "lowerdiagonal"  print only the lower diagonal plot
+        #                "upperdiagonal"  print only the upper diagonal plot
+        #                "whole"  print all
+        # crosslinkedonly: plot only components that have crosslinks
+        # no_dist_info: if True will plot only the cross-links as grey spots
+        # filter = tuple the tuple contains a keyword to be search in the database
+        #                a relationship ">","==","<"
+        #                and a value 
+        #                example ("ID_Score",">",40)                 
+    
+        import matplotlib.pyplot as plt
+        import matplotlib.cm as cm
+        import numpy as np
         
+        fig = plt.figure(figsize = (10,10))
+        ax = fig.add_subplot(111)
+
+        ax.set_xticks([])
+        ax.set_yticks([])
+        
+        # set the list of proteins on the x axis
+        if prot_listx==None:
+           if crosslinkedonly:
+              prot_listx=list(self.crosslinkedprots)
+           else:
+              prot_listx=self.prot_length_dict.keys()
+           prot_listx.sort()
+                
+        nresx=sum([self.prot_length_dict[name] for name in prot_listx])
+        
+        # set the list of proteins on the y axis
+
+        if prot_listy==None:
+           if crosslinkedonly:
+              prot_listy=list(self.crosslinkedprots)
+           else:
+              prot_listy=self.prot_length_dict.keys()
+           prot_listy.sort()  
+     
+        
+
+     
+        nresy=sum([self.prot_length_dict[name] for name in prot_listy])
+
+        # this is the residue offset for each protein
+        resoffsetx={}
+        res=0
+        for prot in prot_listx:
+           resoffsetx[prot]=res
+           res += self.prot_length_dict[prot]
+
+        resoffsety={}
+        res=0
+        for prot in prot_listy:
+           resoffsety[prot]=res
+           res += self.prot_length_dict[prot]
+           
+        resoffsetdiagonal={}
+        res=0        
+        for prot in IMP.pmi.tools.OrderedSet(prot_listx+prot_listy):
+           resoffsetdiagonal[prot]=res
+           res += self.prot_length_dict[prot]           
+
+        # plot protein boundaries
+        
+        xticks=[]
+        xlabels=[]
+        for n,prot in enumerate(prot_listx):
+            res = resoffsetx[prot]
+            leng=self.prot_length_dict[prot]
+            ax.plot([res,res], [0,nresy], 'k-', lw=0.4)
+            xticks.append(float(res)+float(leng)/2)
+            xlabels.append(prot)
+
+            
+        yticks=[]
+        ylabels=[]
+        for n,prot in enumerate(prot_listy):
+            res = resoffsety[prot]
+            leng=self.prot_length_dict[prot]
+            ax.plot([0,nresx], [res,res], 'k-', lw=0.4)
+            yticks.append(float(res)+float(leng)/2)
+            ylabels.append(prot)            
+        
+        
+        ax.set_xticks(xticks)
+        ax.set_xticklabels(xlabels, rotation=90)
+        ax.set_yticks(yticks)
+        ax.set_yticklabels(ylabels)  
+        
+        # set the crosslinks
+        
+        already_added_xls=[]
+        for xl in self.crosslinks:
+            
+            
+            (r1,c1,r2,c2,mdist,stdv,confidence,unique_identifier,descriptor)=xl
+            
+            
+            if confidence_classes!=None:
+               if confidence not in confidence_classes: continue
+            
+            try:
+               pos1=r1+resoffsetx[c1]
+            except:
+               continue
+            try:
+               pos2=r2+resoffsety[c2]
+            except:
+               continue
+               
+            if not filter is None:
+               xldb=self.external_csv_data[unique_identifier]
+               xldb.update({"Distance":mdist})
+               xldb.update({"Distance_stdv":stdv}) 
+               
+               if filter[1]==">":
+                  if float(xldb[filter[0]])<=float(filter[2]): continue
+
+               if filter[1]=="<":
+                  if float(xldb[filter[0]])>=float(filter[2]): continue
+
+               if filter[1]=="==":
+                  if float(xldb[filter[0]])!=float(filter[2]): continue
+               
+            # all that below is used for plotting the diagonal
+            # when you have a rectangolar plots
+            
+            pos_for_diagonal1=r1+resoffsetdiagonal[c1]
+            pos_for_diagonal2=r2+resoffsetdiagonal[c2]
+                           
+            if layout=='lowerdiagonal':
+               if pos_for_diagonal1<=pos_for_diagonal2: continue
+            if layout=='upperdiagonal':
+               if pos_for_diagonal1>=pos_for_diagonal2: continue
+            
+            already_added_xls.append((r1,c1,r2,c2))
+            
+            if not no_confidence_info:
+                if confidence=='0.01': markersize=14
+                elif confidence=='0.05': markersize=9
+                elif confidence=='0.1': markersize=6                        
+                else: markersize=15
+            else:
+                markersize=5
+            
+            if not no_dist_info:
+                color=self.colormap(mdist)
+            else:
+                color="gray"       
+            
+            ax.plot([pos1], [pos2], 'o', c=color,alpha=alphablend,markersize=markersize)
+        
+        fig.set_size_inches(0.002*nresx, 0.002*nresy)
+        
+        [i.set_linewidth(2.0) for i in ax.spines.itervalues()]
+        
+        if filename:
+            plt.savefig(filename+".png",dpi=150,transparent="False")
+        
+        plt.show()        
+   
+   def get_frequency_statistics(self,prot_list,
+                                     prot_list2=None):
+       
+       violated_histogram={}
+       satisfied_histogram={}
+       
+       for xl in self.cross_link_distances:
+           (r1,c1,r2,c2,mdist,confidence)=xl
+           
+           if prot_list2 is None:
+              if not c1 in prot_list: continue
+              if not c2 in prot_list: continue     
+           else:
+              if c1 in prot_list and c2 in prot_list2:
+                 pass
+              elif c1 in prot_list2 and c2 in prot_list: 
+                 pass
+              else:
+                 continue
+           
+           frequency=self.cross_link_frequency[(r1,c1,r2,c2)]
+           if mdist>35.0:
+              if frequency not in violated_histogram:
+                 violated_histogram[frequency]=1
+              else:
+                 violated_histogram[frequency]+=1
+           else:
+              if frequency not in satisfied_histogram:
+                 satisfied_histogram[frequency]=1
+              else:
+                 satisfied_histogram[frequency]+=1  
+
+       
+       for i in satisfied_histogram:
+           if i in violated_histogram:
+              print i, satisfied_histogram[i]+violated_histogram[i]
+           else:
+              print i, satisfied_histogram[i]              
+       
+       print  " "
+
+       for i in violated_histogram:
+           print i, violated_histogram[i]         
+               
+               
+               
+               
+               
+   def get_unique_crosslinks_statistics(self,prot_list,
+                                     prot_list2=None):
+
+      xl_dict={}
+      for xl in self.cross_link_distances:
+           (r1,c1,r2,c2,mdist,confidence)=xl
+           
+           
+           
+           if prot_list2 is None:
+              if not c1 in prot_list: continue
+              if not c2 in prot_list: continue     
+           else:
+              if c1 in prot_list and c2 in prot_list2:
+                 pass
+              elif c1 in prot_list2 and c2 in prot_list: 
+                 pass
+              else:
+                 continue
+           
+           if (r1,c1,r2,c2,confidence) not in xl_dict and (r2,c2,r1,c1,confidence) not in xl_dict:
+              
+              xl_dict[(r1,c1,r2,c2,confidence)]=mdist
+      
+      satisfied_high=0
+      total_high=0
+      satisfied_mid=0
+      total_mid=0
+      satisfied_low=0
+      total_low=0            
+      
+      for xl in xl_dict:
+          dist=xl_dict[xl]
+          conf=xl[4]
+          if conf=="0.01":
+             total_high+=1
+             if dist<=35:
+                satisfied_high+=1
+          if conf=="0.05":
+             total_mid+=1
+             if dist<=35:
+                satisfied_mid+=1
+          if conf=="0.1":
+             total_low+=1
+             if dist<=35:
+                satisfied_low+=1
+                
+      print "unique satisfied_high/total_high", satisfied_high,"/",total_high
+      print "unique satisfied_mid/total_mid", satisfied_mid,"/",total_mid
+      print "unique satisfied_low/total_low", satisfied_low,"/",total_low
+
+
+   def plot_bars(self,filename,prots1,prots2,nxl_per_row=20,arrangement="inter",confidence_input="None"):
+       import IMP.pmi.output
+       
+       data=[]
+       for xl in self.cross_link_distances:
+           (r1,c1,r2,c2,mdist,confidence)=xl
+           if c1 in prots1 and c2 in prots2:
+              if arrangement == "inter" and c1==c2: continue
+              if arrangement == "intra" and c1!=c2: continue
+              if confidence_input==confidence:
+                 label=str(c1)+":"+str(r1)+"-"+str(c2)+":"+str(r2)
+                 values=self.cross_link_distances[xl]
+                 frequency=self.cross_link_frequency[(r1,c1,r2,c2)]
+                 data.append((label,values,mdist,frequency))
+                 
+              
+       sort_by_dist = sorted(data, key=lambda tup: tup[2])
+       sort_by_dist = zip(*sort_by_dist)
+       values=sort_by_dist[1]
+       positions=range(len(values))
+       labels=sort_by_dist[0]
+       frequencies=map(float,sort_by_dist[3])
+       frequencies=[f*10.0 for f in frequencies]
+       
+       
+       nchunks=int(float(len(values))/nxl_per_row)
+       values_chunks=IMP.pmi.tools.chunk_list_into_segments(values,nchunks)
+       positions_chunks=IMP.pmi.tools.chunk_list_into_segments(positions,nchunks)
+       frequencies_chunks=IMP.pmi.tools.chunk_list_into_segments(frequencies,nchunks)
+       labels_chunks=IMP.pmi.tools.chunk_list_into_segments(labels,nchunks)
+       
+       for n,v in enumerate(values_chunks):
+          p=positions_chunks[n]
+          f=frequencies_chunks[n]
+          l=labels_chunks[n]
+          IMP.pmi.output.plot_fields_box_plots(filename+"."+str(n),v,p,f,
+                          valuename="Distance (Ang)",positionname="Unique "+arrangement+" Crosslinks",xlabels=l)
+    
+   def crosslink_distance_histogram(self,filename,
+                                    prot_list=None,
+                                    prot_list2=None,
+                                    confidence_classes=None,
+                                    bins=40,
+                                    color='#66CCCC',
+                                    yplotrange=[0,1],
+                                    format="png",
+                                    normalized=False):
+       if prot_list is None:
+          prot_list=self.prot_length_dict.keys()
+    
+
+          
+       
+       distances=[]
+       for xl in self.crosslinks:
+           (r1,c1,r2,c2,mdist,stdv,confidence,unique_identifier,descriptor)=xl
+           
+           if not confidence_classes is None:
+               if confidence not in confidence_classes:
+                  continue
+           
+           if prot_list2 is None:
+              if not c1 in prot_list: continue
+              if not c2 in prot_list: continue     
+           else:
+              if c1 in prot_list and c2 in prot_list2:
+                 pass
+              elif c1 in prot_list2 and c2 in prot_list: 
+                 pass
+              else:
+                 continue
+                  
+           
+           distances.append(mdist)
+           
+       IMP.pmi.output.plot_field_histogram(filename,distances,valuename="C-alpha C-alpha distance [Ang]",
+                                           bins=bins,color=color,
+                                           format=format,
+                                           reference_xline=35.0,
+                                           yplotrange=yplotrange,normalized=normalized)
+       
+    
+   def scatter_plot_xl_features(self,filename,
+                                     feature1=None,
+                                     feature2=None,
+                                     prot_list=None,
+                                     prot_list2=None,
+                                     yplotrange=None,
+                                     reference_ylines=None,
+                                     distance_color=True,
+                                     format="png"):
+        import matplotlib.pyplot as plt
+        import matplotlib.cm as cm
+        import numpy as np
+        
+        fig = plt.figure(figsize = (10,10))
+        ax = fig.add_subplot(111)
+        
+        for xl in self.crosslinks:
+            (r1,c1,r2,c2,mdist,stdv,confidence,unique_identifier,arrangement)=xl
+            
+            if prot_list2 is None:
+              if not c1 in prot_list: continue
+              if not c2 in prot_list: continue     
+            else:
+              if c1 in prot_list and c2 in prot_list2:
+                 pass
+              elif c1 in prot_list2 and c2 in prot_list: 
+                 pass
+              else:
+                 continue
+            
+            xldb=self.external_csv_data[unique_identifier]
+            xldb.update({"Distance":mdist})
+            xldb.update({"Distance_stdv":stdv})   
+
+            xvalue=float(xldb[feature1])
+            yvalue=float(xldb[feature2])
+            
+            if distance_color:
+               color=self.colormap(mdist)
+            else:
+               color="gray"
+            
+            ax.plot([xvalue], [yvalue], 'o', c=color,alpha=0.1,markersize=7)
+        
+        
+        if not yplotrange is None:        
+           ax.set_ylim(yplotrange)
+        if not reference_ylines is None:
+           for rl in reference_ylines:
+              ax.axhline(rl, color='red', linestyle='dashed', linewidth=1)
+        
+        if filename:
+            plt.savefig(filename+"."+format,dpi=150,transparent="False")
+        
+        plt.show()
         
 ###############################################
 # these are post production function analysis
@@ -694,7 +1310,8 @@ def get_hier_from_rmf(model,frame_number,rmf_file):
       except:
         print "Unable to open frame %i of file %s" % (frame_number,rmf_file)
         prot=None           
-      model.update()   
+      model.update() 
+      del rh  
       return prot
 
 

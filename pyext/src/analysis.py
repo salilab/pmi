@@ -879,7 +879,8 @@ class CrossLinkTable():
              dw.writerow(outdict)
                                   
    
-   def plot(self,prot_listx=None,prot_listy=None,no_dist_info=False,filter=None,layout="whole",crosslinkedonly=True,
+   def plot(self,prot_listx=None,prot_listy=None,no_dist_info=False,
+       no_confidence_info=False,filter=None,layout="whole",crosslinkedonly=True,
        filename=None,confidence_classes=None,alphablend=0.1):
         # layout can be: 
         #                "lowerdiagonal"  print only the lower diagonal plot
@@ -952,7 +953,7 @@ class CrossLinkTable():
         for n,prot in enumerate(prot_listx):
             res = resoffsetx[prot]
             leng=self.prot_length_dict[prot]
-            ax.plot([res,res], [0,nresy], 'k-', lw=0.2)
+            ax.plot([res,res], [0,nresy], 'k-', lw=0.4)
             xticks.append(float(res)+float(leng)/2)
             xlabels.append(prot)
 
@@ -962,7 +963,7 @@ class CrossLinkTable():
         for n,prot in enumerate(prot_listy):
             res = resoffsety[prot]
             leng=self.prot_length_dict[prot]
-            ax.plot([0,nresx], [res,res], 'k-', lw=0.2)
+            ax.plot([0,nresx], [res,res], 'k-', lw=0.4)
             yticks.append(float(res)+float(leng)/2)
             ylabels.append(prot)            
         
@@ -1020,10 +1021,10 @@ class CrossLinkTable():
             
             already_added_xls.append((r1,c1,r2,c2))
             
-            if not no_dist_info:
-                if confidence=='0.01': markersize=15
-                elif confidence=='0.05': markersize=10
-                elif confidence=='0.1': markersize=7                        
+            if not no_confidence_info:
+                if confidence=='0.01': markersize=14
+                elif confidence=='0.05': markersize=9
+                elif confidence=='0.1': markersize=6                        
                 else: markersize=15
             else:
                 markersize=5
@@ -1037,11 +1038,112 @@ class CrossLinkTable():
         
         fig.set_size_inches(0.002*nresx, 0.002*nresy)
         
+        [i.set_linewidth(2.0) for i in ax.spines.itervalues()]
+        
         if filename:
             plt.savefig(filename+".png",dpi=150,transparent="False")
         
         plt.show()        
    
+   def get_frequency_statistics(self,prot_list,
+                                     prot_list2=None):
+       
+       violated_histogram={}
+       satisfied_histogram={}
+       
+       for xl in self.cross_link_distances:
+           (r1,c1,r2,c2,mdist,confidence)=xl
+           
+           if prot_list2 is None:
+              if not c1 in prot_list: continue
+              if not c2 in prot_list: continue     
+           else:
+              if c1 in prot_list and c2 in prot_list2:
+                 pass
+              elif c1 in prot_list2 and c2 in prot_list: 
+                 pass
+              else:
+                 continue
+           
+           frequency=self.cross_link_frequency[(r1,c1,r2,c2)]
+           if mdist>35.0:
+              if frequency not in violated_histogram:
+                 violated_histogram[frequency]=1
+              else:
+                 violated_histogram[frequency]+=1
+           else:
+              if frequency not in satisfied_histogram:
+                 satisfied_histogram[frequency]=1
+              else:
+                 satisfied_histogram[frequency]+=1  
+
+       
+       for i in satisfied_histogram:
+           if i in violated_histogram:
+              print i, satisfied_histogram[i]+violated_histogram[i]
+           else:
+              print i, satisfied_histogram[i]              
+       
+       print  " "
+
+       for i in violated_histogram:
+           print i, violated_histogram[i]         
+               
+               
+               
+               
+               
+   def get_unique_crosslinks_statistics(self,prot_list,
+                                     prot_list2=None):
+
+      xl_dict={}
+      for xl in self.cross_link_distances:
+           (r1,c1,r2,c2,mdist,confidence)=xl
+           
+           
+           
+           if prot_list2 is None:
+              if not c1 in prot_list: continue
+              if not c2 in prot_list: continue     
+           else:
+              if c1 in prot_list and c2 in prot_list2:
+                 pass
+              elif c1 in prot_list2 and c2 in prot_list: 
+                 pass
+              else:
+                 continue
+           
+           if (r1,c1,r2,c2,confidence) not in xl_dict and (r2,c2,r1,c1,confidence) not in xl_dict:
+              
+              xl_dict[(r1,c1,r2,c2,confidence)]=mdist
+      
+      satisfied_high=0
+      total_high=0
+      satisfied_mid=0
+      total_mid=0
+      satisfied_low=0
+      total_low=0            
+      
+      for xl in xl_dict:
+          dist=xl_dict[xl]
+          conf=xl[4]
+          if conf=="0.01":
+             total_high+=1
+             if dist<=35:
+                satisfied_high+=1
+          if conf=="0.05":
+             total_mid+=1
+             if dist<=35:
+                satisfied_mid+=1
+          if conf=="0.1":
+             total_low+=1
+             if dist<=35:
+                satisfied_low+=1
+                
+      print "unique satisfied_high/total_high", satisfied_high,"/",total_high
+      print "unique satisfied_mid/total_mid", satisfied_mid,"/",total_mid
+      print "unique satisfied_low/total_low", satisfied_low,"/",total_low
+
 
    def plot_bars(self,filename,prots1,prots2,nxl_per_row=20,arrangement="inter",confidence_input="None"):
        import IMP.pmi.output

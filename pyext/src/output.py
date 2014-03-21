@@ -601,21 +601,38 @@ class ProcessOutput():
               except:
                  print "# Warning: skipped line number " + str(line_number) + " not a valid line"
                  continue
-              if not filtertuple is None:
+                 
+
+              
+              if   self.isstat1: 
+                 
+                 if not filtertuple is None:
                    keytobefiltered=filtertuple[0]
                    relationship=filtertuple[1]
                    value=filtertuple[2]
                    if relationship=="<":
-                      if d[keytobefiltered]>=value: continue
+                      if float(d[keytobefiltered])>=value: continue
                    if relationship==">":
-                      if d[keytobefiltered]<=value: continue
+                      if float(d[keytobefiltered])<=value: continue
                    if relationship=="==":
-                      if d[keytobefiltered]!=value: continue
+                      if float(d[keytobefiltered])!=value: continue
+                 [outdict[field].append(d[field]) for field in fields]
               
-              if   self.isstat1: [outdict[field].append(d[field]) for field in fields]
               elif self.isstat2:
-                   if line_number==1: continue
-                   [outdict[field].append(d[self.invstat2_dict[field]]) for field in fields]
+                 if line_number==1: continue
+                 
+                 if not filtertuple is None:
+                   keytobefiltered=filtertuple[0]
+                   relationship=filtertuple[1]
+                   value=filtertuple[2]
+                   if relationship=="<":
+                      if float(d[self.invstat2_dict[keytobefiltered]])>=value: continue
+                   if relationship==">":
+                      if float(d[self.invstat2_dict[keytobefiltered]])<=value: continue
+                   if relationship=="==":
+                      if float(d[self.invstat2_dict[keytobefiltered]])!=value: continue                 
+                 
+                 [outdict[field].append(d[self.invstat2_dict[field]]) for field in fields]
            f.close()
            return outdict
 

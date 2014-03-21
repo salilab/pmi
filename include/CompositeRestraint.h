@@ -3,7 +3,7 @@
  *  \brief A pmf based likelihood function 
  *  with prior knowledge on the flase positive rate.
  *
- *  Copyright 2007-2013 IMP Inventors. All rights reserved.
+ *  Copyright 2007-2014 IMP Inventors. All rights reserved.
  *
  */
 
@@ -11,7 +11,6 @@
 #define IMPPMI_COMPOSITE_RESTRAINT_H
 #include "pmi_config.h"
 #include <IMP/Restraint.h>
-#include <IMP/restraint_macros.h>
 #include <IMP/base/tuple_macros.h>
 #include <IMP/base/map.h>
 //#include <IMP/container/CloseBipartitePairContainer.h>

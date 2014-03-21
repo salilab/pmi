@@ -120,7 +120,7 @@ class ResidueBondRestraint():
             pair=[]
             if len(ps)!=2: print "ResidueBondRestraint: wrong length of pair"; exit()
             for p in ps:
-                if not IMP.atom.Residue.particle_is_instance(p):
+                if not IMP.atom.Residue.get_is_setup(p):
                    print "ResidueBondRestraint: not a residue"; exit()
                 else:
                    pair.append(p)
@@ -181,7 +181,7 @@ class ResidueAngleRestraint():
             triplet=[]
             if len(ps)!=3: print "ResidueAngleRestraint: wrong length of triplet"; exit()
             for p in ps:
-                if not IMP.atom.Residue.particle_is_instance(p):
+                if not IMP.atom.Residue.get_is_setup(p):
                    print "ResidueAngleRestraint: not a residue"; exit()
                 else:
                    triplet.append(p)
@@ -244,7 +244,7 @@ class ResidueDihedralRestraint():
             quadruplet=[]
             if len(ps)!=4: print "ResidueDihedralRestraint: wrong length of quadruplet"; exit()
             for p in ps:
-                if not IMP.atom.Residue.particle_is_instance(p):
+                if not IMP.atom.Residue.get_is_setup(p):
                    print "ResidueDihedralRestraint: not a residue"; exit()
                 else:
                    quadruplet.append(p)

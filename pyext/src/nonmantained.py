@@ -170,7 +170,7 @@ class MultipleStates():
                 else:
                     s=IMP.atom.Selection(prot,chains=segment[2],residue_indexes=range(segment[0],segment[1]+1))
                 for p in s.get_selected_particles():
-                    if IMP.core.RigidMember.particle_is_instance(p):
+                    if IMP.core.RigidMember.get_is_setup(p):
                         print "MultipleStates: one particle was not destroied because it was a RigidMember."
                     else:
                         #destroy the residue and the associated atom
@@ -305,7 +305,7 @@ class MultipleStates():
 
             for p in IMP.atom.get_leaves(prot):
                 if p not in pstokeep:
-                    if IMP.core.RigidMember.particle_is_instance(p):
+                    if IMP.core.RigidMember.get_is_setup(p):
                         print "MultipleStates: one particle was not destroied because it was a RigidMember."
                     else:
                         #destroy the residue and the associated atom
@@ -335,7 +335,7 @@ class MultipleStates():
 
                 (r,c)=tools.get_residue_index_and_chain_from_particle(p)
 
-                if IMP.core.RigidMember.particle_is_instance(p):
+                if IMP.core.RigidMember.get_is_setup(p):
                     Floppy=False
                 else:
                     (r,c)=tools.get_residue_index_and_chain_from_particle(p)
@@ -990,7 +990,7 @@ class TemplateRestraint():
         for p1 in  ps1:
             for p2 in ps2:
                 #check that the two particles are not in the same rigid body
-                if(IMP.core.RigidMember.particle_is_instance(p1) and IMP.core.RigidMember.particle_is_instance(p2) and
+                if(IMP.core.RigidMember.get_is_setup(p1) and IMP.core.RigidMember.get_is_setup(p2) and
                 IMP.core.RigidMember(p1).get_rigid_body() == IMP.core.RigidMember(p2).get_rigid_body()) and not self.forcerb: continue
                 d0=IMP.core.XYZ(p1)
                 d1=IMP.core.XYZ(p2)
@@ -1227,8 +1227,8 @@ class CrossLinkMS():
                 p2s.append(s2.get_selected_particles()[0])
 
             #check whether the atom pair belongs to the same rigid body
-            if(IMP.core.RigidMember.particle_is_instance(p1s[0]) and
-               IMP.core.RigidMember.particle_is_instance(p2s[0]) and
+            if(IMP.core.RigidMember.get_is_setup(p1s[0]) and
+               IMP.core.RigidMember.get_is_setup(p2s[0]) and
                IMP.core.RigidMember(p1s[0]).get_rigid_body() ==
                IMP.core.RigidMember(p2s[0]).get_rigid_body() and not force_restraint):
                 print '''CrossLinkMS: WARNING> residue %d of chain %s and
@@ -1338,8 +1338,8 @@ class CrossLinkMS():
                 continue
 
             #check whether the atom pair belongs to the same rigid body
-            if(IMP.core.RigidMember.particle_is_instance(p1) and
-               IMP.core.RigidMember.particle_is_instance(p2) and
+            if(IMP.core.RigidMember.get_is_setup(p1) and
+               IMP.core.RigidMember.get_is_setup(p2) and
                IMP.core.RigidMember(p1).get_rigid_body() ==
                IMP.core.RigidMember(p2).get_rigid_body() and not force_restraint):
                 print '''CrossLinkMS: WARNING> residue %d of chain %s and
@@ -1894,8 +1894,8 @@ class BinomialXLMSRestraint():
                 continue
 
             #check whether the atom pair belongs to the same rigid body
-            if(IMP.core.RigidMember.particle_is_instance(p1) and
-               IMP.core.RigidMember.particle_is_instance(p2) and
+            if(IMP.core.RigidMember.get_is_setup(p1) and
+               IMP.core.RigidMember.get_is_setup(p2) and
                IMP.core.RigidMember(p1).get_rigid_body() ==
                IMP.core.RigidMember(p2).get_rigid_body() and not force_restraint):
                 print '''BinomialXLMSRestraint: WARNING> residue %d of chain %s and
@@ -2159,7 +2159,7 @@ class CrossLinkMSSimple():
             print "attempting to add restraint between residue %d of chain %s and residue %d of chain %s" % (r1,c1,r2,c2)
 
             #check whether the atom pair belongs to the same rigid body
-            if(IMP.core.RigidMember.particle_is_instance(p1) and IMP.core.RigidMember.particle_is_instance(p2) and
+            if(IMP.core.RigidMember.get_is_setup(p1) and IMP.core.RigidMember.get_is_setup(p2) and
                    IMP.core.RigidMember(p1).get_rigid_body() == IMP.core.RigidMember(p2).get_rigid_body() and not force_restraint):
                 print "WARNING> residue %d of chain %s and residue %d of chain %s belong to the same rigid body" % (r1,c1,r2,c2)
                 continue

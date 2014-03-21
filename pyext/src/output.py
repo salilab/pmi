@@ -94,7 +94,7 @@ class Output():
            if protname not in resindexes_dict:
               resindexes_dict[protname]=[]
 
-           if impatom.Atom.particle_is_instance(p):
+           if impatom.Atom.get_is_setup(p):
               atom_index+=1
               residue=impatom.Residue(impatom.Atom(p).get_parent())
               rt=residue.get_residue_type()
@@ -105,7 +105,7 @@ class Output():
               resindexes_dict[protname].append(resind)
 
 
-           elif impatom.Residue.particle_is_instance(p):
+           elif impatom.Residue.get_is_setup(p):
 
               residue=impatom.Residue(p)
               resind=residue.get_index()
@@ -123,7 +123,7 @@ class Output():
               #else:
               #   index_residue_pair_list[protname].append((atom_index,resind))
 
-           elif impatom.Fragment.particle_is_instance(p) and not is_a_bead:
+           elif impatom.Fragment.get_is_setup(p) and not is_a_bead:
               resindexes=IMP.pmi.tools.get_residue_indexes(p)
               resind=resindexes[len(resindexes)/2]
               if resind in resindexes_dict[protname]: continue

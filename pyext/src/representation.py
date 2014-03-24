@@ -1141,7 +1141,6 @@ class Representation():
             firstresn=IMP.pmi.tools.get_residue_indexes(first)[0]
 
             residuegap=firstresn-lastresn-1
-
             if self.disorderedlength and (nreslast/2+nresfirst/2+residuegap)>20.0 :
                #calculate the distance between the sphere centers using Kohn PNAS 2004
                optdist=sqrt(5/3)*1.93*(nreslast/2+nresfirst/2+residuegap)**0.6
@@ -1163,7 +1162,7 @@ class Representation():
             pt1=first.get_particle()
             r=IMP.core.PairRestraint(dps,IMP.ParticlePair(pt0,pt1))
 
-            print "Adding sequence connectivity restraint between", pt0.get_name(), " and ", pt1.get_name()
+            print "Adding sequence connectivity restraint between", pt0.get_name(), " and ", pt1.get_name(),'of distance',optdist
             sortedsegments_cr.add_restraint(r)
             self.linker_restraints_dict["LinkerRestraint-"+pt0.get_name()+"-"+pt1.get_name()]=r
             self.connected_intra_pairs.append((pt0,pt1))

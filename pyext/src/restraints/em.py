@@ -156,7 +156,7 @@ class GaussianEMRestraint():
             IMP.core.transform(rb,transformation)
 
         for p in list(XYZRs):
-            IMP.core.transform(p,transformation)
+            IMP.core.transform(IMP.core.XYZ(p),transformation)
         
 
     def set_weight(self,weight):

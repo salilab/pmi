@@ -8,8 +8,8 @@ class Representation():
     def __init__(self,m):
        self.repr=IMP.pmi.Representation(m)
     
-    def create_component(self,"name"):
-       return Component(self,"name")
+    def create_component(self,name):
+       return Component(self,name)
 
 class Component():
     def __init__(self,representation,name):

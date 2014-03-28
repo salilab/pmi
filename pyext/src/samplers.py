@@ -110,7 +110,7 @@ class MonteCarlo():
         '''returns a dictionary with the mover parameters
         for nuisance parameters'''
         output={}
-        for i in range(self.smv.get_number_of_movers()):
+        for i in range(self.get_number_of_movers()):
             mv=self.smv.get_mover(i)
             name=mv.get_name()
             if "Nuisances" in name:
@@ -119,7 +119,7 @@ class MonteCarlo():
         return output
 
     def get_number_of_movers(self):
-        return self.smv.get_number_of_movers()
+        return len(self.smv.get_movers())
 
     def get_particle_types():
         return self.losp

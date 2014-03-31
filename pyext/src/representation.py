@@ -1581,7 +1581,7 @@ class Representation():
         for k in ks:
             self.draw_component_composition(k,max)
 
-    def draw_component_composition(self,name,max=1000):
+    def draw_component_composition(self,name,max=1000,draw_pdb_names=False):
             from matplotlib import pyplot
             import matplotlib as mpl
             k=name
@@ -1641,23 +1641,25 @@ class Representation():
 
             extra_artists=[]
             npdb=0
-            for l in list:
-                if l[3]=="pdb":
-                   npdb+=1
-                   mid=1.0/endres*float(l[0])
-                   #t =ax.text(mid, float(npdb-1)/2.0+1.5, l[2], ha="left", va="center", rotation=0,
-                   #size=10)
-                   #t=ax.annotate(l[0],2)
-                   t=ax.annotate(l[2], xy=(mid, 1),  xycoords='axes fraction',
-                   xytext=(mid+0.025, float(npdb-1)/2.0+1.5), textcoords='axes fraction',
-                   arrowprops=dict(arrowstyle="->",
-                                connectionstyle="angle,angleA=0,angleB=90,rad=10"),
-                   )
-                   extra_artists.append(t)
+            
+            if draw_pdb_names==True:
+                for l in list:
+                    if l[3]=="pdb":
+                       npdb+=1
+                       mid=1.0/endres*float(l[0])
+                       #t =ax.text(mid, float(npdb-1)/2.0+1.5, l[2], ha="left", va="center", rotation=0,
+                       #size=10)
+                       #t=ax.annotate(l[0],2)
+                       t=ax.annotate(l[2], xy=(mid, 1),  xycoords='axes fraction',
+                       xytext=(mid+0.025, float(npdb-1)/2.0+1.5), textcoords='axes fraction',
+                       arrowprops=dict(arrowstyle="->",
+                                    connectionstyle="angle,angleA=0,angleB=90,rad=10"),
+                       )
+                       extra_artists.append(t)
 
             #set the title of the bar
             title=ax.text(-0.005, 0.5, k, ha="right", va="center", rotation=90,
-                size=15)
+                size=20)
 
             extra_artists.append(title)
             #changing the xticks labels

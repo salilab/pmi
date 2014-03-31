@@ -753,9 +753,25 @@ class CrossLinkTable():
        
        # this dictionary stores the series of distances for given crosslinked residues
        self.cross_link_distances={}       
+
+       # this dictionary stores the series of distances for given crosslinked residues
+       self.cross_link_distances_unique={} 
+
        
+       if not external_csv_data_file is None:
+           # this dictionary stores the further information on crosslinks
+           # labeled by unique ID
+           self.external_csv_data={}
+           xldb=IMP.pmi.tools.get_db_from_csv(external_csv_data_file)
+           
+           for xl in xldb:
+               self.external_csv_data[xl[external_csv_data_file_unique_id_key]]=xl       
        
+       # this list keeps track the tuple of cross-links and sample
+       # so that we don't count twice the same crosslinked residues in the same sample
+       cross_link_frequency_list=[]
        
+       self.unique_cross_link_list=[]
        
        for key in fs:
            keysplit=key.replace("_"," ").replace("-"," ").replace(":"," ").split()
@@ -801,34 +817,48 @@ class CrossLinkTable():
            if self.mindist>mdist: self.mindist=mdist
            if self.maxdist<mdist: self.maxdist=mdist    
            
-           if (r1,c1,r2,c2) not in self.cross_link_frequency:
-              self.cross_link_frequency[(r1,c1,r2,c2)]=1
-              self.cross_link_frequency[(r2,c2,r1,c1)]=1
-           else:
-              self.cross_link_frequency[(r2,c2,r1,c1)]+=1
-              self.cross_link_frequency[(r1,c1,r2,c2)]+=1
+           # calculate the frequency of unique crosslinks within the same sample
+           sample=self.external_csv_data[unique_identifier]["Sample"]
+           
+           
+           if (r1,c1,r2,c2,sample) not in cross_link_frequency_list:
+               if (r1,c1,r2,c2) not in self.cross_link_frequency:
+                  self.cross_link_frequency[(r1,c1,r2,c2)]=1
+                  self.cross_link_frequency[(r2,c2,r1,c1)]=1
+               else:
+                  self.cross_link_frequency[(r2,c2,r1,c1)]+=1
+                  self.cross_link_frequency[(r1,c1,r2,c2)]+=1
+               cross_link_frequency_list.append((r1,c1,r2,c2,sample))
+               cross_link_frequency_list.append((r2,c2,r1,c1,sample))
+               self.unique_cross_link_list.append((r1,c1,r2,c2,sample,mdist))               
 
            if (r1,c1,r2,c2) not in self.cross_link_distances:
               self.cross_link_distances[(r1,c1,r2,c2,mdist,confidence)]=dists
               self.cross_link_distances[(r2,c2,r1,c1,mdist,confidence)]=dists
+              self.cross_link_distances_unique[(r1,c1,r2,c2)]=dists
            else:
-              self.cross_link_distances[(r2,c2,r1,c1)]+=dists
-              self.cross_link_distances[(r1,c1,r2,c2)]+=dists
-                  
+              self.cross_link_distances[(r2,c2,r1,c1,mdist,confidence)]+=dists
+              self.cross_link_distances[(r1,c1,r2,c2,mdist,confidence)]+=dists
+
+                                
            self.crosslinks.append((r1,c1,r2,c2,mdist,stdv,confidence,unique_identifier,'original'))
            self.crosslinks.append((r2,c2,r1,c1,mdist,stdv,confidence,unique_identifier,'reversed'))
 
+
+       self.cross_link_frequency_inverted={}
+       for xl in self.unique_cross_link_list: 
+           (r1,c1,r2,c2,sample,mdist)=xl
+           frequency=self.cross_link_frequency[(r1,c1,r2,c2)]
+           if frequency not in self.cross_link_frequency_inverted:
+              self.cross_link_frequency_inverted[frequency]=[(r1,c1,r2,c2,sample)]
+           else:
+              self.cross_link_frequency_inverted[frequency].append((r1,c1,r2,c2,sample))
+       
        # -------------
 
-       if not external_csv_data_file is None:
-           # this dictionary stores the further information on crosslinks
-           # labeled by unique ID
-           self.external_csv_data={}
-           xldb=IMP.pmi.tools.get_db_from_csv(external_csv_data_file)
-           
-           for xl in xldb:
-               self.external_csv_data[xl[external_csv_data_file_unique_id_key]]=xl
-       
+
+
+      
    
    
    def median(self,mylist):
@@ -1041,7 +1071,7 @@ class CrossLinkTable():
         [i.set_linewidth(2.0) for i in ax.spines.itervalues()]
         
         if filename:
-            plt.savefig(filename+".png",dpi=150,transparent="False")
+            plt.savefig(filename+".pdf",dpi=300,transparent="False")
         
         plt.show()        
    
@@ -1050,10 +1080,12 @@ class CrossLinkTable():
        
        violated_histogram={}
        satisfied_histogram={}
-       
-       for xl in self.cross_link_distances:
-           (r1,c1,r2,c2,mdist,confidence)=xl
+       unique_cross_links=[]
+
+       for xl in self.unique_cross_link_list: 
+           (r1,c1,r2,c2,sample,mdist)=xl
            
+           # here we filter by the protein
            if prot_list2 is None:
               if not c1 in prot_list: continue
               if not c2 in prot_list: continue     
@@ -1066,40 +1098,44 @@ class CrossLinkTable():
                  continue
            
            frequency=self.cross_link_frequency[(r1,c1,r2,c2)]
-           if mdist>35.0:
-              if frequency not in violated_histogram:
-                 violated_histogram[frequency]=1
-              else:
-                 violated_histogram[frequency]+=1
-           else:
-              if frequency not in satisfied_histogram:
-                 satisfied_histogram[frequency]=1
-              else:
-                 satisfied_histogram[frequency]+=1  
+           
+           if (r1,c1,r2,c2) not in unique_cross_links:
+               if mdist>35.0:
+                  if frequency not in violated_histogram:
+                     violated_histogram[frequency]=1
+                  else:
+                     violated_histogram[frequency]+=1
+               else:
+                  if frequency not in satisfied_histogram:
+                     satisfied_histogram[frequency]=1
+                  else:
+                     satisfied_histogram[frequency]+=1
+               unique_cross_links.append((r1,c1,r2,c2))
+               unique_cross_links.append((r2,c2,r1,c1))               
 
        
+       print "# satisfied"
+       
        for i in satisfied_histogram:
-           if i in violated_histogram:
-              print i, satisfied_histogram[i]+violated_histogram[i]
-           else:
+           #if i in violated_histogram:
+           #   print i, satisfied_histogram[i]+violated_histogram[i]
+           #else:
               print i, satisfied_histogram[i]              
        
-       print  " "
+       print  "# violated"
 
        for i in violated_histogram:
            print i, violated_histogram[i]         
-               
-               
-               
-               
-               
-   def get_unique_crosslinks_statistics(self,prot_list,
-                                     prot_list2=None):
 
-      xl_dict={}
-      for xl in self.cross_link_distances:
-           (r1,c1,r2,c2,mdist,confidence)=xl
-           
+
+# ------------
+
+   def print_cross_link_binary_symbols(self,prot_list,
+                                     prot_list2=None):   
+      tmp_matrix=[]    
+      confidence_list=[]  
+      for xl in self.crosslinks:
+           (r1,c1,r2,c2,mdist,stdv,confidence,unique_identifier,descriptor)=xl
            
            
            if prot_list2 is None:
@@ -1113,37 +1149,207 @@ class CrossLinkTable():
               else:
                  continue
            
-           if (r1,c1,r2,c2,confidence) not in xl_dict and (r2,c2,r1,c1,confidence) not in xl_dict:
-              
-              xl_dict[(r1,c1,r2,c2,confidence)]=mdist
+           if descriptor!="original": continue
+           
+           confidence_list.append(confidence)
+           
+           dists=self.cross_link_distances_unique[(r1,c1,r2,c2)]
+           tmp_dist_binary=[]
+           for d in dists:
+               if d<35:
+                  tmp_dist_binary.append(1)
+               else:
+                  tmp_dist_binary.append(0)
+           tmp_matrix.append(tmp_dist_binary)
       
+      matrix=zip(*tmp_matrix)
+      
+      satisfied_high_sum=0
+      satisfied_mid_sum=0
+      satisfied_low_sum=0
+      total_satisfied_sum=0       
+      for k,m in enumerate(matrix):
+          satisfied_high=0
+          total_high=0
+          satisfied_mid=0
+          total_mid=0
+          satisfied_low=0
+          total_low=0
+          total_satisfied=0   
+          total=0 
+          for n,b in enumerate(m):
+              if confidence_list[n]=="0.01":
+                 total_high+=1
+                 if b==1:
+                    satisfied_high+=1
+                    satisfied_high_sum+=1
+              elif confidence_list[n]=="0.05": 
+                 total_mid+=1
+                 if b==1:
+                    satisfied_mid+=1  
+                    satisfied_mid_sum+=1 
+              elif confidence_list[n]=="0.1":  
+                 total_low+=1         
+                 if b==1:
+                    satisfied_low+=1  
+                    satisfied_low_sum+=1 
+              if b==1: total_satisfied+=1; total_satisfied_sum+=1
+              total+=1
+          print k,satisfied_high,total_high
+          print k,satisfied_mid,total_mid
+          print k,satisfied_low,total_low
+          print k,total_satisfied,total
+      print float(satisfied_high_sum)/len(matrix)
+      print float(satisfied_mid_sum)/len(matrix)    
+      print float(satisfied_low_sum)/len(matrix)  
+# ------------
+              
+   def get_unique_crosslinks_statistics(self,prot_list,
+                                     prot_list2=None):
+      
+      print prot_list
+      print prot_list2
       satisfied_high=0
       total_high=0
       satisfied_mid=0
       total_mid=0
       satisfied_low=0
-      total_low=0            
-      
-      for xl in xl_dict:
-          dist=xl_dict[xl]
-          conf=xl[4]
-          if conf=="0.01":
+      total_low=0   
+      total=0 
+      tmp_matrix=[] 
+      satisfied_string=[]
+      for xl in self.crosslinks:
+           (r1,c1,r2,c2,mdist,stdv,confidence,unique_identifier,descriptor)=xl
+           
+           
+           if prot_list2 is None:
+              if not c1 in prot_list: continue
+              if not c2 in prot_list: continue     
+           else:
+              if c1 in prot_list and c2 in prot_list2:
+                 pass
+              elif c1 in prot_list2 and c2 in prot_list: 
+                 pass
+              else:
+                 continue
+           
+           if descriptor!="original": continue
+           
+           
+           
+           total+=1
+           if confidence=="0.01":
              total_high+=1
-             if dist<=35:
+             if mdist<=35:
                 satisfied_high+=1
-          if conf=="0.05":
+           if confidence=="0.05":
              total_mid+=1
-             if dist<=35:
+             if mdist<=35:
                 satisfied_mid+=1
-          if conf=="0.1":
+           if confidence=="0.1":
              total_low+=1
-             if dist<=35:
+             if mdist<=35:
                 satisfied_low+=1
+           if mdist<=35:
+             satisfied_string.append(1)
+           else:
+             satisfied_string.append(0)
+                        
+           dists=self.cross_link_distances_unique[(r1,c1,r2,c2)]
+           tmp_dist_binary=[]
+           for d in dists:
+               if d<35:
+                  tmp_dist_binary.append(1)
+               else:
+                  tmp_dist_binary.append(0)
+           tmp_matrix.append(tmp_dist_binary)
                 
       print "unique satisfied_high/total_high", satisfied_high,"/",total_high
       print "unique satisfied_mid/total_mid", satisfied_mid,"/",total_mid
       print "unique satisfied_low/total_low", satisfied_low,"/",total_low
+      print "total", total
 
+      matrix=zip(*tmp_matrix)
+      satisfied_models=0
+      satstr=""
+      for b in satisfied_string:
+          if b==0: satstr+="-"
+          if b==1: satstr+="*"
+      
+      for m in matrix:
+          all_satisfied=True
+          string=""
+          for n,b in enumerate(m):
+             if b==0: string+="0"
+             if b==1: string+="1"
+             if b==1 and satisfied_string[n]==1:
+                pass
+             elif b==1 and satisfied_string[n]==0:          
+                pass
+             elif b==0 and satisfied_string[n]==0:          
+                pass
+             elif b==0 and satisfied_string[n]==1:          
+                all_satisfied=False
+          if all_satisfied: satisfied_models+=1
+          print string
+          print satstr, all_satisfied
+      print "models that satisfies the median satisfied crosslinks/total models", satisfied_models,len(matrix)
+
+
+   def plot_matrix_cross_link_distances_unique(self,figurename,prot_list,
+                                     prot_list2=None):
+
+      from numpy import zeros
+      from operator import itemgetter
+      import pylab as pl       
+      
+      tmp_matrix=[]
+      for kw in self.cross_link_distances_unique:
+           (r1,c1,r2,c2)=kw
+           dists=self.cross_link_distances_unique[kw]
+
+           if prot_list2 is None:
+              if not c1 in prot_list: continue
+              if not c2 in prot_list: continue     
+           else:
+              if c1 in prot_list and c2 in prot_list2:
+                 pass
+              elif c1 in prot_list2 and c2 in prot_list: 
+                 pass
+              else:
+                 continue
+           #append the sum of dists to order by that in the matrix plot
+           dists.append(sum(dists))
+           tmp_matrix.append(dists)
+      
+
+      
+      tmp_matrix.sort(key=itemgetter(len(tmp_matrix[0])-1))
+
+      #print len(tmp_matrix),  len(tmp_matrix[0])-1
+      matrix = zeros((len(tmp_matrix), len(tmp_matrix[0])-1))
+      
+
+      
+
+      for i in range(len(tmp_matrix)):
+          for k in range(len(tmp_matrix[i])-1):
+              matrix[i][k]=tmp_matrix[i][k]
+
+
+    
+      print matrix
+        
+      fig = pl.figure()
+      ax = fig.add_subplot(211)
+       
+      cax = ax.imshow(matrix, interpolation='nearest')
+      #ax.set_yticks(range(len(self.model_list_names)))
+      #ax.set_yticklabels( [self.model_list_names[i] for i in leaves_order] )
+      fig.colorbar(cax)
+      pl.savefig(figurename,dpi=300)
+      pl.show()
+       
 
    def plot_bars(self,filename,prots1,prots2,nxl_per_row=20,arrangement="inter",confidence_input="None"):
        import IMP.pmi.output

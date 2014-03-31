@@ -31,7 +31,7 @@ class System():
         self.states=[]
 
     def create_state(self,state=None,state_num=None):
-        if state_num=None:
+        if state_num is None:
             state_num=len(self.states)
         if state is None:
             new_state=State(self,state_num)
@@ -52,9 +52,9 @@ class State():
 
     def __init__(self,system,state_num):
         self.rep=IMP.pmi.Representation(system.mdl)
-       self.components={}
-       self.bodies=[]
-       self.state_num=state_num
+        self.components={}
+        self.bodies=[]
+        self.state_num=state_num
 
     def create_component(self,component_name,fasta_fn,copy_num=0):
         c=Component(self,component_name,fasta_fn,copy_num,state_num)
@@ -73,15 +73,15 @@ class Component():
     ''' A part of a System '''
 
     def __init__(self,representation,name,fasta_fn,copy_num,state_num,id=None):
-       representation.rep.create_component(name)
-       self.name=name
-       self.copy_num=copy_num
-       self.state_num=state_num
-       self.add_sequence(fasta_fn)
+        representation.rep.create_component(name)
+        self.name=name
+        self.copy_num=copy_num
+        self.state_num=state_num
+        self.add_sequence(fasta_fn)
 
     def add_sequence(self,fasta_fn,id=None):
-       representation.rep.add_component_sequence(self.name,fastafile,
-                                                 id=id,format="FASTA")
+        representation.rep.add_component_sequence(self.name,fastafile,
+                                                  id=id,format="FASTA")
 
     def add_coordinates(self,chain,res_range,offset=0):
         ''' read coordinates for this component'''

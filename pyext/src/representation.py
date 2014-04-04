@@ -484,6 +484,10 @@ class Representation():
             outhiers+=[h]
 
         return outhiers
+        
+
+        
+        
 
     def add_component_necklace(self,name,begin,end,length,incoord=None):
         '''
@@ -1454,6 +1458,21 @@ class Representation():
                       else:
                          super_rigid_xyzs.add(p)
         self.super_rigid_bodies.append((super_rigid_xyzs,super_rigid_rbs))
+
+    def remove_floppy_bodies(self,hierarchies):
+        '''
+        give a list of hierarchies, get the leaves and remove the corresponding particles
+        from the floppy bodies list. We need this function because sometimes
+        we want to constraint the floppy bodies in a rigid body. For instance
+        when you want to associate a bead with a density particle.
+        '''
+        for h in hierarchies:
+            ps=IMP.atom.get_leaves(h)
+            for p in ps:  
+               if p in self.floppy_bodies:
+                  print "remove_floppy_bodies: removing %s from floppy body list" % p.get_name()
+                  self.floppy_bodies.remove(p)
+                  
 
     def set_floppy_bodies(self):
         for p in self.floppy_bodies:

@@ -759,8 +759,8 @@ class ISDCrossLinkMS():
                   r2 = int(tokens[residue2])
                   c2 = tokens[protein2]
                   ids = float(tokens[idscore])
-                  if xluniqueid==None: xlid=nxl
-                  else: xlid = int(tokens[xluniqueid])
+                  if xluniqueid==None: xlid=str(nxl)
+                  else: xlid = tokens[xluniqueid]
                 except:
                   print "this line was not accessible "+str(entry)
                   continue
@@ -777,8 +777,8 @@ class ISDCrossLinkMS():
                   r2 = int(entry[residue2])
                   c2 = entry[protein2]
                   ids = float(entry[idscore])
-                  if xluniqueid==None: xlid=nxl
-                  else: xlid = int(entry[xluniqueid])
+                  if xluniqueid==None: xlid=str(nxl)
+                  else: xlid = entry[xluniqueid]
                 except:
                   print "this line was not accessible "+str(entry)
                   continue

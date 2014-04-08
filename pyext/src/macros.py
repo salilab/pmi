@@ -365,10 +365,15 @@ class AnalysisReplicaExchange0():
                         distance_matrix_file=None,
                         load_distance_matrix_file=False,
                         is_mpi=False,
+                        skip_clustering=False, # if True, will just extract the best scoring models
+                                               # and save the pdbs
                         number_of_clusters=1,
                         display_plot=False,
                         exit_after_display=True,
                         get_every=1,
+                        first_and_last_frames=None, # pass here a tuple with the first and the last
+                                             # frames to be analysed. If None (default)
+                                             # get all frames.
                         density_custom_ranges=None,
                         voxel_size=5.0):     
         
@@ -425,10 +430,12 @@ class AnalysisReplicaExchange0():
                   print "getting data from file %s" % sf
                   po=IMP.pmi.output.ProcessOutput(sf)
                   keywords=po.get_keys()
+                  
                   feature_keywords=[score_key,rmf_file_key,rmf_file_frame_key]
                   for k in keywords:
                       for fk in feature_keys:
                           if fk in k: feature_keywords.append(k)
+
                   if prefiltervalue is None:
                      fields=po.get_fields(feature_keywords,get_every=get_every)
                   else:
@@ -477,6 +484,15 @@ class AnalysisReplicaExchange0():
             # sort by score and ge the best scoring ones
             score_rmf_tuples=zip(score_list,rmf_file_list,rmf_file_frame_list,range(len(score_list)))
             
+            # first slice the ensemble accoridng to the user requirements
+            if not first_and_last_frames is None:
+               nframes=len(score_rmf_tuples)
+               first_frame=int(first_and_last_frames[0]*nframes)
+               last_frame=int(first_and_last_frames[1]*nframes)
+               if last_frame>len(score_rmf_tuples): last_frame=-1
+               score_rmf_tuples=score_rmf_tuples[first_frame:last_frame]
+               
+            
             #numerically sorting in ascending order
             sorted_score_rmf_tuples=sorted(score_rmf_tuples,key=lambda x: float(x[0]))
             best_score_rmf_tuples=sorted_score_rmf_tuples[0:number_of_best_scoring_models]
@@ -501,6 +517,59 @@ class AnalysisReplicaExchange0():
 
             del feature_keyword_list_dict
 
+# -----------------------------------------------------------------------------------------------
+
+
+            my_best_score_rmf_tuples=IMP.pmi.tools.chunk_list_into_segments(best_score_rmf_tuples,
+                                                                            number_of_processes)[rank]
+
+
+# -----------------------------------------------------------------------------------------------
+            
+            if skip_clustering:
+               
+               dircluster=outputdir+"/all_models."+str(n)+"/"
+               try:
+                   os.mkdir(outputdir)
+               except:
+                   pass                 
+                
+               try:
+                   os.mkdir(dircluster)
+               except:
+                   pass
+               
+               clusstat=open(dircluster+"stat."+str(rank)+".out","w")
+               
+               for cnt,tpl in enumerate(my_best_score_rmf_tuples):
+                    rmf_name=tpl[1]
+                    rmf_frame_number=tpl[2]
+                    
+                    tmp_dict={}
+                    index=tpl[4]
+                                        
+                    for key in best_score_feature_keyword_list_dict:
+                        tmp_dict[key]=best_score_feature_keyword_list_dict[key][index]
+
+                    prot=IMP.pmi.analysis.get_hier_from_rmf(self.model,rmf_frame_number,rmf_name)
+                    
+
+                    
+                    
+                    if not prot: continue
+                    
+                    o=IMP.pmi.output.Output()
+                    o.init_pdb(dircluster+str(cnt)+"."+str(rank)+".pdb",prot)        
+                    o.write_pdb(dircluster+str(cnt)+"."+str(rank)+".pdb")
+                    
+                    tmp_dict["pdb_file_name"]=str(cnt)+"."+str(rank)+".pdb"
+                    
+                    #IMP.atom.destroy(prot)
+                    
+                    clusstat.write(str(tmp_dict)+"\n")
+                
+               exit()
+
 
             # here I've tested that feature_keyword_list_dict is correct on 2 CPUs
 
@@ -509,8 +578,7 @@ class AnalysisReplicaExchange0():
 # --------------------------------------------------------------------------------------------
 
 
-            my_best_score_rmf_tuples=IMP.pmi.tools.chunk_list_into_segments(best_score_rmf_tuples,
-                                                                            number_of_processes)[rank]
+
             # reading the coordinates
             
             
@@ -551,8 +619,10 @@ class AnalysisReplicaExchange0():
                # save needed informations in external files
                self.save_objects([best_score_feature_keyword_list_dict,rmf_file_name_index_dict],".macro.pkl")
 
+            
 
-# -----------------------------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------------------------               
 
             for n,model_coordinate_dict in enumerate(all_coordinates):
 
@@ -655,7 +725,8 @@ class AnalysisReplicaExchange0():
                       index=rmf_file_name_index_dict[structure_name]
                       for key in best_score_feature_keyword_list_dict:
                           tmp_dict[key]=best_score_feature_keyword_list_dict[key][index]
-    
+                      
+                      # get the rmf name and the frame number from the list of frame names
                       rmf_name=structure_name.split("|")[0]
                       rmf_frame_number=int(structure_name.split("|")[1])
     
@@ -704,12 +775,15 @@ class AnalysisReplicaExchange0():
                          o.close_rmf(dircluster+str(k)+".rmf3")
                       
                       del o
-    
+                      #IMP.atom.destroy(prot)
+                  
+                  
+                  
                   if density_custom_ranges:
                      DensModule.write_mrc(path=dircluster)
                      del DensModule
-                     
-        comm.Barrier()
+        
+        if is_mpi: comm.Barrier()
 
 
     def save_objects(self,objects,file_name):

@@ -1509,7 +1509,7 @@ def get_hier_from_rmf(model,frame_number,rmf_file):
         print "Unable to open rmf file %s" % (rmf_file)
         prot=None
         return prot                   
-      IMP.rmf.link_hierarchies(rh, prots)
+      #IMP.rmf.link_hierarchies(rh, prots)
       prot=prots[0]
       try: 
         IMP.rmf.load_frame(rh, frame_number)        

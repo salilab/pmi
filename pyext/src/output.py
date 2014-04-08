@@ -52,26 +52,30 @@ class Output():
             self.dictchain[name][i.get_name()]=self.chainids[n]
 
 
-    def write_pdb(self,name,appendmode=True):
-
+    def write_pdb(self,name,appendmode=True,atomistic=False):
+        import resource
         if appendmode:
             flpdb=open(name,'a')
         else:
             flpdb=open(name,'w')
 
-        particle_infos_for_pdb=self.get_particle_infos_for_pdb_writing(name)
+        particle_infos_for_pdb=self.get_particle_infos_for_pdb_writing(name,atomistic)
 
         for tupl in particle_infos_for_pdb:
 
+                 
                  (p,atom_index,atom_type,residue_type,chain_id,residue_index)=tupl
+ 
                  flpdb.write(impatom.get_pdb_string(impcore.XYZ(p).get_coordinates(),
                              atom_index,atom_type,residue_type,
                              chain_id,residue_index))
 
         flpdb.write("ENDMOL\n")
         flpdb.close()
+        
+        del particle_infos_for_pdb
 
-    def get_particle_infos_for_pdb_writing(self,name):
+    def get_particle_infos_for_pdb_writing(self,name,atomistic=False):
         #index_residue_pair_list={}
 
         # the resindexes dictionary keep track of residues that have been already
@@ -94,7 +98,7 @@ class Output():
            if protname not in resindexes_dict:
               resindexes_dict[protname]=[]
 
-           if impatom.Atom.get_is_setup(p):
+           if impatom.Atom.get_is_setup(p) and atomistic:
               atom_index+=1
               residue=impatom.Residue(impatom.Atom(p).get_parent())
               rt=residue.get_residue_type()

@@ -694,7 +694,8 @@ class ISDCrossLinkMS():
         if not self.marginal:
            self.psi_dictionary = {}
         self.samplelength = samplelength
-
+        self.psi_is_sampled=True
+        
         if ids_map is None:
             self.ids_map = IMP.pmi.tools.map()
             self.ids_map.set_map_element(20.0, 0.05)
@@ -711,6 +712,7 @@ class ISDCrossLinkMS():
             self.radius_map = radius_map
 
         self.outputlevel = "low"
+
 
         # small linear contribution for long range
         self.linear = IMP.core.Linear(0, 0.0)
@@ -1038,6 +1040,9 @@ class ISDCrossLinkMS():
             # this might be "low" or "high"
         self.outputlevel = level
 
+    def set_psi_is_sampled(self,is_sampled=True):
+        self.psi_is_sampled=is_sampled
+
     def get_output(self):
         # content of the crosslink database pairs
         # self.pairs.append((p1,p2,dr,r1,c1,r2,c2))
@@ -1102,7 +1107,7 @@ class ISDCrossLinkMS():
                     ([self.sigma_dictionary[resolution][0]],
                      self.sigma_dictionary[resolution][1])
 
-        if not self.marginal:
+        if (not self.marginal) and self.psi_is_sampled:
           for psiindex in self.psi_dictionary:
             if self.psi_dictionary[psiindex][2]:
                 ps["Nuisances_ISDCrossLinkMS_Psi_" +

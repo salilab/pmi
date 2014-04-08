@@ -41,3 +41,47 @@ class ExternalBarrier():
         output["_TotalScore"] = str(score)
         output["ExternalBarrier_" + self.label] = str(score)
         return output
+        
+        
+class DistanceRestraint():
+    def __init__(self, representation, tuple_selection1, tuple_selection2, distance,resolution=1.0, kappa=1.0):
+        self.m = representation.prot.get_model()
+        self.rs = IMP.RestraintSet(self.m, 'distance')
+
+        ts = IMP.core.Harmonic(distance,kappa)
+
+        # IMP.atom.get_by_type
+        particles1=IMP.pmi.tools.select(representation,resolution=resolution,name=tuple_selection1[2],residue=tuple_selection1[0])
+        particles2=IMP.pmi.tools.select(representation,resolution=resolution,name=tuple_selection2[2],residue=tuple_selection2[0])
+        
+        for p in particles1: 
+            print p.get_name()
+
+        for p in particles2: 
+            print p.get_name()            
+        
+        if len(particles1)>1: print "DistanceRestraint error: more than one particle selected"; exit()
+        if len(particles2)>1: print "DistanceRestraint error: more than one particle selected"; exit()    
+            
+        self.rs.add_restraint(IMP.core.DistanceRestraint(ts,particles1[0],particles2[0]))
+
+
+    def set_label(self, label):
+        self.label = label
+
+    def add_to_model(self):
+        self.m.add_restraint(self.rs)
+
+    def get_restraint(self):
+        return self.rs
+
+    def get_output(self):
+        self.m.update()
+        output = {}
+        score = self.rs.unprotected_evaluate(None)
+        output["_TotalScore"] = str(score)
+        output["DistanceRestraint_" + self.label] = str(score)
+        return output
+
+
+

@@ -519,10 +519,8 @@ class AnalysisReplicaExchange0():
 
 # -----------------------------------------------------------------------------------------------
 
-
             my_best_score_rmf_tuples=IMP.pmi.tools.chunk_list_into_segments(best_score_rmf_tuples,
                                                                             number_of_processes)[rank]
-
 
 # -----------------------------------------------------------------------------------------------
             
@@ -560,7 +558,7 @@ class AnalysisReplicaExchange0():
                     
                     o=IMP.pmi.output.Output()
                     o.init_pdb(dircluster+str(cnt)+"."+str(rank)+".pdb",prot)        
-                    o.write_pdb(dircluster+str(cnt)+"."+str(rank)+".pdb")
+                    o.write_pdb(dircluster+str(cnt)+"."+str(rank)+".pdb",translate_to_geometric_center=True)
                     
                     tmp_dict["pdb_file_name"]=str(cnt)+"."+str(rank)+".pdb"
                     

@@ -52,23 +52,27 @@ class Output():
             self.dictchain[name][i.get_name()]=self.chainids[n]
 
 
-    def write_pdb(self,name,appendmode=True,atomistic=False):
+    def write_pdb(self,name,appendmode=True,atomistic=False,translate_to_geometric_center=False):
         import resource
         if appendmode:
             flpdb=open(name,'a')
         else:
             flpdb=open(name,'w')
 
-        particle_infos_for_pdb=self.get_particle_infos_for_pdb_writing(name,atomistic)
-
+        (particle_infos_for_pdb,geometric_center)=self.get_particle_infos_for_pdb_writing(name,atomistic)
+        
+        if not translate_to_geometric_center: geometric_center=(0,0,0)
+        
         for tupl in particle_infos_for_pdb:
 
                  
-                 (p,atom_index,atom_type,residue_type,chain_id,residue_index)=tupl
+                 (xyz,atom_index,atom_type,residue_type,chain_id,residue_index)=tupl
  
-                 flpdb.write(impatom.get_pdb_string(impcore.XYZ(p).get_coordinates(),
-                             atom_index,atom_type,residue_type,
-                             chain_id,residue_index))
+                 flpdb.write(impatom.get_pdb_string((xyz[0]-geometric_center[0],
+                                                     xyz[1]-geometric_center[1],
+                                                     xyz[2]-geometric_center[2]),
+                                                    atom_index,atom_type,residue_type,
+                                                    chain_id,residue_index))
 
         flpdb.write("ENDMOL\n")
         flpdb.close()
@@ -86,8 +90,11 @@ class Output():
         # this dictionary dill contain the sequence of tuples needed to
         # write the pdb
         particle_infos_for_pdb=[]
-
+        
+        geometric_center=[0,0,0]
+        atom_count=0
         atom_index=0
+        
         for n,p in enumerate(impatom.get_leaves(self.dictionary_pdbs[name])):
 
            # this loop gets the protein name from the
@@ -104,7 +111,12 @@ class Output():
               rt=residue.get_residue_type()
               resind=residue.get_index()
               atomtype=impatom.Atom(p).get_atom_type()
-              particle_infos_for_pdb.append((p,atom_index,
+              xyz=list(IMP.core.XYZ(p).get_coordinates())
+              geometric_center[0]+=xyz[0]
+              geometric_center[1]+=xyz[1]              
+              geometric_center[2]+=xyz[2]
+              atom_count+=1                
+              particle_infos_for_pdb.append((xyz,atom_index,
                      atomtype,rt,self.dictchain[name][protname],resind))
               resindexes_dict[protname].append(resind)
 
@@ -119,7 +131,12 @@ class Output():
                  resindexes_dict[protname].append(resind)
               atom_index+=1
               rt=residue.get_residue_type()
-              particle_infos_for_pdb.append((p,atom_index,
+              xyz=IMP.core.XYZ(p).get_coordinates()
+              geometric_center[0]+=xyz[0]
+              geometric_center[1]+=xyz[1]              
+              geometric_center[2]+=xyz[2]
+              atom_count+=1                 
+              particle_infos_for_pdb.append((xyz,atom_index,
                      impatom.AT_CA,rt,self.dictchain[name][protname],resind))
 
               #if protname not in index_residue_pair_list:
@@ -135,7 +152,12 @@ class Output():
                  resindexes_dict[protname].append(resind)
               atom_index+=1
               rt=impatom.ResidueType('BEA')
-              particle_infos_for_pdb.append((p,atom_index,
+              xyz=IMP.core.XYZ(p).get_coordinates()
+              geometric_center[0]+=xyz[0]
+              geometric_center[1]+=xyz[1]              
+              geometric_center[2]+=xyz[2]
+              atom_count+=1                 
+              particle_infos_for_pdb.append((xyz,atom_index,
                      impatom.AT_CA,rt,self.dictchain[name][protname],resind))
 
 
@@ -145,15 +167,23 @@ class Output():
                  rt=impatom.ResidueType('BEA')
                  resindexes=IMP.pmi.tools.get_residue_indexes(p)
                  resind=resindexes[len(resindexes)/2]
-                 particle_infos_for_pdb.append((p,atom_index,
+                 xyz=IMP.core.XYZ(p).get_coordinates()
+                 geometric_center[0]+=xyz[0]
+                 geometric_center[1]+=xyz[1]              
+                 geometric_center[2]+=xyz[2]
+                 atom_count+=1                    
+                 particle_infos_for_pdb.append((xyz,atom_index,
                       impatom.AT_CA,rt,self.dictchain[name][protname],resind))
               #if protname not in index_residue_pair_list:
               #   index_residue_pair_list[protname]=[(atom_index,resind)]
               #else:
               #   index_residue_pair_list[protname].append((atom_index,resind))
 
-
-        return particle_infos_for_pdb
+        geometric_center=(geometric_center[0]/atom_count,
+                          geometric_center[1]/atom_count,
+                          geometric_center[2]/atom_count)
+                          
+        return (particle_infos_for_pdb,geometric_center)
         '''
         #now write the connectivity
         for protname in index_residue_pair_list:

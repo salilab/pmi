@@ -18,7 +18,7 @@ import IMP.pmi.tools
 import IMP.pmi.output
 import IMP.rmf
 import RMF
-
+import os
 
 
 
@@ -513,6 +513,7 @@ class Representation():
                               covariance_type='full',voxel_size=1.0,
                               out_hier_name='',
                               sampled_points=1000000,num_iter=100,
+                              simulation_res=1.0,
                               multiply_by_total_mass=True,
                               transform=None,
                               intermediate_map_fn=None,
@@ -549,11 +550,6 @@ class Representation():
         import sys
         import IMP.em
 
-        if kernel_type is None:
-           kernel_type=IMP.em.GAUSSIAN
-
-        from math import sqrt
-
         self.representation_is_modified=True
         out_hier=[]
         protein_h=self.hier_dict[name]
@@ -574,11 +570,9 @@ class Representation():
                 IMP.atom.Mass.setup_particle(p,mass)
                 density_particles.append(p)
         elif inputfile is None:
-           if particles is None:
-              fragment_particles=[]
-           else:
-              fragment_particles=particles
-
+           fragment_particles=[]
+           if not particles is None:
+              fragment_particles+=particles
            if not hierarchies is None:
               fragment_particles+=IMP.pmi.tools.select(self,resolution=resolution,
                                                        hierarchies=hierarchies)
@@ -591,40 +585,17 @@ class Representation():
               print "add_component_density: no particle was selected"
               return out_hier
 
-           # compute mass
-           mass_multiplier=1.0
-           if multiply_by_total_mass:
-               mass_multiplier=sum((IMP.atom.Mass(p).get_mass() for p in set(fragment_particles)))
-               print 'add_component_density: will multiply by mass',mass_multiplier
-
-           # simulate density from ps, then calculate points to fit
-           print 'add_component_density: sampling points'
-           dmap=IMP.em.SampledDensityMap(fragment_particles,1.0,voxel_size,
-                                         IMP.atom.Mass.get_mass_key(),3,kernel_type)
-           dmap.calcRMS()
-           if not intermediate_map_fn is None:
-               IMP.em.write_map(dmap,intermediate_map_fn)
-           pts=IMP.isd_emxl.sample_points_from_density(dmap,sampled_points)
-           #pts=[IMP.core.XYZ(p).get_coordinates() for p in fragment_particles]
-
-           # fit GMM
-           print 'add_component_density: fitting GMM to',len(pts),'points'
-           IMP.isd_emxl.gmm_tools.fit_gmm_to_points(points=pts,
-                                                    n_components=num_components,
-                                                    mdl=self.m,
-                                                    ps=density_particles,
-                                                    num_iter=num_iter,
-                                                    covariance_type=covariance_type,
-                                                    mass_multiplier=mass_multiplier)
-
-           if not outputfile is None:
-               IMP.isd_emxl.gmm_tools.write_gmm_to_text(density_particles,outputfile)
-           if not outputmap is None:
-               IMP.isd_emxl.gmm_tools.write_gmm_to_map(ps=density_particles,
-                                                       out_fn=outputmap,
-                                                       voxel_size=voxel_size,
-                                                       bounding_box=IMP.em.get_bounding_box(dmap))
-           del dmap
+           IMP.isd_emxl.gmm_tools.sample_and_fit_to_particles(self.m,
+                                                              fragment_particles,
+                                                              num_components,
+                                                              sampled_points,
+                                                              simulation_res,
+                                                              voxel_size,
+                                                              num_iter,
+                                                              covariance_type,
+                                                              multiply_by_total_mass,
+                                                              outputmap,
+                                                              outputfile)
         else:
             # read the inputfile here
             IMP.isd_emxl.gmm_tools.decorate_gmm_from_text(inputfile,density_particles,
@@ -642,6 +613,7 @@ class Representation():
 
     def get_component_density(self,name):
         return self.hier_representation[name]["Densities"]
+
 
     def add_all_atom_densities(self,name,hierarchies=None,
                                selection_tuples=None,

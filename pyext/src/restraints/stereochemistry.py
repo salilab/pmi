@@ -250,8 +250,8 @@ class ResidueDihedralRestraint():
                    quadruplet.append(p)
             dihedraltype=stringsequence[n]
             if dihedraltype=="C":
-               anglemin=-70.0
-               anglemax=70.0
+               anglemin=-20.0
+               anglemax=20.0
                ts=IMP.core.HarmonicWell((self.pi*anglemin/180.0,self.pi*anglemax/180.0),strength)
                print "ResidueDihedralRestraint: adding a CYS restraint between %s %s %s %s" % (quadruplet[0].get_name(),quadruplet[1].get_name(),
                quadruplet[2].get_name(),quadruplet[3].get_name())
@@ -651,4 +651,100 @@ class CharmmForceFieldRestraint():
         score = self.weight * self.rs.unprotected_evaluate(None)
         output["_TotalScore"] = str(score)
         output["ElasticNetworkRestraint_" + self.label] = str(score)
+        return output
+
+class PseudoAtomicRestraint():
+    '''
+    add bonds and improper dihedral restraints for the CBs
+    '''
+    import IMP.pmi.tools
+    from math import pi as pi
+
+    def __init__(self,representation,selection_tuple,strength=10.0,kappa=1.0):
+        '''
+        jitter: defines the +- added to the optimal distance in the harmonic well restraint
+                used to increase the tolerance
+        '''
+        self.m=representation.prot.get_model()
+        self.rs = IMP.RestraintSet(self.m, "PseudoAtomic")
+        self.weight=1
+        self.label="None"
+        self.pairslist=[]
+
+        residues=IMP.pmi.tools.select_by_tuple(representation,selection_tuple,resolution=1)
+        for r in residues:
+           rtype=IMP.atom.Residue(r).get_residue_type()
+           print rtype,r
+           if rtype!=IMP.atom.ResidueType("GLY"):
+              p0=4
+              nter=False
+              cter=False
+              p1=IMP.pmi.tools.select(self,resolution=1,residue=ridx-1)
+              if p1==[]:
+                 nter=True
+              else:
+                 p1=p1[0].get_particle()
+                 p2=IMP.pmi.tools.select(self,resolution=1,residue=ridx+1)
+                 if p2==[]:
+                    cter=True
+                 else:
+                    p2=p2[0].get_particle()
+                    if (nter and cter):
+                       continue
+                       p3=IMP.Particle(self.m)
+                       #h3=IMP.atom.Hierarchy.setup_particle(p3)
+                       a3=IMP.atom.Atom.setup_particle(p3,IMP.atom.AtomType("CB"))
+
+                #adding a bond restraint between CA and CB
+                h=IMP.core.Harmonic(6.0,kappa)
+                dps=IMP.core.DistancePairScore(h)
+                pr=IMP.core.PairRestraint(dps,IMP.ParticlePair(p0,p3))
+                excluded_pairs.append((p0,p3))
+                rset_bonds.add_restraint(pr)
+
+                #initializing coordinates for the NZ atom
+                v0=IMP.core.XYZ(p0).get_coordinates()
+                x3=v0[0]
+                y3=v0[1]
+                z3=v0[2]
+                d3=IMP.core.XYZR.setup_particle(p3,
+                              IMP.algebra.Sphere3D(IMP.algebra.Vector3D(x3,y3,z3),4.0))
+                d3.set_coordinates_are_optimized(True)
+                hus=IMP.core.Harmonic(2.09,kappa)
+                if not nter:
+                   ar13=IMP.core.AngleRestraint(hus,p1,p0,p3)
+                   rset_angles.add_restraint(ar13)
+                if not cter:
+                      ar23=IMP.core.AngleRestraint(hus,p2,p0,p3)
+                      rset_angles.add_restraint(ar23)
+                      if not nter and not cter:
+                         hus2=IMP.core.Harmonic(0,kappa)
+                         idr=IMP.core.DihedralRestraint(hus2,p0,p1,p2,p3)
+                         rset_angles.add_restraint(idr)
+
+    def set_label(self, label):
+        self.label = label
+        self.rs.set_name(label)
+        for r in self.rs.get_restraints():
+            r.set_name(label)
+
+    def add_to_model(self):
+        self.m.add_restraint(self.rs)
+
+    def get_restraint(self):
+        return self.rs
+
+    def set_weight(self, weight):
+        self.weight = weight
+        self.rs.set_weight(weight)
+
+    def get_excluded_pairs(self):
+        return self.pairslist
+
+    def get_output(self):
+        self.m.update()
+        output = {}
+        score = self.weight * self.rs.unprotected_evaluate(None)
+        output["_TotalScore"] = str(score)
+        output["PseudoAtomicRestraint_" + self.label] = str(score)
         return output

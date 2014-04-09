@@ -602,11 +602,11 @@ class SigmoidalCrossLinkMS():
             label = str(resid1) + ":" + chain1 + "_" + \
                 str(resid2) + ":" + chain2
             output["SigmoidalCrossLinkMS_Score_" + crosslinker + "_" +
-                   label] = str(self.weight * ln.unprotected_evaluate(None))
+                   label+"_"+self.label] = str(self.weight * ln.unprotected_evaluate(None))
             d0 = IMP.core.XYZR(p0)
             d1 = IMP.core.XYZR(p1)
             output["SigmoidalCrossLinkMS_Distance_" +
-                   label] = str(IMP.core.get_distance(d0, d1))
+                   label+"_"+self.label] = str(IMP.core.get_distance(d0, d1))
 
         return output
 

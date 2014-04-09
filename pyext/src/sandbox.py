@@ -21,83 +21,110 @@ no redundant numbers
 '''
 
 
+
 import IMP
 import IMP.pmi
 import IMP.pmi.representation
+import re
+
+# some utility functions (to be placed in a tools file)
+def read_sequence(fasta_fn,fasta_id):
+    pass
+
+def get_number_of_copies_of_a_component(system,state_num,component_name):
+    ct=0
+    pattern=r'%i:%s:(\d+)'%(state_num,component_name)
+    for c in system.states[state_num]:
+        if re.search(pattern,c.get_name()):
+            ct+=1
+    return ct
+
+def clone_component(component,new_copy_num):
+    '''probably implement this in C++. copies all fragments, and all levels of resolution'''
 
 class System():
-    def __init__(self):
-        self.mdl = IMP.Model()
-        self.states=[]
+    '''
+    a class to maintain an IMP hierarchy of a system.
+    contains dictionaries to easily access states and components.
+    all the functions concern adding or editing components of the root hierachy.
 
-    def create_state(self,state=None,state_num=None):
+    data structure:
+    root ->
+      atom::State ->
+        component copy 0 (==atom::Copy) ->
+          Fragment (==atom::Resolution) ->
+            res0,
+            res1,
+            res10,
+            ...
+        component copy 1
+           (identical to copy 0)
+
+    '''
+
+    def __init__(self):
+        self.mdl=IMP.Model()
+        self.root=IMP.atom.Hierarchy.setup_particle(self.mdl,
+                                                    self.mdl.add_particle("root"))
+        # internal data
+        self.sequences={}    # key: (state_num, component_name)
+
+        # the values of these dictionaries are members of the hierarchy
+        self.states={}       # key: state_num
+        self.components={}   # key: (state_num,component_name,copy_num)
+
+    def add_state(self,state_num=None,state_to_copy=None):
+        '''insert a new State in the root hierarchy'''
         if state_num is None:
             state_num=len(self.states)
-        if state is None:
-            new_state=State(self,state_num)
+        if state_to_copy is None:
+            new_state=IMP.atom.State.setup_particle(self.mdl,
+                      self.mdl.add_particle("state%i"%state_num),state_num)
         else:
-            new_state=state.clone()
-            new_state.state_num=state_num
-
-        self.h=IMP.atom.Hierarchy()
-        IMP.atom.State.setup_particle(self.h,state_num)
-
-        self.states.append(new_state)
+            pass
+        self.root.add_child(new_state)
+        self.states[state_num]=new_state
         return new_state
 
+    def add_component(self,state_num,component_name,fasta_fn=None,fasta_id=None):
+        '''insert a new component within a particular State.
+        If you mean to add a copy of an existing component, use add_component_copies()'''
 
-class State():
+        if get_number_of_copies_of_a_component(self,state_num,component_name)!=0:
+            print "error: you are trying to create a component that already exists"
+            return
+        copy_num=0
+        name='%i:%s:%i'%(state_num,component_name,copy_num)
+        new_component=IMP.atom.Copy.setup_particle(self.mdl,self.mdl.add_particle(name),
+                                                   copy_num)
 
-    ''' A class to store and search various components'''
+        self.states[state_num].add_child(new_component)
+        self.components[(state_num,component_name,copy_num)]=new_component
+        self.sequences[(state_num,component_name)]=read_sequence(fasta_fn,fasta_id)
 
-    def __init__(self,system,state_num):
-        self.rep=IMP.pmi.Representation(system.mdl)
-        self.components={}
-        self.bodies=[]
-        self.state_num=state_num
+    def add_coordinates(self,state_num,component_name,pdb_fn,residue_range=None,offset=None):
+        '''read a pdb file and assign its coordinates to a particular component.
+        NOTE: only edits copy 0. run this before you create additional copies'''
 
-    def create_component(self,component_name,fasta_fn,copy_num=0):
-        c=Component(self,component_name,fasta_fn,copy_num,state_num)
-        self.components[(component_name,copy_num)]=c
-        return c
+    def add_resolution_to_component(self,state_num,component_name,resolution,
+                                    residue_range=None):
+        '''simplify coordinates along backbone and add to the hierarchy.
+        NOTE: only edits copy 0. run this before you create additional copies'''
 
-    def create_body(self,rigid_segments=[],nonrigid_segments=[]):
-        ''' makes this piece move together, though flexible components are allowed '''
+    def add_beads_for_missing_residues(self,state_num,component_name,resolution,
+                                       residue_range=None):
+        '''search component for missing residues (those with no coordinates) and
+        add a string of beads.
+        NOTE: only edits copy 0. run this before you create additional copies'''
 
-    def clone(self):
-        pass
-
-
-class Component():
-
-    ''' A part of a System '''
-
-    def __init__(self,representation,name,fasta_fn,copy_num,state_num,id=None):
-        representation.rep.create_component(name)
-        self.name=name
-        self.copy_num=copy_num
-        self.state_num=state_num
-        self.add_sequence(fasta_fn)
-
-    def add_sequence(self,fasta_fn,id=None):
-        representation.rep.add_component_sequence(self.name,fastafile,
-                                                  id=id,format="FASTA")
-
-    def add_coordinates(self,chain,res_range,offset=0):
-        ''' read coordinates for this component'''
-
-    def get_segment(self,**kwargs):
-        ''' return a dictionary for creating a Selection '''
-
-    def add_ideal_helix(self,residue_range=None):
-        pass
-
-
-''' notes from representation.py
-
-add_component_pdb:  reads the pdb file then passes the particles to coarse_hierarchy()
-coarse_hierarchy:   runs create simplified along backbone, which averages particle positions
-                     (presumably handles gaps well)
-
-
-'''
+    def add_component_copies(self,component_name,state_num,num_copies,transform=None):
+        '''make copies if a component and add them to the hierarchy.
+        NOTE: do this AFTER you complete adding coordinates, resolutions, beads'''
+        n=get_number_of_copies_of_a_component(self,state_num,component_name)
+        for i in range(num_copies):
+            copy_num=i+n
+            new_component=clone_component(self.components[(state_num,component_name,0)],
+                                          copy_num)
+            self.states[state_num].add_child(new_component)
+            self.components[(state_num,component_name,copy_num)]=new_component
+            self.sequences[(state_num,component_name)]=read_sequence(fasta_fn,fasta_id)

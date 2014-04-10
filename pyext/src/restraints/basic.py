@@ -44,12 +44,16 @@ class ExternalBarrier():
         
         
 class DistanceRestraint():
-    def __init__(self, representation, tuple_selection1, tuple_selection2, distance,resolution=1.0, kappa=1.0):
+    def __init__(self, representation, tuple_selection1, tuple_selection2, distancemin,distancemax,resolution=1.0, kappa=1.0):
         self.m = representation.prot.get_model()
         self.rs = IMP.RestraintSet(self.m, 'distance')
 
-        ts = IMP.core.Harmonic(distance,kappa)
-
+        #ts = IMP.core.Harmonic(distance,kappa)
+        
+        
+        ts1=IMP.core.HarmonicUpperBound(distancemax,kappa)
+        ts2=IMP.core.HarmonicLowerBound(distancemin,kappa)
+        
         # IMP.atom.get_by_type
         particles1=IMP.pmi.tools.select(representation,resolution=resolution,name=tuple_selection1[2],residue=tuple_selection1[0])
         particles2=IMP.pmi.tools.select(representation,resolution=resolution,name=tuple_selection2[2],residue=tuple_selection2[0])
@@ -63,8 +67,8 @@ class DistanceRestraint():
         if len(particles1)>1: print "DistanceRestraint error: more than one particle selected"; exit()
         if len(particles2)>1: print "DistanceRestraint error: more than one particle selected"; exit()    
             
-        self.rs.add_restraint(IMP.core.DistanceRestraint(ts,particles1[0],particles2[0]))
-
+        self.rs.add_restraint(IMP.core.DistanceRestraint(ts1,particles1[0],particles2[0]))
+        self.rs.add_restraint(IMP.core.DistanceRestraint(ts2,particles1[0],particles2[0]))
 
     def set_label(self, label):
         self.label = label

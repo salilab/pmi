@@ -10,6 +10,7 @@
 #define IMPPMI_SIGMOID_RESTRAINT_SPHERE_H
 #include "pmi_config.h"
 #include <IMP/Restraint.h>
+#include <IMP/kernel/particle_index.h>
 
 
 IMPPMI_BEGIN_NAMESPACE

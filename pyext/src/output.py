@@ -1,3 +1,7 @@
+"""@namespace IMP.pmi.output
+   Ouput.
+"""
+
 import IMP.pmi.tools
 
 

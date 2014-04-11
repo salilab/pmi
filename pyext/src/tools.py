@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+
+"""@namespace IMP.pmi.tools
+   Miscellanous utilities.
+"""
+
 import IMP
 import IMP.algebra
 import collections

@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+
+"""@namespace IMP.pmi.representation
+   Representation of the system.
+"""
+
 import IMP
 import IMP.core
 import IMP.base

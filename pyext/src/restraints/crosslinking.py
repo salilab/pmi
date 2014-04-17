@@ -760,7 +760,8 @@ class ISDCrossLinkMS():
                   c1 = tokens[protein1]
                   r2 = int(tokens[residue2])
                   c2 = tokens[protein2]
-                  ids = float(tokens[idscore])
+                  if idscore==None: ids = 1.0
+                  else: ids = float(tokens[idscore])
                   if xluniqueid==None: xlid=str(nxl)
                   else: xlid = tokens[xluniqueid]
                 except:
@@ -778,7 +779,8 @@ class ISDCrossLinkMS():
                   c1 = entry[protein1]
                   r2 = int(entry[residue2])
                   c2 = entry[protein2]
-                  ids = float(entry[idscore])
+                  if idscore==None: ids = 1.0
+                  else: ids = float(tokens[idscore])
                   if xluniqueid==None: xlid=str(nxl)
                   else: xlid = entry[xluniqueid]
                 except:

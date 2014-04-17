@@ -815,12 +815,14 @@ class Representation():
               self.check_root(name,protein_h,1)
               s1=IMP.atom.Fragment.setup_particle(IMP.Particle(self.m))
               s1.set_name('%s_%i-%i_%s' % (name,start,end,type))
+              s1.set_residue_indexes(range(start,end+1))
               self.hier_representation[name]["Res:1"].add_child(s1)
               outhiers+=[s1]
            if 0 in resolutions:
               self.check_root(name,protein_h,0)
               s0=IMP.atom.Fragment.setup_particle(IMP.Particle(self.m))
               s0.set_name('%s_%i-%i_%s' % (name,start,end,type))
+              s0.set_residue_indexes(range(start,end+1))
               self.hier_representation[name]["Res:0"].add_child(s0)
               outhiers+=[s0]
 
@@ -887,6 +889,7 @@ class Representation():
             chil=s.get_children()
             s0=IMP.atom.Fragment.setup_particle(IMP.Particle(self.m))
             s0.set_name('%s_%i-%i_%s' % (name,start,end,type))
+            s0.set_residue_indexes(range(start,end+1))
             for ch in chil: s0.add_child(ch)
             self.hier_representation[name]["Res:"+str(int(r))].add_child(s0)
             outhiers+=[s0]

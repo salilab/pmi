@@ -1,3 +1,7 @@
+"""@namespace IMP.pmi.samplers
+   Sampling of the system.
+"""
+
 import IMP
 import IMP.core
 

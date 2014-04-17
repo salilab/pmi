@@ -1,3 +1,7 @@
+"""@namespace IMP.pmi.macros
+   Set up of protocols.
+"""
+
 import IMP.pmi.representation
 import IMP.pmi.tools
 import IMP.pmi.samplers

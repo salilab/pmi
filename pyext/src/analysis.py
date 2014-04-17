@@ -1,14 +1,11 @@
 #!/usr/bin/env python
+
+"""@namespace IMP.pmi.analysis
+   Analysis tools.
+"""
+
 import IMP
 import IMP.algebra
-
-
-
-
-############################
-#####Analysis tools
-############################
-
 
 
 class Alignment():

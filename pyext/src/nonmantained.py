@@ -1,3 +1,7 @@
+"""@namespace IMP.pmi.nonmaintained
+   Nonmaintained code.
+"""
+
 class Rods():
     def __init__(self,m):
         self.m=m

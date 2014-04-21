@@ -265,7 +265,8 @@ class Representation():
             return r
 
     def add_component_pdb(self,name,pdbname,chain,resolutions,color=None,resrange=None,offset=0,
-                                   cacenters=True,show=False,isnucleicacid=False,readnonwateratoms=False):
+                                   cacenters=True,show=False,isnucleicacid=False,readnonwateratoms=False,
+                                   read_ca_cb_only=False):
 
         '''
         This method reads a pdb, constructs the fragments corresponding to contiguous senquence stretches,
@@ -288,7 +289,7 @@ class Representation():
         show:             (boolean, optional, default=False): print out the molecular hierarchy at the end.
         isnucleicacid:    (boolean, optional, default=False): use True if you're reading a pdb with nucleic acid.
         readnonwateratoms:(boolean, optional, default=False): if True fixes some pathological pdb.
-
+        read_ca_cb_only: (boolean, optional, default=False): if True, only reads CA/CB
         '''
 
         self.representation_is_modified=True
@@ -298,32 +299,27 @@ class Representation():
         protein_h=self.hier_dict[name]
         outhiers=[]
 
+        # determine selector
+        sel=IMP.atom.NonWaterNonHydrogenPDBSelector()
+        if read_ca_cb_only:
+           cacbsel=IMP.atom.OrPDBSelector(IMP.atom.CAlphaPDBSelector(),IMP.atom.CBetaPDBSelector())
+           sel=IMP.atom.AndPDBSelector(cacbsel,sel)
         if type(chain)==str:
-           #if the chainid is a string
-           if not readnonwateratoms:
-              t=IMP.atom.read_pdb( pdbname, self.m,
-              IMP.atom.AndPDBSelector(IMP.atom.ChainPDBSelector(chain),IMP.atom.NonWaterNonHydrogenPDBSelector()))
-           else:
-              t=IMP.atom.read_pdb( pdbname, self.m,
-              IMP.atom.AndPDBSelector(IMP.atom.ChainPDBSelector(chain),IMP.atom.NonWaterNonHydrogenPDBSelector()))
+           sel=IMP.atom.AndPDBSelector(IMP.atom.ChainPDBSelector(chain),sel)
+           t=IMP.atom.read_pdb( pdbname, self.m,sel)
+
            #get the first and last residue
            start = IMP.atom.Residue(t.get_children()[0].get_children()[0]).get_index()
            end   = IMP.atom.Residue(t.get_children()[0].get_children()[-1]).get_index()
            c=IMP.atom.Chain(IMP.atom.get_by_type(t, IMP.atom.CHAIN_TYPE)[0])
+        else:
+           t=IMP.atom.read_pdb( pdbname, self.m,sel)
+           c=IMP.atom.Chain(IMP.atom.get_by_type(t, IMP.atom.CHAIN_TYPE)[chain])
 
-        elif type(chain)==int:
-           #if the chainid is a number, get the corresponding chain number from the pdb
-           if not readnonwateratoms:
-              s=IMP.atom.read_pdb( pdbname, self.m, IMP.atom.NonWaterNonHydrogenPDBSelector())
-           else:
-              s=IMP.atom.read_pdb( pdbname, self.m, IMP.atom.NonWaterNonHydrogenPDBSelector())
-           t=IMP.atom.Chain(IMP.atom.get_by_type(s, IMP.atom.CHAIN_TYPE)[chain])
            #get the first and last residue
-           start = IMP.atom.Residue(t.get_children()[0]).get_index()
-           end   = IMP.atom.Residue(t.get_children()[-1]).get_index()
-           c=t
-           chain=t.get_id()
-           del s,t
+           start = IMP.atom.Residue(c.get_children()[0]).get_index()
+           end   = IMP.atom.Residue(c.get_children()[-1]).get_index()
+           chain=c.get_id()
 
         if not resrange is None:
            if resrange[0]>start: start=resrange[0]
@@ -489,10 +485,10 @@ class Representation():
             outhiers+=[h]
 
         return outhiers
-        
 
-        
-        
+
+
+
 
     def add_component_necklace(self,name,begin,end,length,incoord=None):
         '''
@@ -585,7 +581,7 @@ class Representation():
               print "add_component_density: no particle was selected"
               return out_hier
 
-           IMP.isd_emxl.gmm_tools.sample_and_fit_to_particles(self.m,
+           density_particles=IMP.isd_emxl.gmm_tools.sample_and_fit_to_particles(self.m,
                                                               fragment_particles,
                                                               num_components,
                                                               sampled_points,
@@ -618,7 +614,7 @@ class Representation():
     def add_all_atom_densities(self,name,hierarchies=None,
                                selection_tuples=None,
                                particles=None,
-                               resolution=0.0,
+                               resolution=0,
                                output_map=None,
                                voxel_size=1.0):
         '''This function decorates all specified particles as Gaussians directly.
@@ -659,13 +655,14 @@ class Representation():
 
         # create a sphereical gaussian for each particle based on atom type
         print 'setting up all atom gaussians num_particles',len(fragment_particles)
-        for p in fragment_particles:
+        for n,p in enumerate(fragment_particles):
             center=IMP.core.XYZ(p).get_coordinates()
             rad=IMP.core.XYZR(p).get_radius()
             mass=IMP.atom.Mass(p).get_mass()
             trans=IMP.algebra.Transformation3D(IMP.algebra.get_identity_rotation_3d(),center)
             shape=IMP.algebra.Gaussian3D(IMP.algebra.ReferenceFrame3D(trans),[rad]*3)
             IMP.core.Gaussian.setup_particle(p,shape)
+            #print 'setting up',n,p
         if not output_map is None:
             print 'writing map to',output_map
             IMP.isd_emxl.gmm_tools.write_gmm_to_map(fragment_particles,output_map,voxel_size)
@@ -1448,11 +1445,11 @@ class Representation():
         '''
         for h in hierarchies:
             ps=IMP.atom.get_leaves(h)
-            for p in ps:  
+            for p in ps:
                if p in self.floppy_bodies:
                   print "remove_floppy_bodies: removing %s from floppy body list" % p.get_name()
                   self.floppy_bodies.remove(p)
-                  
+
 
     def set_floppy_bodies(self):
         for p in self.floppy_bodies:
@@ -1639,7 +1636,7 @@ class Representation():
 
             extra_artists=[]
             npdb=0
-            
+
             if draw_pdb_names==True:
                 for l in list:
                     if l[3]=="pdb":

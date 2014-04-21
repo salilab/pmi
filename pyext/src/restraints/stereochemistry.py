@@ -660,67 +660,93 @@ class PseudoAtomicRestraint():
     import IMP.pmi.tools
     from math import pi as pi
 
-    def __init__(self,representation,selection_tuple,strength=10.0,kappa=1.0):
+    def __init__(self,rnums,representation,selection_tuple,strength=10.0,kappa=1.0,
+                 jitter_angle=0.0,jitter_improper=0.0):
         '''
-        jitter: defines the +- added to the optimal distance in the harmonic well restraint
-                used to increase the tolerance
+        need to add:
+        ca-ca bond
+        ca-cb is a constraint, no restraint needed
+        ca-ca-ca
+        cb-ca-ca-cb
         '''
+
+
+
         self.m=representation.prot.get_model()
         self.rs = IMP.RestraintSet(self.m, "PseudoAtomic")
+        self.rset_angles = IMP.RestraintSet(self.m, "PseudoAtomic_Angles")
+        self.rset_bonds = IMP.RestraintSet(self.m, "PseudoAtomic_Bonds")
         self.weight=1
         self.label="None"
         self.pairslist=[]
 
-        residues=IMP.pmi.tools.select_by_tuple(representation,selection_tuple,resolution=1)
-        for r in residues:
-           rtype=IMP.atom.Residue(r).get_residue_type()
-           print rtype,r
-           if rtype!=IMP.atom.ResidueType("GLY"):
-              p0=4
+        #residues=IMP.pmi.tools.select_by_tuple(representation,selection_tuple,resolution=1)
+        for rnum in rnums:
+           ca,cb=self.get_ca_cb(IMP.pmi.tools.select_by_tuple(representation,
+                                                           (rnum,rnum,'chainA'),resolution=0))
+           if not cb is None:
               nter=False
               cter=False
-              p1=IMP.pmi.tools.select(self,resolution=1,residue=ridx-1)
-              if p1==[]:
+              ca_prev,cb_prev=self.get_ca_cb(IMP.pmi.tools.select_by_tuple(representation,
+                                                           (rnum-1,rnum-1,'chainA'),resolution=0))
+              ca_next,cb_next=self.get_ca_cb(IMP.pmi.tools.select_by_tuple(representation,
+                                                           (rnum+1,rnum+1,'chainA'),resolution=0))
+              if ca_prev is None:
                  nter=True
               else:
-                 p1=p1[0].get_particle()
-                 p2=IMP.pmi.tools.select(self,resolution=1,residue=ridx+1)
-                 if p2==[]:
+                 if ca_next is None:
                     cter=True
                  else:
-                    p2=p2[0].get_particle()
                     if (nter and cter):
                        continue
-                       p3=IMP.Particle(self.m)
-                       #h3=IMP.atom.Hierarchy.setup_particle(p3)
-                       a3=IMP.atom.Atom.setup_particle(p3,IMP.atom.AtomType("CB"))
 
-                #adding a bond restraint between CA and CB
-                h=IMP.core.Harmonic(6.0,kappa)
-                dps=IMP.core.DistancePairScore(h)
-                pr=IMP.core.PairRestraint(dps,IMP.ParticlePair(p0,p3))
-                excluded_pairs.append((p0,p3))
-                rset_bonds.add_restraint(pr)
+              #adding a bond restraint between CA and CB
+              #h=IMP.core.Harmonic(6.0,kappa)
+              #dps=IMP.core.DistancePairScore(h)
+              #pr=IMP.core.PairRestraint(dps,IMP.ParticlePair(ca,cb))
+              #self.pairslist.append((ca,cb))
+              #self.rset_bonds.add_restraint(pr)
 
-                #initializing coordinates for the NZ atom
-                v0=IMP.core.XYZ(p0).get_coordinates()
-                x3=v0[0]
-                y3=v0[1]
-                z3=v0[2]
-                d3=IMP.core.XYZR.setup_particle(p3,
-                              IMP.algebra.Sphere3D(IMP.algebra.Vector3D(x3,y3,z3),4.0))
-                d3.set_coordinates_are_optimized(True)
-                hus=IMP.core.Harmonic(2.09,kappa)
-                if not nter:
-                   ar13=IMP.core.AngleRestraint(hus,p1,p0,p3)
-                   rset_angles.add_restraint(ar13)
-                if not cter:
-                      ar23=IMP.core.AngleRestraint(hus,p2,p0,p3)
-                      rset_angles.add_restraint(ar23)
-                      if not nter and not cter:
-                         hus2=IMP.core.Harmonic(0,kappa)
-                         idr=IMP.core.DihedralRestraint(hus2,p0,p1,p2,p3)
-                         rset_angles.add_restraint(idr)
+              # creating improper dihedral restraint
+              #hus=IMP.core.Harmonic(2.09,kappa)
+              hupp=IMP.core.HarmonicUpperBound(2.09 + jitter_angle/0.5,kappa)
+              hlow=IMP.core.HarmonicLowerBound(2.09 - jitter_angle/0.5,kappa)
+              if not nter:
+                 #ar13=IMP.core.AngleRestraint(hus,ca_prev,ca,cb)
+                 #self.rset_angles.add_restraint(ar13)
+                 ar13u=IMP.core.AngleRestraint(hupp,ca_prev,ca,cb)
+                 ar13l=IMP.core.AngleRestraint(hlow,ca_prev,ca,cb)
+                 self.rset_angles.add_restraint(ar13u)
+                 self.rset_angles.add_restraint(ar13l)
+              if not cter:
+                 #ar23=IMP.core.AngleRestraint(hus,ca_next,ca,cb)
+                 #self.rset_angles.add_restraint(ar23)
+                 ar23u=IMP.core.AngleRestraint(hupp,ca_next,ca,cb)
+                 ar23l=IMP.core.AngleRestraint(hlow,ca_next,ca,cb)
+                 self.rset_angles.add_restraint(ar23u)
+                 self.rset_angles.add_restraint(ar23l)
+              if not nter and not cter:
+                 #hus2=IMP.core.Harmonic(0,kappa)
+                 #idr=IMP.core.DihedralRestraint(hus2,ca,ca_prev,ca_next,cb)
+                 #self.rset_angles.add_restraint(idr)
+
+                 hus2upp=IMP.core.HarmonicUpperBound(jitter_improper,kappa)
+                 hus2low=IMP.core.HarmonicLowerBound(-jitter_improper,kappa)
+                 idru=IMP.core.DihedralRestraint(hus2upp,ca,ca_prev,ca_next,cb)
+                 idrl=IMP.core.DihedralRestraint(hus2low,ca,ca_prev,ca_next,cb)
+                 self.rset_angles.add_restraint(idru)
+                 self.rset_angles.add_restraint(idrl)
+        self.rs.add_restraint(self.rset_bonds)
+        self.rs.add_restraint(self.rset_angles)
+    def get_ca_cb(self,atoms):
+       ca=None
+       cb=None
+       for a in atoms:
+          if IMP.atom.Atom(a).get_atom_type()==IMP.atom.AtomType("CA"):
+             ca=a.get_particle()
+          elif IMP.atom.Atom(a).get_atom_type()==IMP.atom.AtomType("CB"):
+             cb=a.get_particle()
+       return ca,cb
 
     def set_label(self, label):
         self.label = label

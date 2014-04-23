@@ -250,8 +250,8 @@ class ResidueDihedralRestraint():
                    quadruplet.append(p)
             dihedraltype=stringsequence[n]
             if dihedraltype=="C":
-               anglemin=-70.0
-               anglemax=70.0
+               anglemin=-20.0
+               anglemax=20.0
                ts=IMP.core.HarmonicWell((self.pi*anglemin/180.0,self.pi*anglemax/180.0),strength)
                print "ResidueDihedralRestraint: adding a CYS restraint between %s %s %s %s" % (quadruplet[0].get_name(),quadruplet[1].get_name(),
                quadruplet[2].get_name(),quadruplet[3].get_name())
@@ -651,4 +651,126 @@ class CharmmForceFieldRestraint():
         score = self.weight * self.rs.unprotected_evaluate(None)
         output["_TotalScore"] = str(score)
         output["ElasticNetworkRestraint_" + self.label] = str(score)
+        return output
+
+class PseudoAtomicRestraint():
+    '''
+    add bonds and improper dihedral restraints for the CBs
+    '''
+    import IMP.pmi.tools
+    from math import pi as pi
+
+    def __init__(self,rnums,representation,selection_tuple,strength=10.0,kappa=1.0,
+                 jitter_angle=0.0,jitter_improper=0.0):
+        '''
+        need to add:
+        ca-ca bond
+        ca-cb is a constraint, no restraint needed
+        ca-ca-ca
+        cb-ca-ca-cb
+        '''
+
+
+
+        self.m=representation.prot.get_model()
+        self.rs = IMP.RestraintSet(self.m, "PseudoAtomic")
+        self.rset_angles = IMP.RestraintSet(self.m, "PseudoAtomic_Angles")
+        self.rset_bonds = IMP.RestraintSet(self.m, "PseudoAtomic_Bonds")
+        self.weight=1
+        self.label="None"
+        self.pairslist=[]
+
+        #residues=IMP.pmi.tools.select_by_tuple(representation,selection_tuple,resolution=1)
+        for rnum in rnums:
+           ca,cb=self.get_ca_cb(IMP.pmi.tools.select_by_tuple(representation,
+                                                           (rnum,rnum,'chainA'),resolution=0))
+           if not cb is None:
+              nter=False
+              cter=False
+              ca_prev,cb_prev=self.get_ca_cb(IMP.pmi.tools.select_by_tuple(representation,
+                                                           (rnum-1,rnum-1,'chainA'),resolution=0))
+              ca_next,cb_next=self.get_ca_cb(IMP.pmi.tools.select_by_tuple(representation,
+                                                           (rnum+1,rnum+1,'chainA'),resolution=0))
+              if ca_prev is None:
+                 nter=True
+              else:
+                 if ca_next is None:
+                    cter=True
+                 else:
+                    if (nter and cter):
+                       continue
+
+              #adding a bond restraint between CA and CB
+              #h=IMP.core.Harmonic(6.0,kappa)
+              #dps=IMP.core.DistancePairScore(h)
+              #pr=IMP.core.PairRestraint(dps,IMP.ParticlePair(ca,cb))
+              #self.pairslist.append((ca,cb))
+              #self.rset_bonds.add_restraint(pr)
+
+              # creating improper dihedral restraint
+              #hus=IMP.core.Harmonic(2.09,kappa)
+              hupp=IMP.core.HarmonicUpperBound(2.09 + jitter_angle/0.5,kappa)
+              hlow=IMP.core.HarmonicLowerBound(2.09 - jitter_angle/0.5,kappa)
+              if not nter:
+                 #ar13=IMP.core.AngleRestraint(hus,ca_prev,ca,cb)
+                 #self.rset_angles.add_restraint(ar13)
+                 ar13u=IMP.core.AngleRestraint(hupp,ca_prev,ca,cb)
+                 ar13l=IMP.core.AngleRestraint(hlow,ca_prev,ca,cb)
+                 self.rset_angles.add_restraint(ar13u)
+                 self.rset_angles.add_restraint(ar13l)
+              if not cter:
+                 #ar23=IMP.core.AngleRestraint(hus,ca_next,ca,cb)
+                 #self.rset_angles.add_restraint(ar23)
+                 ar23u=IMP.core.AngleRestraint(hupp,ca_next,ca,cb)
+                 ar23l=IMP.core.AngleRestraint(hlow,ca_next,ca,cb)
+                 self.rset_angles.add_restraint(ar23u)
+                 self.rset_angles.add_restraint(ar23l)
+              if not nter and not cter:
+                 #hus2=IMP.core.Harmonic(0,kappa)
+                 #idr=IMP.core.DihedralRestraint(hus2,ca,ca_prev,ca_next,cb)
+                 #self.rset_angles.add_restraint(idr)
+
+                 hus2upp=IMP.core.HarmonicUpperBound(jitter_improper,kappa)
+                 hus2low=IMP.core.HarmonicLowerBound(-jitter_improper,kappa)
+                 idru=IMP.core.DihedralRestraint(hus2upp,ca,ca_prev,ca_next,cb)
+                 idrl=IMP.core.DihedralRestraint(hus2low,ca,ca_prev,ca_next,cb)
+                 self.rset_angles.add_restraint(idru)
+                 self.rset_angles.add_restraint(idrl)
+        self.rs.add_restraint(self.rset_bonds)
+        self.rs.add_restraint(self.rset_angles)
+    def get_ca_cb(self,atoms):
+       ca=None
+       cb=None
+       for a in atoms:
+          if IMP.atom.Atom(a).get_atom_type()==IMP.atom.AtomType("CA"):
+             ca=a.get_particle()
+          elif IMP.atom.Atom(a).get_atom_type()==IMP.atom.AtomType("CB"):
+             cb=a.get_particle()
+       return ca,cb
+
+    def set_label(self, label):
+        self.label = label
+        self.rs.set_name(label)
+        for r in self.rs.get_restraints():
+            r.set_name(label)
+
+    def add_to_model(self):
+        self.m.add_restraint(self.rs)
+
+    def get_restraint(self):
+        return self.rs
+
+    def set_weight(self, weight):
+        self.weight = weight
+        self.rs.set_weight(weight)
+
+    def get_excluded_pairs(self):
+        return self.pairslist
+
+    def get_output(self):
+        self.m.update()
+        output = {}
+        score = self.weight * self.rs.unprotected_evaluate(None)
+        output["_TotalScore"] = str(score)
+        output["PseudoAtomicRestraint_" + self.label] = str(score)
         return output

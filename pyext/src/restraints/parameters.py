@@ -7,6 +7,7 @@ import IMP.atom
 import IMP.container
 import IMP.isd
 
+
 class WeightRestraint():
 
     def __init__(self, weight, lower, upper, kappa):
@@ -50,7 +51,7 @@ class JeffreysPrior():
         self.m = nuisance.get_model()
         self.label = "None"
         self.rs = IMP.RestraintSet(self.m, 'jeffrey_prior')
-        jp = IMP.isd.JeffreysRestraint(self.m,nuisance)
+        jp = IMP.isd.JeffreysRestraint(self.m, nuisance)
         self.rs.add_restraint(jp)
 
     def add_to_model(self):

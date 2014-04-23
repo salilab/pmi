@@ -6,6 +6,7 @@ import IMP.algebra
 import IMP.atom
 import IMP.container
 
+
 class ConnectivityCrossLinkMS():
 
     '''
@@ -19,7 +20,7 @@ class ConnectivityCrossLinkMS():
         restraints_file,
         expdistance,
         strength=None,
-        resolution=None):
+            resolution=None):
 
         self.m = representation.prot.get_model()
         self.rs = IMP.RestraintSet(self.m, 'data')
@@ -31,7 +32,7 @@ class ConnectivityCrossLinkMS():
         self.expdistance = expdistance
         self.strength = strength
 
-        fl=IMP.pmi.tools.open_file_or_inline_text(restraints_file)
+        fl = IMP.pmi.tools.open_file_or_inline_text(restraints_file)
 
         for line in fl:
 
@@ -44,20 +45,30 @@ class ConnectivityCrossLinkMS():
             r2 = int(tokens[3])
             c2 = tokens[1]
 
-            ps1=IMP.pmi.tools.select(representation,resolution=resolution,name=c1,name_is_ambiguous=True,residue=r1)
-            hrc1=[representation.hier_db.particle_to_name[p] for p in ps1]
+            ps1 = IMP.pmi.tools.select(
+                representation,
+                resolution=resolution,
+                name=c1,
+                name_is_ambiguous=True,
+                residue=r1)
+            hrc1 = [representation.hier_db.particle_to_name[p] for p in ps1]
             if len(ps1) == 0:
                 print "ConnectivityCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1, c1)
                 continue
 
-            ps2=IMP.pmi.tools.select(representation,resolution=resolution,name=c2,name_is_ambiguous=True,residue=r2)
-            hrc2=[representation.hier_db.particle_to_name[p] for p in ps2]
+            ps2 = IMP.pmi.tools.select(
+                representation,
+                resolution=resolution,
+                name=c2,
+                name_is_ambiguous=True,
+                residue=r2)
+            hrc2 = [representation.hier_db.particle_to_name[p] for p in ps2]
             if len(ps2) == 0:
                 print "ConnectivityCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2, c2)
                 continue
 
-            s1=IMP.atom.Selection(ps1)
-            s2=IMP.atom.Selection(ps2)
+            s1 = IMP.atom.Selection(ps1)
+            s2 = IMP.atom.Selection(ps2)
 
             # calculate the radii to estimate the slope of the restraint
             if self.strength is None:
@@ -175,7 +186,6 @@ class ConnectivityCrossLinkMS():
         return output
 
 
-
 class SimplifiedCrossLinkMS():
 
     def __init__(
@@ -187,7 +197,7 @@ class SimplifiedCrossLinkMS():
         resolution=None,
         columnmapping=None,
         truncated=True,
-        spheredistancepairscore=True):
+            spheredistancepairscore=True):
         # columnindexes is a list of column indexes for protein1, protein2, residue1, residue2
         # by default column 0 = protein1; column 1 = protein2; column 2 =
         # residue1; column 3 = residue2
@@ -209,8 +219,8 @@ class SimplifiedCrossLinkMS():
         self.outputlevel = "low"
         self.expdistance = expdistance
         self.strength = strength
-        self.truncated=truncated
-        self.spheredistancepairscore=spheredistancepairscore
+        self.truncated = truncated
+        self.spheredistancepairscore = spheredistancepairscore
 
         # fill the cross-linker pmfs
         # to accelerate the init the list listofxlinkertypes might contain only
@@ -220,7 +230,7 @@ class SimplifiedCrossLinkMS():
         residue1 = columnmapping["Residue1"]
         residue2 = columnmapping["Residue2"]
 
-        fl=IMP.pmi.tools.open_file_or_inline_text(restraints_file)
+        fl = IMP.pmi.tools.open_file_or_inline_text(restraints_file)
 
         for line in fl:
 
@@ -233,8 +243,18 @@ class SimplifiedCrossLinkMS():
             r2 = int(tokens[residue2])
             c2 = tokens[protein2]
 
-            ps1=IMP.pmi.tools.select(representation,resolution=resolution,name=c1,name_is_ambiguous=False,residue=r1)
-            ps2=IMP.pmi.tools.select(representation,resolution=resolution,name=c2,name_is_ambiguous=False,residue=r2)
+            ps1 = IMP.pmi.tools.select(
+                representation,
+                resolution=resolution,
+                name=c1,
+                name_is_ambiguous=False,
+                residue=r1)
+            ps2 = IMP.pmi.tools.select(
+                representation,
+                resolution=resolution,
+                name=c2,
+                name_is_ambiguous=False,
+                residue=r2)
 
             if len(ps1) > 1:
                 print "SimplifiedCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles" % (r1, c1)
@@ -264,23 +284,22 @@ class SimplifiedCrossLinkMS():
 
             else:
 
-
                 if self.truncated:
-                   limit = self.strength * (self.expdistance + 15) ** 2 + 10.0
-                   hub = IMP.core.TruncatedHarmonicUpperBound(
-                      self.expdistance,
-                      self.strength,
-                      self.expdistance +
-                      15.,
-                      limit)
+                    limit = self.strength * (self.expdistance + 15) ** 2 + 10.0
+                    hub = IMP.core.TruncatedHarmonicUpperBound(
+                        self.expdistance,
+                        self.strength,
+                        self.expdistance +
+                        15.,
+                        limit)
                 else:
-                   hub = IMP.core.HarmonicUpperBound(
-                      self.expdistance,
-                      self.strength)
+                    hub = IMP.core.HarmonicUpperBound(
+                        self.expdistance,
+                        self.strength)
                 if self.spheredistancepairscore:
-                   df = IMP.core.SphereDistancePairScore(hub)
+                    df = IMP.core.SphereDistancePairScore(hub)
                 else:
-                   df = IMP.core.DistancePairScore(hub)
+                    df = IMP.core.DistancePairScore(hub)
                 dr = IMP.core.PairRestraint(df, (p1, p2))
                 dr.set_name(c1 + ":" + str(r1) + "-" + c2 + ":" + str(r2))
 
@@ -333,17 +352,17 @@ class SimplifiedCrossLinkMS():
         d1.set_radius(radius1)
         d2.set_radius(radius2)
         if self.truncated:
-           limit = self.strength * (self.expdistance + 15) ** 2 + 10.0
-           hub = IMP.core.TruncatedHarmonicUpperBound(
-              self.expdistance,
-              self.strength,
-              self.expdistance +
-              15.,
-              limit)
+            limit = self.strength * (self.expdistance + 15) ** 2 + 10.0
+            hub = IMP.core.TruncatedHarmonicUpperBound(
+                self.expdistance,
+                self.strength,
+                self.expdistance +
+                15.,
+                limit)
         else:
-           hub = IMP.core.HarmonicUpperBound(
-              self.expdistance,
-              self.strength)
+            hub = IMP.core.HarmonicUpperBound(
+                self.expdistance,
+                self.strength)
         df = IMP.core.SphereDistancePairScore(hub)
         dr = IMP.core.PairRestraint(df, (p1, p2))
         dists = []
@@ -381,26 +400,25 @@ class SimplifiedCrossLinkMS():
                    label] = str(self.weight * ln.unprotected_evaluate(None))
 
             if self.spheredistancepairscore:
-               d0 = IMP.core.XYZR(p0)
-               d1 = IMP.core.XYZR(p1)
+                d0 = IMP.core.XYZR(p0)
+                d1 = IMP.core.XYZR(p1)
             else:
-               d0 = IMP.core.XYZ(p0)
-               d1 = IMP.core.XYZ(p1)
+                d0 = IMP.core.XYZ(p0)
+                d1 = IMP.core.XYZ(p1)
             output["SimplifiedCrossLinkMS_Distance_" +
                    label] = str(IMP.core.get_distance(d0, d1))
 
         return output
 
-###########################
-
+#
 
 
 class SigmoidalCrossLinkMS():
 
     def __init__(
         self, representation, restraints_file, inflection, slope, amplitude,
-        linear_slope, resolution=None,columnmapping=None, csvfile=False,
-        filters=None,filelabel="None"):
+        linear_slope, resolution=None, columnmapping=None, csvfile=False,
+            filters=None, filelabel="None"):
         # columnindexes is a list of column indexes for protein1, protein2, residue1, residue2
         # by default column 0 = protein1; column 1 = protein2; column 2 = residue1; column 3 = residue2
         # the filters applies to the csvfile, the format is
@@ -444,9 +462,9 @@ class SigmoidalCrossLinkMS():
         residue1 = columnmapping["Residue1"]
         residue2 = columnmapping["Residue2"]
 
-        indb = open("included."+filelabel+".xl.db", "w")
-        exdb = open("excluded."+filelabel+".xl.db", "w")
-        midb = open("missing."+filelabel+".xl.db", "w")
+        indb = open("included." + filelabel + ".xl.db", "w")
+        exdb = open("excluded." + filelabel + ".xl.db", "w")
+        midb = open("missing." + filelabel + ".xl.db", "w")
 
         for entry in db:
             if not csvfile:
@@ -469,8 +487,18 @@ class SigmoidalCrossLinkMS():
                 r2 = int(entry[residue2])
                 c2 = entry[protein2]
 
-            ps1=IMP.pmi.tools.select(representation,resolution=resolution,name=c1,name_is_ambiguous=False,residue=r1)
-            ps2=IMP.pmi.tools.select(representation,resolution=resolution,name=c2,name_is_ambiguous=False,residue=r2)
+            ps1 = IMP.pmi.tools.select(
+                representation,
+                resolution=resolution,
+                name=c1,
+                name_is_ambiguous=False,
+                residue=r1)
+            ps2 = IMP.pmi.tools.select(
+                representation,
+                resolution=resolution,
+                name=c2,
+                name_is_ambiguous=False,
+                residue=r2)
 
             if len(ps1) > 1:
                 print "SigmoidalCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s" % (r1, c1, str(ps1))
@@ -602,48 +630,49 @@ class SigmoidalCrossLinkMS():
             label = str(resid1) + ":" + chain1 + "_" + \
                 str(resid2) + ":" + chain2
             output["SigmoidalCrossLinkMS_Score_" + crosslinker + "_" +
-                   label+"_"+self.label] = str(self.weight * ln.unprotected_evaluate(None))
+                   label + "_" + self.label] = str(self.weight * ln.unprotected_evaluate(None))
             d0 = IMP.core.XYZR(p0)
             d1 = IMP.core.XYZR(p1)
             output["SigmoidalCrossLinkMS_Distance_" +
-                   label+"_"+self.label] = str(IMP.core.get_distance(d0, d1))
+                   label + "_" + self.label] = str(IMP.core.get_distance(d0, d1))
 
         return output
 
 
-
-###########################
-
-
+#
 class ISDCrossLinkMS():
     import IMP.isd
     try:
-       import IMP.isd_emxl
-       no_isd_emxl=False
+        import IMP.isd_emxl
+        no_isd_emxl = False
     except:
-       no_isd_emxl=True
+        no_isd_emxl = True
     import IMP.pmi.tools
     from math import log
 
-    def __init__(self, representation, 
-                       restraints_file, 
-                       length, 
-                       jackknifing=None,    # jackknifing (Float [0,1]) default=None; percentage of data to be removed randomly
-                       resolution=None,     # resolution (Non-negative Integer) default=None; percentage of data to be removed randomly
-                       slope=0.0,
-                       inner_slope=0.0,
-                       columnmapping=None, 
-                       csvfile=False, 
-                       samplelength=False,
-                       ids_map=None, 
-                       radius_map=None, 
-                       filters=None,
-                       label="None",
-                       filelabel="None",
-                       marginal=False,
-                       automatic_sigma_classification=False,
-                       attributes_for_label=None):
-                       
+    def __init__(self, representation,
+                 restraints_file,
+                 length,
+                 jackknifing=None,
+                 # jackknifing (Float [0,1]) default=None; percentage of data to be
+                 # removed randomly
+                 resolution=None,
+                 # resolution (Non-negative Integer) default=None; percentage of data
+                 # to be removed randomly
+                 slope=0.0,
+                 inner_slope=0.0,
+                 columnmapping=None,
+                 csvfile=False,
+                 samplelength=False,
+                 ids_map=None,
+                 radius_map=None,
+                 filters=None,
+                 label="None",
+                 filelabel="None",
+                 marginal=False,
+                 automatic_sigma_classification=False,
+                 attributes_for_label=None):
+
         # columnindexes is a list of column indexes for protein1, protein2, residue1, residue2,idscore, XL unique id
         # by default column 0 = protein1; column 1 = protein2; column 2 = residue1; column 3 = residue2;
         # column 4 = idscores
@@ -652,10 +681,10 @@ class ISDCrossLinkMS():
         # inner_slope is the slope defined on the restraint dierectly
         # suggestion: do not use both!
 
-        if type(representation)!=list:
-           representations=[representation]
+        if type(representation) != list:
+            representations = [representation]
         else:
-           representations=representation
+            representations = representation
 
         if columnmapping is None:
             columnmapping = {}
@@ -674,28 +703,27 @@ class ISDCrossLinkMS():
         else:
             db = IMP.pmi.tools.open_file_or_inline_text(restraints_file)
 
-        indb = open("included."+filelabel+".xl.db", "w")
-        exdb = open("excluded."+filelabel+".xl.db", "w")
-        midb = open("missing."+filelabel+".xl.db", "w")
+        indb = open("included." + filelabel + ".xl.db", "w")
+        exdb = open("excluded." + filelabel + ".xl.db", "w")
+        midb = open("missing." + filelabel + ".xl.db", "w")
 
         self.m = representations[0].prot.get_model()
-        self.marginal=marginal
+        self.marginal = marginal
         self.rs = IMP.RestraintSet(self.m, 'data')
         if not self.marginal:
-           self.rspsi = IMP.RestraintSet(self.m, 'prior_psi')
+            self.rspsi = IMP.RestraintSet(self.m, 'prior_psi')
         self.rssig = IMP.RestraintSet(self.m, 'prior_sigmas')
         self.rslin = IMP.RestraintSet(self.m, 'prior_linear')
         self.rslen = IMP.RestraintSet(self.m, 'prior_length')
-
 
         self.label = label
         self.pairs = []
         self.sigma_dictionary = {}
         if not self.marginal:
-           self.psi_dictionary = {}
+            self.psi_dictionary = {}
         self.samplelength = samplelength
-        self.psi_is_sampled=True
-        
+        self.psi_is_sampled = True
+
         if ids_map is None:
             self.ids_map = IMP.pmi.tools.map()
             self.ids_map.set_map_element(20.0, 0.05)
@@ -706,13 +734,12 @@ class ISDCrossLinkMS():
         if radius_map is None:
             self.radius_map = IMP.pmi.tools.map()
             if automatic_sigma_classification:
-               self.radius_map.set_map_element(10, 10)
+                self.radius_map.set_map_element(10, 10)
             self.radius_map.set_map_element(1, 1)
         else:
             self.radius_map = radius_map
 
         self.outputlevel = "low"
-
 
         # small linear contribution for long range
         self.linear = IMP.core.Linear(0, 0.0)
@@ -725,9 +752,9 @@ class ISDCrossLinkMS():
         residue2 = columnmapping["Residue2"]
         idscore = columnmapping["IDScore"]
         try:
-           xluniqueid = columnmapping["XLUniqueID"]
+            xluniqueid = columnmapping["XLUniqueID"]
         except:
-           xluniqueid=None
+            xluniqueid = None
 
         restraints = []
 
@@ -735,20 +762,20 @@ class ISDCrossLinkMS():
         # if one id is already present in the dictionary, add the term to the
         # corresponding already geenrated restraint
 
-        uniqueid_restraints_map={}
+        uniqueid_restraints_map = {}
 
         for nxl, entry in enumerate(db):
-            
+
             if not jackknifing is None:
-            
-               # to be implemented
-               # the problem is that in the replica exchange
-               # you have to broadcast the same restraints to every
-               # replica
-               
-               print "jackknifing not yet implemented"; exit()
-            
-            
+
+                # to be implemented
+                # the problem is that in the replica exchange
+                # you have to broadcast the same restraints to every
+                # replica
+
+                print "jackknifing not yet implemented"
+                exit()
+
             if not csvfile:
                 tokens = entry.split()
                 # skip character
@@ -756,17 +783,21 @@ class ISDCrossLinkMS():
                 if (tokens[0] == "#"):
                     continue
                 try:
-                  r1 = int(tokens[residue1])
-                  c1 = tokens[protein1]
-                  r2 = int(tokens[residue2])
-                  c2 = tokens[protein2]
-                  if idscore==None: ids = 1.0
-                  else: ids = float(tokens[idscore])
-                  if xluniqueid==None: xlid=str(nxl)
-                  else: xlid = tokens[xluniqueid]
+                    r1 = int(tokens[residue1])
+                    c1 = tokens[protein1]
+                    r2 = int(tokens[residue2])
+                    c2 = tokens[protein2]
+                    if idscore is None:
+                        ids = 1.0
+                    else:
+                        ids = float(tokens[idscore])
+                    if xluniqueid is None:
+                        xlid = str(nxl)
+                    else:
+                        xlid = tokens[xluniqueid]
                 except:
-                  print "this line was not accessible "+str(entry)
-                  continue
+                    print "this line was not accessible " + str(entry)
+                    continue
 
             else:
                 if filters is not None:
@@ -775,153 +806,173 @@ class ISDCrossLinkMS():
                         continue
 
                 try:
-                  r1 = int(entry[residue1])
-                  c1 = entry[protein1]
-                  r2 = int(entry[residue2])
-                  c2 = entry[protein2]
-                  if idscore==None: ids = 1.0
-                  else: ids = float(tokens[idscore])
-                  if xluniqueid==None: xlid=str(nxl)
-                  else: xlid = entry[xluniqueid]
+                    r1 = int(entry[residue1])
+                    c1 = entry[protein1]
+                    r2 = int(entry[residue2])
+                    c2 = entry[protein2]
+                    if idscore is None:
+                        ids = 1.0
+                    else:
+                        ids = float(tokens[idscore])
+                    if xluniqueid is None:
+                        xlid = str(nxl)
+                    else:
+                        xlid = entry[xluniqueid]
                 except:
-                  print "this line was not accessible "+str(entry)
-                  continue
+                    print "this line was not accessible " + str(entry)
+                    continue
 
+            for nstate, r in enumerate(representations):
+                # loop over every state
+                ps1 = IMP.pmi.tools.select(
+                    r,
+                    resolution=resolution,
+                    name=c1,
+                    name_is_ambiguous=False,
+                    residue=r1)
+                ps2 = IMP.pmi.tools.select(
+                    r,
+                    resolution=resolution,
+                    name=c2,
+                    name_is_ambiguous=False,
+                    residue=r2)
 
+                if len(ps1) > 1:
+                    print "ISDCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s" % (r1, c1, str(ps1))
+                    exit()
+                elif len(ps1) == 0:
+                    print "ISDCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1, c1)
+                    midb.write(str(entry) + "\n")
+                    continue
 
-            for nstate,r in enumerate(representations):
-              #loop over every state
-              ps1=IMP.pmi.tools.select(r,resolution=resolution,name=c1,name_is_ambiguous=False,residue=r1)
-              ps2=IMP.pmi.tools.select(r,resolution=resolution,name=c2,name_is_ambiguous=False,residue=r2)
+                if len(ps2) > 1:
+                    print "ISDCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s" % (r2, c2, str(ps2))
+                    exit()
+                elif len(ps2) == 0:
+                    print "ISDCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2, c2)
+                    midb.write(str(entry) + "\n")
+                    continue
 
-              if len(ps1) > 1:
-                  print "ISDCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s" % (r1, c1, str(ps1))
-                  exit()
-              elif len(ps1) == 0:
-                  print "ISDCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1, c1)
-                  midb.write(str(entry) + "\n")
-                  continue
+                p1 = ps1[0]
+                p2 = ps2[0]
 
-              if len(ps2) > 1:
-                  print "ISDCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s" % (r2, c2, str(ps2))
-                  exit()
-              elif len(ps2) == 0:
-                  print "ISDCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2, c2)
-                  midb.write(str(entry) + "\n")
-                  continue
+                # remove in the future!!!
+                if p1 == p2:
+                    continue
 
-              p1 = ps1[0]
-              p2 = ps2[0]
+                if xlid in uniqueid_restraints_map:
+                    print "getting a crosslink restraint from id %s" % str(xlid)
+                    dr = uniqueid_restraints_map[xlid]
 
-              # remove in the future!!!
-              if p1 == p2:
-                continue
+                else:
+                    if not self.marginal:
+                        if not self.samplelength:
+                            print "generating a new crosslink restraint"
+                            dr = IMP.isd_emxl.CrossLinkMSRestraint(
+                                self.m,
+                                length,
+                                inner_slope)
+                        else:
+                            # this will create a xl length particle that will
+                            # be sampled
+                            self.create_length()
+                            dr = IMP.isd_emxl.CrossLinkMSRestraint(
+                                self.m,
+                                self.length)
 
-              if xlid in uniqueid_restraints_map:
-                 print "getting a crosslink restraint from id %s" % str(xlid)
-                 dr=uniqueid_restraints_map[xlid]
-
-              else:
-                  if not self.marginal:
-                    if not self.samplelength:
-                      print "generating a new crosslink restraint"
-                      dr = IMP.isd_emxl.CrossLinkMSRestraint(self.m, length, inner_slope)
                     else:
-                      # this will create a xl length particle that will be sampled
-                      self.create_length()
-                      dr = IMP.isd_emxl.CrossLinkMSRestraint(self.m, self.length)
+                        if not self.samplelength:
+                            dr = IMP.isd_emxl.CrossLinkMSMarginalRestraint(
+                                self.m,
+                                length)
+                        else:
+                            # this will create a xl length particle that will
+                            # be sampled
+                            self.create_length()
+                            dr = IMP.isd_emxl.CrossLinkMSMarginalRestraint(
+                                self.m,
+                                self.length)
 
-                  else:
-                    if not self.samplelength:
-                      dr = IMP.isd_emxl.CrossLinkMSMarginalRestraint(self.m, length)
-                    else:
-                      # this will create a xl length particle that will be sampled
-                      self.create_length()
-                      dr = IMP.isd_emxl.CrossLinkMSMarginalRestraint(self.m, self.length)
+                    uniqueid_restraints_map[xlid] = dr
 
-                  uniqueid_restraints_map[xlid]=dr
+                mappedr1 = self.radius_map.get_map_element(
+                    IMP.pmi.Uncertainty(p1).get_uncertainty())
+                sigma1 = self.get_sigma(mappedr1)[0]
+                mappedr2 = self.radius_map.get_map_element(
+                    IMP.pmi.Uncertainty(p2).get_uncertainty())
+                sigma2 = self.get_sigma(mappedr2)[0]
 
-              mappedr1 = self.radius_map.get_map_element(
-                  IMP.pmi.Uncertainty(p1).get_uncertainty())
-              sigma1 = self.get_sigma(mappedr1)[0]
-              mappedr2 = self.radius_map.get_map_element(
-                  IMP.pmi.Uncertainty(p2).get_uncertainty())
-              sigma2 = self.get_sigma(mappedr2)[0]
+                if not self.marginal:
+                    psival = self.ids_map.get_map_element(ids)
+                    psi = self.get_psi(psival)[0]
 
-              if not self.marginal:
-                 psival = self.ids_map.get_map_element(ids)
-                 psi = self.get_psi(psival)[0]
+                p1i = p1.get_particle_index()
+                p2i = p2.get_particle_index()
+                s1i = sigma1.get_particle().get_index()
+                s2i = sigma2.get_particle().get_index()
 
-              p1i = p1.get_particle_index()
-              p2i = p2.get_particle_index()
-              s1i = sigma1.get_particle().get_index()
-              s2i = sigma2.get_particle().get_index()
+                print nstate, p1i, p2i, p1.get_name(), p2.get_name()
 
-              print nstate,p1i,p2i,p1.get_name(),p2.get_name()
+                if not self.marginal:
+                    psii = psi.get_particle().get_index()
+                    dr.add_contribution((p1i, p2i), (s1i, s2i), psii)
+                    print "--------------"
+                    print "ISDCrossLinkMS: generating cross-link restraint between"
+                    print "ISDCrossLinkMS: residue %d of chain %s and residue %d of chain %s" % (r1, c1, r2, c2)
+                    print "ISDCrossLinkMS: with sigma1 %f  sigma2 %f psi %s" % (mappedr1, mappedr2, psival)
+                    print "ISDCrossLinkMS: between particles %s and %s" % (p1.get_name(), p2.get_name())
+                else:
+                    psival = None
+                    dr.add_contribution((p1i, p2i), (s1i, s2i))
+                    print "--------------"
+                    print "ISDCrossLinkMS: generating marginal cross-link restraint between"
+                    print "ISDCrossLinkMS: residue %d of chain %s and residue %d of chain %s" % (r1, c1, r2, c2)
+                    print "ISDCrossLinkMS: with sigma1 %f  sigma2 %f" % (mappedr1, mappedr2)
+                    print "ISDCrossLinkMS: between particles %s and %s" % (p1.get_name(), p2.get_name())
 
-              if not self.marginal:
-                 psii = psi.get_particle().get_index()
-                 dr.add_contribution((p1i, p2i), (s1i, s2i), psii)
-                 print "--------------"
-                 print "ISDCrossLinkMS: generating cross-link restraint between"
-                 print "ISDCrossLinkMS: residue %d of chain %s and residue %d of chain %s" % (r1, c1, r2, c2)
-                 print "ISDCrossLinkMS: with sigma1 %f  sigma2 %f psi %s" % (mappedr1, mappedr2, psival)
-                 print "ISDCrossLinkMS: between particles %s and %s" % (p1.get_name(), p2.get_name())
-              else:
-                 psival=None
-                 dr.add_contribution((p1i, p2i), (s1i, s2i))
-                 print "--------------"
-                 print "ISDCrossLinkMS: generating marginal cross-link restraint between"
-                 print "ISDCrossLinkMS: residue %d of chain %s and residue %d of chain %s" % (r1, c1, r2, c2)
-                 print "ISDCrossLinkMS: with sigma1 %f  sigma2 %f" % (mappedr1, mappedr2)
-                 print "ISDCrossLinkMS: between particles %s and %s" % (p1.get_name(), p2.get_name())
+                indb.write(str(entry) + "\n")
 
+                restraints.append(dr)
 
+                # check if the two residues belong to the same rigid body
+                if(IMP.core.RigidMember.get_is_setup(p1) and
+                   IMP.core.RigidMember.get_is_setup(p2) and
+                   IMP.core.RigidMember(p1).get_rigid_body() ==
+                   IMP.core.RigidMember(p2).get_rigid_body()):
+                    xlattribute = "intrarb"
+                else:
+                    xlattribute = "interrb"
 
-              indb.write(str(entry) + "\n")
+                if csvfile:
+                    if not attributes_for_label is None:
+                        for a in attributes_for_label:
+                            xlattribute = xlattribute + "_" + str(entry[a])
 
-              restraints.append(dr)
+                xlattribute = xlattribute + "-State:" + str(nstate)
 
-              # check if the two residues belong to the same rigid body
-              if(IMP.core.RigidMember.get_is_setup(p1) and
-                 IMP.core.RigidMember.get_is_setup(p2) and
-                 IMP.core.RigidMember(p1).get_rigid_body() ==
-                 IMP.core.RigidMember(p2).get_rigid_body()):
-                 xlattribute = "intrarb"
-              else:
-                 xlattribute = "interrb"
+                dr.set_name(
+                    xlattribute + "-" + c1 + ":" + str(r1) + "-" + c2 + ":" + str(r2) + "_" + self.label)
 
-              if csvfile:
-                 if not attributes_for_label is None:
-                   for a in attributes_for_label:
-                      xlattribute=xlattribute+"_"+str(entry[a])
+                pr = IMP.core.PairRestraint(dps2, IMP.ParticlePair(p1, p2))
+                pr.set_name(
+                    xlattribute + "-" + c1 + ":" + str(r1) + "-" + c2 + ":" + str(r2) + "_" + self.label)
+                self.rslin.add_restraint(pr)
 
-              xlattribute=xlattribute+"-State:"+str(nstate)
-
-              dr.set_name(
-                xlattribute + "-" + c1 + ":" + str(r1) + "-" + c2 + ":" + str(r2)+"_"+self.label)
-
-              pr = IMP.core.PairRestraint(dps2, IMP.ParticlePair(p1, p2))
-              pr.set_name(
-                xlattribute + "-" + c1 + ":" + str(r1) + "-" + c2 + ":" + str(r2)+"_"+self.label)
-              self.rslin.add_restraint(pr)
-
-              self.pairs.append(
-                (p1,
-                 p2,
-                 dr,
-                 r1,
-                 c1,
-                 r2,
-                 c2,
-                 xlattribute,
-                 mappedr1,
-                 mappedr2,
-                 psival))
+                self.pairs.append(
+                    (p1,
+                     p2,
+                     dr,
+                     r1,
+                     c1,
+                     r2,
+                     c2,
+                     xlattribute,
+                     mappedr1,
+                     mappedr2,
+                     psival))
 
         lw = IMP.isd_emxl.LogWrapper(restraints)
         self.rs.add_restraint(lw)
-
 
     def create_length(self):
         self.lengthinit = 10.0
@@ -932,7 +983,7 @@ class ISDCrossLinkMS():
         self.lengthmax = 30.0
         self.lengthtrans = 0.2
         self.length = IMP.pmi.tools.SetupNuisance(self.m, self.lengthinit,
-                                          self.lengthminnuis, self.lengthmaxnuis, self.lengthissampled).get_particle()
+                                                  self.lengthminnuis, self.lengthmaxnuis, self.lengthissampled).get_particle()
         self.rslen.add_restraint(
             IMP.isd_emxl.UniformPrior(
                 self.m,
@@ -950,7 +1001,7 @@ class ISDCrossLinkMS():
         self.sigmamax = 100.0
         self.sigmatrans = 0.5
         self.sigma = IMP.pmi.tools.SetupNuisance(self.m, self.sigmainit,
-                                         self.sigmaminnuis, self.sigmamaxnuis, self.sigmaissampled).get_particle()
+                                                 self.sigmaminnuis, self.sigmamaxnuis, self.sigmaissampled).get_particle()
         self.sigma_dictionary[resolution] = (
             self.sigma,
             self.sigmatrans,
@@ -981,8 +1032,8 @@ class ISDCrossLinkMS():
         self.psimax = 0.49
         self.psitrans = 0.1
         self.psi = IMP.pmi.tools.SetupNuisance(self.m, self.psiinit,
-                                       self.psiminnuis, self.psimaxnuis,
-                                       self.psiissampled).get_particle()
+                                               self.psiminnuis, self.psimaxnuis,
+                                               self.psiissampled).get_particle()
         self.psi_dictionary[value] = (
             self.psi,
             self.psitrans,
@@ -994,7 +1045,7 @@ class ISDCrossLinkMS():
                 1000000000.0,
                 self.psimax,
                 self.psimin))
-        self.rspsi.add_restraint(IMP.isd.JeffreysRestraint(self.m,self.psi))
+        self.rspsi.add_restraint(IMP.isd.JeffreysRestraint(self.m, self.psi))
 
     def get_psi(self, value):
         if not value in self.psi_dictionary:
@@ -1007,7 +1058,7 @@ class ISDCrossLinkMS():
     def add_to_model(self):
         self.m.add_restraint(self.rs)
         if not self.marginal:
-           self.m.add_restraint(self.rspsi)
+            self.m.add_restraint(self.rspsi)
         self.m.add_restraint(self.rssig)
         self.m.add_restraint(self.rslen)
         self.m.add_restraint(self.rslin)
@@ -1042,8 +1093,8 @@ class ISDCrossLinkMS():
             # this might be "low" or "high"
         self.outputlevel = level
 
-    def set_psi_is_sampled(self,is_sampled=True):
-        self.psi_is_sampled=is_sampled
+    def set_psi_is_sampled(self, is_sampled=True):
+        self.psi_is_sampled = is_sampled
 
     def get_output(self):
         # content of the crosslink database pairs
@@ -1057,8 +1108,8 @@ class ISDCrossLinkMS():
         output["ISDCrossLinkMS_PriorSig_Score_" +
                self.label] = self.rssig.unprotected_evaluate(None)
         if not self.marginal:
-           output["ISDCrossLinkMS_PriorPsi_Score_" +
-               self.label] = self.rspsi.unprotected_evaluate(None)
+            output["ISDCrossLinkMS_PriorPsi_Score_" +
+                   self.label] = self.rspsi.unprotected_evaluate(None)
         output["ISDCrossLinkMS_Linear_Score_" +
                self.label] = self.rslin.unprotected_evaluate(None)
         for i in range(len(self.pairs)):
@@ -1079,16 +1130,16 @@ class ISDCrossLinkMS():
                 str(resid1) + ":" + chain1 + "_" + str(resid2) + ":" + \
                 chain2 + "-" + str(rad1) + "-" + str(rad2) + "-" + str(psi)
             output["ISDCrossLinkMS_Score_" +
-                   label+"_"+self.label] = str(-self.log(ln.unprotected_evaluate(None)))
+                   label + "_" + self.label] = str(-self.log(ln.unprotected_evaluate(None)))
             d0 = IMP.core.XYZ(p0)
             d1 = IMP.core.XYZ(p1)
             output["ISDCrossLinkMS_Distance_" +
-                   label+"_"+self.label] = str(IMP.core.get_distance(d0, d1))
+                   label + "_" + self.label] = str(IMP.core.get_distance(d0, d1))
 
         if not self.marginal:
-          for psiindex in self.psi_dictionary:
-            output["ISDCrossLinkMS_Psi_" +
-                   str(psiindex) + "_" + self.label] = str(self.psi_dictionary[psiindex][0].get_scale())
+            for psiindex in self.psi_dictionary:
+                output["ISDCrossLinkMS_Psi_" +
+                       str(psiindex) + "_" + self.label] = str(self.psi_dictionary[psiindex][0].get_scale())
 
         for resolution in self.sigma_dictionary:
             output["ISDCrossLinkMS_Sigma_" +
@@ -1110,10 +1161,10 @@ class ISDCrossLinkMS():
                      self.sigma_dictionary[resolution][1])
 
         if (not self.marginal) and self.psi_is_sampled:
-          for psiindex in self.psi_dictionary:
-            if self.psi_dictionary[psiindex][2]:
-                ps["Nuisances_ISDCrossLinkMS_Psi_" +
-                    str(psiindex) + "_" + self.label] = ([self.psi_dictionary[psiindex][0]], self.psi_dictionary[psiindex][1])
+            for psiindex in self.psi_dictionary:
+                if self.psi_dictionary[psiindex][2]:
+                    ps["Nuisances_ISDCrossLinkMS_Psi_" +
+                        str(psiindex) + "_" + self.label] = ([self.psi_dictionary[psiindex][0]], self.psi_dictionary[psiindex][1])
 
         if self.samplelength:
             if self.lengthissampled:
@@ -1123,11 +1174,7 @@ class ISDCrossLinkMS():
         return ps
 
 
-
-
-###########################
-
-
+#
 class CysteineCrossLinkRestraint():
 
     import IMP.isd
@@ -1147,7 +1194,6 @@ class CysteineCrossLinkRestraint():
     # epsilonname is a name for the epsilon particle that must be used for that particular
     # residue pair, eg, "Epsilon-Intra-Solvent", or
     # "Epsilon-Solvent-Membrane", etc.
-
 
         self.representations = representations
         self.m = self.representations[0].prot.get_model()
@@ -1187,7 +1233,10 @@ class CysteineCrossLinkRestraint():
             sigmatuple[1],
             sigmaissampled).get_particle()
         # population particle
-        self.weight = IMP.pmi.tools.SetupWeight(self.m, weightissampled).get_particle()
+        self.weight = IMP.pmi.tools.SetupWeight(
+            self.m,
+            weightissampled).get_particle(
+        )
 
         # read the file
         fl = IMP.pmi.tools.open_file_or_inline_text(filename)
@@ -1197,13 +1246,14 @@ class CysteineCrossLinkRestraint():
         data = []
         for line in fl:
             t = line.split()
-            if t[0][0] == "#": continue
+            if t[0][0] == "#":
+                continue
             if t[5] in self.epsilons:
                 if 1.0 - float(t[4]) <= self.epsilons[t[5]].get_upper():
                     self.epsilons[t[5]].set_upper(1.0 - float(t[4]))
             else:
                 self.epsilons[t[5]] = IMP.pmi.tools.SetupNuisance(self.m,
-                                                          0.01, 0.01, 1.0 - float(t[4]), epsilonissampled).get_particle()
+                                                                  0.01, 0.01, 1.0 - float(t[4]), epsilonissampled).get_particle()
             up = self.epsilons[t[5]].get_upper()
             low = self.epsilons[t[5]].get_lower()
             if up < low:
@@ -1228,7 +1278,7 @@ class CysteineCrossLinkRestraint():
 
         for d in data:
             print "--------------"
-            print "CysteineCrossLink: attempting to create a restraint "+str(d)
+            print "CysteineCrossLink: attempting to create a restraint " + str(d)
             resid1 = d[0]
             chain1 = d[1]
             resid2 = d[2]
@@ -1260,15 +1310,15 @@ class CysteineCrossLinkRestraint():
                     p2 = None
 
                     p1 = IMP.pmi.tools.select(representation,
-                                  resolution=1,name=chain1,
-                                  name_is_ambiguous=False,residue=resid1)[0]
+                                              resolution=1, name=chain1,
+                                              name_is_ambiguous=False, residue=resid1)[0]
 
                     if p1 is None:
                         failed = True
 
                     p2 = IMP.pmi.tools.select(representation,
-                                  resolution=1,name=chain2,
-                                  name_is_ambiguous=False,residue=resid2)[0]
+                                              resolution=1, name=chain2,
+                                              name_is_ambiguous=False, residue=resid2)[0]
 
                     if p2 is None:
                         failed = True
@@ -1279,24 +1329,24 @@ class CysteineCrossLinkRestraint():
                     p2 = []
                     for t in range(-1, 2):
                         p = IMP.pmi.tools.select(representation,
-                                  resolution=1,name=chain1,
-                                  name_is_ambiguous=False,residue=resid1 + t)
+                                                 resolution=1, name=chain1,
+                                                 name_is_ambiguous=False, residue=resid1 + t)
 
-                        if len(p)==1:
-                            p1+=p
+                        if len(p) == 1:
+                            p1 += p
                         else:
                             failed = True
-                            print "\033[93m CysteineCrossLink: missing representation for residue %d of chain %s \033[0m" % (resid1+t, chain1)
+                            print "\033[93m CysteineCrossLink: missing representation for residue %d of chain %s \033[0m" % (resid1 + t, chain1)
 
                         p = IMP.pmi.tools.select(representation,
-                                  resolution=1,name=chain2,
-                                  name_is_ambiguous=False,residue=resid2 + t)
+                                                 resolution=1, name=chain2,
+                                                 name_is_ambiguous=False, residue=resid2 + t)
 
-                        if len(p)==1:
-                            p2+=p
+                        if len(p) == 1:
+                            p2 += p
                         else:
                             failed = True
-                            print "\033[93m CysteineCrossLink: missing representation for residue %d of chain %s \033[0m" % (resid2+t, chain2)
+                            print "\033[93m CysteineCrossLink: missing representation for residue %d of chain %s \033[0m" % (resid2 + t, chain2)
 
                 if not self.cbeta:
                     if (p1 is not None and p2 is not None):
@@ -1308,16 +1358,16 @@ class CysteineCrossLinkRestraint():
 
                 else:
                     if (len(p1) == 3 and len(p2) == 3):
-                        p11n=p1[0].get_name()
-                        p12n=p1[1].get_name()
-                        p13n=p1[2].get_name()
-                        p21n=p2[0].get_name()
-                        p22n=p2[1].get_name()
-                        p23n=p2[2].get_name()
+                        p11n = p1[0].get_name()
+                        p12n = p1[1].get_name()
+                        p13n = p1[2].get_name()
+                        p21n = p2[0].get_name()
+                        p22n = p2[1].get_name()
+                        p23n = p2[2].get_name()
 
                         print "CysteineCrossLink: generating CB cysteine cross-link restraint between"
                         print "CysteineCrossLink: residue %d of chain %s and residue %d of chain %s" % (resid1, chain1, resid2, chain2)
-                        print "CysteineCrossLink: between particles %s %s %s and %s %s %s" % (p11n,p12n,p13n,p21n,p22n,p23n)
+                        print "CysteineCrossLink: between particles %s %s %s and %s %s %s" % (p11n, p12n, p13n, p21n, p22n, p23n)
 
                         ccl.add_contribution(p1, p2)
 

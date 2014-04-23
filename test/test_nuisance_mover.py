@@ -30,16 +30,15 @@ class XTransRestraint(IMP.kernel.Restraint):
     def do_get_inputs(self):
         return [x for x in self.get_model().get_particles()]
 
-m=IMP.Model()
-sigma=tools.SetupNuisance(m,0,0,10,True).get_particle()
-pts=tools.ParticleToSampleList()
-pts.add_particle(sigma,"Nuisances",1.0,"Sigma")
+m = IMP.Model()
+sigma = tools.SetupNuisance(m, 0, 0, 10, True).get_particle()
+pts = tools.ParticleToSampleList()
+pts.add_particle(sigma, "Nuisances", 1.0, "Sigma")
 
 rs = XTransRestraint(m)
 m.add_restraint(rs)
 
-mc = samplers.MonteCarlo(m,[pts], 1.0)
+mc = samplers.MonteCarlo(m, [pts], 1.0)
 for i in range(100):
     mc.run(1)
     print sigma.get_scale()
-

@@ -24,46 +24,50 @@ class GaussianEMRestraint():
         from math import sqrt
 
         # some parameters
-        self.label="None"
+        self.label = "None"
         self.sigmaissampled = False
         self.sigmamaxtrans = 0.3
         self.sigmamin = 1.0
         self.sigmamax = 100.0
         self.sigmainit = 2.0
         self.tabexp = False
-        self.label="None"
-        self.densities=densities
+        self.label = "None"
+        self.densities = densities
 
         # setup target GMM
         self.m = self.densities[0].get_model()
-        print 'will scale target mass by',target_mass_scale
-        if target_fn!='':
+        print 'will scale target mass by', target_mass_scale
+        if target_fn != '':
             self.target_ps = []
-            IMP.isd_emxl.gmm_tools.decorate_gmm_from_text(target_fn, self.target_ps, self.m)
-        elif target_ps!=[]:
-            self.target_ps=target_ps
+            IMP.isd_emxl.gmm_tools.decorate_gmm_from_text(
+                target_fn,
+                self.target_ps,
+                self.m)
+        elif target_ps != []:
+            self.target_ps = target_ps
         else:
             print 'Gaussian EM restraint: must provide target density file or properly set up target densities'
             return
         for p in self.target_ps:
-            rmax=sqrt(max(IMP.core.Gaussian(p).get_variances()))*target_radii_scale
+            rmax = sqrt(max(IMP.core.Gaussian(p).get_variances())) * \
+                target_radii_scale
             if not IMP.core.XYZR.get_is_setup(p):
-                IMP.core.XYZR.setup_particle(p,rmax)
+                IMP.core.XYZR.setup_particle(p, rmax)
             else:
                 IMP.core.XYZR(p).set_radius(rmax)
-            mp=IMP.atom.Mass(p)
-            mp.set_mass(mp.get_mass()*target_mass_scale)
-
+            mp = IMP.atom.Mass(p)
+            mp.set_mass(mp.get_mass() * target_mass_scale)
 
         # setup model GMM
         self.model_ps = []
         for h in self.densities:
             self.model_ps += IMP.atom.get_leaves(h)
-        if model_radii_scale!=1.0:
+        if model_radii_scale != 1.0:
             for p in self.model_ps:
-                rmax=sqrt(max(IMP.core.Gaussian(p).get_variances()))*model_radii_scale
+                rmax = sqrt(max(IMP.core.Gaussian(p).get_variances())) * \
+                    model_radii_scale
                 if not IMP.core.XYZR.get_is_setup(p):
-                    IMP.core.XYZR.setup_particle(p,rmax)
+                    IMP.core.XYZR.setup_particle(p, rmax)
                 else:
                     IMP.core.XYZR(p).set_radius(rmax)
 
@@ -73,15 +77,21 @@ class GaussianEMRestraint():
                                                self.sigmaissampled).get_particle()
 
         # create restraint
-        print 'target num particles',len(self.target_ps), \
-            'total weight',sum([IMP.atom.Mass(p).get_mass() for p in self.target_ps])
-        print 'model num particles',len(self.model_ps), \
-            'total weight',sum([IMP.atom.Mass(p).get_mass() for p in self.model_ps])
+        print 'target num particles', len(self.target_ps), \
+            'total weight', sum([IMP.atom.Mass(p).get_mass()
+                                for p in self.target_ps])
+        print 'model num particles', len(self.model_ps), \
+            'total weight', sum([IMP.atom.Mass(p).get_mass()
+                                for p in self.model_ps])
 
         self.gaussianEM_restraint = IMP.isd_emxl.GaussianEMRestraint(self.m,
-                                                                     IMP.get_indexes(self.model_ps),
-                                                                     IMP.get_indexes(self.target_ps),
-                                                                     self.sigmaglobal.get_particle().get_index(),
+                                                                     IMP.get_indexes(
+                                                                         self.model_ps),
+                                                                     IMP.get_indexes(
+                                                                         self.target_ps),
+                                                                     self.sigmaglobal.get_particle(
+                                                                     ).get_index(
+                                                                     ),
                                                                      cutoff_dist_for_container,
                                                                      False, False)
         print 'done EM setup'
@@ -89,77 +99,76 @@ class GaussianEMRestraint():
         self.rs.add_restraint(self.gaussianEM_restraint)
 
     def center_target_density_on_model(self):
-        target_com=IMP.algebra.Vector3D(0,0,0)
-        target_mass=0.0
+        target_com = IMP.algebra.Vector3D(0, 0, 0)
+        target_mass = 0.0
         for p in self.target_ps:
-            mass=IMP.atom.Mass(p).get_mass()
-            pos=IMP.core.XYZ(p).get_coordinates()
-            target_com+=pos*mass
-            target_mass+=mass
-        target_com/=target_mass
-        print 'target com',target_com
-        model_com=IMP.algebra.Vector3D(0,0,0)
-        model_mass=0.0
+            mass = IMP.atom.Mass(p).get_mass()
+            pos = IMP.core.XYZ(p).get_coordinates()
+            target_com += pos * mass
+            target_mass += mass
+        target_com /= target_mass
+        print 'target com', target_com
+        model_com = IMP.algebra.Vector3D(0, 0, 0)
+        model_mass = 0.0
         for p in self.model_ps:
-            mass=IMP.atom.Mass(p).get_mass()
-            pos=IMP.core.XYZ(p).get_coordinates()
-            model_com+=pos*mass
-            model_mass+=mass
-        model_com/=model_mass
-        print 'model com',model_com
+            mass = IMP.atom.Mass(p).get_mass()
+            pos = IMP.core.XYZ(p).get_coordinates()
+            model_com += pos * mass
+            model_mass += mass
+        model_com /= model_mass
+        print 'model com', model_com
 
-        v=target_com-model_com
-        print 'translating with',-v
-        transformation=IMP.algebra.Transformation3D(IMP.algebra.Vector3D(-v))
+        v = target_com - model_com
+        print 'translating with', -v
+        transformation = IMP.algebra.Transformation3D(IMP.algebra.Vector3D(-v))
         for p in self.target_ps:
-            IMP.core.transform(IMP.core.RigidBody(p),transformation)
-        #IMP.pmi.tools.translate_hierarchies(self.densities,v)
+            IMP.core.transform(IMP.core.RigidBody(p), transformation)
+        # IMP.pmi.tools.translate_hierarchies(self.densities,v)
 
-    def center_model_on_target_density(self,representation):
-        target_com=IMP.algebra.Vector3D(0,0,0)
-        target_mass=0.0
+    def center_model_on_target_density(self, representation):
+        target_com = IMP.algebra.Vector3D(0, 0, 0)
+        target_mass = 0.0
         for p in self.target_ps:
-            mass=IMP.atom.Mass(p).get_mass()
-            pos=IMP.core.XYZ(p).get_coordinates()
-            target_com+=pos*mass
-            target_mass+=mass
-        target_com/=target_mass
-        print 'target com',target_com
-        model_com=IMP.algebra.Vector3D(0,0,0)
-        model_mass=0.0
+            mass = IMP.atom.Mass(p).get_mass()
+            pos = IMP.core.XYZ(p).get_coordinates()
+            target_com += pos * mass
+            target_mass += mass
+        target_com /= target_mass
+        print 'target com', target_com
+        model_com = IMP.algebra.Vector3D(0, 0, 0)
+        model_mass = 0.0
         for p in self.model_ps:
-            mass=IMP.atom.Mass(p).get_mass()
-            pos=IMP.core.XYZ(p).get_coordinates()
-            model_com+=pos*mass
-            model_mass+=mass
-        model_com/=model_mass
-        print 'model com',model_com
+            mass = IMP.atom.Mass(p).get_mass()
+            pos = IMP.core.XYZ(p).get_coordinates()
+            model_com += pos * mass
+            model_mass += mass
+        model_com /= model_mass
+        print 'model com', model_com
 
-        v=target_com-model_com
-        print 'translating with',v
-        transformation=IMP.algebra.Transformation3D(IMP.algebra.Vector3D(v))
-        
-        rigid_bodies=set()
-        XYZRs=set()
-        
+        v = target_com - model_com
+        print 'translating with', v
+        transformation = IMP.algebra.Transformation3D(IMP.algebra.Vector3D(v))
+
+        rigid_bodies = set()
+        XYZRs = set()
+
         for p in IMP.atom.get_leaves(representation.prot):
             if IMP.core.RigidMember.get_is_setup(p):
-               rb=IMP.core.RigidMember(p).get_rigid_body()
-               rigid_bodies.add(rb)
+                rb = IMP.core.RigidMember(p).get_rigid_body()
+                rigid_bodies.add(rb)
             elif IMP.core.NonRigidMember.get_is_setup(p):
-               rb=IMP.core.RigidMember(p).get_rigid_body()               
-               rigid_bodies.add(rb)
+                rb = IMP.core.RigidMember(p).get_rigid_body()
+                rigid_bodies.add(rb)
             elif IMP.core.XYZR.get_is_setup(p):
-               XYZRs.add(p)
-               
+                XYZRs.add(p)
+
         for rb in list(rigid_bodies):
-            IMP.core.transform(rb,transformation)
+            IMP.core.transform(rb, transformation)
 
         for p in list(XYZRs):
-            IMP.core.transform(IMP.core.XYZ(p),transformation)
-        
+            IMP.core.transform(IMP.core.XYZ(p), transformation)
 
-    def set_weight(self,weight):
+    def set_weight(self, weight):
         self.rs.set_weight(weight)
 
     def set_label(self, label):
@@ -179,8 +188,8 @@ class GaussianEMRestraint():
         return self.prot
 
     def get_density_as_hierarchy(self):
-        f=IMP.atom.Fragment().setup_particle(IMP.Particle(self.m))
-        f.set_name("GaussianEMRestraint_density_"+self.label)
+        f = IMP.atom.Fragment().setup_particle(IMP.Particle(self.m))
+        f.set_name("GaussianEMRestraint_density_" + self.label)
         for p in self.target_ps:
             f.add_child(p)
         return f

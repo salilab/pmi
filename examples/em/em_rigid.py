@@ -9,11 +9,7 @@ import IMP.container
 
 import IMP.pmi.restraints.em
 import IMP.pmi.restraints.stereochemistry
-import IMP.pmi.representation as representation
-import IMP.pmi.tools as tools
-import IMP.pmi.samplers as samplers
-import IMP.pmi.output as output
-import IMP.pmi.macros as macros
+import IMP.pmi.representation
 import sys
 import os
 
@@ -41,7 +37,7 @@ except:
 m = IMP.Model()
 outputobjects = []
 sampleobjects = []
-simo = representation.Representation(
+simo = IMP.pmi.representation.Representation(
     m,
     upperharmonic=True,
     disorderedlength=False)
@@ -101,7 +97,7 @@ outputobjects.append(ev)
 m.update()
 
 # SAMPLE ###########
-rex = macros.ReplicaExchange0(m,
+rex = IMP.pmi.macros.ReplicaExchange0(m,
                               simo,
                               sampleobjects,
                               outputobjects,

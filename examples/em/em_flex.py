@@ -9,11 +9,9 @@ import IMP.container
 
 import IMP.pmi.restraints.em
 import IMP.pmi.restraints.stereochemistry
-import IMP.pmi.representation as representation
-import IMP.pmi.tools as tools
-import IMP.pmi.samplers as samplers
-import IMP.pmi.output as output
-import IMP.pmi.macros as macros
+import IMP.pmi.representation
+import IMP.pmi.tools
+import IMP.pmi.macros
 import sys
 import os
 
@@ -42,7 +40,7 @@ except:
 m = IMP.Model()
 outputobjects = []
 sampleobjects = []
-simo = representation.Representation(
+simo = IMP.pmi.representation.Representation(
     m,
     upperharmonic=True,
     disorderedlength=False)
@@ -58,7 +56,7 @@ simo.setup_bonds()
 
 
 # SETUP DENSITIES  ############
-sse_selections = tools.parse_dssp(sse_fn, 'A')
+sse_selections = IMP.pmi.tools.parse_dssp(sse_fn, 'A')
 res_densities = []
 
 for key in ('helix', 'beta'):
@@ -163,7 +161,7 @@ outputobjects.append(ev)
 m.update()
 
 # SAMPLE ###########
-rex = macros.ReplicaExchange0(m,
+rex = IMP.pmi.macros.ReplicaExchange0(m,
                               simo,
                               sampleobjects,
                               outputobjects,

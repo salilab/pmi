@@ -7,12 +7,12 @@ import IMP.algebra
 import IMP.atom
 import IMP.container
 
-import IMP.pmi.restraints.stereochemistry as stereochemistry
-import IMP.pmi.restraints.crosslinking as crosslinking
-import IMP.pmi.representation as representation
-import IMP.pmi.tools as tools
-import IMP.pmi.samplers as samplers
-import IMP.pmi.output as output
+import IMP.pmi.restraints.stereochemistry
+import IMP.pmi.restraints.crosslinking
+import IMP.pmi.representation
+import IMP.pmi.tools
+import IMP.pmi.samplers
+import IMP.pmi.output
 
 IMP.base.set_log_level(IMP.base.SILENT)
 
@@ -20,7 +20,7 @@ IMP.base.set_log_level(IMP.base.SILENT)
 
 pdbfile = IMP.pmi.get_data_path("1WCM.pdb")
 fastafile = IMP.pmi.get_data_path("1WCM.fasta.txt")
-fastids = tools.get_ids_from_fasta_file(fastafile)
+fastids = IMP.pmi.tools.get_ids_from_fasta_file(fastafile)
 missing_bead_size = 20
 
 
@@ -54,7 +54,7 @@ log_objects = []
 optimizable_objects = []
 
 m = IMP.Model()
-r = representation.Representation(m)
+r = IMP.pmi.representation.Representation(m)
 
 hierarchies = {}
 
@@ -96,11 +96,11 @@ r.shuffle_configuration(100, avoidcollision=True)
 
 log_objects.append(r)
 
-ev = stereochemistry.ExcludedVolumeSphere(r, resolution=10)
+ev = IMP.pmi.restraints.stereochemistry.ExcludedVolumeSphere(r, resolution=10)
 ev.add_to_model()
 log_objects.append(ev)
 
-xl = crosslinking.SigmoidalCrossLinkMS(
+xl = IMP.pmi.restraints.crosslinking.SigmoidalCrossLinkMS(
     r,
     crosslink_file,
     inflection=25,
@@ -116,7 +116,7 @@ log_objects.append(xl)
 # move the movers outside ang get the movers from representation and restraints
 # helper function to generate samplers samplers.get_movers([r,xl])
 # something like: mc = samplers.MonteCarlo(m,samplers.get_movers([r,xl]), 1.0)
-mc = samplers.MonteCarlo(m, [r], 1.0)
+mc = IMP.pmi.samplers.MonteCarlo(m, [r], 1.0)
 mc.set_simulated_annealing(min_temp=1.0,
                            max_temp=5.0,
                            min_temp_time=200,
@@ -124,7 +124,7 @@ mc.set_simulated_annealing(min_temp=1.0,
 log_objects.append(mc)
 
 
-o = output.Output()
+o = IMP.pmi.output.Output()
 rmf = o.init_rmf("conformations.rmf3", [r.prot])
 # there is a function in IMP: redundant!
 # for the pdb use write_pdb_of_c_alphas

@@ -8,25 +8,23 @@ import IMP.atom
 import IMP.container
 
 import IMP.pmi
-import IMP.pmi.restraints.stereochemistry as stereochemistry
-import IMP.pmi.restraints.crosslinking as crosslinking
-import IMP.pmi.restraints.basic as basic
-import IMP.pmi.representation as representation
-import IMP.pmi.tools as tools
-import IMP.pmi.samplers as samplers
-import IMP.pmi.output as output
-import IMP.pmi.macros as macros
+import IMP.pmi.restraints.stereochemistry
+import IMP.pmi.restraints.crosslinking
+import IMP.pmi.restraints.basic
+import IMP.pmi.representation
+import IMP.pmi.tools
+import IMP.pmi.macros
 
 import os
 
 log_objects = []
 sample_objects = []
 fastafile = "data/seq.fasta"
-fastids = tools.get_ids_from_fasta_file(fastafile)
+fastids = IMP.pmi.tools.get_ids_from_fasta_file(fastafile)
 
 m = IMP.Model()
 
-r = representation.Representation(m)
+r = IMP.pmi.representation.Representation(m)
 
 r.add_component_name("chainA", color=0.25)
 r.add_component_sequence("chainA", fastafile, id=fastids[0])
@@ -77,26 +75,26 @@ lof = [(62, 75, "chainA"), (96, 101, "chainA"),
 # add bonds and angles
 for l in lof:
 
-    rbr = stereochemistry.ResidueBondRestraint(r, l)
+    rbr = IMP.pmi.restraints.stereochemistry.ResidueBondRestraint(r, l)
     rbr.add_to_model()
     listofexcludedpairs += rbr.get_excluded_pairs()
     log_objects.append(rbr)
 
-    rar = stereochemistry.ResidueAngleRestraint(r, l)
+    rar = IMP.pmi.restraints.stereochemistry.ResidueAngleRestraint(r, l)
     rar.add_to_model()
     listofexcludedpairs += rar.get_excluded_pairs()
     log_objects.append(rar)
 
-ev = stereochemistry.ExcludedVolumeSphere(r, resolution=1.0)
+ev = IMP.pmi.restraints.stereochemistry.ExcludedVolumeSphere(r, resolution=1.0)
 ev.add_excluded_particle_pairs(listofexcludedpairs)
 ev.add_to_model()
 log_objects.append(ev)
 
-eb = basic.ExternalBarrier(r, 50)
+eb = IMP.pmi.restraints.basic.ExternalBarrier(r, 50)
 eb.add_to_model()
 log_objects.append(eb)
 
-xl = crosslinking.CysteineCrossLinkRestraint(
+xl = IMP.pmi.restraints.crosslinking.CysteineCrossLinkRestraint(
     [r],
     filename="data/expdata.txt",
     cbeta=True)
@@ -104,7 +102,7 @@ xl.add_to_model()
 log_objects.append(xl)
 sample_objects.append(xl)
 
-mc = macros.ReplicaExchange0(m, r,
+mc = IMP.pmi.macros.ReplicaExchange0(m, r,
                              sample_objects,
                              log_objects,
                              crosslink_restraints=None,

@@ -161,7 +161,7 @@ class System():
         comp=Component(self,state_num,component_name,copy_num,
                        sequence=seq,
                        hierarchy=c)
-        self.components[(state_num,component_name,copy_num)]=
+        self.components[(state_num,component_name,copy_num)]=comp
         return comp
 
 

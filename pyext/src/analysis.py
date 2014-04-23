@@ -498,10 +498,15 @@ class GetContactMap():
         import IMP.pmi.tools
         self.prot = prot
         self.protnames=[]
-        for i in self.prot.get_children():
-           name=i.get_name()
+        coords= []
+        radii= []
+        namelist=[]
+        
+        particles_dictionary=get_particles_at_resolution_one(self.prot)              
+        
+        for name in particles_dictionary:
            residue_indexes=[]
-           for p in IMP.atom.get_leaves(i):
+           for p in particles_dictionary[name]:
               print p.get_name()
               residue_indexes+=IMP.pmi.tools.get_residue_indexes(p)
               #residue_indexes.add( )
@@ -509,6 +514,7 @@ class GetContactMap():
            if len(residue_indexes)!=0:
                self.protnames.append(name)
                for res in range(min(residue_indexes),max(residue_indexes)+1):
+                  d=IMP.core.XYZR(p)
                   new_name=name+":"+str(res)
                   if name not in self.resmap:
                      self.resmap[name]={}
@@ -516,7 +522,32 @@ class GetContactMap():
                      self.resmap[name][res]={}
                      
                   self.resmap[name][res] = new_name
-                  self.namelist.append(new_name)
+                  namelist.append(new_name)
+
+                  crd = array([d.get_x(),d.get_y(),d.get_z()])
+                  coords.append(crd)
+                  radii.append(d.get_radius())
+
+        coords = array(coords)
+        radii = array(radii)
+        
+        
+        if len(self.namelist)==0:
+            self.namelist = namelist
+            self.contactmap = zeros((len(coords), len(coords)))
+        
+        
+        distances = cdist(coords, coords)
+        distances = (distances-radii).T - radii
+        distances = distances<=self.distance
+        
+        print coords
+        print radii
+        print distances
+        
+        self.contactmap += distances
+
+
 
     def get_subunit_coords(self,frame, align=0):
         coords= []
@@ -710,6 +741,7 @@ class CrossLinkTable():
        self.crosslinkedprots=set()
        self.mindist=+10000000.0
        self.maxdist=-10000000.0
+       self.contactmap=None
    
    def set_hierarchy(self,prot):
        import IMP.pmi.tools
@@ -723,8 +755,53 @@ class CrossLinkTable():
            
            if len(residue_indexes)!=0:
               self.prot_length_dict[name]=max(residue_indexes)
-   
-   
+       
+       
+   def set_coordinates_for_contact_map(self,prot):
+        from numpy import zeros, array, where
+        from scipy.spatial.distance import cdist
+        
+        coords= []
+        radii= []
+        namelist=[]
+        
+        particles_dictionary=get_particles_at_resolution_one(prot)              
+        
+        resindex=0
+        self.index_dictionary={}
+        
+        for name in particles_dictionary:
+           residue_indexes=[]
+           for p in particles_dictionary[name]:
+              print p.get_name()
+              residue_indexes=IMP.pmi.tools.get_residue_indexes(p)
+              #residue_indexes.add( )
+           
+              if len(residue_indexes)!=0:
+                
+                for res in range(min(residue_indexes),max(residue_indexes)+1):
+                  d=IMP.core.XYZR(p)
+
+                  crd = array([d.get_x(),d.get_y(),d.get_z()])
+                  coords.append(crd)
+                  radii.append(d.get_radius())
+                  if name not in self.index_dictionary:
+                     self.index_dictionary[name]=[resindex]
+                  else:                     
+                     self.index_dictionary[name].append(resindex)
+                  resindex+=1
+
+        coords = array(coords)
+        radii = array(radii)
+        
+        distances = cdist(coords, coords)
+        distances = (distances-radii).T - radii
+        
+        distances = where(distances <= 20.0, 1.0, 0)
+        if self.contactmap is None: 
+           self.contactmap = zeros((len(coords), len(coords)))
+        self.contactmap += distances
+        
    
    def set_crosslinks(self,data_file,search_label='ISDCrossLinkMS_Distance_',
                       mapping=None,
@@ -771,12 +848,13 @@ class CrossLinkTable():
        self.unique_cross_link_list=[]
        
        for key in fs:
+           print key
            keysplit=key.replace("_"," ").replace("-"," ").replace(":"," ").split()
            if mapping is None:
-               r1=int(keysplit[6])
-               c1=keysplit[7]
-               r2=int(keysplit[8])
-               c2=keysplit[9]
+               r1=int(keysplit[5])
+               c1=keysplit[6]
+               r2=int(keysplit[7])
+               c2=keysplit[8]
                try:
                  confidence=keysplit[12]
                except:
@@ -815,8 +893,10 @@ class CrossLinkTable():
            if self.maxdist<mdist: self.maxdist=mdist    
            
            # calculate the frequency of unique crosslinks within the same sample
-           sample=self.external_csv_data[unique_identifier]["Sample"]
-           
+           if not self.external_csv_data is None:
+              sample=self.external_csv_data[unique_identifier]["Sample"]
+           else: 
+              sample="None"       
            
            if (r1,c1,r2,c2,sample) not in cross_link_frequency_list:
                if (r1,c1,r2,c2) not in self.cross_link_frequency:
@@ -907,8 +987,9 @@ class CrossLinkTable():
                                   
    
    def plot(self,prot_listx=None,prot_listy=None,no_dist_info=False,
-       no_confidence_info=False,filter=None,layout="whole",crosslinkedonly=True,
-       filename=None,confidence_classes=None,alphablend=0.1):
+       no_confidence_info=False,filter=None,layout="whole",crosslinkedonly=False,
+       filename=None,confidence_classes=None,alphablend=0.1,scale_symbol_size=1.0,
+       gap_between_components=0):
         # layout can be: 
         #                "lowerdiagonal"  print only the lower diagonal plot
         #                "upperdiagonal"  print only the upper diagonal plot
@@ -918,7 +999,8 @@ class CrossLinkTable():
         # filter = tuple the tuple contains a keyword to be search in the database
         #                a relationship ">","==","<"
         #                and a value 
-        #                example ("ID_Score",">",40)                 
+        #                example ("ID_Score",">",40)       
+        # scale_symbol_size rescale the symbol for the crosslink          
     
         import matplotlib.pyplot as plt
         import matplotlib.cm as cm
@@ -938,7 +1020,7 @@ class CrossLinkTable():
               prot_listx=self.prot_length_dict.keys()
            prot_listx.sort()
                 
-        nresx=sum([self.prot_length_dict[name] for name in prot_listx])
+        nresx=gap_between_components+sum([self.prot_length_dict[name]+gap_between_components for name in prot_listx])
         
         # set the list of proteins on the y axis
 
@@ -952,36 +1034,48 @@ class CrossLinkTable():
         
 
      
-        nresy=sum([self.prot_length_dict[name] for name in prot_listy])
+        nresy=gap_between_components+sum([self.prot_length_dict[name]+gap_between_components for name in prot_listy])
 
         # this is the residue offset for each protein
         resoffsetx={}
-        res=0
+        resendx={}
+        res=gap_between_components 
         for prot in prot_listx:
            resoffsetx[prot]=res
            res += self.prot_length_dict[prot]
-
+           resendx[prot]=res
+           res += gap_between_components
+           
+           
         resoffsety={}
-        res=0
+        resendy={}
+        res=gap_between_components
         for prot in prot_listy:
            resoffsety[prot]=res
            res += self.prot_length_dict[prot]
+           resendy[prot]=res           
+           res += gap_between_components
            
         resoffsetdiagonal={}
-        res=0        
+        res=gap_between_components      
         for prot in IMP.pmi.tools.OrderedSet(prot_listx+prot_listy):
            resoffsetdiagonal[prot]=res
-           res += self.prot_length_dict[prot]           
+           res += self.prot_length_dict[prot]         
+           res += gap_between_components             
 
         # plot protein boundaries
         
         xticks=[]
         xlabels=[]
         for n,prot in enumerate(prot_listx):
-            res = resoffsetx[prot]
-            leng=self.prot_length_dict[prot]
-            ax.plot([res,res], [0,nresy], 'k-', lw=0.4)
-            xticks.append(float(res)+float(leng)/2)
+            res=resoffsetx[prot]
+            end=resendx[prot]
+            for proty in prot_listy:
+               resy=resoffsety[proty]
+               endy=resendy[proty]
+               ax.plot([res,res], [resy,endy], 'k-', lw=0.4)
+               ax.plot([end,end], [resy,endy], 'k-', lw=0.4)
+            xticks.append((float(res)+float(end))/2)
             xlabels.append(prot)
 
             
@@ -989,20 +1083,62 @@ class CrossLinkTable():
         ylabels=[]
         for n,prot in enumerate(prot_listy):
             res = resoffsety[prot]
-            leng=self.prot_length_dict[prot]
-            ax.plot([0,nresx], [res,res], 'k-', lw=0.4)
-            yticks.append(float(res)+float(leng)/2)
+            end = resendy[prot]
+            for protx in prot_listx:
+               resx=resoffsetx[protx]
+               endx=resendx[protx]            
+               ax.plot([resx,endx], [res,res], 'k-', lw=0.4)
+               ax.plot([resx,endx], [end,end], 'k-', lw=0.4)
+            yticks.append((float(res)+float(end))/2)
             ylabels.append(prot)            
         
+        
+
+
+        
+        
+
+            
+        # plot the contact map
+        print prot_listx, prot_listy
+        
+        
+        if not self.contactmap is None:
+          from numpy import zeros
+          import matplotlib.cm as cm
+          tmp_array=zeros((nresx, nresy))
+          for px in prot_listx:
+           for py in prot_listy:
+              resx = resoffsety[px]
+              lengx=resendx[px]-1             
+              resy = resoffsety[py]
+              lengy=resendy[py]-1
+              indexes_x=self.index_dictionary[px]
+              minx=min(indexes_x)
+              maxx=max(indexes_x)
+              indexes_y=self.index_dictionary[py]
+              miny=min(indexes_y)
+              maxy=max(indexes_y)
+              
+              
+              tmp_array[resx:lengx,resy:lengy]=self.contactmap[minx:maxx,miny:maxy]
+              
+              
+              print px,py,minx,maxx,miny,maxy              
+          ax.imshow(tmp_array,
+                    cmap=cm.binary,
+                    origin='lower',
+                    interpolation='nearest')
         
         ax.set_xticks(xticks)
         ax.set_xticklabels(xlabels, rotation=90)
         ax.set_yticks(yticks)
         ax.set_yticklabels(ylabels)  
-        
+
         # set the crosslinks
         
         already_added_xls=[]
+       
         for xl in self.crosslinks:
             
             
@@ -1049,12 +1185,12 @@ class CrossLinkTable():
             already_added_xls.append((r1,c1,r2,c2))
             
             if not no_confidence_info:
-                if confidence=='0.01': markersize=14
-                elif confidence=='0.05': markersize=9
-                elif confidence=='0.1': markersize=6                        
-                else: markersize=15
+                if confidence=='0.01': markersize=14*scale_symbol_size
+                elif confidence=='0.05': markersize=9*scale_symbol_size
+                elif confidence=='0.1': markersize=6*scale_symbol_size                        
+                else: markersize=15*scale_symbol_size  
             else:
-                markersize=5
+                markersize=5*scale_symbol_size  
             
             if not no_dist_info:
                 color=self.colormap(mdist)

@@ -419,6 +419,7 @@ class AnalysisReplicaExchange0():
         Clusters = IMP.pmi.analysis.Clustering()
 
         if not load_distance_matrix_file:
+            if len(self.stat_files)==0: print "ERROR: no stat file found in the given path"; exit()
             my_stat_files=IMP.pmi.tools.chunk_list_into_segments(self.stat_files,number_of_processes)[rank]
             
 
@@ -528,6 +529,8 @@ class AnalysisReplicaExchange0():
 
 # -----------------------------------------------------------------------------------------------
             
+            # extract all information without clustering
+            
             if skip_clustering:
                
                dircluster=outputdir+"/all_models."+str(n)+"/"
@@ -569,6 +572,11 @@ class AnalysisReplicaExchange0():
                     #IMP.atom.destroy(prot)
                     
                     clusstat.write(str(tmp_dict)+"\n")
+
+                    o.init_rmf(dircluster+str(cnt)+"."+str(rank)+".rmf3",[prot])
+                    #IMP.rmf.add_restraints(o.dictionary_rmfs[dircluster+str(n)+".rmf3"],restraints)
+                    o.write_rmf(dircluster+str(cnt)+"."+str(rank)+".rmf3")
+                    o.close_rmf(dircluster+str(cnt)+"."+str(rank)+".rmf3")
                 
                exit()
 

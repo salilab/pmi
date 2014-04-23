@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+## \example pmi/integrin/integrin_modeling.py
 
 import IMP
 import IMP.core

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+## \example pmi/glycophorin/glycophorin_modeling.py
 
 import IMP
 import IMP.core

@@ -1,3 +1,5 @@
+## \example pmi/sandbox_example.py
+
 import IMP
 import IMP.pmi
 import IMP.pmi.sandbox

@@ -1,3 +1,5 @@
+## \example pmi/em/em_beads.py
+
 import IMP
 import IMP.core
 import IMP.base

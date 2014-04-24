@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+"""@namespace IMP.pmi.sandbox
+   Experimental code.
+"""
+
 ''' PMI2
 
 USER ACTIONS:

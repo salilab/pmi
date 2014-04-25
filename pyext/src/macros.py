@@ -419,7 +419,7 @@ class AnalysisReplicaExchange0():
         Clusters = IMP.pmi.analysis.Clustering()
 
         if not load_distance_matrix_file:
-            if len(self.stat_files)==0: print "ERROR: no stat file found in the given path"; exit()
+            if len(self.stat_files)==0: print "ERROR: no stat file found in the given path"; return
             my_stat_files=IMP.pmi.tools.chunk_list_into_segments(self.stat_files,number_of_processes)[rank]
             
 
@@ -578,7 +578,7 @@ class AnalysisReplicaExchange0():
                     o.write_rmf(dircluster+str(cnt)+"."+str(rank)+".rmf3")
                     o.close_rmf(dircluster+str(cnt)+"."+str(rank)+".rmf3")
                 
-               exit()
+               return
 
 
             # here I've tested that feature_keyword_list_dict is correct on 2 CPUs

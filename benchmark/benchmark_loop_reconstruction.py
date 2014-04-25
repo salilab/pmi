@@ -111,7 +111,9 @@ for l in lof:
 
 # add excluded volume
 
-ev = IMP.pmi.restraints.stereochemistry.ExcludedVolumeSphere(r, resolution=10.0)
+ev = IMP.pmi.restraints.stereochemistry.ExcludedVolumeSphere(
+    r,
+    resolution=10.0)
 ev.add_excluded_particle_pairs(listofexcludedpairs)
 ev.add_to_model()
 log_objects.append(ev)

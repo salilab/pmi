@@ -6,7 +6,9 @@ import IMP.algebra
 import IMP.atom
 import IMP.container
 
+
 class ConnectivityRestraint():
+
     '''
     generate a connectivity restraint between domains
     setting up the restraint
@@ -14,8 +16,8 @@ class ConnectivityRestraint():
     cr=restraints.ConnectivityRestraint(simo,["CCC",(1,100,"TTT"),(100,150,"AAA")])
     cr.add_to_model()
     cr.set_label("CR1")
-    
-    
+
+
     Multistate support =No
     Selection type=selection tuple
     Resolution=Yes
@@ -40,8 +42,8 @@ class ConnectivityRestraint():
         sels = []
 
         for s in selection_tuples:
-            particles=IMP.pmi.tools.select_by_tuple(representation,s,
-                               resolution=resolution,name_is_ambiguous=True)           
+            particles = IMP.pmi.tools.select_by_tuple(representation, s,
+                                                      resolution=resolution, name_is_ambiguous=True)
             sel = IMP.atom.Selection(particles)
             sels.append(sel)
 
@@ -82,17 +84,15 @@ class ConnectivityRestraint():
         return output
 
 
-
-###########################
-
-
+#
 class CompositeRestraint():
+
     '''
     handleparticles is a selection tuple
     compositeparticles is a list of selection tuples
     '''
     import IMP.pmi
-    
+
     def __init__(
         self,
         representation,
@@ -102,25 +102,26 @@ class CompositeRestraint():
         lam=1.0,
         plateau=0.0,
         resolution=None,
-        label="None"):
+            label="None"):
 
         # composite particles: all particles beside the handle
         self.label = label
         self.m = representation.prot.get_model()
         self.rs = IMP.RestraintSet(self.m, 'cr')
-        
-        handleparticles=[]
-        for s in handleparticles_tuples:
-            handleparticles+=IMP.pmi.tools.select_by_tuple(representation,s,
-                               resolution=resolution,name_is_ambiguous=True)             
 
-        compositeparticle_list=[]
+        handleparticles = []
+        for s in handleparticles_tuples:
+            handleparticles += IMP.pmi.tools.select_by_tuple(representation, s,
+                                                             resolution=resolution, name_is_ambiguous=True)
+
+        compositeparticle_list = []
         for list in compositeparticles_tuple_list:
-           compositeparticles=[]
-           for s in list:
-              compositeparticles+=IMP.pmi.tools.select_by_tuple(representation,s,
-                                 resolution=resolution,name_is_ambiguous=True)
-           compositeparticle_list.append(compositeparticles)
+            compositeparticles = []
+            for s in list:
+                compositeparticles += IMP.pmi.tools.select_by_tuple(
+                    representation, s,
+                    resolution=resolution, name_is_ambiguous=True)
+            compositeparticle_list.append(compositeparticles)
 
         ln = IMP.pmi.CompositeRestraint(
             self.m,
@@ -150,10 +151,7 @@ class CompositeRestraint():
         return output
 
 
-
-###########################
-
-
+#
 class AmbiguousCompositeRestraint():
 
     '''
@@ -170,20 +168,20 @@ class AmbiguousCompositeRestraint():
         lam=1.0,
         plateau=0.01,
         resolution=None,
-        label="None"):
+            label="None"):
 
         self.weight = 1.0
-        self.m = representation.prot.get_model()     
-        self.rs = IMP.RestraintSet(self.m, 'data')           
+        self.m = representation.prot.get_model()
+        self.rs = IMP.RestraintSet(self.m, 'data')
         self.label = "None"
         self.pairs = []
 
         self.outputlevel = "low"
-        self.cut_off=cut_off
-        self.lam=lam
-        self.plateau=plateau
+        self.cut_off = cut_off
+        self.lam = lam
+        self.plateau = plateau
 
-        fl=IMP.pmi.tools.open_file_or_inline_text(restraints_file)
+        fl = IMP.pmi.tools.open_file_or_inline_text(restraints_file)
 
         for line in fl:
 
@@ -196,48 +194,83 @@ class AmbiguousCompositeRestraint():
             r2 = int(tokens[3])
             c2 = tokens[1]
 
-            ps1=IMP.pmi.tools.select(representation,resolution=resolution,name=c1,name_is_ambiguous=True,residue=r1)            
-            hrc1=[representation.hier_db.particle_to_name[p] for p in ps1]
-            ps1nosym=[p for p in ps1 if IMP.pmi.Symmetric(p).get_symmetric()==0]
-            hrc1nosym=[representation.hier_db.particle_to_name[p] for p in ps1nosym]
-            
+            ps1 = IMP.pmi.tools.select(
+                representation,
+                resolution=resolution,
+                name=c1,
+                name_is_ambiguous=True,
+                residue=r1)
+            hrc1 = [representation.hier_db.particle_to_name[p] for p in ps1]
+            ps1nosym = [
+                p for p in ps1 if IMP.pmi.Symmetric(
+                    p).get_symmetric(
+                ) == 0]
+            hrc1nosym = [representation.hier_db.particle_to_name[p]
+                         for p in ps1nosym]
+
             if len(ps1) == 0:
                 print "AmbiguousCompositeRestraint: WARNING> residue %d of chain %s is not there" % (r1, c1)
                 continue
-            
-            ps2=IMP.pmi.tools.select(representation,resolution=resolution,name=c2,name_is_ambiguous=True,residue=r2)
-            hrc2=[representation.hier_db.particle_to_name[p] for p in ps2]
-            ps2nosym=[p for p in ps2 if IMP.pmi.Symmetric(p).get_symmetric()==0]
-            hrc2nosym=[representation.hier_db.particle_to_name[p] for p in ps2nosym]
-            
+
+            ps2 = IMP.pmi.tools.select(
+                representation,
+                resolution=resolution,
+                name=c2,
+                name_is_ambiguous=True,
+                residue=r2)
+            hrc2 = [representation.hier_db.particle_to_name[p] for p in ps2]
+            ps2nosym = [
+                p for p in ps2 if IMP.pmi.Symmetric(
+                    p).get_symmetric(
+                ) == 0]
+            hrc2nosym = [representation.hier_db.particle_to_name[p]
+                         for p in ps2nosym]
+
             if len(ps2) == 0:
                 print "AmbiguousCompositeRestraint: WARNING> residue %d of chain %s is not there" % (r2, c2)
                 continue
-            
+
             cr = IMP.pmi.CompositeRestraint(
-                 self.m,
-                 ps1nosym,
-                 self.cut_off,
-                 self.lam,
-                 True,
-                 self.plateau)
+                self.m,
+                ps1nosym,
+                self.cut_off,
+                self.lam,
+                True,
+                self.plateau)
             cr.add_composite_particle(ps2)
 
             self.rs.add_restraint(cr)
-            self.pairs.append((ps1nosym, hrc1nosym, c1, r1, ps2, hrc2, c2, r2, cr))
+            self.pairs.append(
+                (ps1nosym,
+                 hrc1nosym,
+                 c1,
+                 r1,
+                 ps2,
+                 hrc2,
+                 c2,
+                 r2,
+                 cr))
 
             cr = IMP.pmi.CompositeRestraint(
-                 self.m,
-                 ps1,
-                 self.cut_off,
-                 self.lam,
-                 True,
-                 self.plateau)
+                self.m,
+                ps1,
+                self.cut_off,
+                self.lam,
+                True,
+                self.plateau)
             cr.add_composite_particle(ps2nosym)
 
             self.rs.add_restraint(cr)
-            self.pairs.append((ps1, hrc1, c1, r1, ps2nosym, hrc2nosym, c2, r2, cr))
-
+            self.pairs.append(
+                (ps1,
+                 hrc1,
+                 c1,
+                 r1,
+                 ps2nosym,
+                 hrc2nosym,
+                 c2,
+                 r2,
+                 cr))
 
     def plot_restraint(
         self,
@@ -250,13 +283,13 @@ class AmbiguousCompositeRestraint():
         d1 = IMP.core.XYZR.setup_particle(p1)
         d2 = IMP.core.XYZR.setup_particle(p2)
         cr = IMP.pmi.CompositeRestraint(
-                 self.m,
-                 [p1],
-                 self.cut_off,
-                 self.lam,
-                 True,
-                 self.plateau)
-        cr.add_composite_particle([p2])         
+            self.m,
+            [p1],
+            self.cut_off,
+            self.lam,
+            True,
+            self.plateau)
+        cr.add_composite_particle([p2])
         dists = []
         scores = []
         for i in range(npoints):
@@ -330,14 +363,16 @@ class AmbiguousCompositeRestraint():
         return output
 
 
-
-###########################
-
-
-
+#
 class SimplifiedPEMAP():
 
-    def __init__(self, representation, restraints_file, expdistance, strength,resolution=None):
+    def __init__(
+        self,
+        representation,
+        restraints_file,
+        expdistance,
+        strength,
+            resolution=None):
 
         self.m = representation.prot.get_model()
         self.rs = IMP.RestraintSet(self.m, 'data')
@@ -348,8 +383,8 @@ class SimplifiedPEMAP():
         self.expdistance = expdistance
         self.strength = strength
 
-        fl=IMP.pmi.tools.open_file_or_inline_text(restraints_file)
-        
+        fl = IMP.pmi.tools.open_file_or_inline_text(restraints_file)
+
         for line in fl:
 
             tokens = line.split()
@@ -362,25 +397,35 @@ class SimplifiedPEMAP():
             c2 = tokens[1]
             pcc = float(tokens[4])
 
-            ps1=IMP.pmi.tools.select(representation,resolution=resolution,name=c1,name_is_ambiguous=False,residue=r1)
-            if len(ps1)==0:
+            ps1 = IMP.pmi.tools.select(
+                representation,
+                resolution=resolution,
+                name=c1,
+                name_is_ambiguous=False,
+                residue=r1)
+            if len(ps1) == 0:
                 print "SimplifiedPEMAP: WARNING> residue %d of chain %s is not there (w/ %d %s)" % (r1, c1, r2, c2)
                 continue
-            if len(ps1)>1:
+            if len(ps1) > 1:
                 print "SimplifiedPEMAP: WARNING> residue %d of chain %s selected multiple particles" % (r1, c1)
                 continue
 
-            ps2=IMP.pmi.tools.select(representation,resolution=resolution,name=c2,name_is_ambiguous=False,residue=r2)
-            if len(ps2)==0:
+            ps2 = IMP.pmi.tools.select(
+                representation,
+                resolution=resolution,
+                name=c2,
+                name_is_ambiguous=False,
+                residue=r2)
+            if len(ps2) == 0:
                 print "SimplifiedPEMAP: WARNING> residue %d of chain %s is not there (w/ %d %s)" % (r1, c1, r2, c2)
                 continue
-            if len(ps2)>1:
+            if len(ps2) > 1:
                 print "SimplifiedPEMAP: WARNING> residue %d of chain %s selected multiple particles" % (r2, c2)
                 continue
 
-            p1=ps1[0]
-            p2=ps2[0]
-            
+            p1 = ps1[0]
+            p2 = ps2[0]
+
             # This is harmonic potential for the pE-MAP data
             upperdist = self.get_upper_bond(pcc)
             limit = self.strength * (upperdist + 15) ** 2 + 10.0
@@ -471,7 +516,3 @@ class SimplifiedPEMAP():
                    label] = str(IMP.core.get_distance(d0, d1))
 
         return output
-
-
-
-

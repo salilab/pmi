@@ -1,5 +1,5 @@
 /**
- *  \file pmi/CompositeRestraint.h
+ *  \file IMP/pmi/CompositeRestraint.h
  *  \brief A pmf based likelihood function
  *  with prior knowledge on the flase positive rate.
  *

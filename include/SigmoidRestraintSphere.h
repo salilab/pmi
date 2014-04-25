@@ -1,5 +1,5 @@
 /**
- *  \file pmi/SigmoidRestraintSphere.h
+ *  \file IMP/pmi/SigmoidRestraintSphere.h
  *  \brief Simple Sigmoidal score calculated between sphere surfaces.
  *
  *  Copyright 2007-2014 IMP Inventors. All rights reserved.

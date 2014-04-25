@@ -600,16 +600,18 @@ class AnalysisReplicaExchange0():
 
                     prot=IMP.pmi.analysis.get_hier_from_rmf(self.model,rmf_frame_number,rmf_name)
                     
-
-                    
-                    
                     if not prot: continue
                     
                     o=IMP.pmi.output.Output()
                     o.init_pdb(dircluster+str(cnt)+"."+str(rank)+".pdb",prot)        
                     o.write_pdb(dircluster+str(cnt)+"."+str(rank)+".pdb",translate_to_geometric_center=True)
                     
-                    tmp_dict["pdb_file_name"]=str(cnt)+"."+str(rank)+".pdb"
+                    tmp_dict["local_pdb_file_name"]=str(cnt)+"."+str(rank)+".pdb"
+                    tmp_dict["rmf_file_full_path"]=rmf_name
+                    tmp_dict["local_rmf_file_name"]=str(cnt)+"."+str(rank)+".rmf3"
+                    tmp_dict["local_rmf_frame_number"]=0
+                    
+                    
                     
                     #IMP.atom.destroy(prot)
                     

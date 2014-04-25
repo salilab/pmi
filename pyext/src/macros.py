@@ -434,16 +434,15 @@ class AnalysisReplicaExchange0():
         Clusters = IMP.pmi.analysis.Clustering()
 
         if not load_distance_matrix_file:
-            if len(self.stat_files) == 0:
-                print "ERROR: no stat file found in the given path"
-                exit()
-            my_stat_files = IMP.pmi.tools.chunk_list_into_segments(
-                self.stat_files,
-                number_of_processes)[rank]
 
-            score_list = []
-            rmf_file_list = []
-            rmf_file_frame_list = []
+            if len(self.stat_files)==0: print "ERROR: no stat file found in the given path"; return
+            my_stat_files=IMP.pmi.tools.chunk_list_into_segments(self.stat_files,number_of_processes)[rank]
+            
+
+            score_list=[]
+            rmf_file_list=[]
+            rmf_file_frame_list=[]
+
             if not score_key is None:
                 feature_keyword_list_dict = {}
                 for sf in my_stat_files:
@@ -575,6 +574,61 @@ class AnalysisReplicaExchange0():
             # extract all information without clustering
 
             if skip_clustering:
+
+               dircluster=outputdir+"/all_models."+str(n)+"/"
+               try:
+                   os.mkdir(outputdir)
+               except:
+                   pass                 
+                
+               try:
+                   os.mkdir(dircluster)
+               except:
+                   pass
+               
+               clusstat=open(dircluster+"stat."+str(rank)+".out","w")
+               
+               for cnt,tpl in enumerate(my_best_score_rmf_tuples):
+                    rmf_name=tpl[1]
+                    rmf_frame_number=tpl[2]
+                    
+                    tmp_dict={}
+                    index=tpl[4]
+                                        
+                    for key in best_score_feature_keyword_list_dict:
+                        tmp_dict[key]=best_score_feature_keyword_list_dict[key][index]
+
+                    prot=IMP.pmi.analysis.get_hier_from_rmf(self.model,rmf_frame_number,rmf_name)
+                    
+
+                    
+                    
+                    if not prot: continue
+                    
+                    o=IMP.pmi.output.Output()
+                    o.init_pdb(dircluster+str(cnt)+"."+str(rank)+".pdb",prot)        
+                    o.write_pdb(dircluster+str(cnt)+"."+str(rank)+".pdb",translate_to_geometric_center=True)
+                    
+                    tmp_dict["pdb_file_name"]=str(cnt)+"."+str(rank)+".pdb"
+                    
+                    #IMP.atom.destroy(prot)
+                    
+                    clusstat.write(str(tmp_dict)+"\n")
+
+                    o.init_rmf(dircluster+str(cnt)+"."+str(rank)+".rmf3",[prot])
+                    #IMP.rmf.add_restraints(o.dictionary_rmfs[dircluster+str(n)+".rmf3"],restraints)
+                    o.write_rmf(dircluster+str(cnt)+"."+str(rank)+".rmf3")
+                    o.close_rmf(dircluster+str(cnt)+"."+str(rank)+".rmf3")
+                
+               return
+
+
+            # here I've tested that feature_keyword_list_dict is correct on 2 CPUs
+
+# --------------------------------------------------------------------------------------------
+# read the coordinates
+# --------------------------------------------------------------------------------------------
+
 
                 dircluster = outputdir + "/all_models." + str(n) + "/"
                 try:

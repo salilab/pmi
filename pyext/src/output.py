@@ -815,25 +815,25 @@ def plot_fields_box_plots(name, values, positions, frequencies=None,
     plt.xlabel(positionname)
     plt.ylabel(valuename)
 
-    plt.savefig(name + ".png", dpi=150)
+    plt.savefig(name,dpi=150)
     plt.show()
 
 
-def plot_xy_data(x, y):
-    import matplotlib.pyplot as plt
-    plt.rc('lines', linewidth=2)
-    fig, ax = plt.subplots(nrows=1)
-    fig.set_size_inches(8, 4.5)
-    plt.rc('axes', color_cycle=['r'])
-    print x
-    print y
-    ax.plot(x, y)
-    plt.show()
+def plot_xy_data(x,y):
+        import matplotlib.pyplot as plt
+        plt.rc('lines', linewidth=2)
+        fig, ax  = plt.subplots(nrows=1)
+        fig.set_size_inches(8,4.5)
+        plt.rc('axes', color_cycle=['r'])
+        print x
+        print y
+        ax.plot(x,y)
+        plt.show()
 
+def plot_scatter_xy_data(x,y,labelx="None",labely="None",
+                         xmin=None,xmax=None,ymin=None,ymax=None,
+                         savefile=False,filename="None.eps",alpha=0.75):
 
-def plot_scatter_xy_data(x, y, labelx="None", labely="None",
-                         xmin=None, xmax=None, ymin=None, ymax=None,
-                         savefile=False, filename="None.eps"):
     import matplotlib.pyplot as plt
     import sys
     from matplotlib import rc
@@ -848,7 +848,7 @@ def plot_scatter_xy_data(x, y, labelx="None", labely="None",
 
     plot2 = []
 
-    plot2.append(axs0.plot(x,  y,   'o', lw=0, ms=4, alpha=0.75,  c="w"))
+    plot2.append(axs0.plot(x,  y,   'o', lw=0, ms=4, alpha=alpha,  c="w"))
 
     axs0.legend(
         loc=0,
@@ -860,9 +860,10 @@ def plot_scatter_xy_data(x, y, labelx="None", labely="None",
     fig.set_size_inches(8.0, 8.0)
     fig.subplots_adjust(left=0.161, right=0.980, top=0.95, bottom=0.11)
     if (not ymin is None) and (not ymax is None):
-        axs0.set_ylim(ymin, ymax)
-    if (not xmin is None) and (xmax is None):
-        axs0.set_xlim(xmin, xmax)
+       axs0.set_ylim(ymin,ymax)
+    if (not xmin is None) and (not xmax is None):
+       axs0.set_xlim(xmin,xmax)
+
     plt.show()
     if savefile:
         fig.savefig(filename, dpi=300)

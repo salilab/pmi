@@ -604,11 +604,11 @@ class ElasticNetworkRestraint():
     from math import pi as pi
 
     def __init__(self,representation,
-					  selection_tuples,
-					  resolution=1,
-					  strength=10.0,
-					  dist_cutoff=10.0,
-					  ca_only=True):
+                 selection_tuples,
+                 resolution=1,
+                 strength=10.0,
+                 dist_cutoff=10.0,
+                 ca_only=True):
         '''
 		  ca_only: only applies for resolution 0
         '''
@@ -620,26 +620,23 @@ class ElasticNetworkRestraint():
 
         particles = []
         for st in selection_tuples:
-            for p in IMP.pmi.tools.select_by_tuple(representation,
-																	st,resolution=resolution):
-					 if resolution==0 and ca_only \
-					   	 and IMP.atom.Atom(p).get_atom_type()!=IMP.atom.AtomType("CA"):
-					     continue
-					  else:
-						  particles.append(p.get_particle())
+            for p in IMP.pmi.tools.select_by_tuple(representation,st,resolution=resolution):
+                if (resolution==0 and ca_only and IMP.atom.Atom(p).get_atom_type()!=IMP.atom.AtomType("CA")):
+                    continue
+                else:
+                    particles.append(p.get_particle())
 
-		  for pair in itertools.combinations(particles,2):
-            distance=IMP.algebra.get_distance(IMP.core.XYZ(pair[0]).get_coordinates(),
-															 IMP.core.XYZ(pair[1]).get_coordinates())
-				if distance>=dist_cutoff:
-					continue
-				ts=IMP.core.HarmonicDistancePairScore(distance,strength)
-
-				print "ElasticNetworkConstraint: adding a restraint between %s and %s with distance %.3f" % (pair[0].get_name(),pair[1].get_name(),distance)
-				self.rs.add_restraint(IMP.core.PairRestraint(ts,pair))
-				self.pairslist.append(IMP.ParticlePair(pair[0], pair[1]))
-				self.pairslist.append(IMP.ParticlePair(pair[1], pair[0]))
-		  print 'created',self.rs.get_number_of_restraints(),'restraints'
+            for pair in itertools.combinations(particles,2):
+                distance=IMP.algebra.get_distance(IMP.core.XYZ(pair[0]).get_coordinates(),
+                                                  IMP.core.XYZ(pair[1]).get_coordinates())
+                if distance>=dist_cutoff:
+                    continue
+                ts=IMP.core.HarmonicDistancePairScore(distance,strength)
+                print "ElasticNetworkConstraint: adding a restraint between %s and %s with distance %.3f" % (pair[0].get_name(),pair[1].get_name(),distance)
+                self.rs.add_restraint(IMP.core.PairRestraint(ts,pair))
+                self.pairslist.append(IMP.ParticlePair(pair[0], pair[1]))
+                self.pairslist.append(IMP.ParticlePair(pair[1], pair[0]))
+        print 'created',self.rs.get_number_of_restraints(),'restraints'
 
     def set_label(self, label):
         self.label = label
@@ -679,34 +676,34 @@ class CharmmForceFieldRestraint():
 
 
     def __init__(self,representation,ff_temp=300.0):
-		  self.m=representation.prot.get_model()
-		  self.rs = IMP.RestraintSet(self.m, "ElasticNetwork")
-		  self.weight=1
-		  self.label="None"
+        self.m=representation.prot.get_model()
+        self.rs = IMP.RestraintSet(self.m, "ElasticNetwork")
+        self.weight=1
+        self.label="None"
 
-		  kB = (1.381 * 6.02214) / 4184.0
-		  root=representation.prot
-		  atoms=IMP.atom.get_leaves(root)
+        kB = (1.381 * 6.02214) / 4184.0
+        root=representation.prot
+        atoms=IMP.atom.get_leaves(root)
 
-		  ### charmm setup
-		  ff = IMP.atom.get_heavy_atom_CHARMM_parameters()
-		  topology = ff.create_topology(root)
-		  topology.apply_default_patches()
-		  topology.setup_hierarchy(root)
-		  r = IMP.atom.CHARMMStereochemistryRestraint(root, topology)
-		  self.rs = IMP.RestraintSet(self.m, 1.0 / (kB * ff_temp), 'phys')
-		  crs.add_restraint(r)
-		  ff.add_radii(root)
-		  ff.add_well_depths(root)
+        ### charmm setup
+        ff = IMP.atom.get_heavy_atom_CHARMM_parameters()
+        topology = ff.create_topology(root)
+        topology.apply_default_patches()
+        topology.setup_hierarchy(root)
+        r = IMP.atom.CHARMMStereochemistryRestraint(root, topology)
+        self.rs = IMP.RestraintSet(self.m, 1.0 / (kB * ff_temp), 'phys')
+        self.rs.add_restraint(r)
+        ff.add_radii(root)
+        ff.add_well_depths(root)
 
-		  ### non-bonded forces
-		  cont = IMP.container.ListSingletonContainer(atoms)
-		  nbl = IMP.container.ClosePairContainer(cont, 4.0)
-		  nbl.add_pair_filter(r.get_pair_filter())
-		  sf = IMP.atom.ForceSwitch(6.0, 7.0)
-		  ljps = IMP.atom.LennardJonesPairScore(sf)
-		  pr=IMP.container.PairsRestraint(ljps, nbl)
-		  rs.add_restraint(pr)
+        ### non-bonded forces
+        cont = IMP.container.ListSingletonContainer(atoms)
+        nbl = IMP.container.ClosePairContainer(cont, 4.0)
+        nbl.add_pair_filter(r.get_pair_filter())
+        sf = IMP.atom.ForceSwitch(6.0, 7.0)
+        ljps = IMP.atom.LennardJonesPairScore(sf)
+        pr=IMP.container.PairsRestraint(ljps, nbl)
+        self.rs.add_restraint(pr)
 
         print 'CHARMM is set up'
 

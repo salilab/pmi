@@ -15,7 +15,7 @@ class ReplicaExchange0():
                  representation,
                  sample_objects,
                  output_objects,
-					  sampler_type="MC",
+                 sampler_type="MC",
                  crosslink_restraints=None,
                  monte_carlo_temperature=1.0,
                  replica_exchange_minimum_temperature=1.0,
@@ -49,7 +49,7 @@ class ReplicaExchange0():
         self.em_object_for_rmf = em_object_for_rmf
         self.sample_objects = sample_objects
         self.output_objects = output_objects
-		  self.sampler_type=sampler_type
+        self.sampler_type=sampler_type
         self.replica_exchange_object = replica_exchange_object
         self.vars = {}
         if self.is_multi_state:
@@ -93,7 +93,7 @@ class ReplicaExchange0():
 
         temp_index_factor = 100000.0
 
-		  if self.sampler_type=="MC":
+        if self.sampler_type=="MC":
             print "Setting up MonteCarlo"
             sampler = IMP.pmi.samplers.MonteCarlo(self.model,
                                                  self.sample_objects,
@@ -370,7 +370,7 @@ class AnalysisReplicaExchange0():
         # it contains the position of the root directories
         self.root_directory_dict = {}
         for rd in merge_directories:
-            stat_files = glob.glob(rd + "/" + stat_dir + "/"+stat_file_name_suffix+".*.out")
+            stat_files = glob.glob(rd + "/" + stat_dir + "/stat.*.out")
             self.stat_files += stat_files
             for s in stat_files:
                 self.root_directory_dict[s] = rd
@@ -638,58 +638,68 @@ class AnalysisReplicaExchange0():
 # --------------------------------------------------------------------------------------------
 
 
-                dircluster = outputdir + "/all_models." + str(n) + "/"
-                try:
-                    os.mkdir(outputdir)
-                except:
-                    pass
+            dircluster = outputdir + "/all_models." + str(n) + "/"
+            try:
+                os.mkdir(outputdir)
+            except:
+                pass
 
-                try:
-                    os.mkdir(dircluster)
-                except:
-                    pass
+            try:
+                os.mkdir(dircluster)
+            except:
+                pass
 
-                clusstat = open(dircluster + "stat." + str(rank) + ".out", "w")
+            clusstat = open(dircluster + "stat." + str(rank) + ".out", "w")
 
-                for cnt, tpl in enumerate(my_best_score_rmf_tuples):
-                    rmf_name = tpl[1]
-                    rmf_frame_number = tpl[2]
+            for cnt, tpl in enumerate(my_best_score_rmf_tuples):
+                rmf_name = tpl[1]
+                rmf_frame_number = tpl[2]
 
-                    tmp_dict = {}
-                    index = tpl[4]
+                tmp_dict = {}
+                index = tpl[4]
 
-                    for key in best_score_feature_keyword_list_dict:
-                        tmp_dict[key]=best_score_feature_keyword_list_dict[key][index]
+                for key in best_score_feature_keyword_list_dict:
+                    tmp_dict[
+                        key] = best_score_feature_keyword_list_dict[
+                        key][
+                        index]
 
-                    prot=IMP.pmi.analysis.get_hier_from_rmf(self.model,rmf_frame_number,rmf_name)
-                    
-                    if not prot: continue
-                    
-                    o=IMP.pmi.output.Output()
-                    o.init_pdb(dircluster+str(cnt)+"."+str(rank)+".pdb",prot)        
-                    o.write_pdb(dircluster+str(cnt)+"."+str(rank)+".pdb",translate_to_geometric_center=True)
-                    
-                    tmp_dict["local_pdb_file_name"]=str(cnt)+"."+str(rank)+".pdb"
-                    tmp_dict["rmf_file_full_path"]=rmf_name
-                    tmp_dict["local_rmf_file_name"]=str(cnt)+"."+str(rank)+".rmf3"
-                    tmp_dict["local_rmf_frame_number"]=0
-                    
-                    
-                    
-                    #IMP.atom.destroy(prot)
-                    
-                    clusstat.write(str(tmp_dict)+"\n")
+                prot = IMP.pmi.analysis.get_hier_from_rmf(
+                    self.model,
+                    rmf_frame_number,
+                    rmf_name)
 
-                    o.init_rmf(dircluster+str(cnt)+"."+str(rank)+".rmf3",[prot])
-                    #IMP.rmf.add_restraints(o.dictionary_rmfs[dircluster+str(n)+".rmf3"],restraints)
-                    o.write_rmf(dircluster+str(cnt)+"."+str(rank)+".rmf3")
-                    o.close_rmf(dircluster+str(cnt)+"."+str(rank)+".rmf3")
-                
-               return
+                if not prot:
+                    continue
 
+                o = IMP.pmi.output.Output()
+                o.init_pdb(
+                    dircluster + str(cnt) + "." + str(rank) + ".pdb",
+                    prot)
+                o.write_pdb(
+                    dircluster + str(cnt) + "." + str(rank) + ".pdb",
+                    translate_to_geometric_center=True)
 
-            # here I've tested that feature_keyword_list_dict is correct on 2 CPUs
+                tmp_dict["pdb_file_name"] = str(
+                    cnt) + "." + str(rank) + ".pdb"
 
+                # IMP.atom.destroy(prot)
+
+                clusstat.write(str(tmp_dict) + "\n")
+
+                o.init_rmf(
+                    dircluster + str(cnt) + "." + str(rank) + ".rmf3",
+                    [prot])
+                # IMP.rmf.add_restraints(o.dictionary_rmfs[dircluster+str(n)+".rmf3"],restraints)
+                o.write_rmf(
+                    dircluster + str(cnt) + "." + str(rank) + ".rmf3")
+                o.close_rmf(
+                    dircluster + str(cnt) + "." + str(rank) + ".rmf3")
+
+            exit()
+
+            # here I've tested that feature_keyword_list_dict is correct on 2
+            # CPUs
 # ------------------------------------------------------------------------
 # read the coordinates
 # ------------------------------------------------------------------------

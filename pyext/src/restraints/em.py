@@ -168,6 +168,128 @@ class GaussianEMRestraint():
         for p in list(XYZRs):
             IMP.core.transform(IMP.core.XYZ(p), transformation)
 
+
+    def set_weight(self,weight):
+        self.rs.set_weight(weight)
+
+    def set_label(self, label):
+        self.label = label
+
+    def add_to_model(self):
+        self.m.add_restraint(self.rs)
+
+    def get_particles_to_sample(self):
+        ps = {}
+        if self.sigmaissampled:
+            ps["Nuisances_GaussianEMRestraint_sigma_" +
+                self.label] = ([self.sigmaglobal], self.sigmamaxtrans)
+        return ps
+
+    def get_hierarchy(self):
+        return self.prot
+
+    def get_density_as_hierarchy(self):
+        f=IMP.atom.Fragment().setup_particle(IMP.Particle(self.m))
+        f.set_name("GaussianEMRestraint_density_"+self.label)
+        for p in self.target_ps:
+            f.add_child(p)
+        return f
+
+    def get_restraint_set(self):
+        return self.rs
+
+    def get_output(self):
+        self.m.update()
+        output = {}
+        score = self.rs.unprotected_evaluate(None)
+        output["_TotalScore"] = str(score)
+        output["GaussianEMRestraint_" +
+               self.label] = str(self.rs.unprotected_evaluate(None))
+        output["GaussianEMRestraint_sigma_" +
+               self.label] = str(self.sigmaglobal.get_scale())
+        return output
+
+class SphericalGaussianEMRestraint():
+
+    def __init__(self, densities,
+                 target_fn='',
+                 target_ps=[],
+                 cutoff_dist_for_container=10.0,
+                 target_mass_scale=1.0,
+                 target_radii_scale=1.0,
+                 model_radii_scale=1.0):
+        global sys, tools
+        import sys
+        import IMP.isd_emxl
+        import IMP.isd_emxl.gmm_tools
+        import IMP.pmi.tools as tools
+        from math import sqrt
+
+        # some parameters
+        self.label="None"
+        self.sigmaissampled = False
+        self.sigmamaxtrans = 0.3
+        self.sigmamin = 1.0
+        self.sigmamax = 100.0
+        self.sigmainit = 2.0
+        self.tabexp = False
+        self.label="None"
+        self.densities=densities
+
+        # setup target GMM
+        self.m = self.densities[0].get_model()
+        print 'will scale target mass by',target_mass_scale
+        if target_fn!='':
+            self.target_ps = []
+            IMP.isd_emxl.gmm_tools.decorate_gmm_from_text(target_fn, self.target_ps, self.m)
+        elif target_ps!=[]:
+            self.target_ps=target_ps
+        else:
+            print 'Gaussian EM restraint: must provide target density file or properly set up target densities'
+            return
+        for p in self.target_ps:
+            rmax=sqrt(max(IMP.core.Gaussian(p).get_variances()))*target_radii_scale
+            if not IMP.core.XYZR.get_is_setup(p):
+                IMP.core.XYZR.setup_particle(p,rmax)
+            else:
+                IMP.core.XYZR(p).set_radius(rmax)
+            mp=IMP.atom.Mass(p)
+            mp.set_mass(mp.get_mass()*target_mass_scale)
+
+
+        # setup model GMM
+        self.model_ps = []
+        for h in self.densities:
+            self.model_ps += IMP.atom.get_leaves(h)
+        if model_radii_scale!=1.0:
+            for p in self.model_ps:
+                rmax=sqrt(IMP.core.SphericalGaussian(p).get_variance())*model_radii_scale
+                if not IMP.core.XYZR.get_is_setup(p):
+                    IMP.core.XYZR.setup_particle(p,rmax)
+                else:
+                    IMP.core.XYZR(p).set_radius(rmax)
+
+        # sigma particle
+        self.sigmaglobal = tools.SetupNuisance(self.m, self.sigmainit,
+                                               self.sigmamin, self.sigmamax,
+                                               self.sigmaissampled).get_particle()
+
+        # create restraint
+        print 'target num particles',len(self.target_ps), \
+            'total weight',sum([IMP.atom.Mass(p).get_mass() for p in self.target_ps])
+        print 'model num particles',len(self.model_ps), \
+            'total weight',sum([IMP.atom.Mass(p).get_mass() for p in self.model_ps])
+        print 'spherical a go'
+        self.gaussianEM_restraint = IMP.isd_emxl.SphericalGaussianEMRestraint(self.m,
+                                                    IMP.get_indexes(self.model_ps),
+                                                    IMP.get_indexes(self.target_ps),
+                                                    self.sigmaglobal.get_particle().get_index(),
+                                                    cutoff_dist_for_container,
+                                                    False, False)
+        print 'done EM setup'
+        self.rs = IMP.RestraintSet(self.m, 'SphericalGaussianEMRestraint')
+        self.rs.add_restraint(self.gaussianEM_restraint)
+
     def set_weight(self, weight):
         self.rs.set_weight(weight)
 

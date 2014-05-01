@@ -54,12 +54,8 @@ class Output():
         for n, i in enumerate(self.dictionary_pdbs[name].get_children()):
             self.dictchain[name][i.get_name()] = self.chainids[n]
 
-    def write_pdb(
-        self,
-        name,
-        appendmode=True,
-        atomistic=False,
-            translate_to_geometric_center=False):
+    def write_pdb(self,name,appendmode=True,atomistic=False,
+                  translate_to_geometric_center=False):
         import resource
         if appendmode:
             flpdb = open(name, 'a')

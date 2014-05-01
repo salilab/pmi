@@ -33,6 +33,7 @@ class GaussianEMRestraint():
         self.tabexp = False
         self.label = "None"
         self.densities = densities
+        self.weight=1
 
         # setup target GMM
         self.m = self.densities[0].get_model()
@@ -170,6 +171,7 @@ class GaussianEMRestraint():
 
 
     def set_weight(self,weight):
+        self.weight = weight
         self.rs.set_weight(weight)
 
     def set_label(self, label):
@@ -201,7 +203,7 @@ class GaussianEMRestraint():
     def get_output(self):
         self.m.update()
         output = {}
-        score = self.rs.unprotected_evaluate(None)
+        score = self.weight * self.rs.unprotected_evaluate(None)
         output["_TotalScore"] = str(score)
         output["GaussianEMRestraint_" +
                self.label] = str(self.rs.unprotected_evaluate(None))
@@ -235,6 +237,7 @@ class SphericalGaussianEMRestraint():
         self.tabexp = False
         self.label="None"
         self.densities=densities
+        self.weight=1
 
         # setup target GMM
         self.m = self.densities[0].get_model()
@@ -291,6 +294,7 @@ class SphericalGaussianEMRestraint():
         self.rs.add_restraint(self.gaussianEM_restraint)
 
     def set_weight(self, weight):
+        self.weight = weight
         self.rs.set_weight(weight)
 
     def set_label(self, label):
@@ -322,10 +326,7 @@ class SphericalGaussianEMRestraint():
     def get_output(self):
         self.m.update()
         output = {}
-        score = self.rs.unprotected_evaluate(None)
-        output["_TotalScore"] = str(score)
-        output["GaussianEMRestraint_" +
-               self.label] = str(self.rs.unprotected_evaluate(None))
-        output["GaussianEMRestraint_sigma_" +
-               self.label] = str(self.sigmaglobal.get_scale())
+        score = self.weight * self.rs.unprotected_evaluate(None)
+        output["SphericalGaussianEMRestraint_" +
+               self.label] = str(score)
         return output

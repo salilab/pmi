@@ -610,7 +610,7 @@ class ElasticNetworkRestraint():
                  dist_cutoff=10.0,
                  ca_only=True):
         '''
-		  ca_only: only applies for resolution 0
+        ca_only: only applies for resolution 0
         '''
         self.m = representation.prot.get_model()
         self.rs = IMP.RestraintSet(self.m, "ElasticNetwork")
@@ -620,6 +620,7 @@ class ElasticNetworkRestraint():
 
         particles = []
         for st in selection_tuples:
+            print 'selecting with',st
             for p in IMP.pmi.tools.select_by_tuple(representation,st,resolution=resolution):
                 if (resolution==0 and ca_only and IMP.atom.Atom(p).get_atom_type()!=IMP.atom.AtomType("CA")):
                     continue
@@ -673,15 +674,20 @@ class CharmmForceFieldRestraint():
     '''
     import IMP.pmi.tools
     from math import pi as pi
-
+    import IMP.isd
 
     def __init__(self,representation,ff_temp=300.0):
+
+        kB = (1.381 * 6.02214) / 4184.0
+
         self.m=representation.prot.get_model()
-        self.rs = IMP.RestraintSet(self.m, "ElasticNetwork")
+        self.bonds_rs = IMP.RestraintSet(self.m, 1.0 / (kB * ff_temp), 'bonds')
+        self.nonbonded_rs = IMP.RestraintSet(self.m, 1.0 / (kB * ff_temp), 'NONBONDED')
         self.weight=1
         self.label="None"
 
-        kB = (1.381 * 6.02214) / 4184.0
+
+        #root=representation.prot.get_children()[0].get_children()[0].get_children()[0]
         root=representation.prot
         atoms=IMP.atom.get_leaves(root)
 
@@ -691,19 +697,21 @@ class CharmmForceFieldRestraint():
         topology.apply_default_patches()
         topology.setup_hierarchy(root)
         r = IMP.atom.CHARMMStereochemistryRestraint(root, topology)
-        self.rs = IMP.RestraintSet(self.m, 1.0 / (kB * ff_temp), 'phys')
-        self.rs.add_restraint(r)
+        self.bonds_rs.add_restraint(r)
         ff.add_radii(root)
         ff.add_well_depths(root)
 
         ### non-bonded forces
         cont = IMP.container.ListSingletonContainer(atoms)
-        nbl = IMP.container.ClosePairContainer(cont, 4.0)
+        nbl = IMP.container.ClosePairContainer(cont, 5.0) #4?
         nbl.add_pair_filter(r.get_pair_filter())
-        sf = IMP.atom.ForceSwitch(6.0, 7.0)
-        ljps = IMP.atom.LennardJonesPairScore(sf)
-        pr=IMP.container.PairsRestraint(ljps, nbl)
-        self.rs.add_restraint(pr)
+        #sf = IMP.atom.ForceSwitch(6.0, 7.0)
+        #pairscore = IMP.atom.LennardJonesPairScore(sf)
+        pairscore = IMP.isd.RepulsiveDistancePairScore(0,1)
+        pr=IMP.container.PairsRestraint(pairscore, nbl)
+        self.nonbonded_rs.add_restraint(pr)
+
+        #self.scoring_function = IMP.core.RestraintsScoringFunction([r,pr])
 
         print 'CHARMM is set up'
 
@@ -714,7 +722,8 @@ class CharmmForceFieldRestraint():
             r.set_name(label)
 
     def add_to_model(self):
-        self.m.add_restraint(self.rs)
+        self.m.add_restraint(self.bonds_rs)
+        self.m.add_restraint(self.nonbonded_rs)
 
     def get_restraint(self):
         return self.rs
@@ -726,9 +735,12 @@ class CharmmForceFieldRestraint():
     def get_output(self):
         self.m.update()
         output = {}
-        score = self.weight * self.rs.unprotected_evaluate(None)
+        bonds_score = self.weight * self.bonds_rs.unprotected_evaluate(None)
+        nonbonded_score = self.weight * self.nonbonded_rs.unprotected_evaluate(None)
+        score=bonds_score+nonbonded_score
         output["_TotalScore"] = str(score)
-        output["CHARMM_" + self.label] = str(score)
+        output["CHARMM_BONDS"] = str(bonds_score)
+        output["CHARMM_NONBONDED"] = str(nonbonded_score)
         return output
 
 

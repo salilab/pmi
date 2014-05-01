@@ -23,6 +23,7 @@ class ReplicaExchange0():
                  number_of_best_scoring_models=500,
                  monte_carlo_steps=10,
                  number_of_frames=1000,
+                 nframes_write_coordinates=1,
                  write_initial_rmf=True,
                  initial_rmf_name_suffix="initial",
                  stat_file_name_suffix="stat",
@@ -65,6 +66,7 @@ class ReplicaExchange0():
             "number_of_best_scoring_models"] = number_of_best_scoring_models
         self.vars["monte_carlo_steps"] = monte_carlo_steps
         self.vars["number_of_frames"] = number_of_frames
+        self.vars["nframes_write_coordinates"] = nframes_write_coordinates
         self.vars["write_initial_rmf"] = write_initial_rmf
         self.vars["initial_rmf_name_suffix"] = initial_rmf_name_suffix
         self.vars["best_pdb_name_suffix"] = best_pdb_name_suffix
@@ -247,11 +249,15 @@ class ReplicaExchange0():
             if min_temp_index == my_temp_index:
                 print "--- frame %s score %s " % (str(i), str(score))
 
-                output.write_pdb_best_scoring(score)
-                output.write_rmf(rmfname)
-
-                output.set_output_entry("rmf_file", rmfname)
-                output.set_output_entry("rmf_frame_index", ntimes_at_low_temp)
+                if i % self.vars["nframes_write_coordinates"]==0:
+                    print '--- writing coordinates'
+                    output.write_pdb_best_scoring(score)
+                    output.write_rmf(rmfname)
+                    output.set_output_entry("rmf_file", rmfname)
+                    output.set_output_entry("rmf_frame_index", ntimes_at_low_temp)
+                else:
+                    output.set_output_entry("rmf_file", rmfname)
+                    output.set_output_entry("rmf_frame_index", '-1')
                 output.write_stat2(low_temp_stat_file)
                 ntimes_at_low_temp += 1
 

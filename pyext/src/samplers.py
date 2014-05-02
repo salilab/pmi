@@ -315,6 +315,35 @@ class MonteCarlo():
         return output
 
 
+class MolecularDynamics():
+    def __init__(self,m,objects,temperature,gamma=0.5,maximum_time_step=0.001):
+        self.m=m
+        to_sample=[]
+        for obj in objects:
+            to_sample+=obj.get_particles_to_sample()['Floppy_Bodies_SimplifiedModel'][0]
+        self.ltstate=IMP.atom.LangevinThermostatOptimizerState(self.m,to_sample,
+                                                          temperature,
+                                                          gamma)
+        self.md = IMP.atom.MolecularDynamics(self.m)
+        self.md.add_optimizer_state(self.ltstate)
+
+    def set_kt(self,kt):
+        temp=kt/0.0019872041
+        #self.md.get_optimizer_state(0).set_temperature(temp)
+        self.ltstate.set_temperature(temp)
+        self.md.assign_velocities(temp)
+
+    def set_gamma(self,gamma):
+        self.ltstate.set_gamma(gamma)
+
+    def optimize(self,nsteps):
+        self.md.optimize(nsteps)
+
+    def get_output(self):
+        output={}
+        output["MolecularDynamics_KineticEnergy"]=str(self.md.get_kinetic_energy())
+        return output
+
 class ConjugateGradients():
 
     def __init__(self, m, objects):

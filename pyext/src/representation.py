@@ -713,19 +713,17 @@ class Representation():
             return
 
         # create a sphereical gaussian for each particle based on atom type
-        print 'setting up all atom gaussians num_particles', len(fragment_particles)
-        for n, p in enumerate(fragment_particles):
-            center = IMP.core.XYZ(p).get_coordinates()
-            rad = IMP.core.XYZR(p).get_radius()
-            mass = IMP.atom.Mass(p).get_mass()
-            trans = IMP.algebra.Transformation3D(
-                IMP.algebra.get_identity_rotation_3d(),
-                center)
-            shape = IMP.algebra.Gaussian3D(
-                IMP.algebra.ReferenceFrame3D(trans),
-                [rad] * 3)
-            IMP.core.Gaussian.setup_particle(p, shape)
-            # print 'setting up',n,p
+        print 'setting up all atom gaussians num_particles',len(fragment_particles)
+        for n,p in enumerate(fragment_particles):
+            center=IMP.core.XYZ(p).get_coordinates()
+            rad=IMP.core.XYZR(p).get_radius()
+            mass=IMP.atom.Mass(p).get_mass()
+            trans=IMP.algebra.Transformation3D(IMP.algebra.get_identity_rotation_3d(),
+															  center)
+            shape=IMP.algebra.Gaussian3D(IMP.algebra.ReferenceFrame3D(trans),[rad]*3)
+            IMP.core.SphericalGaussian.setup_particle(p,shape)
+            #print 'setting up',n,p
+
         if not output_map is None:
             print 'writing map to', output_map
             IMP.isd_emxl.gmm_tools.write_gmm_to_map(

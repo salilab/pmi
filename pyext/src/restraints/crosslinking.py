@@ -723,6 +723,7 @@ class ISDCrossLinkMS():
             self.psi_dictionary = {}
         self.samplelength = samplelength
         self.psi_is_sampled = True
+        self.sigma_is_sampled = True
 
         if ids_map is None:
             self.ids_map = IMP.pmi.tools.map()
@@ -779,7 +780,6 @@ class ISDCrossLinkMS():
             if not csvfile:
                 tokens = entry.split()
                 # skip character
-
                 if (tokens[0] == "#"):
                     continue
                 try:
@@ -1096,6 +1096,9 @@ class ISDCrossLinkMS():
     def set_psi_is_sampled(self, is_sampled=True):
         self.psi_is_sampled = is_sampled
 
+    def set_sigma_is_sampled(self, is_sampled=True):
+        self.sigma_is_sampled = is_sampled
+
     def get_output(self):
         # content of the crosslink database pairs
         # self.pairs.append((p1,p2,dr,r1,c1,r2,c2))
@@ -1155,7 +1158,7 @@ class ISDCrossLinkMS():
         ps = {}
 
         for resolution in self.sigma_dictionary:
-            if self.sigma_dictionary[resolution][2]:
+            if self.sigma_dictionary[resolution][2] and self.sigma_is_sampled:
                 ps["Nuisances_ISDCrossLinkMS_Sigma_" + str(resolution) + "_" + self.label] =\
                     ([self.sigma_dictionary[resolution][0]],
                      self.sigma_dictionary[resolution][1])

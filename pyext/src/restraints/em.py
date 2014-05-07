@@ -330,3 +330,49 @@ class SphericalGaussianEMRestraint():
         output["SphericalGaussianEMRestraint_" +
                self.label] = str(score)
         return output
+
+
+#-------------------------------------------
+        
+class ElectronMicroscopy2D():
+
+    def __init__(
+        self,
+        representation,
+        images,
+        resolution=None):
+        
+        self.weight=1.0
+        self.m = representation.prot.get_model()
+        self.rs = IMP.RestraintSet(self.m, 'em2d')
+        self.label = "None"
+
+        # IMP.atom.get_by_type
+        particles = IMP.pmi.tools.select(
+            representation,
+            resolution=resolution)
+            
+        em2d = None
+        self.rs.add_restraint(em2d)
+
+    def set_label(self, label):
+        self.label = label
+
+    def add_to_model(self):
+        self.m.add_restraint(self.rs)
+
+    def get_restraint(self):
+        return self.rs
+
+    def set_weight(self,weight):
+        self.weight=weight
+        self.rs.set_weigth(self.weight)
+
+    def get_output(self):
+        self.m.update()
+        output = {}
+        score = self.weight*self.rs.unprotected_evaluate(None)
+        output["_TotalScore"] = str(score)
+        output["ElectronMicroscopy2D_" + self.label] = str(score)
+        return output
+        

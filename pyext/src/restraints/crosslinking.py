@@ -804,7 +804,14 @@ class ISDCrossLinkMS():
                     if eval(IMP.pmi.tools.cross_link_db_filter_parser(filters)) == False:
                         exdb.write(str(entry) + "\n")
                         continue
-
+                
+                print int(entry[residue1])
+                print entry[protein1]
+                print int(entry[residue2])
+                print entry[protein2]
+                print float(entry[idscore])
+                print entry[xluniqueid]
+                
                 try:
                     r1 = int(entry[residue1])
                     c1 = entry[protein1]
@@ -813,7 +820,7 @@ class ISDCrossLinkMS():
                     if idscore is None:
                         ids = 1.0
                     else:
-                        ids = float(tokens[idscore])
+                        ids = float(entry[idscore])
                     if xluniqueid is None:
                         xlid = str(nxl)
                     else:

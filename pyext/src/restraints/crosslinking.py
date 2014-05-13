@@ -805,13 +805,6 @@ class ISDCrossLinkMS():
                         exdb.write(str(entry) + "\n")
                         continue
                 
-                print int(entry[residue1])
-                print entry[protein1]
-                print int(entry[residue2])
-                print entry[protein2]
-                print float(entry[idscore])
-                print entry[xluniqueid]
-                
                 try:
                     r1 = int(entry[residue1])
                     c1 = entry[protein1]

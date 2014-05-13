@@ -928,7 +928,6 @@ def scatter_and_gather(data):
             if type(data) == list:
                 data += data_tmp
             elif type(data) == dict:
-                print "aaaa",rank,data_tmp
                 data.update(data_tmp)
             else:
                 print "tools.scatter_and_gather: data not supported, use list or dictionaries"

@@ -1823,7 +1823,7 @@ class Precision():
             selection_dictionary = {"Selection_name_1":selection_tuple1,
                                     "Selection_name_2":selection_tuple2}'''
                                     
-        self.styles=['pairwise_rmsd','pairwise_drmsd_k','pairwise_drms_k','rmsd_from_center','drmsd_from_center']
+        self.styles=['pairwise_rmsd','pairwise_drmsd_k','pairwise_drmsd_Q','pairwise_drms_k','rmsd_from_center','drmsd_from_center']
         self.style='pairwise_drmsd_k'
         self.structures_dictionary={}
         self.reference_structures_dictionary={}
@@ -1836,6 +1836,7 @@ class Precision():
         self.reference_structure=None
         self.reference_prot=None
         self.selection_dictionary=selection_dictionary
+        self.threshold=20.0
        
         if resolution in ["one", "ten"]:
            self.resolution=resolution
@@ -1984,6 +1985,8 @@ class Precision():
            distance=IMP.atom.get_drmsd(coordinates1,coordinates2)
         if self.style=='pairwise_drms_k':       
            distance=IMP.atom.get_drms(coordinates1,coordinates2)
+        if self.style=='pairwise_drmsd_Q':       
+           distance=IMP.atom.get_drmsd_Q(coordinates1,coordinates2,self.threshold)
         
         return distance
         

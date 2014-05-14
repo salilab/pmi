@@ -9,7 +9,7 @@ import IMP.pmi.output
 import os
 
 
-class ReplicaExchange0():
+class ReplicaExchange0(object):
 
     def __init__(self, model,
                  representation,
@@ -352,7 +352,7 @@ data = [("Rpb1",     pdbfile,   "A",     0.00000000,  (fastafile,    0)),
 # ----------------------------------------------------------------------
 
 
-class AnalysisReplicaExchange0():
+class AnalysisReplicaExchange0(object):
 
     def __init__(self, model,
                  stat_file_name_suffix="stat",

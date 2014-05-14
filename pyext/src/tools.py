@@ -9,7 +9,7 @@ import IMP.algebra
 import collections
 
 
-class Stopwatch():
+class Stopwatch(object):
 
     def __init__(self, isdelta=True):
         global time
@@ -39,7 +39,7 @@ class Stopwatch():
         return output
 
 
-class SetupNuisance():
+class SetupNuisance(object):
 
     def __init__(self, m, initialvalue, minvalue, maxvalue, isoptimized=True):
         import IMP.isd
@@ -58,7 +58,7 @@ class SetupNuisance():
         return self.nuisance
 
 
-class SetupWeight():
+class SetupWeight(object):
 
     def __init__(self, m, isoptimized=True):
         import IMP.isd
@@ -70,7 +70,7 @@ class SetupWeight():
         return self.weight
 
 
-class ParticleToSampleList():
+class ParticleToSampleList(object):
 
     def __init__(self, label="None"):
 
@@ -119,7 +119,7 @@ class ParticleToSampleList():
         return ps
 
 
-class Variance():
+class Variance(object):
 
     def __init__(self, model, tau, niter, prot, th_profile, write_data=False):
         global sqrt, os, random
@@ -549,7 +549,7 @@ def get_residue_gaps_in_hierarchy(hierarchy, start, end):
     return gaps
 
 
-class map():
+class map(object):
 
     def __init__(self):
         self.map = {}
@@ -703,7 +703,7 @@ def get_db_from_csv(csvfilename):
     return outputlist
 
 
-class HierarchyDatabase():
+class HierarchyDatabase(object):
 
     def __init__(self):
         self.db = {}

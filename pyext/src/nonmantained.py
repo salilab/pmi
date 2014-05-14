@@ -3,7 +3,7 @@
 """
 
 
-class Rods():
+class Rods(object):
 
     def __init__(self, m):
         self.m = m
@@ -61,7 +61,7 @@ class Rods():
         return ps
 
 
-class Beads():
+class Beads(object):
 
     def __init__(self, m):
         self.m = m
@@ -119,7 +119,7 @@ class Beads():
         return ps
 
 
-class MultipleStates():
+class MultipleStates(object):
 
     def __init__(self, nstates, m):
         global itertools, tools, restraints
@@ -742,7 +742,7 @@ class MultipleStates():
 
 #
 
-class LinkDomains():
+class LinkDomains(object):
 
     def __init__(self, prot, resrangelist, kappa, length=5.0):
         # generate a linker between residues using HarmonicUpperBound
@@ -870,7 +870,7 @@ class LinkDomains():
 #
 
 
-class UpperBound():
+class UpperBound(object):
 
     def __init__(self, prot, respairs, kappa, length=5.0):
         # generate a restraint between residues using HarmonicUpperBound
@@ -951,7 +951,7 @@ class UpperBound():
 #
 
 
-class ExcludedVolumeResidue():
+class ExcludedVolumeResidue(object):
 
     def __init__(self, prot, kappa):
         self.rs = IMP.RestraintSet('excluded_volume')
@@ -1007,7 +1007,7 @@ class ExcludedVolumeResidue():
 #
 
 
-class BipartiteExcludedVolumeResidue():
+class BipartiteExcludedVolumeResidue(object):
 
     def __init__(self, prot1, prot2, kappa):
         self.rs = IMP.RestraintSet('bipartite_excluded_volume')
@@ -1073,7 +1073,7 @@ class BipartiteExcludedVolumeResidue():
 #
 
 
-class TemplateRestraint():
+class TemplateRestraint(object):
 
     def __init__(self, ps1, ps2, cutoff=6.5, kappa=1.0, forcerb=False):
         self.m = ps1[0].get_model()
@@ -1124,7 +1124,7 @@ class TemplateRestraint():
 #
 
 
-class MarginalChi3Restraint():
+class MarginalChi3Restraint(object):
 
     def __init__(self, part1, part2):
         global impisd2, tools
@@ -1181,7 +1181,7 @@ class MarginalChi3Restraint():
 #
 
 
-class CrossLinkMS():
+class CrossLinkMS(object):
 
     '''
     this class initialize a CrossLinkMS restraint and contains
@@ -1829,7 +1829,7 @@ class CrossLinkMS():
 #
 
 
-class BinomialXLMSRestraint():
+class BinomialXLMSRestraint(object):
 
     def __init__(self, m, prots,
                  listofxlinkertypes=["BS3", "BS2G", "EGS"], map_between_protein_names_and_chains=None, typeofprofile='pfes'):
@@ -2315,7 +2315,7 @@ class BinomialXLMSRestraint():
 #
 
 
-class CrossLinkMSSimple():
+class CrossLinkMSSimple(object):
 
     def __init__(self, prot, restraints_file, TruncatedHarmonic=True):
         """read crosslink restraints between two residue

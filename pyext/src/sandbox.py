@@ -57,18 +57,18 @@ def clone_component(component, new_copy_num):
     '''probably implement this in C++. copies all fragments, and all levels of resolution'''
 
 
-class Handle():
+class Handle(object):
 
     '''a class for accessing part of a Sequence.
     define: and, or, -, [] '''
 
 
-class Sequence():
+class Sequence(object):
 
     ''' might simply be a string'''
 
 
-class Component():
+class Component(object):
 
     ''' a class to store the sequence and coordinates of a component.
     it should act as a handle to itself, or at least return one easily.'''
@@ -91,12 +91,12 @@ class Component():
         return Handle(self, start, stop)
 
 
-class Body():
+class Body(object):
 
     ''' a class to store mixtures of subsets of components, with optional settings'''
 
 
-class System():
+class System(object):
 
     '''
     a class to make it easy to setup an IMP hierarchy of a system.

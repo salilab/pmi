@@ -8,7 +8,7 @@ import IMP
 import IMP.algebra
 
 
-class Alignment():
+class Alignment(object):
 
     """
     This class performs alignment and RMSD calculation for two sets of coordinates
@@ -139,7 +139,7 @@ else: print 'ERROR!'; exit()
 
 
 # ----------------------------------
-class Violations():
+class Violations(object):
 
     def __init__(self, filename):
         global impem, deepcopy, cdist, array, argwhere, mgrid, shape, reshape, zeros, sqrt, diagonal, argsort
@@ -174,7 +174,7 @@ class Violations():
 
 
 # ----------------------------------
-class Clustering():
+class Clustering(object):
 
     def __init__(self):
 
@@ -446,7 +446,7 @@ class Clustering():
 
 # ----------------------------------
 
-class GetModelDensity():
+class GetModelDensity(object):
 
     def __init__(self, custom_ranges, representation=None, voxel=5.0):
         '''
@@ -538,7 +538,7 @@ class GetModelDensity():
 # ----------------------------------
 
 
-class GetContactMap():
+class GetContactMap(object):
 
     def __init__(self, distance=15.):
         global impem, deepcopy, cdist, array, argwhere, mgrid, shape, reshape, zeros, sqrt, diagonal, argsort, log
@@ -839,7 +839,7 @@ class GetContactMap():
 
 # ------------------------------------------------------------------
 
-class CrossLinkTable():
+class CrossLinkTable(object):
 
     def __init__(self):
         self.crosslinks = []
@@ -1816,7 +1816,7 @@ class CrossLinkTable():
 # these are post production function analysis
 #
 
-class Precision():
+class Precision(object):
     def __init__(self,model,resolution='one',selection_dictionary=None):
     
         ''' selection_dictionary is a dictionary where we store coordinates

@@ -5,7 +5,7 @@
 import IMP.pmi.tools
 
 
-class Output():
+class Output(object):
 
     def __init__(self, ascii=True):
         global os, RMF, imprmf, cPickle, impatom, impcore, imp
@@ -584,7 +584,7 @@ class Output():
             self.write_stat2(stat)
 
 
-class ProcessOutput():
+class ProcessOutput(object):
 
     def __init__(self, filename):
         self.filename = filename

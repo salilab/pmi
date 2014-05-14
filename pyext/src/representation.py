@@ -21,7 +21,7 @@ import RMF
 import os
 
 
-class Representation():
+class Representation(object):
     # Authors: Peter Cimermancic, Riccardo Pellarin, Charles Greenberg
 
     '''

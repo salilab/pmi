@@ -6,7 +6,7 @@ import IMP
 import IMP.core
 
 
-class MonteCarlo():
+class MonteCarlo(object):
 
     # check that isd is installed
     try:
@@ -315,7 +315,7 @@ class MonteCarlo():
         return output
 
 
-class MolecularDynamics():
+class MolecularDynamics(object):
     def __init__(self,m,objects,temperature,gamma=0.5,maximum_time_step=0.001):
         self.m=m
         to_sample=[]
@@ -344,7 +344,7 @@ class MolecularDynamics():
         output["MolecularDynamics_KineticEnergy"]=str(self.md.get_kinetic_energy())
         return output
 
-class ConjugateGradients():
+class ConjugateGradients(object):
 
     def __init__(self, m, objects):
         self.m = m
@@ -375,7 +375,7 @@ class ConjugateGradients():
         return output
 
 
-class ReplicaExchange():
+class ReplicaExchange(object):
 
     def __init__(
         self,
@@ -486,7 +486,7 @@ class ReplicaExchange():
         return output
 
 
-class PyMCMover():
+class PyMCMover(object):
     # only works if the sampled particles are rigid bodies
 
     def __init__(self, representation, mcchild, n_mc_steps):
@@ -524,7 +524,7 @@ class PyMCMover():
         self.n_mc_steps = nsteps
 
 
-class PyMC():
+class PyMC(object):
 
     def __init__(self, model):
         from math import exp

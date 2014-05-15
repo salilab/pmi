@@ -7,7 +7,7 @@ import IMP.atom
 import IMP.container
 
 
-class ConnectivityCrossLinkMS():
+class ConnectivityCrossLinkMS(object):
 
     '''
     this restraint allows ambiguous crosslinking between multiple copies
@@ -186,7 +186,7 @@ class ConnectivityCrossLinkMS():
         return output
 
 
-class SimplifiedCrossLinkMS():
+class SimplifiedCrossLinkMS(object):
 
     def __init__(
         self,
@@ -413,7 +413,7 @@ class SimplifiedCrossLinkMS():
 #
 
 
-class SigmoidalCrossLinkMS():
+class SigmoidalCrossLinkMS(object):
 
     def __init__(
         self, representation, restraints_file, inflection, slope, amplitude,
@@ -640,7 +640,7 @@ class SigmoidalCrossLinkMS():
 
 
 #
-class ISDCrossLinkMS():
+class ISDCrossLinkMS(object):
     import IMP.isd
     try:
         import IMP.isd_emxl
@@ -1178,7 +1178,7 @@ class ISDCrossLinkMS():
 
 
 #
-class CysteineCrossLinkRestraint():
+class CysteineCrossLinkRestraint(object):
 
     import IMP.isd
     import IMP.pmi.tools

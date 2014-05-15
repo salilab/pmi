@@ -7,7 +7,7 @@ import IMP.atom
 import IMP.container
 
 
-class ConnectivityRestraint():
+class ConnectivityRestraint(object):
 
     '''
     generate a connectivity restraint between domains
@@ -85,7 +85,7 @@ class ConnectivityRestraint():
 
 
 #
-class CompositeRestraint():
+class CompositeRestraint(object):
 
     '''
     handleparticles is a selection tuple
@@ -152,7 +152,7 @@ class CompositeRestraint():
 
 
 #
-class AmbiguousCompositeRestraint():
+class AmbiguousCompositeRestraint(object):
 
     '''
     this restraint allows ambiguous crosslinking between multiple copies
@@ -364,7 +364,7 @@ class AmbiguousCompositeRestraint():
 
 
 #
-class SimplifiedPEMAP():
+class SimplifiedPEMAP(object):
 
     def __init__(
         self,

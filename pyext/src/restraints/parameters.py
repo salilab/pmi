@@ -8,7 +8,7 @@ import IMP.container
 import IMP.isd
 
 
-class WeightRestraint():
+class WeightRestraint(object):
 
     def __init__(self, weight, lower, upper, kappa):
 
@@ -44,7 +44,7 @@ class WeightRestraint():
         return output
 
 
-class JeffreysPrior():
+class JeffreysPrior(object):
 
     def __init__(self, nuisance):
 

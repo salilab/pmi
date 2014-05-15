@@ -19,7 +19,7 @@ except:
     no_isd_emxl = True
 
 
-class ExcludedVolumeSphere():
+class ExcludedVolumeSphere(object):
 
     '''
     all leaves of the input hierarchies will be input in the
@@ -100,7 +100,7 @@ class ExcludedVolumeSphere():
         return output
 
 
-class ResidueBondRestraint():
+class ResidueBondRestraint(object):
 
     '''
     add bond restraint between pair of consecutive
@@ -182,7 +182,7 @@ class ResidueBondRestraint():
         return output
 
 
-class ResidueAngleRestraint():
+class ResidueAngleRestraint(object):
 
     '''
     add angular restraint between triplets of consecutive
@@ -262,7 +262,7 @@ class ResidueAngleRestraint():
         return output
 
 
-class ResidueDihedralRestraint():
+class ResidueDihedralRestraint(object):
 
     '''
     add dihedral restraints between quatruplet of consecutive
@@ -364,7 +364,7 @@ class ResidueDihedralRestraint():
 
 
 #
-class SecondaryStructure():
+class SecondaryStructure(object):
 
     from math import pi
     from math import log
@@ -595,7 +595,7 @@ class SecondaryStructure():
         return output
 
 
-class ElasticNetworkRestraint():
+class ElasticNetworkRestraint(object):
 
     '''
     add harmonic restraints between all pairs
@@ -667,7 +667,7 @@ class ElasticNetworkRestraint():
         return output
 
 
-class CharmmForceFieldRestraint():
+class CharmmForceFieldRestraint(object):
 
     '''
     add charmm force field
@@ -744,7 +744,7 @@ class CharmmForceFieldRestraint():
         return output
 
 
-class PseudoAtomicRestraint():
+class PseudoAtomicRestraint(object):
 
     '''
     add bonds and improper dihedral restraints for the CBs

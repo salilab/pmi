@@ -7,7 +7,7 @@ import IMP.atom
 import IMP.container
 
 
-class ExternalBarrier():
+class ExternalBarrier(object):
 
     def __init__(
         self,
@@ -52,7 +52,7 @@ class ExternalBarrier():
         return output
 
 
-class DistanceRestraint():
+class DistanceRestraint(object):
 
     def __init__(
         self,

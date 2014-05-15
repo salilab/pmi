@@ -7,7 +7,7 @@ import IMP.atom
 import IMP.container
 
 
-class SAXSISDRestraint():
+class SAXSISDRestraint(object):
 
     import IMP.saxs
     import IMP.isd

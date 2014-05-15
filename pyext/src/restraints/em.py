@@ -7,7 +7,7 @@ import IMP.atom
 import IMP.container
 
 
-class GaussianEMRestraint():
+class GaussianEMRestraint(object):
 
     def __init__(self, densities,
                  target_fn='',
@@ -211,7 +211,7 @@ class GaussianEMRestraint():
                self.label] = str(self.sigmaglobal.get_scale())
         return output
 
-class SphericalGaussianEMRestraint():
+class SphericalGaussianEMRestraint(object):
 
     def __init__(self, densities,
                  target_fn='',
@@ -334,7 +334,7 @@ class SphericalGaussianEMRestraint():
 
 #-------------------------------------------
         
-class ElectronMicroscopy2D():
+class ElectronMicroscopy2D(object):
 
     def __init__(
         self,

@@ -1310,7 +1310,10 @@ class OrderedSet(collections.MutableSet):
     def pop(self, last=True):
         if not self:
             raise KeyError('set is empty')
-        key = self.end[1][0] if last else self.end[2][0]
+        if last:
+            key = self.end[1][0]
+        else:
+            key = self.end[2][0]
         self.discard(key)
         return key
 

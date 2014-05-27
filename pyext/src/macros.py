@@ -35,6 +35,7 @@ class ReplicaExchange0(object):
                  best_pdb_dir="pdbs/",
                  replica_stat_file_suffix="stat_replica",
                  em_object_for_rmf=None,
+                 atomistic=False,
                  replica_exchange_object=None):
         '''
         representation    IMP.pmi.Representation()      can be a list of representations (enables the multi state modeling)
@@ -76,6 +77,7 @@ class ReplicaExchange0(object):
         self.vars["global_output_directory"] = global_output_directory
         self.vars["rmf_dir"] = rmf_dir
         self.vars["best_pdb_dir"] = best_pdb_dir
+        self.vars["atomistic"] = atomistic
         self.vars["replica_stat_file_suffix"] = replica_stat_file_suffix
 
     def show_info(self):
@@ -164,7 +166,7 @@ class ReplicaExchange0(object):
         self.output_objects.append(sw)
 
         print "Setting up stat file"
-        output = IMP.pmi.output.Output()
+        output = IMP.pmi.output.Output(atomistic=self.vars["atomistic"])
         low_temp_stat_file = globaldir + \
             self.vars["stat_file_name_suffix"] + "." + str(myindex) + ".out"
         output.init_stat2(low_temp_stat_file,

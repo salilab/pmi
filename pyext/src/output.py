@@ -7,7 +7,7 @@ import IMP.pmi.tools
 
 class Output(object):
 
-    def __init__(self, ascii=True):
+    def __init__(self, ascii=True,atomistic=False):
         global os, RMF, imprmf, cPickle, impatom, impcore, imp
         import cPickle as cPickle
         import os
@@ -35,6 +35,7 @@ class Output(object):
         self.chainids = "ABCDEFGHIJKLMNOPQRSTUVXYWZabcdefghijklmnopqrstuvxywz"
         self.dictchain = {}
         self.particle_infos_for_pdb = {}
+        self.atomistic=atomistic
 
     def get_pdb_names(self):
         return self.dictionary_pdbs.keys()
@@ -54,7 +55,7 @@ class Output(object):
         for n, i in enumerate(self.dictionary_pdbs[name].get_children()):
             self.dictchain[name][i.get_name()] = self.chainids[n]
 
-    def write_pdb(self,name,appendmode=True,atomistic=False,
+    def write_pdb(self,name,appendmode=True,
                   translate_to_geometric_center=False):
         import resource
         if appendmode:
@@ -63,7 +64,7 @@ class Output(object):
             flpdb = open(name, 'w')
 
         (particle_infos_for_pdb,
-         geometric_center) = self.get_particle_infos_for_pdb_writing(name, atomistic)
+         geometric_center) = self.get_particle_infos_for_pdb_writing(name)
 
         if not translate_to_geometric_center:
             geometric_center = (0, 0, 0)
@@ -84,7 +85,7 @@ class Output(object):
 
         del particle_infos_for_pdb
 
-    def get_particle_infos_for_pdb_writing(self, name, atomistic=False):
+    def get_particle_infos_for_pdb_writing(self, name):
         # index_residue_pair_list={}
 
         # the resindexes dictionary keep track of residues that have been already
@@ -111,7 +112,7 @@ class Output(object):
             if protname not in resindexes_dict:
                 resindexes_dict[protname] = []
 
-            if impatom.Atom.get_is_setup(p) and atomistic:
+            if impatom.Atom.get_is_setup(p) and self.atomistic:
                 atom_index += 1
                 residue = impatom.Residue(impatom.Atom(p).get_parent())
                 rt = residue.get_residue_type()

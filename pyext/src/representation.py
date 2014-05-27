@@ -721,7 +721,7 @@ class Representation(object):
             trans=IMP.algebra.Transformation3D(IMP.algebra.get_identity_rotation_3d(),
 															  center)
             shape=IMP.algebra.Gaussian3D(IMP.algebra.ReferenceFrame3D(trans),[rad]*3)
-            IMP.core.SphericalGaussian.setup_particle(p,shape)
+            IMP.core.Gaussian.setup_particle(p,shape)
             #print 'setting up',n,p
 
         if not output_map is None:

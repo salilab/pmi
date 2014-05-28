@@ -834,7 +834,10 @@ def plot_scatter_xy_data(x,y,labelx="None",labely="None",
     import matplotlib.pyplot as plt
     import sys
     from matplotlib import rc
-
+    #rc('font', **{'family':'serif','serif':['Palatino']})
+    rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
+    #rc('text', usetex=True)
+    
     fig, axs = plt.subplots(1)
 
     axs0 = axs
@@ -845,7 +848,7 @@ def plot_scatter_xy_data(x,y,labelx="None",labely="None",
 
     plot2 = []
 
-    plot2.append(axs0.plot(x,  y,   'o', lw=0, ms=4, alpha=alpha,  c="w"))
+    plot2.append(axs0.plot(x,  y,   'o', color='k',lw=2, ms=0.1, alpha=alpha,  c="w"))
 
     axs0.legend(
         loc=0,
@@ -855,13 +858,13 @@ def plot_scatter_xy_data(x,y,labelx="None",labely="None",
         columnspacing=1)
 
     fig.set_size_inches(8.0, 8.0)
-    fig.subplots_adjust(left=0.161, right=0.980, top=0.95, bottom=0.11)
+    fig.subplots_adjust(left=0.161, right=0.850, top=0.95, bottom=0.11)
     if (not ymin is None) and (not ymax is None):
        axs0.set_ylim(ymin,ymax)
     if (not xmin is None) and (not xmax is None):
        axs0.set_xlim(xmin,xmax)
 
-    plt.show()
+    #plt.show()
     if savefile:
         fig.savefig(filename, dpi=300)
 

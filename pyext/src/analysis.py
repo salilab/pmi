@@ -852,6 +852,7 @@ class CrossLinkTable(object):
     def set_hierarchy(self, prot):
         import IMP.pmi.tools
         self.prot_length_dict = {}
+        self.model=prot.get_model()
 
         for i in prot.get_children():
             name = i.get_name()
@@ -862,15 +863,24 @@ class CrossLinkTable(object):
             if len(residue_indexes) != 0:
                 self.prot_length_dict[name] = max(residue_indexes)
 
-    def set_coordinates_for_contact_map(self, prot):
+    def set_coordinates_for_contact_map(self, rmf_name,rmf_frame_index):
         from numpy import zeros, array, where
         from scipy.spatial.distance import cdist
+        import IMP.rmf
+        import RMF
+
+        rh= RMF.open_rmf_file_read_only(rmf_name)
+        prots=IMP.rmf.create_hierarchies(rh, self.model) 
+        IMP.rmf.load_frame(rh, rmf_frame_index)
+        print "getting coordinates for frame %i rmf file %s" % (rmf_frame_index, rmf_name)
+        del rh
+
 
         coords = []
         radii = []
         namelist = []
 
-        particles_dictionary = get_particles_at_resolution_one(prot)
+        particles_dictionary = get_particles_at_resolution_one(prots[0])
 
         resindex = 0
         self.index_dictionary = {}
@@ -895,7 +905,7 @@ class CrossLinkTable(object):
                         else:
                             self.index_dictionary[name].append(resindex)
                         resindex += 1
-
+                
         coords = array(coords)
         radii = array(radii)
 
@@ -906,12 +916,16 @@ class CrossLinkTable(object):
         if self.contactmap is None:
             self.contactmap = zeros((len(coords), len(coords)))
         self.contactmap += distances
+        
+        for prot in prots: IMP.atom.destroy(prot)
 
     def set_crosslinks(
         self, data_file, search_label='ISDCrossLinkMS_Distance_',
         mapping=None,
+        filter_label=None,
+        filter_rmf_file_names=None, #provide a list of rmf base names to filter the stat file
         external_csv_data_file=None,
-            external_csv_data_file_unique_id_key="Unique ID"):
+        external_csv_data_file_unique_id_key="Unique ID"):
 
         # example key ISDCrossLinkMS_Distance_intrarb_937-State:0-108:RPS3_55:RPS30-1-1-0.1_None
         # mapping is a dictionary that maps standard keywords to entry positions in the key string
@@ -924,9 +938,15 @@ class CrossLinkTable(object):
 
         po = IMP.pmi.output.ProcessOutput(data_file)
         keys = po.get_keys()
+        
         xl_keys = [k for k in keys if search_label in k]
-        fs = po.get_fields(xl_keys)
-
+        
+        if filter_rmf_file_names is not None:
+           rmf_file_key="local_rmf_file_name"
+           fs = po.get_fields(xl_keys+[rmf_file_key])
+        else:
+           fs = po.get_fields(xl_keys)
+       
         # this dictionary stores the occurency of given crosslinks
         self.cross_link_frequency = {}
 
@@ -955,7 +975,7 @@ class CrossLinkTable(object):
 
         self.unique_cross_link_list = []
 
-        for key in fs:
+        for key in xl_keys:
             print key
             keysplit = key.replace(
                 "_",
@@ -965,6 +985,10 @@ class CrossLinkTable(object):
                 ":",
                 " ").split(
             )
+            
+            if filter_label!=None:
+               if filter_label not in keysplit: continue
+            
             if mapping is None:
                 r1 = int(keysplit[5])
                 c1 = keysplit[6]
@@ -995,10 +1019,20 @@ class CrossLinkTable(object):
             self.crosslinkedprots.add(c1)
             self.crosslinkedprots.add(c2)
 
+            # construct the list of distances corresponding to the input rmf
+            # files
+            
+            dists=[]
+            if filter_rmf_file_names is not None:
+               for n,d in enumerate(fs[key]):       
+                  if fs[rmf_file_key][n] in filter_rmf_file_names:
+                     dists.append(float(d))
+            else:
+               dists=[float(f) for f in fs[key]]
+
             # check if the input confidence class corresponds to the
             # one of the cross-link
-
-            dists = map(float, fs[key])
+            
             mdist = self.median(dists)
 
             stdv = np.std(np.array(dists))
@@ -1014,17 +1048,17 @@ class CrossLinkTable(object):
             else:
                 sample = "None"
 
-            if (r1, c1, r2, c2, sample) not in cross_link_frequency_list:
+            if (r1, c1, r2, c2,mdist) not in cross_link_frequency_list:
                 if (r1, c1, r2, c2) not in self.cross_link_frequency:
                     self.cross_link_frequency[(r1, c1, r2, c2)] = 1
                     self.cross_link_frequency[(r2, c2, r1, c1)] = 1
                 else:
                     self.cross_link_frequency[(r2, c2, r1, c1)] += 1
                     self.cross_link_frequency[(r1, c1, r2, c2)] += 1
-                cross_link_frequency_list.append((r1, c1, r2, c2, sample))
-                cross_link_frequency_list.append((r2, c2, r1, c1, sample))
+                cross_link_frequency_list.append((r1, c1, r2, c2))
+                cross_link_frequency_list.append((r2, c2, r1, c1))
                 self.unique_cross_link_list.append(
-                    (r1, c1, r2, c2, sample, mdist))
+                    (r1, c1, r2, c2,mdist))
 
             if (r1, c1, r2, c2) not in self.cross_link_distances:
                 self.cross_link_distances[(
@@ -1081,31 +1115,40 @@ class CrossLinkTable(object):
 
         self.cross_link_frequency_inverted = {}
         for xl in self.unique_cross_link_list:
-            (r1, c1, r2, c2, sample, mdist) = xl
+            (r1, c1, r2, c2, mdist) = xl
             frequency = self.cross_link_frequency[(r1, c1, r2, c2)]
             if frequency not in self.cross_link_frequency_inverted:
                 self.cross_link_frequency_inverted[
-                    frequency] = [(r1, c1, r2, c2, sample)]
+                    frequency] = [(r1, c1, r2, c2)]
             else:
                 self.cross_link_frequency_inverted[
-                    frequency].append((r1, c1, r2, c2, sample))
+                    frequency].append((r1, c1, r2, c2))
 
         # -------------
 
     def median(self, mylist):
         sorts = sorted(mylist)
         length = len(sorts)
+        print length
+        if length == 1: 
+            return mylist[0]
         if not length % 2:
             return (sorts[length / 2] + sorts[length / 2 - 1]) / 2.0
         return sorts[length / 2]
+    
+    def set_threshold(self,threshold):
+        self.threshold=threshold
 
-    def colormap(self, dist, threshold=35, tolerance=0):
-        if dist < threshold - tolerance:
+    def set_tolerance(self,tolerance):
+        self.tolerance=tolerance
+    
+    def colormap(self, dist):
+        if dist < self.threshold - self.tolerance:
             return "Green"
-        elif dist >= threshold + tolerance:
+        elif dist >= self.threshold + self.tolerance:
             return "Orange"
         else:
-            return "Orange"
+            return "Red"
 
     def write_cross_link_database(self, filename, format='csv'):
         import csv
@@ -1154,7 +1197,8 @@ class CrossLinkTable(object):
     def plot(self, prot_listx=None, prot_listy=None, no_dist_info=False,
              no_confidence_info=False, filter=None, layout="whole", crosslinkedonly=False,
              filename=None, confidence_classes=None, alphablend=0.1, scale_symbol_size=1.0,
-             gap_between_components=0):
+             gap_between_components=0,
+             rename_protein_map=None):
         # layout can be:
         #                "lowerdiagonal"  print only the lower diagonal plot
         #                "upperdiagonal"  print only the upper diagonal plot
@@ -1166,6 +1210,7 @@ class CrossLinkTable(object):
         #                and a value
         #                example ("ID_Score",">",40)
         # scale_symbol_size rescale the symbol for the crosslink
+        # rename_protein_map is a dictionary to rename proteins
 
         import matplotlib.pyplot as plt
         import matplotlib.cm as cm
@@ -1241,6 +1286,9 @@ class CrossLinkTable(object):
                 ax.plot([res, res], [resy, endy], 'k-', lw=0.4)
                 ax.plot([end, end], [resy, endy], 'k-', lw=0.4)
             xticks.append((float(res) + float(end)) / 2)
+            if rename_protein_map is not None:
+               if prot in rename_protein_map:
+                  prot=rename_protein_map[prot]
             xlabels.append(prot)
 
         yticks = []
@@ -1254,6 +1302,9 @@ class CrossLinkTable(object):
                 ax.plot([resx, endx], [res, res], 'k-', lw=0.4)
                 ax.plot([resx, endx], [end, end], 'k-', lw=0.4)
             yticks.append((float(res) + float(end)) / 2)
+            if rename_protein_map is not None:
+               if prot in rename_protein_map:
+                  prot=rename_protein_map[prot]            
             ylabels.append(prot)
 
         # plot the contact map
@@ -1263,8 +1314,11 @@ class CrossLinkTable(object):
             from numpy import zeros
             import matplotlib.cm as cm
             tmp_array = zeros((nresx, nresy))
+
             for px in prot_listx:
+                print px
                 for py in prot_listy:
+                    print py
                     resx = resoffsety[px]
                     lengx = resendx[px] - 1
                     resy = resoffsety[py]
@@ -1275,14 +1329,19 @@ class CrossLinkTable(object):
                     indexes_y = self.index_dictionary[py]
                     miny = min(indexes_y)
                     maxy = max(indexes_y)
-
-                    tmp_array[
-                        resx:lengx,
-                        resy:lengy] = self.contactmap[
-                        minx:maxx,
-                        miny:maxy]
-
+                    
                     print px, py, minx, maxx, miny, maxy
+                    
+                    try:
+                      tmp_array[
+                          resx:lengx,
+                          resy:lengy] = self.contactmap[
+                          minx:maxx,
+                          miny:maxy]
+                    except:
+                      continue
+  
+            
             ax.imshow(tmp_array,
                       cmap=cm.binary,
                       origin='lower',
@@ -1292,7 +1351,10 @@ class CrossLinkTable(object):
         ax.set_xticklabels(xlabels, rotation=90)
         ax.set_yticks(yticks)
         ax.set_yticklabels(ylabels)
-
+        ax.set_xlim(0,nresx)
+        ax.set_ylim(0,nresy)
+        
+        
         # set the crosslinks
 
         already_added_xls = []
@@ -1372,12 +1434,17 @@ class CrossLinkTable(object):
                 alpha=alphablend,
                 markersize=markersize)
 
-        fig.set_size_inches(0.002 * nresx, 0.002 * nresy)
+
+
+        fig.set_size_inches(0.004 * nresx, 0.004 * nresy)
 
         [i.set_linewidth(2.0) for i in ax.spines.itervalues()]
 
+        #plt.tight_layout()
+
         if filename:
             plt.savefig(filename + ".pdf", dpi=300, transparent="False")
+        
 
         plt.show()
 
@@ -1389,7 +1456,7 @@ class CrossLinkTable(object):
         unique_cross_links = []
 
         for xl in self.unique_cross_link_list:
-            (r1, c1, r2, c2, sample, mdist) = xl
+            (r1, c1, r2, c2, mdist) = xl
 
             # here we filter by the protein
             if prot_list2 is None:
@@ -1422,18 +1489,28 @@ class CrossLinkTable(object):
                 unique_cross_links.append((r2, c2, r1, c1))
 
         print "# satisfied"
-
+        
+        total_number_of_crosslinks=0
+        
         for i in satisfied_histogram:
             # if i in violated_histogram:
             #   print i, satisfied_histogram[i]+violated_histogram[i]
             # else:
-            print i, satisfied_histogram[i]
+            if i in violated_histogram:
+              print i, violated_histogram[i]+satisfied_histogram[i]
+            else:
+              print i, satisfied_histogram[i]
+            total_number_of_crosslinks+=i*satisfied_histogram[i]
 
         print "# violated"
 
         for i in violated_histogram:
             print i, violated_histogram[i]
-
+            total_number_of_crosslinks+=i*violated_histogram[i]
+        
+        print total_number_of_crosslinks
+        
+        
 # ------------
     def print_cross_link_binary_symbols(self, prot_list,
                                         prot_list2=None):
@@ -1836,7 +1913,7 @@ class Precision(object):
         self.reference_structure=None
         self.reference_prot=None
         self.selection_dictionary=selection_dictionary
-        self.threshold=20.0
+        self.threshold=40.0
        
         if resolution in ["one", "ten"]:
            self.resolution=resolution
@@ -1973,7 +2050,10 @@ class Precision(object):
                exit()
         return selected_coordinates
        
-
+    def set_threshold(self,threshold): 
+        self.threshold=threshold
+    
+    
     def get_distance(self,selection_name,index1,index2):
         c1=self.structures_dictionary[selection_name][index1]
         c2=self.structures_dictionary[selection_name][index2]
@@ -1991,7 +2071,7 @@ class Precision(object):
         return distance
         
         
-    def get_precision(self,is_mpi=False,skip=None):
+    def get_precision(self,outfile,is_mpi=False,skip=None):
         '''
         skip Int analyse every skip structure for the distance matrix calculation
         '''
@@ -2068,10 +2148,11 @@ class Precision(object):
             #pairwise_distance=distance/len(distances.keys())
             centroid_distance/=number_of_structures
             #average_centroid_distance=sum(distances_to_structure)/len(distances_to_structure)
-            
-            print selection_name,"average centroid",centroid_distance
-            print selection_name,"centroid index",centroid_index
-            print selection_name,"centroid rmf name",centroid_rmf_name                     
+            of=open(outfile,"w")
+            of.write(str(selection_name)+" average centroid "+str(centroid_distance)+"\n")
+            of.write(str(selection_name)+" centroid index "+str(centroid_index)+"\n")
+            of.write(str(selection_name)+" centroid rmf name "+str(centroid_rmf_name)+"\n")
+            of.close()                     
             
 
     def set_reference_structure(self,rmf_name,rmf_frame_index):
@@ -2095,10 +2176,22 @@ class Precision(object):
           
           distances=[]
           for sc in self.structures_dictionary[selection_name]: 
+              
+              c1=sc
+              c2=reference_coordinates
+                    
+              coordinates1=map(lambda c: IMP.algebra.Vector3D(c), c1)
+              coordinates2=map(lambda c: IMP.algebra.Vector3D(c), c2)
+                    
               if self.style=='pairwise_drmsd_k':       
-                 distances.append(IMP.atom.get_drmsd(sc,reference_coordinates))
+                 distance=IMP.atom.get_drmsd(coordinates1,coordinates2)
               if self.style=='pairwise_drms_k':       
-                 distances.append(IMP.atom.get_drms(sc,reference_coordinates))
+                 distance=IMP.atom.get_drms(coordinates1,coordinates2)
+              if self.style=='pairwise_drmsd_Q':       
+                 distance=IMP.atom.get_drmsd_Q(coordinates1,coordinates2,self.threshold)
+                      
+              distances.append(distance)
+              
           
           print selection_name,"average distance",sum(distances)/len(distances),"minimum distance",min(distances)
           

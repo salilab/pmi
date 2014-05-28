@@ -5,6 +5,14 @@ Repository of Python classes to represent, score, sample
 and analyse models. It is based on the Integrative Modeling Platform 
 [IMP](http://salilab.org/imp/).
 
+**News May 14 2014**
+
+From Ben Webb:
+
+PMI was added as an IMP submodule. But what might not be obvious is that a submodule is tied to a specific revision (or git hash) so doesn't automatically update whenever PMI is updated. So far I've been updating PMI in IMP on a rather ad hoc basis (essentially whenever I make changes to PMI itself), but you might want to do this too when you add new features.
+
+It's pretty easy: if you maintain PMI outside of IMP somewhere, just go into your IMP checkout, cd modules/pmi, then "git checkout <githash>" where <githash> is the version of PMI you want to live in IMP. Then you can go back up into IMP proper and git commit/git push that change. Or you can do what I do and work on the copy of PMI that's in IMP directly rather than checking it out separately. To do that, go into modules/pmi in your IMP checkout and run "git checkout develop" to get on the PMI develop branch. Then you can run all the normal git commands (e.g. git pull) in there. (Although note that you can't push by default; that's easy to fix though by running "git remote set-url --push origin git@github.com:salilab/pmi.git".) When you're done with your git push, you can cd up into IMP proper and commit the change in PMI githash there (without having to remember what it is).
+
 **News April 24 2014**
 
 The main branch is now `develop` (not `master`) and the module is included

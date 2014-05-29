@@ -99,6 +99,8 @@ class GaussianEMRestraint(object):
                                                 cutoff_dist_for_container,
                                                 update_model, update_density, tabexp)
         else:
+            print 'USING POINTWISE RESTRAINT'
+            print 'update model?',update_model
             self.gaussianEM_restraint = \
                IMP.isd_emxl.PointwiseGaussianEMRestraint(self.m,
                                                 IMP.get_indexes(self.model_ps),
@@ -218,7 +220,7 @@ class GaussianEMRestraint(object):
         score = self.weight * self.rs.unprotected_evaluate(None)
         output["_TotalScore"] = str(score)
         output["GaussianEMRestraint_" +
-               self.label] = str(self.rs.unprotected_evaluate(None))
+               self.label] = str(score)
         output["GaussianEMRestraint_sigma_" +
                self.label] = str(self.sigmaglobal.get_scale())
         return output

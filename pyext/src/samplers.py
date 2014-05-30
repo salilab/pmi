@@ -57,6 +57,7 @@ class MonteCarlo(object):
                     self.mvs += mvs
 
                 if "SR_Bodies" in k:
+                    print len(pts[k])
                     mvs = self.get_super_rigid_body_movers(
                         pts[k][0],
                         pts[k][1],
@@ -316,7 +317,7 @@ class MonteCarlo(object):
 
 
 class MolecularDynamics(object):
-    def __init__(self,m,objects,kt,gamma=5.0,maximum_time_step=1.0):
+    def __init__(self,m,objects,kt,gamma=0.01,maximum_time_step=1.0):
         self.m=m
         to_sample=[]
         for obj in objects:
@@ -382,7 +383,7 @@ class ReplicaExchange(object):
         model,
         tempmin,
         tempmax,
-        samplerobject,
+        samplerobjects,
         test=True,
             replica_exchange_object=None):
         '''
@@ -393,7 +394,7 @@ class ReplicaExchange(object):
         import IMP.mpi as imppmi
 
         self.m = model
-        self.samplerobject = samplerobject
+        self.samplerobjects = samplerobjects
         # min and max temperature
         self.TEMPMIN_ = tempmin
         self.TEMPMAX_ = tempmax
@@ -422,7 +423,8 @@ class ReplicaExchange(object):
         myindex = self.rem.get_my_index()
         # set initial value of the parameter (temperature) to exchange
         self.rem.set_my_parameter("temp", [self.temperatures[myindex]])
-        self.samplerobject.set_kt(self.temperatures[myindex])
+        for so in self.samplerobjects:
+            so.set_kt(self.temperatures[myindex])
         self.nattempts = 0
         self.nmintemp = 0
         self.nmaxtemp = 0
@@ -465,7 +467,8 @@ class ReplicaExchange(object):
         self.nattempts += 1
         # if accepted, change temperature
         if (flag):
-            self.samplerobject.set_kt(ftemp)
+            for so in self.samplerobjects:
+                so.set_kt(ftemp)
             self.nsuccess += 1
 
     def get_output(self):

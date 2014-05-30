@@ -13,15 +13,17 @@ class ReplicaExchange0(object):
 
     def __init__(self, model,
                  representation,
-                 sample_objects,
-                 output_objects,
-                 sampler_type="MC",
+                 sample_objects=None, # DEPRECATED
+                 monte_carlo_sample_objects=None,
+                 molecular_dynamics_sample_objects=None,
+                 output_objects=None,
                  crosslink_restraints=None,
                  monte_carlo_temperature=1.0,
                  replica_exchange_minimum_temperature=1.0,
                  replica_exchange_maximum_temperature=2.5,
                  number_of_best_scoring_models=500,
                  monte_carlo_steps=10,
+                 molecular_dynamics_steps=10,
                  number_of_frames=1000,
                  nframes_write_coordinates=1,
                  write_initial_rmf=True,
@@ -49,9 +51,11 @@ class ReplicaExchange0(object):
         self.representation = representation
         self.crosslink_restraints = crosslink_restraints
         self.em_object_for_rmf = em_object_for_rmf
-        self.sample_objects = sample_objects
+        self.monte_carlo_sample_objects = monte_carlo_sample_objects
+        if sample_objects is not None:
+            self.monte_carlo_sample_objects+=sample_objects
+        self.molecular_dynamics_sample_objects=molecular_dynamics_sample_objects
         self.output_objects = output_objects
-        self.sampler_type=sampler_type
         self.replica_exchange_object = replica_exchange_object
         self.vars = {}
         if self.is_multi_state:
@@ -66,6 +70,7 @@ class ReplicaExchange0(object):
         self.vars[
             "number_of_best_scoring_models"] = number_of_best_scoring_models
         self.vars["monte_carlo_steps"] = monte_carlo_steps
+        self.vars["molecular_dynamics_steps"]=molecular_dynamics_steps
         self.vars["number_of_frames"] = number_of_frames
         self.vars["nframes_write_coordinates"] = nframes_write_coordinates
         self.vars["write_initial_rmf"] = write_initial_rmf
@@ -96,19 +101,23 @@ class ReplicaExchange0(object):
     def execute_macro(self):
 
         temp_index_factor = 100000.0
-
-        if self.sampler_type=="MC":
+        samplers=[]
+        sampler_mc=None
+        sampler_md=None
+        if self.monte_carlo_sample_objects is not None:
             print "Setting up MonteCarlo"
-            sampler = IMP.pmi.samplers.MonteCarlo(self.model,
-                                                 self.sample_objects,
+            sampler_mc = IMP.pmi.samplers.MonteCarlo(self.model,
+                                                 self.monte_carlo_sample_objects,
                                                  self.vars["monte_carlo_temperature"])
-        elif self.sampler_type=="MD":
+            self.output_objects.append(sampler_mc)
+            samplers.append(sampler_mc)
+        if self.molecular_dynamics_sample_objects is not None:
             print "Setting up MolecularDynamics"
-            sampler = IMP.pmi.samplers.MolecularDynamics(self.model,
-                                                       self.sample_objects,
+            sampler_md = IMP.pmi.samplers.MolecularDynamics(self.model,
+                                                       self.molecular_dynamics_sample_objects,
                                                        self.vars["monte_carlo_temperature"])
-        self.output_objects.append(sampler)
-
+            self.output_objects.append(sampler_md)
+            samplers.append(sampler_md)
 # -------------------------------------------------------------------------
 
         print "Setting up ReplicaExchange"
@@ -116,7 +125,8 @@ class ReplicaExchange0(object):
                                                self.vars[
                                                    "replica_exchange_minimum_temperature"],
                                                self.vars[
-                                                   "replica_exchange_maximum_temperature"], sampler,
+                                                   "replica_exchange_maximum_temperature"],
+                                               samplers,
                                                replica_exchange_object=self.replica_exchange_object)
         self.replica_exchange_object = rex.rem
 
@@ -241,8 +251,10 @@ class ReplicaExchange0(object):
             self.show_info()
 
         for i in range(self.vars["number_of_frames"]):
-
-            sampler.optimize(self.vars["monte_carlo_steps"])
+            if sampler_mc is not None:
+                sampler_mc.optimize(self.vars["monte_carlo_steps"])
+            if sampler_md is not None:
+                sampler_md.optimize(self.vars["molecular_dynamics_steps"])
             score = self.model.evaluate(False)
             output.set_output_entry("score", score)
 

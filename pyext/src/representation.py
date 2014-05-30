@@ -1571,12 +1571,12 @@ class Representation(object):
         super_rigid_rbs = set()
 
         for s in subunits:
-            if type(s) == type(tuple()) and len(s) == 2:
+            if type(s) == type(tuple()) and len(s) == 3:
                 sel = IMP.atom.Selection(
                     self.prot,
-                    molecule=s[0],
-                    residue_indexes=range(s[1][0],
-                                          s[1][1] + 1))
+                    molecule=s[2],
+                    residue_indexes=range(s[0],
+                                          s[1] + 1))
                 if len(sel.get_selected_particles()) == 0:
                     print "set_rigid_bodies: selected particle does not exists"
                 for p in sel.get_selected_particles():
@@ -1658,6 +1658,12 @@ class Representation(object):
 
     def set_rigid_bodies_max_rot(self, maxrot):
         self.maxrot_rb = maxrot
+
+    def set_super_rigid_bodies_max_trans(self, maxtrans):
+        self.maxtrans_srb = maxtrans
+
+    def set_super_rigid_bodies_max_rot(self, maxrot):
+        self.maxrot_srb = maxrot
 
     def set_floppy_bodies_max_trans(self, maxtrans):
         self.maxtrans_fb = maxtrans

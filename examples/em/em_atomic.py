@@ -1,3 +1,5 @@
+## \example pmi/em/em_atomic.py
+
 import IMP
 import IMP.core
 import IMP.base
@@ -7,20 +9,21 @@ import IMP.container
 
 import IMP.pmi.restraints.em
 import IMP.pmi.restraints.stereochemistry
-import IMP.pmi.representation as representation
-import IMP.pmi.tools as tools
-import IMP.pmi.samplers as samplers
-import IMP.pmi.output as output
-import IMP.pmi.macros as macros
+import IMP.pmi.representation
+import IMP.pmi.tools
+import IMP.pmi.samplers
+import IMP.pmi.output
+import IMP.pmi.macros
 import sys
 import os
-from collections import deque
-from math import pi
+import math
 ############ SETTINGS ###############
 m = IMP.Model()
 in_fn='data/helix3.pdb'
 sse_fn='data/helix3.dssp'
-target_gmm='target_gmm/helix3_c20.txt'
+#target_gmm='target_gmm/helix3_c20.txt'
+#target_gmm='target_gmm/helix3_c50.txt'
+target_gmm='target_gmm/helix3_c100.txt'
 total_mass=5485.224
 
 target_map='data/helix3_4.mrc'
@@ -39,12 +42,15 @@ target_radii_scale=3.0
 lowertemp=1.0
 highertemp=1.3
 nframes=1000
-nsteps=200
+mcsteps=10
+mdsteps=200
 pointwise=True
+rb_max_trans=0.1
+rb_max_rot=0.01
 
 elastic_strength=50.0
 elastic_cutoff=8.0
-em_weight=10
+em_weight=500
 
 try:
   os.stat(out_dir)
@@ -65,8 +71,9 @@ def setup_particles(ps):
 
 ############ SETUP COMPONENTS  #############
 outputobjects = []
-sampleobjects = []
-simo = representation.Representation(m,upperharmonic=True,disorderedlength=False)
+mc_objects = []
+md_objects = []
+simo = IMP.pmi.representation.Representation(m,upperharmonic=True,disorderedlength=False)
 simo.create_component("chainA",color=0.0)
 chainA=simo.add_component_pdb("chainA",in_fn,'A',
                               resolutions=[0],
@@ -75,11 +82,15 @@ chainA=simo.add_component_pdb("chainA",in_fn,'A',
                               offset=0,
                               cacenters=False,
                               show=False)
-# each atom is a rigid body
 for a in IMP.core.get_leaves(chainA[0]):
   simo.set_floppy_bodies_from_hierarchies([a])
 
-# each residue is a super rigid body...
+simo.set_super_rigid_body_from_hierarchies(chainA)
+md_objects.append(simo)
+ptsf=IMP.pmi.tools.ParticleToSampleFilter([simo])
+ptsf.add_filter("SR_Bodies")
+mc_objects.append(ptsf)
+
 
 p=chainA[0].get_particle()
 IMP.atom.Chain.setup_particle(p,'A')
@@ -88,11 +99,9 @@ IMP.atom.Chain.setup_particle(p,'A')
 ############ SETUP RIGID BODIES  ############
 #,output_map='atomic.mrc')
 
-#simo.set_super_rigid_body_from_hierarchies(chainA)
 simo.set_current_coordinates_as_reference_for_rmsd('structure_native')
 outputobjects.append(simo)
-sampleobjects.append(simo)
-sse_selections=tools.parse_dssp(sse_fn,'A')
+sse_selections=IMP.pmi.tools.parse_dssp(sse_fn,'A')
 
 
 ######### SETUP RESTRAINTS  ##########
@@ -109,6 +118,8 @@ print m.evaluate(False)
 
 print 'going to set up all atom gaussians'
 simo.add_all_atom_densities('chainA',chainA)
+simo.set_super_rigid_bodies_max_trans(rb_max_trans)
+simo.set_super_rigid_bodies_max_rot(rb_max_rot)
 ### finish setting up particles for MD
 setup_particles(IMP.core.get_leaves(simo.prot))
 
@@ -119,6 +130,8 @@ excluded_pairs=[]
 print 'setting up sse restraints'
 for n,sse in enumerate(sse_selections['helix']+sse_selections['beta']):
   sse_tuple=tuple([tuple(i) for i in sse])
+  print 'adding tuple',sse_tuple
+  simo.set_super_rigid_bodies(sse_tuple)
   er=IMP.pmi.restraints.stereochemistry.ElasticNetworkRestraint(simo,sse_tuple,
                                                                 strength=elastic_strength,
                                                                 dist_cutoff=elastic_cutoff,
@@ -136,9 +149,8 @@ print m.evaluate(False)
 ### shuffle things
 atoms=IMP.core.get_leaves(simo.prot)
 cent=IMP.algebra.get_centroid([IMP.core.XYZ(p).get_coordinates() for p in atoms])
-trans=IMP.algebra.get_random_local_transformation(cent,5.0,pi/3)
+trans=IMP.algebra.get_random_local_transformation(cent,6.0,math.pi/2)
 for p in atoms:
-    #print IMP.core.RigidBody.get_is_setup(p)
     IMP.core.transform(IMP.core.RigidBody(p),trans)
 
 
@@ -191,30 +203,19 @@ print 'EVAL - EM'
 print m.evaluate(False)
 
 
-### Traditional EM
-'''
-em = IMP.pmi.restraints.em.EMRestraint(atoms,
-                                       target_fn=target_map,
-                                       map_resolution=4)
-em.set_weight(em_weight)
-em.add_to_model()
-outputobjects.append(em)
-print 'EVAL - EM'
-print m.evaluate(False)
-'''
-
-
 ########### SAMPLE ###########
 
-rex=macros.ReplicaExchange0(m,
+rex=IMP.pmi.macros.ReplicaExchange0(m,
                             simo,
-                            sampleobjects,
-                            outputobjects,
-                            sampler_type="MD",
+                            sample_objects=None,
+                            monte_carlo_sample_objects=mc_objects,
+                            molecular_dynamics_sample_objects=md_objects,
+                            output_objects=outputobjects,
                             replica_exchange_minimum_temperature=lowertemp,
                             replica_exchange_maximum_temperature=highertemp,
                             number_of_best_scoring_models=100,
-                            monte_carlo_steps=nsteps,
+                            monte_carlo_steps=mcsteps,
+                            molecular_dynamics_steps=mdsteps,
                             number_of_frames=nframes,
                             write_initial_rmf=True,
                             initial_rmf_name_suffix="initial",

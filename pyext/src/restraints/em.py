@@ -12,7 +12,9 @@ class GaussianEMRestraint(object):
     def __init__(self, densities,
                  target_fn='',
                  target_ps=[],
-                 cutoff_dist_for_container=10.0,
+                 cutoff_dist_for_container=10.0, # deprecated!
+                 cutoff_dist_model_data=0.0,
+                 cutoff_dist_model_model=0.0,
                  target_mass_scale=1.0,
                  target_radii_scale=1.0,
                  model_radii_scale=1.0,
@@ -106,7 +108,8 @@ class GaussianEMRestraint(object):
                                                 IMP.get_indexes(self.model_ps),
                                                 IMP.get_indexes(self.target_ps),
                                                 self.sigmaglobal.get_particle().get_index(),
-                                                cutoff_dist_for_container,
+                                                cutoff_dist_model_data,
+                                                cutoff_dist_model_model,
                                                 update_model, update_density, tabexp)
 
         print 'done EM setup'

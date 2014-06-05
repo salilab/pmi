@@ -387,9 +387,9 @@ class ReplicaExchange(object):
         test=True,
             replica_exchange_object=None):
         '''
-        sampler object should be MonteCarlo
+        samplerobjects can be a list of MonteCarlo or MolecularDynamics
         '''
-
+        
         global imppmi
         import IMP.mpi as imppmi
 
@@ -401,7 +401,7 @@ class ReplicaExchange(object):
 
         if replica_exchange_object is None:
             # initialize Replica Exchange class
-            self.rem = IMP.mpi.ReplicaExchange()
+            self.rem = IMP.mpi.ReplicaExchange()           
         else:
             # get the replica exchange class instance from elsewhere
             print 'got existing rex object'

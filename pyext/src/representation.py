@@ -167,7 +167,7 @@ class Representation(object):
     def get_component_names(self):
         return self.hier_dict.keys()
 
-    def add_component_sequence(self, name, filename, id=None, format="FASTA"):
+    def add_component_sequence(self, name, filename, id=None, offs=None, format="FASTA"):
         '''
         give the component name, the fasta filename,
         and the id stored in the fasta file (i.e., the header)
@@ -185,7 +185,12 @@ class Representation(object):
         except KeyError:
             print "add_component_sequence: id %s not found in fasta file" % id
             exit()
+
         self.sequence_dict[name] = str(record_dict[id].seq).replace("*", "")
+        if offs is not None:  
+           offs_str="-"*offs
+           self.sequence_dict[name]=offs_str+self.sequence_dict[name]
+           
         self.elements[name].append((length, length, " ", "end"))
 
     def autobuild_model(self, name, pdbname, chain,
@@ -430,12 +435,23 @@ class Representation(object):
             if name in self.sequence_dict:
                 try:
                     rtstr = self.onetothree[
-                        self.sequence_dict[name][ds_frag[0]]]
+                        self.sequence_dict[name][res-1]]
                 except:
                     rtstr = "UNK"
                 rt = IMP.atom.ResidueType(rtstr)
             else:
                 rt = IMP.atom.ResidueType("ALA")
+            
+            # get the residue volume
+            try:
+                vol = IMP.atom.get_volume_from_residue_type(rt)
+                # mass=IMP.atom.get_mass_from_residue_type(rt)
+            except IMP.base.ValueException:
+                vol = IMP.atom.get_volume_from_residue_type(
+                IMP.atom.ResidueType("ALA"))
+                # mass=IMP.atom.get_mass_from_residue_type(IMP.atom.ResidueType("ALA"))
+            radius = IMP.algebra.get_ball_radius_from_volume_3d(vol)                
+                
             r = IMP.atom.Residue.setup_particle(IMP.Particle(self.m), rt, res)
             p = IMP.Particle(self.m)
             d = IMP.core.XYZR.setup_particle(p)
@@ -443,7 +459,7 @@ class Representation(object):
             y = 2.3 * sin(n * 2 * pi / 3.6)
             z = 6.2 / 3.6 / 2 * n * 2 * pi / 3.6
             d.set_coordinates(IMP.algebra.Vector3D(x, y, z))
-            d.set_radius(2.9)
+            d.set_radius(radius)
             # print d
             a = IMP.atom.Atom.setup_particle(p, IMP.atom.AT_CA)
             r.add_child(a)
@@ -477,7 +493,7 @@ class Representation(object):
                 if name in self.sequence_dict:
                     try:
                         rtstr = self.onetothree[
-                            self.sequence_dict[name][ds_frag[0]]]
+                            self.sequence_dict[name][ds_frag[0]-1]]
                     except:
                         rtstr = "UNK"
                     rt = IMP.atom.ResidueType(rtstr)

@@ -13,7 +13,6 @@
 #include <IMP/Restraint.h>
 #include <IMP/kernel/Particle.h>
 #include <IMP/base/tuple_macros.h>
-#include <IMP/base/map.h>
 //#include <IMP/container/CloseBipartitePairContainer.h>
 
 IMPPMI_BEGIN_NAMESPACE
@@ -35,8 +34,8 @@ class IMPPMIEXPORT  CompositeRestraint : public Restraint
     IMP_NAMED_TUPLE_2(CacheKeyPot, CacheKeyPots,
                   Int, ipart, Int, kpart, );
 
-    typedef base::map<CacheKey, double> Cache;
-    typedef base::map<CacheKeyPot, double> CachePot;
+    typedef boost::unordered_map<CacheKey, double> Cache;
+    typedef boost::unordered_map<CacheKeyPot, double> CachePot;
 
     //variables needed to tabulate the exponential
     Floats prob_grid_;
@@ -66,7 +65,7 @@ class IMPPMIEXPORT  CompositeRestraint : public Restraint
     }
 
 
-    //base::map<std::tuple<unsigned int,unsigned int>,
+    //boost::unordered_map<std::tuple<unsigned int,unsigned int>,
     //          base::Pointer<container::CloseBipartitePairContainer>> map_cont_;
 
   /* call for probability */

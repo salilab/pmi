@@ -19,7 +19,8 @@ class GaussianEMRestraint(object):
                  target_radii_scale=1.0,
                  model_radii_scale=1.0,
                  spherical_gaussians=False,
-                 pointwise_restraint=False):
+                 pointwise_restraint=False,
+                 close_pair_container=None):
         global sys, tools
         import sys
         import IMP.isd_emxl
@@ -110,7 +111,8 @@ class GaussianEMRestraint(object):
                                                 self.sigmaglobal.get_particle().get_index(),
                                                 cutoff_dist_model_data,
                                                 cutoff_dist_model_model,
-                                                update_model, update_density, tabexp)
+                                                update_model, update_density, tabexp,
+                                                close_pair_container)
 
         print 'done EM setup'
         self.rs = IMP.RestraintSet(self.m, 'GaussianEMRestraint')

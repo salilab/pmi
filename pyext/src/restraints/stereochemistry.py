@@ -703,12 +703,12 @@ class CharmmForceFieldRestraint(object):
 
         ### non-bonded forces
         cont = IMP.container.ListSingletonContainer(atoms)
-        nbl = IMP.container.ClosePairContainer(cont, 5.0) #4?
-        nbl.add_pair_filter(r.get_pair_filter())
+        self.nbl = IMP.container.ClosePairContainer(cont, 4.0)
+        self.nbl.add_pair_filter(r.get_pair_filter())
         #sf = IMP.atom.ForceSwitch(6.0, 7.0)
         #pairscore = IMP.atom.LennardJonesPairScore(sf)
         pairscore = IMP.isd.RepulsiveDistancePairScore(0,1)
-        pr=IMP.container.PairsRestraint(pairscore, nbl)
+        pr=IMP.container.PairsRestraint(pairscore, self.nbl)
         self.nonbonded_rs.add_restraint(pr)
 
         #self.scoring_function = IMP.core.RestraintsScoringFunction([r,pr])
@@ -727,6 +727,9 @@ class CharmmForceFieldRestraint(object):
 
     def get_restraint(self):
         return self.rs
+
+    def get_close_pair_container(self):
+        return self.nbl
 
     def set_weight(self, weight):
         self.weight = weight

@@ -639,7 +639,6 @@ class SigmoidalCrossLinkMS(object):
         return output
 
 
-#
 class ISDCrossLinkMS(object):
     import IMP.isd
     try:
@@ -779,6 +778,9 @@ class ISDCrossLinkMS(object):
 
             if not csvfile:
                 tokens = entry.split()
+                if len(tokens)==0: 
+                    continue
+
                 # skip character
                 if (tokens[0] == "#"):
                     continue
@@ -919,7 +921,7 @@ class ISDCrossLinkMS(object):
                     print "--------------"
                     print "ISDCrossLinkMS: generating cross-link restraint between"
                     print "ISDCrossLinkMS: residue %d of chain %s and residue %d of chain %s" % (r1, c1, r2, c2)
-                    print "ISDCrossLinkMS: with sigma1 %f  sigma2 %f psi %s" % (mappedr1, mappedr2, psival)
+                    print "ISDCrossLinkMS: with sigma1 %f sigma2 %f psi %s" % (mappedr1, mappedr2, psival)
                     print "ISDCrossLinkMS: between particles %s and %s" % (p1.get_name(), p2.get_name())
                 else:
                     psival = None
@@ -927,7 +929,7 @@ class ISDCrossLinkMS(object):
                     print "--------------"
                     print "ISDCrossLinkMS: generating marginal cross-link restraint between"
                     print "ISDCrossLinkMS: residue %d of chain %s and residue %d of chain %s" % (r1, c1, r2, c2)
-                    print "ISDCrossLinkMS: with sigma1 %f  sigma2 %f" % (mappedr1, mappedr2)
+                    print "ISDCrossLinkMS: with sigma1 %f sigma2 %f" % (mappedr1, mappedr2)
                     print "ISDCrossLinkMS: between particles %s and %s" % (p1.get_name(), p2.get_name())
 
                 indb.write(str(entry) + "\n")
@@ -969,12 +971,89 @@ class ISDCrossLinkMS(object):
                      xlattribute,
                      mappedr1,
                      mappedr2,
-                     psival))
+                     psival,
+                     xlid))
 
         lw = IMP.isd_emxl.LogWrapper(restraints)
         self.rs.add_restraint(lw)
 
+    def create_length(self):
+        self.lengthinit = 10.0
+        self.lengthissampled = True
+        self.lengthminnuis = 0.0000001
+        self.lengthmaxnuis = 1000.0
+        self.lengthmin = 6.0
+        self.lengthmax = 30.0
+        self.lengthtrans = 0.2
+        self.length = IMP.pmi.tools.SetupNuisance(self.m, self.lengthinit,
+                                                  self.lengthminnuis, self.lengthmaxnuis, self.lengthissampled).get_particle()
+        self.rslen.add_restraint(
+            IMP.isd_emxl.UniformPrior(
+                self.m,
+                self.length,
+                1000000000.0,
+                self.lengthmax,
+                self.lengthmin))
 
+    def create_sigma(self, resolution):
+        self.sigmainit = resolution + 2.0
+        self.sigmaissampled = True
+        self.sigmaminnuis = 0.0000001
+        self.sigmamaxnuis = 1000.0
+        self.sigmamin = 0.01
+        self.sigmamax = 100.0
+        self.sigmatrans = 0.5
+        self.sigma = IMP.pmi.tools.SetupNuisance(self.m, self.sigmainit,
+                                                 self.sigmaminnuis, self.sigmamaxnuis, self.sigmaissampled).get_particle()
+        self.sigma_dictionary[resolution] = (
+            self.sigma,
+            self.sigmatrans,
+            self.sigmaissampled)
+        self.rssig.add_restraint(
+            IMP.isd_emxl.UniformPrior(
+                self.m,
+                self.sigma,
+                1000000000.0,
+                self.sigmamax,
+                self.sigmamin))
+        # self.rssig.add_restraint(IMP.isd.JeffreysRestraint(self.sigma))
+
+    def get_sigma(self, resolution):
+        if not resolution in self.sigma_dictionary:
+            self.create_sigma(resolution)
+        return self.sigma_dictionary[resolution]
+
+    def set_slope_linear_term(self, slope):
+        self.linear.set_slope(slope)
+
+    def create_psi(self, value):
+        self.psiinit = value
+        self.psiissampled = True
+        self.psiminnuis = 0.0000001
+        self.psimaxnuis = 0.4999999
+        self.psimin = 0.01
+        self.psimax = 0.49
+        self.psitrans = 0.1
+        self.psi = IMP.pmi.tools.SetupNuisance(self.m, self.psiinit,
+                                               self.psiminnuis, self.psimaxnuis,
+                                               self.psiissampled).get_particle()
+        self.psi_dictionary[value] = (
+            self.psi,
+            self.psitrans,
+            self.psiissampled)
+        self.rspsi.add_restraint(
+            IMP.isd_emxl.UniformPrior(
+                self.m,
+                self.psi,
+                1000000000.0,
+                self.psimax,
+                self.psimin))
+        self.rspsi.add_restraint(IMP.isd.JeffreysRestraint(self.m, self.psi))
+
+    def get_psi(self, value):
+        if not value in self.psi_dictionary:
+            self.create_psi(value)
+        return self.psi_dictionary[value]
 
     def set_label(self, label):
         self.label = label
@@ -1052,6 +1131,7 @@ class ISDCrossLinkMS(object):
             rad1 = self.pairs[i][8]
             rad2 = self.pairs[i][9]
             psi = self.pairs[i][10]
+            xlid= self.pairs[i][11]
 
             label = attribute + "-" + \
                 str(resid1) + ":" + chain1 + "_" + str(resid2) + ":" + \
@@ -1099,7 +1179,6 @@ class ISDCrossLinkMS(object):
                     self.label] = ([self.length], self.lengthtrans)
 
         return ps
-
 
 #
 class CysteineCrossLinkRestraint(object):

@@ -312,7 +312,33 @@ class Variance(object):
 
     #-------------------------------
 
+def get_random_cross_link_dataset(representation,
+                                  resolution=1.0,
+                                  number_of_cross_links=10,
+                                  ambiguity_probability=0.1,
+                                  confidence_score_range=[0,100]):
+                                  
+    residue_pairs=get_random_residue_pairs(representation, resolution, number_of_cross_links)
+    
+    from random import random
+    unique_identifier=0
+    cmin=float(min(confidence_score_range))
+    cmax=float(max(confidence_score_range))    
+    
+    dataset="#\n"
+    
+    for (name1, r1, name2, r2) in residue_pairs:
+        if random() > ambiguity_probability:
+           unique_identifier+=1
+        score=random()*(cmax-cmin)+cmin
+        dataset+=str(name1)+" "+str(name2)+" "+str(r1)+" "+str(r2)+" "+str(score)+" "+str(unique_identifier)+"\n"
+    
+    print dataset
+    return dataset
+    
 
+    #-------------------------------
+    
 def get_cross_link_data(directory, filename, (distmin, distmax, ndist),
                         (omegamin, omegamax, nomega),
                         (sigmamin, sigmamax, nsigma),
@@ -1074,6 +1100,28 @@ def log_normal_density_function(expected_value, sigma, x):
         1 / math.sqrt(2 * math.pi) / sigma / x *
         math.exp(-(math.log(x / expected_value) ** 2 / 2 / sigma / sigma))
     )
+
+
+def get_random_residue_pairs(representation, resolution, number, names=None):
+    from random import choice
+    particles = []
+    if names is None:
+        names=representation.hier_dict.keys()
+    
+    for name in names:
+        prot = representation.hier_dict[name]
+        particles += select(representation,name=name,resolution=resolution)
+    random_residue_pairs = []
+    for i in range(number):
+        p1 = choice(particles)
+        p2 = choice(particles)
+        r1 = choice(IMP.pmi.tools.get_residue_indexes(p1))
+        r2 = choice(IMP.pmi.tools.get_residue_indexes(p2))
+        name1 = representation.get_prot_name_from_particle(p1)
+        name2 = representation.get_prot_name_from_particle(p2)
+        random_residue_pairs.append((name1, r1, name2, r2))
+    
+    return random_residue_pairs
 
 
 def get_random_data_point(

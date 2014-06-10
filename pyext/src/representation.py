@@ -1936,24 +1936,6 @@ class Representation(object):
             particle0 = h.get_particle()
         return name
 
-    def get_random_residue_pairs(self, names, resolution, number):
-        from random import choice
-        particles = []
-        for name in names:
-            prot = self.hier_dict[name]
-            particles += IMP.pmi.tools.get_particles_by_resolution(prot,
-                                                                   resolution)
-
-        random_residue_pairs = []
-        for i in range(number):
-            p1 = choice(particles)
-            p2 = choice(particles)
-            r1 = choice(IMP.pmi.tools.get_residue_indexes(p1))
-            r2 = choice(IMP.pmi.tools.get_residue_indexes(p2))
-            name1 = self.get_prot_name_from_particle(p1)
-            name2 = self.get_prot_name_from_particle(p2)
-            random_residue_pairs.append((name1, r1, name2, r2))
-        return random_residue_pairs
 
     def get_particles_to_sample(self):
         # get the list of samplable particles with their type

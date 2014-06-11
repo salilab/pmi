@@ -416,9 +416,9 @@ class Output(object):
             # remove all entries that begin with _ (private entries)
             dfiltered = dict((k, v) for k, v in d.iteritems() if k[0] != "_")
             output.update(dfiltered)
-        output.update({"ENVIRONMENT": str(self.get_environment_variables())})
-        output.update(
-            {"IMP_VERSIONS": str(self.get_versions_of_relevant_modules())})
+        #output.update({"ENVIRONMENT": str(self.get_environment_variables())})
+        #output.update(
+        #    {"IMP_VERSIONS": str(self.get_versions_of_relevant_modules())})
         flstat.write("%s \n" % output)
         flstat.close()
 
@@ -434,11 +434,13 @@ class Output(object):
                 output.update(obj.get_test_output())
             except:
                 output.update(obj.get_output())
-        output.update({"ENVIRONMENT": str(self.get_environment_variables())})
-        output.update(
-            {"IMP_VERSIONS": str(self.get_versions_of_relevant_modules())})
+        #output.update({"ENVIRONMENT": str(self.get_environment_variables())})
+        #output.update(
+        #    {"IMP_VERSIONS": str(self.get_versions_of_relevant_modules())})
 
         flstat = open(name, 'r')
+        
+        passed=True
         for l in flstat:
             test_dict = eval(l)
         for k in test_dict:
@@ -449,11 +451,14 @@ class Output(object):
                 if test_dict[k] != output[k]:
                     if len(old_value) < 50 and len(new_value) < 50:
                         print str(k) + ": test failed, old value: " + old_value + " new value " + new_value
+                        passed=False
                     else:
                         print str(k) + ": test failed, omitting results (too long)"
+                        passed=False
 
             else:
                 print str(k) + " from old objects (file " + str(name) + ") not in new objects"
+        return passed
 
     def get_environment_variables(self):
         import os

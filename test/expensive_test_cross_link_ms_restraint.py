@@ -171,6 +171,7 @@ def setup_crosslinks_beads(representation,mode):
 class ISDCrossMSTest(IMP.test.TestCase):
     
     def setUp(self):
+        IMP.test.TestCase.setUp(self)    
         self.m = IMP.Model()
         self.rcomplex=init_representation_complex(self.m)  
         self.rbeads=init_representation_beads(self.m)  
@@ -180,8 +181,10 @@ class ISDCrossMSTest(IMP.test.TestCase):
     def test_partial_scores_complex(self):
         o=IMP.pmi.output.Output()
         o.write_test("expensive_test_cross_link_ms_restraint.dat", [self.xlc])
-        o.test(IMP.pmi.get_data_path("expensive_test_cross_link_ms_restraint.dat"), [self.xlc])
-
+        passed=o.test(IMP.pmi.get_data_path("expensive_test_cross_link_ms_restraint.dat"), [self.xlc])
+        self.assertEqual(passed, True)
+        
+        
     def test_restraint_probability_complex(self):
         
         rs=self.xlc.get_restraint()
@@ -232,11 +235,11 @@ class ISDCrossMSTest(IMP.test.TestCase):
             res2 =  t[3]
             ids =   t[4]
             xlid =  t[5]
-            dsresid1 = ds[3]
-            dschain1 = ds[4]
-            dsresid2 = ds[5]
-            dschain2 = ds[6]
-            dsxlid=    ds[11]            
+            dsres1 = ds[nxl][3]
+            dschain1 = ds[nxl][4]
+            dsres2 = ds[nxl][5]
+            dschain2 = ds[nxl][6]
+            dsxlid=    ds[nxl][11]            
             self.assertEqual(chain1,dschain1)
             self.assertEqual(chain2,dschain2)            
             self.assertEqual(res1,dsres1)   

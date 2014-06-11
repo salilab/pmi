@@ -913,7 +913,7 @@ class ISDCrossLinkMS(object):
                 s1i = sigma1.get_particle().get_index()
                 s2i = sigma2.get_particle().get_index()
 
-                print nstate, p1i, p2i, p1.get_name(), p2.get_name()
+                #print nstate, p1i, p2i, p1.get_name(), p2.get_name()
 
                 if not self.marginal:
                     psii = psi.get_particle().get_index()

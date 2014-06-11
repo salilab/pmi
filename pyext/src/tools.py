@@ -317,7 +317,10 @@ def get_random_cross_link_dataset(representation,
                                   number_of_cross_links=10,
                                   ambiguity_probability=0.1,
                                   confidence_score_range=[0,100]):
-                                  
+
+    '''returns a random cross-link dataset into a string were every
+    line is a residue pair, together with UniqueIdentifier and XL score'''
+                       
     residue_pairs=get_random_residue_pairs(representation, resolution, number_of_cross_links)
     
     from random import random
@@ -333,7 +336,6 @@ def get_random_cross_link_dataset(representation,
         score=random()*(cmax-cmin)+cmin
         dataset+=str(name1)+" "+str(name2)+" "+str(r1)+" "+str(r2)+" "+str(score)+" "+str(unique_identifier)+"\n"
     
-    print dataset
     return dataset
     
 

@@ -316,12 +316,13 @@ def get_random_cross_link_dataset(representation,
                                   resolution=1.0,
                                   number_of_cross_links=10,
                                   ambiguity_probability=0.1,
-                                  confidence_score_range=[0,100]):
+                                  confidence_score_range=[0,100],
+                                  avoid_same_particles=False):
 
     '''returns a random cross-link dataset into a string were every
     line is a residue pair, together with UniqueIdentifier and XL score'''
                        
-    residue_pairs=get_random_residue_pairs(representation, resolution, number_of_cross_links)
+    residue_pairs=get_random_residue_pairs(representation, resolution, number_of_cross_links, avoid_same_particles)
     
     from random import random
     unique_identifier=0
@@ -1104,7 +1105,11 @@ def log_normal_density_function(expected_value, sigma, x):
     )
 
 
-def get_random_residue_pairs(representation, resolution, number, names=None):
+def get_random_residue_pairs(representation, resolution, 
+                             number,
+                             avoid_same_particles=False, 
+                             names=None):
+                             
     from random import choice
     particles = []
     if names is None:
@@ -1114,9 +1119,10 @@ def get_random_residue_pairs(representation, resolution, number, names=None):
         prot = representation.hier_dict[name]
         particles += select(representation,name=name,resolution=resolution)
     random_residue_pairs = []
-    for i in range(number):
+    while len(random_residue_pairs)<=number:
         p1 = choice(particles)
         p2 = choice(particles)
+        if p1==p2 and avoid_same_particles: continue
         r1 = choice(IMP.pmi.tools.get_residue_indexes(p1))
         r2 = choice(IMP.pmi.tools.get_residue_indexes(p2))
         name1 = representation.get_prot_name_from_particle(p1)

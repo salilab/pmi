@@ -1,14 +1,13 @@
-
-import IMP
+Simport IMP
 import IMP.atom
 import IMP.pmi
 
 
 '''
-#A new representation module. It helps to construct the hierarchy
-#and deal with multi-state, multi-scale, multi-copies
+A new representation module. It helps to construct the hierarchy
+and deal with multi-state, multi-scale, multi-copies
 
-#Usage Example:
+Usage Example:
 
 see representation_new_test.py
 '''

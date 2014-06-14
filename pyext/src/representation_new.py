@@ -44,7 +44,7 @@ class System(_SystemBase):
   
   def __init__(self):
     self.model=IMP.Model()
-    self.number_of_states=1
+    self.number_of_states=0
     # the root hierarchy node  
     self.system_hierarchy=self._create_hierarchy()
     self.system_hierarchy.set_name("System")
@@ -54,6 +54,10 @@ class System(_SystemBase):
     self.number_of_states+=1
     return _State(self.system_hierarchy,self.number_of_states-1)
   
+  def get_number_of_states(self):
+    '''returns the total number of states generated'''     
+    return self.number_of_states
+    
 #------------------------
 
 class _State(_SystemBase):
@@ -96,7 +100,7 @@ class _Molecule(_SystemBase):
     self.model=state_hierarchy.get_model()  
     self.molecule_name=molecule_name
     self.sequence=sequence
-    self.number_of_copies=1
+    self.number_of_copies=0
     self.molecule_hierarchies=[]
     self.add_copy(parent_hierarchy=state_hierarchy)
 
@@ -114,6 +118,10 @@ class _Molecule(_SystemBase):
     molecule=IMP.atom.Molecule.setup_particle(self.molecule_hierarchies[copy_index])  
     IMP.atom.Copy.setup_particle(self.molecule_hierarchies[copy_index],copy_index)    
     self.number_of_copies+=1
+
+  def get_number_of_copies(self):
+    ''' return the number of copies of the mulecule'''
+    return self.number_of_copies
 
   def add_structure(self,**kwargs):
     '''handles the structure, such as a pdb, or

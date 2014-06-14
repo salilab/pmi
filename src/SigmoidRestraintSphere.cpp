@@ -30,7 +30,7 @@ double SigmoidRestraintSphere::
 
     core::XYZR d1(get_model(), p1_);
     core::XYZR d2(get_model(), p2_);
-	double dist = IMP::core::get_distance(d1,d2);
+	  double dist = IMP::core::get_distance(d1,d2);
     
     double linear_contribution=0.0;
     if (dist>inflection_){

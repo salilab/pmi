@@ -5,7 +5,7 @@
 
 import IMP
 import IMP.atom
-import IMP.pmi.representation_new as r
+import IMP.pmi.representationnew as r
 
 # create Sequence handler objects for proteins
 sequence_prot1=r.Sequence(fastafile="my_fasta_file.fasta",id_fastafile="Prot1")

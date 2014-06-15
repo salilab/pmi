@@ -13,13 +13,16 @@ class GaussianEMRestraint(object):
                  target_fn='',
                  target_ps=[],
                  cutoff_dist_for_container=10.0, # deprecated!
-                 cutoff_dist_model_data=0.0,
                  cutoff_dist_model_model=0.0,
+                 cutoff_dist_model_data=0.0,
+                 overlap_threshold=0.0,
                  target_mass_scale=1.0,
                  target_radii_scale=1.0,
                  model_radii_scale=1.0,
+                 slope=0.0,
                  spherical_gaussians=False,
                  pointwise_restraint=False,
+                 local_mm=False,
                  close_pair_container=None):
         global sys, tools
         import sys
@@ -35,7 +38,6 @@ class GaussianEMRestraint(object):
         self.sigmamin = 1.0
         self.sigmamax = 100.0
         self.sigmainit = 2.0
-        self.tabexp = False
         self.label = "None"
         self.densities = densities
         self.weight=1
@@ -48,21 +50,14 @@ class GaussianEMRestraint(object):
             IMP.isd_emxl.gmm_tools.decorate_gmm_from_text(
                 target_fn,
                 self.target_ps,
-                self.m)
+                self.m,
+                radius_scale=target_radii_scale,
+                mass_scale=target_mass_scale)
         elif target_ps != []:
             self.target_ps = target_ps
         else:
             print 'Gaussian EM restraint: must provide target density file or properly set up target densities'
             return
-        for p in self.target_ps:
-            rmax = sqrt(max(IMP.core.Gaussian(p).get_variances())) * \
-                target_radii_scale
-            if not IMP.core.XYZR.get_is_setup(p):
-                IMP.core.XYZR.setup_particle(p, rmax)
-            else:
-                IMP.core.XYZR(p).set_radius(rmax)
-            mp = IMP.atom.Mass(p)
-            mp.set_mass(mp.get_mass() * target_mass_scale)
 
         # setup model GMM
         self.model_ps = []
@@ -109,9 +104,11 @@ class GaussianEMRestraint(object):
                                                 IMP.get_indexes(self.model_ps),
                                                 IMP.get_indexes(self.target_ps),
                                                 self.sigmaglobal.get_particle().get_index(),
-                                                cutoff_dist_model_data,
                                                 cutoff_dist_model_model,
-                                                update_model, update_density, tabexp,
+                                                cutoff_dist_model_data,
+                                                overlap_threshold,
+                                                slope,
+                                                update_model, update_density, local_mm,
                                                 close_pair_container)
 
         print 'done EM setup'
@@ -229,6 +226,9 @@ class GaussianEMRestraint(object):
         output["GaussianEMRestraint_sigma_" +
                self.label] = str(self.sigmaglobal.get_scale())
         return output
+
+    def evaluate(self):
+        return self.weight * self.rs.unprotected_evaluate(None)
 
 
 #-------------------------------------------

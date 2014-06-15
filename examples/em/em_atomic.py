@@ -18,39 +18,46 @@ import sys
 import os
 import math
 ############ SETTINGS ###############
-m = IMP.Model()
-in_fn='data/helix3.pdb'
+# Data options
+m=IMP.Model()
+#in_fn='data/helix3.pdb'
+in_fn='data/1oel_A_fit4.pdb'
 sse_fn='data/helix3.dssp'
-#target_gmm='target_gmm/helix3_c20.txt'
-#target_gmm='target_gmm/helix3_c50.txt'
+model_gmm_dir='model_gmm'
 target_gmm='target_gmm/helix3_c100.txt'
+out_dir='out_atomic_md100/'
 total_mass=5485.224
 
-target_map='data/helix3_4.mrc'
-
-#in_fn='data/1oel_A_fit4.pdb'
-#sse_fn='data/1oel_A.dssp'
-#target_gmm='target_gmm/1oel_A_c100.txt'
-#total_mass=50990.8117
-
-out_dir='out_atomic_md'
-#shuffle_dir='out_atomic_md/shuffle/'
-model_gmm_dir='model_gmm'
-cutoff_dist_em=5.0
-model_radii_scale=1.0
-target_radii_scale=3.0
-lowertemp=1.0
-highertemp=1.3
-nframes=1000
+# Sampling options
+lowertemp=1 #float(sys.argv[1])
+highertemp=1.1 #float(sys.argv[2])
+nframes=10000 #int(sys.argv[3])
+mdsteps=100 #int(sys.argv[4])
 mcsteps=10
-mdsteps=200
-pointwise=True
 rb_max_trans=0.1
 rb_max_rot=0.01
+nframes_write_coordinates = 1
+num_sd=0
+num_cg=0
 
+# EM options
+cutoff_dist_mm=0
+cutoff_dist_md=0
+overlap_threshold=1e-4
+target_radii_scale=2.0
+em_weight=1
+slope=1e-6
+pointwise=True
+local_mm=True
+shuffle=False
+
+# other restraint options
 elastic_strength=50.0
 elastic_cutoff=8.0
-em_weight=500
+
+
+
+
 
 try:
   os.stat(out_dir)
@@ -105,9 +112,6 @@ sse_selections=IMP.pmi.tools.parse_dssp(sse_fn,'A')
 
 
 ######### SETUP RESTRAINTS  ##########
-#all_densities=set(p for comp in res_densities for p in IMP.core.get_leaves(comp))
-#total_mass=sum((IMP.atom.Mass(p).get_mass() for p in all_densities))
-
 ### CHARMM
 charmm=IMP.pmi.restraints.stereochemistry.CharmmForceFieldRestraint(simo)
 charmm.add_to_model()
@@ -115,9 +119,14 @@ outputobjects.append(charmm)
 print 'EVAL - charmm'
 print m.evaluate(False)
 
+#total_mass=sum((IMP.atom.Mass(p).get_mass() for p in IMP.core.get_leaves(simo.prot)))
+#print total_mass
+
+
 
 print 'going to set up all atom gaussians'
-simo.add_all_atom_densities('chainA',chainA)
+simo.add_all_atom_densities('chainA',chainA,output_map='test_map_1oel.mrc',voxel_size=2.0)
+exit()
 simo.set_super_rigid_bodies_max_trans(rb_max_trans)
 simo.set_super_rigid_bodies_max_rot(rb_max_rot)
 ### finish setting up particles for MD
@@ -131,7 +140,7 @@ print 'setting up sse restraints'
 for n,sse in enumerate(sse_selections['helix']+sse_selections['beta']):
   sse_tuple=tuple([tuple(i) for i in sse])
   print 'adding tuple',sse_tuple
-  simo.set_super_rigid_bodies(sse_tuple)
+  #simo.set_super_rigid_bodies(sse_tuple)
   er=IMP.pmi.restraints.stereochemistry.ElasticNetworkRestraint(simo,sse_tuple,
                                                                 strength=elastic_strength,
                                                                 dist_cutoff=elastic_cutoff,
@@ -149,9 +158,10 @@ print m.evaluate(False)
 ### shuffle things
 atoms=IMP.core.get_leaves(simo.prot)
 cent=IMP.algebra.get_centroid([IMP.core.XYZ(p).get_coordinates() for p in atoms])
-trans=IMP.algebra.get_random_local_transformation(cent,6.0,math.pi/2)
-for p in atoms:
-    IMP.core.transform(IMP.core.RigidBody(p),trans)
+trans=IMP.algebra.get_random_local_transformation(cent,7.0,math.pi)
+if shuffle:
+    for p in atoms:
+        IMP.core.transform(IMP.core.RigidBody(p),trans)
 
 
 
@@ -191,11 +201,16 @@ print m.evaluate(False)
 gem = IMP.pmi.restraints.em.GaussianEMRestraint(atoms,
                                                 target_gmm,
                                                 target_mass_scale=total_mass,
-                                                cutoff_dist_for_container=cutoff_dist_em,
+                                                cutoff_dist_model_model=cutoff_dist_mm,
+                                                cutoff_dist_model_data=cutoff_dist_md,
+                                                overlap_threshold=overlap_threshold,
                                                 target_radii_scale=target_radii_scale,
-                                                model_radii_scale=model_radii_scale,
+                                                model_radii_scale=1.0,
+                                                slope=slope,
                                                 spherical_gaussians=True,
-                                                pointwise_restraint=pointwise)
+                                                pointwise_restraint=pointwise,
+                                                local_mm=local_mm,
+                                                close_pair_container=charmm.get_close_pair_container())
 gem.set_weight(em_weight)
 gem.add_to_model()
 outputobjects.append(gem)
@@ -204,6 +219,14 @@ print m.evaluate(False)
 
 
 ########### SAMPLE ###########
+'''
+trans=IMP.algebra.Transformation3D(IMP.algebra.Vector3D(1,0,0))
+for i in range(20):
+    print 'trans',i,
+    for p in atoms:
+        IMP.core.transform(IMP.core.RigidBody(p),trans)
+    print gem.evaluate()
+'''
 
 rex=IMP.pmi.macros.ReplicaExchange0(m,
                             simo,
@@ -213,7 +236,7 @@ rex=IMP.pmi.macros.ReplicaExchange0(m,
                             output_objects=outputobjects,
                             replica_exchange_minimum_temperature=lowertemp,
                             replica_exchange_maximum_temperature=highertemp,
-                            number_of_best_scoring_models=100,
+                            number_of_best_scoring_models=300,
                             monte_carlo_steps=mcsteps,
                             molecular_dynamics_steps=mdsteps,
                             number_of_frames=nframes,
@@ -227,62 +250,3 @@ rex=IMP.pmi.macros.ReplicaExchange0(m,
                             atomistic=True)
 #replica_exchange_object=rex_object)
 rex.execute_macro()
-
-
-
-
-########### SAMPLE ###########
-'''
-output = IMP.pmi.output.Output()
-output.init_pdb_best_scoring(out_dir+'/pdbs/model',
-                            simo.prot,
-                            100,
-                            replica_exchange=False)
-output.init_rmf(out_dir+"/rmfs/0.rmf3",[simo.prot])
-
-#bd = IMP.atom.BrownianDynamics(m)
-#bd.set_time_step(10)
-for i in range(0, 1000):
-   md.optimize(200)
-   #bd.optimize(100)
-
-   score=m.evaluate(False)
-   output.write_pdb_best_scoring(score)
-   output.write_rmfs()
-   print i,score
-'''
-
-'''
-set_diffusion_factor(IMP.core.get_leaves(simo.prot),diffusion_factor)
-output = IMP.pmi.output.Output()
-cg = IMP.core.ConjugateGradients(m)
-output.init_rmf(out_dir+"/trajectory.rmf3",[simo.prot])
-
-output.init_pdb_best_scoring(out_dir+'/pdbs/model',
-                             simo.prot,
-                             100,
-                             replica_exchange=False)
-
-scores=deque(maxlen=20)
-bd_nsteps=25
-for i in range(0, 1000):
-    bd.optimize(bd_nsteps)
-    score=m.evaluate(False)
-    print i
-    print 'BD:',score
-    cg.optimize(20)
-    score=m.evaluate(False)
-    print 'CG:',score
-    scores.append(score)
-    spread=abs(max(scores)-min(scores))/min(scores)
-    print '  spread',spread
-    if abs(spread)<spread_threshold:
-      bd_nsteps=int(1.1*bd_nsteps)
-      print 'increasing bd_nsteps to',bd_nsteps
-    else:
-      bd_nsteps=max(10,int(0.9*bd_nsteps))
-      if bd_nsteps>10:
-        print 'decreasing bd_nsteps to',bd_nsteps
-    output.write_rmfs()
-    output.write_pdb_best_scoring(score)
-'''

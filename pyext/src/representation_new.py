@@ -102,7 +102,7 @@ class _State(_SystemBase):
         IMP.atom.State.setup_particle(self.state,state_index)
         self.built=False
 
-    def create_molecule(self,name,sequence=None):
+    def create_molecule(self,name,sequence=None,molecule_to_copy=None):
         """Create a new Molecule within this State
         @param name       the name of the molecule (string)
         @param sequence            sequence (string)
@@ -148,6 +148,12 @@ class _Molecule(_SystemBase):
         self.molecule.set_name(self.name+"_0")
         IMP.atom.Copy.setup_particle(self.molecule,0)
 
+        # create Residues from Sequence
+        self.residues=[]
+        for ns,s in enumerate(sequence):
+            r=Residue(s,ns,ns+1)
+            self.residues.append(r)
+
     def add_copy(self):
         """Register a new copy of the Molecule.
         Copies are only constructed when Build() is called.
@@ -181,15 +187,21 @@ class _Molecule(_SystemBase):
         for all residues at resolution X:
         group by volume
         """
+
         if not self.built:
             # group into Fragments either along backbone or using volume
+            #    ...
+
             # create copies
             for nc in range(1,self.number_of_copies):
                 mhc=self._create_child(self.state)
                 mhc.set_name(self.name+"_%i"%nc)
                 IMP.atom.Copy.setup_particle(mhc,nc)
-                ### add all the parts or do some kind of deep copy
+                # DEEP COPY
+                # ...
+
             self.built=True
+
         return self.molecule
 
 #------------------------

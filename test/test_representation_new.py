@@ -53,26 +53,30 @@ class RepresentationNewTest(IMP.test.TestCase):
 
         # create state 1 with 2 molecules
         st=s.create_state()
-        p1=st.create_molecule("Prot1",sequence=seqs["Prot1"])
-        p2=st.create_molecule("Prot2",sequence=seqs["Prot2"])
-        self.assertEqual(p1.molecule.get_parent(),st.state)
-        self.assertEqual(p2.molecule.get_parent(),st.state)
-        self.assertEqual(p1.mdl,st.mdl)
-        self.assertEqual(p2.mdl,st.mdl)
-        self.assertEqual(p1.name,"Prot1")
-        self.assertEqual(p2.name,"Prot2")
-        self.assertEqual(p1.number_of_copies,1)
+        m1=st.create_molecule("Prot1",sequence=seqs["Prot1"])
+        m2=st.create_molecule("Prot2",sequence=seqs["Prot2"])
+        self.assertEqual(m1.molecule.get_parent(),st.state)
+        self.assertEqual(m2.molecule.get_parent(),st.state)
+        self.assertEqual(m1.mdl,st.mdl)
+        self.assertEqual(m2.mdl,st.mdl)
+        self.assertEqual(m1.name,"Prot1")
+        self.assertEqual(m2.name,"Prot2")
+        self.assertEqual(m1.number_of_copies,1)
         self.assertEqual(len(st.state.get_children()),2)
 
         # create state 2 with one molecule
         st2=s.create_state()
-        p3=st2.create_molecule("Prot3",sequence=seqs["Prot3"])
-        self.assertEqual(p3.molecule.get_parent(),st2.state)
-        self.assertEqual(p3.mdl,st2.mdl)
-        self.assertEqual(p3.name,"Prot3")
-        self.assertEqual(p3.number_of_copies,1)
+        m3=st2.create_molecule("Prot3",sequence=seqs["Prot3"])
+        self.assertEqual(m3.molecule.get_parent(),st2.state)
+        self.assertEqual(m3.mdl,st2.mdl)
+        self.assertEqual(m3.name,"Prot3")
+        self.assertEqual(m3.number_of_copies,1)
         self.assertEqual(len(st2.state.get_children()),1)
 
+        # test if sequences are OK
+        self.assertEqual(''.join(r.code for r in m1.residues),seqs["Prot1"])
+        self.assertEqual(''.join(r.code for r in m2.residues),seqs["Prot2"])
+        self.assertEqual(''.join(r.code for r in m3.residues),seqs["Prot3"])
 
     def test_create_copies(self):
         '''Test creation of Copies (does NOT check Copy content)'''
@@ -84,23 +88,23 @@ class RepresentationNewTest(IMP.test.TestCase):
 
         # create state 1 with 2 molecules and several copies
         st1=s.create_state()
-        p1=st1.create_molecule("Prot1",sequence=seqs["Prot1"])
-        p2=st1.create_molecule("Prot2",sequence=seqs["Prot2"])
-        p1.add_copy()
-        p1.add_copy()
-        p1.add_copy()
-        p2.add_copy()
+        m1=st1.create_molecule("Prot1",sequence=seqs["Prot1"])
+        m2=st1.create_molecule("Prot2",sequence=seqs["Prot2"])
+        m1.add_copy()
+        m1.add_copy()
+        m1.add_copy()
+        m2.add_copy()
 
         # create state 2 with one molecule
         st2=s.create_state()
-        p3=st2.create_molecule("Prot3",sequence=seqs["Prot3"])
+        m3=st2.create_molecule("Prot3",sequence=seqs["Prot3"])
 
         # build system
         s.build()
 
         # check number of molecules per state
-        self.assertEqual(p1.number_of_copies+p2.number_of_copies,len(st1.state.get_children()))
-        self.assertEqual(p3.number_of_copies,len(st2.state.get_children()))
+        self.assertEqual(m1.number_of_copies+m2.number_of_copies,len(st1.state.get_children()))
+        self.assertEqual(m3.number_of_copies,len(st2.state.get_children()))
 
     '''
     def test_add_structure(self):

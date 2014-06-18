@@ -2,6 +2,7 @@ import IMP
 import IMP.atom
 import IMP.pmi
 from collections import defaultdict
+from Bio import SeqIO
 
 """
 A new representation module. It helps to construct the hierarchy
@@ -33,12 +34,12 @@ class _SystemBase(object):
         else:
             self.mdl=mdl
 
-    def _create_hierarchy(self):                                # reproduces IMP functionality!
+    def _create_hierarchy(self):
         """create a new hierarchy"""
         tmp_part=IMP.kernel.Particle(self.mdl)
         return IMP.atom.Hierarchy.setup_particle(tmp_part)
 
-    def _create_child(self,parent_hierarchy):                   # reproduces IMP functionality!
+    def _create_child(self,parent_hierarchy):
         """create a new hierarchy, set it as child of the input
         one, and return it"""
         child_hierarchy=self._create_hierarchy()
@@ -200,7 +201,7 @@ class Sequences(object):
         @param fasta_fn sequence file
         @param name_map dictionary mapping the fasta name to the stored name
         """
-        self.sequences=defaultdict(str)
+        self.sequences={}
         self.read_sequences(fasta_fn,name_map)
     def __len__(self):
         return len(self.sequences)
@@ -208,10 +209,23 @@ class Sequences(object):
         return x in self.sequences
     def __getitem__(self,key):
         return self.sequences[key]
-    def read_sequences(self,fasta_fn,name_map):
-        pass
+    def read_sequences(self,fasta_fn,name_map=None):
+        # read all sequences
+        handle = open(fasta_fn, "rU")
+        record_dict = SeqIO.to_dict(SeqIO.parse(handle, "fasta"))
+        handle.close()
+        if name_map is None:
+            for pn in record_dict:
+                self.sequences[pn]=str(record_dict[pn].seq).replace("*", "")
+        else:
+            for pn in name_map:
+                try:
+                    self.sequences[name_map[pn]]=str(record_dict[pn].seq).replace("*", "")
+                except:
+                    print "tried to add sequence but: id %s not found in fasta file" % pn
+                    exit()
 
-
+#------------------------
 
 class Residue(object):
     """Stores basic residue information, even without structure available."""

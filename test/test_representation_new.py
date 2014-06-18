@@ -1,16 +1,28 @@
-#A new representation module. It helps to construct the hierarchy
-#and deal with multi-state, multi-scale, multi-copies
-
-#Usage Example:
-
 import IMP
 import IMP.atom
 import IMP.pmi
 import IMP.pmi.representation_new as r
 import IMP.test
 
-
 class RepresentationNewTest(IMP.test.TestCase):
+
+    def test_read_sequences(self):
+        # test without name map
+        seqs0=r.Sequences(self.get_input_file_name('seqs.fasta'))
+        self.assertEqual(len(seqs0),3)
+        self.assertEqual(seqs0['Protein_1'],'MEIKEVDDRA')
+        self.assertEqual(seqs0['Protein_2'],'MELEPTLFGIIEA')
+        self.assertEqual(seqs0['Protein_3'],'LAPQLLSQSHLQTFVSDV')
+
+        # test with name map
+        seqs=r.Sequences(self.get_input_file_name('seqs.fasta'),
+                         name_map={'Protein_1':'Prot1',
+                                   'Protein_2':'Prot2',
+                                   'Protein_3':'Prot3'})
+        self.assertEqual(len(seqs),3)
+        self.assertEqual(seqs['Prot1'],'MEIKEVDDRA')
+        self.assertEqual(seqs['Prot2'],'MELEPTLFGIIEA')
+        self.assertEqual(seqs['Prot3'],'LAPQLLSQSHLQTFVSDV')
 
     def test_system_base(self):
         '''Test systembase functions like create hierarchy and create child'''
@@ -34,7 +46,10 @@ class RepresentationNewTest(IMP.test.TestCase):
     def test_create_molecules(self):
         '''Test Molecule creation from State'''
         s=r.System()
-        seqs=r.Sequences(fasta_fn="my_fasta_file.fasta")
+        seqs=r.Sequences(self.get_input_file_name('seqs.fasta'),
+                         name_map={'Protein_1':'Prot1',
+                                   'Protein_2':'Prot2',
+                                   'Protein_3':'Prot3'})
 
         # create state 1 with 2 molecules
         st=s.create_state()
@@ -62,7 +77,10 @@ class RepresentationNewTest(IMP.test.TestCase):
     def test_create_copies(self):
         '''Test creation of Copies (does NOT check Copy content)'''
         s=r.System()
-        seqs=r.Sequences(fasta_fn="my_fasta_file.fasta")
+        seqs=r.Sequences(self.get_input_file_name('seqs.fasta'),
+                         name_map={'Protein_1':'Prot1',
+                                   'Protein_2':'Prot2',
+                                   'Protein_3':'Prot3'})
 
         # create state 1 with 2 molecules and several copies
         st1=s.create_state()
@@ -137,10 +155,6 @@ class RepresentationNewTest(IMP.test.TestCase):
         p2.set_representation()
         p3.set_representation()
         s.build()
-
-    def test_sequence(self):
-        # incomplete
-        seqs=r.Sequences(fasta_fn="my_fasta_file.fasta")
 
     def test_build_partial1(self):
         # incomplete

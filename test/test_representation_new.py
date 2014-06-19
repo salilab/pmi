@@ -4,15 +4,25 @@ import IMP.pmi
 import IMP.pmi.representation_new as r
 import IMP.test
 
+def get_atomic_residue_list(residues):
+    r1=[]
+    for r in residues:
+        if r.res is None:
+            r1.append('-')
+        else:
+            r1.append(IMP.atom.get_one_letter_code(r.res.get_residue_type()))
+    return ''.join(r1)
+
+
 class RepresentationNewTest(IMP.test.TestCase):
 
     def test_read_sequences(self):
         # test without name map
         seqs0=r.Sequences(self.get_input_file_name('seqs.fasta'))
         self.assertEqual(len(seqs0),3)
-        self.assertEqual(seqs0['Protein_1'],'MEIKEVDDRA')
-        self.assertEqual(seqs0['Protein_2'],'MELEPTLFGIIEA')
-        self.assertEqual(seqs0['Protein_3'],'LAPQLLSQSHLQTFVSDV')
+        self.assertEqual(seqs0['Protein_1'],'QEALVVKDLL')
+        self.assertEqual(seqs0['Protein_2'],'PEEDILKYVSYTL')
+        self.assertEqual(seqs0['Protein_3'],'NVLIGLEGTY')
 
         # test with name map
         seqs=r.Sequences(self.get_input_file_name('seqs.fasta'),
@@ -20,9 +30,9 @@ class RepresentationNewTest(IMP.test.TestCase):
                                    'Protein_2':'Prot2',
                                    'Protein_3':'Prot3'})
         self.assertEqual(len(seqs),3)
-        self.assertEqual(seqs['Prot1'],'MEIKEVDDRA')
-        self.assertEqual(seqs['Prot2'],'MELEPTLFGIIEA')
-        self.assertEqual(seqs['Prot3'],'LAPQLLSQSHLQTFVSDV')
+        self.assertEqual(seqs['Prot1'],'QEALVVKDLL')
+        self.assertEqual(seqs['Prot2'],'PEEDILKYVSYTL')
+        self.assertEqual(seqs['Prot3'],'NVLIGLEGTY')
 
     def test_system_base(self):
         '''Test systembase functions like create hierarchy and create child'''
@@ -106,22 +116,33 @@ class RepresentationNewTest(IMP.test.TestCase):
         self.assertEqual(m1.number_of_copies+m2.number_of_copies,len(st1.state.get_children()))
         self.assertEqual(m3.number_of_copies,len(st2.state.get_children()))
 
-    '''
-    def test_add_structure(self):
-        # incomplete
-        s=r.System()
-        # create a new state
-        st1=s.create_state()
-        seqs=r.Sequences(fasta_fn="my_fasta_file.fasta")
-        p1=st1.create_molecule("Prot1",sequence=seqs["Prot1"])
-        p2=st1.create_molecule("Prot2",sequence=seqs["Prot2"])
-        st2=s.create_state()
-        p3=st2.create_molecule("Prot3",sequence=seqs["Prot3"])
-        p1.add_copy()
-        p1.add_structure()
-        p2.add_structure()
-        p3.add_structure()
 
+    def test_add_structure(self):
+        '''Test adding partial structure data to a molecule'''
+
+        s=r.System()
+        st1=s.create_state()
+        seqs=r.Sequences(self.get_input_file_name('seqs.fasta'),
+                         name_map={'Protein_1':'Prot1',
+                                   'Protein_2':'Prot2',
+                                   'Protein_3':'Prot3'})
+
+        m1=st1.create_molecule("Prot1",sequence=seqs["Prot1"])
+        m2=st1.create_molecule("Prot2",sequence=seqs["Prot2"])
+        res1=m1.add_structure(self.get_input_file_name('prot.pdb'),chain='A',res_range=(1,10),offset=-54)
+        res2=m2.add_structure(self.get_input_file_name('prot.pdb'),chain='B',res_range=(1,13),offset=-179)
+
+        # check that the molecule residues have the right info
+        rlist1=get_atomic_residue_list(m1.residues)
+        rlist2=get_atomic_residue_list(m2.residues)
+        self.assertEqual(rlist1,'QE--VVKDLL')
+        self.assertEqual(rlist2,'PEEDILKYVSYTL')
+
+        # check that the returned Residue tuples are correct
+        #print res1
+        #self.assertEqual(res1[0][0].index,1)
+
+    '''
     def test_set_representation(self):
         # incomplete
         s=r.System()

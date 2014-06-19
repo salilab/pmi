@@ -2,6 +2,7 @@ import IMP
 import IMP.atom
 import IMP.pmi
 from collections import defaultdict
+import structure_tools
 from Bio import SeqIO
 
 """
@@ -19,8 +20,6 @@ and the root IMP hierarchy is returned.
 """
 
 #------------------------
-
-
 
 
 class _SystemBase(object):
@@ -83,6 +82,7 @@ class System(_SystemBase):
                 state.build()
             self.built=True
         return self.system
+
 #------------------------
 
 class _State(_SystemBase):
@@ -148,7 +148,7 @@ class _Molecule(_SystemBase):
         self.molecule.set_name(self.name+"_0")
         IMP.atom.Copy.setup_particle(self.molecule,0)
 
-        # create Residues from Sequence
+        # create Residues from the sequence
         self.residues=[]
         for ns,s in enumerate(sequence):
             r=Residue(s,ns,ns+1)
@@ -161,11 +161,35 @@ class _Molecule(_SystemBase):
         self.number_of_copies+=1
 
     def add_structure(self,pdb_fn,chain,res_range=None,offset=0):
-        """Read a structure and store the coordinates"""
-        # extract coordinates from PDB file
-        # store coordinates within each Residue
-        # return tuple of residue ranges that have atomic definition
-        pass
+        """Read a structure and store the coordinates.
+        Returns the atomic Residue ranges
+        @param pdb_fn The file to read
+        @param chain  Chain ID to read
+        @param res_range Add only a specific set of residues
+        @param offset Apply an offset to the residue indexes of the PDB file
+        \note After offset, we expect the PDB residue numbering to match the FASTA file
+        """
+        rhs=structure_tools.get_structure(self.mdl,pdb_fn,chain,res_range,offset)
+        if len(rhs)>len(self.residues):
+            print 'ERROR: You are loading',len(rhs), \
+                'pdb residues for a sequence of length',len(self.residues),'(too many)'
+        ret=[]
+        prev_idx=rhs[0].get_index()-1
+        cur_range=[rhs[0],rhs[0]]
+        for rh in rhs:
+            idx=rh.get_index()
+            if self.residues[idx-1].code!=IMP.atom.get_one_letter_code(rh.get_residue_type()):
+                print 'ERROR: PDB residue is',IMP.atom.get_one_letter_code(rh.get_residue_type()), \
+                    'and sequence residue is',self.residues[idx-1].code
+            self.residues[idx-1].set_structure(rh)
+            if idx!=prev_idx+1:
+                ret.append(cur_range)
+                cur_range=[rh,rh]
+            else:
+                cur_range[1]=rh
+            prev_idx=idx
+        ret.append(cur_range)
+        return ret
 
     def set_representation(self,res_ranges=None):
         """handles the IMP.atom.Representation decorators, such as multi-scale,
@@ -201,8 +225,8 @@ class _Molecule(_SystemBase):
                 # ...
 
             self.built=True
-
         return self.molecule
+
 
 #------------------------
 
@@ -250,7 +274,10 @@ class Residue(object):
         self.code = code
         self.index = index
         self.num = num
+        self.res = None
         representations = defaultdict(set)
+    def __str__(self):
+        return code
     def set_structure(self,res_hier):
         self.res = res_hier
     def add_representation(self,rep_type,resolutions):

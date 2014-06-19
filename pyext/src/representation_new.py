@@ -212,10 +212,17 @@ class _Molecule(_SystemBase):
             atomic_res.add(internal_res)
         return atomic_res
 
-    def set_representation(self,res_set=None):
+    def add_representation(self,res_set=None,representation_type="beads",resolutions=[]):
         """handles the IMP.atom.Representation decorators, such as multi-scale,
         density, etc."""
-        pass
+        allowed_types=("beads")
+        if representation_type not in allowed_types:
+            print "ERROR: Allowed representation types:",allowed_types
+            return
+        if res_set is None:
+            res_set=set(self.residues)
+        for res in res_set:
+            res.add_representation(representation_type,resolutions)
 
     def build(self):
         """Create all parts of the IMP hierarchy
@@ -299,7 +306,7 @@ class _Residue(object):
         self.index = index
         self.num = num
         self.res = None
-        representations = defaultdict(set)
+        self.representations = defaultdict(set)
     def __str__(self):
         return str(self.code)
     def __repr__(self):
@@ -313,4 +320,4 @@ class _Residue(object):
     def set_structure(self,res_hier):
         self.res = res_hier
     def add_representation(self,rep_type,resolutions):
-        self.representations[rep_type] &= set(resolutions)
+        self.representations[rep_type] |= set(resolutions)

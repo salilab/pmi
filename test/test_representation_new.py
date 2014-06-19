@@ -161,25 +161,25 @@ class RepresentationNewTest(IMP.test.TestCase):
         inv=m1[:]-m1[1:5]
         self.assertEqual(inv,set([m1.residues[0]]+m1.residues[5:10]))
 
-    '''
-    def test_set_representation(self):
-        # incomplete
-        s=r.System()
-        seqs=r.Sequences(fasta_fn="my_fasta_file.fasta")
-        # create a new state
-        st1=s.create_state()
-        p1=st1.create_molecule("Prot1",sequence=seqs["Prot1"])
-        p2=st1.create_molecule("Prot2",sequence=seqs["Prot2"])
-        st2=s.create_state()
-        p3=st2.create_molecule("Prot3",sequence=seqs["Prot3"])
-        p1.add_copy()
-        p1.add_structure()
-        p2.add_structure()
-        p3.add_structure()
-        p1.set_representation()
-        p2.set_representation()
-        p3.set_representation()
 
+    def test_add_representation(self):
+        s=r.System()
+        st1=s.create_state()
+        seqs=r.Sequences(self.get_input_file_name('seqs.fasta'),
+                         name_map={'Protein_1':'Prot1',
+                                   'Protein_2':'Prot2',
+                                   'Protein_3':'Prot3'})
+        m1=st1.create_molecule("Prot1",sequence=seqs["Prot1"])
+        atomic_res=m1.add_structure(self.get_input_file_name('prot.pdb'),chain='A',res_range=(1,10),offset=-54)
+        m1.add_representation(m1[:],resolutions=[10])
+        m1.add_representation(atomic_res,resolutions=[0])
+        for na in (0,1,4,5,6,7,8):
+            self.assertEqual(m1[na].representations['beads'],set([0,10]))
+        for nna in (2,3,9):
+            self.assertEqual(m1[nna].representations['beads'],set([10]))
+
+
+    '''
     def test_build_system(self):
         # incomplete
         s=r.System()

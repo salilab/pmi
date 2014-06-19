@@ -89,6 +89,7 @@ class _State(_SystemBase):
     """This private class is constructed from within the System class.
     It wrapps an IMP.atom.State
     """
+    ### TODO: state should check for unique molecule names
     def __init__(self,system_hierarchy,state_index):
         """Define a new state
         @param system_hierarchy     the parent root hierarchy
@@ -151,8 +152,32 @@ class _Molecule(_SystemBase):
         # create Residues from the sequence
         self.residues=[]
         for ns,s in enumerate(sequence):
-            r=Residue(s,ns,ns+1)
+            r=_Residue(self,s,ns,ns+1)
             self.residues.append(r)
+
+    def __repr__(self):
+        return self.state.get_name()+'_'+self.name
+
+    def __getitem__(self,val):
+        if isinstance(val,int):
+            return self.residues[val]
+        elif isinstance(val,str):
+            return self.residues[int(val)-1]
+        elif isinstance(val,slice):
+            return set(self.residues[val])
+        else:
+            print "ERROR: range ends must be int or str. Stride must be int."
+
+
+    def residue_range(self,a,b,stride=1):
+        """get residue range. Use integers to get 0-indexing, or strings to get PDB-indexing"""
+        if isinstance(a,int) and isinstance(b,int) and isinstance(stride,int):
+            return set(self.residues[a:b:stride])
+        elif isinstance(a,str) and isinstance(b,str) and isinstance(stride,int):
+            return set(self.residues[int(a)-1:int(b)-1:stride])
+        else:
+            print "ERROR: range ends must be int or str. Stride must be int."
+
 
     def add_copy(self):
         """Register a new copy of the Molecule.
@@ -162,7 +187,7 @@ class _Molecule(_SystemBase):
 
     def add_structure(self,pdb_fn,chain,res_range=None,offset=0):
         """Read a structure and store the coordinates.
-        Returns the atomic Residue ranges
+        Returns the atomic residues (as a set)
         @param pdb_fn The file to read
         @param chain  Chain ID to read
         @param res_range Add only a specific set of residues
@@ -176,9 +201,7 @@ class _Molecule(_SystemBase):
                 'pdb residues for a sequence of length',len(self.residues),'(too many)'
 
         # load those into the existing pmi Residue objects, and return contiguous regions
-        ret=[]
-        prev_idx=-1
-        cur_range=[]
+        atomic_res=set() # collect integer indexes of atomic residues!
         for nrh,rh in enumerate(rhs):
             idx=rh.get_index()
             internal_res=self.residues[idx-1]
@@ -186,18 +209,10 @@ class _Molecule(_SystemBase):
                 print 'ERROR: PDB residue is',IMP.atom.get_one_letter_code(rh.get_residue_type()), \
                     'and sequence residue is',internal_res.code
             internal_res.set_structure(rh)
-            if prev_idx==-1:
-                cur_range=[internal_res,internal_res]
-            elif idx!=prev_idx+1:
-                ret.append(cur_range)
-                cur_range=[internal_res,internal_res]
-            else:
-                cur_range[1]=internal_res
-            prev_idx=idx
-        ret.append(cur_range)
-        return ret
+            atomic_res.add(internal_res)
+        return atomic_res
 
-    def set_representation(self,res_ranges=None):
+    def set_representation(self,res_set=None):
         """handles the IMP.atom.Representation decorators, such as multi-scale,
         density, etc."""
         pass
@@ -269,14 +284,17 @@ class Sequences(object):
 
 #------------------------
 
-class Residue(object):
+
+class _Residue(object):
     """Stores basic residue information, even without structure available."""
-    def __init__(self,code,num,index):
+    # Consider implementing __hash__ so you can select.
+    def __init__(self,molecule,code,num,index):
         """setup a Residue
         @param code one-letter residue type code
         @param num  PDB-style residue number
         @param index internal integer index
         """
+        self.molecule = molecule
         self.code = code
         self.index = index
         self.num = num
@@ -286,6 +304,12 @@ class Residue(object):
         return str(self.code)
     def __repr__(self):
         return self.__str__()
+    def __key(self):
+        return (self.molecule,self.code,self.index,self.num,self.res)
+    def __eq__(self,other):
+        return type(other)==type(self) and self.__key() == other.__key()
+    def __hash__(self):
+        return hash(self.__key())
     def set_structure(self,res_hier):
         self.res = res_hier
     def add_representation(self,rep_type,resolutions):

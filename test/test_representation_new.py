@@ -138,20 +138,28 @@ class RepresentationNewTest(IMP.test.TestCase):
         self.assertEqual(rlist1,'QE--VVKDL-')
         self.assertEqual(rlist2,'PEEDILKYVSYTL')
 
-        # check that the returned Residue tuples are correct
-        self.assertEqual(res1[0][0].code,'Q')
-        self.assertEqual(res1[0][0].index,1)
-        self.assertEqual(res1[0][1].code,'E')
-        self.assertEqual(res1[0][1].index,2)
-        self.assertEqual(res1[1][0].code,'V')
-        self.assertEqual(res1[1][0].index,5)
-        self.assertEqual(res1[1][1].code,'L')
-        self.assertEqual(res1[1][1].index,9)
+        # check that the returned Residue index sets are correct
+        self.assertEqual(res1,set([m1.residues[i] for i in (0,1,4,5,6,7,8)]))
+        self.assertEqual(res2,set([m2.residues[i] for i in range(0,13)]))
 
-        self.assertEqual(res2[0][0].code,'P')
-        self.assertEqual(res2[0][0].index,1)
-        self.assertEqual(res2[0][1].code,'L')
-        self.assertEqual(res2[0][1].index,13)
+    def test_residue_access(self):
+        '''test functions to retrieve residues'''
+        s=r.System()
+        st1=s.create_state()
+        seqs=r.Sequences(self.get_input_file_name('seqs.fasta'),
+                         name_map={'Protein_1':'Prot1',
+                                   'Protein_2':'Prot2',
+                                   'Protein_3':'Prot3'})
+
+        m1=st1.create_molecule("Prot1",sequence=seqs["Prot1"])
+        self.assertEqual(m1[:],set(m1.residues[:]))
+        self.assertEqual(m1[1],m1.residues[1])
+        self.assertEqual(m1[1:5],set(m1.residues[1:5]))
+        self.assertEqual(m1['1'],m1.residues[0])
+        self.assertEqual(m1.residue_range(1,5),set(m1.residues[1:5]))
+        self.assertEqual(m1.residue_range('2','6'),set(m1.residues[1:5]))
+        inv=m1[:]-m1[1:5]
+        self.assertEqual(inv,set([m1.residues[0]]+m1.residues[5:10]))
 
     '''
     def test_set_representation(self):

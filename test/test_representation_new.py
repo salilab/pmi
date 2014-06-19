@@ -135,12 +135,23 @@ class RepresentationNewTest(IMP.test.TestCase):
         # check that the molecule residues have the right info
         rlist1=get_atomic_residue_list(m1.residues)
         rlist2=get_atomic_residue_list(m2.residues)
-        self.assertEqual(rlist1,'QE--VVKDLL')
+        self.assertEqual(rlist1,'QE--VVKDL-')
         self.assertEqual(rlist2,'PEEDILKYVSYTL')
 
         # check that the returned Residue tuples are correct
-        #print res1
-        #self.assertEqual(res1[0][0].index,1)
+        self.assertEqual(res1[0][0].code,'Q')
+        self.assertEqual(res1[0][0].index,1)
+        self.assertEqual(res1[0][1].code,'E')
+        self.assertEqual(res1[0][1].index,2)
+        self.assertEqual(res1[1][0].code,'V')
+        self.assertEqual(res1[1][0].index,5)
+        self.assertEqual(res1[1][1].code,'L')
+        self.assertEqual(res1[1][1].index,9)
+
+        self.assertEqual(res2[0][0].code,'P')
+        self.assertEqual(res2[0][0].index,1)
+        self.assertEqual(res2[0][1].code,'L')
+        self.assertEqual(res2[0][1].index,13)
 
     '''
     def test_set_representation(self):

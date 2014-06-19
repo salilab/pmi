@@ -169,24 +169,30 @@ class _Molecule(_SystemBase):
         @param offset Apply an offset to the residue indexes of the PDB file
         \note After offset, we expect the PDB residue numbering to match the FASTA file
         """
+        # get IMP.atom.Residues from the pdb file
         rhs=structure_tools.get_structure(self.mdl,pdb_fn,chain,res_range,offset)
         if len(rhs)>len(self.residues):
             print 'ERROR: You are loading',len(rhs), \
                 'pdb residues for a sequence of length',len(self.residues),'(too many)'
+
+        # load those into the existing pmi Residue objects, and return contiguous regions
         ret=[]
-        prev_idx=rhs[0].get_index()-1
-        cur_range=[rhs[0],rhs[0]]
-        for rh in rhs:
+        prev_idx=-1
+        cur_range=[]
+        for nrh,rh in enumerate(rhs):
             idx=rh.get_index()
-            if self.residues[idx-1].code!=IMP.atom.get_one_letter_code(rh.get_residue_type()):
+            internal_res=self.residues[idx-1]
+            if internal_res.code!=IMP.atom.get_one_letter_code(rh.get_residue_type()):
                 print 'ERROR: PDB residue is',IMP.atom.get_one_letter_code(rh.get_residue_type()), \
-                    'and sequence residue is',self.residues[idx-1].code
-            self.residues[idx-1].set_structure(rh)
-            if idx!=prev_idx+1:
+                    'and sequence residue is',internal_res.code
+            internal_res.set_structure(rh)
+            if prev_idx==-1:
+                cur_range=[internal_res,internal_res]
+            elif idx!=prev_idx+1:
                 ret.append(cur_range)
-                cur_range=[rh,rh]
+                cur_range=[internal_res,internal_res]
             else:
-                cur_range[1]=rh
+                cur_range[1]=internal_res
             prev_idx=idx
         ret.append(cur_range)
         return ret
@@ -277,7 +283,9 @@ class Residue(object):
         self.res = None
         representations = defaultdict(set)
     def __str__(self):
-        return code
+        return str(self.code)
+    def __repr__(self):
+        return self.__str__()
     def set_structure(self,res_hier):
         self.res = res_hier
     def add_representation(self,rep_type,resolutions):

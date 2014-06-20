@@ -171,7 +171,7 @@ class RepresentationNewTest(IMP.test.TestCase):
                                    'Protein_3':'Prot3'})
         m1=st1.create_molecule("Prot1",sequence=seqs["Prot1"])
         atomic_res=m1.add_structure(self.get_input_file_name('prot.pdb'),chain='A',res_range=(1,10),offset=-54)
-        m1.add_representation(m1[:],resolutions=[10])
+        m1.add_representation(resolutions=[10])
         m1.add_representation(atomic_res,resolutions=[0])
         for na in (0,1,4,5,6,7,8):
             self.assertEqual(m1[na].representations['beads'],set([0,10]))

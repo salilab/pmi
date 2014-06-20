@@ -224,27 +224,47 @@ class _Molecule(_SystemBase):
         for res in res_set:
             res.add_representation(representation_type,resolutions)
 
-    def build(self):
+    def build(self,merge_type="backbone"):
         """Create all parts of the IMP hierarchy
         including Atoms, Residues, and Fragments/Representations and, finally, Copies
-        cur_rep={}
-        if backbone:
-        # loop along backbone and group things if they have the same representations
-        for res in self.residues:
-        if res.rep!=cur_rep:
-        start_new_fragment()
-        if volume:
-        # group things by resolution and break into fragments by volume
-        for each resolution X:
-        for all residues at resolution X:
-        group by volume
+        @param merge_type Principle for grouping into fragments.
+                          "backbone": linear sequences along backbone are grouped
+                          into fragments if they have identical sets of representations.
+                          "volume": at each resolution, groups are made based on
+                          spatial distance (not currently implemented)
         """
-
+        allowed_types=("backbone")
+        if merge_type not in allowed_types:
+            print "ERROR: Allowed merge types:",allowed_types
+            return
         if not self.built:
-            # group into Fragments either along backbone or using volume
-            #    ...
+            # group into Fragments along backbone
+            prev_rep = None
+            cur_fragment=[]
+            fragments=[]
+            if merge_type=="backbone":
+                for res in self.residues:
+                    if prev_rep is None:
+                        prev_rep = res.representations
+                        cur_fragment = [res,res]
+                    rep = res.representations
+                    if rep==prev_rep:
+                        cur_fragment[1]=res
+                    else:
+                        fragments.append(cur_fragment)
+                    prev_rep=rep
+                fragments.append(cur_fragment)
 
-            # create copies
+                for frag in fragments:
+                    # building the beads
+                    for resolution in frag[0].representations["beads"]:
+                        pass
+
+            # group into Fragments by volume
+            elif merge_type=="volume":
+                pass
+
+            # create requested number of copies
             for nc in range(1,self.number_of_copies):
                 mhc=self._create_child(self.state)
                 mhc.set_name(self.name+"_%i"%nc)

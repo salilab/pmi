@@ -15,7 +15,7 @@ see representation_new_test.py
 
 For each of the classes System, State, and Molecule, you store the root node and
   references to child classes (System>State>Molecule).
-When you call Build() on any of these classes, Build() is also called for each of the child classes,
+When you call build() on any of these classes, build() is also called for each of the child classes,
 and the root IMP hierarchy is returned.
 """
 
@@ -82,14 +82,14 @@ class System(_SystemBase):
                 state.build()
             self.built=True
         return self.system
+    
 
 #------------------------
 
 class _State(_SystemBase):
     """This private class is constructed from within the System class.
-    It wrapps an IMP.atom.State
+    It wraps an IMP.atom.State
     """
-    ### TODO: state should check for unique molecule names
     def __init__(self,system_hierarchy,state_index):
         """Define a new state
         @param system_hierarchy     the parent root hierarchy
@@ -105,9 +105,19 @@ class _State(_SystemBase):
 
     def create_molecule(self,name,sequence=None,molecule_to_copy=None):
         """Create a new Molecule within this State
-        @param name       the name of the molecule (string)
+        @param name                the name of the molecule (string) it must not 
+                                   contain underscores characters "_" and must not 
+                                   be already used
         @param sequence            sequence (string)
         """
+        # check the presence of underscores
+        if "_" in name:
+           raise WrongMoleculeName('A molecule name should not contain underscores characters')
+        
+        # check whether the molecule name is already assigned
+        if name in [mol.name for mol in self.molecules]:
+           raise WrongMoleculeName('Cannot use a molecule name already used')           
+        
         mol = _Molecule(self.state,name,sequence)
         self.molecules.append(mol)
         return mol
@@ -132,8 +142,8 @@ class _Molecule(_SystemBase):
     def __init__(self,state_hierarchy,name,sequence):
         """Create copy 0 of this molecule.
         Arguments:
-        @param state_hierarchy     the parent State-decorated hierarchy (IMP hier)
-        @param name       the name of the molecule (string)
+        @param state_hierarchy     the parent State-decorated hierarchy (IMP.atom.Hierarchy)
+        @param name                the name of the molecule (string)
         @param sequence            sequence (string)
         """
         # internal data storage
@@ -181,17 +191,17 @@ class _Molecule(_SystemBase):
 
     def add_copy(self):
         """Register a new copy of the Molecule.
-        Copies are only constructed when Build() is called.
+        Copies are only constructed when build() is called.
         """
         self.number_of_copies+=1
 
     def add_structure(self,pdb_fn,chain,res_range=None,offset=0):
         """Read a structure and store the coordinates.
         Returns the atomic residues (as a set)
-        @param pdb_fn The file to read
-        @param chain  Chain ID to read
+        @param pdb_fn    The file to read
+        @param chain     Chain ID to read
         @param res_range Add only a specific set of residues
-        @param offset Apply an offset to the residue indexes of the PDB file
+        @param offset    Apply an offset to the residue indexes of the PDB file
         \note After offset, we expect the PDB residue numbering to match the FASTA file
         """
         # get IMP.atom.Residues from the pdb file
@@ -317,8 +327,8 @@ class _Residue(object):
     # Consider implementing __hash__ so you can select.
     def __init__(self,molecule,code,num,index):
         """setup a Residue
-        @param code one-letter residue type code
-        @param num  PDB-style residue number
+        @param code  one-letter residue type code
+        @param num   PDB-style residue number
         @param index internal integer index
         """
         self.molecule = molecule

@@ -2,7 +2,7 @@ import IMP
 import IMP.atom
 import IMP.pmi
 from collections import defaultdict
-import structure_tools
+import IMP.pmi.structure_tools
 from Bio import SeqIO
 
 """
@@ -205,7 +205,7 @@ class _Molecule(_SystemBase):
         \note After offset, we expect the PDB residue numbering to match the FASTA file
         """
         # get IMP.atom.Residues from the pdb file
-        rhs=structure_tools.get_structure(self.mdl,pdb_fn,chain,res_range,offset)
+        rhs=IMP.pmi.structure_tools.get_structure(self.mdl,pdb_fn,chain,res_range,offset)
         if len(rhs)>len(self.residues):
             print 'ERROR: You are loading',len(rhs), \
                 'pdb residues for a sequence of length',len(self.residues),'(too many)'
@@ -222,10 +222,10 @@ class _Molecule(_SystemBase):
             atomic_res.add(internal_res)
         return atomic_res
 
-    def add_representation(self,res_set=None,representation_type="beads",resolutions=[]):
+    def add_representation(self,res_set=None,representation_type="balls",resolutions=[]):
         """handles the IMP.atom.Representation decorators, such as multi-scale,
         density, etc."""
-        allowed_types=("beads")
+        allowed_types=("balls")
         if representation_type not in allowed_types:
             print "ERROR: Allowed representation types:",allowed_types
             return
@@ -234,41 +234,34 @@ class _Molecule(_SystemBase):
         for res in res_set:
             res.add_representation(representation_type,resolutions)
 
-    def build(self,merge_type="backbone"):
+    def build(self,merge_type="backbone",ca_centers=True,fill_in_missing_residues=True):
         """Create all parts of the IMP hierarchy
         including Atoms, Residues, and Fragments/Representations and, finally, Copies
+        /note Any residues assigned a resolution must have an IMP.atom.Residue hierarchy
+              containing at least a CAlpha. For missing residues, these can be constructed
+              from the PDB file
+
         @param merge_type Principle for grouping into fragments.
                           "backbone": linear sequences along backbone are grouped
                           into fragments if they have identical sets of representations.
                           "volume": at each resolution, groups are made based on
                           spatial distance (not currently implemented)
+        @param ca_centers For single-bead-per-residue only. Set the center over the CA position.
         """
         allowed_types=("backbone")
         if merge_type not in allowed_types:
             print "ERROR: Allowed merge types:",allowed_types
             return
         if not self.built:
-            # group into Fragments along backbone
-            prev_rep = None
-            cur_fragment=[]
-            fragments=[]
-            if merge_type=="backbone":
-                for res in self.residues:
-                    if prev_rep is None:
-                        prev_rep = res.representations
-                        cur_fragment = [res,res]
-                    rep = res.representations
-                    if rep==prev_rep:
-                        cur_fragment[1]=res
-                    else:
-                        fragments.append(cur_fragment)
-                    prev_rep=rep
-                fragments.append(cur_fragment)
+            # fill in missing residues
+            #  for every Residue with tagged representation, build an IMP.atom.Residue and CAlpha
 
-                for frag in fragments:
-                    # building the beads
-                    for resolution in frag[0].representations["beads"]:
-                        pass
+
+            # group into Fragments along backbone
+            if merge_type=="backbone":
+                IMP.pmi.structure_tools.build_along_backbone(self.mdl,self.molecule,self.residues,
+                                                             IMP.atom.BALLS,ca_centers)
+
 
             # group into Fragments by volume
             elif merge_type=="volume":
@@ -279,10 +272,11 @@ class _Molecule(_SystemBase):
                 mhc=self._create_child(self.state)
                 mhc.set_name(self.name+"_%i"%nc)
                 IMP.atom.Copy.setup_particle(mhc,nc)
-                # DEEP COPY
+                # TODO: DEEP COPY all representations, fragments, residues, and atoms
                 # ...
 
             self.built=True
+        #IMP.atom.show_molecular_hierarchy(self.molecule)
         return self.molecule
 
 
@@ -325,7 +319,7 @@ class Sequences(object):
 class _Residue(object):
     """Stores basic residue information, even without structure available."""
     # Consider implementing __hash__ so you can select.
-    def __init__(self,molecule,code,num,index):
+    def __init__(self,molecule,code,index,num):
         """setup a Residue
         @param code  one-letter residue type code
         @param num   PDB-style residue number
@@ -342,7 +336,8 @@ class _Residue(object):
     def __repr__(self):
         return self.__str__()
     def __key(self):
-        return (self.molecule,self.code,self.index,self.num,self.res)
+        return (self.molecule,self.code,self.index,self.num,self.res,
+                frozenset((k,tuple(self.representations[k])) for k in self.representations))
     def __eq__(self,other):
         return type(other)==type(self) and self.__key() == other.__key()
     def __hash__(self):

@@ -3,6 +3,7 @@ import IMP.atom
 import IMP.pmi
 import IMP.pmi.representation_new as r
 import IMP.test
+import IMP.pmi.sequence_tools
 
 def get_atomic_residue_list(residues):
     r1=[]
@@ -14,9 +15,10 @@ def get_atomic_residue_list(residues):
     return ''.join(r1)
 
 
-class RepresentationNewTest(IMP.test.TestCase):
 
+class RepresentationNewTest(IMP.test.TestCase):
     def test_read_sequences(self):
+        '''Test if the sequence reader returns correct strings'''
         # test without name map
         seqs0=r.Sequences(self.get_input_file_name('seqs.fasta'))
         self.assertEqual(len(seqs0),3)
@@ -40,7 +42,6 @@ class RepresentationNewTest(IMP.test.TestCase):
         root=sb._create_hierarchy()
         child=sb._create_child(root)
         self.assertEqual(child.get_parent(),root)
-        sb.build()
 
     def test_create_states(self):
         '''Test State-creation from System'''
@@ -88,6 +89,7 @@ class RepresentationNewTest(IMP.test.TestCase):
         self.assertEqual(''.join(r.code for r in m2.residues),seqs["Prot2"])
         self.assertEqual(''.join(r.code for r in m3.residues),seqs["Prot3"])
 
+    """
     def test_create_copies(self):
         '''Test creation of Copies (does NOT check Copy content)'''
         s=r.System()
@@ -115,7 +117,7 @@ class RepresentationNewTest(IMP.test.TestCase):
         # check number of molecules per state
         self.assertEqual(m1.number_of_copies+m2.number_of_copies,len(st1.state.get_children()))
         self.assertEqual(m3.number_of_copies,len(st2.state.get_children()))
-
+    """
 
     def test_add_structure(self):
         '''Test adding partial structure data to a molecule'''
@@ -161,8 +163,8 @@ class RepresentationNewTest(IMP.test.TestCase):
         inv=m1[:]-m1[1:5]
         self.assertEqual(inv,set([m1.residues[0]]+m1.residues[5:10]))
 
-
     def test_add_representation(self):
+        '''test if add_representations propulates the correct Residues'''
         s=r.System()
         st1=s.create_state()
         seqs=r.Sequences(self.get_input_file_name('seqs.fasta'),
@@ -171,79 +173,49 @@ class RepresentationNewTest(IMP.test.TestCase):
                                    'Protein_3':'Prot3'})
         m1=st1.create_molecule("Prot1",sequence=seqs["Prot1"])
         atomic_res=m1.add_structure(self.get_input_file_name('prot.pdb'),chain='A',res_range=(1,10),offset=-54)
-        m1.add_representation(resolutions=[10])
+        m1.add_representation(resolutions=[1])
         m1.add_representation(atomic_res,resolutions=[0])
         for na in (0,1,4,5,6,7,8):
-            self.assertEqual(m1[na].representations['beads'],set([0,10]))
+            self.assertEqual(m1[na].representations['balls'],set([0,1]))
         for nna in (2,3,9):
-            self.assertEqual(m1[nna].representations['beads'],set([10]))
+            self.assertEqual(m1[nna].representations['balls'],set([1]))
 
 
-    '''
     def test_build_system(self):
-        # incomplete
         s=r.System()
-        seqs=r.Sequences(fasta_fn="my_fasta_file.fasta")
-
-        # create a new state
         st1=s.create_state()
-        p1=st1.create_molecule("Prot1",sequence=seqs["Prot1"])
-        p2=st1.create_molecule("Prot2",sequence=seqs["Prot2"])
-        st2=s.create_state()
-        p3=st2.create_molecule("Prot3",sequence=seqs["Prot3"])
-        p1.add_copy()
-        p1.add_structure()
-        p2.add_structure()
-        p3.add_structure()
-        p1.set_representation()
-        p2.set_representation()
-        p3.set_representation()
-        s.build()
+        seqs=r.Sequences(self.get_input_file_name('seqs.fasta'),
+                         name_map={'Protein_1':'Prot1',
+                                   'Protein_2':'Prot2',
+                                   'Protein_3':'Prot3'})
+        m1=st1.create_molecule("Prot1",sequence=seqs["Prot1"])
+        atomic_res=m1.add_structure(self.get_input_file_name('prot.pdb'),chain='A',
+                                    res_range=(1,10),offset=-54)
+        #m1.add_representation(m1[:]-atomic_res,resolutions=[1])
+        m1.add_representation(atomic_res,resolutions=[0,1])
+        m1.build(merge_type="backbone")
+        frags = m1.molecule.get_children()
+        #IMP.atom.show_molecular_hierarchy(m1.molecule)
+        for f in frags:
+            self.assertTrue(IMP.atom.Fragment.get_is_setup(f))
+            self.assertTrue(IMP.atom.Representation.get_is_setup(f))
+            rep = IMP.atom.Representation(f)
+            self.assertEquals(rep.get_resolutions(),[0,1])
 
-    def test_build_partial1(self):
-        # incomplete
-        s=r.System()
-        sequence_prot1=r.Sequences(fastafile="my_fasta_file.fasta",id_fastafile="Prot1")
-        sequence_prot2=r.Sequences(fastafile="my_fasta_file.fasta",id_fastafile="Prot2")
-        sequence_prot3=r.Sequences(fastafile="my_fasta_file.fasta",id_fastafile="Prot3")
-        # create a new state
-        st1=s.create_state()
-        p1=st1.create_molecule("Prot1",sequence=sequence_prot1)
-        p2=st1.create_molecule("Prot2",sequence=sequence_prot2)
-        st2=s.create_state()
-        p3=st2.create_molecule("Prot3",sequence=sequence_prot3)
-        p1.add_copy()
-        p1.add_structure()
-        p2.add_structure()
-        p3.add_structure()
-        p1.set_representation()
-        p2.set_representation()
-        p3.set_representation()
-        st1.build()
-        st2.build()
+            IMP.pmi.structure_tools.show_representation(rep)
 
-    def test_build_partial2(self):
-        # incomplete
-        s=r.System()
-        sequence_prot1=r.Sequences(fastafile="my_fasta_file.fasta",id_fastafile="Prot1")
-        sequence_prot2=r.Sequences(fastafile="my_fasta_file.fasta",id_fastafile="Prot2")
-        sequence_prot3=r.Sequences(fastafile="my_fasta_file.fasta",id_fastafile="Prot3")
-        # create a new state
-        st1=s.create_state()
-        p1=st1.create_molecule("Prot1",sequence=sequence_prot1)
-        p2=st1.create_molecule("Prot2",sequence=sequence_prot2)
-        st2=s.create_state()
-        p3=st2.create_molecule("Prot3",sequence=sequence_prot3)
-        p1.add_copy()
-        p1.add_structure()
-        p2.add_structure()
-        p3.add_structure()
-        p1.set_representation()
-        p2.set_representation()
-        p3.set_representation()
-        p1.build()
-        p2.build()
-        p3.build()
-    '''
+        # check if atomic created correctly
+        for rnum,rname,anums in zip((1,2,5,6,7,8,9),'QEVVKDL',(9,9,7,7,9,8,8)):
+            res = IMP.atom.Selection(m1.molecule,residue_index=rnum,resolution=0).get_selected_particles()
+            self.assertEquals(len(res),anums)
+            self.assertEquals(IMP.atom.Residue(IMP.atom.Atom(res[0]).get_parent()).get_residue_type(),
+                              IMP.pmi.sequence_tools.get_residue_type_from_one_letter_code(rname))
+            res1 = IMP.atom.Selection(m1.molecule,residue_index=rnum,resolution=1).get_selected_particles()
+            self.assertEquals(len(res1),1)
+            self.assertEquals(IMP.atom.Residue(IMP.atom.Atom(res1[0])).get_residue_type(),
+                              IMP.pmi.sequence_tools.get_residue_type_from_one_letter_code(rname))
+
+        # check if non-atomic are correct
+
 if __name__ == '__main__':
     IMP.test.main()

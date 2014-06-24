@@ -21,6 +21,8 @@ spc98 = state1.create_molecule("Spc98", sequence=seqs["Spc98"])
 spc97.add_copy()
 
 ### load structure data for each molecule. returns a list of contiguous fragments
+#     note, you can actually just use INDEXES for this.
+#     rather than hashing Residues. because currently you only do this WITHIN a single molecule
 s97_atomic = spc97.add_structure(pdb_fn='data/tusc.pdb',chain='A',res_range=None,offset=None)
 s97_nonatomic = spc97[:] - spc97_atomic
 s97_a = spc97[5:10]
@@ -32,7 +34,7 @@ spc97.set_representation(s97_atomic,resolution,representation_type)
 #spc97.set_representation(s97_nonatomic,resolution,resolution_type)
 
 
-
+spc97.fill_in_missing_backbone()
 s98_fragments = spc98.add_structure(pdb_fn='data/tusc.pdb',chain='B')
 
 

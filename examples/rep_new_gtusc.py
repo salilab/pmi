@@ -28,13 +28,13 @@ s97_nonatomic = spc97[:] - spc97_atomic
 s97_a = spc97[5:10]
 s97_b = spc97[8:15]
 
-
-spc97.set_representation(res=10,"Beads")
-spc97.set_representation(s97_atomic,resolution,representation_type)
-#spc97.set_representation(s97_nonatomic,resolution,resolution_type)
+#s97_5 = spc97['5']
+#s97_a = spc97.residue_range('6','10')
 
 
-spc97.fill_in_missing_backbone()
+spc97.add_representation(s97_atomic,[0,10],"beads")
+spc97.add_representation(s97_nonatomic,[10],"beads")
+
 s98_fragments = spc98.add_structure(pdb_fn='data/tusc.pdb',chain='B')
 
 

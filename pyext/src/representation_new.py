@@ -82,7 +82,7 @@ class System(_SystemBase):
                 state.build()
             self.built=True
         return self.system
-    
+
 
 #------------------------
 
@@ -105,19 +105,19 @@ class _State(_SystemBase):
 
     def create_molecule(self,name,sequence=None,molecule_to_copy=None):
         """Create a new Molecule within this State
-        @param name                the name of the molecule (string) it must not 
-                                   contain underscores characters "_" and must not 
+        @param name                the name of the molecule (string) it must not
+                                   contain underscores characters "_" and must not
                                    be already used
         @param sequence            sequence (string)
         """
         # check the presence of underscores
         if "_" in name:
            raise WrongMoleculeName('A molecule name should not contain underscores characters')
-        
+
         # check whether the molecule name is already assigned
         if name in [mol.name for mol in self.molecules]:
-           raise WrongMoleculeName('Cannot use a molecule name already used')           
-        
+           raise WrongMoleculeName('Cannot use a molecule name already used')
+
         mol = _Molecule(self.state,name,sequence)
         self.molecules.append(mol)
         return mol
@@ -322,8 +322,8 @@ class _Residue(object):
     def __init__(self,molecule,code,index,num):
         """setup a Residue
         @param code  one-letter residue type code
-        @param num   PDB-style residue number
         @param index internal integer index
+        @param num   PDB-style residue number
         """
         self.molecule = molecule
         self.code = code

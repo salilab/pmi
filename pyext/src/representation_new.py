@@ -162,7 +162,7 @@ class _Molecule(_SystemBase):
         # create Residues from the sequence
         self.residues=[]
         for ns,s in enumerate(sequence):
-            r=_Residue(self,s,ns,ns+1)
+            r=_Residue(self,s,ns+1)
             self.residues.append(r)
 
     def __repr__(self):
@@ -215,9 +215,9 @@ class _Molecule(_SystemBase):
         for nrh,rh in enumerate(rhs):
             idx=rh.get_index()
             internal_res=self.residues[idx-1]
-            if internal_res.code!=IMP.atom.get_one_letter_code(rh.get_residue_type()):
+            if internal_res.get_code()!=IMP.atom.get_one_letter_code(rh.get_residue_type()):
                 print 'ERROR: PDB residue is',IMP.atom.get_one_letter_code(rh.get_residue_type()), \
-                    'and sequence residue is',internal_res.code
+                    'and sequence residue is',internal_res.get_code()
             internal_res.set_structure(rh)
             atomic_res.add(internal_res)
         return atomic_res
@@ -319,30 +319,39 @@ class Sequences(object):
 class _Residue(object):
     """Stores basic residue information, even without structure available."""
     # Consider implementing __hash__ so you can select.
-    def __init__(self,molecule,code,index,num):
+    def __init__(self,molecule,code,index):
         """setup a Residue
-        @param code  one-letter residue type code
-        @param index internal integer index
-        @param num   PDB-style residue number
+        @param molecule PMI Molecule to which this residue belongs
+        @param code     one-letter residue type code
+        @param index    PDB index
         """
         self.molecule = molecule
-        self.code = code
-        self.index = index
-        self.num = num
-        self.res = None
+        self.hier = IMP.atom.Residue.setup_particle(IMP.Particle(molecule.mdl),
+                                                    IMP.pmi.sequence_tools.get_residue_type_from_one_letter_code(code),
+                                                    index)
         self.representations = defaultdict(set)
     def __str__(self):
-        return str(self.code)
+        return self.get_code()
     def __repr__(self):
         return self.__str__()
     def __key(self):
-        return (self.molecule,self.code,self.index,self.num,self.res,
+        return (self.molecule,self.hier,
                 frozenset((k,tuple(self.representations[k])) for k in self.representations))
     def __eq__(self,other):
         return type(other)==type(self) and self.__key() == other.__key()
     def __hash__(self):
         return hash(self.__key())
-    def set_structure(self,res_hier):
-        self.res = res_hier
+    def get_index(self):
+        return self.hier.get_index()
+    def get_code(self):
+        return IMP.atom.get_one_letter_code(self.hier.get_residue_type())
+    def get_residue_type(self):
+        return self.hier.get_residue_type()
+    def set_structure(self,res):
+        if res.get_residue_type()!=self.hier.get_residue_type():
+            print "ERROR: adding structure to this residue, but it's the wrong type!"
+            sys.exit()
+        for a in res.get_children():
+            self.hier.add_child(a)
     def add_representation(self,rep_type,resolutions):
         self.representations[rep_type] |= set(resolutions)

@@ -64,7 +64,7 @@ def build_along_backbone(mdl,root,residues,rep_type,ca_centers=True):
 
     # build the representations within each fragment
     for frag_res in fragments:
-        res_nums=[r.num for r in frag_res]
+        res_nums=[r.get_index() for r in frag_res]
         this_rep=frag_res[0].representations
         if len(this_rep)==0:
             continue
@@ -79,8 +79,7 @@ def build_along_backbone(mdl,root,residues,rep_type,ca_centers=True):
                 f=IMP.atom.Fragment.setup_particle(mdl,mdl.add_particle("resolution 0"),
                                                    res_nums)
                 for residue in frag_res:
-                    #frag.add_child(residue.res)
-                    f.add_child(residue.res)
+                    f.add_child(residue.hier)
                 frag.add_child(f)
 
             # add one-residue-per-bead
@@ -89,20 +88,19 @@ def build_along_backbone(mdl,root,residues,rep_type,ca_centers=True):
                 for residue in frag_res:
                     if ca_centers==True:
                         rp1 = IMP.Particle(mdl)
-                        rp1.set_name("res1_idx%i"%residue.num)
-                        rt=residue.res.get_residue_type()
-                        r1 = IMP.atom.Residue.setup_particle(rp1,rt,residue.num)
-                        res1.add_child(r1)
+                        rp1.set_name("res1_idx%i"%residue.get_index())
+                        rt=residue.get_residue_type()
+                        res1.add_child(IMP.atom.Residue.setup_particle(IMP.Particle(mdl),residue.hier))
                         try:
                             vol = IMP.atom.get_volume_from_residue_type(rt)
                         except IMP.base.ValueException:
                             vol = IMP.atom.get_volume_from_residue_type(
                                 IMP.atom.ResidueType("ALA"))
                         try:
-                            mass = IMP.atom.get_mass_from_residue_type(rt)
+                            mass = IMP.atom.get_mass(rt)
                         except:
-                            mass = IMP.atom.get_mass_from_residue_type(IMP.atom.ResidueType("ALA"))
-                        calpha = IMP.atom.Selection(residue.res,atom_type=IMP.atom.AT_CA). \
+                            mass = IMP.atom.get_mass(IMP.atom.ResidueType("ALA"))
+                        calpha = IMP.atom.Selection(residue.hier,atom_type=IMP.atom.AT_CA). \
                                    get_selected_particles()[0]
                         radius = IMP.algebra.get_ball_radius_from_volume_3d(vol)
                         shape = IMP.algebra.Sphere3D(IMP.core.XYZ(calpha).get_coordinates(),radius)

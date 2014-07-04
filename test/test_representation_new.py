@@ -8,10 +8,11 @@ import IMP.pmi.sequence_tools
 def get_atomic_residue_list(residues):
     r1=[]
     for r in residues:
-        if r.res is None:
+        ps=r.hier.get_children()
+        if len(ps)==0:
             r1.append('-')
         else:
-            r1.append(IMP.atom.get_one_letter_code(r.res.get_residue_type()))
+            r1.append(IMP.atom.get_one_letter_code(r.get_residue_type()))
     return ''.join(r1)
 
 
@@ -85,9 +86,9 @@ class RepresentationNewTest(IMP.test.TestCase):
         self.assertEqual(len(st2.state.get_children()),1)
 
         # test if sequences are OK
-        self.assertEqual(''.join(r.code for r in m1.residues),seqs["Prot1"])
-        self.assertEqual(''.join(r.code for r in m2.residues),seqs["Prot2"])
-        self.assertEqual(''.join(r.code for r in m3.residues),seqs["Prot3"])
+        self.assertEqual(''.join(r.get_code() for r in m1.residues),seqs["Prot1"])
+        self.assertEqual(''.join(r.get_code() for r in m2.residues),seqs["Prot2"])
+        self.assertEqual(''.join(r.get_code() for r in m3.residues),seqs["Prot3"])
 
     """
     def test_create_copies(self):

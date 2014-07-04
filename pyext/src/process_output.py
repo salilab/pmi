@@ -61,7 +61,13 @@ if argparse:
         '--search_value',
         dest="search_value",
         help="Search a line from the file. Specify the value to be searched for. ")
-
+    parser.add_argument(
+        '--nframe',
+        action="store_true",        
+        dest="nframe",
+        default=False,
+        help="Print the frame number as initial column")
+        
     result = parser.parse_args()
 
 else:
@@ -133,6 +139,12 @@ else:
         '--search_value',
         dest="search_value",
         help="Search a line from the file. Specify the value to be searched for. ")
+    parser.add_option(
+        '--nframe',
+        dest="nframe",
+        action="store_true",        
+        default=False,
+        help="Print the frame number as initial column")
 
     (result, args) = parser.parse_args()
 
@@ -229,7 +241,10 @@ if not result.fields is None:
                 continue
             s0 = ' '.join(["%20s" % (str(d[invstat2_dict[field]]))
                           for field in field_list])
-        print "> " + s0
+        if not result.nframe:
+            print "> " + s0
+        else:
+            print str(line_number)+ " > " + s0            
     f.close()
 
 

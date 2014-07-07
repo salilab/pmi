@@ -12,7 +12,8 @@ import os
 class ReplicaExchange0(object):
 
     def __init__(self, model,
-                 representation,
+                 representation=None,
+                 hierarchy=None,
                  sample_objects=None, # DEPRECATED
                  monte_carlo_sample_objects=None,
                  molecular_dynamics_sample_objects=None,
@@ -44,6 +45,7 @@ class ReplicaExchange0(object):
         '''
 
         self.model = model
+        ### add check hierarchy is multistate
         if type(representation) == list:
             self.is_multi_state = True
         else:

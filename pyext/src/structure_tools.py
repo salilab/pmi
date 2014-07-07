@@ -1,7 +1,7 @@
 import IMP
 import IMP.atom
 
-def get_structure(mdl,pdb_fn,chain,res_range=None,offset=0):
+def get_structure(mdl,pdb_fn,chain,res_range=[],offset=0):
     """return the residues from a pdb file with particular chain and range"""
     mh=IMP.atom.read_pdb(pdb_fn,mdl,IMP.atom.NonWaterNonHydrogenPDBSelector())
 
@@ -10,15 +10,16 @@ def get_structure(mdl,pdb_fn,chain,res_range=None,offset=0):
         IMP.atom.Residue(rr).set_index(IMP.atom.Residue(rr).get_index()+offset)
 
     # get requested chain and residue range
-    if res_range is not None:
+    if res_range != []:
         res_range=range(res_range[0],res_range[1]+1)
-    sel=IMP.atom.Selection(mh,chain=chain,residue_indexes=res_range,
-                               atom_type=IMP.atom.AT_CA)
-    ret=[]
+    sel=IMP.atom.Selection(mh,chain=chain,residue_indexes=res_range)
+    #                               atom_type=IMP.atom.AtomType('CA'))
+
+    ret=set()
     for p in sel.get_selected_particles():
         res=IMP.atom.Residue(IMP.atom.Atom(p).get_parent())
-        ret.append(res)
-    return ret
+        ret.add(res)
+    return list(ret)
 
 def fill_in_missing_backbone(mdl,residues):
     """Guess CA position based on surroundings.
@@ -68,7 +69,7 @@ def build_along_backbone(mdl,root,residues,rep_type,ca_centers=True):
         this_rep=frag_res[0].representations
         if len(this_rep)==0:
             continue
-        print 'building frag',frag_res,'pdb nums',res_nums
+        #print 'building frag',frag_res,'pdb nums',res_nums
         frag = IMP.atom.Fragment.setup_particle(mdl,mdl.add_particle("fragment root"),res_nums)
         root.add_child(frag)
         frep = IMP.atom.Representation.setup_particle(frag,0)

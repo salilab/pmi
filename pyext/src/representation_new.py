@@ -195,7 +195,7 @@ class _Molecule(_SystemBase):
         """
         self.number_of_copies+=1
 
-    def add_structure(self,pdb_fn,chain,res_range=None,offset=0):
+    def add_structure(self,pdb_fn,chain,res_range=[],offset=0):
         """Read a structure and store the coordinates.
         Returns the atomic residues (as a set)
         @param pdb_fn    The file to read
@@ -224,8 +224,12 @@ class _Molecule(_SystemBase):
 
     def add_representation(self,res_set=None,representation_type="balls",resolutions=[]):
         """handles the IMP.atom.Representation decorators, such as multi-scale,
-        density, etc."""
-        allowed_types=("balls")
+        density, etc.
+        @param res_set             set of PMI residues for adding the representation
+        @param representation_type currently supports only balls
+        @param resolutions         what resolutions to add to the residues
+        """
+        allowed_types=["balls"]
         if representation_type not in allowed_types:
             print "ERROR: Allowed representation types:",allowed_types
             return

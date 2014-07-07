@@ -3,43 +3,36 @@
 import IMP
 import IMP.pmi
 import IMP.pmi.representation_new
+import IMP.pmi.sequence_tools
 
 ### setup 1-state system
 mdl = IMP.Model()
 system = IMP.pmi.representation_new.System(mdl)
-state1 = system.create_state()
+stateA = system.create_state()
+stateB = system.create_state()
+
 
 ### read sequences into a little data structure
-seqs = IMP.pmi.representation_new.Sequences(fasta_fn="data/tusc_sequences.fasta",
+seqs = IMP.pmi.representation_new.Sequences(fasta_fn="gtusc_data/tusc_sequences.fasta",
                                             name_map={'GCP2_YEAST':'Spc97',
                                                       'GCP3_YEAST':'Spc98'})
 
-
 ### add molecules to the state
-spc97 = state1.create_molecule("Spc97", sequence=seqs["Spc97"])
-spc98 = state1.create_molecule("Spc98", sequence=seqs["Spc98"])
-spc97.add_copy()
+spc97A = stateA.create_molecule("Spc97", sequence=seqs["Spc97"])
+spc97B = stateB.create_molecule("Spc97", sequence=seqs["Spc97"])
 
 ### load structure data for each molecule. returns a list of contiguous fragments
-#     note, you can actually just use INDEXES for this.
-#     rather than hashing Residues. because currently you only do this WITHIN a single molecule
-s97_atomic = spc97.add_structure(pdb_fn='data/tusc.pdb',chain='A',res_range=None,offset=None)
-s97_nonatomic = spc97[:] - spc97_atomic
-s97_a = spc97[5:10]
-s97_b = spc97[8:15]
+s97A_atomic = spc97A.add_structure(pdb_fn='gtusc_data/tusc.pdb',chain='A',res_range=[55,95])
+s97B_atomic = spc97B.add_structure(pdb_fn='gtusc_data/tusc.pdb',chain='A',res_range=[55,95])
 
-#s97_5 = spc97['5']
-#s97_a = spc97.residue_range('6','10')
+### add representation
+spc97A.add_representation(s97A_atomic,'balls',[0])
+spc97B.add_representation(s97B_atomic,'balls',[0])
 
-
-spc97.add_representation(s97_atomic,[0,10],"beads")
-spc97.add_representation(s97_nonatomic,[10],"beads")
-
-s98_fragments = spc98.add_structure(pdb_fn='data/tusc.pdb',chain='B')
+### build system
+hier = system.build()
+IMP.atom.show_molecular_hierarchy(hier)
 
 
-### utility to create different representations for atomic/non-atomic parts
-# note, can also do this with spc97.set_representations(fragment,spec)
-#  where fragment is spc97.range(X,Y) or spc97.range('X','Y')
-#spc97.add_representations(resolutions_for_atomic_regions=[1],
-#                          resolutions_for_missing_regions=[10])
+### add some restraints
+charmmA = IMP.pmi.restraints_new.stereochemistry.CharmmForceFieldRestraint(mdl)

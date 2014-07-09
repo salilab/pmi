@@ -689,7 +689,6 @@ class CharmmForceFieldRestraint(object):
 
         #root=representation.prot.get_children()[0].get_children()[0].get_children()[0]
         root=representation.prot
-        atoms=IMP.atom.get_leaves(root)
 
         ### charmm setup
         ff = IMP.atom.get_heavy_atom_CHARMM_parameters()
@@ -700,6 +699,7 @@ class CharmmForceFieldRestraint(object):
         self.bonds_rs.add_restraint(r)
         ff.add_radii(root)
         ff.add_well_depths(root)
+        atoms=IMP.atom.get_leaves(root)
 
         ### non-bonded forces
         cont = IMP.container.ListSingletonContainer(atoms)

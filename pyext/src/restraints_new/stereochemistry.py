@@ -2,6 +2,7 @@
 import IMP
 import IMP.core
 import IMP.atom
+import IMP.isd
 
 class CharmmForceFieldRestraint(object):
     """ Enable CHARMM force field """
@@ -11,6 +12,8 @@ class CharmmForceFieldRestraint(object):
         @param root       The node at which to apply the restraint
         @param ff_temp    The temperature of the force field
         """
+
+        kB = (1.381 * 6.02214) / 4184.0
 
         self.mdl=mdl
         self.bonds_rs = IMP.RestraintSet(self.mdl, 1.0 / (kB * ff_temp), 'BONDED')
@@ -53,8 +56,8 @@ class CharmmForceFieldRestraint(object):
         self.mdl.add_restraint(self.bonds_rs)
         self.mdl.add_restraint(self.nonbonded_rs)
 
-    def get_restraint(self):
-        return self.rs
+    def get_restraints(self):
+        return [self.bonds_rs,self.nonbonded_rs]
 
     def get_close_pair_container(self):
         return self.nbl

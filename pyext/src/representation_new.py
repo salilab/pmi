@@ -103,12 +103,15 @@ class _State(_SystemBase):
         IMP.atom.State.setup_particle(self.state,state_index)
         self.built=False
 
-    def create_molecule(self,name,sequence=None,molecule_to_copy=None):
+    def create_molecule(self,name,sequence=None,chain_id='',molecule_to_copy=None):
         """Create a new Molecule within this State
         @param name                the name of the molecule (string) it must not
                                    contain underscores characters "_" and must not
                                    be already used
         @param sequence            sequence (string)
+        @param chain_id            Chain id to assign to this molecule
+        @param molecule_to_copy    Copy everything from an existing molecule. NOT IMPLEMENTED
+
         """
         # check the presence of underscores
         if "_" in name:
@@ -118,7 +121,7 @@ class _State(_SystemBase):
         if name in [mol.name for mol in self.molecules]:
            raise WrongMoleculeName('Cannot use a molecule name already used')
 
-        mol = _Molecule(self.state,name,sequence)
+        mol = _Molecule(self.state,name,sequence,chain_id)
         self.molecules.append(mol)
         return mol
 
@@ -139,7 +142,7 @@ class _Molecule(_SystemBase):
     Resolutions and copies can be registered, but are only created when build() is called
     """
 
-    def __init__(self,state_hierarchy,name,sequence):
+    def __init__(self,state_hierarchy,name,sequence,chain_id):
         """Create copy 0 of this molecule.
         Arguments:
         @param state_hierarchy     the parent State-decorated hierarchy (IMP.atom.Hierarchy)
@@ -158,6 +161,7 @@ class _Molecule(_SystemBase):
         self.molecule=self._create_child(self.state)
         self.molecule.set_name(self.name+"_0")
         IMP.atom.Copy.setup_particle(self.molecule,0)
+        IMP.atom.Chain.setup_particle(self.molecule,chain_id)
 
         # create Residues from the sequence
         self.residues=[]
@@ -189,9 +193,10 @@ class _Molecule(_SystemBase):
             print "ERROR: range ends must be int or str. Stride must be int."
 
 
-    def add_copy(self):
+    def add_copy(self,chain_id=''):
         """Register a new copy of the Molecule.
         Copies are only constructed when build() is called.
+        @param chain_id The id to assign to the new copy
         """
         self.number_of_copies+=1
 

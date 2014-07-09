@@ -9,17 +9,16 @@ def get_structure(mdl,pdb_fn,chain,res_range=[],offset=0):
     for rr in IMP.atom.get_by_type(mh,IMP.atom.RESIDUE_TYPE):
         IMP.atom.Residue(rr).set_index(IMP.atom.Residue(rr).get_index()+offset)
 
-    # get requested chain and residue range
-    if res_range != []:
-        res_range=range(res_range[0],res_range[1]+1)
-    sel=IMP.atom.Selection(mh,chain=chain,residue_indexes=res_range)
-    #                               atom_type=IMP.atom.AtomType('CA'))
-
-    ret=set()
+    if res_range==[]:
+        sel=IMP.atom.Selection(mh,chain=chain,atom_type=IMP.atom.AtomType('CA'))
+    else:
+        sel=IMP.atom.Selection(mh,chain=chain,residue_indexes=range(res_range[0],res_range[1]+1),
+                               atom_type=IMP.atom.AtomType('CA'))
+    ret=[]
     for p in sel.get_selected_particles():
         res=IMP.atom.Residue(IMP.atom.Atom(p).get_parent())
-        ret.add(res)
-    return list(ret)
+        ret.append(res)
+    return ret
 
 def fill_in_missing_backbone(mdl,residues):
     """Guess CA position based on surroundings.
@@ -27,7 +26,7 @@ def fill_in_missing_backbone(mdl,residues):
     for each residue:
       if residue.representations != defaultdict(set)
         create a new Residue and CAlpha and guess position
-        store as residue.res
+        store as residue.hier
     """
     pass
 
@@ -67,10 +66,10 @@ def build_along_backbone(mdl,root,residues,rep_type,ca_centers=True):
     for frag_res in fragments:
         res_nums=[r.get_index() for r in frag_res]
         this_rep=frag_res[0].representations
+        name = "frag_%i-%i"%(res_nums[0],res_nums[1])
         if len(this_rep)==0:
             continue
-        #print 'building frag',frag_res,'pdb nums',res_nums
-        frag = IMP.atom.Fragment.setup_particle(mdl,mdl.add_particle("fragment root"),res_nums)
+        frag = IMP.atom.Fragment.setup_particle(mdl,mdl.add_particle(name),res_nums)
         root.add_child(frag)
         frep = IMP.atom.Representation.setup_particle(frag,0)
 
@@ -115,6 +114,7 @@ def build_along_backbone(mdl,root,residues,rep_type,ca_centers=True):
                 pass
 
 def show_representation(node):
+    print node
     if IMP.atom.Representation.get_is_setup(node):
         repr=IMP.atom.Representation(node)
         resolutions=repr.get_resolutions()

@@ -76,3 +76,62 @@ class CharmmForceFieldRestraint(object):
         output["CHARMM_BONDS"] = str(bonds_score)
         output["CHARMM_NONBONDED"] = str(nonbonded_score)
         return output
+
+class ElasticNetworkRestraint(object):
+    import IMP.pmi.tools
+    from math import pi as pi
+
+    def __init__(self,mdl,
+                 selection,
+                 strength=10.0,
+                 dist_cutoff=10.0):
+        """ Add harmonic restraints between all pairs below a specified distance
+        @param mdl         The IMP model
+        @param selection   Includes the particles to apply the restraint to
+        @param strength    The elastic bond strength
+        @param dist_cutoff Create bonds when below this distance
+        """
+        self.m = representation.prot.get_model()
+        self.rs = IMP.RestraintSet(self.m, "ElasticNetwork")
+        self.weight = 1
+        self.label = "None"
+        self.pairslist = []
+
+        particles = selection.get_selected_particles():
+        for pair in itertools.combinations(particles,2):
+            distance=IMP.algebra.get_distance(IMP.core.XYZ(pair[0]).get_coordinates(),
+                                              IMP.core.XYZ(pair[1]).get_coordinates())
+            if distance>=dist_cutoff:
+                continue
+            ts=IMP.core.HarmonicDistancePairScore(distance,strength)
+            print "ElasticNetworkConstraint: adding a restraint between %s and %s with distance %.3f" % (pair[0].get_name(),pair[1].get_name(),distance)
+            self.rs.add_restraint(IMP.core.PairRestraint(ts,pair))
+            self.pairslist.append(IMP.ParticlePair(pair[0], pair[1]))
+            self.pairslist.append(IMP.ParticlePair(pair[1], pair[0]))
+        print 'created',self.rs.get_number_of_restraints(),'restraints'
+
+    def set_label(self, label):
+        self.label = label
+        self.rs.set_name(label)
+        for r in self.rs.get_restraints():
+            r.set_name(label)
+
+    def add_to_model(self):
+        self.m.add_restraint(self.rs)
+
+    def get_restraint(self):
+        return self.rs
+
+    def set_weight(self, weight):
+        self.weight = weight
+        self.rs.set_weight(weight)
+
+    def get_excluded_pairs(self):
+        return self.pairslist
+
+    def get_output(self):
+        self.m.update()
+        output = {}
+        score = self.weight * self.rs.unprotected_evaluate(None)
+        output["ElasticNetworkRestraint_" + self.label] = str(score)
+        return output

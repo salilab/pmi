@@ -367,6 +367,146 @@ data = [("Rpb1",     pdbfile,   "A",     0.00000000,  (fastafile,    0)),
 
 # ----------------------------------------------------------------------
 
+class BuildModel1(object):
+
+    ''' this building scheme needs a data structure with the following fields 
+          comp_name
+          hier_name
+          color
+          fasta_file
+          fasta_id
+          pdb_name
+          chain_id
+          res_range
+          read_em_files
+          bead_size
+          super_rb
+          em_num_components
+          em_txt_file_name
+          em_mrc_file_name
+    '''
+
+    def __init__(self, representation):
+      self.simo=representation
+    
+    
+    def build_model(self,data_structure):
+
+      domain_dict={}
+      self.resdensities=[]
+      super_rigid_bodies={}
+
+      for d in data_structure:
+          comp_name        =d[0]
+          hier_name        =d[1]
+          color            =d[2]
+          fasta_file       =d[3]
+          fasta_id         =d[4]
+          pdb_name         =d[5]
+          chain_id         =d[6]
+          res_range        =d[7]
+          read_em_files    =d[8]
+          bead_size        =d[9]
+          super_rb         =d[10]
+          em_num_components=d[11]
+          em_txt_file_name =d[12]
+          em_mrc_file_name =d[13]
+          if comp_name not in self.simo.get_component_names():
+             self.simo.create_component(comp_name,color=0.0)
+             self.simo.add_component_sequence(comp_name,fasta_file,fasta_id)
+          outhier=self.autobuild(self.simo,comp_name,pdb_name,chain_id,res_range,read=read_em_files,beadsize=bead_size,color=color)
+          
+          if not read_em_files is None:
+             dens_hier=self.create_density(self.simo,comp_name,outhier,em_txt_file_name,em_mrc_file_name,em_num_components,read_em_files)
+          else:
+             dens_hier=[]
+          
+          self.resdensities+=dens_hier
+          domain_dict[hier_name]=outhier+dens_hier
+          self.simo.set_rigid_body_from_hierarchies(domain_dict[hier_name])
+          
+          for k in super_rb:
+              if k not in super_rigid_bodies:
+                 super_rigid_bodies[k]=domain_dict[hier_name]
+          else:
+              super_rigid_bodies[k]+=domain_dict[hier_name]
+          
+          
+          
+      for c in self.simo.get_component_names():
+          self.simo.setup_component_sequence_connectivity(c)
+
+      for k in super_rigid_bodies:
+          self.simo.set_super_rigid_body_from_hierarchies(super_rigid_bodies[k])
+
+      self.simo.set_floppy_bodies()
+      
+    def get_density_hierarchies(self):
+        return self.resdensities
+
+    def get_pdb_bead_bits(self,hierarchy):
+        pdbbits=[]
+        beadbits=[]
+        for h in hierarchy:
+           if "_pdb" in h.get_name():pdbbits.append(h)
+           if "_bead" in h.get_name():beadbits.append(h)
+        return (pdbbits,beadbits)
+
+    def create_density(self,simo,compname,comphier,txtfilename,mrcfilename,num_components,read=True):
+        #density generation for the EM restraint
+       (pdbbits,beadbits)=self.get_pdb_bead_bits(comphier)
+       
+       
+       if read:
+          outhier=simo.add_component_density(compname,
+                                   pdbbits,
+                                   num_components=num_components, # number of gaussian into which the simulated density is approximated
+                                   resolution=0,      # resolution that you want to calculate the simulated density
+                                   inputfile=txtfilename) # read what it was calculated before
+
+       else:
+          outhier=simo.add_component_density(compname,
+                                   pdbbits,
+                                   num_components=num_components, # number of gaussian into which the simulated density is approximated
+                                   resolution=0,      # resolution that you want to calculate the simulated density
+                                   outputfile=txtfilename, # do the calculation
+                                   outputmap=mrcfilename,
+                                   multiply_by_total_mass=True) # do the calculation and output the mrc                                    
+       return outhier
+
+    def autobuild(self,simo,comname,pdbname,chain,resrange,read=True,beadsize=5,color=0.0):
+        if pdbname is not None:
+          if resrange[-1]==-1: resrange=(resrange[0],len(simo.sequence_dict[comname]))
+          if read==False:    
+             print "res0",comname, resrange
+             outhier=simo.autobuild_model(comname, 
+                              pdbname=pdbname,
+                              chain=chain,
+                              resrange=resrange,
+                              resolutions=[0,1,10],
+                              color=color, 
+                              missingbeadsize=beadsize)
+          else:
+             print "res1",comname, resrange
+             outhier=simo.autobuild_model(comname, 
+                              pdbname=pdbname,
+                              chain=chain,
+                              resrange=resrange,                          
+                              resolutions=[1,10], 
+                              color=color,
+                              missingbeadsize=beadsize)                                 
+          return outhier
+        else:
+          seq_len=len(simo.sequence_dict[comname])
+          outhier=simo.add_component_necklace(comname,
+                                begin=1,
+                                end=seq_len,
+                                length=beadsize)  
+                                
+        return outhier 
+
+
+# ----------------------------------------------------------------------
 
 class AnalysisReplicaExchange0(object):
 

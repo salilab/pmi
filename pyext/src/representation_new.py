@@ -97,10 +97,10 @@ class _State(_SystemBase):
         """
         self.mdl = system_hierarchy.get_model()
         self.system = system_hierarchy
-        self.state = self._create_child(system_hierarchy)
-        self.state.set_name("State_"+str(state_index))
+        self.hier = self._create_child(system_hierarchy)
+        self.hier.set_name("State_"+str(state_index))
         self.molecules = []
-        IMP.atom.State.setup_particle(self.state,state_index)
+        IMP.atom.State.setup_particle(self.hier,state_index)
         self.built=False
 
     def create_molecule(self,name,sequence=None,chain_id='',molecule_to_copy=None):
@@ -121,9 +121,12 @@ class _State(_SystemBase):
         if name in [mol.name for mol in self.molecules]:
            raise WrongMoleculeName('Cannot use a molecule name already used')
 
-        mol = _Molecule(self.state,name,sequence,chain_id)
+        mol = _Molecule(self.hier,name,sequence,chain_id)
         self.molecules.append(mol)
         return mol
+
+    def get_hierarchy(self):
+        return self.hier
 
     def build(self):
         """call build on all molecules (automatically makes copies)"""
@@ -131,7 +134,7 @@ class _State(_SystemBase):
             for mol in self.molecules:
                 mol.build()
             self.built=True
-        return self.state
+        return self.hier
 
 #------------------------
 
@@ -158,10 +161,11 @@ class _Molecule(_SystemBase):
         self.built=False
 
         # create root node and set it as child to passed parent hierarchy
-        self.molecule=self._create_child(self.state)
-        self.molecule.set_name(self.name+"_0")
-        IMP.atom.Copy.setup_particle(self.molecule,0)
-        IMP.atom.Chain.setup_particle(self.molecule,chain_id)
+        self.hier = self._create_child(self.state)
+        self.hier.set_name(self.name+"_0")
+        IMP.atom.Molecule.setup_particle(self.hier)
+        IMP.atom.Copy.setup_particle(self.hier,0)
+        IMP.atom.Chain.setup_particle(self.hier,chain_id)
 
         # create Residues from the sequence
         self.residues=[]
@@ -182,6 +186,8 @@ class _Molecule(_SystemBase):
         else:
             print "ERROR: range ends must be int or str. Stride must be int."
 
+    def get_hierarchy(self):
+        return self.hier
 
     def residue_range(self,a,b,stride=1):
         """get residue range. Use integers to get 0-indexing, or strings to get PDB-indexing"""
@@ -268,7 +274,7 @@ class _Molecule(_SystemBase):
 
             # group into Fragments along backbone
             if merge_type=="backbone":
-                IMP.pmi.structure_tools.build_along_backbone(self.mdl,self.molecule,self.residues,
+                IMP.pmi.structure_tools.build_along_backbone(self.mdl,self.hier,self.residues,
                                                              IMP.atom.BALLS,ca_centers)
 
 
@@ -286,7 +292,7 @@ class _Molecule(_SystemBase):
 
             self.built=True
         #IMP.atom.show_molecular_hierarchy(self.molecule)
-        return self.molecule
+        return self.hier
 
 
 #------------------------

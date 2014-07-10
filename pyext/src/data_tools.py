@@ -1,4 +1,7 @@
-# tools for reading data
+#!/usr/bin/env python
+
+"""Tools for reading data
+"""
 
 import IMP
 import IMP.algebra

@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+"""utilities for interpreting and analyzing sequence data"""
+
 import IMP
 import IMP.atom
 

@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+"""tools to help build structures"""
+
 import IMP
 import IMP.atom
 
@@ -107,7 +110,6 @@ def build_along_backbone(mdl,root,residues,rep_type,ca_centers=True):
                         IMP.core.XYZR.setup_particle(rp1,shape)
                         IMP.atom.Mass.setup_particle(rp1,mass)
                 frep.add_representation(res1,IMP.atom.BALLS,1)
-
 
             # add all other resolutions
             for resolution in set(this_rep['balls']) - set([0,1]):

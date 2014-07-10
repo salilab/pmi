@@ -380,6 +380,7 @@ class BuildModel1(object):
           res_range
           read_em_files
           bead_size
+          rb
           super_rb
           em_num_components
           em_txt_file_name
@@ -395,6 +396,7 @@ class BuildModel1(object):
       domain_dict={}
       self.resdensities=[]
       super_rigid_bodies={}
+      rigid_bodies={}
 
       for d in data_structure:
           comp_name        =d[0]
@@ -407,10 +409,11 @@ class BuildModel1(object):
           res_range        =d[7]
           read_em_files    =d[8]
           bead_size        =d[9]
-          super_rb         =d[10]
-          em_num_components=d[11]
-          em_txt_file_name =d[12]
-          em_mrc_file_name =d[13]
+          rb               =d[10]
+          super_rb         =d[11]
+          em_num_components=d[12]
+          em_txt_file_name =d[13]
+          em_mrc_file_name =d[14]
           if comp_name not in self.simo.get_component_names():
              self.simo.create_component(comp_name,color=0.0)
              self.simo.add_component_sequence(comp_name,fasta_file,fasta_id)
@@ -423,7 +426,11 @@ class BuildModel1(object):
           
           self.resdensities+=dens_hier
           domain_dict[hier_name]=outhier+dens_hier
-          self.simo.set_rigid_body_from_hierarchies(domain_dict[hier_name])
+              
+          if rb not in rigid_bodies:
+              rigid_bodies[rb]=domain_dict[hier_name]
+          else:
+              rigid_bodies[rb]+=domain_dict[hier_name]
           
           for k in super_rb:
               if k not in super_rigid_bodies:
@@ -435,6 +442,9 @@ class BuildModel1(object):
           
       for c in self.simo.get_component_names():
           self.simo.setup_component_sequence_connectivity(c)
+      
+      for rb in rigid_bodies:
+          self.simo.set_rigid_body_from_hierarchies(rigid_bodies[rb])
 
       for k in super_rigid_bodies:
           self.simo.set_super_rigid_body_from_hierarchies(super_rigid_bodies[k])

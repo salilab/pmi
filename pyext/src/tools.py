@@ -501,7 +501,7 @@ def get_closest_residue_position(hier, resindex, terminus="N"):
         niter += 1
         sel = IMP.atom.Selection(hier, residue_index=resindex,
                                  atom_type=IMP.atom.AT_CA)
-
+        
         if terminus == "N":
             resindex += 1
         if terminus == "C":

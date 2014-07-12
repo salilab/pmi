@@ -399,25 +399,29 @@ class BuildModel1(object):
       rigid_bodies={}
 
       for d in data_structure:
-          comp_name        =d[0]
-          hier_name        =d[1]
-          color            =d[2]
-          fasta_file       =d[3]
-          fasta_id         =d[4]
-          pdb_name         =d[5]
-          chain_id         =d[6]
-          res_range        =d[7]
-          read_em_files    =d[8]
-          bead_size        =d[9]
-          rb               =d[10]
-          super_rb         =d[11]
-          em_num_components=d[12]
-          em_txt_file_name =d[13]
-          em_mrc_file_name =d[14]
+          comp_name         = d[0]
+          hier_name         = d[1]
+          color             = d[2]
+          fasta_file        = d[3]
+          fasta_id          = d[4]
+          pdb_name          = d[5]
+          chain_id          = d[6]
+          res_range         = d[7][0:2]
+          try:
+             offset         = d[7][2]
+          except:  
+             offset         = 0
+          read_em_files     = d[8]
+          bead_size         = d[9]
+          rb                = d[10]
+          super_rb          = d[11]
+          em_num_components = d[12]
+          em_txt_file_name  = d[13]
+          em_mrc_file_name  = d[14]
           if comp_name not in self.simo.get_component_names():
              self.simo.create_component(comp_name,color=0.0)
              self.simo.add_component_sequence(comp_name,fasta_file,fasta_id)
-          outhier=self.autobuild(self.simo,comp_name,pdb_name,chain_id,res_range,read=read_em_files,beadsize=bead_size,color=color)
+          outhier=self.autobuild(self.simo,comp_name,pdb_name,chain_id,res_range,read=read_em_files,beadsize=bead_size,color=color,offset=offset)
           
           if not read_em_files is None:
              dens_hier=self.create_density(self.simo,comp_name,outhier,em_txt_file_name,em_mrc_file_name,em_num_components,read_em_files)
@@ -437,12 +441,16 @@ class BuildModel1(object):
                  super_rigid_bodies[k]=domain_dict[hier_name]
           else:
               super_rigid_bodies[k]+=domain_dict[hier_name]
+              
+     
           
           
           
       for c in self.simo.get_component_names():
           self.simo.setup_component_sequence_connectivity(c)
-      
+          self.simo.setup_component_geometry(c)
+
+           
       for rb in rigid_bodies:
           self.simo.set_rigid_body_from_hierarchies(rigid_bodies[rb])
 
@@ -450,6 +458,7 @@ class BuildModel1(object):
           self.simo.set_super_rigid_body_from_hierarchies(super_rigid_bodies[k])
 
       self.simo.set_floppy_bodies()
+      self.simo.setup_bonds()
       
     def get_density_hierarchies(self):
         return self.resdensities
@@ -484,7 +493,8 @@ class BuildModel1(object):
                                    multiply_by_total_mass=True) # do the calculation and output the mrc                                    
        return outhier
 
-    def autobuild(self,simo,comname,pdbname,chain,resrange,read=True,beadsize=5,color=0.0):
+    def autobuild(self,simo,comname,pdbname,chain,resrange,read=True,beadsize=5,color=0.0,offset=0):
+    
         if pdbname is not None:
           if resrange[-1]==-1: resrange=(resrange[0],len(simo.sequence_dict[comname]))
           if read==False:    
@@ -494,6 +504,7 @@ class BuildModel1(object):
                               chain=chain,
                               resrange=resrange,
                               resolutions=[0,1,10],
+                              offset=offset,
                               color=color, 
                               missingbeadsize=beadsize)
           else:
@@ -503,6 +514,7 @@ class BuildModel1(object):
                               chain=chain,
                               resrange=resrange,                          
                               resolutions=[1,10], 
+                              offset=offset,
                               color=color,
                               missingbeadsize=beadsize)                                 
           return outhier

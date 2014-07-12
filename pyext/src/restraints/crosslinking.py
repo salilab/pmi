@@ -746,6 +746,8 @@ class ISDCrossLinkMS(_NuisancesBase):
                  slope=0.0,
                  inner_slope=0.0,
                  columnmapping=None,
+                 rename_dict=None,
+                 offset_dict=None,
                  csvfile=False,
                  samplelength=False,
                  ids_map=None,
@@ -874,6 +876,15 @@ class ISDCrossLinkMS(_NuisancesBase):
                     c1 = tokens[protein1]
                     r2 = int(tokens[residue2])
                     c2 = tokens[protein2]
+                    
+                    if offset_dict is not None:
+                       if c1 in offset_dict: r1+=offset_dict[c1]
+                       if c2 in offset_dict: r2+=offset_dict[c2]
+
+                    if rename_dict is not None:
+                       if c1 in rename_dict: c1=rename_dict[c1]
+                       if c2 in rename_dict: c2=rename_dict[c2]
+                                           
                     if idscore is None:
                         ids = 1.0
                     else:
@@ -897,6 +908,15 @@ class ISDCrossLinkMS(_NuisancesBase):
                     c1 = entry[protein1]
                     r2 = int(entry[residue2])
                     c2 = entry[protein2]
+
+                    if offset_dict is not None:
+                       if c1 in offset_dict: r1+=offset_dict[c1]
+                       if c2 in offset_dict: r2+=offset_dict[c2]
+
+                    if rename_dict is not None:
+                       if c1 in rename_dict: c1=rename_dict[c1]
+                       if c2 in rename_dict: c2=rename_dict[c2]
+
                     if idscore is None:
                         ids = 1.0
                     else:
@@ -905,6 +925,7 @@ class ISDCrossLinkMS(_NuisancesBase):
                         xlid = str(nxl)
                     else:
                         xlid = entry[xluniqueid]
+                        
                 except:
                     print "this line was not accessible " + str(entry)
                     continue

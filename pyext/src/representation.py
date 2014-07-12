@@ -245,19 +245,20 @@ class Representation(object):
             t,
             resrange[0],
             resrange[1])
+        
         xyznter = IMP.pmi.tools.get_closest_residue_position(
             t,
-            start,
+            resrange[0],
             terminus="N")
         xyzcter = IMP.pmi.tools.get_closest_residue_position(
             t,
-            end,
+            resrange[1],
             terminus="C")
 
         # construct pdb fragments and intervening beads
         for n, g in enumerate(gaps):
-            first = g[0] + offset
-            last = g[1] + offset
+            first = g[0] 
+            last = g[1]
             if g[2] == "cont":
                 print "autobuild_model: constructing fragment %s from pdb" % (str((first, last)))
                 outhiers += self.add_component_pdb(name, pdbname,
@@ -274,13 +275,13 @@ class Representation(object):
                     1)
                 xyz = IMP.core.XYZ(parts[0]).get_coordinates()
                 outhiers += self.add_component_necklace(name,
-                                                        first, last, missingbeadsize, incoord=xyz)
+                                                        first+offset, last+offset, missingbeadsize, incoord=xyz)
 
             elif g[2] == "gap" and n == 0:
                 # add pre-beads
                 print "autobuild_model: constructing fragment %s as a bead" % (str((first, last)))
                 outhiers += self.add_component_necklace(name,
-                                                        first, last, missingbeadsize, incoord=xyznter)
+                                                        first+offset, last+offset, missingbeadsize, incoord=xyznter)
 
         return outhiers
 

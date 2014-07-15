@@ -1456,7 +1456,7 @@ class Representation(object):
         hiers:         list of hierarchies
         particles:     (optional, default=None) list of particles to add to the rigid body
         '''
-
+        
         if particles is None:
             rigid_parts = set()
         else:
@@ -1466,6 +1466,7 @@ class Representation(object):
         print "set_rigid_body_from_hierarchies> setting up a new rigid body"
         for hier in hiers:
             ps = IMP.atom.get_leaves(hier)
+            
             for p in ps:
                 if IMP.core.RigidMember.get_is_setup(p):
                     rb = IMP.core.RigidMember(p).get_rigid_body()
@@ -1474,11 +1475,16 @@ class Representation(object):
                     rigid_parts.add(p)
             name += hier.get_name() + "-"
             print "set_rigid_body_from_hierarchies> adding %s to the rigid body" % hier.get_name()
-        rb = IMP.atom.create_rigid_body(list(rigid_parts))
-        rb.set_coordinates_are_optimized(True)
-        rb.set_name(name + "rigid_body")
-        self.rigid_bodies.append(rb)
-        return rb
+        
+        if len(list(rigid_parts)) != 0:
+           rb = IMP.atom.create_rigid_body(list(rigid_parts))
+           rb.set_coordinates_are_optimized(True)
+           rb.set_name(name + "rigid_body")
+           self.rigid_bodies.append(rb)
+           return rb
+           
+        else:
+           print "set_rigid_body_from_hierarchies> rigid body could not be setup"
 
     def set_rigid_bodies(self, subunits):
         '''

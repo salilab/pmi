@@ -418,6 +418,7 @@ class BuildModel1(object):
           em_num_components = d[12]
           em_txt_file_name  = d[13]
           em_mrc_file_name  = d[14]
+          
           if comp_name not in self.simo.get_component_names():
              self.simo.create_component(comp_name,color=0.0)
              self.simo.add_component_sequence(comp_name,fasta_file,fasta_id)
@@ -495,10 +496,9 @@ class BuildModel1(object):
 
     def autobuild(self,simo,comname,pdbname,chain,resrange,read=True,beadsize=5,color=0.0,offset=0):
     
-        if pdbname is not None:
+        if pdbname is not None and pdbname is not "IDEAL_HELIX" and pdbname is not "BEADS" :
           if resrange[-1]==-1: resrange=(resrange[0],len(simo.sequence_dict[comname]))
           if read==False:    
-             print "res0",comname, resrange
              outhier=simo.autobuild_model(comname, 
                               pdbname=pdbname,
                               chain=chain,
@@ -508,7 +508,6 @@ class BuildModel1(object):
                               color=color, 
                               missingbeadsize=beadsize)
           else:
-             print "res1",comname, resrange
              outhier=simo.autobuild_model(comname, 
                               pdbname=pdbname,
                               chain=chain,
@@ -517,14 +516,21 @@ class BuildModel1(object):
                               offset=offset,
                               color=color,
                               missingbeadsize=beadsize)                                 
-          return outhier
-        elif pdbname=="BUILD_IDEAL_HELIX":
-          outhier=add_component_ideal_helix(comname,
+
+
+        elif pdbname is not None and pdbname is "IDEAL_HELIX" and pdbname is not "BEADS" :
+          
+          outhier=simo.add_component_ideal_helix(comname,
                                             resolutions=[1,10],
-                                            resrange,
+                                            resrange=resrange,
                                             color=color,
                                             show=False)
+                                            
+        elif pdbname is not None and pdbname is not "IDEAL_HELIX" and pdbname is "BEADS" :   
+          outhier=simo.add_component_necklace(comname,resrange[0],resrange[1],beadsize)
+          
         else:
+
           seq_len=len(simo.sequence_dict[comname])
           outhier=simo.add_component_necklace(comname,
                                 begin=1,

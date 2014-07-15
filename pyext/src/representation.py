@@ -418,7 +418,7 @@ class Representation(object):
         resolutions,
         resrange,
         color=None,
-            show=False):
+        show=False):
 
         self.representation_is_modified = True
         from math import pi, cos, sin

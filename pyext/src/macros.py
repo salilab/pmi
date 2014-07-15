@@ -518,6 +518,12 @@ class BuildModel1(object):
                               color=color,
                               missingbeadsize=beadsize)                                 
           return outhier
+        elif pdbname=="BUILD_IDEAL_HELIX":
+          outhier=add_component_ideal_helix(comname,
+                                            resolutions=[1,10],
+                                            resrange,
+                                            color=color,
+                                            show=False)
         else:
           seq_len=len(simo.sequence_dict[comname])
           outhier=simo.add_component_necklace(comname,

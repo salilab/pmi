@@ -560,15 +560,19 @@ class Representation(object):
 
         return outhiers
 
-    def add_component_necklace(self, name, begin, end, length, incoord=None):
+    def add_component_necklace(self, name, begin, end, length, color=None, incoord=None):
         '''
         generates a string of beads with given length
         '''
         self.representation_is_modified = True
         outhiers = []
+        if color is None: 
+           colors=None
+        else: 
+           colors=[color]
         for chunk in list(IMP.pmi.tools.list_chunks_iterator(range(begin, end + 1), length)):
             outhiers += self.add_component_beads(name,
-                                                 [(chunk[0], chunk[-1])], incoord=incoord)
+                                                 [(chunk[0], chunk[-1])], colors=colors,incoord=incoord)
         return outhiers
 
     def add_component_density(

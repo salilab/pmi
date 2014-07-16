@@ -747,7 +747,7 @@ def select_by_tuple(
 def get_db_from_csv(csvfilename):
     import csv
     outputlist = []
-    csvr = csv.DictReader(open(csvfilename))
+    csvr = csv.DictReader(open(csvfilename, "rU"))
     for l in csvr:
         outputlist.append(l)
     return outputlist

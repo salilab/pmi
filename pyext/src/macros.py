@@ -527,7 +527,7 @@ class BuildModel1(object):
                                             show=False)
                                             
         elif pdbname is not None and pdbname is not "IDEAL_HELIX" and pdbname is "BEADS" :   
-          outhier=simo.add_component_necklace(comname,resrange[0],resrange[1],beadsize)
+          outhier=simo.add_component_necklace(comname,resrange[0],resrange[1],beadsize,color=color)
           
         else:
 

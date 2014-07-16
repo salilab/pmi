@@ -162,8 +162,7 @@ class _Molecule(_SystemBase):
 
         # create root node and set it as child to passed parent hierarchy
         self.hier = self._create_child(self.state)
-        self.hier.set_name(self.name+"_0")
-        IMP.atom.Molecule.setup_particle(self.hier)
+        self.hier.set_name(self.name)
         IMP.atom.Copy.setup_particle(self.hier,0)
         IMP.atom.Chain.setup_particle(self.hier,chain_id)
 

@@ -83,9 +83,9 @@ class AtomicCrossLinkMSRestraint(object):
         psi_init=0.01
         psi_min=0.0
         psi_max=0.5
-        self.sig1 = setup_nuisance(self.mdl,sigma_init,sigma_min,sigma_max,self.nuis_opt)
-        self.sig2 = setup_nuisance(self.mdl,sigma_init,sigma_min,sigma_max,self.nuis_opt)
-        self.psi = setup_nuisance(self.mdl,psi_init,psi_min,psi_max,self.nuis_opt)
+        sig1 = setup_nuisance(self.mdl,sigma_init,sigma_min,sigma_max,self.nuis_opt)
+        sig2 = setup_nuisance(self.mdl,sigma_init,sigma_min,sigma_max,self.nuis_opt)
+        psi = setup_nuisance(self.mdl,psi_init,psi_min,psi_max,self.nuis_opt)
 
         xlrs=[]
         for unique_id in data:

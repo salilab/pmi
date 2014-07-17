@@ -4,15 +4,23 @@
 import IMP
 import IMP.atom
 
-def get_structure(mdl,pdb_fn,chain_id,res_range=[],offset=0):
+def get_structure(mdl,pdb_fn,chain_id,res_range=[],offset=0,model_num=None):
     """read a structure from a PDB file and return a list of residues
     @param mdl The IMP model
     @param pdb_fn    The file to read
     @param chain_id  Chain ID to read
     @param res_range Add only a specific set of residues
     @param offset    Apply an offset to the residue indexes of the PDB file
+    @param model_num Read multi-model PDB and return that model
     """
-    mh=IMP.atom.read_pdb(pdb_fn,mdl,IMP.atom.NonWaterNonHydrogenPDBSelector())
+    if model_num is None:
+        mh=IMP.atom.read_pdb(pdb_fn,mdl,IMP.atom.NonWaterNonHydrogenPDBSelector())
+    else:
+        mhs=IMP.atom.read_multimodel_pdb(pdb_fn,mdl,IMP.atom.NonWaterNonHydrogenPDBSelector())
+        if model_num>=len(mhs):
+            raise StructureError("you requested model num "+str(model_num)+\
+                                 " but the PDB file only contains "+str(len(mhs))+" models")
+        mh=mhs[model_num]
 
     # first update using offset:
     for rr in IMP.atom.get_by_type(mh,IMP.atom.RESIDUE_TYPE):

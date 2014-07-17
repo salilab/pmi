@@ -231,13 +231,14 @@ class _Molecule(_SystemBase):
         for orig,new in zip(self.residues,mol.residues):
             new.representations=orig.representations
 
-    def add_structure(self,pdb_fn,chain_id,res_range=[],offset=0):
+    def add_structure(self,pdb_fn,chain_id,res_range=[],offset=0,model_num=None):
         """Read a structure and store the coordinates.
         Returns the atomic residues (as a set)
         @param pdb_fn    The file to read
         @param chain_id  Chain ID to read
         @param res_range Add only a specific set of residues
         @param offset    Apply an offset to the residue indexes of the PDB file
+        @param model_num Read multi-model PDB and return that model
         \note After offset, we expect the PDB residue numbering to match the FASTA file
         """
         # get IMP.atom.Residues from the pdb file
@@ -252,8 +253,9 @@ class _Molecule(_SystemBase):
             idx=rh.get_index()
             internal_res=self.residues[idx-1]
             if internal_res.get_code()!=IMP.atom.get_one_letter_code(rh.get_residue_type()):
-                print 'ERROR: PDB residue is',IMP.atom.get_one_letter_code(rh.get_residue_type()), \
-                    'and sequence residue is',internal_res.get_code()
+                raise StructureError('ERROR: PDB residue is',
+                                     IMP.atom.get_one_letter_code(rh.get_residue_type()),
+                                     'and sequence residue is',internal_res.get_code())
             internal_res.set_structure(rh)
             atomic_res.add(internal_res)
         return atomic_res
@@ -333,6 +335,11 @@ class Sequences(object):
         return x in self.sequences
     def __getitem__(self,key):
         return self.sequences[key]
+    def __repr__(self):
+        ret=''
+        for s in self.sequences:
+            ret+='%s\t%s\n'%(s,self.sequences[s])
+        return ret
     def read_sequences(self,fasta_fn,name_map=None):
         # read all sequences
         handle = open(fasta_fn, "rU")
@@ -387,9 +394,11 @@ class _Residue(object):
         return self.hier
     def set_structure(self,res):
         if res.get_residue_type()!=self.hier.get_residue_type():
-            print "ERROR: adding structure to this residue, but it's the wrong type!"
-            sys.exit()
+            raise StructureError("Adding structure to this residue, but it's the wrong type!")
         for a in res.get_children():
             self.hier.add_child(a)
+            atype=IMP.atom.Atom(a).get_atom_type()
+            a.get_particle().set_name('Atom %s of residue %i'%(atype.__str__().strip('"'),
+                                                               self.hier.get_index()))
     def add_representation(self,rep_type,resolutions):
         self.representations[rep_type] |= set(resolutions)

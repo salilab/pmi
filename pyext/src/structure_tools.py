@@ -4,8 +4,14 @@
 import IMP
 import IMP.atom
 
-def get_structure(mdl,pdb_fn,chain,res_range=[],offset=0):
-    """return the residues from a pdb file with particular chain and range"""
+def get_structure(mdl,pdb_fn,chain_id,res_range=[],offset=0):
+    """read a structure from a PDB file and return a list of residues
+    @param mdl The IMP model
+    @param pdb_fn    The file to read
+    @param chain_id  Chain ID to read
+    @param res_range Add only a specific set of residues
+    @param offset    Apply an offset to the residue indexes of the PDB file
+    """
     mh=IMP.atom.read_pdb(pdb_fn,mdl,IMP.atom.NonWaterNonHydrogenPDBSelector())
 
     # first update using offset:
@@ -13,9 +19,9 @@ def get_structure(mdl,pdb_fn,chain,res_range=[],offset=0):
         IMP.atom.Residue(rr).set_index(IMP.atom.Residue(rr).get_index()+offset)
 
     if res_range==[]:
-        sel=IMP.atom.Selection(mh,chain=chain,atom_type=IMP.atom.AtomType('CA'))
+        sel=IMP.atom.Selection(mh,chain=chain_id,atom_type=IMP.atom.AtomType('CA'))
     else:
-        sel=IMP.atom.Selection(mh,chain=chain,residue_indexes=range(res_range[0],res_range[1]+1),
+        sel=IMP.atom.Selection(mh,chain=chain_id,residue_indexes=range(res_range[0],res_range[1]+1),
                                atom_type=IMP.atom.AtomType('CA'))
     ret=[]
     for p in sel.get_selected_particles():
@@ -23,7 +29,7 @@ def get_structure(mdl,pdb_fn,chain,res_range=[],offset=0):
         ret.append(res)
     return ret
 
-def fill_in_missing_backbone(mdl,residues):
+def fill_in_missing_backbone(residues):
     """Guess CA position based on surroundings.
     Only does this if the Residue has associated Representations
     for each residue:
@@ -69,7 +75,7 @@ def build_along_backbone(mdl,root,residues,rep_type,ca_centers=True):
     for frag_res in fragments:
         res_nums=[r.get_index() for r in frag_res]
         this_rep=frag_res[0].representations
-        name = "frag_%i-%i"%(res_nums[0],res_nums[1])
+        name = "frag_%i-%i"%(res_nums[0],res_nums[-1])
         if len(this_rep)==0:
             continue
         frag = IMP.atom.Fragment.setup_particle(mdl,mdl.add_particle(name),res_nums)

@@ -2,7 +2,7 @@ import IMP
 import IMP.atom
 import IMP.pmi
 from collections import defaultdict
-import IMP.pmi.structure_tools
+import IMP.pmi.structure_tools as structure_tools
 from Bio import SeqIO
 
 """
@@ -61,13 +61,13 @@ class System(_SystemBase):
         self.built=False
 
         # the root hierarchy node
-        self.system=self._create_hierarchy()
-        self.system.set_name("System")
+        self.hier=self._create_hierarchy()
+        self.hier.set_name("System")
 
     def create_state(self):
         """returns a new IMP.pmi.representation_new._State(), increment the state index"""
         self._number_of_states+=1
-        state = _State(self.system,self._number_of_states-1)
+        state = _State(self,self._number_of_states-1)
         self.states.append(state)
         return state
 
@@ -75,14 +75,16 @@ class System(_SystemBase):
         """returns the total number of states generated"""
         return self._number_of_states
 
-    def build(self):
+    def get_hierarchy(self):
+        return self.hier
+
+    def build(self,**kwargs):
         """call build on all states"""
         if not self.built:
             for state in self.states:
-                state.build()
+                state.build(**kwargs)
             self.built=True
-        return self.system
-
+        return self.hier
 
 #------------------------
 
@@ -90,14 +92,14 @@ class _State(_SystemBase):
     """This private class is constructed from within the System class.
     It wraps an IMP.atom.State
     """
-    def __init__(self,system_hierarchy,state_index):
+    def __init__(self,system,state_index):
         """Define a new state
-        @param system_hierarchy     the parent root hierarchy
-        @param state_index          the index of the new state
+        @param system        the PMI System
+        @param state_index   the index of the new state
         """
-        self.mdl = system_hierarchy.get_model()
-        self.system = system_hierarchy
-        self.hier = self._create_child(system_hierarchy)
+        self.mdl = system.get_hierarchy().get_model()
+        self.system = system
+        self.hier = self._create_child(system.get_hierarchy())
         self.hier.set_name("State_"+str(state_index))
         self.molecules = []
         IMP.atom.State.setup_particle(self.hier,state_index)
@@ -121,18 +123,18 @@ class _State(_SystemBase):
         if name in [mol.name for mol in self.molecules]:
            raise WrongMoleculeName('Cannot use a molecule name already used')
 
-        mol = _Molecule(self.hier,name,sequence,chain_id)
+        mol = _Molecule(self,name,sequence,chain_id,copy_num=0)
         self.molecules.append(mol)
         return mol
 
     def get_hierarchy(self):
         return self.hier
 
-    def build(self):
+    def build(self,**kwargs):
         """call build on all molecules (automatically makes copies)"""
         if not self.built:
             for mol in self.molecules:
-                mol.build()
+                mol.build(**kwargs)
             self.built=True
         return self.hier
 
@@ -145,25 +147,25 @@ class _Molecule(_SystemBase):
     Resolutions and copies can be registered, but are only created when build() is called
     """
 
-    def __init__(self,state_hierarchy,name,sequence,chain_id):
+    def __init__(self,state,name,sequence,chain_id,copy_num):
         """Create copy 0 of this molecule.
         Arguments:
-        @param state_hierarchy     the parent State-decorated hierarchy (IMP.atom.Hierarchy)
-        @param name                the name of the molecule (string)
-        @param sequence            sequence (string)
+        @param state      the parent PMI State
+        @param name       the name of the molecule (string)
+        @param sequence   sequence (string)
         """
         # internal data storage
-        self.mdl=state_hierarchy.get_model()
-        self.state=state_hierarchy
+        self.mdl=state.get_hierarchy().get_model()
+        self.state=state
         self.name=name
         self.sequence=sequence
-        self.number_of_copies=1
+        self.copies=[]
         self.built=False
 
         # create root node and set it as child to passed parent hierarchy
-        self.hier = self._create_child(self.state)
+        self.hier = self._create_child(self.state.get_hierarchy())
         self.hier.set_name(self.name)
-        IMP.atom.Copy.setup_particle(self.hier,0)
+        IMP.atom.Copy.setup_particle(self.hier,copy_num)
         IMP.atom.Chain.setup_particle(self.hier,chain_id)
 
         # create Residues from the sequence
@@ -173,7 +175,8 @@ class _Molecule(_SystemBase):
             self.residues.append(r)
 
     def __repr__(self):
-        return self.state.get_name()+'_'+self.name
+        return self.state.get_hierarchy().get_name()+'_'+self.name+ \
+            IMP.atom.Copy(self.hier).get_copy_number()
 
     def __getitem__(self,val):
         if isinstance(val,int):
@@ -197,25 +200,48 @@ class _Molecule(_SystemBase):
         else:
             print "ERROR: range ends must be int or str. Stride must be int."
 
+    def get_atomic_residues(self):
+        """ Return a set of Residues that have associated structure coordinates """
+        atomic_res=set()
+        for res in self.residues:
+            if len(res.hier.get_children())>0:
+                atomic_res.add(res)
+        return atomic_res
 
-    def add_copy(self,chain_id=''):
-        """Register a new copy of the Molecule.
-        Copies are only constructed when build() is called.
-        @param chain_id The id to assign to the new copy
+    def add_copy(self,pdb_fn,chain_id,res_range=[],offset=0,new_chain_id=None):
+        """Create a new Molecule storing the new coordinates.
+        Ensures that representations are identical to original molecule
+        Will verify that the sequence is the same as that of the first structure.
+        @param pdb_fn       The file to read
+        @param chain_id     Chain ID to read
+        @param res_range    Add only a specific set of residues
+        @param offset       Apply an offset to the residue indexes of the PDB file
+        @param new_chain_id If you want to set the chain ID of the copy to something
+                            (defaults to what you extract from the PDB file)
         """
-        self.number_of_copies+=1
+        if new_chain_id is None:
+            new_chain_id=chain_id
+        mol=_Molecule(self.state,self.name,self.sequence,new_chain_id,copy_num=len(self.copies)+1)
+        self.copies.append(mol)
+        new_atomic_res = mol.add_structure(pdb_fn,chain_id,res_range,offset)
+        new_idxs = set([r.get_index() for r in new_atomic_res])
+        orig_idxs = set([r.get_index() for r in self.get_atomic_residues()])
+        if new_idxs!=orig_idxs:
+            raise MoleculeCopyError("You added a structure for the copy with different residues")
+        for orig,new in zip(self.residues,mol.residues):
+            new.representations=orig.representations
 
-    def add_structure(self,pdb_fn,chain,res_range=[],offset=0):
+    def add_structure(self,pdb_fn,chain_id,res_range=[],offset=0):
         """Read a structure and store the coordinates.
         Returns the atomic residues (as a set)
         @param pdb_fn    The file to read
-        @param chain     Chain ID to read
+        @param chain_id  Chain ID to read
         @param res_range Add only a specific set of residues
         @param offset    Apply an offset to the residue indexes of the PDB file
         \note After offset, we expect the PDB residue numbering to match the FASTA file
         """
         # get IMP.atom.Residues from the pdb file
-        rhs=IMP.pmi.structure_tools.get_structure(self.mdl,pdb_fn,chain,res_range,offset)
+        rhs=structure_tools.get_structure(self.mdl,pdb_fn,chain_id,res_range,offset)
         if len(rhs)>len(self.residues):
             print 'ERROR: You are loading',len(rhs), \
                 'pdb residues for a sequence of length',len(self.residues),'(too many)'
@@ -267,30 +293,26 @@ class _Molecule(_SystemBase):
             print "ERROR: Allowed merge types:",allowed_types
             return
         if not self.built:
-            # fill in missing residues
-            #  for every Residue with tagged representation, build an IMP.atom.Residue and CAlpha
-
+            # for every Residue with tagged representation, build a CAlpha
+            # NOT IMPLEMENTED
+            structure_tools.fill_in_missing_backbone(self.residues)
 
             # group into Fragments along backbone
             if merge_type=="backbone":
-                IMP.pmi.structure_tools.build_along_backbone(self.mdl,self.hier,self.residues,
-                                                             IMP.atom.BALLS,ca_centers)
+                structure_tools.build_along_backbone(self.mdl,self.hier,self.residues,
+                                                     IMP.atom.BALLS,ca_centers)
 
 
             # group into Fragments by volume
             elif merge_type=="volume":
                 pass
 
-            # create requested number of copies
-            for nc in range(1,self.number_of_copies):
-                mhc=self._create_child(self.state)
-                mhc.set_name(self.name+"_%i"%nc)
-                IMP.atom.Copy.setup_particle(mhc,nc)
-                # TODO: DEEP COPY all representations, fragments, residues, and atoms
-                # ...
+            # build copies
+            for copy in self.copies:
+                copy.build()
 
             self.built=True
-        #IMP.atom.show_molecular_hierarchy(self.molecule)
+
         return self.hier
 
 
@@ -341,8 +363,8 @@ class _Residue(object):
         """
         self.molecule = molecule
         self.hier = IMP.atom.Residue.setup_particle(IMP.Particle(molecule.mdl),
-                                                    IMP.pmi.sequence_tools.get_residue_type_from_one_letter_code(code),
-                                                    index)
+                                IMP.pmi.sequence_tools.get_residue_type_from_one_letter_code(code),
+                                index)
         self.representations = defaultdict(set)
     def __str__(self):
         return self.get_code()
@@ -361,6 +383,8 @@ class _Residue(object):
         return IMP.atom.get_one_letter_code(self.hier.get_residue_type())
     def get_residue_type(self):
         return self.hier.get_residue_type()
+    def get_hierarchy(self):
+        return self.hier
     def set_structure(self,res):
         if res.get_residue_type()!=self.hier.get_residue_type():
             print "ERROR: adding structure to this residue, but it's the wrong type!"

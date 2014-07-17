@@ -4,11 +4,11 @@ import IMP.core
 import IMP.atom
 import IMP.isd
 import itertools
-import IMP.pmi.hierarchy_tools
+import IMP.pmi.hierarchy_tools as hierarchy_tools
 
 class CharmmForceFieldRestraint(object):
     """ Enable CHARMM force field """
-    def __init__(self,root,ff_temp=300.0):
+    def __init__(self,root,ff_temp=300.0,enable_nonbonded=True):
         """Setup the charmm restraint on a selection. Expecting atoms.
         @param root       The node at which to apply the restraint
         @param ff_temp    The temperature of the force field
@@ -20,7 +20,7 @@ class CharmmForceFieldRestraint(object):
         self.bonds_rs = IMP.RestraintSet(self.mdl, 1.0 / (kB * ff_temp), 'BONDED')
         self.nonbonded_rs = IMP.RestraintSet(self.mdl, 1.0 / (kB * ff_temp), 'NONBONDED')
         self.weight=1
-        self.label="None"
+        self.label=""
 
         ### charmm setup
         ff = IMP.atom.get_heavy_atom_CHARMM_parameters()
@@ -34,14 +34,15 @@ class CharmmForceFieldRestraint(object):
         atoms = IMP.atom.get_leaves(root)
 
         ### non-bonded forces
-        cont = IMP.container.ListSingletonContainer(atoms)
-        self.nbl = IMP.container.ClosePairContainer(cont, 4.0)
-        self.nbl.add_pair_filter(r.get_pair_filter())
-        #sf = IMP.atom.ForceSwitch(6.0, 7.0)
-        #pairscore = IMP.atom.LennardJonesPairScore(sf)
-        pairscore = IMP.isd.RepulsiveDistancePairScore(0,1)
-        pr=IMP.container.PairsRestraint(pairscore, self.nbl)
-        self.nonbonded_rs.add_restraint(pr)
+        if enable_nonbonded:
+            cont = IMP.container.ListSingletonContainer(atoms)
+            self.nbl = IMP.container.ClosePairContainer(cont, 4.0)
+            self.nbl.add_pair_filter(r.get_pair_filter())
+            #sf = IMP.atom.ForceSwitch(6.0, 7.0)
+            #pairscore = IMP.atom.LennardJonesPairScore(sf)
+            pairscore = IMP.isd.RepulsiveDistancePairScore(0,1)
+            pr=IMP.container.PairsRestraint(pairscore, self.nbl)
+            self.nonbonded_rs.add_restraint(pr)
 
         #self.scoring_function = IMP.core.RestraintsScoringFunction([r,pr])
 
@@ -49,9 +50,6 @@ class CharmmForceFieldRestraint(object):
 
     def set_label(self, label):
         self.label = label
-        self.rs.set_name(label)
-        for r in self.rs.get_restraints():
-            r.set_name(label)
 
     def add_to_model(self):
         self.mdl.add_restraint(self.bonds_rs)
@@ -74,8 +72,8 @@ class CharmmForceFieldRestraint(object):
         nonbonded_score = self.weight * self.nonbonded_rs.unprotected_evaluate(None)
         score=bonds_score+nonbonded_score
         output["_TotalScore"] = str(score)
-        output["CHARMM_BONDS"] = str(bonds_score)
-        output["CHARMM_NONBONDED"] = str(nonbonded_score)
+        output["CHARMM_BONDS"+str(self.label)] = str(bonds_score)
+        output["CHARMM_NONBONDED"+str(self.label)] = str(nonbonded_score)
         return output
 
 class ElasticNetworkRestraint(object):
@@ -109,7 +107,7 @@ class ElasticNetworkRestraint(object):
 
         ps=[]
         for osel in selection_dicts:
-            sel = IMP.pmi.hierarcy_tools.combine_dicts(osel,extra_sel)
+            sel = hierarchy_tools.combine_dicts(osel,extra_sel)
             ps+=IMP.atom.Selection(root,**sel).get_selected_particles()
             self.label+='_'
             if 'chain' in sel:

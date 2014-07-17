@@ -135,12 +135,10 @@ def parse_xlinks_davis(data_fn,
                 n2=name_map[n2]
             if n2 in named_offsets:
                 r2+=named_offsets[n2]
-
             xl={}
             xl['r1']={'molecule':n1,'residue_index':r1}
             xl['r2']={'molecule':n2,'residue_index':r2}
             xl['score']=score
-            print xl
             data[nl].append(xl)
 
     inf.close()

@@ -13,7 +13,7 @@ class ReplicaExchange0(object):
 
     def __init__(self, model,
                  representation=None,
-                 hierarchy=None,
+                 root_hier=None,
                  sample_objects=None, # DEPRECATED
                  monte_carlo_sample_objects=None,
                  molecular_dynamics_sample_objects=None,
@@ -45,12 +45,31 @@ class ReplicaExchange0(object):
         '''
 
         self.model = model
+        self.vars = {}
+
         ### add check hierarchy is multistate
-        if type(representation) == list:
-            self.is_multi_state = True
+        if representation:
+            if type(representation) == list:
+                self.is_multi_state = True
+                self.root_hiers = [r.prot for r in representation]
+                self.vars["number_of_states"] = len(representation)
+            else:
+                self.is_multi_state = False
+                self.root_hier = representation.prot
+                self.vars["number_of_states"] = 1
+        elif root_hier:
+            states = IMP.atom.get_by_type(root_hier,IMP.atom.STATE_TYPE)
+            self.vars["number_of_states"] = len(states)
+            if len(states)>1:
+                self.root_hiers = states
+                self.is_multi_state = True
+            else:
+                self.root_hier = root_hier
+                self.is_multi_state = False
         else:
-            self.is_multi_state = False
-        self.representation = representation
+            print "ERROR: Must provide representation or root_hier"
+            return
+
         self.crosslink_restraints = crosslink_restraints
         self.em_object_for_rmf = em_object_for_rmf
         self.monte_carlo_sample_objects = monte_carlo_sample_objects
@@ -59,11 +78,6 @@ class ReplicaExchange0(object):
         self.molecular_dynamics_sample_objects=molecular_dynamics_sample_objects
         self.output_objects = output_objects
         self.replica_exchange_object = replica_exchange_object
-        self.vars = {}
-        if self.is_multi_state:
-            self.vars["number_of_states"] = len(self.representation)
-        else:
-            self.vars["number_of_states"] = 1
         self.vars["monte_carlo_temperature"] = monte_carlo_temperature
         self.vars[
             "replica_exchange_minimum_temperature"] = replica_exchange_minimum_temperature
@@ -194,7 +208,7 @@ class ReplicaExchange0(object):
         if not self.is_multi_state:
             output.init_pdb_best_scoring(pdb_dir + "/" +
                                          self.vars["best_pdb_name_suffix"],
-                                         self.representation.prot,
+                                         self.root_hier,
                                          self.vars[
                                              "number_of_best_scoring_models"],
                                          replica_exchange=True)
@@ -202,7 +216,7 @@ class ReplicaExchange0(object):
             for n in range(self.vars["number_of_states"]):
                 output.init_pdb_best_scoring(pdb_dir + "/" + str(n) + "/" +
                                              self.vars["best_pdb_name_suffix"],
-                                             self.representation[n].prot,
+                                             self.root_hiers[n],
                                              self.vars[
                                                  "number_of_best_scoring_models"],
                                              replica_exchange=True)
@@ -212,18 +226,18 @@ class ReplicaExchange0(object):
         if not self.em_object_for_rmf is None:
             if not self.is_multi_state:
                 output_hierarchies = [
-                    self.representation.prot,
+                    self.root_hier,
                     self.em_object_for_rmf.get_density_as_hierarchy(
                     )]
             else:
-                output_hierarchies = [r.prot for r in self.representation]
+                output_hierarchies = self.root_hiers
                 output_hierarchies.append(
                     self.em_object_for_rmf.get_density_as_hierarchy())
         else:
             if not self.is_multi_state:
-                output_hierarchies = [self.representation.prot]
+                output_hierarchies = [self.root_hier]
             else:
-                output_hierarchies = [r.prot for r in self.representation]
+                output_hierarchies = self.root_hiers
 
 #----------------------------------------------
         print "Setting up and writing initial rmf coordinate file"
@@ -369,7 +383,7 @@ data = [("Rpb1",     pdbfile,   "A",     0.00000000,  (fastafile,    0)),
 
 class BuildModel1(object):
 
-    ''' this building scheme needs a data structure with the following fields 
+    ''' this building scheme needs a data structure with the following fields
           comp_name
           hier_name
           color
@@ -389,8 +403,8 @@ class BuildModel1(object):
 
     def __init__(self, representation):
       self.simo=representation
-    
-    
+
+
     def build_model(self,data_structure):
 
       domain_dict={}
@@ -409,7 +423,7 @@ class BuildModel1(object):
           res_range         = d[7][0:2]
           try:
              offset         = d[7][2]
-          except:  
+          except:
              offset         = 0
           read_em_files     = d[8]
           bead_size         = d[9]
@@ -418,40 +432,40 @@ class BuildModel1(object):
           em_num_components = d[12]
           em_txt_file_name  = d[13]
           em_mrc_file_name  = d[14]
-          
+
           if comp_name not in self.simo.get_component_names():
              self.simo.create_component(comp_name,color=0.0)
              self.simo.add_component_sequence(comp_name,fasta_file,fasta_id)
           outhier=self.autobuild(self.simo,comp_name,pdb_name,chain_id,res_range,read=read_em_files,beadsize=bead_size,color=color,offset=offset)
-          
+
           if not read_em_files is None:
              dens_hier=self.create_density(self.simo,comp_name,outhier,em_txt_file_name,em_mrc_file_name,em_num_components,read_em_files)
           else:
              dens_hier=[]
-          
+
           self.resdensities+=dens_hier
           domain_dict[hier_name]=outhier+dens_hier
-              
+
           if rb not in rigid_bodies:
               rigid_bodies[rb]=domain_dict[hier_name]
           else:
               rigid_bodies[rb]+=domain_dict[hier_name]
-          
+
           for k in super_rb:
               if k not in super_rigid_bodies:
                  super_rigid_bodies[k]=domain_dict[hier_name]
           else:
               super_rigid_bodies[k]+=domain_dict[hier_name]
-              
-     
-          
-          
-          
+
+
+
+
+
       for c in self.simo.get_component_names():
           self.simo.setup_component_sequence_connectivity(c)
           self.simo.setup_component_geometry(c)
 
-           
+
       for rb in rigid_bodies:
           self.simo.set_rigid_body_from_hierarchies(rigid_bodies[rb])
 
@@ -460,7 +474,7 @@ class BuildModel1(object):
 
       self.simo.set_floppy_bodies()
       self.simo.setup_bonds()
-      
+
     def get_density_hierarchies(self):
         return self.resdensities
 
@@ -475,8 +489,8 @@ class BuildModel1(object):
     def create_density(self,simo,compname,comphier,txtfilename,mrcfilename,num_components,read=True):
         #density generation for the EM restraint
        (pdbbits,beadbits)=self.get_pdb_bead_bits(comphier)
-       
-       
+
+
        if read:
           outhier=simo.add_component_density(compname,
                                    pdbbits,
@@ -491,53 +505,53 @@ class BuildModel1(object):
                                    resolution=0,      # resolution that you want to calculate the simulated density
                                    outputfile=txtfilename, # do the calculation
                                    outputmap=mrcfilename,
-                                   multiply_by_total_mass=True) # do the calculation and output the mrc                                    
+                                   multiply_by_total_mass=True) # do the calculation and output the mrc
        return outhier
 
     def autobuild(self,simo,comname,pdbname,chain,resrange,read=True,beadsize=5,color=0.0,offset=0):
-    
+
         if pdbname is not None and pdbname is not "IDEAL_HELIX" and pdbname is not "BEADS" :
           if resrange[-1]==-1: resrange=(resrange[0],len(simo.sequence_dict[comname]))
-          if read==False:    
-             outhier=simo.autobuild_model(comname, 
+          if read==False:
+             outhier=simo.autobuild_model(comname,
                               pdbname=pdbname,
                               chain=chain,
                               resrange=resrange,
                               resolutions=[0,1,10],
                               offset=offset,
-                              color=color, 
+                              color=color,
                               missingbeadsize=beadsize)
           else:
-             outhier=simo.autobuild_model(comname, 
+             outhier=simo.autobuild_model(comname,
                               pdbname=pdbname,
                               chain=chain,
-                              resrange=resrange,                          
-                              resolutions=[1,10], 
+                              resrange=resrange,
+                              resolutions=[1,10],
                               offset=offset,
                               color=color,
-                              missingbeadsize=beadsize)                                 
+                              missingbeadsize=beadsize)
 
 
         elif pdbname is not None and pdbname is "IDEAL_HELIX" and pdbname is not "BEADS" :
-          
+
           outhier=simo.add_component_ideal_helix(comname,
                                             resolutions=[1,10],
                                             resrange=resrange,
                                             color=color,
                                             show=False)
-                                            
-        elif pdbname is not None and pdbname is not "IDEAL_HELIX" and pdbname is "BEADS" :   
+
+        elif pdbname is not None and pdbname is not "IDEAL_HELIX" and pdbname is "BEADS" :
           outhier=simo.add_component_necklace(comname,resrange[0],resrange[1],beadsize,color=color)
-          
+
         else:
 
           seq_len=len(simo.sequence_dict[comname])
           outhier=simo.add_component_necklace(comname,
                                 begin=1,
                                 end=seq_len,
-                                length=beadsize)  
-                                
-        return outhier 
+                                length=beadsize)
+
+        return outhier
 
 
 # ----------------------------------------------------------------------

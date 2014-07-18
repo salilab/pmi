@@ -295,9 +295,6 @@ class _Molecule(_SystemBase):
             print "ERROR: Allowed merge types:",allowed_types
             return
         if not self.built:
-            # for every Residue with tagged representation, build a CAlpha
-            # NOT IMPLEMENTED
-            structure_tools.fill_in_missing_backbone(self.residues)
 
             # group into Fragments along backbone
             if merge_type=="backbone":
@@ -392,6 +389,11 @@ class _Residue(object):
         return self.hier.get_residue_type()
     def get_hierarchy(self):
         return self.hier
+    def get_has_coordinates(self):
+        if len(self.hier.get_children())>0:
+            return True
+        else:
+            return False
     def set_structure(self,res):
         if res.get_residue_type()!=self.hier.get_residue_type():
             raise StructureError("Adding structure to this residue, but it's the wrong type!")

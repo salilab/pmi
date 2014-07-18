@@ -113,4 +113,4 @@ def list_chunks_iterator(input_list, length):
     """ Yield successive length-sized chunks from a list.
     """
     for i in xrange(0, len(input_list), length):
-        yield list[i:i + length]             
+        yield input_list[i:i + length]             

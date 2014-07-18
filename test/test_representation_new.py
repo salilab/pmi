@@ -113,6 +113,30 @@ class RepresentationNewTest(IMP.test.TestCase):
         self.assertEqual(res1,set([m1.residues[i] for i in (0,1,4,5,6,7,8)]))
         self.assertEqual(res2,set([m2.residues[i] for i in range(0,13)]))
 
+    def test_get_atomic_non_atomic_residues(self):
+        '''test if, adding a structure, you get the atomic and non atomic residues sets
+        correctly'''
+        s=r.System()
+        st1=s.create_state()
+        seqs=r.Sequences(self.get_input_file_name('seqs.fasta'),
+                         name_map={'Protein_1':'Prot1',
+                                   'Protein_2':'Prot2'})
+
+        m1=st1.create_molecule("Prot1",sequence=seqs["Prot1"])
+        m2=st1.create_molecule("Prot2",sequence=seqs["Prot2"])
+        res1=m1.add_structure(self.get_input_file_name('prot.pdb'),
+                              chain_id='A',res_range=(1,10),offset=-54)
+
+        m1_atomic_residues=m1.get_atomic_residues()
+        m1_non_atomic_residues=m1.get_non_atomic_residues()
+        m1_all_residues=m1.get_residues()
+        m2_atomic_residues=m2.get_atomic_residues()
+        m2_non_atomic_residues=m2.get_non_atomic_residues()
+        m2_all_residues=m2.get_residues()
+      
+        self.assertEqual(m1_atomic_residues,m1_all_residues-m1_non_atomic_residues)
+        self.assertEqual(m2_atomic_residues,m2_all_residues-m2_non_atomic_residues)
+
     def test_residue_access(self):
         '''test functions to retrieve residues'''
         s=r.System()
@@ -150,7 +174,6 @@ class RepresentationNewTest(IMP.test.TestCase):
         for nna in (2,3,9):
             self.assertEqual(m1[nna].representations['balls'],set([1]))
 
-
     def test_build_system(self):
         s=r.System()
         st1=s.create_state()
@@ -161,6 +184,8 @@ class RepresentationNewTest(IMP.test.TestCase):
         m1=st1.create_molecule("Prot1",sequence=seqs["Prot1"])
         atomic_res=m1.add_structure(self.get_input_file_name('prot.pdb'),chain_id='A',
                                     res_range=(1,10),offset=-54)
+        non_atomic_res=m1.get_residues()-atomic_res
+        
         #m1.add_representation(m1[:]-atomic_res,resolutions=[1])
         m1.add_representation(atomic_res,resolutions=[0,1,10])
         m1.build(merge_type="backbone")

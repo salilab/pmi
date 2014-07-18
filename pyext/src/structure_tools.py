@@ -39,58 +39,56 @@ def get_structure(mdl,pdb_fn,chain_id,res_range=[],offset=0,model_num=None):
         ret.append(res)
     return ret
 
-def build_bead(residues,input_coord=None):
+def build_bead(model,residues,input_coord=None):
     """Generates a single bead
     """
     from math import pi
 
-    ds_frag = (residues[0].get_index(), residues[-1].get_index())
-    prt = IMP.Particle(self.m)
-    if ds_frag[0] == ds_frag[-1]:
-        h = IMP.atom.Residue.setup_particle(prt, rt, ds_frag[0])
-        h.set_name(name + '_%i_bead' % (ds_frag[0]))
-        prt.set_name(name + '_%i_bead' % (ds_frag[0]))
-        resolution=1
-    else:
-        h = IMP.atom.Fragment.setup_particle(prt)
-        h.set_name(name + '_%i-%i_bead' % (ds_frag[0], ds_frag[-1]))
-        prt.set_name(name + '_%i-%i_bead' % (ds_frag[0], ds_frag[-1]))
-        h.set_residue_indexes(range(ds_frag[0], ds_frag[-1] + 1))
-        resolution = len(h.get_residue_indexes())
 
+
+    ds_frag = (residues[0].get_index(), residues[-1].get_index())
+    prt = IMP.Particle(model)
     IMP.core.XYZR.setup_particle(prt)
     ptem = IMP.core.XYZR(prt)
-    mass = IMP.atom.get_mass_from_number_of_residues(resolution)
+    mass = IMP.atom.get_mass_from_number_of_residues(len(residues))
 
-    if resolution == 1:
+    if ds_frag[0] == ds_frag[-1]:
+        rt=residues[0].get_residue_type()
+        h =IMP.atom.Residue.setup_particle(prt, rt, ds_frag[0])
+        h.set_name('%i_bead' % (ds_frag[0]))
+        prt.set_name('%i_bead' % (ds_frag[0]))
         try:
             vol = IMP.atom.get_volume_from_residue_type(rt)
         except IMP.base.ValueException:
             vol = IMP.atom.get_volume_from_residue_type(
                 IMP.atom.ResidueType("ALA"))
         radius = IMP.algebra.get_ball_radius_from_volume_3d(vol)
-        IMP.atom.Mass.setup_particle(prt, mass)
         ptem.set_radius(radius)
     else:
+        h = IMP.atom.Fragment.setup_particle(prt)
+        h.set_name(name + '_%i-%i_bead' % (ds_frag[0], ds_frag[-1]))
+        prt.set_name(name + '_%i-%i_bead' % (ds_frag[0], ds_frag[-1]))
+        h.set_residue_indexes(range(ds_frag[0], ds_frag[-1] + 1))
         volume = IMP.atom.get_volume_from_mass(mass)
         radius = 0.8 * (3.0 / 4.0 / pi * volume) ** (1.0 / 3.0)
-        IMP.atom.Mass.setup_particle(prt, mass)
         ptem.set_radius(radius)
+    
+    IMP.atom.Mass.setup_particle(prt, mass)
     try:
         if not tuple(input_coord) is None:
-            ptem.set_coordinates(incoord)
+            ptem.set_coordinates(input_coord)
     except TypeError:
         pass
 
     return h
 
-def build_necklace(residues, resolution, input_coord=None):
+def build_necklace(model,residues, resolution, input_coord=None):
     '''
     Generates a string of beads with given length
     '''
     outhiers = []
     for chunk in list(IMP.pmi.hierarchy_tools.list_chunks_iterator(residues, resolution)):
-        outhiers += build_bead(chunk, input_coord=input_coord)
+        outhiers.append(build_bead(model,chunk, input_coord=input_coord))
     return outhiers
 
 
@@ -129,6 +127,7 @@ def build_along_backbone(mdl,root,residues,rep_type,ca_centers=True):
     fragments.append(cur_fragment)
 
     # build the representations within each fragment
+    
     for frag_res in fragments:
     
         if frag_res[0].get_has_coordinates():
@@ -194,13 +193,20 @@ def build_along_backbone(mdl,root,residues,rep_type,ca_centers=True):
 
         else:
             # frag_res is a continuous list of non-atomic residues with the same resolutions
-            resolutions=frag_res[0].representations
+            this_resolutions=frag_res[0].representations['balls']
             # check that we have only one resolution for now
+            if len(this_resolutions) > 1 : 
+                print "build_along_backbone Error: residues with missing atomic coordinate shoul be associated with only one resolution"
+                exit()
+            this_resolution=this_resolutions.pop()
+            
+            # create a root hierarchy node for the beads
             frag = IMP.atom.Fragment.setup_particle(mdl,mdl.add_particle(name),res_nums)
             root.add_child(frag)
-            frep = IMP.atom.Representation.setup_particle(frag,resolutions[0])
-            hiers=build_necklace(frag_res, resolutions[0])
-            frag.add_children(hiers)
+            frep = IMP.atom.Representation.setup_particle(frag,this_resolution)
+            hiers=build_necklace(mdl,frag_res,this_resolution)
+            for h in hiers:
+                frag.add_child(h)
                 
 def show_representation(node):
     print node

@@ -200,6 +200,13 @@ class _Molecule(_SystemBase):
         else:
             print "ERROR: range ends must be int or str. Stride must be int."
 
+    def get_residues(self):
+        """ Return all Residues as a set"""
+        all_res=set()
+        for res in self.residues:
+                all_res.add(res)
+        return all_res
+
     def get_atomic_residues(self):
         """ Return a set of Residues that have associated structure coordinates """
         atomic_res=set()
@@ -207,6 +214,14 @@ class _Molecule(_SystemBase):
             if len(res.hier.get_children())>0:
                 atomic_res.add(res)
         return atomic_res
+
+    def get_non_atomic_residues(self):
+        """ Return a set of Residues that don't have associated structure coordinates """
+        non_atomic_res=set()
+        for res in self.residues:
+            if len(res.hier.get_children())==0:
+                non_atomic_res.add(res)
+        return non_atomic_res
 
     def add_copy(self,pdb_fn,chain_id,res_range=[],offset=0,new_chain_id=None):
         """Create a new Molecule storing the new coordinates.

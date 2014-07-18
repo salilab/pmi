@@ -22,7 +22,7 @@ class dof(object):
         self.maxtrans_fb = 3.0
         self.mdl = mdl
 
-   def set_rigid_body_from_hierarchies(self, hiers, particles=None):
+    def set_rigid_body_from_hierarchies(self, hiers, particles=None):
         '''
         This method allows the construction of a rigid body given a list
         of hierarchies and or a list of particles.

@@ -72,7 +72,7 @@ def build_bead(model,residues,input_coord=None):
         volume = IMP.atom.get_volume_from_mass(mass)
         radius = 0.8 * (3.0 / 4.0 / pi * volume) ** (1.0 / 3.0)
         ptem.set_radius(radius)
-    
+
     IMP.atom.Mass.setup_particle(prt, mass)
     try:
         if not tuple(input_coord) is None:
@@ -127,9 +127,10 @@ def build_along_backbone(mdl,root,residues,rep_type,ca_centers=True):
     fragments.append(cur_fragment)
 
     # build the representations within each fragment
-    
+
     for frag_res in fragments:
-    
+        if len(frag_res[0].representations)==0:
+            continue
         if frag_res[0].get_has_coordinates():
             res_nums=[r.get_index() for r in frag_res]
             this_rep=frag_res[0].representations
@@ -178,14 +179,14 @@ def build_along_backbone(mdl,root,residues,rep_type,ca_centers=True):
                 # add all other resolutions
                 for resolution in set(this_rep['balls']) - set([0,1]):
                     resx=IMP.atom.Fragment.setup_particle(mdl,mdl.add_particle("resolution "+str(resolution)),res_nums)
-                    
+
                     # we create a dummy chain hierarchy and copy
                     # residues in it, beacuse the chain is required by simplified_along_backbone
                     c=IMP.atom.Chain.setup_particle(mdl,mdl.add_particle("dummy chain"),"X")
                     for residue in frag_res:
                         c.add_child(residue.hier)
                     sh  =IMP.atom.create_simplified_along_backbone(c,resolution)
-                    for ch in sh.get_children(): 
+                    for ch in sh.get_children():
                         resx.add_child(ch)
                     frep.add_representation(resx,IMP.atom.BALLS,resolution)
                     del sh
@@ -195,11 +196,11 @@ def build_along_backbone(mdl,root,residues,rep_type,ca_centers=True):
             # frag_res is a continuous list of non-atomic residues with the same resolutions
             this_resolutions=frag_res[0].representations['balls']
             # check that we have only one resolution for now
-            if len(this_resolutions) > 1 : 
-                print "build_along_backbone Error: residues with missing atomic coordinate shoul be associated with only one resolution"
+            if len(this_resolutions) > 1 :
+                print "build_along_backbone Error: residues with missing atomic coordinate should be associated with only one resolution"
                 exit()
             this_resolution=this_resolutions.pop()
-            
+
             # create a root hierarchy node for the beads
             frag = IMP.atom.Fragment.setup_particle(mdl,mdl.add_particle(name),res_nums)
             root.add_child(frag)
@@ -207,7 +208,7 @@ def build_along_backbone(mdl,root,residues,rep_type,ca_centers=True):
             hiers=build_necklace(mdl,frag_res,this_resolution)
             for h in hiers:
                 frag.add_child(h)
-                
+
 def show_representation(node):
     print node
     if IMP.atom.Representation.get_is_setup(node):

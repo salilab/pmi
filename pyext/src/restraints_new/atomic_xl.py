@@ -8,6 +8,7 @@ import IMP.container
 import IMP.isd_emxl
 import IMP.pmi.hierarchy_tools as hierarchy_tools
 import itertools
+from collections import defaultdict
 
 def setup_nuisance(m,initialvalue,minvalue,maxvalue,isoptimized=True):
     nuisance=IMP.isd.Scale.setup_particle(IMP.Particle(m),initialvalue)
@@ -17,6 +18,13 @@ def setup_nuisance(m,initialvalue,minvalue,maxvalue,isoptimized=True):
         nuisance.set_upper(maxvalue)
     nuisance.set_is_optimized(nuisance.get_nuisance_key(),isoptimized)
     return nuisance
+
+class SampleObjects(object):
+    """ hack class to provide things to sample for PMI::samplers """
+    def __init__(self,dict_name,pack_in_dict):
+        self.d={dict_name:pack_in_dict}
+    def get_particles_to_sample(self):
+        return self.d
 
 class AtomicCrossLinkMSRestraint(object):
     def __init__(self,
@@ -76,16 +84,26 @@ class AtomicCrossLinkMSRestraint(object):
         #### FIX THIS NUISANCE STUFF ###
         one_sigma=True
         one_psi=True
-        sigma_init=3.0
-        sigma_min=1.0
-        sigma_max=100.0
         psi_init=0.01
         psi_min=0.0
         psi_max=0.5
-        sig1 = setup_nuisance(self.mdl,sigma_init,sigma_min,sigma_max,self.nuis_opt)
-        sig2 = setup_nuisance(self.mdl,sigma_init,sigma_min,sigma_max,self.nuis_opt)
+        sig_threshold=4
+        self.sig_low = setup_nuisance(self.mdl,initialvalue=5.0,minvalue=1.0,
+                                      maxvalue=100.0,isoptimized=self.nuis_opt)
+        self.sig_high = setup_nuisance(self.mdl,initialvalue=10.0,minvalue=1.0,
+                                       maxvalue=100.0,isoptimized=self.nuis_opt)
         psi = setup_nuisance(self.mdl,psi_init,psi_min,psi_max,self.nuis_opt)
 
+
+        ### first read ahead to get the number of XL's per residue
+        num_xls_per_res=defaultdict(int)
+        for unique_id in data:
+            for nstate in range(nstates):
+                for xl in data[unique_id]:
+                    num_xls_per_res[str(xl['r1'])]+=1
+                    num_xls_per_res[str(xl['r2'])]+=1
+
+        ### now create all the XL's, using the number of restraints to guide sigmas
         xlrs=[]
         for unique_id in data:
 
@@ -103,7 +121,6 @@ class AtomicCrossLinkMSRestraint(object):
                 esel['state_index'] = nstate
 
                 for xl in data[unique_id]:
-
                     # select the particles (should grab all copies)
                     print '\t',xl
                     sel1 = IMP.atom.Selection(root,**hierarchy_tools.combine_dicts(
@@ -130,6 +147,20 @@ class AtomicCrossLinkMSRestraint(object):
                             dist=IMP.core.get_distance(IMP.core.XYZ(p1),IMP.core.XYZ(p2))
                             if dist>max_dist:
                                 continue
+                        num1=num_xls_per_res[str(xl['r1'])]
+                        num2=num_xls_per_res[str(xl['r2'])]
+                        if num1<sig_threshold:
+                            sig1=self.sig_low
+                            print "\tsig1 is low"
+                        else:
+                            sig1=self.sig_high
+                            print "\tsig1 is high"
+                        if num2<sig_threshold:
+                            sig2=self.sig_low
+                            print "\tsig2 is low"
+                        else:
+                            sig2=self.sig_high
+                            print "\tsig2 is high"
                         r.add_contribution([p1.get_index(),p2.get_index()],
                                            [sig1.get_particle_index(),sig2.get_particle_index()],
                                            psi.get_particle_index())
@@ -139,6 +170,10 @@ class AtomicCrossLinkMSRestraint(object):
                 if num_contributions==0:
                     raise RestraintSetupError("No contributions!")
                 print '\tCur XL score:',r.evaluate(False)
+
+        #print '>>> Number of XLs per residue'
+        #for key in num_xls_per_res:
+        #    print key,num_xls_per_res[key]
 
         self.rs=IMP.isd_emxl.LogWrapper(xlrs,self.weight)
 
@@ -158,9 +193,8 @@ class AtomicCrossLinkMSRestraint(object):
     def get_restraint_set(self):
         return self.rs
 
-    def get_particles_to_sample(self):
-        """ hack for a little MD. returns a list of all particles in the requested residues """
-        ret={'Floppy_Bodies_SimplifiedModel':[[]]}
+    def enable_sampling(self):
+        """ HACK! Adds necessary attributes to the selected residues for MD sampling"""
         vxkey = IMP.FloatKey('vx')
         vykey = IMP.FloatKey('vy')
         vzkey = IMP.FloatKey('vz')
@@ -171,9 +205,18 @@ class AtomicCrossLinkMSRestraint(object):
                 pp.add_attribute(vxkey, 0.0)
                 pp.add_attribute(vykey, 0.0)
                 pp.add_attribute(vzkey, 0.0)
-            ret['Floppy_Bodies_SimplifiedModel'][0]+=ps
-        print 'num particles to sample:',len(ret['Floppy_Bodies_SimplifiedModel'][0])
-        return ret
+
+    def get_md_sample_objects(self):
+        """ HACK! Make a SampleObjects class that can be used with PMI::samplers"""
+        ps=[]
+        for p in self.particles:
+            ps+=IMP.atom.Hierarchy(p).get_parent().get_children()
+        return [SampleObjects('Floppy_Bodies_SimplifiedModel',[ps])]
+
+    def get_mc_sample_objects(self,max_step):
+        """ HACK! Make a SampleObjects class that can be used with PMI::samplers"""
+        ps=[[self.sig_low,self.sig_high],max_step]
+        return [SampleObjects('Nuisances',ps)]
 
     def __repr__(self):
         return 'XL restraint with '+str(len(self.rs.get_restraint(0).get_number_of_restraints())) \
@@ -186,6 +229,11 @@ class AtomicCrossLinkMSRestraint(object):
         output["_TotalScore"] = str(score)
         output["AtomicXLRestraint" + self.label] = str(score)
 
+        ### HACK to make it easier to see the few sigmas
+        output["AtomicXLRestraint_sig_low"] = self.sig_low.get_scale()
+        output["AtomicXLRestraint_sig_high"] = self.sig_high.get_scale()
+        ######
+
         # count distances above length
         bad_count=0
         bad_av=0.0
@@ -196,14 +244,14 @@ class AtomicCrossLinkMSRestraint(object):
                 dist,sig1,sig2,psi = xl.get_contribution_scores(contr)
                 if self.label!='':
                     output["AtomicXLRestraint_xl%i_cont%i_%s_%s"%(nxl,contr,"Dist",self.label)]=str(dist)
-                    output["AtomicXLRestraint_xl%i_cont%i_%s_%s"%(nxl,contr,"Psi",self.label)]=str(psi)
-                    output["AtomicXLRestraint_xl%i_cont%i_%s_%s"%(nxl,contr,"Sig1",self.label)]=str(sig1)
-                    output["AtomicXLRestraint_xl%i_cont%i_%s_%s"%(nxl,contr,"Sig2",self.label)]=str(sig2)
+                    #output["AtomicXLRestraint_xl%i_cont%i_%s_%s"%(nxl,contr,"Psi",self.label)]=str(psi)
+                    #output["AtomicXLRestraint_xl%i_cont%i_%s_%s"%(nxl,contr,"Sig1",self.label)]=str(sig1)
+                    #output["AtomicXLRestraint_xl%i_cont%i_%s_%s"%(nxl,contr,"Sig2",self.label)]=str(sig2)
                 else:
                     output["AtomicXLRestraint_xl%i_cont%i_%s"%(nxl,contr,"Dist")]=str(dist)
-                    output["AtomicXLRestraint_xl%i_cont%i_%s"%(nxl,contr,"Psi")]=str(psi)
-                    output["AtomicXLRestraint_xl%i_cont%i_%s"%(nxl,contr,"Sig1")]=str(sig1)
-                    output["AtomicXLRestraint_xl%i_cont%i_%s"%(nxl,contr,"Sig2")]=str(sig2)
+                    #output["AtomicXLRestraint_xl%i_cont%i_%s"%(nxl,contr,"Psi")]=str(psi)
+                    #output["AtomicXLRestraint_xl%i_cont%i_%s"%(nxl,contr,"Sig1")]=str(sig1)
+                    #output["AtomicXLRestraint_xl%i_cont%i_%s"%(nxl,contr,"Sig2")]=str(sig2)
                 if dist<low_dist:
                     low_dist=dist
             if low_dist>self.length:

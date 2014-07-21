@@ -82,8 +82,6 @@ class AtomicCrossLinkMSRestraint(object):
         self.particles=[]
 
         #### FIX THIS NUISANCE STUFF ###
-        one_sigma=True
-        one_psi=True
         psi_init=0.01
         psi_min=0.0
         psi_max=0.5
@@ -193,7 +191,7 @@ class AtomicCrossLinkMSRestraint(object):
     def get_restraint_set(self):
         return self.rs
 
-    def enable_sampling(self):
+    def enable_md_sampling(self):
         """ HACK! Adds necessary attributes to the selected residues for MD sampling"""
         vxkey = IMP.FloatKey('vx')
         vykey = IMP.FloatKey('vy')

@@ -63,7 +63,8 @@ class CharmmForceFieldRestraint(object):
 
     def set_weight(self, weight):
         self.weight = weight
-        self.rs.set_weight(weight)
+        self.bonds_rs.set_weight(weight)
+        self.nonbonded_rs.set_weight(weight)
 
     def get_output(self):
         self.mdl.update()

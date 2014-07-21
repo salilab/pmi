@@ -188,15 +188,10 @@ class RepresentationNewTest(IMP.test.TestCase):
         
         #m1.add_representation(m1[:]-atomic_res,resolutions=[1])
         m1.add_representation(atomic_res,resolutions=[0,1,10])
+        m1.add_representation(non_atomic_res,resolutions=[10])
         m1.build(merge_type="backbone")
         frags = m1.get_hierarchy().get_children()
-        #IMP.atom.show_molecular_hierarchy(m1.get_hierarchy())
-        for f in frags:
-            self.assertTrue(IMP.atom.Fragment.get_is_setup(f))
-            self.assertTrue(IMP.atom.Representation.get_is_setup(f))
-            rep = IMP.atom.Representation(f)
-            self.assertEquals(rep.get_resolutions(),[0,1,10])
-            IMP.pmi.structure_tools.show_representation(rep)
+        IMP.atom.show_molecular_hierarchy(m1.get_hierarchy())
 
         # check if res0,1 created correctly
         for rnum,rname,anums in zip((1,2,5,6,7,8,9),'QEVVKDL',(9,9,7,7,9,8,8)):
@@ -218,7 +213,7 @@ class RepresentationNewTest(IMP.test.TestCase):
         sel = IMP.atom.Selection(m1.get_hierarchy(),residue_indexes=range(5,10),resolution=10)
         self.assertEquals(len(sel.get_selected_particles()),1)
         sel = IMP.atom.Selection(m1.get_hierarchy(),resolution=10)
-        self.assertEquals(len(sel.get_selected_particles()),2)
+        self.assertEquals(len(sel.get_selected_particles()),4)
         sel1 = IMP.atom.Selection(m1.get_hierarchy(),residue_index=1,resolution=10)
         sel2 = IMP.atom.Selection(m1.get_hierarchy(),residue_index=2,resolution=10)                    
         self.assertEquals(sel1.get_selected_particles(),sel2.get_selected_particles())     

@@ -66,8 +66,8 @@ def build_bead(model,residues,input_coord=None):
         ptem.set_radius(radius)
     else:
         h = IMP.atom.Fragment.setup_particle(prt)
-        h.set_name(name + '_%i-%i_bead' % (ds_frag[0], ds_frag[-1]))
-        prt.set_name(name + '_%i-%i_bead' % (ds_frag[0], ds_frag[-1]))
+        h.set_name('%i-%i_bead' % (ds_frag[0], ds_frag[-1]))
+        prt.set_name('%i-%i_bead' % (ds_frag[0], ds_frag[-1]))
         h.set_residue_indexes(range(ds_frag[0], ds_frag[-1] + 1))
         volume = IMP.atom.get_volume_from_mass(mass)
         radius = 0.8 * (3.0 / 4.0 / pi * volume) ** (1.0 / 3.0)
@@ -124,6 +124,7 @@ def build_along_backbone(mdl,root,residues,rep_type,ca_centers=True):
             fragments.append(cur_fragment)
             cur_fragment=[res]
         prev_rep=rep
+        prev_atomic=res.get_has_coordinates()
     fragments.append(cur_fragment)
 
     # build the representations within each fragment
@@ -131,10 +132,10 @@ def build_along_backbone(mdl,root,residues,rep_type,ca_centers=True):
     for frag_res in fragments:
         if len(frag_res[0].representations)==0:
             continue
+        res_nums=[r.get_index() for r in frag_res]
+        name = "frag_%i-%i"%(res_nums[0],res_nums[-1])
         if frag_res[0].get_has_coordinates():
-            res_nums=[r.get_index() for r in frag_res]
             this_rep=frag_res[0].representations
-            name = "frag_%i-%i"%(res_nums[0],res_nums[-1])
             if len(this_rep)==0:
                 continue
             frag = IMP.atom.Fragment.setup_particle(mdl,mdl.add_particle(name),res_nums)
@@ -200,7 +201,6 @@ def build_along_backbone(mdl,root,residues,rep_type,ca_centers=True):
                 print "build_along_backbone Error: residues with missing atomic coordinate should be associated with only one resolution"
                 exit()
             this_resolution=this_resolutions.pop()
-
             # create a root hierarchy node for the beads
             frag = IMP.atom.Fragment.setup_particle(mdl,mdl.add_particle(name),res_nums)
             root.add_child(frag)

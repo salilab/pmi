@@ -386,7 +386,7 @@ class _Residue(object):
                                 index)
         self.representations = defaultdict(set)
     def __str__(self):
-        return self.get_code()
+        return self.get_code()+str(self.get_index())
     def __repr__(self):
         return self.__str__()
     def __key(self):

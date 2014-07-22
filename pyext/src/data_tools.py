@@ -54,7 +54,7 @@ def parse_dssp(dssp_fn, limit_to_chains=''):
         if line[9] == " ":
             chain_break = True
         elif limit_to_chains != '' and line[11] not in limit_to_chains:
-            break
+            continue
 
         # gather line info
         if not chain_break:

@@ -83,6 +83,7 @@ class ElasticNetworkRestraint(object):
                  selection_dicts=None,
                  extra_sel=None,
                  label='',
+                 add_info_to_label=True,
                  strength=10.0,
                  dist_cutoff=10.0):
         """ Add harmonic restraints between all pairs below a specified distance
@@ -110,11 +111,12 @@ class ElasticNetworkRestraint(object):
         for osel in selection_dicts:
             sel = hierarchy_tools.combine_dicts(osel,extra_sel)
             ps+=IMP.atom.Selection(root,**sel).get_selected_particles()
-            self.label+='_'
-            if 'chain' in sel:
-                self.label+=sel['chain']
-            if 'residue_indexes' in sel:
-                self.label+=':%i-%i'%(min(sel['residue_indexes']),max(sel['residue_indexes']))
+            if add_info_to_label:
+                self.label+='_'
+                if 'chain' in sel:
+                    self.label+=sel['chain']
+                if 'residue_indexes' in sel:
+                    self.label+=':%i-%i'%(min(sel['residue_indexes']),max(sel['residue_indexes']))
 
         for pair in itertools.combinations(ps,2):
             distance=IMP.algebra.get_distance(IMP.core.XYZ(pair[0]).get_coordinates(),

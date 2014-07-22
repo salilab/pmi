@@ -108,28 +108,28 @@ class AtomicCrossLinkMSRestraint(object):
         for unique_id in data:
 
             # create restraint for this data point
-            print 'creating xl with unique id',unique_id
+            #print 'creating xl with unique id',unique_id
             r = IMP.isd_emxl.AtomicCrossLinkMSRestraint(self.mdl,self.length,slope,True)
             xlrs.append(r)
             num_contributions=0
 
             # add a contribution for each XL ambiguity option within each state
             for nstate in range(nstates):
-                print '\tstate',nstate
+                #print '\tstate',nstate
                 # select the state
                 esel = extra_sel.copy()
                 esel['state_index'] = nstate
 
                 for xl in data[unique_id]:
                     # select the particles (should grab all copies)
-                    print '\t',xl
+                    #print '\t',xl
                     sel1 = IMP.atom.Selection(root,**hierarchy_tools.combine_dicts(
                         xl['r1'],esel)).get_selected_particles()
-                    print '\tsel1:',sel1
+                    #print '\tsel1:',sel1
 
                     sel2 = IMP.atom.Selection(root,**hierarchy_tools.combine_dicts(
                         xl['r2'],esel)).get_selected_particles()
-                    print '\tsel2:',sel2
+                    #print '\tsel2:',sel2
                     self.particles+=sel1+sel2
 
                     # check to make sure all particles in selections are from different copies
@@ -146,16 +146,16 @@ class AtomicCrossLinkMSRestraint(object):
                     num2=num_xls_per_res[str(xl['r2'])]
                     if num1<sig_threshold:
                         sig1=self.sig_low
-                        print "\tsig1 is low"
+                        #print "\tsig1 is low"
                     else:
                         sig1=self.sig_high
-                        print "\tsig1 is high"
+                        #print "\tsig1 is high"
                     if num2<sig_threshold:
                         sig2=self.sig_low
-                        print "\tsig2 is low"
+                        #print "\tsig2 is low"
                     else:
                         sig2=self.sig_high
-                        print "\tsig2 is high"
+                        #print "\tsig2 is high"
 
                     # add each copy contribution to restraint
                     for p1,p2 in itertools.product(sel1,sel2):
@@ -167,16 +167,14 @@ class AtomicCrossLinkMSRestraint(object):
                                            [sig1.get_particle_index(),sig2.get_particle_index()],
                                            self.psi.get_particle_index())
                         dist,s1,s2,psv=r.get_contribution_scores(num_contributions)
-                        print '\tadding contribution, init dist',dist
+                        #print '\tadding contribution, init dist',dist
                         num_contributions+=1
                 if num_contributions==0:
                     raise RestraintSetupError("No contributions!")
-                print '\tCur XL score:',r.evaluate(False)
+                #print '\tCur XL score:',r.evaluate(False)
 
-        #print '>>> Number of XLs per residue'
-        #for key in num_xls_per_res:
-        #    print key,num_xls_per_res[key]
 
+        print 'created',len(xlrs),'XL restraints'
         self.rs=IMP.isd_emxl.LogWrapper(xlrs,self.weight)
 
     def set_weight(self,weight):

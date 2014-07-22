@@ -1,4 +1,4 @@
-## \example pmi/sandbox_example.py
+## \example pmi/rep_new_gtusc.py
 
 import IMP
 import IMP.pmi

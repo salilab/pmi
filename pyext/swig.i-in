@@ -16,3 +16,4 @@ IMP_SWIG_OBJECT(IMP::pmi, TransformMover, TransformMovers);
 %include "IMP/pmi/Symmetric.h"
 %include "IMP/pmi/SigmoidRestraintSphere.h"
 %include "IMP/pmi/TransformMover.h"
+%include "IMP/pmi/utilities.h"

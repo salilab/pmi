@@ -4,6 +4,7 @@ import IMP.core
 import IMP.atom
 import IMP.isd
 import itertools
+import IMP.pmi
 import IMP.pmi.hierarchy_tools as hierarchy_tools
 
 class CharmmForceFieldRestraint(object):
@@ -108,6 +109,7 @@ class ElasticNetworkRestraint(object):
             selection_dicts.append(None)
 
         ps=[]
+        print '\tcombining selections'
         for osel in selection_dicts:
             sel = hierarchy_tools.combine_dicts(osel,extra_sel)
             ps+=IMP.atom.Selection(root,**sel).get_selected_particles()
@@ -117,7 +119,7 @@ class ElasticNetworkRestraint(object):
                     self.label+=sel['chain']
                 if 'residue_indexes' in sel:
                     self.label+=':%i-%i'%(min(sel['residue_indexes']),max(sel['residue_indexes']))
-
+        '''
         for pair in itertools.combinations(ps,2):
             distance=IMP.algebra.get_distance(IMP.core.XYZ(pair[0]).get_coordinates(),
                                               IMP.core.XYZ(pair[1]).get_coordinates())
@@ -129,7 +131,10 @@ class ElasticNetworkRestraint(object):
             self.rs.add_restraint(pr)
             self.pairslist.append(IMP.ParticlePair(pair[0], pair[1]))
             self.pairslist.append(IMP.ParticlePair(pair[1], pair[0]))
-        print 'created elastic network',self.label,'with',self.rs.get_number_of_restraints(),'restraints'
+        '''
+        print '\tcreating network'
+        self.rs = IMP.pmi.create_elastic_network(ps,dist_cutoff,strength)
+        print '\tcreated elastic network',self.label,'with',self.rs.get_number_of_restraints(),'restraints'
 
     def set_label(self, label):
         self.label = label

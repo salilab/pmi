@@ -66,6 +66,7 @@ class CharmmForceFieldRestraint(object):
         self.weight = weight
         self.bonds_rs.set_weight(weight)
         self.nonbonded_rs.set_weight(weight)
+        print 'CHARMM: weight is',self.weight
 
     def get_output(self):
         self.mdl.update()
@@ -106,10 +107,10 @@ class ElasticNetworkRestraint(object):
         if selection_dict is not None:
             selection_dicts.append(selection_dict)
         if selection_dicts==[]:
-            selection_dicts.append(None)
+            print 'ERROR: no selections provided!'
+            exit()
 
         ps=[]
-        print '\tcombining selections'
         for osel in selection_dicts:
             sel = hierarchy_tools.combine_dicts(osel,extra_sel)
             ps+=IMP.atom.Selection(root,**sel).get_selected_particles()
@@ -119,22 +120,9 @@ class ElasticNetworkRestraint(object):
                     self.label+=sel['chain']
                 if 'residue_indexes' in sel:
                     self.label+=':%i-%i'%(min(sel['residue_indexes']),max(sel['residue_indexes']))
-        '''
-        for pair in itertools.combinations(ps,2):
-            distance=IMP.algebra.get_distance(IMP.core.XYZ(pair[0]).get_coordinates(),
-                                              IMP.core.XYZ(pair[1]).get_coordinates())
-            if distance>=dist_cutoff:
-                continue
-            ts=IMP.core.HarmonicDistancePairScore(distance,strength)
-            #print "ElasticNetworkConstraint: adding a restraint between %s and %s with distance %.3f" % (pair[0].get_name(),pair[1].get_name(),distance)
-            pr=IMP.core.PairRestraint(ts,pair)
-            self.rs.add_restraint(pr)
-            self.pairslist.append(IMP.ParticlePair(pair[0], pair[1]))
-            self.pairslist.append(IMP.ParticlePair(pair[1], pair[0]))
-        '''
-        print '\tcreating network'
+
         self.rs = IMP.pmi.create_elastic_network(ps,dist_cutoff,strength)
-        print '\tcreated elastic network',self.label,'with',self.rs.get_number_of_restraints(),'restraints'
+        print 'created elastic network',self.label,'with',self.rs.get_number_of_restraints(),'restraints'
 
     def set_label(self, label):
         self.label = label

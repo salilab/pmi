@@ -72,13 +72,13 @@ class Output(object):
         for tupl in particle_infos_for_pdb:
 
             (xyz, atom_index, atom_type, residue_type,
-             chain_id, residue_index) = tupl
+             chain_id, residue_index,radius) = tupl
 
             flpdb.write(impatom.get_pdb_string((xyz[0] - geometric_center[0],
                                                 xyz[1] - geometric_center[1],
                                                 xyz[2] - geometric_center[2]),
                                                atom_index, atom_type, residue_type,
-                                               chain_id, residue_index))
+                                               chain_id, residue_index,' ',1.00,radius))
 
         flpdb.write("ENDMOL\n")
         flpdb.close()
@@ -119,12 +119,13 @@ class Output(object):
                 resind = residue.get_index()
                 atomtype = impatom.Atom(p).get_atom_type()
                 xyz = list(IMP.core.XYZ(p).get_coordinates())
+                radius = IMP.core.XYZ(p).get_radius()
                 geometric_center[0] += xyz[0]
                 geometric_center[1] += xyz[1]
                 geometric_center[2] += xyz[2]
                 atom_count += 1
                 particle_infos_for_pdb.append((xyz, atom_index,
-                                               atomtype, rt, self.dictchain[name][protname], resind))
+                                               atomtype, rt, self.dictchain[name][protname], resind,radius))
                 resindexes_dict[protname].append(resind)
 
             elif impatom.Residue.get_is_setup(p):
@@ -670,8 +671,8 @@ class ProcessOutput(object):
 
             if line_number % get_every != 0:
                 continue
-            if line_number % 100 == 0:
-                print "ProcessOutput.get_fields: read line %s from file %s" % (str(line_number), self.filename)
+            #if line_number % 1000 == 0:
+            #    print "ProcessOutput.get_fields: read line %s from file %s" % (str(line_number), self.filename)
             try:
                 d = eval(line)
             except:
@@ -751,16 +752,31 @@ def plot_fields(fields, framemin=None, framemax=None):
 
 
 def plot_field_histogram(
-    name, values, valuename=None, bins=40, color='#66CCCC', format="png",
-        reference_xline=None, yplotrange=None, normalized=True):
+    name, values_lists, valuename=None, bins=40, color='#66CCCC', format="png",
+        reference_xline=None, yplotrange=None, xplotrange=None,normalized=True):
+        
+    '''This function is plotting a list of histograms from a value list.
+    @param name the name of the plot
+    @param value_lists the list of list of values eg: [[...],[...],[...]]
+    @param valuename=None the y-label
+    @param bins=40  the number of bins 
+    @param color="#66CCCC" the color for the histogram line
+    @param format="png" output format
+    @param reference_xline=None plot a reference line parallel to the y-axis
+    @param yplotrange=None the range for the y-axis
+    @param normalized=True whether the histogram is normalized or not'''
+    
     import matplotlib.pyplot as plt
     fig = plt.figure(figsize=(8.0, 8.0))
 
-    plt.hist(
-        [float(y) for y in values],
-        bins=bins,
-        color=color,
-        normed=normalized)
+    
+    for values in values_lists:
+        plt.hist(
+           [float(y) for y in values],
+           bins=bins,
+           color=color,
+           normed=normalized,histtype='step')
+           
     # plt.title(name,size="xx-large")
     plt.tick_params(labelsize=12, pad=10)
     if valuename is None:
@@ -771,6 +787,9 @@ def plot_field_histogram(
 
     if not yplotrange is None:
         plt.ylim(yplotrange)
+    if not xplotrange is None:
+        plt.xlim(xplotrange)
+
     if not reference_xline is None:
         plt.axvline(
             reference_xline,

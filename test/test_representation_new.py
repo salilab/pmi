@@ -214,6 +214,8 @@ class RepresentationNewTest(IMP.test.TestCase):
         self.assertEquals(len(sel.get_selected_particles()),1)
         sel = IMP.atom.Selection(m1.get_hierarchy(),resolution=10)
         self.assertEquals(len(sel.get_selected_particles()),4)
+        sel = IMP.atom.Selection(m1.get_hierarchy(),resolution=1)
+        self.assertEquals(len(sel.get_selected_particles()),9)
         sel1 = IMP.atom.Selection(m1.get_hierarchy(),residue_index=1,resolution=10)
         sel2 = IMP.atom.Selection(m1.get_hierarchy(),residue_index=2,resolution=10)                    
         self.assertEquals(sel1.get_selected_particles(),sel2.get_selected_particles())     

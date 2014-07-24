@@ -22,6 +22,7 @@ class ReplicaExchange0(object):
                  monte_carlo_temperature=1.0,
                  replica_exchange_minimum_temperature=1.0,
                  replica_exchange_maximum_temperature=2.5,
+                 num_sample_rounds=1,
                  number_of_best_scoring_models=500,
                  monte_carlo_steps=10,
                  molecular_dynamics_steps=10,
@@ -83,6 +84,7 @@ class ReplicaExchange0(object):
             "replica_exchange_minimum_temperature"] = replica_exchange_minimum_temperature
         self.vars[
             "replica_exchange_maximum_temperature"] = replica_exchange_maximum_temperature
+        self.vars["num_sample_rounds"] = num_sample_rounds
         self.vars[
             "number_of_best_scoring_models"] = number_of_best_scoring_models
         self.vars["monte_carlo_steps"] = monte_carlo_steps
@@ -267,10 +269,11 @@ class ReplicaExchange0(object):
             self.show_info()
 
         for i in range(self.vars["number_of_frames"]):
-            if sampler_mc is not None:
-                sampler_mc.optimize(self.vars["monte_carlo_steps"])
-            if sampler_md is not None:
-                sampler_md.optimize(self.vars["molecular_dynamics_steps"])
+            for nr in range(self.vars["num_sample_rounds"]):
+                if sampler_mc is not None:
+                    sampler_mc.optimize(self.vars["monte_carlo_steps"])
+                if sampler_md is not None:
+                    sampler_md.optimize(self.vars["molecular_dynamics_steps"])
             score = self.model.evaluate(False)
             output.set_output_entry("score", score)
 

@@ -440,7 +440,7 @@ class Output(object):
         #    {"IMP_VERSIONS": str(self.get_versions_of_relevant_modules())})
 
         flstat = open(name, 'r')
-        
+
         passed=True
         for l in flstat:
             test_dict = eval(l)
@@ -752,31 +752,43 @@ def plot_fields(fields, framemin=None, framemax=None):
 
 
 def plot_field_histogram(
-    name, values_lists, valuename=None, bins=40, color='#66CCCC', format="png",
-        reference_xline=None, yplotrange=None, xplotrange=None,normalized=True):
-        
+    name, values_lists, valuename=None, bins=40, colors=None, format="png",
+        reference_xline=None, yplotrange=None, xplotrange=None,normalized=True,
+        leg_names=None):
+
     '''This function is plotting a list of histograms from a value list.
     @param name the name of the plot
     @param value_lists the list of list of values eg: [[...],[...],[...]]
     @param valuename=None the y-label
-    @param bins=40  the number of bins 
-    @param color="#66CCCC" the color for the histogram line
+    @param bins=40  the number of bins
+    @param colors=None. If None, will use rainbow. Else will use specific list
     @param format="png" output format
     @param reference_xline=None plot a reference line parallel to the y-axis
     @param yplotrange=None the range for the y-axis
-    @param normalized=True whether the histogram is normalized or not'''
-    
-    import matplotlib.pyplot as plt
-    fig = plt.figure(figsize=(8.0, 8.0))
+    @param normalized=True whether the histogram is normalized or not
+    @param leg_names names for the legend
+    '''
 
-    
-    for values in values_lists:
-        plt.hist(
-           [float(y) for y in values],
-           bins=bins,
-           color=color,
-           normed=normalized,histtype='step')
-           
+    import matplotlib.pyplot as plt
+    import matplotlib.cm as cm
+    import numpy as np
+    fig = plt.figure(figsize=(18.0, 9.0))
+
+    if colors is None:
+        colors = cm.rainbow(np.linspace(0, 1, len(values_lists)))
+    for nv,values in enumerate(values_lists):
+        col=colors[nv]
+        if leg_names is not None:
+            label=leg_names[nv]
+        else:
+            label=str(nv)
+        h=plt.hist(
+            [float(y) for y in values],
+            bins=bins,
+            color=col,
+            normed=normalized,histtype='step',lw=4,
+            label=label)
+
     # plt.title(name,size="xx-large")
     plt.tick_params(labelsize=12, pad=10)
     if valuename is None:
@@ -789,6 +801,8 @@ def plot_field_histogram(
         plt.ylim(yplotrange)
     if not xplotrange is None:
         plt.xlim(xplotrange)
+
+    plt.legend(loc=2)
 
     if not reference_xline is None:
         plt.axvline(
@@ -861,7 +875,7 @@ def plot_scatter_xy_data(x,y,labelx="None",labely="None",
     #rc('font', **{'family':'serif','serif':['Palatino']})
     rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
     #rc('text', usetex=True)
-    
+
     fig, axs = plt.subplots(1)
 
     axs0 = axs

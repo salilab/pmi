@@ -60,7 +60,7 @@ def parse_dssp(dssp_fn, limit_to_chains=''):
         if not chain_break:
             pdb_res_num = int(line[5:10])
             chain = line[11]
-            sstype = line[16]
+            sstype = sse_dict[line[16]]
             beta_id = line[33]
 
         # decide whether to extend or store the SSE
@@ -68,9 +68,9 @@ def parse_dssp(dssp_fn, limit_to_chains=''):
             cur_sse = {'chain':chain,'residue_indexes':[pdb_res_num]}
         elif sstype != prev_sstype or chain_break:
             # add cur_sse to the right place
-            if sse_dict[prev_sstype] in ['helix', 'loop']:
-                sses[sse_dict[prev_sstype]].append([cur_sse])
-            if sse_dict[prev_sstype] == 'beta':
+            if prev_sstype in ['helix', 'loop']:
+                sses[prev_sstype].append([cur_sse])
+            elif prev_sstype == 'beta':
                 beta_dict[prev_beta_id].append(cur_sse)
             cur_sse = {'chain':chain,'residue_indexes':[pdb_res_num]}
         else:
@@ -83,9 +83,9 @@ def parse_dssp(dssp_fn, limit_to_chains=''):
             prev_beta_id = beta_id
     # final SSE processing
     if not prev_sstype is None:
-        if sse_dict[prev_sstype] in ['helix', 'loop']:
-            sses[sse_dict[prev_sstype]].append([cur_sse])
-        if sse_dict[prev_sstype] == 'beta':
+        if prev_sstype in ['helix', 'loop']:
+            sses[prev_sstype].append([cur_sse])
+        elif prev_sstype == 'beta':
             beta_dict[prev_beta_id].append(cur_sse)
     # gather betas
     for beta_sheet in beta_dict:

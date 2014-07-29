@@ -120,7 +120,9 @@ class ElasticNetworkRestraint(object):
                     self.label+=sel['chain']
                 if 'residue_indexes' in sel:
                     self.label+=':%i-%i'%(min(sel['residue_indexes']),max(sel['residue_indexes']))
-
+        if len(ps)==0:
+            print 'ERROR: Did not select any particles!'
+            exit()
         self.rs = IMP.pmi.create_elastic_network(ps,dist_cutoff,strength)
         print 'created elastic network',self.label,'with',self.rs.get_number_of_restraints(),'restraints'
 

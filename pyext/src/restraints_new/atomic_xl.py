@@ -9,6 +9,7 @@ import IMP.isd_emxl
 import IMP.pmi.hierarchy_tools as hierarchy_tools
 import itertools
 from collections import defaultdict
+import os.path
 
 def setup_nuisance(m,rs,init_val,min_val,max_val,is_opt=True):
     nuisance=IMP.isd.Scale.setup_particle(IMP.Particle(m),init_val)
@@ -125,11 +126,11 @@ class AtomicCrossLinkMSRestraint(object):
                     #print '\t',xl
                     sel1 = IMP.atom.Selection(root,**hierarchy_tools.combine_dicts(
                         xl['r1'],esel)).get_selected_particles()
-                    #print '\tsel1:',sel1
+                    #print '\tsel1:',xl['r1']
 
                     sel2 = IMP.atom.Selection(root,**hierarchy_tools.combine_dicts(
                         xl['r2'],esel)).get_selected_particles()
-                    #print '\tsel2:',sel2
+                    #print '\tsel2:',xl['r2']
                     self.particles+=sel1+sel2
 
                     # check to make sure all particles in selections are from different copies
@@ -223,6 +224,46 @@ class AtomicCrossLinkMSRestraint(object):
         return 'XL restraint with '+str(len(self.rs.get_restraint(0).get_number_of_restraints())) \
             + ' data points'
 
+    def plot_violations(self,out_fn,thresh=0.1,model_nums=[0]):
+        """Write a CMM file of all xinks. Draws a line for the closest contribution
+        Will draw in green if prob>thresh, red if <thresh"""
+
+        outf=open(out_fn,'w')
+        outf.write('<marker_set name="%s"> \n' % os.path.splitext(os.path.basename(out_fn))[0])
+        nv=0
+        cmd=''
+        for nxl in range(self.rs.get_number_of_restraints()):
+            xl=IMP.isd_emxl.AtomicCrossLinkMSRestraint.cast(self.rs.get_restraint(nxl))
+            prob = xl.unprotected_evaluate(None)
+            low_dist=1e6
+            low_contr=-1
+            for contr in range(xl.get_number_of_contributions()):
+                dist,sig1,sig2,psi = xl.get_contribution_scores(contr)
+                if dist<low_dist:
+                    low_dist = dist
+                    low_contr = contr
+            if prob<thresh:
+                print "VIOLATION",xl,xl.get_contribution_scores(low_contr)
+            if prob<thresh:
+                r=1; g=0; b=0;
+            else:
+                r=0; g=1; b=0;
+            c1=IMP.core.XYZ(self.mdl,xl.get_contribution(low_contr)[0]).get_coordinates()
+            c2=IMP.core.XYZ(self.mdl,xl.get_contribution(low_contr)[1]).get_coordinates()
+            a1=IMP.atom.Atom(self.mdl,xl.get_contribution(low_contr)[0])
+            a2=IMP.atom.Atom(self.mdl,xl.get_contribution(low_contr)[1])
+            for mnum in model_nums:
+                cmd+='#%i:%i.%s '%(mnum,IMP.atom.get_residue(a1).get_index(),IMP.atom.get_chain(a1).get_id())
+                cmd+='#%i:%i.%s '%(mnum,IMP.atom.get_residue(a2).get_index(),IMP.atom.get_chain(a2).get_id())
+            outf.write('<marker id= "%d" x="%.3f" y="%.3f" z="%.3f" radius="0.8"  r="%.2f" g="%.2f" b="%.2f"/> \n' % (nv,c1[0],c1[1],c1[2],r,g,b))
+            outf.write('<marker id= "%d" x="%.3f" y="%.3f" z="%.3f" radius="0.8"  r="%.2f" g="%.2f" b="%.2f"/> \n' % (nv+1,c2[0],c2[1],c2[2],r,g,b))
+            outf.write('<link id1= "%d" id2="%d" radius="0.8" r="%.2f" g="%.2f" b="%.2f"/> \n' % (nv,nv+1,r,g,b))
+            nv+=2
+        outf.write('</marker_set>\n')
+        outf.close()
+        print cmd
+        print 'wrote xlinks to',out_fn
+
     def get_output(self):
         self.mdl.update()
         output = {}
@@ -237,19 +278,24 @@ class AtomicCrossLinkMSRestraint(object):
 
         # count distances above length
         bad_count=0
-        #bad_av=0.0
         for nxl in range(self.rs.get_number_of_restraints()):
             xl=IMP.isd_emxl.AtomicCrossLinkMSRestraint.cast(self.rs.get_restraint(nxl))
             prob = xl.unprotected_evaluate(None)
             if prob<0.1:
                 bad_count+=1
             low_dist=1e6
+            low_contr=None
             for contr in range(xl.get_number_of_contributions()):
                 dist,sig1,sig2,psi = xl.get_contribution_scores(contr)
                 if dist<low_dist:
                     low_dist=dist
+                    low_contr=contr
+            dist,sig1,sig2,psi = xl.get_contribution_scores(low_contr)
             output["AtomicXLRestraint_%i_%s"%(nxl,"Prob")]=str(prob)
             output["AtomicXLRestraint_%i_%s"%(nxl,"BestDist")]=str(low_dist)
+            # note:
+            output["AtomicXLRestraint_%i_%s"%(nxl,"Sig1")]=str(sig1)
+            output["AtomicXLRestraint_%i_%s"%(nxl,"Sig2")]=str(sig2)
 
         output["AtomicXLRestraint_NumViol"] = str(bad_count)
         return output

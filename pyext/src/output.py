@@ -118,8 +118,8 @@ class Output(object):
                 rt = residue.get_residue_type()
                 resind = residue.get_index()
                 atomtype = impatom.Atom(p).get_atom_type()
-                xyz = list(impcore.XYZ(p).get_coordinates())
-                radius = impcore.XYZR(p).get_radius()
+                xyz = list(IMP.core.XYZ(p).get_coordinates())
+                radius = IMP.core.XYZR(p).get_radius()
                 geometric_center[0] += xyz[0]
                 geometric_center[1] += xyz[1]
                 geometric_center[2] += xyz[2]
@@ -140,7 +140,7 @@ class Output(object):
                     resindexes_dict[protname].append(resind)
                 atom_index += 1
                 rt = residue.get_residue_type()
-                xyz = impcore.XYZ(p).get_coordinates()
+                xyz = IMP.core.XYZ(p).get_coordinates()
                 geometric_center[0] += xyz[0]
                 geometric_center[1] += xyz[1]
                 geometric_center[2] += xyz[2]
@@ -162,7 +162,7 @@ class Output(object):
                     resindexes_dict[protname].append(resind)
                 atom_index += 1
                 rt = impatom.ResidueType('BEA')
-                xyz = impcore.XYZ(p).get_coordinates()
+                xyz = IMP.core.XYZ(p).get_coordinates()
                 geometric_center[0] += xyz[0]
                 geometric_center[1] += xyz[1]
                 geometric_center[2] += xyz[2]
@@ -176,7 +176,7 @@ class Output(object):
                     rt = impatom.ResidueType('BEA')
                     resindexes = IMP.pmi.tools.get_residue_indexes(p)
                     resind = resindexes[len(resindexes) / 2]
-                    xyz = impcore.XYZ(p).get_coordinates()
+                    xyz = IMP.core.XYZ(p).get_coordinates()
                     geometric_center[0] += xyz[0]
                     geometric_center[1] += xyz[1]
                     geometric_center[2] += xyz[2]
@@ -328,7 +328,7 @@ class Output(object):
             for pp in pps:
                 imprmf.add_geometry(
                     self.dictionary_rmfs[name],
-                    impcore.EdgePairGeometry(pp))
+                    IMP.core.EdgePairGeometry(pp))
 
     def write_rmf(self, name):
         imprmf.save_frame(self.dictionary_rmfs[name])

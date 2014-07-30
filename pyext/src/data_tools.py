@@ -95,7 +95,8 @@ def parse_dssp(dssp_fn, limit_to_chains=''):
 def parse_xlinks_davis(data_fn,
                        max_num=-1,
                        name_map={},
-                       named_offsets={}):
+                       named_offsets={},
+                       use_chains={}):
     """ Format from Trisha Davis. Lines are:
     ignore ignore seq1 seq2 >Name(res) >Name(res) score
     @param data_fn       The data file name
@@ -115,6 +116,7 @@ def parse_xlinks_davis(data_fn,
 
     inf=open(data_fn,'r')
     data=defaultdict(list)
+    found=set()
     for nl,l in enumerate(inf):
         if max_num==-1 or nl<max_num:
             ig1,ig2,seq1,seq2,s1,s2,score=l.split()
@@ -135,6 +137,11 @@ def parse_xlinks_davis(data_fn,
                 n2=name_map[n2]
             if n2 in named_offsets:
                 r2+=named_offsets[n2]
+            key=tuple(sorted(['%s.%i'%(n1,r1),'%s.%i'%(n2,r2)]))
+            if key in found:
+                print 'skipping duplicated xl',key
+                continue
+            found.add(key)
             xl={}
             xl['r1']={'molecule':n1,'residue_index':r1}
             xl['r2']={'molecule':n2,'residue_index':r2}

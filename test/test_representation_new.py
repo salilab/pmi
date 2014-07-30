@@ -69,8 +69,8 @@ class RepresentationNewTest(IMP.test.TestCase):
         self.assertEqual(m2.get_hierarchy().get_parent(),st.get_hierarchy())
         self.assertEqual(m1.mdl,st.mdl)
         self.assertEqual(m2.mdl,st.mdl)
-        self.assertEqual(m1.name,"Prot1")
-        self.assertEqual(m2.name,"Prot2")
+        self.assertEqual(m1.get_name(),"Prot1")
+        self.assertEqual(m2.get_name(),"Prot2")
         self.assertEqual(len(st.get_hierarchy().get_children()),2)
 
         # create state 2 with one molecule
@@ -78,7 +78,7 @@ class RepresentationNewTest(IMP.test.TestCase):
         m3=st2.create_molecule("Prot3",sequence=seqs["Prot3"])
         self.assertEqual(m3.get_hierarchy().get_parent(),st2.get_hierarchy())
         self.assertEqual(m3.mdl,st2.mdl)
-        self.assertEqual(m3.name,"Prot3")
+        self.assertEqual(m3.get_name(),"Prot3")
         self.assertEqual(len(st2.get_hierarchy().get_children()),1)
 
         # test if sequences are OK
@@ -133,7 +133,7 @@ class RepresentationNewTest(IMP.test.TestCase):
         m2_atomic_residues=m2.get_atomic_residues()
         m2_non_atomic_residues=m2.get_non_atomic_residues()
         m2_all_residues=m2.get_residues()
-      
+
         self.assertEqual(m1_atomic_residues,m1_all_residues-m1_non_atomic_residues)
         self.assertEqual(m2_atomic_residues,m2_all_residues-m2_non_atomic_residues)
 
@@ -185,48 +185,45 @@ class RepresentationNewTest(IMP.test.TestCase):
         atomic_res=m1.add_structure(self.get_input_file_name('prot.pdb'),chain_id='A',
                                     res_range=(1,10),offset=-54)
         non_atomic_res=m1.get_residues()-atomic_res
-        
+
         #m1.add_representation(m1[:]-atomic_res,resolutions=[1])
         m1.add_representation(atomic_res,resolutions=[0,1,10])
         m1.add_representation(non_atomic_res,resolutions=[10])
-        m1.build(merge_type="backbone")
-        frags = m1.get_hierarchy().get_children()
-        IMP.atom.show_molecular_hierarchy(m1.get_hierarchy())
+        hier = m1.build(merge_type="backbone")
+        frags = hier.get_children()
+
+        # check names
+        self.assertEquals(hier.get_name(),'Prot1')
+        self.assertEquals(m1.__repr__(),'System.State_0.Prot1.0')
 
         # check if res0,1 created correctly
         for rnum,rname,anums in zip((1,2,5,6,7,8,9),'QEVVKDL',(9,9,7,7,9,8,8)):
-            res = IMP.atom.Selection(m1.get_hierarchy(),residue_index=rnum,
+            res = IMP.atom.Selection(hier,residue_index=rnum,
                                      resolution=0).get_selected_particles()
             self.assertEquals(len(res),anums)
             self.assertEquals(IMP.atom.Residue(IMP.atom.Atom(res[0]).get_parent()).get_residue_type(),
                               IMP.pmi.sequence_tools.get_residue_type_from_one_letter_code(rname))
-            res1 = IMP.atom.Selection(m1.get_hierarchy(),residue_index=rnum,
+            res1 = IMP.atom.Selection(hier,residue_index=rnum,
                                       resolution=1).get_selected_particles()
             self.assertEquals(len(res1),1)
             self.assertEquals(IMP.atom.Residue(res1[0]).get_residue_type(),
                               IMP.pmi.sequence_tools.get_residue_type_from_one_letter_code(rname))
-        
+
         # check if res10 created correctly
-        
-        sel = IMP.atom.Selection(m1.get_hierarchy(),residue_indexes=[1,2],resolution=10)
+        sel = IMP.atom.Selection(hier,residue_indexes=[1,2],resolution=10)
         self.assertEquals(len(sel.get_selected_particles()),1)
-        sel = IMP.atom.Selection(m1.get_hierarchy(),residue_indexes=range(5,10),resolution=10)
+        sel = IMP.atom.Selection(hier,residue_indexes=range(5,10),resolution=10)
         self.assertEquals(len(sel.get_selected_particles()),1)
-        sel = IMP.atom.Selection(m1.get_hierarchy(),resolution=10)
+        sel = IMP.atom.Selection(hier,resolution=10)
         self.assertEquals(len(sel.get_selected_particles()),4)
-        sel = IMP.atom.Selection(m1.get_hierarchy(),resolution=1)
+        sel = IMP.atom.Selection(hier,resolution=1)
         self.assertEquals(len(sel.get_selected_particles()),9)
-        sel1 = IMP.atom.Selection(m1.get_hierarchy(),residue_index=1,resolution=10)
-        sel2 = IMP.atom.Selection(m1.get_hierarchy(),residue_index=2,resolution=10)                    
-        self.assertEquals(sel1.get_selected_particles(),sel2.get_selected_particles())     
-        sel1 = IMP.atom.Selection(m1.get_hierarchy(),residue_index=1,resolution=10)
-        sel2 = IMP.atom.Selection(m1.get_hierarchy(),residue_index=5,resolution=10)                    
-        self.assertNotEquals(sel1.get_selected_particles(),sel2.get_selected_particles())  
-        
-        # check if we build the missing parts correctly
-        
-        
-        # check if non-atomic are correct (TODO: must guess CA positions for non-atomic parts to work)
+        sel1 = IMP.atom.Selection(hier,residue_index=1,resolution=10)
+        sel2 = IMP.atom.Selection(hier,residue_index=2,resolution=10)
+        self.assertEquals(sel1.get_selected_particles(),sel2.get_selected_particles())
+        sel1 = IMP.atom.Selection(hier,residue_index=1,resolution=10)
+        sel2 = IMP.atom.Selection(hier,residue_index=5,resolution=10)
+        self.assertNotEquals(sel1.get_selected_particles(),sel2.get_selected_particles())
 
     def test_create_copies(self):
         '''Test creation of Copies'''

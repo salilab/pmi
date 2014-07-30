@@ -54,7 +54,7 @@ class _SystemBase(object):
 
 class System(_SystemBase):
     """This class initializes the root node of the global IMP.atom.Hierarchy."""
-    def __init__(self,mdl=None):
+    def __init__(self,mdl=None,name="System"):
         _SystemBase.__init__(self,mdl)
         self._number_of_states = 0
         self.states = []
@@ -62,7 +62,7 @@ class System(_SystemBase):
 
         # the root hierarchy node
         self.hier=self._create_hierarchy()
-        self.hier.set_name("System")
+        self.hier.set_name(name)
 
     def create_state(self):
         """returns a new IMP.pmi.representation_new._State(), increment the state index"""
@@ -70,6 +70,9 @@ class System(_SystemBase):
         state = _State(self,self._number_of_states-1)
         self.states.append(state)
         return state
+
+    def __repr__(self):
+        return self.hier.get_name()
 
     def get_number_of_states(self):
         """returns the total number of states generated"""
@@ -105,6 +108,9 @@ class _State(_SystemBase):
         IMP.atom.State.setup_particle(self.hier,state_index)
         self.built=False
 
+    def __repr__(self):
+        return self.system.__repr__()+'.'+self.hier.get_name()
+
     def create_molecule(self,name,sequence=None,chain_id='',molecule_to_copy=None):
         """Create a new Molecule within this State
         @param name                the name of the molecule (string) it must not
@@ -120,7 +126,7 @@ class _State(_SystemBase):
            raise WrongMoleculeName('A molecule name should not contain underscores characters')
 
         # check whether the molecule name is already assigned
-        if name in [mol.name for mol in self.molecules]:
+        if name in [mol.get_name() for mol in self.molecules]:
            raise WrongMoleculeName('Cannot use a molecule name already used')
 
         mol = _Molecule(self,name,sequence,chain_id,copy_num=0)
@@ -157,14 +163,13 @@ class _Molecule(_SystemBase):
         # internal data storage
         self.mdl=state.get_hierarchy().get_model()
         self.state=state
-        self.name=name
         self.sequence=sequence
         self.copies=[]
         self.built=False
 
         # create root node and set it as child to passed parent hierarchy
         self.hier = self._create_child(self.state.get_hierarchy())
-        self.hier.set_name(self.name)
+        self.hier.set_name(name)
         IMP.atom.Copy.setup_particle(self.hier,copy_num)
         IMP.atom.Chain.setup_particle(self.hier,chain_id)
 
@@ -175,8 +180,9 @@ class _Molecule(_SystemBase):
             self.residues.append(r)
 
     def __repr__(self):
-        return self.state.get_hierarchy().get_name()+'_'+self.name+ \
-            IMP.atom.Copy(self.hier).get_copy_number()
+        return self.state.__repr__()+'.'+self.hier.get_name()+'.'+ \
+            str(IMP.atom.Copy(self.hier).get_copy_index())
+
 
     def __getitem__(self,val):
         if isinstance(val,int):
@@ -190,6 +196,9 @@ class _Molecule(_SystemBase):
 
     def get_hierarchy(self):
         return self.hier
+
+    def get_name(self):
+        return self.hier.get_name()
 
     def residue_range(self,a,b,stride=1):
         """get residue range. Use integers to get 0-indexing, or strings to get PDB-indexing"""
@@ -236,7 +245,8 @@ class _Molecule(_SystemBase):
         """
         if new_chain_id is None:
             new_chain_id=chain_id
-        mol=_Molecule(self.state,self.name,self.sequence,new_chain_id,copy_num=len(self.copies)+1)
+        mol=_Molecule(self.state,self.get_hierarchy().get_name(),
+                      self.sequence,new_chain_id,copy_num=len(self.copies)+1)
         self.copies.append(mol)
         new_atomic_res = mol.add_structure(pdb_fn,chain_id,res_range,offset)
         new_idxs = set([r.get_index() for r in new_atomic_res])

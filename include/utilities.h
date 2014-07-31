@@ -16,7 +16,7 @@
 IMPPMI_BEGIN_NAMESPACE
 
 //! Create an elastic network restraint set
-IMPPMIEXPORT RestraintSet * create_elastic_network(const Particles &ps,
+RestraintSet * create_elastic_network(const Particles &ps,
                                       Float dist_cutoff,
                                       Float strength){
   IMP_NEW(RestraintSet,rs,(ps[0]->get_model(),"ElasticNetwork"));

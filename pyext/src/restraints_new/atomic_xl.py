@@ -224,6 +224,26 @@ class AtomicCrossLinkMSRestraint(object):
         return 'XL restraint with '+str(len(self.rs.get_restraint(0).get_number_of_restraints())) \
             + ' data points'
 
+    def load_nuisances_from_stat_file(self,in_fn,nframe):
+        """Read a stat file and load all the sigmas.
+        This is potentially quite stupid.
+        It's also a hack since the sigmas should be stored in the RMF file.
+        Also, requires same sigma for each contribution.
+        """
+        import subprocess
+        for nxl in range(self.rs.get_number_of_restraints()):
+            xl=IMP.isd_emxl.AtomicCrossLinkMSRestraint.cast(self.rs.get_restraint(nxl))
+            sig1_val = float(subprocess.check_output(["process_output.py","-f",in_fn,
+                                    "-s","AtomicXLRestraint_%i_Sig1"%nxl]).split('\n>')[1+nframe])
+            sig2_val = float(subprocess.check_output(["process_output.py","-f",in_fn,
+                                    "-s","AtomicXLRestraint_%i_Sig2"%nxl]).split('\n>')[1+nframe])
+
+            for contr in range(xl.get_number_of_contributions()):
+                sig1,sig2=xl.get_contribution_sigmas(contr)
+                IMP.isd.Scale(self.mdl,sig1).set_scale(sig1_val)
+                IMP.isd.Scale(self.mdl,sig2).set_scale(sig2_val)
+        print 'loaded sigmas from file'
+
     def plot_violations(self,out_fn,thresh=0.1,model_nums=[0]):
         """Write a CMM file of all xinks. Draws a line for the closest contribution
         Will draw in green if prob>thresh, red if <thresh"""

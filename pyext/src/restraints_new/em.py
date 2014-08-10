@@ -18,7 +18,6 @@ class EMRestraint(object):
         # some parameters
         self.mdl = root.get_model()
         self.label = label
-        self.weight=1
         self.dmap = IMP.em.read_map(map_fn,IMP.em.MRCReaderWriter())
         dh = self.dmap.get_header()
         dh.set_resolution(resolution)
@@ -36,6 +35,7 @@ class EMRestraint(object):
         fr = IMP.em.FitRestraint(ps,self.dmap)
         self.rs = IMP.RestraintSet(self.mdl,weight,"FitRestraint")
         self.rs.add_restraint(fr)
+        self.set_weight(weight)
 
     def set_weight(self,weight):
         self.weight = weight

@@ -12,8 +12,7 @@ class EMRestraint(object):
                  voxel_size=None,
                  weight=1.0,
                  label="",
-                 selection_dict=None,
-                 use_rigid_bodies=True):
+                 selection_dict=None):
         """ create a FitRestraint. can provide rigid bodies instead of individual particles """
 
         # some parameters
@@ -21,7 +20,7 @@ class EMRestraint(object):
         self.label = label
         self.weight=1
         self.dmap = IMP.em.read_map(map_fn,IMP.em.MRCReaderWriter())
-        dh = dmap.get_header()
+        dh = self.dmap.get_header()
         dh.set_resolution(resolution)
         if voxel_size:
             self.dmap.update_voxel_size(voxel_size)
@@ -30,9 +29,13 @@ class EMRestraint(object):
         elif type(origin)==list:
             self.dmap.set_origin(*origin)
 
-        ps=IMP.atom.Selection(root,**selection_dict).get_selected_particles()
-        fr = IMP.em.FitRestraint(ps,self.dmap,use_rigid_bodies=use_rigid_bodies)
+        if selection_dict:
+            ps=IMP.atom.Selection(root,**selection_dict).get_selected_particles()
+        else:
+            ps=IMP.atom.get_leaves(root)
+        fr = IMP.em.FitRestraint(ps,self.dmap)
         self.rs = IMP.RestraintSet(self.mdl,weight,"FitRestraint")
+        self.rs.add_restraint(fr)
 
     def set_weight(self,weight):
         self.weight = weight
@@ -42,13 +45,13 @@ class EMRestraint(object):
         self.label = label
 
     def add_to_model(self):
-        self.m.add_restraint(self.rs)
+        self.mdl.add_restraint(self.rs)
 
     def get_restraint_set(self):
         return self.rs
 
     def get_output(self):
-        self.m.update()
+        self.mdl.update()
         output = {}
         score = self.weight * self.rs.unprotected_evaluate(None)
         output["_TotalScore"] = str(score)

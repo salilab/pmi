@@ -106,20 +106,20 @@ class ElasticNetworkRestraint(object):
             selection_dicts=[]
         if selection_dict is not None:
             selection_dicts.append(selection_dict)
-        if selection_dicts==[]:
-            print 'ERROR: no selections provided!'
-            exit()
 
-        ps=[]
-        for osel in selection_dicts:
-            sel = hierarchy_tools.combine_dicts(osel,extra_sel)
-            ps+=IMP.atom.Selection(root,**sel).get_selected_particles()
-            if add_info_to_label:
-                self.label+='_'
-                if 'chain' in sel:
-                    self.label+=sel['chain']
-                if 'residue_indexes' in sel:
-                    self.label+=':%i-%i'%(min(sel['residue_indexes']),max(sel['residue_indexes']))
+        if selection_dicts==[]:
+            ps=IMP.atom.get_leaves(root)
+        else:
+            ps=[]
+            for osel in selection_dicts:
+                sel = hierarchy_tools.combine_dicts(osel,extra_sel)
+                ps+=IMP.atom.Selection(root,**sel).get_selected_particles()
+                if add_info_to_label:
+                    self.label+='_'
+                    if 'chain' in sel:
+                        self.label+=sel['chain']
+                    if 'residue_indexes' in sel:
+                        self.label+=':%i-%i'%(min(sel['residue_indexes']),max(sel['residue_indexes']))
         if len(ps)==0:
             print 'ERROR: Did not select any particles!'
             exit()

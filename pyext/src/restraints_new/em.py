@@ -15,6 +15,13 @@ class EMRestraint(object):
                  selection_dict=None):
         """ create a FitRestraint. can provide rigid bodies instead of individual particles """
 
+        print 'FitRestraint: setup'
+        print '\tmap_fn',map_fn
+        print '\tresolution',resolution
+        print '\tvoxel_size',voxel_size
+        print '\torigin',origin
+        print '\tweight',weight
+
         # some parameters
         self.mdl = root.get_model()
         self.label = label
@@ -27,7 +34,9 @@ class EMRestraint(object):
             self.dmap.set_origin(origin)
         elif type(origin)==list:
             self.dmap.set_origin(*origin)
-
+        else:
+            print 'FitRestraint did not recognize format of origin'
+            exit()
         if selection_dict:
             ps=IMP.atom.Selection(root,**selection_dict).get_selected_particles()
         else:

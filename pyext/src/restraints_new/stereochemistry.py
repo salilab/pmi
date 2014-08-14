@@ -151,3 +151,73 @@ class ElasticNetworkRestraint(object):
         score = self.weight * self.rs.unprotected_evaluate(None)
         output["ElasticNetworkRestraint_" + self.label] = str(score)
         return output
+
+class SymmetryRestraint(object):
+    def __init__(self,root,
+                 symmetry_transforms,
+                 selection_dicts,
+                 extra_sel={"atom_type":IMP.atom.AtomType("CA")},
+                 label='',
+                 strength=10.0):
+        """ Add harmonic restraints to the mean positions between multiple selections.
+        @param root                Root hierarchy for applying selections
+        @param symmetry_transforms Transforms moving each selection to the first selection
+        @param selection_dicts     Selection kwargs for each symmetry unit
+        @param extra_sel           Additional selection arguments (e.g., CA only!)
+        @param strength            The elastic bond strength
+
+        \note the length of symmetry_transforms should be one more than the length of selection_dicts
+        Because all transforms are WRT the first selection
+        """
+        self.mdl = root.get_model()
+        self.rs = IMP.RestraintSet(self.mdl, "Symmetry")
+        self.weight = 1
+        self.label=label
+
+        if len(selection_dicts)!=len(symmetry_transforms)+1:
+            print 'Error: There should be one more symmetry transform than selection dict'
+            exit()
+        harmonic = IMP.core.Harmonic(0.,strength)
+        sel0 = hierarchy_tools.combine_dicts(selection_dicts[0],extra_sel)
+        ps0 = IMP.atom.Selection(root,**sel0).get_selected_particles()
+        if len(ps0)==0:
+            print "Error: did not select any particles!"
+            exit()
+        for sdict,trans in zip(selection_dicts[1:],symmetry_transforms):
+            sel = hierarchy_tools.combine_dicts(sdict,extra_sel)
+            ps=IMP.atom.Selection(root,**sel).get_selected_particles()
+            if len(ps0)!=len(ps):
+                print "Error: did not select the same number of particles!"
+                exit()
+            pair_score = IMP.core.TransformedDistancePairScore(harmonic,trans)
+            for p0,p1 in zip(ps0,ps):
+                r = IMP.core.PairRestraint(pair_score,(p0,p1))
+                self.rs.add_restraint(r)
+
+        print 'created symmetry network with',self.rs.get_number_of_restraints(),'restraints'
+
+    def set_label(self, label):
+        self.label = label
+        self.rs.set_name(label)
+        for r in self.rs.get_restraints():
+            r.set_name(label)
+
+    def add_to_model(self):
+        self.mdl.add_restraint(self.rs)
+
+    def get_restraint(self):
+        return self.rs
+
+    def set_weight(self, weight):
+        self.weight = weight
+        self.rs.set_weight(weight)
+
+    def get_excluded_pairs(self):
+        return self.pairslist
+
+    def get_output(self):
+        self.mdl.update()
+        output = {}
+        score = self.weight * self.rs.unprotected_evaluate(None)
+        output["SymmetryRestraint_" + self.label] = str(score)
+        return output

@@ -2102,6 +2102,10 @@ class Precision(object):
           
           pair_combination_list=list(itertools.combinations(structure_pointers,2))
           
+          if len(pair_combination_list)==0: 
+             print "get_precision> no structure selected. Check the skip parameter."
+             exit()
+          
           my_pair_combination_list=IMP.pmi.tools.chunk_list_into_segments(pair_combination_list,number_of_processes)[rank]
           my_length=len(my_pair_combination_list)
           

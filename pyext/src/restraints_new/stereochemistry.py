@@ -33,24 +33,6 @@ class CharmmForceFieldRestraint(object):
         ff.add_radii(root)
         ff.add_well_depths(root)
         atoms = IMP.atom.get_leaves(root)
-        print 'CHARMM STUFF'
-        total_bonds=0
-        for nseg in range(topology.get_number_of_segments()):
-            seg = topology.get_segment(nseg)
-            nbonds=0
-            nimproper=0
-            ndihedrals=0
-            nangles=0
-            for res in seg.get_residues():
-                nbonds+=res.get_number_of_bonds()
-                nimproper+=res.get_number_of_impropers()
-                ndihedrals+=res.get_number_of_dihedrals()
-                nangles+=res.get_number_of_angles()
-            print seg,'nres',len(seg.get_residues()),'num bonds',nbonds,'num impropers',nimproper,'num dihedrals',ndihedrals,'num angles',nangles
-            total_bonds+=nbonds
-        print 'total bonds',total_bonds
-        #exit()
-
 
         ### non-bonded forces
         if enable_nonbonded:

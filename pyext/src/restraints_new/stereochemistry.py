@@ -20,7 +20,7 @@ class CharmmForceFieldRestraint(object):
         self.mdl = root.get_model()
         self.bonds_rs = IMP.RestraintSet(self.mdl, 1.0 / (kB * ff_temp), 'BONDED')
         self.nonbonded_rs = IMP.RestraintSet(self.mdl, 1.0 / (kB * ff_temp), 'NONBONDED')
-        self.weight=1
+        self.weight=1.0
         self.label=""
 
         ### charmm setup
@@ -33,6 +33,24 @@ class CharmmForceFieldRestraint(object):
         ff.add_radii(root)
         ff.add_well_depths(root)
         atoms = IMP.atom.get_leaves(root)
+        print 'CHARMM STUFF'
+        total_bonds=0
+        for nseg in range(topology.get_number_of_segments()):
+            seg = topology.get_segment(nseg)
+            nbonds=0
+            nimproper=0
+            ndihedrals=0
+            nangles=0
+            for res in seg.get_residues():
+                nbonds+=res.get_number_of_bonds()
+                nimproper+=res.get_number_of_impropers()
+                ndihedrals+=res.get_number_of_dihedrals()
+                nangles+=res.get_number_of_angles()
+            print seg,'nres',len(seg.get_residues()),'num bonds',nbonds,'num impropers',nimproper,'num dihedrals',ndihedrals,'num angles',nangles
+            total_bonds+=nbonds
+        print 'total bonds',total_bonds
+        #exit()
+
 
         ### non-bonded forces
         if enable_nonbonded:
@@ -51,6 +69,8 @@ class CharmmForceFieldRestraint(object):
 
     def set_label(self, label):
         self.label = label
+        self.bonds_rs.set_name(self.bonds_rs.get_name()+label)
+        self.nonbonded_rs.set_name(self.nonbonded_rs.get_name()+label)
 
     def add_to_model(self):
         self.mdl.add_restraint(self.bonds_rs)
@@ -150,6 +170,7 @@ class ElasticNetworkRestraint(object):
         output = {}
         score = self.weight * self.rs.unprotected_evaluate(None)
         output["ElasticNetworkRestraint_" + self.label] = str(score)
+        output["_TotalScore"] = str(score)
         return output
 
 class SymmetryRestraint(object):
@@ -220,4 +241,5 @@ class SymmetryRestraint(object):
         output = {}
         score = self.weight * self.rs.unprotected_evaluate(None)
         output["SymmetryRestraint_" + self.label] = str(score)
+        output["_TotalScore"] = str(score)
         return output

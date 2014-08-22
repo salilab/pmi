@@ -158,9 +158,9 @@ def build_along_backbone(mdl,root,residues,rep_type,ca_centers=True):
                     for residue in frag_res:
                         if ca_centers==True:
                             rp1 = IMP.Particle(mdl)
-                            rp1.set_name("res1_idx%i"%residue.get_index())
+                            rp1.set_name("Residue_%i"%residue.get_index())
                             rt=residue.get_residue_type()
-                            res1.add_child(IMP.atom.Residue.setup_particle(IMP.Particle(mdl),residue.hier))
+                            res1.add_child(IMP.atom.Residue.setup_particle(rp1,residue.hier))
                             try:
                                 vol = IMP.atom.get_volume_from_residue_type(rt)
                             except IMP.base.ValueException:

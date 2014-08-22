@@ -140,8 +140,9 @@ def build_along_backbone(mdl,root,residues,rep_type,ca_centers=True):
                 continue
             frag = IMP.atom.Fragment.setup_particle(mdl,mdl.add_particle(name),res_nums)
             root.add_child(frag)
-            frep = IMP.atom.Representation.setup_particle(frag,0)
-
+            
+            primary_rep_num=min(this_rep['balls'])
+            frep = IMP.atom.Representation.setup_particle(frag,primary_rep_num)
             if 'balls' in this_rep:
                 # if atomic, add the residues as child (inside another fragment - check RMF)
                 if 0 in this_rep['balls']:
@@ -175,7 +176,10 @@ def build_along_backbone(mdl,root,residues,rep_type,ca_centers=True):
                             shape = IMP.algebra.Sphere3D(IMP.core.XYZ(calpha).get_coordinates(),radius)
                             IMP.core.XYZR.setup_particle(rp1,shape)
                             IMP.atom.Mass.setup_particle(rp1,mass)
-                    frep.add_representation(res1,IMP.atom.BALLS,1)
+                    if primary_rep_num==1:
+                        frag.add_child(res1)
+                    else:
+                        frep.add_representation(res1,IMP.atom.BALLS,1)
 
                 # add all other resolutions
                 for resolution in set(this_rep['balls']) - set([0,1]):
@@ -189,9 +193,13 @@ def build_along_backbone(mdl,root,residues,rep_type,ca_centers=True):
                     sh  =IMP.atom.create_simplified_along_backbone(c,resolution)
                     for ch in sh.get_children():
                         resx.add_child(ch)
-                    frep.add_representation(resx,IMP.atom.BALLS,resolution)
+                    if primary_rep_num==resolution:
+                        frag.add_child(resx)
+                    else:
+                        frep.add_representation(resx,IMP.atom.BALLS,resolution)
                     del sh
                     del c
+
 
         else:
             # frag_res is a continuous list of non-atomic residues with the same resolutions

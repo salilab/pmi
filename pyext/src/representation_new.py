@@ -19,6 +19,9 @@ When you call build() on any of these classes, build() is also called for each o
 and the root IMP hierarchy is returned.
 """
 
+class StructureError(Exception):
+   pass
+
 #------------------------
 
 
@@ -278,7 +281,7 @@ class _Molecule(_SystemBase):
             idx=rh.get_index()
             internal_res=self.residues[idx-1]
             if internal_res.get_code()!=IMP.atom.get_one_letter_code(rh.get_residue_type()):
-                raise StructureError('ERROR: PDB residue is',
+                raise StructureError('ERROR: PDB residue index',idx,'is',
                                      IMP.atom.get_one_letter_code(rh.get_residue_type()),
                                      'and sequence residue is',internal_res.get_code())
             internal_res.set_structure(rh)

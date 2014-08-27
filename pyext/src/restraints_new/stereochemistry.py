@@ -85,6 +85,7 @@ class ElasticNetworkRestraint(object):
     def __init__(self,root,
                  selection_dict=None,
                  selection_dicts=None,
+                 selection_dicts_list=None,
                  extra_sel=None,
                  label='',
                  add_info_to_label=True,

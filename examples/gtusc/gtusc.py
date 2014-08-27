@@ -89,7 +89,7 @@ ytub_2.add_representation(ytub_atomic_2,'balls',[0])
 print 'building system'
 hier = system.build()
 
-#### HACK ####
+#### MD SAMPLING HACK ####
 vxkey = IMP.FloatKey('vx')
 vykey = IMP.FloatKey('vy')
 vzkey = IMP.FloatKey('vz')
@@ -100,7 +100,6 @@ for pp in IMP.core.get_leaves(hier):
     pp.add_attribute(vzkey, 0.0)
 md_objects = [IMP.pmi.restraints_new.atomic_xl.SampleObjects(
     'Floppy_Bodies_SimplifiedModel',[IMP.core.get_leaves(hier)])]
-
 #############
 
 
@@ -143,12 +142,12 @@ for nstate in range(2):
 
 ### elastic network on ALL SSEs together!
 sse_selections=IMP.pmi.data_tools.parse_dssp(sse_fn,'ABCDGHIJ')
-sel=sse_selections['helix']+sse_selections['beta']
+all_sses=sse_selections['helix']+sse_selections['beta']
 ers=[]
 for i in range(2):
     print 'creating SSEs',i
     er=IMP.pmi.restraints_new.stereochemistry.ElasticNetworkRestraint(hier,
-                                selection_dicts=(item for sublist in sel for item in sublist),
+                                selection_dicts=(sse for sselist in all_sses for sse in sselist),
                                 extra_sel={'atom_type':IMP.atom.AtomType('CA'),'state_index':i},
                                 label='sses_'+str(i),
                                 add_info_to_label=False,

@@ -24,6 +24,8 @@ class StructureError(Exception):
 
 #------------------------
 
+class StructureError(Exception):
+    pass
 
 class _SystemBase(object):
     """This is the base class for System, _State and _Molecule

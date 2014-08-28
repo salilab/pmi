@@ -22,6 +22,9 @@ def setup_nuisance(m,rs,init_val,min_val,max_val,is_opt=True):
                                                max_val,min_val))
     return nuisance
 
+class RestraintSetupError(Exception):
+    pass
+
 class SampleObjects(object):
     """ hack class to provide things to sample for PMI::samplers """
     def __init__(self,dict_name,pack_in_dict):
@@ -39,7 +42,9 @@ class AtomicCrossLinkMSRestraint(object):
                  nstates=None,
                  label='',
                  max_dist=None,
-                 nuisances_are_optimized=True):
+                 nuisances_are_optimized=True,
+                 sigma_init=5.0,
+                 psi_init = 0.01):
         """Create XL restraint. Provide selections for the particles to restrain.
         Automatically creates one "sigma" per crosslinked residue and one "psis" per pair.
         Other nuisance options are available.
@@ -60,12 +65,14 @@ class AtomicCrossLinkMSRestraint(object):
           multiple possible contributions. will have to check that there is only ONE per copy.
         each contribution will be assigned a PSI based on the score
 
-        @param extra_sel Additional selections to add to each data point. Defaults to:
-                         {'atom_type':IMP.atom.AtomType('NZ')}
-        @param length    The XL linker length
-        @param nstates   The number of states to model. Defaults to the number of states in root.
-        @param label     The output label for the restraint
-        @param nuisances_are_optimized
+        @param extra_sel  Additional selections to add to each data point. Defaults to:
+                          {'atom_type':IMP.atom.AtomType('NZ')}
+        @param length     The XL linker length
+        @param nstates    The number of states to model. Defaults to the number of states in root.
+        @param label      The output label for the restraint
+        @param nuisances_are_optimized Whether to optimize nuisances
+        @param sigma_init The initial value for all the sigmas
+        @param psi_init   The initial value for all the psis
         """
 
         self.mdl = root.get_model()
@@ -84,13 +91,12 @@ class AtomicCrossLinkMSRestraint(object):
         self.particles=[]
 
         #### FIX THIS NUISANCE STUFF ###
-        psi_init=0.01
         psi_min=0.0
         psi_max=0.5
         sig_threshold=4
-        self.sig_low = setup_nuisance(self.mdl,self.rs_nuis,init_val=5.0,min_val=1.0,
+        self.sig_low = setup_nuisance(self.mdl,self.rs_nuis,init_val=sigma_init,min_val=1.0,
                                       max_val=100.0,is_opt=self.nuis_opt)
-        self.sig_high = setup_nuisance(self.mdl,self.rs_nuis,init_val=10.0,min_val=1.0,
+        self.sig_high = setup_nuisance(self.mdl,self.rs_nuis,init_val=sigma_init,min_val=1.0,
                                        max_val=100.0,is_opt=self.nuis_opt)
         self.psi = setup_nuisance(self.mdl,self.rs_nuis,psi_init,psi_min,psi_max,
                                   self.nuis_opt)
@@ -103,13 +109,16 @@ class AtomicCrossLinkMSRestraint(object):
                 for xl in data[unique_id]:
                     num_xls_per_res[str(xl['r1'])]+=1
                     num_xls_per_res[str(xl['r2'])]+=1
+        print 'counting number of restraints per xl:'
+        for key in num_xls_per_res:
+            print key,num_xls_per_res[key]
 
         ### now create all the XL's, using the number of restraints to guide sigmas
         xlrs=[]
         for unique_id in data:
 
             # create restraint for this data point
-            #print 'creating xl with unique id',unique_id
+            print 'creating xl with unique id',unique_id
             r = IMP.isd_emxl.AtomicCrossLinkMSRestraint(self.mdl,self.length,slope,True)
             xlrs.append(r)
             num_contributions=0
@@ -134,8 +143,10 @@ class AtomicCrossLinkMSRestraint(object):
                     self.particles+=sel1+sel2
 
                     # check to make sure all particles in selections are from different copies
-                    if len(sel1)==0 or len(sel2)==0:
-                        raise RestraintSetupError("at least one selection is empty")
+                    if len(sel1)==0:
+                        raise RestraintSetupError("this selection is empty",xl['r1'])
+                    if len(sel2)==0:
+                        raise RestraintSetupError("this selection is empty",xl['r2'])
 
                     for s in (sel1,sel2):
                         idxs=[IMP.atom.get_copy_index(p) for p in s]
@@ -145,6 +156,7 @@ class AtomicCrossLinkMSRestraint(object):
                     # figure out sig1 and sig2 based on num XLs
                     num1=num_xls_per_res[str(xl['r1'])]
                     num2=num_xls_per_res[str(xl['r2'])]
+                    #print '\t num restraints per sel',num1,num2
                     if num1<sig_threshold:
                         sig1=self.sig_low
                         #print "\tsig1 is low"
@@ -193,6 +205,9 @@ class AtomicCrossLinkMSRestraint(object):
         return self.prot
 
     def get_restraint_set(self):
+        return self.rs
+
+    def get_restraint(self):
         return self.rs
 
     def enable_md_sampling(self):

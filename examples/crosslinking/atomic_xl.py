@@ -1,3 +1,5 @@
+## \example pmi/crosslinking/atomic_xl.py
+
 import IMP
 import IMP.atom
 import IMP.pmi

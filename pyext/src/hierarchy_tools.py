@@ -3,6 +3,7 @@
 
 import IMP
 import IMP.atom
+from collections import defaultdict
 
 def combine_dicts(a1,a2):
     """ Combine Selection dictionaries. The first one has higher priority.
@@ -29,6 +30,25 @@ def combine_dicts(a1,a2):
             final[k]=a2[k]
     return final
 
+def get_particles_within_zone(root,ps,radius):
+    """Get a list of selections of residues within a zone around some particles
+    @param root The root node to search in
+    @param ps   The target particles
+    @param radius The search radius per particle
+
+    \note Currently this only works for atomic problems, and grabs entire residues...
+    """
+    ###@param include_siblings For all the found particles, include its siblings (e.g. other atoms
+    ###                        in the residue
+    ret = []
+    atoms = IMP.core.get_leaves(root)
+    nn = IMP.algebra.NearestNeighbor3D([IMP.core.XYZ(p).get_coordinates() for p in atoms])
+    for p in ps:
+        ns = nn.get_in_ball(IMP.core.XYZ(p).get_coordinates(),radius)
+        for n in ns:
+            r = IMP.atom.get_residue(IMP.atom.Atom(atoms[n]))
+            ret+=r.get_children()
+    return ret
 
 def select_node(root,state_num,resolution=None,representation_type=None):
     """Eventually this should allow you to select any NODE in a hierarchy.
@@ -39,7 +59,6 @@ def select_node(root,state_num,resolution=None,representation_type=None):
         sn = IMP.atom.State(state).get_state_index()
         if sn == state_num:
             return state
-
 
 def get_residue_gaps_in_hierarchy(residues,start=None,end=None,contiguous=False):
     '''
@@ -52,17 +71,17 @@ def get_residue_gaps_in_hierarchy(residues,start=None,end=None,contiguous=False)
 
         @param residues   Input list of pmi residues
         @param start      optional. If given will set the first residue index
-        @param end        optional. If given will set the last residue index    
+        @param end        optional. If given will set the last residue index
         @param contiguous If true, it will return the list of contiguous fragments
-    
+
     '''
-    
+
     residue_indexes=[r.get_index() for r in residues]
     if start==None:
        start=min(residue_indexes)
     if end==None:
        end=max(residue_indexes)
-    
+
     stretches = []
     returned_stretches=[]
     for n, rindex in enumerate(range(start, end + 1)):
@@ -95,22 +114,22 @@ def get_residue_gaps_in_hierarchy(residues,start=None,end=None,contiguous=False)
             else:
                 # residue is not contiguous with the previously discovered continuous part
                 # hence create a new cont tuple
-                stretches.append([rindex, rindex,"cont"])        
+                stretches.append([rindex, rindex,"cont"])
             # update the index of the last residue gap
             rindexcont = rindex
-    
+
     for s in stretches:
       if not contiguous and s[2]=="gap":
          returned_stretches.append((s[0],s[1]))
       if contiguous and s[2]=="cont":
-         returned_stretches.append((s[0],s[1]))         
-        
-    
-    return returned_stretches   
-    
-    
+         returned_stretches.append((s[0],s[1]))
+
+
+    return returned_stretches
+
+
 def list_chunks_iterator(input_list, length):
     """ Yield successive length-sized chunks from a list.
     """
     for i in xrange(0, len(input_list), length):
-        yield input_list[i:i + length]             
+        yield input_list[i:i + length]

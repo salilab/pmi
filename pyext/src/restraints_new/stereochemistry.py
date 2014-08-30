@@ -9,10 +9,17 @@ import IMP.pmi.hierarchy_tools as hierarchy_tools
 
 class CharmmForceFieldRestraint(object):
     """ Enable CHARMM force field """
-    def __init__(self,root,ff_temp=300.0,enable_nonbonded=True):
+    def __init__(self,root,
+                 limit_to_ps=None,
+                 ff_temp=300.0,
+                 enable_nonbonded=True,
+                 enable_bonded=True):
         """Setup the charmm restraint on a selection. Expecting atoms.
-        @param root       The node at which to apply the restraint
-        @param ff_temp    The temperature of the force field
+        @param root             The node at which to apply the restraint
+        @param limit_to_ps      Limit the BONDED restraint to these particles
+        @param ff_temp          The temperature of the force field
+        @param enable_nonbonded Allow the repulsive restraint
+        @param enable_bonded    Allow the repulsive restraint
         """
 
         kB = (1.381 * 6.02214) / 4184.0
@@ -23,28 +30,34 @@ class CharmmForceFieldRestraint(object):
         self.weight=1.0
         self.label=""
 
-        ### charmm setup
-        ff = IMP.atom.get_heavy_atom_CHARMM_parameters()
-        topology = ff.create_topology(root)
-        topology.apply_default_patches()
-        topology.setup_hierarchy(root)
-        r = IMP.atom.CHARMMStereochemistryRestraint(root, topology)
-        self.bonds_rs.add_restraint(r)
-        ff.add_radii(root)
-        ff.add_well_depths(root)
-        atoms = IMP.atom.get_leaves(root)
+        ### setup topology and bonds etc
+        if enable_bonded:
+            ff = IMP.atom.get_heavy_atom_CHARMM_parameters()
+            topology = ff.create_topology(root)
+            topology.apply_default_patches()
+            topology.setup_hierarchy(root)
+            if limit_to_ps is not None:
+                r = IMP.atom.CHARMMStereochemistryRestraint(root, topology, limit_to_ps)
+            else:
+                r = IMP.atom.CHARMMStereochemistryRestraint(root, topology)
+            self.bonds_rs.add_restraint(r)
+            ff.add_radii(root)
+            ff.add_well_depths(root)
+        print '\tstero eval:',r.unprotected_evaluate(None)
 
+        atoms = IMP.atom.get_leaves(root)
         ### non-bonded forces
         if enable_nonbonded:
             cont = IMP.container.ListSingletonContainer(atoms)
             self.nbl = IMP.container.ClosePairContainer(cont, 4.0)
-            self.nbl.add_pair_filter(r.get_pair_filter())
+            if enable_bonded:
+                self.nbl.add_pair_filter(r.get_full_pair_filter())
             #sf = IMP.atom.ForceSwitch(6.0, 7.0)
             #pairscore = IMP.atom.LennardJonesPairScore(sf)
             pairscore = IMP.isd.RepulsiveDistancePairScore(0,1)
             pr=IMP.container.PairsRestraint(pairscore, self.nbl)
             self.nonbonded_rs.add_restraint(pr)
-
+            print '\trepulsive eval:',pr.unprotected_evaluate(None)
         #self.scoring_function = IMP.core.RestraintsScoringFunction([r,pr])
 
         print 'CHARMM is set up'

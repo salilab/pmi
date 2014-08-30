@@ -7,6 +7,7 @@ import IMP.atom
 import IMP.container
 import IMP.isd_emxl
 import IMP.pmi.hierarchy_tools as hierarchy_tools
+import IMP.pmi.sampling_tools as sampling_tools
 import itertools
 from collections import defaultdict
 import os.path
@@ -24,13 +25,6 @@ def setup_nuisance(m,rs,init_val,min_val,max_val,is_opt=True):
 
 class RestraintSetupError(Exception):
     pass
-
-class SampleObjects(object):
-    """ hack class to provide things to sample for PMI::samplers """
-    def __init__(self,dict_name,pack_in_dict):
-        self.d={dict_name:pack_in_dict}
-    def get_particles_to_sample(self):
-        return self.d
 
 class AtomicCrossLinkMSRestraint(object):
     def __init__(self,
@@ -109,16 +103,16 @@ class AtomicCrossLinkMSRestraint(object):
                 for xl in data[unique_id]:
                     num_xls_per_res[str(xl['r1'])]+=1
                     num_xls_per_res[str(xl['r2'])]+=1
-        print 'counting number of restraints per xl:'
-        for key in num_xls_per_res:
-            print key,num_xls_per_res[key]
+        #print 'counting number of restraints per xl:'
+        #for key in num_xls_per_res:
+        #    print key,num_xls_per_res[key]
 
         ### now create all the XL's, using the number of restraints to guide sigmas
         xlrs=[]
         for unique_id in data:
 
             # create restraint for this data point
-            print 'creating xl with unique id',unique_id
+            #print 'creating xl with unique id',unique_id
             r = IMP.isd_emxl.AtomicCrossLinkMSRestraint(self.mdl,self.length,slope,True)
             xlrs.append(r)
             num_contributions=0
@@ -210,30 +204,14 @@ class AtomicCrossLinkMSRestraint(object):
     def get_restraint(self):
         return self.rs
 
-    def enable_md_sampling(self):
-        """ HACK! Adds necessary attributes to the selected residues for MD sampling"""
-        vxkey = IMP.FloatKey('vx')
-        vykey = IMP.FloatKey('vy')
-        vzkey = IMP.FloatKey('vz')
-        for p in self.particles:
-            ps=IMP.atom.Hierarchy(p).get_parent().get_children()
-            for pp in ps:
-                IMP.core.XYZ(pp).set_coordinates_are_optimized(True)
-                pp.add_attribute(vxkey, 0.0)
-                pp.add_attribute(vykey, 0.0)
-                pp.add_attribute(vzkey, 0.0)
-
-    def get_md_sample_objects(self):
-        """ HACK! Make a SampleObjects class that can be used with PMI::samplers"""
-        ps=[]
-        for p in self.particles:
-            ps+=IMP.atom.Hierarchy(p).get_parent().get_children()
-        return [SampleObjects('Floppy_Bodies_SimplifiedModel',[ps])]
+    def get_particles(self):
+        """ Get particles involved in the restraint """
+        return self.particles
 
     def get_mc_sample_objects(self,max_step):
         """ HACK! Make a SampleObjects class that can be used with PMI::samplers"""
         ps=[[self.sig_low,self.sig_high],max_step]
-        return [SampleObjects('Nuisances',ps)]
+        return [sampling_tools.SampleObjects('Nuisances',ps)]
 
     def __repr__(self):
         return 'XL restraint with '+str(len(self.rs.get_restraint(0).get_number_of_restraints())) \

@@ -47,8 +47,8 @@ def get_particles_within_zone(root,ps,radius):
         ns = nn.get_in_ball(IMP.core.XYZ(p).get_coordinates(),radius)
         for n in ns:
             r = IMP.atom.get_residue(IMP.atom.Atom(atoms[n]))
-            ret+=r.get_children()
-    return ret
+            ret+=[l.get_particle() for l in IMP.core.get_leaves(r)]
+    return list(set(ret))
 
 def select_node(root,state_num,resolution=None,representation_type=None):
     """Eventually this should allow you to select any NODE in a hierarchy.

@@ -11,11 +11,13 @@ class SampleObjects(object):
     def get_particles_to_sample(self):
         return self.d
 
-def enable_md_sampling(hier=None,
+def enable_md_sampling(mdl,
+                       hier=None,
                        particles=None,
                        include_siblings=True):
     """ Adds necessary attributes to the selected residues for MD sampling
-    @param root             The root node
+    @param model            The IMP model
+    @param hier             Hierarchy to sample
     @param particles        Particles to sample
     @param selection        Single or multiple selections for enabling sampling
     @param include_siblings Get the siblings of the passed particles and sample them too """
@@ -34,8 +36,8 @@ def enable_md_sampling(hier=None,
             ps=[p]
         all_ps+=ps
         for pp in ps:
-            IMP.core.XYZ(pp).set_coordinates_are_optimized(True)
-            pp.add_attribute(vxkey, 0.0)
-            pp.add_attribute(vykey, 0.0)
-            pp.add_attribute(vzkey, 0.0)
+            IMP.core.XYZ(mdl,pp.get_index()).set_coordinates_are_optimized(True)
+            mdl.add_attribute(vxkey,pp.get_index(),0.0)
+            mdl.add_attribute(vykey,pp.get_index(),0.0)
+            mdl.add_attribute(vzkey,pp.get_index(),0.0)
     return [SampleObjects('Floppy_Bodies_SimplifiedModel',[all_ps])]

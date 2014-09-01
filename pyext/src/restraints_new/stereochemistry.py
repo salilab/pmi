@@ -43,7 +43,6 @@ class CharmmForceFieldRestraint(object):
             self.bonds_rs.add_restraint(r)
             ff.add_radii(root)
             ff.add_well_depths(root)
-        print '\tstero eval:',r.unprotected_evaluate(None)
 
         atoms = IMP.atom.get_leaves(root)
         ### non-bonded forces
@@ -57,7 +56,6 @@ class CharmmForceFieldRestraint(object):
             pairscore = IMP.isd.RepulsiveDistancePairScore(0,1)
             pr=IMP.container.PairsRestraint(pairscore, self.nbl)
             self.nonbonded_rs.add_restraint(pr)
-            print '\trepulsive eval:',pr.unprotected_evaluate(None)
         #self.scoring_function = IMP.core.RestraintsScoringFunction([r,pr])
 
         print 'CHARMM is set up'

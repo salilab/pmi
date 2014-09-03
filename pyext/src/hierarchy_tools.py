@@ -30,24 +30,33 @@ def combine_dicts(a1,a2):
             final[k]=a2[k]
     return final
 
-def get_particles_within_zone(root,ps,radius):
+def get_particles_within_zone(root,ps,radius,
+                              entire_residues=False,
+                              exclude_backbone=False):
     """Get a list of selections of residues within a zone around some particles
-    @param root The root node to search in
-    @param ps   The target particles
-    @param radius The search radius per particle
-
+    @param root             The root node to search in
+    @param ps               The target particles
+    @param radius           The search radius per particle
+    @param entire_residues  Expand selection to include entire residues
+    @param exclude_backbone Don't select backbone atoms
     \note Currently this only works for atomic problems, and grabs entire residues...
     """
-    ###@param include_siblings For all the found particles, include its siblings (e.g. other atoms
-    ###                        in the residue
     ret = []
     atoms = IMP.core.get_leaves(root)
     nn = IMP.algebra.NearestNeighbor3D([IMP.core.XYZ(p).get_coordinates() for p in atoms])
+    backbone = [IMP.atom.AT_C,IMP.atom.AT_N,IMP.atom.AT_CA]
     for p in ps:
         ns = nn.get_in_ball(IMP.core.XYZ(p).get_coordinates(),radius)
-        for n in ns:
-            r = IMP.atom.get_residue(IMP.atom.Atom(atoms[n]))
-            ret+=[l.get_particle() for l in IMP.core.get_leaves(r)]
+        this_ps=[]
+        for n in ns: #looping over each particle near p's position
+            if entire_residues:
+                r = IMP.atom.get_residue(IMP.atom.Atom(atoms[n]))
+                this_ps += [l.get_particle() for l in IMP.core.get_leaves(r)]
+            else:
+                this_ps += atoms[n]
+        if exclude_backbone:
+            this_ps = [tp for tp in this_ps if IMP.atom.Atom(tp).get_atom_type() not in backbone]
+        ret+=this_ps
     return list(set(ret))
 
 def select_node(root,state_num,resolution=None,representation_type=None):

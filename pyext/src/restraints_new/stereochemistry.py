@@ -72,6 +72,9 @@ class CharmmForceFieldRestraint(object):
     def get_restraints(self):
         return [self.bonds_rs,self.nonbonded_rs]
 
+    def get_restraint(self):
+        return self.bonds_rs
+
     def get_close_pair_container(self):
         return self.nbl
 

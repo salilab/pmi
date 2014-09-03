@@ -7,6 +7,9 @@ import IMP.pmi.representation_new
 import IMP.pmi.sequence_tools
 import IMP.pmi.restraints_new.stereochemistry
 import IMP.pmi.restraints_new.atomic_xl
+import IMP.pmi.hierarchy_tools as hierarchy_tools
+import IMP.pmi.sampling_tools as sampling_tools
+import IMP.pmi.data_tools as data_tools
 import IMP.pmi.macros
 import IMP.isd_emxl
 
@@ -16,11 +19,13 @@ import IMP.isd_emxl
 xl_length = 5.0
 slope = 0.01
 charmm_weight = 0.1
+psi_init = 0.0
+sigma_init = 2.0
 
 # sampling params
 num_md = 20
 num_mc = 0
-num_rounds = 10
+num_rounds = 1
 out_dir = "."
 nframes = 10000
 nmodels = 10
@@ -53,13 +58,13 @@ charmm1 = IMP.pmi.restraints_new.stereochemistry.CharmmForceFieldRestraint(state
 charmm1.set_weight(charmm_weight)
 charmm1.add_to_model()
 print 'EVAL - CHARMM 1',mdl.evaluate(False)
-
+output_objects.append(charmm1)
 charmm2 = IMP.pmi.restraints_new.stereochemistry.CharmmForceFieldRestraint(state2.get_hierarchy(),
                                                                            enable_nonbonded=True)
 charmm2.add_to_model()
 charmm2.set_weight(charmm_weight)
 print 'EVAL - CHARMM 2',mdl.evaluate(False)
-
+output_objects.append(charmm2)
 
 # crosslinks
 xls={}
@@ -73,7 +78,9 @@ xlrs = IMP.pmi.restraints_new.atomic_xl.AtomicCrossLinkMSRestraint(hier,
                                                                    xls,
                                                                    length=xl_length,
                                                                    slope=slope,
-                                                                   nstates=2)
+                                                                   nstates=2,
+                                                                   psi_init=psi_init,
+                                                                   sigma_init=sigma_init)
 xlrs.add_to_model()
 output_objects.append(xlrs)
 print 'EVAL - XLINKS',mdl.evaluate(False)
@@ -94,13 +101,18 @@ output_objects.append(mini_output(mdl))
 #### SAMPLING HACK ####
 for p in IMP.core.get_leaves(hier):
     IMP.core.XYZ(p).set_coordinates_are_optimized(False)
-xlrs.enable_md_sampling()
+
+md_objs=sampling_tools.enable_md_sampling(mdl,
+                                          particles=xlrs.get_particles(),
+                                          include_siblings=True,
+                                          exclude_backbone=True)
+
 #################
 
 
 rex = IMP.pmi.macros.ReplicaExchange0(mdl,
                             root_hier = hier,
-                            molecular_dynamics_sample_objects=xlrs.get_md_sample_objects(),
+                            molecular_dynamics_sample_objects=md_objs,
                             #monte_carlo_sample_objects=xlrs.get_mc_sample_objects(mc_max_step),
                             output_objects = output_objects,
                             replica_exchange_minimum_temperature=min_temp,

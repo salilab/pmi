@@ -35,7 +35,7 @@ def enable_md_sampling(mdl,
     all_ps=[]
     for p in particles:
         if include_siblings:
-            ps=IMP.atom.Hierarchy(p).get_parent().get_children()
+            ps=[x.get_particle() for x in IMP.atom.Hierarchy(p).get_parent().get_children()]
         else:
             ps=[p]
         for pp in ps:

@@ -26,6 +26,12 @@ def setup_nuisance(m,rs,init_val,min_val,max_val,is_opt=True):
 class RestraintSetupError(Exception):
     pass
 
+class MyGetRestraint(object):
+    def __init__(self,rs):
+        self.rs=rs
+    def get_restraint_for_rmf(self):
+        return self.rs
+
 class AtomicCrossLinkMSRestraint(object):
     def __init__(self,
                  root,
@@ -201,8 +207,24 @@ class AtomicCrossLinkMSRestraint(object):
     def get_restraint_set(self):
         return self.rs
 
-    def get_restraint(self):
-        return self.rs
+    def create_restraints_for_rmf(self):
+        """ create dummy harmonic restraints for each XL but don't add to model
+        Makes it easy to see each contribution to each XL in RMF
+        """
+        dummy_mdl=IMP.Model()
+        hps = IMP.core.HarmonicDistancePairScore(self.length,1.0)
+        dummy_rs=[]
+        for nxl in range(self.rs.get_number_of_restraints()):
+            xl=IMP.isd_emxl.AtomicCrossLinkMSRestraint.cast(self.rs.get_restraint(nxl))
+            rs = IMP.RestraintSet(dummy_mdl, 'atomic_xl_'+str(nxl))
+            for ncontr in range(xl.get_number_of_contributions()):
+                ps=xl.get_contribution(ncontr)
+                dr = IMP.core.PairRestraint(hps,[self.mdl.get_particle(p) for p in ps],
+                                            'xl%i_contr%i'%(nxl,ncontr))
+                rs.add_restraint(dr)
+                dummy_rs.append(MyGetRestraint(rs))
+        return dummy_rs
+
 
     def get_particles(self):
         """ Get particles involved in the restraint """

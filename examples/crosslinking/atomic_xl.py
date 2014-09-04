@@ -23,7 +23,7 @@ psi_init = 0.0
 sigma_init = 2.0
 
 # sampling params
-num_md = 20
+num_md = 40
 num_mc = 0
 num_rounds = 1
 out_dir = "."
@@ -113,7 +113,6 @@ md_objs=sampling_tools.enable_md_sampling(mdl,
 rex = IMP.pmi.macros.ReplicaExchange0(mdl,
                             root_hier = hier,
                             molecular_dynamics_sample_objects=md_objs,
-                            #monte_carlo_sample_objects=xlrs.get_mc_sample_objects(mc_max_step),
                             output_objects = output_objects,
                             replica_exchange_minimum_temperature=min_temp,
                             replica_exchange_maximum_temperature=max_temp,
@@ -124,5 +123,6 @@ rex = IMP.pmi.macros.ReplicaExchange0(mdl,
                             number_of_frames = nframes,
                             write_initial_rmf=True,
                             global_output_directory=out_dir,
-                            atomistic=True)
+                            atomistic=True,
+                            crosslink_restraints=xlrs.create_restraints_for_rmf())
 rex.execute_macro()

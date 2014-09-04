@@ -1,4 +1,3 @@
-import unittest
 import IMP
 import IMP.test
 import IMP.core
@@ -25,7 +24,6 @@ def get_random_gaussian_3d(center):
     trans = IMP.algebra.Transformation3D(rot, center)
     return IMP.algebra.Gaussian3D(IMP.algebra.ReferenceFrame3D(trans), var)
 
-@unittest.skip("EM interface is changing")
 class TestEMRestraint(IMP.test.TestCase):
 
     def setUp(self):
@@ -41,6 +39,7 @@ class TestEMRestraint(IMP.test.TestCase):
             self.p1, get_random_gaussian_3d([0, 0, 0]))
         IMP.atom.Mass.setup_particle(self.p1, np.random.rand() * 10)
 
+    @IMP.test.skip("EM interface is changing")
     def test_move_to_center(self):
         target_h = [IMP.atom.Fragment.setup_particle(IMP.Particle(self.m))]
         target_h[0].add_child(self.p0)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """@namespace IMP.pmi.tools
-   Miscellanous utilities.
+   Miscellaneous utilities.
 """
 
 import IMP

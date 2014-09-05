@@ -1,5 +1,5 @@
 """@namespace IMP.pmi.output
-   Ouput.
+   Output.
 """
 
 import IMP.pmi.tools

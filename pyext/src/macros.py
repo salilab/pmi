@@ -413,6 +413,7 @@ class BuildModel1(object):
       domain_dict={}
       self.resdensities=[]
       super_rigid_bodies={}
+      chain_super_rigid_bodies={}      
       rigid_bodies={}
 
       for d in data_structure:
@@ -435,6 +436,7 @@ class BuildModel1(object):
           em_num_components = d[12]
           em_txt_file_name  = d[13]
           em_mrc_file_name  = d[14]
+          chain_of_super_rb = d[15]
 
           if comp_name not in self.simo.get_component_names():
              self.simo.create_component(comp_name,color=0.0)
@@ -450,17 +452,22 @@ class BuildModel1(object):
           domain_dict[hier_name]=outhier+dens_hier
 
           if rb not in rigid_bodies:
-              rigid_bodies[rb]=domain_dict[hier_name]
+              rigid_bodies[rb]=[h for h in domain_dict[hier_name]]
           else:
-              rigid_bodies[rb]+=domain_dict[hier_name]
+              rigid_bodies[rb]+=[h for h in domain_dict[hier_name]]
 
           for k in super_rb:
               if k not in super_rigid_bodies:
-                 super_rigid_bodies[k]=domain_dict[hier_name]
-          else:
-              super_rigid_bodies[k]+=domain_dict[hier_name]
+                 super_rigid_bodies[k]=[h for h in domain_dict[hier_name]]
+              else:
+                 super_rigid_bodies[k]+=[h for h in domain_dict[hier_name]]
 
-
+             
+          for k in chain_of_super_rb:
+              if k not in chain_super_rigid_bodies:
+                 chain_super_rigid_bodies[k]=[h for h in domain_dict[hier_name]]
+              else:
+                 chain_super_rigid_bodies[k]+=[h for h in domain_dict[hier_name]]
 
 
 
@@ -474,6 +481,9 @@ class BuildModel1(object):
 
       for k in super_rigid_bodies:
           self.simo.set_super_rigid_body_from_hierarchies(super_rigid_bodies[k])
+
+      for k in chain_super_rigid_bodies:
+          self.simo.set_chain_of_super_rigid_bodies(chain_super_rigid_bodies[k],2,3)          
 
       self.simo.set_floppy_bodies()
       self.simo.setup_bonds()

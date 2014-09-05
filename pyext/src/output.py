@@ -141,12 +141,13 @@ class Output(object):
                 atom_index += 1
                 rt = residue.get_residue_type()
                 xyz = IMP.core.XYZ(p).get_coordinates()
+                radius = IMP.core.XYZR(p).get_radius()                
                 geometric_center[0] += xyz[0]
                 geometric_center[1] += xyz[1]
                 geometric_center[2] += xyz[2]
                 atom_count += 1
                 particle_infos_for_pdb.append((xyz, atom_index,
-                                               impatom.AT_CA, rt, self.dictchain[name][protname], resind))
+                                               impatom.AT_CA, rt, self.dictchain[name][protname], resind,radius))
 
                 # if protname not in index_residue_pair_list:
                 #   index_residue_pair_list[protname]=[(atom_index,resind)]
@@ -163,12 +164,13 @@ class Output(object):
                 atom_index += 1
                 rt = impatom.ResidueType('BEA')
                 xyz = IMP.core.XYZ(p).get_coordinates()
+                radius = IMP.core.XYZR(p).get_radius()                
                 geometric_center[0] += xyz[0]
                 geometric_center[1] += xyz[1]
                 geometric_center[2] += xyz[2]
                 atom_count += 1
                 particle_infos_for_pdb.append((xyz, atom_index,
-                                               impatom.AT_CA, rt, self.dictchain[name][protname], resind))
+                                               impatom.AT_CA, rt, self.dictchain[name][protname], resind,radius))
 
             else:
                 if is_a_bead:
@@ -177,12 +179,13 @@ class Output(object):
                     resindexes = IMP.pmi.tools.get_residue_indexes(p)
                     resind = resindexes[len(resindexes) / 2]
                     xyz = IMP.core.XYZ(p).get_coordinates()
+                    radius = IMP.core.XYZR(p).get_radius()                    
                     geometric_center[0] += xyz[0]
                     geometric_center[1] += xyz[1]
                     geometric_center[2] += xyz[2]
                     atom_count += 1
                     particle_infos_for_pdb.append((xyz, atom_index,
-                                                   impatom.AT_CA, rt, self.dictchain[name][protname], resind))
+                                                   impatom.AT_CA, rt, self.dictchain[name][protname], resind,radius))
                 # if protname not in index_residue_pair_list:
                 #   index_residue_pair_list[protname]=[(atom_index,resind)]
                 # else:

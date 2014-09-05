@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-"""tools to help build structures"""
+
+"""@namespace IMP.pmi.structure_tools
+   Tools to help build structures
+"""
 
 import IMP
 import IMP.atom

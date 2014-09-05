@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-"""useful tools for finding things in an IMP hierarchy"""
+
+"""@namespace IMP.pmi.hierarchy_tools
+   Useful tools for finding things in an IMP hierarchy
+"""
 
 import IMP
 import IMP.atom

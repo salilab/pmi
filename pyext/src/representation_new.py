@@ -1,13 +1,6 @@
-import IMP
-import IMP.atom
-import IMP.pmi
-from collections import defaultdict
-import IMP.pmi.structure_tools as structure_tools
-from Bio import SeqIO
-
-"""
-A new representation module. It helps to construct the hierarchy
-and deal with multi-state, multi-scale, multi-copies
+"""@namespace IMP.pmi.representation_new
+   A new representation module. It helps to construct the hierarchy
+   and deal with multi-state, multi-scale, multi-copies
 
 Usage Example:
 
@@ -18,6 +11,13 @@ For each of the classes System, State, and Molecule, you store the root node and
 When you call build() on any of these classes, build() is also called for each of the child classes,
 and the root IMP hierarchy is returned.
 """
+
+import IMP
+import IMP.atom
+import IMP.pmi
+from collections import defaultdict
+import IMP.pmi.structure_tools as structure_tools
+from Bio import SeqIO
 
 class StructureError(Exception):
    pass

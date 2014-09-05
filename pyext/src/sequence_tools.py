@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-"""utilities for interpreting and analyzing sequence data"""
+
+"""@namespace IMP.pmi.sequence_tools
+   Utilities for interpreting and analyzing sequence data
+"""
 
 import IMP
 import IMP.atom

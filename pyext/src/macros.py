@@ -454,16 +454,19 @@ class BuildModel1(object):
           self.resdensities+=dens_hier
           domain_dict[hier_name]=outhier+dens_hier
 
-          if rb not in rigid_bodies:
-              rigid_bodies[rb]=[h for h in domain_dict[hier_name]]
-          else:
-              rigid_bodies[rb]+=[h for h in domain_dict[hier_name]]
-
-          for k in super_rb:
-              if k not in super_rigid_bodies:
-                 super_rigid_bodies[k]=[h for h in domain_dict[hier_name]]
+          if rb is not None:
+              if rb not in rigid_bodies:
+                  rigid_bodies[rb]=[h for h in domain_dict[hier_name]]
               else:
-                 super_rigid_bodies[k]+=[h for h in domain_dict[hier_name]]
+                  rigid_bodies[rb]+=[h for h in domain_dict[hier_name]]
+          
+          
+          if super_rb is not None:
+              for k in super_rb:
+                  if k not in super_rigid_bodies:
+                     super_rigid_bodies[k]=[h for h in domain_dict[hier_name]]
+                  else:
+                     super_rigid_bodies[k]+=[h for h in domain_dict[hier_name]]
 
           if  chain_of_super_rb is not None:
               for k in chain_of_super_rb:
@@ -471,9 +474,8 @@ class BuildModel1(object):
                      chain_super_rigid_bodies[k]=[h for h in domain_dict[hier_name]]
                   else:
                      chain_super_rigid_bodies[k]+=[h for h in domain_dict[hier_name]]
-
-
-
+          
+      self.rigid_bodies=rigid_bodies
 
 
       for c in self.simo.get_component_names():
@@ -482,6 +484,7 @@ class BuildModel1(object):
 
 
       for rb in rigid_bodies:
+          print "AHAHAHA"
           self.simo.set_rigid_body_from_hierarchies(rigid_bodies[rb])
 
       for k in super_rigid_bodies:

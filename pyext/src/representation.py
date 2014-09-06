@@ -187,10 +187,10 @@ class Representation(object):
             exit()
 
         self.sequence_dict[name] = str(record_dict[id].seq).replace("*", "")
-        if offs is not None:  
+        if offs is not None:
            offs_str="-"*offs
            self.sequence_dict[name]=offs_str+self.sequence_dict[name]
-           
+
         self.elements[name].append((length, length, " ", "end"))
 
     def autobuild_model(self, name, pdbname, chain,
@@ -245,7 +245,7 @@ class Representation(object):
             t,
             resrange[0],
             resrange[1])
-        
+
         xyznter = IMP.pmi.tools.get_closest_residue_position(
             t,
             resrange[0],
@@ -257,7 +257,7 @@ class Representation(object):
 
         # construct pdb fragments and intervening beads
         for n, g in enumerate(gaps):
-            first = g[0] 
+            first = g[0]
             last = g[1]
             if g[2] == "cont":
                 print "autobuild_model: constructing fragment %s from pdb" % (str((first, last)))
@@ -442,7 +442,7 @@ class Representation(object):
                 rt = IMP.atom.ResidueType(rtstr)
             else:
                 rt = IMP.atom.ResidueType("ALA")
-            
+
             # get the residue volume
             try:
                 vol = IMP.atom.get_volume_from_residue_type(rt)
@@ -451,8 +451,8 @@ class Representation(object):
                 vol = IMP.atom.get_volume_from_residue_type(
                 IMP.atom.ResidueType("ALA"))
                 # mass=IMP.atom.get_mass_from_residue_type(IMP.atom.ResidueType("ALA"))
-            radius = IMP.algebra.get_ball_radius_from_volume_3d(vol)                
-                
+            radius = IMP.algebra.get_ball_radius_from_volume_3d(vol)
+
             r = IMP.atom.Residue.setup_particle(IMP.Particle(self.m), rt, res)
             p = IMP.Particle(self.m)
             d = IMP.core.XYZR.setup_particle(p)
@@ -566,9 +566,9 @@ class Representation(object):
         '''
         self.representation_is_modified = True
         outhiers = []
-        if color is None: 
+        if color is None:
            colors=None
-        else: 
+        else:
            colors=[color]
         for chunk in list(IMP.pmi.tools.list_chunks_iterator(range(begin, end + 1), length)):
             outhiers += self.add_component_beads(name,
@@ -589,7 +589,8 @@ class Representation(object):
         multiply_by_total_mass=True,
         transform=None,
         intermediate_map_fn=None,
-            density_ps_to_copy=None):
+        density_ps_to_copy=None,
+        use_precomputed_gaussians):
         '''
         This function sets up a GMM for this component.
         Can specify input GMM file or it will be computed.
@@ -613,6 +614,7 @@ class Representation(object):
         transform:              for input file only, apply a transformation (eg for multiple copies same GMM)
         intermediate_map_fn:    for debugging, this will write the itermediate (simulated) map
         density_ps_to_copy:     in case you already created the appropriate GMM (eg, for beads)
+        use_precomputed_gaussians: Set this flag and pass fragments - will use roughly spherical gaussian setup
         '''
 
         import IMP.isd_emxl
@@ -621,18 +623,38 @@ class Representation(object):
         import sys
         import IMP.em
 
+        # prepare output
         self.representation_is_modified = True
         out_hier = []
         protein_h = self.hier_dict[name]
-
         if "Densities" not in self.hier_representation[name]:
             root = IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
             root.set_name("Densities")
             self.hier_representation[name]["Densities"] = root
             protein_h.add_child(root)
 
+        # gather passed particles
+        fragment_particles = []
+        if not particles is None:
+            fragment_particles += particles
+        if not hierarchies is None:
+            fragment_particles += IMP.pmi.tools.select(
+                self, resolution=resolution,
+                hierarchies=hierarchies)
+        if not selection_tuples is None:
+            for st in selection_tuples:
+                fragment_particles += IMP.pmi.tools.select_by_tuple(
+                    self, tupleselection=st,
+                    resolution=resolution,
+                    name_is_ambiguous=False)
+
+        # compute or read gaussians
         density_particles = []
-        if not density_ps_to_copy is None:
+        if inputfile:
+            IMP.isd_emxl.gmm_tools.decorate_gmm_from_text(
+                inputfile, density_particles,
+                self.m, transform)
+        elif density_ps_to_copy:
             for ip in density_ps_to_copy:
                 p = IMP.Particle(self.m)
                 shape = IMP.core.Gaussian(ip).get_gaussian()
@@ -640,20 +662,27 @@ class Representation(object):
                 IMP.core.Gaussian.setup_particle(p, shape)
                 IMP.atom.Mass.setup_particle(p, mass)
                 density_particles.append(p)
-        elif inputfile is None:
-            fragment_particles = []
-            if not particles is None:
-                fragment_particles += particles
-            if not hierarchies is None:
-                fragment_particles += IMP.pmi.tools.select(
-                    self, resolution=resolution,
-                    hierarchies=hierarchies)
-            if not selection_tuples is None:
-                for st in selection_tuples:
-                    fragment_particles += IMP.pmi.tools.select_by_tuple(
-                        self, tupleselection=st,
-                        resolution=resolution,
-                        name_is_ambiguous=False)
+        elif use_precomputed_gaussians:
+            if len(fragment_particles) == 0:
+                print "add_component_density: no particle was selected"
+                return out_hier
+            for p in fragment_particles:
+                if not (IMP.atom.Fragment.get_is_setup(self.m,p.get_particle_index()) and
+                        IMP.core.XYZ.get_is_setup(self.m,p.get_particle_index())):
+                    raise Exception("The particles you selected must be Fragments and XYZs")
+                nres=len(IMP.atom.Fragment(self.m,p.get_particle_index()).get_residue_indexes())
+                pos=IMP.core.XYZ(self.m,p.get_particle_index()).get_coordinates()
+                density_particles=[]
+                try:
+                    IMP.isd_emxl.get_data_path("beads/bead_%i"%nres)
+                except:
+                    raise Exception("We haven't created a bead file for",nres,"residues")
+                transform = IMP.algebra.Transformation3D(pos)
+                IMP.isd_emxl.gmm_tools.decorate_gmm_from_text(
+                    IMP.isd_emxl.get_data_path("beads/bead_%i.txt"%nres, density_particles,
+                    self.m, transform)
+        else:
+            #compute the gaussians here
             if len(fragment_particles) == 0:
                 print "add_component_density: no particle was selected"
                 return out_hier
@@ -1460,7 +1489,7 @@ class Representation(object):
         hiers:         list of hierarchies
         particles:     (optional, default=None) list of particles to add to the rigid body
         '''
-        
+
         if particles is None:
             rigid_parts = set()
         else:
@@ -1470,7 +1499,7 @@ class Representation(object):
         print "set_rigid_body_from_hierarchies> setting up a new rigid body"
         for hier in hiers:
             ps = IMP.atom.get_leaves(hier)
-            
+
             for p in ps:
                 if IMP.core.RigidMember.get_is_setup(p):
                     rb = IMP.core.RigidMember(p).get_rigid_body()
@@ -1479,14 +1508,14 @@ class Representation(object):
                     rigid_parts.add(p)
             name += hier.get_name() + "-"
             print "set_rigid_body_from_hierarchies> adding %s to the rigid body" % hier.get_name()
-        
+
         if len(list(rigid_parts)) != 0:
            rb = IMP.atom.create_rigid_body(list(rigid_parts))
            rb.set_coordinates_are_optimized(True)
            rb.set_name(name + "rigid_body")
            self.rigid_bodies.append(rb)
            return rb
-           
+
         else:
            print "set_rigid_body_from_hierarchies> rigid body could not be setup"
 

@@ -590,7 +590,7 @@ class Representation(object):
         transform=None,
         intermediate_map_fn=None,
         density_ps_to_copy=None,
-        use_precomputed_gaussians):
+        use_precomputed_gaussians=False):
         '''
         This function sets up a GMM for this component.
         Can specify input GMM file or it will be computed.
@@ -679,7 +679,7 @@ class Representation(object):
                     raise Exception("We haven't created a bead file for",nres,"residues")
                 transform = IMP.algebra.Transformation3D(pos)
                 IMP.isd_emxl.gmm_tools.decorate_gmm_from_text(
-                    IMP.isd_emxl.get_data_path("beads/bead_%i.txt"%nres, density_particles,
+                    IMP.isd_emxl.get_data_path("beads/bead_%i.txt"%nres), density_particles,
                     self.m, transform)
         else:
             #compute the gaussians here
@@ -699,11 +699,6 @@ class Representation(object):
                 multiply_by_total_mass,
                 outputmap,
                 outputfile)
-        else:
-            # read the inputfile here
-            IMP.isd_emxl.gmm_tools.decorate_gmm_from_text(
-                inputfile, density_particles,
-                self.m, transform)
 
         # prepare output hierarchy
         s0 = IMP.atom.Fragment.setup_particle(IMP.Particle(self.m))

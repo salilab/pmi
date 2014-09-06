@@ -1080,7 +1080,7 @@ class ISDCrossLinkMS(_NuisancesBase):
                      psival,
                      xlid))
 
-        lw = IMP.isd_emxl.LogWrapper(restraints,1.0)
+        lw = IMP.isd_emxl.LogWrapper(restraints,1.0) 
         self.rs.add_restraint(lw)
 
 

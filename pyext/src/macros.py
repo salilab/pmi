@@ -417,6 +417,7 @@ class BuildModel1(object):
       rigid_bodies={}
 
       for d in data_structure:
+          print d
           comp_name         = d[0]
           hier_name         = d[1]
           color             = d[2]
@@ -462,12 +463,12 @@ class BuildModel1(object):
               else:
                  super_rigid_bodies[k]+=[h for h in domain_dict[hier_name]]
 
-             
-          for k in chain_of_super_rb:
-              if k not in chain_super_rigid_bodies:
-                 chain_super_rigid_bodies[k]=[h for h in domain_dict[hier_name]]
-              else:
-                 chain_super_rigid_bodies[k]+=[h for h in domain_dict[hier_name]]
+          if  chain_of_super_rb is not None:
+              for k in chain_of_super_rb:
+                  if k not in chain_super_rigid_bodies:
+                     chain_super_rigid_bodies[k]=[h for h in domain_dict[hier_name]]
+                  else:
+                     chain_super_rigid_bodies[k]+=[h for h in domain_dict[hier_name]]
 
 
 
@@ -519,6 +520,16 @@ class BuildModel1(object):
                                    outputfile=txtfilename, # do the calculation
                                    outputmap=mrcfilename,
                                    multiply_by_total_mass=True) # do the calculation and output the mrc
+       
+       for b in beadbits:
+          outhier=simo.add_component_density(compname,
+                                   [b],
+                                   num_components=num_components, # number of gaussian into which the simulated density is approximated
+                                   resolution=0,      # resolution that you want to calculate the simulated density
+                                   outputfile=txtfilename, # do the calculation
+                                   outputmap=mrcfilename,
+                                   multiply_by_total_mass=True) # do the calculation and output the mrc          
+       
        return outhier
 
     def autobuild(self,simo,comname,pdbname,chain,resrange,read=True,beadsize=5,color=0.0,offset=0):

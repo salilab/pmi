@@ -19,7 +19,7 @@ import IMP.isd_emxl
 xl_length = 5.0
 slope = 0.01
 charmm_weight = 0.1
-psi_init = 0.0
+psi_init = 1e-8
 sigma_init = 2.0
 
 # sampling params
@@ -57,23 +57,33 @@ charmm1 = IMP.pmi.restraints_new.stereochemistry.CharmmForceFieldRestraint(state
                                                                            enable_nonbonded=True)
 charmm1.set_weight(charmm_weight)
 charmm1.add_to_model()
+charmm1.set_label('_1')
 print 'EVAL - CHARMM 1',mdl.evaluate(False)
 output_objects.append(charmm1)
 charmm2 = IMP.pmi.restraints_new.stereochemistry.CharmmForceFieldRestraint(state2.get_hierarchy(),
                                                                            enable_nonbonded=True)
 charmm2.add_to_model()
 charmm2.set_weight(charmm_weight)
+charmm1.set_label('_2')
 print 'EVAL - CHARMM 2',mdl.evaluate(False)
 output_objects.append(charmm2)
 
 # crosslinks
 xls={}
+xls[0]=[{'r1': {'residue_index':48},
+         'r2': {'residue_index':51},
+         'Score': 1.0}]
+xls[1]=[{'r1': {'residue_index':48},
+         'r2': {'residue_index':43},
+         'Score': 1.0}]
+'''
 xls[0]=[{'r1': {'residue_index':88},
          'r2': {'residue_index':146},
          'Score': 1.0}]
 xls[1]=[{'r1': {'residue_index':141},
          'r2': {'residue_index':146},
          'Score': 1.0}]
+'''
 xlrs = IMP.pmi.restraints_new.atomic_xl.AtomicCrossLinkMSRestraint(hier,
                                                                    xls,
                                                                    length=xl_length,

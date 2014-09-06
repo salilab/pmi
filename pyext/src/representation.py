@@ -674,7 +674,7 @@ class Representation(object):
                 pos=IMP.core.XYZ(self.m,p.get_particle_index()).get_coordinates()
                 density_particles=[]
                 try:
-                    IMP.isd_emxl.get_data_path("beads/bead_%i"%nres)
+                    IMP.isd_emxl.get_data_path("beads/bead_%i.txt"%nres)
                 except:
                     raise Exception("We haven't created a bead file for",nres,"residues")
                 transform = IMP.algebra.Transformation3D(pos)
@@ -754,7 +754,7 @@ class Representation(object):
                     name_is_ambiguous=False)
 
         if len(fragment_particles) == 0:
-            print "add_component_density: no particle was selected"
+            print "add all atom densities: no particle was selected"
             return
 
         # create a sphereical gaussian for each particle based on atom type

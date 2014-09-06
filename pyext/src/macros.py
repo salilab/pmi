@@ -417,7 +417,6 @@ class BuildModel1(object):
       rigid_bodies={}
 
       for d in data_structure:
-          print d
           comp_name         = d[0]
           hier_name         = d[1]
           color             = d[2]
@@ -445,7 +444,10 @@ class BuildModel1(object):
           outhier=self.autobuild(self.simo,comp_name,pdb_name,chain_id,res_range,read=read_em_files,beadsize=bead_size,color=color,offset=offset)
 
           if not read_em_files is None:
-             dens_hier=self.create_density(self.simo,comp_name,outhier,em_txt_file_name,em_mrc_file_name,em_num_components,read_em_files)
+             dens_hier,beads=self.create_density(self.simo,comp_name,outhier,em_txt_file_name,em_mrc_file_name,em_num_components,read_em_files)
+             self.simo.add_all_atom_densities(comp_name, hierarchies=beads)
+             dens_hier+=beads
+             
           else:
              dens_hier=[]
 
@@ -469,6 +471,8 @@ class BuildModel1(object):
                      chain_super_rigid_bodies[k]=[h for h in domain_dict[hier_name]]
                   else:
                      chain_super_rigid_bodies[k]+=[h for h in domain_dict[hier_name]]
+
+
 
 
 
@@ -520,17 +524,9 @@ class BuildModel1(object):
                                    outputfile=txtfilename, # do the calculation
                                    outputmap=mrcfilename,
                                    multiply_by_total_mass=True) # do the calculation and output the mrc
+             
        
-       for b in beadbits:
-          outhier=simo.add_component_density(compname,
-                                   [b],
-                                   num_components=num_components, # number of gaussian into which the simulated density is approximated
-                                   resolution=0,      # resolution that you want to calculate the simulated density
-                                   outputfile=txtfilename, # do the calculation
-                                   outputmap=mrcfilename,
-                                   multiply_by_total_mass=True) # do the calculation and output the mrc          
-       
-       return outhier
+       return outhier,beadbits
 
     def autobuild(self,simo,comname,pdbname,chain,resrange,read=True,beadsize=5,color=0.0,offset=0):
 

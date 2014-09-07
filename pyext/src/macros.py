@@ -408,10 +408,10 @@ class BuildModel1(object):
       self.simo=representation
 
 
-    def build_model(self,data_structure):
+    def build_model(self,data_structure,sequence_connectivity_scale=4.0):
 
       domain_dict={}
-      self.resdensities=[]
+      self.resdensities={}
       super_rigid_bodies={}
       chain_super_rigid_bodies={}      
       rigid_bodies={}
@@ -451,7 +451,7 @@ class BuildModel1(object):
           else:
              dens_hier=[]
 
-          self.resdensities+=dens_hier
+          self.resdensities[hier_name]=dens_hier
           domain_dict[hier_name]=outhier+dens_hier
 
           if rb is not None:
@@ -479,7 +479,7 @@ class BuildModel1(object):
 
 
       for c in self.simo.get_component_names():
-          self.simo.setup_component_sequence_connectivity(c)
+          self.simo.setup_component_sequence_connectivity(c,scale=sequence_connectivity_scale)
           self.simo.setup_component_geometry(c)
 
 
@@ -496,8 +496,13 @@ class BuildModel1(object):
       self.simo.set_floppy_bodies()
       self.simo.setup_bonds()
 
-    def get_density_hierarchies(self):
-        return self.resdensities
+    def get_density_hierarchies(self,hier_name_list):
+        # return a list of density hierarchies 
+        # specify the list of hierarchy names
+        dens_hier_list=[]
+        for hn in hier_name_list:
+            dens_hier_list+=self.resdensities[hn]
+        return dens_hier_list
 
     def get_pdb_bead_bits(self,hierarchy):
         pdbbits=[]

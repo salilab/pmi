@@ -81,8 +81,9 @@ class AtomicCrossLinkMSRestraint(object):
         self.label = label
         self.length = length
         self.nuis_opt = nuisances_are_optimized
+        self.nstates = nstates
         if nstates is None:
-            nstates = len(IMP.atom.get_by_type(root,IMP.atom.STATE_TYPE))
+            self.nstates = len(IMP.atom.get_by_type(root,IMP.atom.STATE_TYPE))
         elif nstates!=len(IMP.atom.get_by_type(root,IMP.atom.STATE_TYPE)):
             print "Warning: nstates is not the same as the number of states in root"
 
@@ -105,7 +106,7 @@ class AtomicCrossLinkMSRestraint(object):
         ### first read ahead to get the number of XL's per residue
         num_xls_per_res=defaultdict(int)
         for unique_id in data:
-            for nstate in range(nstates):
+            for nstate in range(self.nstates):
                 for xl in data[unique_id]:
                     num_xls_per_res[str(xl['r1'])]+=1
                     num_xls_per_res[str(xl['r2'])]+=1
@@ -124,7 +125,7 @@ class AtomicCrossLinkMSRestraint(object):
             num_contributions=0
 
             # add a contribution for each XL ambiguity option within each state
-            for nstate in range(nstates):
+            for nstate in range(self.nstates):
                 #print '\tstate',nstate
                 # select the state
                 esel = extra_sel.copy()
@@ -179,8 +180,6 @@ class AtomicCrossLinkMSRestraint(object):
                         r.add_contribution([p1.get_index(),p2.get_index()],
                                            [sig1.get_particle_index(),sig2.get_particle_index()],
                                            self.psi.get_particle_index())
-                        dist,s1,s2,psv=r.get_contribution_scores(num_contributions)
-                        #print '\tadding contribution, init dist',dist
                         num_contributions+=1
                 if num_contributions==0:
                     raise RestraintSetupError("No contributions!")
@@ -257,47 +256,110 @@ class AtomicCrossLinkMSRestraint(object):
                 sig1,sig2=xl.get_contribution_sigmas(contr)
                 IMP.isd.Scale(self.mdl,sig1).set_scale(sig1_val)
                 IMP.isd.Scale(self.mdl,sig2).set_scale(sig2_val)
-        print 'loaded sigmas from file'
+        print 'loaded nuisances from file'
 
-    def plot_violations(self,out_fn,thresh=0.1,model_nums=[0]):
-        """Write a CMM file of all xinks. Draws a line for the closest contribution
-        Will draw in green if prob>thresh, red if <thresh"""
+    def plot_violations(self,out_fn,
+                        max_prob_for_violation=0.1,
+                        min_dist_for_violation=1e9,
+                        coarsen=False):
+        """Create a CMM file of all xinks.
+        will draw in GREEN if non-violated in all states (or if only one state)
+        will draw in PURPLE if non-violated only in a subset of states (draws nothing elsewhere)
+        will draw in RED in ALL states if all violated
+        (if only one state, you'll only see green and red)
 
+        @param out_fn                 The CMM output file
+        @param max_prob_for_violation It's a violation if the probability is below this
+        @param min_dist_for_violation It's a violation if the min dist is above this
+        @param coarsen                Use CA positions
+        """
         outf=open(out_fn,'w')
         outf.write('<marker_set name="%s"> \n' % os.path.splitext(os.path.basename(out_fn))[0])
         nv=0
-        cmd=''
+
+        # for each crosslink, evaluate probability and lowest distance for each state
         for nxl in range(self.rs.get_number_of_restraints()):
             xl=IMP.isd_emxl.AtomicCrossLinkMSRestraint.cast(self.rs.get_restraint(nxl))
-            prob = xl.unprotected_evaluate(None)
-            low_dist=1e6
-            low_contr=-1
-            for contr in range(xl.get_number_of_contributions()):
-                dist,sig1,sig2,psi = xl.get_contribution_scores(contr)
-                if dist<low_dist:
-                    low_dist = dist
-                    low_contr = contr
-            if prob<thresh:
-                print "VIOLATION",xl,xl.get_contribution_scores(low_contr)
-            if prob<thresh:
-                r=1; g=0; b=0;
-            else:
-                r=0; g=1; b=0;
-            c1=IMP.core.XYZ(self.mdl,xl.get_contribution(low_contr)[0]).get_coordinates()
-            c2=IMP.core.XYZ(self.mdl,xl.get_contribution(low_contr)[1]).get_coordinates()
-            a1=IMP.atom.Atom(self.mdl,xl.get_contribution(low_contr)[0])
-            a2=IMP.atom.Atom(self.mdl,xl.get_contribution(low_contr)[1])
-            for mnum in model_nums:
-                cmd+='#%i:%i.%s '%(mnum,IMP.atom.get_residue(a1).get_index(),IMP.atom.get_chain(a1).get_id())
-                cmd+='#%i:%i.%s '%(mnum,IMP.atom.get_residue(a2).get_index(),IMP.atom.get_chain(a2).get_id())
-            outf.write('<marker id= "%d" x="%.3f" y="%.3f" z="%.3f" radius="0.8"  r="%.2f" g="%.2f" b="%.2f"/> \n' % (nv,c1[0],c1[1],c1[2],r,g,b))
-            outf.write('<marker id= "%d" x="%.3f" y="%.3f" z="%.3f" radius="0.8"  r="%.2f" g="%.2f" b="%.2f"/> \n' % (nv+1,c2[0],c2[1],c2[2],r,g,b))
-            outf.write('<link id1= "%d" id2="%d" radius="0.8" r="%.2f" g="%.2f" b="%.2f"/> \n' % (nv,nv+1,r,g,b))
-            nv+=2
+            best_contr_per_state=[[1e6,None] for i in range(self.nstates)] # [low dist, idx low contr]
+            ncontr_per_state=[[] for i in range(self.nstates)]     # [list of the ncontr in each state]
+
+            # get best contributions and probabilities for each state
+            for ncontr in range(xl.get_number_of_contributions()):
+                idxs = xl.get_contribution(ncontr)
+                nstate = IMP.atom.get_state_index(IMP.atom.Atom(self.mdl,idxs[0]))
+                ncontr_per_state[nstate].append(ncontr)
+                idx1,idx2,dist=self._get_contribution_info(xl,ncontr,use_CA=coarsen)
+                if dist<best_contr_per_state[nstate][0]*0.95:
+                    if best_contr_per_state[nstate][1] is not None:
+                        c1=IMP.atom.get_chain_id(IMP.atom.Atom(self.mdl,idx1))
+                        c2=IMP.atom.get_chain_id(IMP.atom.Atom(self.mdl,idx2))
+                        if c1==c2:
+                            continue
+                    best_contr_per_state[nstate] = [dist,ncontr]
+            prob_per_state = [xl.evaluate_for_contributions(cr,None) for cr in ncontr_per_state]
+            prob_global = xl.unprotected_evaluate(None)
+            print xl,'prob:',prob_global,'prob per state: ',prob_per_state,'best dists',best_contr_per_state
+
+            # now check each state and see how many pass
+            npass=[]
+            nviol=[]
+            for nstate in range(self.nstates):
+                prob = prob_per_state[nstate]
+                idx1,idx2,low_dist=self._get_contribution_info(xl,best_contr_per_state[nstate][1],
+                                                               use_CA=coarsen)
+                if prob<max_prob_for_violation or low_dist>min_dist_for_violation:
+                    nviol.append(nstate)
+                else:
+                    npass.append(nstate)
+
+            # special case when all pass or all fail
+            all_pass=False
+            all_viol=False
+            if len(npass)==self.nstates:
+                all_pass=True
+            elif len(nviol)==self.nstates:
+                all_viol=True
+
+            # finally, color based on above info
+            for nstate in range(self.nstates):
+                if all_pass:
+                    r=0; g=1; b=0;
+                elif all_viol:
+                    r=1; g=0; b=0;
+                else:
+                    if nstate in nviol:
+                        continue
+                    else:
+                        r=0.9; g=0.34; b=0.9;
+                idx1,idx2,low_dist=self._get_contribution_info(xl,best_contr_per_state[nstate][1],
+                                                               use_CA=coarsen)
+                c1=IMP.core.XYZ(self.mdl,idx1).get_coordinates()
+                c2=IMP.core.XYZ(self.mdl,idx2).get_coordinates()
+                a1=IMP.atom.Atom(self.mdl,idx1)
+                a2=IMP.atom.Atom(self.mdl,idx2)
+                outf.write('<marker id= "%d" x="%.3f" y="%.3f" z="%.3f" radius="0.8" '
+                           'r="%.2f" g="%.2f" b="%.2f"/> \n' % (nv,c1[0],c1[1],c1[2],r,g,b))
+                outf.write('<marker id= "%d" x="%.3f" y="%.3f" z="%.3f" radius="0.8"  '
+                           'r="%.2f" g="%.2f" b="%.2f"/> \n' % (nv+1,c2[0],c2[1],c2[2],r,g,b))
+                outf.write('<link id1= "%d" id2="%d" radius="0.8" '
+                           'r="%.2f" g="%.2f" b="%.2f"/> \n' % (nv,nv+1,r,g,b))
+                nv+=2
         outf.write('</marker_set>\n')
         outf.close()
-        print cmd
         print 'wrote xlinks to',out_fn
+
+    def _get_contribution_info(self,xl,ncontr,use_CA=False):
+        """Return the particles at that contribution. If requested will return CA's instead"""
+        idx1=xl.get_contribution(ncontr)[0]
+        idx2=xl.get_contribution(ncontr)[1]
+        if use_CA:
+            idx1 = IMP.atom.Selection(IMP.atom.get_residue(IMP.atom.Atom(self.mdl,idx1)),
+                                      atom_type=IMP.atom.AtomType("CA")).get_selected_particle_indexes()[0]
+            idx2 = IMP.atom.Selection(IMP.atom.get_residue(IMP.atom.Atom(self.mdl,idx2)),
+                                      atom_type=IMP.atom.AtomType("CA")).get_selected_particle_indexes()[0]
+        dist = IMP.algebra.get_distance(IMP.core.XYZ(self.mdl,idx1).get_coordinates(),
+                                        IMP.core.XYZ(self.mdl,idx2).get_coordinates())
+        return idx1,idx2,dist
 
     def get_output(self):
         self.mdl.update()

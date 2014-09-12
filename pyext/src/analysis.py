@@ -2212,6 +2212,8 @@ class Precision(object):
 
 
 def get_hier_from_rmf(model, frame_number, rmf_file):
+
+
     # I have to deprecate this function
     import IMP.rmf
     import RMF

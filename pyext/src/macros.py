@@ -406,11 +406,14 @@ class BuildModel1(object):
 
     def __init__(self, representation):
       self.simo=representation
+      self.gmm_models_directory="."
 
+    def set_gmm_models_directory(self,directory_name):
+      self.gmm_models_directory=directory_name
 
     def build_model(self,data_structure,sequence_connectivity_scale=4.0):
 
-      domain_dict={}
+      self.domain_dict={}
       self.resdensities={}
       super_rigid_bodies={}
       chain_super_rigid_bodies={}      
@@ -444,6 +447,9 @@ class BuildModel1(object):
           outhier=self.autobuild(self.simo,comp_name,pdb_name,chain_id,res_range,read=read_em_files,beadsize=bead_size,color=color,offset=offset)
 
           if not read_em_files is None:
+             if em_txt_file_name is " ": em_txt_file_name=self.gmm_models_directory+"/"+hier_name+".txt"
+             if em_mrc_file_name is " ": em_mrc_file_name=self.gmm_models_directory+"/"+hier_name+".mrc"
+             
              dens_hier,beads=self.create_density(self.simo,comp_name,outhier,em_txt_file_name,em_mrc_file_name,em_num_components,read_em_files)
              self.simo.add_all_atom_densities(comp_name, hierarchies=beads)
              dens_hier+=beads
@@ -452,28 +458,28 @@ class BuildModel1(object):
              dens_hier=[]
 
           self.resdensities[hier_name]=dens_hier
-          domain_dict[hier_name]=outhier+dens_hier
+          self.domain_dict[hier_name]=outhier+dens_hier
 
           if rb is not None:
               if rb not in rigid_bodies:
-                  rigid_bodies[rb]=[h for h in domain_dict[hier_name]]
+                  rigid_bodies[rb]=[h for h in self.domain_dict[hier_name]]
               else:
-                  rigid_bodies[rb]+=[h for h in domain_dict[hier_name]]
+                  rigid_bodies[rb]+=[h for h in self.domain_dict[hier_name]]
           
           
           if super_rb is not None:
               for k in super_rb:
                   if k not in super_rigid_bodies:
-                     super_rigid_bodies[k]=[h for h in domain_dict[hier_name]]
+                     super_rigid_bodies[k]=[h for h in self.domain_dict[hier_name]]
                   else:
-                     super_rigid_bodies[k]+=[h for h in domain_dict[hier_name]]
+                     super_rigid_bodies[k]+=[h for h in self.domain_dict[hier_name]]
 
           if  chain_of_super_rb is not None:
               for k in chain_of_super_rb:
                   if k not in chain_super_rigid_bodies:
-                     chain_super_rigid_bodies[k]=[h for h in domain_dict[hier_name]]
+                     chain_super_rigid_bodies[k]=[h for h in self.domain_dict[hier_name]]
                   else:
-                     chain_super_rigid_bodies[k]+=[h for h in domain_dict[hier_name]]
+                     chain_super_rigid_bodies[k]+=[h for h in self.domain_dict[hier_name]]
           
       self.rigid_bodies=rigid_bodies
 
@@ -484,7 +490,6 @@ class BuildModel1(object):
 
 
       for rb in rigid_bodies:
-          print "AHAHAHA"
           self.simo.set_rigid_body_from_hierarchies(rigid_bodies[rb])
 
       for k in super_rigid_bodies:
@@ -511,12 +516,37 @@ class BuildModel1(object):
            if "_pdb" in h.get_name():pdbbits.append(h)
            if "_bead" in h.get_name():beadbits.append(h)
         return (pdbbits,beadbits)
+    
+    def scale_bead_radii(self,nresidues,scale):
+        scaled_beads=set()
+        for h in self.domain_dict:
+          (pdbbits,beadbits)=self.get_pdb_bead_bits(self.domain_dict[h])
+          slope=(1.0-scale)/(1.0-float(nresidues))
+          
+          for b in beadbits:
+              # I have to do the following 
+              # because otherwise we'll scale more than once
+              if b not in scaled_beads:
+                 scaled_beads.add(b)
+              else:
+                 continue
+              radius=IMP.core.XYZR(b).get_radius()
+              num_residues=len(IMP.pmi.tools.get_residue_indexes(b))
+              scale_factor=slope*float(num_residues)+1.0
+              print scale_factor
+              new_radius=scale_factor*radius
+              IMP.core.XYZR(b).set_radius(new_radius)
+              print b.get_name()
+              print "particle with radius "+str(radius)+" and "+str(num_residues)+" residues scaled to a new radius "+str(new_radius)
+
 
     def create_density(self,simo,compname,comphier,txtfilename,mrcfilename,num_components,read=True):
-        #density generation for the EM restraint
+       #density generation for the EM restraint
        (pdbbits,beadbits)=self.get_pdb_bead_bits(comphier)
 
+       
 
+       
        if read:
           outhier=simo.add_component_density(compname,
                                    pdbbits,
@@ -613,6 +643,10 @@ class AnalysisReplicaExchange0(object):
             for s in stat_files:
                 self.root_directory_dict[s] = rd
 
+
+
+
+
     def clustering(self, score_key,
                    rmf_file_key,
                    rmf_file_frame_key,
@@ -641,6 +675,7 @@ class AnalysisReplicaExchange0(object):
                    # frames to be analysed. If None (default)
                    # get all frames.
                    density_custom_ranges=None,
+                   write_pdb_with_centered_coordinates=False,
                    voxel_size=5.0):
         '''
         the features are keywords for which you want to calculate average, medians, etc,
@@ -850,7 +885,9 @@ class AnalysisReplicaExchange0(object):
 
                     o=IMP.pmi.output.Output()
                     o.init_pdb(dircluster+str(cnt)+"."+str(rank)+".pdb",prot)
-                    o.write_pdb(dircluster+str(cnt)+"."+str(rank)+".pdb",translate_to_geometric_center=True)
+                    o.write_pdb(dircluster+str(cnt)+"."+str(rank)+".pdb",
+                    translate_to_geometric_center=write_pdb_with_centered_coordinates)
+
 
                     tmp_dict["local_pdb_file_name"]=str(cnt)+"."+str(rank)+".pdb"
                     tmp_dict["rmf_file_full_path"]=rmf_name
@@ -916,7 +953,7 @@ class AnalysisReplicaExchange0(object):
                     prot)
                 o.write_pdb(
                     dircluster + str(cnt) + "." + str(rank) + ".pdb",
-                    translate_to_geometric_center=True)
+                    translate_to_geometric_center=write_pdb_with_centered_coordinates)
 
                 tmp_dict["pdb_file_name"] = str(
                     cnt) + "." + str(rank) + ".pdb"
@@ -934,7 +971,7 @@ class AnalysisReplicaExchange0(object):
                 o.close_rmf(
                     dircluster + str(cnt) + "." + str(rank) + ".rmf3")
 
-            exit()
+
 
             # here I've tested that feature_keyword_list_dict is correct on 2
             # CPUs
@@ -1024,7 +1061,8 @@ class AnalysisReplicaExchange0(object):
             if display_plot:
                 if rank == 0:
                     Clusters.plot_matrix()
-                comm.Barrier()
+                if number_of_processes > 1:                    
+                    comm.Barrier()
                 if exit_after_display:
                     exit()
             Clusters.save_distance_matrix_file(file_name=distance_matrix_file)
@@ -1041,7 +1079,8 @@ class AnalysisReplicaExchange0(object):
             if display_plot:
                 if rank == 0:
                     Clusters.plot_matrix()
-                comm.Barrier()
+                if number_of_processes > 1:                    
+                    comm.Barrier()
                 if exit_after_display:
                     exit()
 
@@ -1116,6 +1155,7 @@ class AnalysisReplicaExchange0(object):
                     #rh= RMF.open_rmf_file_read_only(rmf_name)
                     # restraints=IMP.rmf.create_restraints(rh,self.model)
                     #del rh
+                    
 
                     if k > 0:
                         model_index = Clusters.get_model_index_from_name(
@@ -1142,11 +1182,12 @@ class AnalysisReplicaExchange0(object):
                                     IMP.core.XYZ(p),
                                     transformation)
                            # IMP.em.add_to_map(dmap_dict[name],particle_dict[name])
-
+                    
+                    
                     # add the density
                     if density_custom_ranges:
                         DensModule.add_subunits_density(prot)
-
+                    
                     o = IMP.pmi.output.Output()
                     o.init_pdb(dircluster + str(k) + ".pdb", prot)
                     o.write_pdb(dircluster + str(k) + ".pdb")

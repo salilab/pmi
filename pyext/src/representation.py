@@ -90,6 +90,7 @@ class Representation(object):
         self.disorderedlength = disorderedlength
         self.rigid_bodies = []
         self.fixed_rigid_bodies = []
+        self.fixed_floppy_bodies = []
         self.floppy_bodies = []
         # self.super_rigid_bodies is a list of tuples.
         # each tuple, corresponding to a particular super rigid body
@@ -1597,6 +1598,7 @@ class Representation(object):
 
     def fix_rigid_bodies(self, rigid_bodies):
         self.fixed_rigid_bodies += rigid_bodies
+        
 
     def set_chain_of_super_rigid_bodies(
         self,
@@ -1662,6 +1664,7 @@ class Representation(object):
                 if p in self.floppy_bodies:
                     print "remove_floppy_bodies: removing %s from floppy body list" % p.get_name()
                     self.floppy_bodies.remove(p)
+                        
 
     def set_floppy_bodies(self):
         for p in self.floppy_bodies:

@@ -450,6 +450,7 @@ class BuildModel1(object):
              if em_txt_file_name is " ": em_txt_file_name=self.gmm_models_directory+"/"+hier_name+".txt"
              if em_mrc_file_name is " ": em_mrc_file_name=self.gmm_models_directory+"/"+hier_name+".mrc"
              
+             
              dens_hier,beads=self.create_density(self.simo,comp_name,outhier,em_txt_file_name,em_mrc_file_name,em_num_components,read_em_files)
              self.simo.add_all_atom_densities(comp_name, hierarchies=beads)
              dens_hier+=beads
@@ -512,15 +513,17 @@ class BuildModel1(object):
     def get_pdb_bead_bits(self,hierarchy):
         pdbbits=[]
         beadbits=[]
+        helixbits=[]
         for h in hierarchy:
            if "_pdb" in h.get_name():pdbbits.append(h)
            if "_bead" in h.get_name():beadbits.append(h)
-        return (pdbbits,beadbits)
+           if "_helix" in h.get_name():helixbits.append(h)           
+        return (pdbbits,beadbits,helixbits)
     
     def scale_bead_radii(self,nresidues,scale):
         scaled_beads=set()
         for h in self.domain_dict:
-          (pdbbits,beadbits)=self.get_pdb_bead_bits(self.domain_dict[h])
+          (pdbbits,beadbits,helixbits)=self.get_pdb_bead_bits(self.domain_dict[h])
           slope=(1.0-scale)/(1.0-float(nresidues))
           
           for b in beadbits:
@@ -542,27 +545,43 @@ class BuildModel1(object):
 
     def create_density(self,simo,compname,comphier,txtfilename,mrcfilename,num_components,read=True):
        #density generation for the EM restraint
-       (pdbbits,beadbits)=self.get_pdb_bead_bits(comphier)
+       (pdbbits,beadbits,helixbits)=self.get_pdb_bead_bits(comphier)
 
-       
-
-       
+   
+       outhier=[]
        if read:
-          outhier=simo.add_component_density(compname,
-                                   pdbbits,
-                                   num_components=num_components, # number of gaussian into which the simulated density is approximated
-                                   resolution=0,      # resolution that you want to calculate the simulated density
-                                   inputfile=txtfilename) # read what it was calculated before
+          if len(pdbbits)!=0:
+            outhier+=simo.add_component_density(compname,
+                                     pdbbits,
+                                     num_components=num_components, # number of gaussian into which the simulated density is approximated
+                                     resolution=0,      # resolution that you want to calculate the simulated density
+                                     inputfile=txtfilename) # read what it was calculated before
+          if len(helixbits)!=0:
+            outhier+=simo.add_component_density(compname,
+                                     helixbits,
+                                     num_components=num_components, # number of gaussian into which the simulated density is approximated
+                                     resolution=1,      # resolution that you want to calculate the simulated density
+                                     inputfile=txtfilename) # read what it was calculated before                                               
+                                   
 
        else:
-          outhier=simo.add_component_density(compname,
-                                   pdbbits,
-                                   num_components=num_components, # number of gaussian into which the simulated density is approximated
-                                   resolution=0,      # resolution that you want to calculate the simulated density
-                                   outputfile=txtfilename, # do the calculation
-                                   outputmap=mrcfilename,
-                                   multiply_by_total_mass=True) # do the calculation and output the mrc
-             
+          if len(pdbbits)!=0:       
+            outhier+=simo.add_component_density(compname,
+                                     pdbbits,
+                                     num_components=num_components, # number of gaussian into which the simulated density is approximated
+                                     resolution=0,      # resolution that you want to calculate the simulated density
+                                     outputfile=txtfilename, # do the calculation
+                                     outputmap=mrcfilename,
+                                     multiply_by_total_mass=True) # do the calculation and output the mrc
+                                     
+          if len(helixbits)!=0:       
+            outhier+=simo.add_component_density(compname,
+                                     helixbits,
+                                     num_components=num_components, # number of gaussian into which the simulated density is approximated
+                                     resolution=1,      # resolution that you want to calculate the simulated density
+                                     outputfile=txtfilename, # do the calculation
+                                     outputmap=mrcfilename,
+                                     multiply_by_total_mass=True) # do the calculation and output the mrc             
        
        return outhier,beadbits
 
@@ -593,10 +612,10 @@ class BuildModel1(object):
         elif pdbname is not None and pdbname is "IDEAL_HELIX" and pdbname is not "BEADS" :
 
           outhier=simo.add_component_ideal_helix(comname,
-                                            resolutions=[1,10],
-                                            resrange=resrange,
-                                            color=color,
-                                            show=False)
+                                              resolutions=[1,10],
+                                              resrange=resrange,
+                                              color=color,
+                                              show=False)
 
         elif pdbname is not None and pdbname is not "IDEAL_HELIX" and pdbname is "BEADS" :
           outhier=simo.add_component_necklace(comname,resrange[0],resrange[1],beadsize,color=color)

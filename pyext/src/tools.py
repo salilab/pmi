@@ -608,19 +608,25 @@ class map(object):
         self.map[xvalue] = yvalue
 
     def get_map_element(self, invalue):
-        n = 0
-        mindist = 1
-        for x in self.map:
-            dist = (invalue - x) * (invalue - x)
+        if type(invalue) == float:
+          n = 0
+          mindist = 1
+          for x in self.map:
+              dist = (invalue - x) * (invalue - x)
 
-            if n == 0:
-                mindist = dist
-                minx = x
-            if dist < mindist:
-                mindist = dist
-                minx = x
-            n += 1
-        return self.map[minx]
+              if n == 0:
+                  mindist = dist
+                  minx = x
+              if dist < mindist:
+                  mindist = dist
+                  minx = x
+              n += 1
+          return self.map[minx]
+        elif type(invalue) == str:
+          return self.map[invalue]
+        else:
+          print "wrong type for map"
+          exit()
 
 
 def select(representation,

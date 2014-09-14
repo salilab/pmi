@@ -60,7 +60,6 @@ class _NuisancesBase(object):
 
     def create_psi(self, value):
         ''' a nuisance on the inconsistency '''
-        
         self.psiinit = value
         self.psiissampled = True
         self.psiminnuis = 0.0000001
@@ -810,7 +809,9 @@ class ISDCrossLinkMS(_NuisancesBase):
         self.samplelength = samplelength
         self.psi_is_sampled = True
         self.sigma_is_sampled = True
-
+        
+        # isd_map is a dictionary/map that is used to determine the psi 
+        # parameter from identity scores (such as ID-Score, or FDR)
         if ids_map is None:
             self.ids_map = IMP.pmi.tools.map()
             self.ids_map.set_map_element(20.0, 0.05)
@@ -895,6 +896,12 @@ class ISDCrossLinkMS(_NuisancesBase):
                         xlid = tokens[xluniqueid]
                 except:
                     print "this line was not accessible " + str(entry)
+                    if residue1 not in entry: print residue1+" keyword not in database"
+                    if residue2 not in entry: print residue2+" keyword not in database"
+                    if protein1 not in entry: print protein1+" keyword not in database"                    
+                    if protein2 not in entry: print protein2+" keyword not in database"  
+                    if idscore not in entry: print idscore+" keyword not in database"
+                    if xluniqueid not in entry: print xluniqueid+" keyword not in database"
                     continue
 
             else:
@@ -904,30 +911,39 @@ class ISDCrossLinkMS(_NuisancesBase):
                         continue
                 
                 try:
-                    r1 = int(entry[residue1])
-                    c1 = entry[protein1]
-                    r2 = int(entry[residue2])
-                    c2 = entry[protein2]
+                  r1 = int(entry[residue1])
+                  c1 = entry[protein1]
+                  r2 = int(entry[residue2])
+                  c2 = entry[protein2]
 
-                    if offset_dict is not None:
-                       if c1 in offset_dict: r1+=offset_dict[c1]
-                       if c2 in offset_dict: r2+=offset_dict[c2]
+                  if offset_dict is not None:
+                     if c1 in offset_dict: r1+=offset_dict[c1]
+                     if c2 in offset_dict: r2+=offset_dict[c2]
 
-                    if rename_dict is not None:
-                       if c1 in rename_dict: c1=rename_dict[c1]
-                       if c2 in rename_dict: c2=rename_dict[c2]
+                  if rename_dict is not None:
+                     if c1 in rename_dict: c1=rename_dict[c1]
+                     if c2 in rename_dict: c2=rename_dict[c2]
 
-                    if idscore is None:
-                        ids = 1.0
-                    else:
+                  if idscore is None:
+                      ids = 1.0
+                  else:
+                      try:
                         ids = float(entry[idscore])
-                    if xluniqueid is None:
-                        xlid = str(nxl)
-                    else:
-                        xlid = entry[xluniqueid]
+                      except ValueError:
+                        ids = entry[idscore]
+                  if xluniqueid is None:
+                      xlid = str(nxl)
+                  else:
+                    xlid = entry[xluniqueid]
                         
                 except:
                     print "this line was not accessible " + str(entry)
+                    if residue1 not in entry: print residue1+" keyword not in database"
+                    if residue2 not in entry: print residue2+" keyword not in database"
+                    if protein1 not in entry: print protein1+" keyword not in database"                    
+                    if protein2 not in entry: print protein2+" keyword not in database"  
+                    if idscore not in entry: print idscore+" keyword not in database"
+                    if xluniqueid not in entry: print xluniqueid+" keyword not in database"                    
                     continue
 
             for nstate, r in enumerate(representations):
@@ -1013,7 +1029,8 @@ class ISDCrossLinkMS(_NuisancesBase):
                 if not self.marginal:
                     psival = self.ids_map.get_map_element(ids)
                     psi = self.get_psi(psival)[0]
-
+                
+                
                 p1i = p1.get_particle_index()
                 p2i = p2.get_particle_index()
                 s1i = sigma1.get_particle().get_index()
@@ -1065,7 +1082,8 @@ class ISDCrossLinkMS(_NuisancesBase):
                 pr.set_name(
                     xlattribute + "-" + c1 + ":" + str(r1) + "-" + c2 + ":" + str(r2) + "_" + self.label)
                 self.rslin.add_restraint(pr)
-
+                
+                
                 self.pairs.append(
                     (p1,
                      p2,

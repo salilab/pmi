@@ -507,6 +507,7 @@ class BuildModel1(object):
         # specify the list of hierarchy names
         dens_hier_list=[]
         for hn in hier_name_list:
+            print hn
             dens_hier_list+=self.resdensities[hn]
         return dens_hier_list
 
@@ -550,7 +551,7 @@ class BuildModel1(object):
    
        outhier=[]
        if read:
-          if len(pdbbits)!=0:
+          if len(pdbbits)!=0:        
             outhier+=simo.add_component_density(compname,
                                      pdbbits,
                                      num_components=num_components, # number of gaussian into which the simulated density is approximated
@@ -565,7 +566,7 @@ class BuildModel1(object):
                                    
 
        else:
-          if len(pdbbits)!=0:       
+          if len(pdbbits)!=0:        
             outhier+=simo.add_component_density(compname,
                                      pdbbits,
                                      num_components=num_components, # number of gaussian into which the simulated density is approximated
@@ -574,7 +575,7 @@ class BuildModel1(object):
                                      outputmap=mrcfilename,
                                      multiply_by_total_mass=True) # do the calculation and output the mrc
                                      
-          if len(helixbits)!=0:       
+          if len(helixbits)!=0:      
             outhier+=simo.add_component_density(compname,
                                      helixbits,
                                      num_components=num_components, # number of gaussian into which the simulated density is approximated
@@ -1210,11 +1211,11 @@ class AnalysisReplicaExchange0(object):
                     o = IMP.pmi.output.Output()
                     o.init_pdb(dircluster + str(k) + ".pdb", prot)
                     o.write_pdb(dircluster + str(k) + ".pdb")
-                    if k == 0:
-                        o.init_rmf(dircluster + str(k) + ".rmf3", [prot])
-                        # IMP.rmf.add_restraints(o.dictionary_rmfs[dircluster+str(n)+".rmf3"],restraints)
-                        o.write_rmf(dircluster + str(k) + ".rmf3")
-                        o.close_rmf(dircluster + str(k) + ".rmf3")
+
+                    o.init_rmf(dircluster + str(k) + ".rmf3", [prot])
+                    # IMP.rmf.add_restraints(o.dictionary_rmfs[dircluster+str(n)+".rmf3"],restraints)
+                    o.write_rmf(dircluster + str(k) + ".rmf3")
+                    o.close_rmf(dircluster + str(k) + ".rmf3")
 
                     del o
                     # IMP.atom.destroy(prot)

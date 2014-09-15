@@ -896,12 +896,12 @@ class ISDCrossLinkMS(_NuisancesBase):
                         xlid = tokens[xluniqueid]
                 except:
                     print "this line was not accessible " + str(entry)
-                    if residue1 not in entry: print residue1+" keyword not in database"
-                    if residue2 not in entry: print residue2+" keyword not in database"
-                    if protein1 not in entry: print protein1+" keyword not in database"                    
-                    if protein2 not in entry: print protein2+" keyword not in database"  
-                    if idscore not in entry: print idscore+" keyword not in database"
-                    if xluniqueid not in entry: print xluniqueid+" keyword not in database"
+                    if residue1 not in entry: print str(residue1)+" keyword not in database"
+                    if residue2 not in entry: print str(residue2)+" keyword not in database"
+                    if protein1 not in entry: print str(protein1)+" keyword not in database"                    
+                    if protein2 not in entry: print str(protein2)+" keyword not in database"  
+                    if idscore not in entry: print str(idscore)+" keyword not in database"
+                    if xluniqueid not in entry: print str(xluniqueid)+" keyword not in database"
                     continue
 
             else:
@@ -938,12 +938,12 @@ class ISDCrossLinkMS(_NuisancesBase):
                         
                 except:
                     print "this line was not accessible " + str(entry)
-                    if residue1 not in entry: print residue1+" keyword not in database"
-                    if residue2 not in entry: print residue2+" keyword not in database"
-                    if protein1 not in entry: print protein1+" keyword not in database"                    
-                    if protein2 not in entry: print protein2+" keyword not in database"  
-                    if idscore not in entry: print idscore+" keyword not in database"
-                    if xluniqueid not in entry: print xluniqueid+" keyword not in database"                    
+                    if residue1 not in entry: print str(residue1)+" keyword not in database"
+                    if residue2 not in entry: print str(residue2)+" keyword not in database"
+                    if protein1 not in entry: print str(protein1)+" keyword not in database"                    
+                    if protein2 not in entry: print str(protein2)+" keyword not in database"  
+                    if idscore not in entry: print str(idscore)+" keyword not in database"
+                    if xluniqueid not in entry: print str(xluniqueid)+" keyword not in database"                    
                     continue
 
             for nstate, r in enumerate(representations):

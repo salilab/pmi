@@ -240,3 +240,14 @@ class SymmetryRestraint(object):
         output["SymmetryRestraint_" + self.label] = str(score)
         output["_TotalScore"] = str(score)
         return output
+
+class CoarseCARestraint(object):
+    """ Add bonds, angles, and dihedrals for a CA-only model """
+    def __init__(self,root,
+                 strength=10.0,
+                 bond_distance=3.78
+                 bond_jitter=None,
+                 angle_min=100.0
+                 angle_max=140.0,
+                 dihedral_seq=None):
+        pass

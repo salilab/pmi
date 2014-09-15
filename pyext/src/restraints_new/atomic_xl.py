@@ -258,24 +258,32 @@ class AtomicCrossLinkMSRestraint(object):
                 IMP.isd.Scale(self.mdl,sig2).set_scale(sig2_val)
         print 'loaded nuisances from file'
 
-    def plot_violations(self,out_fn,
+    def plot_violations(self,out_prefix,
                         max_prob_for_violation=0.1,
                         min_dist_for_violation=1e9,
                         coarsen=False):
-        """Create a CMM file of all xinks.
+        """Create CMM files, one for each state, of all xinks.
         will draw in GREEN if non-violated in all states (or if only one state)
         will draw in PURPLE if non-violated only in a subset of states (draws nothing elsewhere)
         will draw in RED in ALL states if all violated
         (if only one state, you'll only see green and red)
 
-        @param out_fn                 The CMM output file
+        @param out_prefix             Output xlink files prefix
         @param max_prob_for_violation It's a violation if the probability is below this
         @param min_dist_for_violation It's a violation if the min dist is above this
         @param coarsen                Use CA positions
         """
-        outf=open(out_fn,'w')
-        outf.write('<marker_set name="%s"> \n' % os.path.splitext(os.path.basename(out_fn))[0])
-        nv=0
+
+        all_dists=[]
+
+        # prepare one output file per state
+        out_fns=[]
+        out_nvs=[]
+        for nstate in range(self.nstates):
+            outf=open(out_prefix+str(nstate)+'.cmm','w')
+            outf.write('<marker_set name="xlinks_state%i"> \n' % nstate)
+            out_fns.append(outf)
+            out_nvs.append(0)
 
         # for each crosslink, evaluate probability and lowest distance for each state
         for nxl in range(self.rs.get_number_of_restraints()):
@@ -289,7 +297,7 @@ class AtomicCrossLinkMSRestraint(object):
                 nstate = IMP.atom.get_state_index(IMP.atom.Atom(self.mdl,idxs[0]))
                 ncontr_per_state[nstate].append(ncontr)
                 idx1,idx2,dist=self._get_contribution_info(xl,ncontr,use_CA=coarsen)
-                if dist<best_contr_per_state[nstate][0]*0.95:
+                if dist<best_contr_per_state[nstate][0]*0.9:
                     if best_contr_per_state[nstate][1] is not None:
                         c1=IMP.atom.get_chain_id(IMP.atom.Atom(self.mdl,idx1))
                         c2=IMP.atom.get_chain_id(IMP.atom.Atom(self.mdl,idx2))
@@ -298,7 +306,7 @@ class AtomicCrossLinkMSRestraint(object):
                     best_contr_per_state[nstate] = [dist,ncontr]
             prob_per_state = [xl.evaluate_for_contributions(cr,None) for cr in ncontr_per_state]
             prob_global = xl.unprotected_evaluate(None)
-            print xl,'prob:',prob_global,'prob per state: ',prob_per_state,'best dists',best_contr_per_state
+            all_dists.append(min(best_contr_per_state)[0])
 
             # now check each state and see how many pass
             npass=[]
@@ -315,17 +323,18 @@ class AtomicCrossLinkMSRestraint(object):
             # special case when all pass or all fail
             all_pass=False
             all_viol=False
+
             if len(npass)==self.nstates:
                 all_pass=True
             elif len(nviol)==self.nstates:
                 all_viol=True
-
+            print xl,'prob:',prob_global,'prob per state: ',prob_per_state,'best dists',best_contr_per_state,all_viol
             # finally, color based on above info
             for nstate in range(self.nstates):
                 if all_pass:
-                    r=0; g=1; b=0;
+                    r=0.365; g=0.933; b=0.365;
                 elif all_viol:
-                    r=1; g=0; b=0;
+                    r=0.980; g=0.302; b=0.247;
                 else:
                     if nstate in nviol:
                         continue
@@ -337,17 +346,22 @@ class AtomicCrossLinkMSRestraint(object):
                 c2=IMP.core.XYZ(self.mdl,idx2).get_coordinates()
                 a1=IMP.atom.Atom(self.mdl,idx1)
                 a2=IMP.atom.Atom(self.mdl,idx2)
+
+                outf = out_fns[nstate]
+                nv = out_nvs[nstate]
                 outf.write('<marker id= "%d" x="%.3f" y="%.3f" z="%.3f" radius="0.8" '
                            'r="%.2f" g="%.2f" b="%.2f"/> \n' % (nv,c1[0],c1[1],c1[2],r,g,b))
                 outf.write('<marker id= "%d" x="%.3f" y="%.3f" z="%.3f" radius="0.8"  '
                            'r="%.2f" g="%.2f" b="%.2f"/> \n' % (nv+1,c2[0],c2[1],c2[2],r,g,b))
                 outf.write('<link id1= "%d" id2="%d" radius="0.8" '
                            'r="%.2f" g="%.2f" b="%.2f"/> \n' % (nv,nv+1,r,g,b))
-                nv+=2
-        outf.write('</marker_set>\n')
-        outf.close()
-        print 'wrote xlinks to',out_fn
+                out_nvs[nstate]+=2
 
+        for nstate in range(self.nstates):
+            out_fns[nstate].write('</marker_set>\n')
+            out_fns[nstate].close()
+
+        return all_dists
     def _get_contribution_info(self,xl,ncontr,use_CA=False):
         """Return the particles at that contribution. If requested will return CA's instead"""
         idx1=xl.get_contribution(ncontr)[0]

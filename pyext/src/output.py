@@ -857,14 +857,15 @@ def plot_fields_box_plots(name, values, positions, frequencies=None,
     plt.show()
 
 
-def plot_xy_data(x,y):
+def plot_xy_data(x,y,title=None):
         import matplotlib.pyplot as plt
         plt.rc('lines', linewidth=2)
+        
         fig, ax  = plt.subplots(nrows=1)
         fig.set_size_inches(8,4.5)
+        if title is not None:
+          fig.canvas.set_window_title(title)
         plt.rc('axes', color_cycle=['r'])
-        print x
-        print y
         ax.plot(x,y)
         plt.show()
 

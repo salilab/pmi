@@ -6,6 +6,7 @@
 
 import IMP
 import IMP.algebra
+import IMP.pmi.tools
 
 
 class Alignment(object):
@@ -1906,7 +1907,8 @@ class Precision(object):
             selection_dictionary = {"Selection_name_1":selection_tuple1,
                                     "Selection_name_2":selection_tuple2}'''
 
-        self.styles=['pairwise_rmsd','pairwise_drmsd_k','pairwise_drmsd_Q','pairwise_drms_k','rmsd_from_center','drmsd_from_center']
+                                    
+        self.styles=['pairwise_rmsd','pairwise_drmsd_k','pairwise_drmsd_Q','pairwise_drms_k','pairwise_rmsd','drmsd_from_center']
         self.style='pairwise_drmsd_k'
         self.structures_dictionary={}
         self.reference_structures_dictionary={}
@@ -1920,6 +1922,8 @@ class Precision(object):
         self.reference_prot=None
         self.selection_dictionary=selection_dictionary
         self.threshold=40.0
+
+        self.residue_particle_index_map=None
 
         if resolution in ["one", "ten"]:
            self.resolution=resolution
@@ -1980,11 +1984,32 @@ class Precision(object):
 
         my_rmf_name_frame_tuples=IMP.pmi.tools.chunk_list_into_segments(rmf_name_frame_tuples,number_of_processes)[rank]
 
-        for tup in my_rmf_name_frame_tuples:
+        
+        for nfr,tup in enumerate(my_rmf_name_frame_tuples):
             rmf_name=tup[0]
             rmf_frame_index=tup[1]
-
+            # the first frame stores the map between residues and particles
             self.add_structure(rmf_name,rmf_frame_index)
+            try:
+               (a,b)=self.get_structure(rmf_frame_index,rmf_name)
+            except:
+               print "something wrong with the rmf"
+               continue              
+            if self.residue_particle_index_map is None:
+
+               
+               try:
+                 (particles_resolution_one, prots)=self.get_structure(rmf_frame_index,rmf_name)
+               except:
+                 print "something wrong with the rmf"
+                 continue                
+               
+               self.residue_particle_index_map={}
+                                
+               for prot_name in self.protein_names:  
+                 
+                 self.residue_particle_index_map[prot_name]=self.get_residue_particle_index_map(prot_name,particles_resolution_one,prots[0])
+
 
         if number_of_processes > 1:
            # synchronize the internal self.selection_dictionary data structure
@@ -2012,9 +2037,13 @@ class Precision(object):
 
     def add_structure(self,rmf_name,rmf_frame_index):
 
-        (particles_resolution_one, prots)=self.get_structure(rmf_frame_index,rmf_name)
+        try:     
+          (particles_resolution_one, prots)=self.get_structure(rmf_frame_index,rmf_name)
+        except:
+          print "something wrong with the rmf"
+          return 0
 
-        if self.selection_dictionary is None: self.selection_dictionary={"All":self.protein_names}
+        self.selection_dictionary.update({"All":self.protein_names})
 
         for selection_name in self.selection_dictionary:
             selection_tuple=self.selection_dictionary[selection_name]
@@ -2031,7 +2060,16 @@ class Precision(object):
 
 
 
-
+    def get_residue_particle_index_map(self,prot_name,structure,hier):
+       residue_particle_index_map=[]
+       s=IMP.atom.Selection(hier,molecules=[prot_name])
+       all_selected_particles=s.get_selected_particles()
+       intersection=list(set(all_selected_particles) & set(structure))   
+       sorted_intersection=IMP.pmi.tools.sort_by_residues(intersection)    
+       for p in sorted_intersection:
+           residue_particle_index_map.append(IMP.pmi.tools.get_residue_indexes(p))
+       return residue_particle_index_map
+               
 
     def select_coordinates(self,tuple_selections,structure,prot):
         selected_coordinates=[]
@@ -2074,15 +2112,33 @@ class Precision(object):
         if self.style=='pairwise_drmsd_Q':
            distance=IMP.atom.get_drmsd_Q(coordinates1,coordinates2,self.threshold)
 
+        if self.style=='pairwise_rmsd':
+           distance=IMP.atom.get_rmsd(coordinates1,coordinates2,IMP.algebra.get_identity_transformation_3d())
+               
         return distance
+    
+    def get_particle_distances(self,selection_name,index1,index2):
+        import numpy
+        import numpy.linalg
+        c1=self.structures_dictionary[selection_name][index1]
+        c2=self.structures_dictionary[selection_name][index2]
+              
+        coordinates1=map(lambda c: IMP.algebra.Vector3D(c), c1)
+        coordinates2=map(lambda c: IMP.algebra.Vector3D(c), c2)
+        
+        distances=[numpy.linalg.norm(a-b) for (a,b) in zip(coordinates1,coordinates2)]
+        
+        return distances
+        
+    def get_precision(self,outfile,is_mpi=False,skip=None,selection_keywords=None):
 
-
-    def get_precision(self,outfile,is_mpi=False,skip=None):
         '''
         skip Int analyse every skip structure for the distance matrix calculation
+        outfile   str  the output file name
+        is_mpi    bool speed up calculation using openmpi
+        skip      int  skip every n frames
+        rmsf      bool calculate the residue root mean square fluctuations (like the b-factors)
         '''
-
-
 
         import itertools
 
@@ -2092,10 +2148,18 @@ class Precision(object):
             rank = comm.Get_rank()
             number_of_processes = comm.size
         else:
-            number_of_processes=1
-            rank=0
-
-        for selection_name in self.selection_dictionary:
+            number_of_processes=1 
+            rank=0       
+        
+        of=open(outfile,"w")       
+         
+        if selection_keywords is None:
+          sel_keys=self.selection_dictionary.keys()
+        else:
+          sel_keys=selection_keywords
+        
+        for selection_name in sel_keys:
+          
 
           number_of_structures=len(self.structures_dictionary[selection_name])
 
@@ -2151,32 +2215,69 @@ class Precision(object):
 
             centroid_distance=0.0
             for n in range(number_of_structures):
-                print n
                 centroid_distance+=self.get_distance(selection_name,centroid_index,n)
 
 
             #pairwise_distance=distance/len(distances.keys())
             centroid_distance/=number_of_structures
             #average_centroid_distance=sum(distances_to_structure)/len(distances_to_structure)
-            of=open(outfile,"w")
             of.write(str(selection_name)+" average centroid "+str(centroid_distance)+"\n")
             of.write(str(selection_name)+" centroid index "+str(centroid_index)+"\n")
             of.write(str(selection_name)+" centroid rmf name "+str(centroid_rmf_name)+"\n")
-            of.close()
+
+          
+        of.close()     
+        return centroid_index                
+
+    def get_rmsf(self,outfile,is_mpi=False,skip=None,make_plot=False):
+        import numpy
+        of=open(outfile,"w")       
+        # get the centroid structure for the whole complex
+        centroid_index=self.get_precision(outfile,is_mpi=is_mpi,skip=skip,selection_keywords=["All"])
+
+        for p in self.protein_names:
+
+           selection_name=p
+           self.selection_dictionary.update({selection_name:[p]})
+           number_of_structures=len(self.structures_dictionary[selection_name])
+           
+           rpim=self.residue_particle_index_map[p]  
+
+           residue_distances={}                    
+           for index in range(number_of_structures):
+           
+
+              distances=self.get_particle_distances(selection_name,centroid_index,index)          
+              for nblock,block in enumerate(rpim):
+
+                 for residue_number in block:
+                     if residue_number not in residue_distances:
+                        residue_distances[residue_number]=[distances[nblock]]
+                     else:
+                        residue_distances[residue_number].append(distances[nblock])
+           
+           residues=[]
+           rmsfs=[]
+           for rn in residue_distances:
+               residues.append(rn)
+               rmsfs.append(numpy.std(residue_distances[rn]))
+           
+           IMP.pmi.output.plot_xy_data(residues,rmsfs,title=p)
+           
+               
+                 
 
 
     def set_reference_structure(self,rmf_name,rmf_frame_index):
         (particles_resolution_one, prot)=self.get_structure(rmf_frame_index,rmf_name)
         self.reference_rmf_names_frames=(rmf_name,rmf_frame_index)
 
-
-
+        
         for selection_name in self.selection_dictionary:
             selection_tuple=self.selection_dictionary[selection_name]
             coords=self.select_coordinates(selection_tuple,
                                        particles_resolution_one,prot)
             self.reference_structures_dictionary[selection_name]=coords
-
 
 
     def get_average_distance_wrt_reference_structure(self,tuple_selections=None):
@@ -2185,23 +2286,23 @@ class Precision(object):
           reference_coordinates=self.reference_structures_dictionary[selection_name]
 
           distances=[]
-          for sc in self.structures_dictionary[selection_name]:
 
-              c1=sc
-              c2=reference_coordinates
-
-              coordinates1=map(lambda c: IMP.algebra.Vector3D(c), c1)
-              coordinates2=map(lambda c: IMP.algebra.Vector3D(c), c2)
-
-              if self.style=='pairwise_drmsd_k':
-                 distance=IMP.atom.get_drmsd(coordinates1,coordinates2)
-              if self.style=='pairwise_drms_k':
-                 distance=IMP.atom.get_drms(coordinates1,coordinates2)
-              if self.style=='pairwise_drmsd_Q':
-                 distance=IMP.atom.get_drmsd_Q(coordinates1,coordinates2,self.threshold)
-
-              distances.append(distance)
-
+          for sc in self.structures_dictionary[selection_name]: 
+              
+              for rc in self.reference_structures_dictionary[selection_name]:
+                        
+                  coordinates1=map(lambda c: IMP.algebra.Vector3D(c), sc)
+                  coordinates2=map(lambda c: IMP.algebra.Vector3D(c), rc)
+                        
+                  if self.style=='pairwise_drmsd_k':       
+                     distance=IMP.atom.get_drmsd(coordinates1,coordinates2)
+                  if self.style=='pairwise_drms_k':       
+                     distance=IMP.atom.get_drms(coordinates1,coordinates2)
+                  if self.style=='pairwise_drmsd_Q':       
+                     distance=IMP.atom.get_drmsd_Q(coordinates1,coordinates2,self.threshold)
+                          
+                  distances.append(distance)
+              
 
           print selection_name,"average distance",sum(distances)/len(distances),"minimum distance",min(distances)
 

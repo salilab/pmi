@@ -524,7 +524,13 @@ class GetModelDensity(object):
         if name not in self.densities:
             self.densities[name] = dmap
         else:
-            self.densities[name].add(dmap)
+            bbox1 = IMP.em.get_bounding_box(self.densities[name])
+            bbox2 = IMP.em.get_bounding_box(dmap)
+            bbox1 += bbox2
+            dmap3 = IMP.em.create_density_map(bbox1,self.voxel)
+            dmap3.add(dmap)
+            dmap3.add(self.densities[name])
+            self.densities[name] = dmap3
 
     def write_mrc(self, path="./"):
 
@@ -870,7 +876,7 @@ class CrossLinkTable(object):
         import RMF
 
         rh= RMF.open_rmf_file_read_only(rmf_name)
-        prots=IMP.rmf.create_hierarchies(rh, self.model) 
+        prots=IMP.rmf.create_hierarchies(rh, self.model)
         IMP.rmf.load_frame(rh, rmf_frame_index)
         print "getting coordinates for frame %i rmf file %s" % (rmf_frame_index, rmf_name)
         del rh
@@ -905,7 +911,7 @@ class CrossLinkTable(object):
                         else:
                             self.index_dictionary[name].append(resindex)
                         resindex += 1
-                
+
         coords = array(coords)
         radii = array(radii)
 
@@ -916,7 +922,7 @@ class CrossLinkTable(object):
         if self.contactmap is None:
             self.contactmap = zeros((len(coords), len(coords)))
         self.contactmap += distances
-        
+
         for prot in prots: IMP.atom.destroy(prot)
 
     def set_crosslinks(
@@ -938,15 +944,15 @@ class CrossLinkTable(object):
 
         po = IMP.pmi.output.ProcessOutput(data_file)
         keys = po.get_keys()
-        
+
         xl_keys = [k for k in keys if search_label in k]
-        
+
         if filter_rmf_file_names is not None:
            rmf_file_key="local_rmf_file_name"
            fs = po.get_fields(xl_keys+[rmf_file_key])
         else:
            fs = po.get_fields(xl_keys)
-       
+
         # this dictionary stores the occurency of given crosslinks
         self.cross_link_frequency = {}
 
@@ -985,10 +991,10 @@ class CrossLinkTable(object):
                 ":",
                 " ").split(
             )
-            
+
             if filter_label!=None:
                if filter_label not in keysplit: continue
-            
+
             if mapping is None:
                 r1 = int(keysplit[5])
                 c1 = keysplit[6]
@@ -1021,10 +1027,10 @@ class CrossLinkTable(object):
 
             # construct the list of distances corresponding to the input rmf
             # files
-            
+
             dists=[]
             if filter_rmf_file_names is not None:
-               for n,d in enumerate(fs[key]):       
+               for n,d in enumerate(fs[key]):
                   if fs[rmf_file_key][n] in filter_rmf_file_names:
                      dists.append(float(d))
             else:
@@ -1032,7 +1038,7 @@ class CrossLinkTable(object):
 
             # check if the input confidence class corresponds to the
             # one of the cross-link
-            
+
             mdist = self.median(dists)
 
             stdv = np.std(np.array(dists))
@@ -1130,18 +1136,18 @@ class CrossLinkTable(object):
         sorts = sorted(mylist)
         length = len(sorts)
         print length
-        if length == 1: 
+        if length == 1:
             return mylist[0]
         if not length % 2:
             return (sorts[length / 2] + sorts[length / 2 - 1]) / 2.0
         return sorts[length / 2]
-    
+
     def set_threshold(self,threshold):
         self.threshold=threshold
 
     def set_tolerance(self,tolerance):
         self.tolerance=tolerance
-    
+
     def colormap(self, dist):
         if dist < self.threshold - self.tolerance:
             return "Green"
@@ -1304,7 +1310,7 @@ class CrossLinkTable(object):
             yticks.append((float(res) + float(end)) / 2)
             if rename_protein_map is not None:
                if prot in rename_protein_map:
-                  prot=rename_protein_map[prot]            
+                  prot=rename_protein_map[prot]
             ylabels.append(prot)
 
         # plot the contact map
@@ -1329,9 +1335,9 @@ class CrossLinkTable(object):
                     indexes_y = self.index_dictionary[py]
                     miny = min(indexes_y)
                     maxy = max(indexes_y)
-                    
+
                     print px, py, minx, maxx, miny, maxy
-                    
+
                     try:
                       tmp_array[
                           resx:lengx,
@@ -1340,8 +1346,8 @@ class CrossLinkTable(object):
                           miny:maxy]
                     except:
                       continue
-  
-            
+
+
             ax.imshow(tmp_array,
                       cmap=cm.binary,
                       origin='lower',
@@ -1353,8 +1359,8 @@ class CrossLinkTable(object):
         ax.set_yticklabels(ylabels)
         ax.set_xlim(0,nresx)
         ax.set_ylim(0,nresy)
-        
-        
+
+
         # set the crosslinks
 
         already_added_xls = []
@@ -1444,7 +1450,7 @@ class CrossLinkTable(object):
 
         if filename:
             plt.savefig(filename + ".pdf", dpi=300, transparent="False")
-        
+
 
         plt.show()
 
@@ -1489,9 +1495,9 @@ class CrossLinkTable(object):
                 unique_cross_links.append((r2, c2, r1, c1))
 
         print "# satisfied"
-        
+
         total_number_of_crosslinks=0
-        
+
         for i in satisfied_histogram:
             # if i in violated_histogram:
             #   print i, satisfied_histogram[i]+violated_histogram[i]
@@ -1507,10 +1513,10 @@ class CrossLinkTable(object):
         for i in violated_histogram:
             print i, violated_histogram[i]
             total_number_of_crosslinks+=i*violated_histogram[i]
-        
+
         print total_number_of_crosslinks
-        
-        
+
+
 # ------------
     def print_cross_link_binary_symbols(self, prot_list,
                                         prot_list2=None):
@@ -1895,11 +1901,11 @@ class CrossLinkTable(object):
 
 class Precision(object):
     def __init__(self,model,resolution='one',selection_dictionary=None):
-    
+
         ''' selection_dictionary is a dictionary where we store coordinates
             selection_dictionary = {"Selection_name_1":selection_tuple1,
                                     "Selection_name_2":selection_tuple2}'''
-                                    
+
         self.styles=['pairwise_rmsd','pairwise_drmsd_k','pairwise_drmsd_Q','pairwise_drms_k','rmsd_from_center','drmsd_from_center']
         self.style='pairwise_drmsd_k'
         self.structures_dictionary={}
@@ -1914,20 +1920,20 @@ class Precision(object):
         self.reference_prot=None
         self.selection_dictionary=selection_dictionary
         self.threshold=40.0
-       
+
         if resolution in ["one", "ten"]:
            self.resolution=resolution
         else:
-           print "no such resolution"; exit()  
+           print "no such resolution"; exit()
 
 
 
     def get_structure(self,rmf_frame_index,rmf_name):
         import IMP.rmf
         import RMF
-        
+
         rh= RMF.open_rmf_file_read_only(rmf_name)
-        prots=IMP.rmf.create_hierarchies(rh, self.model) 
+        prots=IMP.rmf.create_hierarchies(rh, self.model)
         IMP.rmf.load_frame(rh, rmf_frame_index)
         print "getting coordinates for frame %i rmf file %s" % (rmf_frame_index, rmf_name)
         del rh
@@ -1935,21 +1941,21 @@ class Precision(object):
         if self.resolution=='one':
            particle_dict=get_particles_at_resolution_one(prots[0])
         elif self.resolution=='ten':
-           particle_dict=get_particles_at_resolution_ten(prots[0])  
-     
+           particle_dict=get_particles_at_resolution_ten(prots[0])
+
         protein_names=particle_dict.keys()
         particles_resolution_one=[]
         for k in particle_dict:
             particles_resolution_one+=(particle_dict[k])
-            
+
         if self.protein_names==None:
             self.protein_names=protein_names
         else:
             if self.protein_names!=protein_names:
                print "Error: the protein names of the new coordinate set is not compatible with the previous one"
                exit()
-            
-        if self.len_particles_resolution_one==None: 
+
+        if self.len_particles_resolution_one==None:
             self.len_particles_resolution_one=len(particles_resolution_one)
         else:
             if self.len_particles_resolution_one!=len(particles_resolution_one):
@@ -1958,11 +1964,11 @@ class Precision(object):
 
         return particles_resolution_one, prots
 
-    
+
     def add_structures(self,rmf_name_frame_tuples,is_mpi=False):
         '''this function helps reading a list of rmfs, the input is a list of
         tuples, containing the file name and the frame number'''
-        
+
         if is_mpi:
             from mpi4py import MPI
             comm = MPI.COMM_WORLD
@@ -1971,15 +1977,15 @@ class Precision(object):
         else:
             number_of_processes=1
             rank=0
-          
+
         my_rmf_name_frame_tuples=IMP.pmi.tools.chunk_list_into_segments(rmf_name_frame_tuples,number_of_processes)[rank]
-        
+
         for tup in my_rmf_name_frame_tuples:
             rmf_name=tup[0]
             rmf_frame_index=tup[1]
-            
+
             self.add_structure(rmf_name,rmf_frame_index)
-          
+
         if number_of_processes > 1:
            # synchronize the internal self.selection_dictionary data structure
            self.rmf_names_frames=IMP.pmi.tools.scatter_and_gather(self.rmf_names_frames)
@@ -1990,9 +1996,9 @@ class Precision(object):
            elif rank == 0:
               for i in range(1, number_of_processes):
                  data_tmp = comm.recv(source=i, tag=11)
-                 
+
                  for key in self.structures_dictionary:
-                 
+
                      self.structures_dictionary[key]+=data_tmp[key]
 
               for i in range(1, number_of_processes):
@@ -2000,29 +2006,29 @@ class Precision(object):
 
            if rank != 0:
               self.structures_dictionary = comm.recv(source=0, tag=11)
-    
-        
 
-        
+
+
+
     def add_structure(self,rmf_name,rmf_frame_index):
-               
+
         (particles_resolution_one, prots)=self.get_structure(rmf_frame_index,rmf_name)
 
-        if self.selection_dictionary is None: self.selection_dictionary={"All":self.protein_names}        
-        
+        if self.selection_dictionary is None: self.selection_dictionary={"All":self.protein_names}
+
         for selection_name in self.selection_dictionary:
             selection_tuple=self.selection_dictionary[selection_name]
             coords=self.select_coordinates(selection_tuple,particles_resolution_one,prots[0])
-            
+
             if selection_name not in self.structures_dictionary:
                self.structures_dictionary[selection_name]=[coords]
             else:
                self.structures_dictionary[selection_name].append(coords)
 
         self.rmf_names_frames.append((rmf_name,rmf_frame_index))
-        
+
         for prot in prots: IMP.atom.destroy(prot)
-               
+
 
 
 
@@ -2033,82 +2039,82 @@ class Precision(object):
            if type(t)==tuple and len(t)==3:
                s=IMP.atom.Selection(prot,molecules=[t[0]],residue_indexes=range(t[1],t[2]+1))
                all_selected_particles=s.get_selected_particles()
-               intersection=list(set(all_selected_particles) & set(structure))    
-               sorted_intersection=IMP.pmi.tools.sort_by_residues(intersection)                                  
-               cc=map(lambda p: tuple(IMP.core.XYZ(p).get_coordinates()), sorted_intersection) 
+               intersection=list(set(all_selected_particles) & set(structure))
+               sorted_intersection=IMP.pmi.tools.sort_by_residues(intersection)
+               cc=map(lambda p: tuple(IMP.core.XYZ(p).get_coordinates()), sorted_intersection)
                selected_coordinates+=cc
 
            elif type(t)==str:
                s=IMP.atom.Selection(prot,molecules=[t])
                all_selected_particles=s.get_selected_particles()
-               intersection=list(set(all_selected_particles) & set(structure))   
-               sorted_intersection=IMP.pmi.tools.sort_by_residues(intersection)       
+               intersection=list(set(all_selected_particles) & set(structure))
+               sorted_intersection=IMP.pmi.tools.sort_by_residues(intersection)
                cc=map(lambda p: tuple(IMP.core.XYZ(p).get_coordinates()), sorted_intersection)
                selected_coordinates+=cc
            else:
                print "Selection error"
                exit()
         return selected_coordinates
-       
-    def set_threshold(self,threshold): 
+
+    def set_threshold(self,threshold):
         self.threshold=threshold
-    
-    
+
+
     def get_distance(self,selection_name,index1,index2):
         c1=self.structures_dictionary[selection_name][index1]
         c2=self.structures_dictionary[selection_name][index2]
-              
+
         coordinates1=map(lambda c: IMP.algebra.Vector3D(c), c1)
         coordinates2=map(lambda c: IMP.algebra.Vector3D(c), c2)
-              
-        if self.style=='pairwise_drmsd_k':       
+
+        if self.style=='pairwise_drmsd_k':
            distance=IMP.atom.get_drmsd(coordinates1,coordinates2)
-        if self.style=='pairwise_drms_k':       
+        if self.style=='pairwise_drms_k':
            distance=IMP.atom.get_drms(coordinates1,coordinates2)
-        if self.style=='pairwise_drmsd_Q':       
+        if self.style=='pairwise_drmsd_Q':
            distance=IMP.atom.get_drmsd_Q(coordinates1,coordinates2,self.threshold)
-        
+
         return distance
-        
-        
+
+
     def get_precision(self,outfile,is_mpi=False,skip=None):
         '''
         skip Int analyse every skip structure for the distance matrix calculation
         '''
-        
-        
-        
+
+
+
         import itertools
-        
+
         if is_mpi:
             from mpi4py import MPI
             comm = MPI.COMM_WORLD
             rank = comm.Get_rank()
             number_of_processes = comm.size
         else:
-            number_of_processes=1 
-            rank=0       
-        
+            number_of_processes=1
+            rank=0
+
         for selection_name in self.selection_dictionary:
-          
+
           number_of_structures=len(self.structures_dictionary[selection_name])
 
           distances={}
-          
+
           structure_pointers=range(number_of_structures)
-          
+
           if skip is not None:
              structure_pointers=structure_pointers[0::skip]
-          
+
           pair_combination_list=list(itertools.combinations(structure_pointers,2))
-          
-          if len(pair_combination_list)==0: 
+
+          if len(pair_combination_list)==0:
              print "get_precision> no structure selected. Check the skip parameter."
              exit()
-          
+
           my_pair_combination_list=IMP.pmi.tools.chunk_list_into_segments(pair_combination_list,number_of_processes)[rank]
           my_length=len(my_pair_combination_list)
-          
+
           for n,pair in enumerate(my_pair_combination_list):
               progression=int(float(n)/my_length*100.0)
               print rank,progression,len(pair_combination_list),my_length,n
@@ -2116,39 +2122,39 @@ class Precision(object):
 
           if number_of_processes > 1:
               distances = IMP.pmi.tools.scatter_and_gather(distances)
-          
+
           if rank == 0:
-          
+
             distance=0.0
             distances_to_structure={}
             distances_to_structure_normalization={}
-                    
+
             for n in structure_pointers:
                 distances_to_structure[n]=0.0
                 distances_to_structure_normalization[n]=0
-                        
+
             for k in distances:
                 distance+=distances[k]
                 distances_to_structure[k[0]]+=distances[k]
-                distances_to_structure[k[1]]+=distances[k]   
-                distances_to_structure_normalization[k[0]]+=1        
-                distances_to_structure_normalization[k[1]]+=1              
-            
-            for n in structure_pointers:        
+                distances_to_structure[k[1]]+=distances[k]
+                distances_to_structure_normalization[k[0]]+=1
+                distances_to_structure_normalization[k[1]]+=1
+
+            for n in structure_pointers:
                 distances_to_structure[n]=distances_to_structure[n]/distances_to_structure_normalization[n]
-            
+
             #for n,d in enumerate(distances_to_structure):
             #    print self.rmf_names_frames[n],d
-            min_distance=min([distances_to_structure[n] for n in distances_to_structure])    
+            min_distance=min([distances_to_structure[n] for n in distances_to_structure])
             centroid_index=[k for k, v in distances_to_structure.iteritems() if v == min_distance][0]
             centroid_rmf_name=self.rmf_names_frames[centroid_index]
-            
+
             centroid_distance=0.0
             for n in range(number_of_structures):
                 print n
                 centroid_distance+=self.get_distance(selection_name,centroid_index,n)
-            
-            
+
+
             #pairwise_distance=distance/len(distances.keys())
             centroid_distance/=number_of_structures
             #average_centroid_distance=sum(distances_to_structure)/len(distances_to_structure)
@@ -2156,13 +2162,13 @@ class Precision(object):
             of.write(str(selection_name)+" average centroid "+str(centroid_distance)+"\n")
             of.write(str(selection_name)+" centroid index "+str(centroid_index)+"\n")
             of.write(str(selection_name)+" centroid rmf name "+str(centroid_rmf_name)+"\n")
-            of.close()                     
-            
+            of.close()
+
 
     def set_reference_structure(self,rmf_name,rmf_frame_index):
         (particles_resolution_one, prot)=self.get_structure(rmf_frame_index,rmf_name)
         self.reference_rmf_names_frames=(rmf_name,rmf_frame_index)
-        
+
 
 
         for selection_name in self.selection_dictionary:
@@ -2170,44 +2176,44 @@ class Precision(object):
             coords=self.select_coordinates(selection_tuple,
                                        particles_resolution_one,prot)
             self.reference_structures_dictionary[selection_name]=coords
-           
 
-        
+
+
     def get_average_distance_wrt_reference_structure(self,tuple_selections=None):
-        
+
         for selection_name in self.selection_dictionary:
           reference_coordinates=self.reference_structures_dictionary[selection_name]
-          
+
           distances=[]
-          for sc in self.structures_dictionary[selection_name]: 
-              
+          for sc in self.structures_dictionary[selection_name]:
+
               c1=sc
               c2=reference_coordinates
-                    
+
               coordinates1=map(lambda c: IMP.algebra.Vector3D(c), c1)
               coordinates2=map(lambda c: IMP.algebra.Vector3D(c), c2)
-                    
-              if self.style=='pairwise_drmsd_k':       
+
+              if self.style=='pairwise_drmsd_k':
                  distance=IMP.atom.get_drmsd(coordinates1,coordinates2)
-              if self.style=='pairwise_drms_k':       
+              if self.style=='pairwise_drms_k':
                  distance=IMP.atom.get_drms(coordinates1,coordinates2)
-              if self.style=='pairwise_drmsd_Q':       
+              if self.style=='pairwise_drmsd_Q':
                  distance=IMP.atom.get_drmsd_Q(coordinates1,coordinates2,self.threshold)
-                      
+
               distances.append(distance)
-              
-          
+
+
           print selection_name,"average distance",sum(distances)/len(distances),"minimum distance",min(distances)
-          
-    
+
+
     def get_coordinates(self):
         pass
-    
+
     def set_precision_style(self, style):
         if style in self.styles:
            self.style=style
         else:
-           print "No such style"; exit() 
+           print "No such style"; exit()
 
 
 
@@ -2262,8 +2268,8 @@ def get_hiers_from_rmf(model, frame_number, rmf_file):
     model.update()
     del rh
     return prots
-        
-    
+
+
 
 def get_particles_at_resolution_one(prot):
     '''

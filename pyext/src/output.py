@@ -857,7 +857,7 @@ def plot_fields_box_plots(name, values, positions, frequencies=None,
     plt.show()
 
 
-def plot_xy_data(x,y,title=None):
+def plot_xy_data(x,y,title=None,display=True):
         import matplotlib.pyplot as plt
         plt.rc('lines', linewidth=2)
         
@@ -867,7 +867,11 @@ def plot_xy_data(x,y,title=None):
           fig.canvas.set_window_title(title)
         plt.rc('axes', color_cycle=['r'])
         ax.plot(x,y)
-        plt.show()
+        if title is not None:
+          plt.savefig(title+".pdf")
+        if display:
+          plt.show()
+        plt.close(fig)
 
 def plot_scatter_xy_data(x,y,labelx="None",labely="None",
                          xmin=None,xmax=None,ymin=None,ymax=None,

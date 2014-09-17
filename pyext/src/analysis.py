@@ -2229,14 +2229,15 @@ class Precision(object):
         of.close()     
         return centroid_index                
 
-    def get_rmsf(self,outfile,is_mpi=False,skip=None,make_plot=False):
+    def get_rmsf(self,outdir="./",is_mpi=False,skip=None,make_plot=False):
         import numpy
-        of=open(outfile,"w")       
+        outfile=outdir+"/rmsf.dat"      
         # get the centroid structure for the whole complex
         centroid_index=self.get_precision(outfile,is_mpi=is_mpi,skip=skip,selection_keywords=["All"])
 
         for p in self.protein_names:
-
+           outfile=outdir+"/rmsf."+p+".dat"  
+           of=open(outfile,"w")          
            selection_name=p
            self.selection_dictionary.update({selection_name:[p]})
            number_of_structures=len(self.structures_dictionary[selection_name])
@@ -2244,6 +2245,7 @@ class Precision(object):
            rpim=self.residue_particle_index_map[p]  
 
            residue_distances={}                    
+           residue_nblock={}
            for index in range(number_of_structures):
            
 
@@ -2251,6 +2253,7 @@ class Precision(object):
               for nblock,block in enumerate(rpim):
 
                  for residue_number in block:
+                     residue_nblock[residue_number]=nblock
                      if residue_number not in residue_distances:
                         residue_distances[residue_number]=[distances[nblock]]
                      else:
@@ -2260,10 +2263,12 @@ class Precision(object):
            rmsfs=[]
            for rn in residue_distances:
                residues.append(rn)
-               rmsfs.append(numpy.std(residue_distances[rn]))
+               rmsf=numpy.std(residue_distances[rn])
+               rmsfs.append(rmsf)
+               of.write(str(rn)+" "+str(residue_nblock[rn])+" "+str(rmsf)+"\n")
            
-           IMP.pmi.output.plot_xy_data(residues,rmsfs,title=p)
-           
+           IMP.pmi.output.plot_xy_data(residues,rmsfs,title=outdir+"/rmsf."+p,display=False)
+           of.close()
                
                  
 

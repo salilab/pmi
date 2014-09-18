@@ -157,6 +157,8 @@ def run():
             pr.add_structures(zip(rmfs,frames),is_mpi=options.use_mpi)
             pr.get_rmsf(cldir+"/",is_mpi=options.use_mpi,skip=1)
 
+    else:
+        print 'ERROR: the only analysis options are cluster, precision, and rmsf'
 
 if __name__=="__main__":
     run()

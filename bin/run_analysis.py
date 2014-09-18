@@ -15,7 +15,7 @@ import re
 
 def parse_args():
     usage = """%prog [options] <analysis_option> <input file>
-    Currently implemented analysis options: cluster, precision
+    Currently implemented analysis options: cluster, precision, rmsf
     The input file contains all the setup options:
 
     (general)
@@ -143,6 +143,18 @@ def run():
             pr.add_structures(zip(rmfs,frames),is_mpi=info['is_mpi'])
             pr.get_precision(cldir+"/precision.out",is_mpi=info['is_mpi'],skip=1)
 
+    elif args[0]=='rmsf':
+        print '\nRUNNING RMSF WITH THESE OPTIONS'
+        for k in info:
+            print k,':',info[k]
+        print 'density custom dict',sels
+        for cldir in glob.glob(os.path.join(info['output_dir'],'cluster.*')):
+            rmfs=glob.glob(cldir+'/*.rmf3')
+            frames=[0]*len(rmfs)
+            pr=IMP.pmi.analysis.Precision(mdl,'one',selection_dictionary=sels)
+            pr.set_precision_style('pairwise_rmsd')
+            pr.add_structures(zip(rmfs,frames),is_mpi=info['is_mpi'])
+            pr.get_rmsf(cldir+"/",is_mpi=info['is_mpi'],skip=1)
 
 
 if __name__=="__main__":

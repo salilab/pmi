@@ -1000,6 +1000,8 @@ class AnalysisReplicaExchange0(object):
 # ------------------------------------------------------------------------
             # reading the coordinates
             all_coordinates = []
+            rmsd_coordinates = []
+            alignment_coordinates = []
             all_rmf_file_names = []
             # it will be used to extract the features
             rmf_file_name_index_dict = {}
@@ -1016,15 +1018,55 @@ class AnalysisReplicaExchange0(object):
                 # getting the particles
                 part_dict = IMP.pmi.analysis.get_particles_at_resolution_one(
                     prot)
+                
+                all_particles=[pp for key in part_dict for pp in part_dict[key]] 
+                    
 
                 # getting the coordinates
                 model_coordinate_dict = {}
+                template_coordinate_dict={}
+                rmsd_coordinate_dict={}
                 for pr in part_dict:
                     coords = np.array(
                         [np.array(IMP.core.XYZ(i).get_coordinates()) for i in part_dict[pr]])
                     model_coordinate_dict[pr] = coords
+                
+                if alignment_components is not None:                
+                  for pr in alignment_components:
+                    if type(alignment_components[pr]) is str:
+                       name=alignment_components[pr]
+                       s=IMP.atom.Selection(prot,molecule=name)
+                    elif type(alignment_components[pr]) is tuple:
+                       name=alignment_components[pr][2]
+                       rend=alignment_components[pr][1]
+                       rbegin=alignment_components[pr][0]
+                       s=IMP.atom.Selection(prot,molecule=name,residue_indexes=range(rbegin,rend+1))
+                    ps=s.get_selected_particles()    
+                    filtered_particles=list(set(ps)&set(all_particles)) 
+                    coords = np.array(
+                        [np.array(IMP.core.XYZ(i).get_coordinates()) for i in filtered_particles])              
+                    template_coordinate_dict[pr] = coords
+                
+                if rmsd_calculation_components is not None:
+                  for pr in rmsd_calculation_components:
+                    if type(rmsd_calculation_components[pr]) is str:
+                       name=rmsd_calculation_components[pr]
+                       s=IMP.atom.Selection(prot,molecule=name)
+                    elif type(rmsd_calculation_components[pr]) is tuple:
+                       name=rmsd_calculation_components[pr][2]
+                       rend=rmsd_calculation_components[pr][1]
+                       rbegin=rmsd_calculation_components[pr][0]
+                       s=IMP.atom.Selection(prot,molecule=name,residue_indexes=range(rbegin,rend+1))
+                    ps=s.get_selected_particles()
+                    filtered_particles=list(set(ps)&set(all_particles))
+                    coords = np.array(
+                        [np.array(IMP.core.XYZ(i).get_coordinates()) for i in filtered_particles])
+                    rmsd_coordinate_dict[pr] = coords
+                    
 
                 all_coordinates.append(model_coordinate_dict)
+                alignment_coordinates.append(template_coordinate_dict)
+                rmsd_coordinates.append(rmsd_coordinate_dict)
                 frame_name = rmf_file + '|' + str(frame_number)
                 all_rmf_file_names.append(frame_name)
                 rmf_file_name_index_dict[frame_name] = tpl[4]
@@ -1038,6 +1080,10 @@ class AnalysisReplicaExchange0(object):
                     all_rmf_file_names)
                 rmf_file_name_index_dict = IMP.pmi.tools.scatter_and_gather(
                     rmf_file_name_index_dict)
+                alignment_coordinates=IMP.pmi.tools.scatter_and_gather(
+                    alignment_coordinates)
+                rmsd_coordinates=IMP.pmi.tools.scatter_and_gather(
+                    rmsd_coordinates)
 
             if rank == 0:
                 # save needed informations in external files
@@ -1052,24 +1098,22 @@ class AnalysisReplicaExchange0(object):
                 template_coordinate_dict = {}
                 # let's try to align
                 if alignment_flag == 1 and len(Clusters.all_coords) == 0:
-                    for pr in alignment_components:
-                        template_coordinate_dict[
-                            pr] = model_coordinate_dict[
-                            pr]
+                    #for pr in alignment_components:
+                    #    template_coordinate_dict[pr] = model_coordinate_dict[pr]
                 # set the first model as template coordinates
-                    Clusters.set_template(template_coordinate_dict)
+                    Clusters.set_template(alignment_coordinates[n])
 
                 # set particles to calculate RMSDs on
                 # (if global, list all proteins, or just a few for local)
                 # setting all the coordinates for rmsd calculation
-                rmsd_coordinate_dict = {}
-                if rmsd_calculation_components is None:
-                    rmsd_calculation_components = alignment_components
+                #rmsd_coordinate_dict = {}
+                #if rmsd_calculation_components is None:
+                #    rmsd_calculation_components = alignment_components
 
-                for pr in rmsd_calculation_components:
-                    rmsd_coordinate_dict[pr] = model_coordinate_dict[pr]
+                #for pr in rmsd_calculation_components:
+                #    rmsd_coordinate_dict[pr] = model_coordinate_dict[pr]
 
-                Clusters.fill(all_rmf_file_names[n], rmsd_coordinate_dict)
+                Clusters.fill(all_rmf_file_names[n], rmsd_coordinates[n])
 
             print "Global calculating the distance matrix"
 

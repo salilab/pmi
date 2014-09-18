@@ -10,12 +10,12 @@ import numpy as np
 from operator import itemgetter
 from optparse import OptionParser
 import sys,os
-from glob import glob
+import glob
 import re
 
 def parse_args():
     usage = """%prog [options] <analysis_option> <input file>
-    Currently implemented analysis options: cluster
+    Currently implemented analysis options: cluster, precision
     The input file contains all the setup options:
 
     (general)
@@ -56,76 +56,93 @@ def run():
     options,args = parse_args()
     inf = open(args[1],'r')
     mdl = IMP.Model()
+
+    info={'merge_directories' : './',
+          'global_output_dir' : './',
+          'feature_keys':None,
+          'number_of_best_scoring_models' : 100,
+          'distance_matrix_file' : "distance.rawmatrix.pkl",
+          'outputdir' : "kmeans_2_1/" ,
+          'load_distance_matrix_file' : 0,
+          'skip_clustering' : 0,
+          'display_plot' : 0,
+          'exit_after_display' : 0,
+          'get_every' : 0,
+          'is_mpi' : 1,
+          'number_of_clusters' : 1,
+          'voxel_size' : 3.0}
+    new_dict={}
+    for l in inf:
+        fields = l.split()
+        key = fields[0]
+        if len(fields)>2:
+            new_dict[key]=fields[1:]
+        else:
+            new_dict[key]=fields[1]
+    info.update(new_dict)
+    if type(info['merge_directories']) is not list:
+        info['merge_directories']=[info['merge_directories']]
+    info['number_of_best_scoring_models']=int(info['number_of_best_scoring_models'])
+    info['load_distance_matrix_file']=str2bool(info['load_distance_matrix_file'])
+    info['skip_clustering']=str2bool(info['skip_clustering'])
+    info['display_plot']=str2bool(info['display_plot'])
+    info['exit_after_display']=str2bool(info['exit_after_display'])
+    info['get_every']=int(info['get_every'])
+    info['is_mpi']=str2bool(info['is_mpi'])
+    info['number_of_clusters']=int(info['number_of_clusters'])
+    info['voxel_size']=float(info['voxel_size'])
+    info['prefilter_value']=float(info['prefilter_value'])
+
+    sels={}
+    for s in info['subunits']:
+        sels[s]=[s]
+
     if args[0]=="cluster":
-        cluster_dict={'merge_directories' : './',
-                      'global_output_dir' : './',
-                      'feature_keys':None,
-                      'number_of_best_scoring_models' : 100,
-                      'distance_matrix_file' : "distance.rawmatrix.pkl",
-                      'outputdir' : "kmeans_2_1/" ,
-                      'load_distance_matrix_file' : 0,
-                      'skip_clustering' : 0,
-                      'display_plot' : 0,
-                      'exit_after_display' : 0,
-                      'get_every' : 0,
-                      'is_mpi' : 1,
-                      'number_of_clusters' : 1,
-                      'voxel_size' : 3.0}
-        new_dict={}
-        for l in inf:
-            fields = l.split()
-            key = fields[0]
-            if len(fields)>2:
-                new_dict[key]=fields[1:]
-            else:
-                new_dict[key]=fields[1]
-        cluster_dict.update(new_dict)
-        cluster_dict['number_of_best_scoring_models']=int(cluster_dict['number_of_best_scoring_models'])
-        cluster_dict['load_distance_matrix_file']=str2bool(cluster_dict['load_distance_matrix_file'])
-        cluster_dict['skip_clustering']=str2bool(cluster_dict['skip_clustering'])
-        cluster_dict['display_plot']=str2bool(cluster_dict['display_plot'])
-        cluster_dict['exit_after_display']=str2bool(cluster_dict['exit_after_display'])
-        cluster_dict['get_every']=int(cluster_dict['get_every'])
-        cluster_dict['is_mpi']=str2bool(cluster_dict['is_mpi'])
-        cluster_dict['number_of_clusters']=int(cluster_dict['number_of_clusters'])
-        cluster_dict['voxel_size']=float(cluster_dict['voxel_size'])
-        cluster_dict['prefilter_value']=float(cluster_dict['prefilter_value'])
-
-        sels={}
-        for s in cluster_dict['subunits']:
-            sels[s]=[s]
-
-
         print '\nRUNNING CLUSTERING WITH THESE OPTIONS'
-        for k in cluster_dict:
-            print k,':',cluster_dict[k]
+        for k in info:
+            print k,':',info[k]
         print 'density custom dict',sels
 
         mc=IMP.pmi.macros.AnalysisReplicaExchange0(mdl,
                                                    stat_file_name_suffix="stat",
-                                                   merge_directories=cluster_dict['merge_directories'],
-                                                   global_output_directory=cluster_dict['global_output_dir'],
+                                                   merge_directories=info['merge_directories'],
+                                                   global_output_directory=info['global_output_dir'],
                                                    rmf_dir="rmfs/")
 
         mc.clustering("SimplifiedModel_Total_Score_None",
                       "rmf_file",
                       "rmf_frame_index",
-                      prefiltervalue=cluster_dict['prefilter_value'],
-                      number_of_best_scoring_models=cluster_dict['number_of_best_scoring_models'],
+                      prefiltervalue=info['prefilter_value'],
+                      number_of_best_scoring_models=info['number_of_best_scoring_models'],
                       alignment_components=None,
-                      rmsd_calculation_components=cluster_dict['subunits'],
+                      rmsd_calculation_components=info['subunits'],
                       distance_matrix_file="distance.rawmatrix.pkl",
-                      outputdir=cluster_dict['output_dir'],
-                      feature_keys=cluster_dict['feature_keys'],
-                      load_distance_matrix_file=cluster_dict['load_distance_matrix_file'],
-                      skip_clustering=cluster_dict['skip_clustering'],
-                      display_plot=cluster_dict['display_plot'],
-                      exit_after_display=cluster_dict['exit_after_display'],
-                      get_every=cluster_dict['get_every'],
-                      is_mpi=cluster_dict['is_mpi'],
-                      number_of_clusters=cluster_dict['number_of_clusters'],
-                      voxel_size=cluster_dict['voxel_size'],
+                      outputdir=info['output_dir'],
+                      feature_keys=info['feature_keys'],
+                      load_distance_matrix_file=info['load_distance_matrix_file'],
+                      skip_clustering=info['skip_clustering'],
+                      display_plot=info['display_plot'],
+                      exit_after_display=info['exit_after_display'],
+                      get_every=info['get_every'],
+                      is_mpi=info['is_mpi'],
+                      number_of_clusters=info['number_of_clusters'],
+                      voxel_size=info['voxel_size'],
                       density_custom_ranges=sels)
+
+    elif args[0]=='precision':
+        print '\nRUNNING PRECISION WITH THESE OPTIONS'
+        for k in info:
+            print k,':',info[k]
+        print 'density custom dict',sels
+        for cldir in glob.glob(os.path.join(info['output_dir'],'cluster.*')):
+            print 'precision in dir',cldir
+            rmfs=glob.glob(cldir+'/*.rmf3')
+            frames=[0]*len(rmfs)
+            pr=IMP.pmi.analysis.Precision(mdl,'one',selection_dictionary=sels)
+            pr.set_precision_style('pairwise_rmsd')
+            pr.add_structures(zip(rmfs,frames),is_mpi=info['is_mpi'])
+            pr.get_precision(cldir+"/precision.out",is_mpi=info['is_mpi'],skip=1)
+
 
 
 if __name__=="__main__":

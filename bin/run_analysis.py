@@ -39,8 +39,11 @@ def parse_args():
     number_of_clusters = 1
     voxel_size = 3.0
     """
+
     parser = OptionParser(usage)
     (options, args) = parser.parse_args()
+    parser.add_option("-m","--use_mpi",dest="use_mpi",action="store_true",default=False,
+                      help="Use MPI (works for some scripts)")
     if len(args) != 2:
         parser.error("incorrect number of arguments")
     return options,args
@@ -68,7 +71,6 @@ def run():
           'display_plot' : 0,
           'exit_after_display' : 0,
           'get_every' : 0,
-          'is_mpi' : 1,
           'number_of_clusters' : 1,
           'voxel_size' : 3.0}
     new_dict={}
@@ -88,7 +90,6 @@ def run():
     info['display_plot']=str2bool(info['display_plot'])
     info['exit_after_display']=str2bool(info['exit_after_display'])
     info['get_every']=int(info['get_every'])
-    info['is_mpi']=str2bool(info['is_mpi'])
     info['number_of_clusters']=int(info['number_of_clusters'])
     info['voxel_size']=float(info['voxel_size'])
     info['prefilter_value']=float(info['prefilter_value'])
@@ -124,7 +125,7 @@ def run():
                       display_plot=info['display_plot'],
                       exit_after_display=info['exit_after_display'],
                       get_every=info['get_every'],
-                      is_mpi=info['is_mpi'],
+                      is_mpi=options.use_mpi,
                       number_of_clusters=info['number_of_clusters'],
                       voxel_size=info['voxel_size'],
                       density_custom_ranges=sels)
@@ -140,8 +141,8 @@ def run():
             frames=[0]*len(rmfs)
             pr=IMP.pmi.analysis.Precision(mdl,'one',selection_dictionary=sels)
             pr.set_precision_style('pairwise_rmsd')
-            pr.add_structures(zip(rmfs,frames),is_mpi=info['is_mpi'])
-            pr.get_precision(cldir+"/precision.out",is_mpi=info['is_mpi'],skip=1)
+            pr.add_structures(zip(rmfs,frames),is_mpi=options.use_mpi)
+            pr.get_precision(cldir+"/precision.out",is_mpi=options.use_mpi,skip=1)
 
     elif args[0]=='rmsf':
         print '\nRUNNING RMSF WITH THESE OPTIONS'
@@ -153,8 +154,8 @@ def run():
             frames=[0]*len(rmfs)
             pr=IMP.pmi.analysis.Precision(mdl,'one',selection_dictionary=sels)
             pr.set_precision_style('pairwise_rmsd')
-            pr.add_structures(zip(rmfs,frames),is_mpi=info['is_mpi'])
-            pr.get_rmsf(cldir+"/",is_mpi=info['is_mpi'],skip=1)
+            pr.add_structures(zip(rmfs,frames),is_mpi=options.use_mpi)
+            pr.get_rmsf(cldir+"/",is_mpi=options.use_mpi,skip=1)
 
 
 if __name__=="__main__":

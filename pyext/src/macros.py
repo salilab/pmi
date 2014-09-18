@@ -932,7 +932,7 @@ class AnalysisReplicaExchange0(object):
 # read the coordinates
 # --------------------------------------------------------------------------------------------
 
-
+            '''
             dircluster = outputdir + "/all_models." + str(n) + "/"
             try:
                 os.mkdir(outputdir)
@@ -990,7 +990,7 @@ class AnalysisReplicaExchange0(object):
                     dircluster + str(cnt) + "." + str(rank) + ".rmf3")
                 o.close_rmf(
                     dircluster + str(cnt) + "." + str(rank) + ".rmf3")
-
+             '''
 
 
             # here I've tested that feature_keyword_list_dict is correct on 2

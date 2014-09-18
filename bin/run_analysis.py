@@ -41,9 +41,9 @@ def parse_args():
     """
 
     parser = OptionParser(usage)
-    (options, args) = parser.parse_args()
     parser.add_option("-m","--use_mpi",dest="use_mpi",action="store_true",default=False,
                       help="Use MPI (works for some scripts)")
+    (options, args) = parser.parse_args()
     if len(args) != 2:
         parser.error("incorrect number of arguments")
     return options,args

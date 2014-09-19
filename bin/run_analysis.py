@@ -94,15 +94,16 @@ def run():
     info['voxel_size']=float(info['voxel_size'])
     info['prefilter_value']=float(info['prefilter_value'])
 
-    sels={}
+    density_sels={}
+    rmsd_sels={}
     for s in info['subunits']:
-        sels[s]=[s]
+        density_sels[s]=[s]
+        rmsd_sels[s]=s
 
     if args[0]=="cluster":
         print '\nRUNNING CLUSTERING WITH THESE OPTIONS'
         for k in info:
             print k,':',info[k]
-        print 'density custom dict',sels
 
         mc=IMP.pmi.macros.AnalysisReplicaExchange0(mdl,
                                                    stat_file_name_suffix="stat",
@@ -116,7 +117,7 @@ def run():
                       prefiltervalue=info['prefilter_value'],
                       number_of_best_scoring_models=info['number_of_best_scoring_models'],
                       alignment_components=None,
-                      rmsd_calculation_components=info['subunits'],
+                      rmsd_calculation_components=rmsd_sels,
                       distance_matrix_file="distance.rawmatrix.pkl",
                       outputdir=info['output_dir'],
                       feature_keys=info['feature_keys'],
@@ -128,18 +129,17 @@ def run():
                       is_mpi=options.use_mpi,
                       number_of_clusters=info['number_of_clusters'],
                       voxel_size=info['voxel_size'],
-                      density_custom_ranges=sels)
+                      density_custom_ranges=density_sels)
 
     elif args[0]=='precision':
         print '\nRUNNING PRECISION WITH THESE OPTIONS'
         for k in info:
             print k,':',info[k]
-        print 'density custom dict',sels
         for cldir in glob.glob(os.path.join(info['output_dir'],'cluster.*')):
             print 'precision in dir',cldir
             rmfs=glob.glob(cldir+'/*.rmf3')
             frames=[0]*len(rmfs)
-            pr=IMP.pmi.analysis.Precision(mdl,'one',selection_dictionary=sels)
+            pr=IMP.pmi.analysis.Precision(mdl,'one',selection_dictionary=density_sels)
             pr.set_precision_style('pairwise_rmsd')
             pr.add_structures(zip(rmfs,frames),is_mpi=options.use_mpi)
             pr.get_precision(cldir+"/precision.out",is_mpi=options.use_mpi,skip=1)
@@ -152,7 +152,7 @@ def run():
         for cldir in glob.glob(os.path.join(info['output_dir'],'cluster.*')):
             rmfs=glob.glob(cldir+'/*.rmf3')
             frames=[0]*len(rmfs)
-            pr=IMP.pmi.analysis.Precision(mdl,'one',selection_dictionary=sels)
+            pr=IMP.pmi.analysis.Precision(mdl,'one',selection_dictionary=density_sels)
             pr.set_precision_style('pairwise_rmsd')
             pr.add_structures(zip(rmfs,frames),is_mpi=options.use_mpi)
             pr.get_rmsf(cldir+"/",is_mpi=options.use_mpi,skip=1)

@@ -416,7 +416,7 @@ class BuildModel1(object):
       self.domain_dict={}
       self.resdensities={}
       super_rigid_bodies={}
-      chain_super_rigid_bodies={}      
+      chain_super_rigid_bodies={}
       rigid_bodies={}
 
       for d in data_structure:
@@ -449,12 +449,12 @@ class BuildModel1(object):
           if not read_em_files is None:
              if em_txt_file_name is " ": em_txt_file_name=self.gmm_models_directory+"/"+hier_name+".txt"
              if em_mrc_file_name is " ": em_mrc_file_name=self.gmm_models_directory+"/"+hier_name+".mrc"
-             
-             
+
+
              dens_hier,beads=self.create_density(self.simo,comp_name,outhier,em_txt_file_name,em_mrc_file_name,em_num_components,read_em_files)
              self.simo.add_all_atom_densities(comp_name, hierarchies=beads)
              dens_hier+=beads
-             
+
           else:
              dens_hier=[]
 
@@ -466,8 +466,8 @@ class BuildModel1(object):
                   rigid_bodies[rb]=[h for h in self.domain_dict[hier_name]]
               else:
                   rigid_bodies[rb]+=[h for h in self.domain_dict[hier_name]]
-          
-          
+
+
           if super_rb is not None:
               for k in super_rb:
                   if k not in super_rigid_bodies:
@@ -481,7 +481,7 @@ class BuildModel1(object):
                      chain_super_rigid_bodies[k]=[h for h in self.domain_dict[hier_name]]
                   else:
                      chain_super_rigid_bodies[k]+=[h for h in self.domain_dict[hier_name]]
-          
+
       self.rigid_bodies=rigid_bodies
 
 
@@ -497,13 +497,13 @@ class BuildModel1(object):
           self.simo.set_super_rigid_body_from_hierarchies(super_rigid_bodies[k])
 
       for k in chain_super_rigid_bodies:
-          self.simo.set_chain_of_super_rigid_bodies(chain_super_rigid_bodies[k],2,3)          
+          self.simo.set_chain_of_super_rigid_bodies(chain_super_rigid_bodies[k],2,3)
 
       self.simo.set_floppy_bodies()
       self.simo.setup_bonds()
 
     def get_density_hierarchies(self,hier_name_list):
-        # return a list of density hierarchies 
+        # return a list of density hierarchies
         # specify the list of hierarchy names
         dens_hier_list=[]
         for hn in hier_name_list:
@@ -518,17 +518,17 @@ class BuildModel1(object):
         for h in hierarchy:
            if "_pdb" in h.get_name():pdbbits.append(h)
            if "_bead" in h.get_name():beadbits.append(h)
-           if "_helix" in h.get_name():helixbits.append(h)           
+           if "_helix" in h.get_name():helixbits.append(h)
         return (pdbbits,beadbits,helixbits)
-    
+
     def scale_bead_radii(self,nresidues,scale):
         scaled_beads=set()
         for h in self.domain_dict:
           (pdbbits,beadbits,helixbits)=self.get_pdb_bead_bits(self.domain_dict[h])
           slope=(1.0-scale)/(1.0-float(nresidues))
-          
+
           for b in beadbits:
-              # I have to do the following 
+              # I have to do the following
               # because otherwise we'll scale more than once
               if b not in scaled_beads:
                  scaled_beads.add(b)
@@ -548,10 +548,10 @@ class BuildModel1(object):
        #density generation for the EM restraint
        (pdbbits,beadbits,helixbits)=self.get_pdb_bead_bits(comphier)
 
-   
+
        outhier=[]
        if read:
-          if len(pdbbits)!=0:        
+          if len(pdbbits)!=0:
             outhier+=simo.add_component_density(compname,
                                      pdbbits,
                                      num_components=num_components, # number of gaussian into which the simulated density is approximated
@@ -562,11 +562,11 @@ class BuildModel1(object):
                                      helixbits,
                                      num_components=num_components, # number of gaussian into which the simulated density is approximated
                                      resolution=1,      # resolution that you want to calculate the simulated density
-                                     inputfile=txtfilename) # read what it was calculated before                                               
-                                   
+                                     inputfile=txtfilename) # read what it was calculated before
+
 
        else:
-          if len(pdbbits)!=0:        
+          if len(pdbbits)!=0:
             outhier+=simo.add_component_density(compname,
                                      pdbbits,
                                      num_components=num_components, # number of gaussian into which the simulated density is approximated
@@ -574,16 +574,16 @@ class BuildModel1(object):
                                      outputfile=txtfilename, # do the calculation
                                      outputmap=mrcfilename,
                                      multiply_by_total_mass=True) # do the calculation and output the mrc
-                                     
-          if len(helixbits)!=0:      
+
+          if len(helixbits)!=0:
             outhier+=simo.add_component_density(compname,
                                      helixbits,
                                      num_components=num_components, # number of gaussian into which the simulated density is approximated
                                      resolution=1,      # resolution that you want to calculate the simulated density
                                      outputfile=txtfilename, # do the calculation
                                      outputmap=mrcfilename,
-                                     multiply_by_total_mass=True) # do the calculation and output the mrc             
-       
+                                     multiply_by_total_mass=True) # do the calculation and output the mrc
+
        return outhier,beadbits
 
     def autobuild(self,simo,comname,pdbname,chain,resrange,read=True,beadsize=5,color=0.0,offset=0):
@@ -1018,9 +1018,9 @@ class AnalysisReplicaExchange0(object):
                 # getting the particles
                 part_dict = IMP.pmi.analysis.get_particles_at_resolution_one(
                     prot)
-                
-                all_particles=[pp for key in part_dict for pp in part_dict[key]] 
-                    
+
+                all_particles=[pp for key in part_dict for pp in part_dict[key]]
+
 
                 # getting the coordinates
                 model_coordinate_dict = {}
@@ -1030,8 +1030,8 @@ class AnalysisReplicaExchange0(object):
                     coords = np.array(
                         [np.array(IMP.core.XYZ(i).get_coordinates()) for i in part_dict[pr]])
                     model_coordinate_dict[pr] = coords
-                
-                if alignment_components is not None:                
+
+                if alignment_components is not None:
                   for pr in alignment_components:
                     if type(alignment_components[pr]) is str:
                        name=alignment_components[pr]
@@ -1041,12 +1041,12 @@ class AnalysisReplicaExchange0(object):
                        rend=alignment_components[pr][1]
                        rbegin=alignment_components[pr][0]
                        s=IMP.atom.Selection(prot,molecule=name,residue_indexes=range(rbegin,rend+1))
-                    ps=s.get_selected_particles()    
-                    filtered_particles=list(set(ps)&set(all_particles)) 
+                    ps=s.get_selected_particles()
+                    filtered_particles=list(set(ps)&set(all_particles))
                     coords = np.array(
-                        [np.array(IMP.core.XYZ(i).get_coordinates()) for i in filtered_particles])              
+                        [np.array(IMP.core.XYZ(i).get_coordinates()) for i in filtered_particles])
                     template_coordinate_dict[pr] = coords
-                
+
                 if rmsd_calculation_components is not None:
                   for pr in rmsd_calculation_components:
                     if type(rmsd_calculation_components[pr]) is str:
@@ -1062,7 +1062,7 @@ class AnalysisReplicaExchange0(object):
                     coords = np.array(
                         [np.array(IMP.core.XYZ(i).get_coordinates()) for i in filtered_particles])
                     rmsd_coordinate_dict[pr] = coords
-                    
+
 
                 all_coordinates.append(model_coordinate_dict)
                 alignment_coordinates.append(template_coordinate_dict)
@@ -1125,7 +1125,7 @@ class AnalysisReplicaExchange0(object):
             if display_plot:
                 if rank == 0:
                     Clusters.plot_matrix()
-                if number_of_processes > 1:                    
+                if number_of_processes > 1:
                     comm.Barrier()
                 if exit_after_display:
                     exit()
@@ -1143,7 +1143,7 @@ class AnalysisReplicaExchange0(object):
             if display_plot:
                 if rank == 0:
                     Clusters.plot_matrix()
-                if number_of_processes > 1:                    
+                if number_of_processes > 1:
                     comm.Barrier()
                 if exit_after_display:
                     exit()
@@ -1219,7 +1219,7 @@ class AnalysisReplicaExchange0(object):
                     #rh= RMF.open_rmf_file_read_only(rmf_name)
                     # restraints=IMP.rmf.create_restraints(rh,self.model)
                     #del rh
-                    
+
 
                     if k > 0:
                         model_index = Clusters.get_model_index_from_name(
@@ -1235,23 +1235,24 @@ class AnalysisReplicaExchange0(object):
                                 IMP.core.XYZR(p).set_radius(0.0001)
                                 IMP.core.XYZR(p).set_coordinates((0, 0, 0))
 
-                            if IMP.core.RigidBody.get_is_setup(p):
-                                rb = IMP.core.RigidMember(p).get_rigid_body()
+                            if IMP.core.RigidBodyMember.get_is_setup(p):
+                                rb = IMP.core.RigidBodyMember(p).get_rigid_body()
                                 if rb not in rbs:
                                     rbs.append(rb)
                                     IMP.core.transform(rb, transformation)
-
+                            elif IMP.core.RigidBody.get_is_setup(p):
+                                rb = IMP.core.RigidBody(p)
+                                if rb not in rbs:
+                                    rbs.append(rb)
+                                    IMP.core.transform(rb, transformation)
                             else:
-                                IMP.core.transform(
-                                    IMP.core.XYZ(p),
-                                    transformation)
-                           # IMP.em.add_to_map(dmap_dict[name],particle_dict[name])
-                    
-                    
+                                IMP.core.transform(IMP.core.XYZ(p),
+                                                   transformation)
+
                     # add the density
                     if density_custom_ranges:
                         DensModule.add_subunits_density(prot)
-                    
+
                     o = IMP.pmi.output.Output()
                     o.init_pdb(dircluster + str(k) + ".pdb", prot)
                     o.write_pdb(dircluster + str(k) + ".pdb")

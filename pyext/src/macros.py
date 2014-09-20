@@ -1228,26 +1228,22 @@ class AnalysisReplicaExchange0(object):
                             cl,
                             model_index)
 
-                        rbs = []
+                        rbs = set()
                         for p in IMP.atom.get_leaves(prot):
                             if not IMP.core.XYZR.get_is_setup(p):
+                                print 'does this ever happen?'
                                 IMP.core.XYZR.setup_particle(p)
                                 IMP.core.XYZR(p).set_radius(0.0001)
                                 IMP.core.XYZR(p).set_coordinates((0, 0, 0))
 
                             if IMP.core.RigidBodyMember.get_is_setup(p):
                                 rb = IMP.core.RigidBodyMember(p).get_rigid_body()
-                                if rb not in rbs:
-                                    rbs.append(rb)
-                                    IMP.core.transform(rb, transformation)
-                            elif IMP.core.RigidBody.get_is_setup(p):
-                                rb = IMP.core.RigidBody(p)
-                                if rb not in rbs:
-                                    rbs.append(rb)
-                                    IMP.core.transform(rb, transformation)
+                                rbs.add(rb)
                             else:
                                 IMP.core.transform(IMP.core.XYZ(p),
                                                    transformation)
+                        for rb in rbs:
+                            IMP.core.transform(rb,transformation)
 
                     # add the density
                     if density_custom_ranges:

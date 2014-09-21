@@ -84,7 +84,6 @@ class GaussianEMRestraint(object):
             'total weight', sum([IMP.atom.Mass(p).get_mass()
                                 for p in self.model_ps])
 
-        update_density=False
         update_model=not spherical_gaussians
         tabexp=False
         if not pointwise_restraint:
@@ -96,7 +95,7 @@ class GaussianEMRestraint(object):
                                                 cutoff_dist_model_model,
                                                 cutoff_dist_model_data,
                                                 slope,
-                                                update_model, update_density, tabexp)
+                                                update_model, tabexp)
         else:
             print 'USING POINTWISE RESTRAINT'
             print 'update model?',update_model

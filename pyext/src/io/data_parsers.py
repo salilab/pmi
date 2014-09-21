@@ -6,12 +6,15 @@
 import IMP
 import IMP.algebra
 import IMP.atom
+import IMP.pmi.io.data_storage
 import re
 from collections import defaultdict
 
-def parse_dssp(dssp_fn, limit_to_chains=''):
+def parse_dssp(model, dssp_fn, limit_to_chains=''):
     """read dssp file, get SSEs. values are all PDB residue numbering.
-    Returns selection kwargs for each SSE type (stored in a dictionary).
+    Returns a SubsequenceData object containing labels helix, beta, loop.
+    Each one is a list of SelectionDictionaries
+
     Example for a structure with helix A:5-7 and Beta strands A:1-3,A:9-11:
     helix : [ [ {'chain':'A','residue_indexes': [5,6,7]} ] ]
     beta  : [ [ {'chain':'A','residue_indexes': [1,2,3]},
@@ -19,9 +22,6 @@ def parse_dssp(dssp_fn, limit_to_chains=''):
     loop  : same format as helix
     """
     # setup
-    sses = {'helix': [],
-            'beta': [],
-            'loop': []}
     helix_classes = 'GHI'
     strand_classes = 'EB'
     loop_classes = [' ', '', 'T', 'S']
@@ -32,6 +32,7 @@ def parse_dssp(dssp_fn, limit_to_chains=''):
         sse_dict[s] = 'beta'
     for l in loop_classes:
         sse_dict[l] = 'loop'
+    sses = IMP.pmi.io.data_storage.SubsequenceData(model)
 
     # read file and parse
     start = False
@@ -69,7 +70,7 @@ def parse_dssp(dssp_fn, limit_to_chains=''):
         elif sstype != prev_sstype or chain_break:
             # add cur_sse to the right place
             if prev_sstype in ['helix', 'loop']:
-                sses[prev_sstype].append([cur_sse])
+                sses.add_subsequence(prev_sstype,[cur_sse])
             elif prev_sstype == 'beta':
                 beta_dict[prev_beta_id].append(cur_sse)
             cur_sse = {'chain':chain,'residue_indexes':[pdb_res_num]}
@@ -81,29 +82,32 @@ def parse_dssp(dssp_fn, limit_to_chains=''):
         else:
             prev_sstype = sstype
             prev_beta_id = beta_id
+
     # final SSE processing
     if not prev_sstype is None:
         if prev_sstype in ['helix', 'loop']:
-            sses[prev_sstype].append([cur_sse])
+            sses.add_subsequence(prev_sstype,[cur_sse])
         elif prev_sstype == 'beta':
             beta_dict[prev_beta_id].append(cur_sse)
     # gather betas
     for beta_sheet in beta_dict:
-        sses['beta'].append(beta_dict[beta_sheet])
+        sses.add_subsequence('beta',beta_dict[beta_sheet])
     return sses
 
-def parse_xlinks_davis(data_fn,
+def parse_xlinks_davis(model,
+                       data_fn,
                        max_num=-1,
                        name_map={},
                        named_offsets={},
                        use_chains={}):
     """ Format from Trisha Davis. Lines are:
     ignore ignore seq1 seq2 >Name(res) >Name(res) score
+    @param model         An IMP model
     @param data_fn       The data file name
     @param max_num       Maximum number of XL to read (-1 is all)
     @param name_map      Dictionary mapping text file names to the molecule name
     @param named_offsets Integer offsets to apply to the indexing in the file
-    Output is dictionary of selection commands:
+    Output is a CrossLinkData object containing SelectionDictionaries
     data[unique_id] =
               [ { 'r1': {'molecule':'A','residue_index':5},
                   'r2': {'molecule':'B','residue_index':100},
@@ -117,6 +121,7 @@ def parse_xlinks_davis(data_fn,
     inf=open(data_fn,'r')
     data=defaultdict(list)
     found=set()
+    data = IMP.pmi.io.data_storage.CrossLinkData(model)
     for nl,l in enumerate(inf):
         if max_num==-1 or nl<max_num:
             ig1,ig2,seq1,seq2,s1,s2,score=l.split()
@@ -142,11 +147,9 @@ def parse_xlinks_davis(data_fn,
                 print 'skipping duplicated xl',key
                 continue
             found.add(key)
-            xl={}
-            xl['r1']={'molecule':n1,'residue_index':r1}
-            xl['r2']={'molecule':n2,'residue_index':r2}
-            xl['score']=score
-            data[nl].append(xl)
-
+            data.add_cross_link(nl,
+                                {'molecule':n1,'residue_index':r1},
+                                {'molecule':n2,'residue_index':r2},
+                                score=score)
     inf.close()
     return data

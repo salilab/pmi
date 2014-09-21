@@ -4,6 +4,7 @@ import IMP.core
 import IMP.atom
 import IMP.isd
 import itertools
+from IMP.pmi.io.data_storage import SelectionDict
 import IMP.pmi
 import IMP.pmi.hierarchy_tools as hierarchy_tools
 
@@ -97,21 +98,19 @@ class CharmmForceFieldRestraint(object):
 
 class ElasticNetworkRestraint(object):
     def __init__(self,root,
-                 selection_dict=None,
                  selection_dicts=None,
-                 selection_dicts_list=None,
-                 extra_sel=None,
                  label='',
                  add_info_to_label=True,
                  strength=10.0,
-                 dist_cutoff=10.0):
+                 dist_cutoff=10.0,
+                 **kwargs):
         """ Add harmonic restraints between all pairs below a specified distance
-        @param root            Root hierarchy for applying selections
-        @param selection_dict  Selection kwargs
-        @param selection_dicts List of Selection kwargs
-        @param extra_sel       Additional selection arguments (e.g., CA only!)
-        @param strength        The elastic bond strength
-        @param dist_cutoff     Create bonds when below this distance
+        @param root             Root hierarchy for applying selections
+        @param selection_dicts  List of SelectionDict objects to form into elastic net
+        @param strength         The elastic bond strength
+        @param dist_cutoff      Create bonds when below this distance
+        \note any additional keyword arguments are passed to the Selection
+        E.g. you could pass atom_type=IMP.atom.AtomType("CA")
         """
         self.mdl = root.get_model()
         self.rs = IMP.RestraintSet(self.mdl, "ElasticNetwork")
@@ -120,23 +119,18 @@ class ElasticNetworkRestraint(object):
         self.label=label
 
         if selection_dicts is None:
-            selection_dicts=[]
-        if selection_dict is not None:
-            selection_dicts.append(selection_dict)
-
-        if selection_dicts==[]:
-            ps=IMP.atom.get_leaves(root)
-        else:
-            ps=[]
-            for osel in selection_dicts:
-                sel = hierarchy_tools.combine_dicts(osel,extra_sel)
-                ps+=IMP.atom.Selection(root,**sel).get_selected_particles()
-                if add_info_to_label:
-                    self.label+='_'
-                    if 'chain' in sel:
-                        self.label+=sel['chain']
-                    if 'residue_indexes' in sel:
-                        self.label+=':%i-%i'%(min(sel['residue_indexes']),max(sel['residue_indexes']))
+            selection_dicts=[SelectionDict(self.mdl)]
+        ps=[]
+        print 'using kwargs',kwargs
+        for osel in selection_dicts:
+            osel.add_fields(**kwargs)
+            ps += osel.select(root).get_selected_particles()
+            if add_info_to_label:
+                self.label+='_'
+                if 'chain' in osel:
+                    self.label+=osel['chain']
+                if 'residue_indexes' in osel:
+                    self.label+=':%i-%i'%(min(osel['residue_indexes']),max(osel['residue_indexes']))
         if len(ps)==0:
             print 'ERROR: Did not select any particles!'
             exit()
@@ -245,9 +239,9 @@ class CoarseCARestraint(object):
     """ Add bonds, angles, and dihedrals for a CA-only model """
     def __init__(self,root,
                  strength=10.0,
-                 bond_distance=3.78
+                 bond_distance=3.78,
                  bond_jitter=None,
-                 angle_min=100.0
+                 angle_min=100.0,
                  angle_max=140.0,
                  dihedral_seq=None):
         pass

@@ -9,14 +9,6 @@ import IMP.pmi.sequence_tools
 
 
 class StereochemistryTests(IMP.test.TestCase):
-    def test_dssp_parsing(self):
-        sse_selections=IMP.pmi.data_tools.parse_dssp(
-            self.get_input_file_name('chainA.dssp'),'A')
-        self.assertEqual(sorted(sse_selections.keys()),sorted(['helix','beta','loop']))
-        self.assertEqual(len(sse_selections['helix']),20)
-        self.assertEqual(len(sse_selections['beta']),3)
-        self.assertEqual(len(sse_selections['loop']),32)
-
     def test_elastic_network(self):
         """ test PMI setup of elastic nets """
 

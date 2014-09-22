@@ -117,11 +117,9 @@ class ElasticNetworkRestraint(object):
         self.weight = 1
         self.pairslist = []
         self.label=label
-
         if selection_dicts is None:
             selection_dicts=[SelectionDict(self.mdl)]
         ps=[]
-        print 'using kwargs',kwargs
         for osel in selection_dicts:
             osel.add_fields(**kwargs)
             ps += osel.select(root).get_selected_particles()

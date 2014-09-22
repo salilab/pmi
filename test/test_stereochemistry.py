@@ -3,7 +3,7 @@ import IMP.atom
 import IMP.pmi
 import IMP.pmi.representation_new as r
 import IMP.pmi.restraints_new.stereochemistry
-import IMP.pmi.data_tools
+import IMP.pmi.io.data_parsers as data_parsers
 import IMP.test
 import IMP.pmi.sequence_tools
 
@@ -11,9 +11,10 @@ import IMP.pmi.sequence_tools
 class StereochemistryTests(IMP.test.TestCase):
     def test_elastic_network(self):
         """ test PMI setup of elastic nets """
+        mdl = IMP.Model()
 
         # create two states, each with two copies of the protein
-        s=r.System()
+        s=r.System(mdl)
         seqs=r.Sequences(self.get_input_file_name('chainA.fasta'),
                          name_map={'GCP2_YEAST':'Prot1'})
         # build state
@@ -26,18 +27,13 @@ class StereochemistryTests(IMP.test.TestCase):
 
         hier = s.build(merge_type="backbone")
 
-        # get secondary structure
-        sse_selections=IMP.pmi.data_tools.parse_dssp(
-            self.get_input_file_name('chainA.dssp'),'A')
-
         # create elastic network from some SSEs
-        data=sse_selections['helix'][0][0]
+        sses = data_parsers.parse_dssp(mdl,self.get_input_file_name('chainA.dssp'),'A')
         er = IMP.pmi.restraints_new.stereochemistry.ElasticNetworkRestraint(hier,
-                                                selection_dict=data,
-                                                extra_sel={'atom_type':IMP.atom.AtomType("CA")},
+                                                selection_dicts=sses['helix'][0],
                                                 strength=10.0,
-                                                dist_cutoff=5.0)
-        print er.get_restraint()
+                                                dist_cutoff=5.0,
+                                                atom_type=IMP.atom.AtomType("CA"))
         self.assertEqual(er.get_restraint().get_number_of_restraints(),12)
 
 if __name__ == '__main__':

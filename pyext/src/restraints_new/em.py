@@ -75,9 +75,9 @@ class EMRestraint(object):
         return self.weight * self.rs.unprotected_evaluate(None)
 
 class GaussianEMRestraint(object):
-
     def __init__(self,
-                 model_ps,
+                 hier=None,
+                 model_ps=None,
                  target_fn='',
                  cutoff_dist_model_model=0.0,
                  cutoff_dist_model_data=0.0,
@@ -88,8 +88,7 @@ class GaussianEMRestraint(object):
                  slope=0.0,
                  spherical_gaussians=False,
                  pointwise_restraint=False,
-                 local_mm=False,
-                 close_pair_container=None,
+                 mm_container=None,
                  label=""):
 
         # some parameters
@@ -102,7 +101,14 @@ class GaussianEMRestraint(object):
         self.weight=1
 
         # setup target GMM
-        self.m = model_ps[0].get_model()
+        self.model_ps=[]
+        if hier is not None:
+            self.model_ps+=IMP.atom.get_leaves(hier)
+        if model_ps is not None:
+            self.model_ps+=model_ps
+        if len(self.model_ps)==0:
+            raise Exception("GaussianEM: must provide hier or model_ps")
+        self.m = self.model_ps[0].get_model()
         print 'will scale target mass by', target_mass_scale
         target_ps=[]
         if target_fn != '':
@@ -118,7 +124,7 @@ class GaussianEMRestraint(object):
 
         # setup model GMM
         if model_radii_scale != 1.0:
-            for p in model_ps:
+            for p in self.model_ps:
                 rmax = sqrt(max(IMP.core.Gaussian(p).get_variances())) * \
                     model_radii_scale
                 if not IMP.core.XYZR.get_is_setup(p):
@@ -135,37 +141,34 @@ class GaussianEMRestraint(object):
         print 'target num particles', len(target_ps), \
             'total weight', sum([IMP.atom.Mass(p).get_mass()
                                 for p in target_ps])
-        print 'model num particles', len(model_ps), \
+        print 'model num particles', len(self.model_ps), \
             'total weight', sum([IMP.atom.Mass(p).get_mass()
-                                for p in model_ps])
+                                for p in self.model_ps])
 
-        update_density=False
         update_model=not spherical_gaussians
         tabexp=False
         if not pointwise_restraint:
             self.gaussianEM_restraint = \
                IMP.isd_emxl.GaussianEMRestraint(self.m,
-                                                IMP.get_indexes(model_ps),
+                                                IMP.get_indexes(self.model_ps),
                                                 IMP.get_indexes(target_ps),
                                                 sigmaglobal.get_particle().get_index(),
                                                 cutoff_dist_model_model,
                                                 cutoff_dist_model_data,
                                                 slope,
-                                                update_model, update_density, tabexp)
+                                                update_model,tabexp)
         else:
             print 'USING POINTWISE RESTRAINT'
             print 'update model?',update_model
             self.gaussianEM_restraint = \
                IMP.isd_emxl.PointwiseGaussianEMRestraint(self.m,
-                                                IMP.get_indexes(model_ps),
+                                                IMP.get_indexes(self.model_ps),
                                                 IMP.get_indexes(target_ps),
                                                 sigmaglobal.get_particle().get_index(),
                                                 cutoff_dist_model_model,
                                                 cutoff_dist_model_data,
-                                                overlap_threshold,
-                                                slope,
-                                                update_model, update_density, local_mm,
-                                                close_pair_container)
+                                                update_model,tabexp,
+                                                mm_container)
 
         print 'done EM setup'
         self.rs = IMP.RestraintSet(self.m, 'GaussianEMRestraint')

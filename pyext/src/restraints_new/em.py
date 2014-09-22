@@ -89,6 +89,9 @@ class GaussianEMRestraint(object):
                  spherical_gaussians=False,
                  pointwise_restraint=False,
                  mm_container=None,
+                 backbone_slope=False,
+                 use_log_score=False,
+                 orig_map_fn=None,
                  label=""):
 
         # some parameters
@@ -122,6 +125,18 @@ class GaussianEMRestraint(object):
             print 'Gaussian EM restraint: must provide target density file'
             return
 
+        self.get_cc=False
+        if orig_map_fn is not None:
+            self.dmap=IMP.em.read_map(orig_map_fn,IMP.em.MRCReaderWriter())
+            self.dmap.update_voxel_size(1.06)
+            dh = self.dmap.get_header()
+            dh.set_resolution(4.0)
+            self.fr = IMP.em.FitRestraint(self.model_ps,self.dmap)
+            frscore = self.fr.unprotected_evaluate(None)
+            print 'init CC eval!',1.0-frscore
+            self.dmap.set_origin(-100/1.06,-100/1.06,-100/1.06)
+            self.get_cc=True
+
         # setup model GMM
         if model_radii_scale != 1.0:
             for p in self.model_ps:
@@ -146,7 +161,6 @@ class GaussianEMRestraint(object):
                                 for p in self.model_ps])
 
         update_model=not spherical_gaussians
-        tabexp=False
         if not pointwise_restraint:
             self.gaussianEM_restraint = \
                IMP.isd_emxl.GaussianEMRestraint(self.m,
@@ -156,10 +170,11 @@ class GaussianEMRestraint(object):
                                                 cutoff_dist_model_model,
                                                 cutoff_dist_model_data,
                                                 slope,
-                                                update_model,tabexp)
+                                                update_model,backbone_slope)
         else:
             print 'USING POINTWISE RESTRAINT'
             print 'update model?',update_model
+            print 'mm_container',mm_container
             self.gaussianEM_restraint = \
                IMP.isd_emxl.PointwiseGaussianEMRestraint(self.m,
                                                 IMP.get_indexes(self.model_ps),
@@ -167,7 +182,8 @@ class GaussianEMRestraint(object):
                                                 sigmaglobal.get_particle().get_index(),
                                                 cutoff_dist_model_model,
                                                 cutoff_dist_model_data,
-                                                update_model,tabexp,
+                                                slope,
+                                                update_model,use_log_score,
                                                 mm_container)
 
         print 'done EM setup'
@@ -194,8 +210,9 @@ class GaussianEMRestraint(object):
         output["_TotalScore"] = str(score)
         output["GaussianEMRestraint_" +
                self.label] = str(score)
-        #output["GaussianEMRestraint_sigma_" +
-        #       self.label] = str(sigmaglobal.get_scale())
+        if self.get_cc:
+            frscore = self.fr.unprotected_evaluate(None)
+            output["CrossCorrelation"] = str(1.0-frscore)
         return output
 
     def evaluate(self):

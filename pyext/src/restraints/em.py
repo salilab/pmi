@@ -22,7 +22,8 @@ class GaussianEMRestraint(object):
                  spherical_gaussians=False,
                  pointwise_restraint=False,
                  local_mm=False,
-                 close_pair_container=None):
+                 close_pair_container=None,
+                 backbone_slope=False):
         global sys, tools
         import sys
         import IMP.isd_emxl
@@ -85,7 +86,7 @@ class GaussianEMRestraint(object):
                                 for p in self.model_ps])
 
         update_model=not spherical_gaussians
-        tabexp=False
+        log_score=False
         if not pointwise_restraint:
             self.gaussianEM_restraint = \
                IMP.isd_emxl.GaussianEMRestraint(self.m,
@@ -95,7 +96,7 @@ class GaussianEMRestraint(object):
                                                 cutoff_dist_model_model,
                                                 cutoff_dist_model_data,
                                                 slope,
-                                                update_model, tabexp)
+                                                update_model, backbone_slope)
         else:
             print 'USING POINTWISE RESTRAINT'
             print 'update model?',update_model
@@ -106,9 +107,9 @@ class GaussianEMRestraint(object):
                                                 self.sigmaglobal.get_particle().get_index(),
                                                 cutoff_dist_model_model,
                                                 cutoff_dist_model_data,
-                                                overlap_threshold,
                                                 slope,
-                                                update_model, update_density, local_mm,
+                                                update_model,
+                                                log_score,
                                                 close_pair_container)
 
         print 'done EM setup'

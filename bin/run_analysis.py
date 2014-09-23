@@ -148,7 +148,6 @@ def run():
         print '\nRUNNING RMSF WITH THESE OPTIONS'
         for k in info:
             print k,':',info[k]
-        print 'density custom dict',sels
         for cldir in glob.glob(os.path.join(info['output_dir'],'cluster.*')):
             rmfs=glob.glob(cldir+'/*.rmf3')
             frames=[0]*len(rmfs)

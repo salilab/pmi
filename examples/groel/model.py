@@ -14,7 +14,7 @@ import IMP.pmi.samplers
 import IMP.pmi.sampling_tools as sampling_tools
 import IMP.pmi.macros
 import RMF
-
+from copy import deepcopy
 
 # files and settings
 
@@ -27,29 +27,41 @@ import RMF
 # model
 init_fn = 'data/1oel_A_from_1we3.pdb'
 seq_fn = 'data/1oel.fasta'
-out_dir='out/'
 pdb_offset=0
+
+out_dir='out_test/'
+use_srbs=True
+#out_dir='out_fix/'
+#use_srbs=False
 
 gmm_fn = 'gmms/1oel_A_200.txt'
 sse_fn = 'data/1oel_A_from_1we3.dssp'
 map_fn = 'data/1oel_A_4.mrc'
-
+target_radii_scale=5.0
 
 # restraint options
 slope=0.0
-elastic_strength=100.0
+elastic_strength=500.0
 elastic_cutoff=7.0
 em_weight=1.0
 charmm_weight=1.0
 
 #sampling options
-num_md = 400
-num_mc = 0
-num_rounds = 1
+if use_srbs:
+    num_md=20
+    num_mc=1
+    num_rounds=10
+else:
+    num_md = 300
+    num_mc = 0
+    num_rounds = 1
 min_temp=1.0
 max_temp=1.2
 nmodels=100
 nframes=10000
+mc_max_step=0.1
+srb_max_trans=1.0
+srb_max_rot=0.1
 
 ### setup 1-state system
 mdl = IMP.Model()
@@ -97,7 +109,7 @@ for p in IMP.atom.get_leaves(hier):
     IMP.core.Gaussian.setup_particle(p,shape)
 gem = IMP.pmi.restraints_new.em.GaussianEMRestraint(hier=hier,
                                         target_fn=gmm_fn,
-                                        target_radii_scale=3.0,
+                                        target_radii_scale=target_radii_scale,
                                         target_mass_scale=mass,
                                         spherical_gaussians=True,
                                         pointwise_restraint=True,
@@ -113,7 +125,13 @@ print 'EVAL - EM',mdl.evaluate(False)
 ### elastic network for SSEs
 sses = data_parsers.parse_dssp(mdl,sse_fn)
 ers=[]
+#srbs=[[[p.get_particle() for p in IMP.atom.get_leaves(hier)],[]]]
+srbs=[]
 for ns,sse in enumerate(sses['helix']+sses['beta']):
+    srb=[[],[]]
+    for s in sse:
+        srb[0]+=s.select(hier).get_selected_particles()
+    srbs.append(srb)
     er=IMP.pmi.restraints_new.stereochemistry.ElasticNetworkRestraint(hier,
                         selection_dicts=sse,
                         label='sse',
@@ -121,6 +139,7 @@ for ns,sse in enumerate(sses['helix']+sses['beta']):
                         strength=elastic_strength,
                         dist_cutoff=elastic_cutoff,
                         atom_type=IMP.atom.AtomType("CA"))
+
     er.set_weight(1.0)
     er.add_to_model()
     output_objects.append(er)
@@ -131,6 +150,10 @@ for ns,sse in enumerate(sses['helix']+sses['beta']):
 md_objects = [sampling_tools.SampleObjects(
     'Floppy_Bodies_SimplifiedModel',[IMP.core.get_leaves(hier)])]
 IMP.pmi.sampling_tools.enable_md_sampling(mdl,hier)
+#mc_objects=[IMP.pmi.sampling_tools.SampleObjects('Floppy_Bodies_SimplifiedModel',
+#                                                 [IMP.core.get_leaves(hier),mc_max_step])]
+mc_objects=[IMP.pmi.sampling_tools.SampleObjects('SR_Bodies',[srbs,srb_max_trans,srb_max_rot])]
+
 class mini_output:
     def __init__(self,mdl):
         self.mdl=mdl
@@ -141,8 +164,11 @@ class mini_output:
 output_objects.append(mini_output(mdl))
 ##################
 
+if not use_srbs:
+    mc_objects=None
 rex = IMP.pmi.macros.ReplicaExchange0(mdl,
                             root_hier = hier,
+                            monte_carlo_sample_objects = mc_objects,
                             molecular_dynamics_sample_objects=md_objects,
                             output_objects = output_objects,
                             replica_exchange_minimum_temperature=min_temp,

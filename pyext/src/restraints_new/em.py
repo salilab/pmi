@@ -131,10 +131,12 @@ class GaussianEMRestraint(object):
             self.dmap.update_voxel_size(1.06)
             dh = self.dmap.get_header()
             dh.set_resolution(4.0)
-            self.fr = IMP.em.FitRestraint(self.model_ps,self.dmap)
+            self.fr = IMP.em.FitRestraint(self.model_ps,self.dmap,[0.,0.],
+                                          IMP.atom.Mass.get_mass_key(),1.0,
+                                          False)
+            #self.dmap.set_origin(-100/1.06,-100/1.06,-100/1.06)
             frscore = self.fr.unprotected_evaluate(None)
             print 'init CC eval!',1.0-frscore
-            self.dmap.set_origin(-100/1.06,-100/1.06,-100/1.06)
             self.get_cc=True
 
         # setup model GMM
@@ -213,6 +215,8 @@ class GaussianEMRestraint(object):
         if self.get_cc:
             frscore = self.fr.unprotected_evaluate(None)
             output["CrossCorrelation"] = str(1.0-frscore)
+        #dd = self.fr.get_model_dens_map()
+        #IMP.em.write_map(dd,'test_map.mrc')
         return output
 
     def evaluate(self):

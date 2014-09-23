@@ -992,7 +992,7 @@ class ISDCrossLinkMS(_NuisancesBase):
                     if not self.marginal:
                         if not self.samplelength:
                             print "generating a new crosslink restraint"
-                            dr = IMP.isd_emxl.CrossLinkMSRestraint(
+                            dr = IMP.isd.CrossLinkMSRestraint(
                                 self.m,
                                 length,
                                 inner_slope)
@@ -1000,7 +1000,7 @@ class ISDCrossLinkMS(_NuisancesBase):
                             # this will create a xl length particle that will
                             # be sampled
                             self.create_length()
-                            dr = IMP.isd_emxl.CrossLinkMSRestraint(
+                            dr = IMP.isd.CrossLinkMSRestraint(
                                 self.m,
                                 self.length)
 
@@ -1098,7 +1098,7 @@ class ISDCrossLinkMS(_NuisancesBase):
                      psival,
                      xlid))
 
-        lw = IMP.isd_emxl.LogWrapper(restraints,1.0) 
+        lw = IMP.isd.LogWrapper(restraints,1.0) 
         self.rs.add_restraint(lw)
 
 

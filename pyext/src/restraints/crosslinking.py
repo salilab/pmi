@@ -22,7 +22,7 @@ class _NuisancesBase(object):
         self.length = IMP.pmi.tools.SetupNuisance(self.m, self.lengthinit,
                                                   self.lengthminnuis, self.lengthmaxnuis, self.lengthissampled).get_particle()
         self.rslen.add_restraint(
-            IMP.isd_emxl.UniformPrior(
+            IMP.isd.UniformPrior(
                 self.m,
                 self.length,
                 1000000000.0,
@@ -45,7 +45,7 @@ class _NuisancesBase(object):
             self.sigmatrans,
             self.sigmaissampled)
         self.rssig.add_restraint(
-            IMP.isd_emxl.UniformPrior(
+            IMP.isd.UniformPrior(
                 self.m,
                 self.sigma,
                 1000000000.0,
@@ -75,7 +75,7 @@ class _NuisancesBase(object):
             self.psitrans,
             self.psiissampled)
         self.rspsi.add_restraint(
-            IMP.isd_emxl.UniformPrior(
+            IMP.isd.UniformPrior(
                 self.m,
                 self.psi,
                 1000000000.0,

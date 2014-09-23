@@ -19,8 +19,8 @@ def setup_nuisance(m,rs,init_val,min_val,max_val,is_opt=True):
     if max_val:
         nuisance.set_upper(max_val)
     nuisance.set_is_optimized(nuisance.get_nuisance_key(),is_opt)
-    rs.add_restraint(IMP.isd_emxl.UniformPrior(m,nuisance,1000000000.0,
-                                               max_val,min_val))
+    rs.add_restraint(IMP.isd.UniformPrior(m,nuisance,1000000000.0,
+                                          max_val,min_val))
     return nuisance
 
 class RestraintSetupError(Exception):

@@ -310,7 +310,7 @@ class Clustering(object):
         self.model_indexes_dict = dict(
             zip(self.model_list_names, self.model_indexes))
 
-    def plot_matrix(self, figurename="clustermatrix.png"):
+    def plot_matrix(self, figurename="clustermatrix.pdf"):
         import pylab as pl
         from scipy.cluster import hierarchy as hrc
 
@@ -332,7 +332,7 @@ class Clustering(object):
         #ax.set_yticklabels( [self.model_list_names[i] for i in leaves_order] )
         fig.colorbar(cax)
         pl.savefig(figurename, dpi=300)
-        pl.show()
+        #pl.show()
 
     def get_model_index_from_name(self, name):
         return self.model_indexes_dict[name]

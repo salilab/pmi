@@ -5,6 +5,29 @@
 import IMP
 import IMP.core
 
+class _SerialReplicaExchange(object):
+    """Dummy replica exchange class used in non-MPI builds.
+       It should act similarly to IMP.mpi.ReplicaExchange on a single processor.
+    """
+    def __init__(self):
+        self.__params = {}
+    def get_number_of_replicas(self):
+        return 1
+    def create_temperatures(self, tmin, tmax, nrep):
+        return [tmin]
+    def get_my_index(self):
+        return 0
+    def set_my_parameter(self, key, val):
+        self.__params[key] = val
+    def get_my_parameter(self, key):
+        return self.__params[key]
+    def get_friend_index(self, step):
+        return 0
+    def get_friend_parameter(self, key, findex):
+        return self.get_my_parameter(key)
+    def do_exchange(self, myscore, fscore, findex):
+        return False
+
 
 class MonteCarlo(object):
 
@@ -399,8 +422,12 @@ class ReplicaExchange(object):
 
         if replica_exchange_object is None:
             # initialize Replica Exchange class
-            import IMP.mpi
-            self.rem = IMP.mpi.ReplicaExchange()           
+            try:
+                import IMP.mpi
+                self.rem = IMP.mpi.ReplicaExchange()
+            except ImportError:
+                self.rem = _SerialReplicaExchange()
+
         else:
             # get the replica exchange class instance from elsewhere
             print 'got existing rex object'

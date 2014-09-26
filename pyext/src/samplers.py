@@ -390,8 +390,6 @@ class ReplicaExchange(object):
         samplerobjects can be a list of MonteCarlo or MolecularDynamics
         '''
         
-        global imppmi
-        import IMP.mpi as imppmi
 
         self.m = model
         self.samplerobjects = samplerobjects
@@ -401,6 +399,7 @@ class ReplicaExchange(object):
 
         if replica_exchange_object is None:
             # initialize Replica Exchange class
+            import IMP.mpi
             self.rem = IMP.mpi.ReplicaExchange()           
         else:
             # get the replica exchange class instance from elsewhere

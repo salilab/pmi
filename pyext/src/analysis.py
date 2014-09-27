@@ -6,8 +6,15 @@
 
 import IMP
 import IMP.algebra
+import IMP.em
+import IMP.pmi
 import IMP.pmi.tools
-
+import IMP.pmi.analysis
+import IMP.pmi.output
+import IMP.rmf
+import RMF
+from operator import itemgetter
+from copy import deepcopy
 
 class Alignment(object):
 
@@ -29,7 +36,6 @@ class Alignment(object):
         global array, argwhere, mgrid, shape, reshape, zeros, diagonal, argsort, deepcopy, cdist, sqrt
         global product, permutations
         from numpy import array, argwhere, mgrid, shape, reshape, zeros, diagonal, argsort
-        from copy import deepcopy
         from scipy.spatial.distance import cdist
         from math import sqrt
         from itertools import permutations, product
@@ -143,10 +149,8 @@ else: print 'ERROR!'; exit()
 class Violations(object):
 
     def __init__(self, filename):
-        global impem, deepcopy, cdist, array, argwhere, mgrid, shape, reshape, zeros, sqrt, diagonal, argsort
-        import IMP.em as impem
+        global deepcopy, cdist, array, argwhere, mgrid, shape, reshape, zeros, sqrt, diagonal, argsort
         from numpy import array, argwhere, mgrid, shape, reshape, zeros, diagonal, argsort
-        from copy import deepcopy
         from scipy.spatial.distance import cdist
         from math import sqrt
         self.violation_thresholds = {}
@@ -179,11 +183,9 @@ class Clustering(object):
 
     def __init__(self):
 
-        global impem, deepcopy, cdist, array, argwhere, mgrid, shape, reshape, zeros, sqrt, diagonal, argsort, npsum
-        import IMP.em as impem
+        global deepcopy, cdist, array, argwhere, mgrid, shape, reshape, zeros, sqrt, diagonal, argsort, npsum
         from numpy import array, argwhere, mgrid, shape, reshape, zeros, diagonal, argsort
         from numpy import sum as npsum
-        from copy import deepcopy
         from scipy.spatial.distance import cdist
         from math import sqrt
         self.all_coords = {}
@@ -197,7 +199,7 @@ class Clustering(object):
     def fill(self, frame, Coords):
         """
         fill stores coordinates of a model into a dictionary all_coords,
-        containint coordinates for all models.
+        containing coordinates for all models.
         """
 
         self.all_coords[frame] = Coords
@@ -249,6 +251,7 @@ class Clustering(object):
 
     def do_cluster(self, number_of_clusters):
         from sklearn.cluster import KMeans
+
         kmeans = KMeans(n_clusters=number_of_clusters)
         kmeans.fit_predict(self.raw_distance_matrix)
 
@@ -381,10 +384,6 @@ class Clustering(object):
 
     def matrix_calculation(self, all_coords, template_coords, list_of_pairs):
 
-        import IMP
-        import IMP.pmi
-        import IMP.pmi.analysis
-
         model_list_names = all_coords.keys()
         rmsd_protein_names = all_coords[model_list_names[0]].keys()
         raw_distance_dict = {}
@@ -448,17 +447,18 @@ class Clustering(object):
 # ----------------------------------
 
 class GetModelDensity(object):
-
+    """A class to compute mean density maps from structures"""
     def __init__(self, custom_ranges, representation=None, voxel=5.0):
-        '''
-        custom_ranges ={'kin28':[['kin28',1,-1]],
-                'density_name_1' :[('ccl1')],
-                'density_name_2' :[(1,142,'tfb3d1'),(143,700,'tfb3d2')],
+        """Setup GetModelDensity object
+        @param custom_ranges  dictionary, keys are the density component names,
+                              values are selection tuples
+                              e.g. {'kin28':[['kin28',1,-1]],
+                                   'density_name_1' :[('ccl1')],
+                                   'density_name_2' :[(1,142,'tfb3d1'),(143,700,'tfb3d2')],
+        @param representation a PMI representation, for doing selections
+        @param voxel          The voxel size for the output map (lower is slower)
 
-
-        '''
-        global impem
-        import IMP.em as impem
+        """
 
         self.representation = representation
         self.voxel = voxel
@@ -467,7 +467,7 @@ class GetModelDensity(object):
         self.custom_ranges = custom_ranges
 
     def add_subunits_density(self, hierarchy=None):
-            # the hierarchy is optional, if passed
+        # the hierarchy is optional, if passed
         self.count_models += 1.0
         for density_name in self.custom_ranges:
             parts = []
@@ -479,7 +479,6 @@ class GetModelDensity(object):
                     parts += IMP.tools.select_by_tuple(self.representation,
                                                        seg, resolution=1, name_is_ambiguous=False)
                 else:
-
                     if type(seg) == str:
                         children = [
                             child for child in hierarchy.get_children(
@@ -520,7 +519,7 @@ class GetModelDensity(object):
             'BINARIZED_SPHERE': IMP.em.BINARIZED_SPHERE,
             'SPHERE': IMP.em.SPHERE}
 
-        dmap = impem.SampledDensityMap(ps, resolution, self.voxel)
+        dmap = IMP.em.SampledDensityMap(ps, resolution, self.voxel)
         dmap.calcRMS()
         if name not in self.densities:
             self.densities[name] = dmap
@@ -534,13 +533,12 @@ class GetModelDensity(object):
             self.densities[name] = dmap3
 
     def write_mrc(self, path="./"):
-
         for density_name in self.densities:
             self.densities[density_name].multiply(1. / self.count_models)
-            impem.write_map(
+            IMP.em.write_map(
                 self.densities[density_name],
                 path + "/" + density_name + ".mrc",
-                impem.MRCReaderWriter())
+                IMP.em.MRCReaderWriter())
 
 # ----------------------------------
 
@@ -548,14 +546,9 @@ class GetModelDensity(object):
 class GetContactMap(object):
 
     def __init__(self, distance=15.):
-        global impem, deepcopy, cdist, array, argwhere, mgrid, shape, reshape, zeros, sqrt, diagonal, argsort, log
-        import IMP.em as impem
+        global deepcopy, cdist, array, argwhere, mgrid, shape, reshape, zeros, sqrt, diagonal, argsort, log
         from numpy import array, argwhere, mgrid, shape, reshape, zeros, diagonal, argsort, log
-        from copy import deepcopy
         from scipy.spatial.distance import cdist
-        global itemgetter
-        from operator import itemgetter
-
         self.distance = distance
         self.contactmap = ''
         self.namelist = []
@@ -565,7 +558,6 @@ class GetContactMap(object):
         self.resmap = {}
 
     def set_prot(self, prot):
-        import IMP.pmi.tools
         self.prot = prot
         self.protnames = []
         coords = []
@@ -857,7 +849,6 @@ class CrossLinkTable(object):
         self.contactmap = None
 
     def set_hierarchy(self, prot):
-        import IMP.pmi.tools
         self.prot_length_dict = {}
         self.model=prot.get_model()
 
@@ -873,8 +864,6 @@ class CrossLinkTable(object):
     def set_coordinates_for_contact_map(self, rmf_name,rmf_frame_index):
         from numpy import zeros, array, where
         from scipy.spatial.distance import cdist
-        import IMP.rmf
-        import RMF
 
         rh= RMF.open_rmf_file_read_only(rmf_name)
         prots=IMP.rmf.create_hierarchies(rh, self.model)
@@ -940,7 +929,6 @@ class CrossLinkTable(object):
         # external datafile is a datafile that contains further information on the crosslinks
         # it will use the unique id to create the dictionary keys
 
-        import IMP.pmi.output
         import numpy as np
 
         po = IMP.pmi.output.ProcessOutput(data_file)
@@ -1699,7 +1687,6 @@ class CrossLinkTable(object):
                                                 prot_list2=None):
 
         from numpy import zeros
-        from operator import itemgetter
         import pylab as pl
 
         tmp_matrix = []
@@ -1933,8 +1920,6 @@ class Precision(object):
 
 
     def get_structure(self,rmf_frame_index,rmf_name):
-        import IMP.rmf
-        import RMF
 
         rh= RMF.open_rmf_file_read_only(rmf_name)
         prots=IMP.rmf.create_hierarchies(rh, self.model)
@@ -2324,11 +2309,7 @@ class Precision(object):
 
 
 def get_hier_from_rmf(model, frame_number, rmf_file):
-
-
     # I have to deprecate this function
-    import IMP.rmf
-    import RMF
     print "getting coordinates for frame %i rmf file %s" % (frame_number, rmf_file)
 
     # load the frame
@@ -2352,8 +2333,6 @@ def get_hier_from_rmf(model, frame_number, rmf_file):
     return prot
 
 def get_hiers_from_rmf(model, frame_number, rmf_file):
-    import IMP.rmf
-    import RMF
     print "getting coordinates for frame %i rmf file %s" % (frame_number, rmf_file)
 
     # load the frame
@@ -2376,13 +2355,12 @@ def get_hiers_from_rmf(model, frame_number, rmf_file):
     return prots
 
 
-
 def get_particles_at_resolution_one(prot):
-    '''
-    this fucntion get the particles by resolution, without a Representation class initialized
-    it is mainly used when the hierarchy is read from an rmf file
-    it returns a dictionary of component names and their particles
-    '''
+    """
+    Get particles at res 1, or any beads, based on the name (no Representation needed)
+    It is mainly used when the hierarchy is read from an rmf file
+    Returns a dictionary of component names and their particles
+    """
     particle_dict = {}
     allparticles = []
     for c in prot.get_children():
@@ -2396,18 +2374,16 @@ def get_particles_at_resolution_one(prot):
 
     particle_align = []
     for name in particle_dict:
-
         particle_dict[name] = IMP.pmi.tools.sort_by_residues(
             list(set(particle_dict[name]) & set(allparticles)))
-
     return particle_dict
 
 def get_particles_at_resolution_ten(prot):
-    '''
-    this fucntion get the particles by resolution, without a Representation class initialized
-    it is mainly used when the hierarchy is read from an rmf file
-    it returns a dictionary of component names and their particles
-    '''
+    """
+    Get particles at res 10, or any beads, based on the name (no Representation needed)
+    It is mainly used when the hierarchy is read from an rmf file
+    Returns a dictionary of component names and their particles
+    """
     particle_dict = {}
     allparticles = []
     for c in prot.get_children():
@@ -2418,13 +2394,10 @@ def get_particles_at_resolution_ten(prot):
                 allparticles += IMP.atom.get_leaves(s)
             if "Beads" in s.get_name():
                 allparticles += IMP.atom.get_leaves(s)
-
     particle_align = []
     for name in particle_dict:
-
         particle_dict[name] = IMP.pmi.tools.sort_by_residues(
             list(set(particle_dict[name]) & set(allparticles)))
-
     return particle_dict
 
 

@@ -48,9 +48,26 @@ class ReplicaExchange0(object):
                  em_object_for_rmf=None,
                  atomistic=False,
                  replica_exchange_object=None):
-        '''
-        representation    IMP.pmi.Representation()      can be a list of representations (enables the multi state modeling)
-        '''
+        """
+        Setup and run replica exchange, supporting monte carlo and molecular dynamics
+        @param model                    The IMP model
+        @param representation           PMI.Representation() (or list of them, for multi-state modeling)
+        @param root_hier                Instead of passing Representation, just pass a hierarchy
+        @param mote_carlo_sample_objcts Objects for MC sampling
+        @param molecular_dynamics_sample_objects Objects for MD sampling
+        @param output_objects           Objects with get_output() for packing into stat files
+        @param crosslink_restraints     Harmonic restraints to go in output RMF files
+        @param monte_carlo_temperature  MC temp
+        @param replica_exchange_minimum_temperature Low temp for REX
+        @param replica_exchange_maximum_temperature High temp for REX
+        @param num_sample_rounds        Number of rounds of MC/MD per cycle
+        @param number_of_best_scoring_models Number of top-scoring PDB models to keep around
+        @param monte_carlo_steps        Number of MC steps per round
+        @param molecular_dynamics_steps  Number of MD steps per round
+        @param number_of_frames         Number of REX frames to run
+        @param nframes_write_coordinates How often to write the coordinates of a frame
+        @param write_initial_rmf        Write the initial configuration
+        """
 
         self.model = model
         self.vars = {}
@@ -735,10 +752,6 @@ class AnalysisReplicaExchange0(object):
         else:
             rank = 0
             number_of_processes = 1
-        if alignment_components is None:
-            alignment_flag = 0
-        else:
-            alignment_flag = 1
 
         print "setup clustering class"
         Clusters = IMP.pmi.analysis.Clustering()
@@ -889,9 +902,7 @@ class AnalysisReplicaExchange0(object):
             for n, model_coordinate_dict in enumerate(all_coordinates):
                 template_coordinate_dict = {}
                 # let's try to align
-                if alignment_flag == 1 and len(Clusters.all_coords) == 0:
-                    #for pr in alignment_components:
-                    #    template_coordinate_dict[pr] = model_coordinate_dict[pr]
+                if alignment_components is not None and len(Clusters.all_coords) == 0:
                     # set the first model as template coordinates
                     Clusters.set_template(alignment_coordinates[n])
                 Clusters.fill(all_rmf_file_names[n], rmsd_coordinates[n])

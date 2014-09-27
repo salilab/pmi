@@ -85,6 +85,7 @@ def read_coordinates_of_rmfs(model,
     @param model      The IMP model
     @param rmf_tuples [score,filename,frame number,original order number, rank]
     @param alignment_components Tuples to specify what you're aligning on
+    @param rmsd_calculation_components Tuples to specify what components are used for RMSD calc
     """
     all_coordinates = []
     rmsd_coordinates = []
@@ -140,7 +141,7 @@ def read_coordinates_of_rmfs(model,
                rbegin=rmsd_calculation_components[pr][0]
                s=IMP.atom.Selection(prot,molecule=name,residue_indexes=range(rbegin,rend+1))
             ps=s.get_selected_particles()
-            filtered_particles=list(set(ps)&set(all_particles))
+            filtered_particles=[p for p in ps if p in all_particles] #list(set(ps)&set(all_particles))
             rmsd_coordinate_dict[pr] = np.array(
                 [np.array(IMP.core.XYZ(i).get_coordinates()) for i in filtered_particles])
 

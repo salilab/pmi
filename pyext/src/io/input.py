@@ -81,7 +81,9 @@ def read_coordinates_of_rmfs(model,
                              rmf_tuples,
                              alignment_components=None,
                              rmsd_calculation_components=None):
-    """ Read in coordinates of a set of RMF tuples
+    """ Read in coordinates of a set of RMF tuples.
+    Returns the coordinates split as requested (all, alignment only, rmsd only) as well as
+    RMF file names (as keys in a dictionary, with values being the rank number) and just a plain list
     @param model      The IMP model
     @param rmf_tuples [score,filename,frame number,original order number, rank]
     @param alignment_components Tuples to specify what you're aligning on
@@ -106,7 +108,7 @@ def read_coordinates_of_rmfs(model,
         # getting the particles
         part_dict = IMP.pmi.analysis.get_particles_at_resolution_one(prot)
         all_particles=[pp for key in part_dict for pp in part_dict[key]]
-
+        all_ps_set=set(all_particles)
         # getting the coordinates
         model_coordinate_dict = {}
         template_coordinate_dict={}
@@ -141,7 +143,7 @@ def read_coordinates_of_rmfs(model,
                rbegin=rmsd_calculation_components[pr][0]
                s=IMP.atom.Selection(prot,molecule=name,residue_indexes=range(rbegin,rend+1))
             ps=s.get_selected_particles()
-            filtered_particles=[p for p in ps if p in all_particles] #list(set(ps)&set(all_particles))
+            filtered_particles=[p for p in ps if p in all_ps_set] #list(set(ps)&set(all_particles))
             rmsd_coordinate_dict[pr] = np.array(
                 [np.array(IMP.core.XYZ(i).get_coordinates()) for i in filtered_particles])
 

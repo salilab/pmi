@@ -450,12 +450,13 @@ class GetModelDensity(object):
     """A class to compute mean density maps from structures"""
     def __init__(self, custom_ranges, representation=None, voxel=5.0):
         """Setup GetModelDensity object
-        @param custom_ranges  dictionary, keys are the density component names,
+        @param custom_ranges  Required. It's a dictionary, keys are the density component names,
                               values are selection tuples
                               e.g. {'kin28':[['kin28',1,-1]],
                                    'density_name_1' :[('ccl1')],
                                    'density_name_2' :[(1,142,'tfb3d1'),(143,700,'tfb3d2')],
-        @param representation a PMI representation, for doing selections
+        @param representation PMI representation, for doing selections.
+                              not needed if you only pass hierarchies
         @param voxel          The voxel size for the output map (lower is slower)
 
         """
@@ -467,7 +468,10 @@ class GetModelDensity(object):
         self.custom_ranges = custom_ranges
 
     def add_subunits_density(self, hierarchy=None):
-        # the hierarchy is optional, if passed
+        """Add a frame to the densities.
+        @param hierarchy Optionally read the hierarchy from somewhere.
+                         If not passed, will just read the representation.
+        """
         self.count_models += 1.0
         for density_name in self.custom_ranges:
             parts = []
@@ -480,19 +484,17 @@ class GetModelDensity(object):
                                                        seg, resolution=1, name_is_ambiguous=False)
                 else:
                     if type(seg) == str:
-                        children = [
-                            child for child in hierarchy.get_children(
-                            ) if child.get_name(
-                            ) == seg]
+                        children = [child for child in hierarchy.get_children()
+                                    if child.get_name() == seg]
                         s = IMP.atom.Selection(children)
-                    if type(seg) == tuple:
-                        children = [
-                            child for child in hierarchy.get_children(
-                            ) if child.get_name(
-                            ) == seg[
-                                2]]
+                    elif type(seg) == tuple:
+                        children = [child for child in hierarchy.get_children()
+                                    if child.get_name() == seg[2]]
                         s = IMP.atom.Selection(
                             children, residue_indexes=range(seg[0], seg[1] + 1))
+                    else:
+                        raise Exception('could not understand selection tuple '+str(seg))
+
                     all_particles_by_segments += s.get_selected_particles()
 
             if hierarchy:
@@ -503,17 +505,17 @@ class GetModelDensity(object):
                 parts = list(
                     set(all_particles_by_segments) & set(all_particles_by_resolution))
 
-            self.create_density_from_particles(parts, density_name)
+            self._create_density_from_particles(parts, density_name)
 
     def normalize_density(self):
         pass
 
-    def create_density_from_particles(self, ps, name,
+    def _create_density_from_particles(self, ps, name,
                                       resolution=1,
                                       kernel_type='GAUSSIAN'):
-        '''pass XYZR particles with mass and create a density from them.
+        '''Internal function for adding to densities.
+        pass XYZR particles with mass and create a density from them.
         kernel type options are GAUSSIAN, BINARIZED_SPHERE, and SPHERE.'''
-
         kd = {
             'GAUSSIAN': IMP.em.GAUSSIAN,
             'BINARIZED_SPHERE': IMP.em.BINARIZED_SPHERE,
@@ -531,6 +533,16 @@ class GetModelDensity(object):
             dmap3.add(dmap)
             dmap3.add(self.densities[name])
             self.densities[name] = dmap3
+
+    def get_density_keys(self):
+        return self.densities.keys()
+
+    def get_density(self,name):
+        """Get the current density for some component name"""
+        if name not in self.densities:
+            return None
+        else:
+            return self.densities[name]
 
     def write_mrc(self, path="./"):
         for density_name in self.densities:

@@ -50,6 +50,7 @@ class InputTest(IMP.test.TestCase):
         rmsd_coordinates=got_coords[2]
         rmf_file_name_index_dict=got_coords[3]
         all_rmf_file_names=got_coords[4]
+        print all_rmf_file_names
         self.assertEqual(len(all_coordinates),8)
         self.assertEqual(len(alignment_coordinates),8)
         self.assertEqual(len(rmsd_coordinates),8)

@@ -12,6 +12,10 @@ class AnalysisTest(IMP.test.TestCase):
         IMP.test.TestCase.setUp(self)
         self.model = IMP.Model()
 
+    def test_alignment(self):
+        """Test alignment correctly aligns, handles multiple copies of same protein"""
+        pass
+
     def test_clustering(self):
         """Test clustering can calculate distance matrix, align, and cluster correctly"""
         pass

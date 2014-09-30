@@ -20,6 +20,9 @@ class AnalysisTest(IMP.test.TestCase):
         """Test clustering can calculate distance matrix, align, and cluster correctly"""
         pass
 
+    def precision(self):
+        pass
+
     def test_get_model_density(self):
         """Test GetModelDensity correctly creates and adds density maps"""
         custom_ranges={'med2':[(1,100,'med2')],

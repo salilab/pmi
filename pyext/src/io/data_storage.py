@@ -2,7 +2,6 @@
 import IMP
 import IMP.atom
 from collections import defaultdict
-import pandas
 
 class Subsequence(object):
     """ A light class to store multiple not-necessarily-contiguous residue ranges."""

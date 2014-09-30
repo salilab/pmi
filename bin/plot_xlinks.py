@@ -15,19 +15,21 @@ def parse_args():
                       default=35.0,
                       type=float,
                       help="Above this threshold, use a different color. "
-                      "Default is VERY BIG")
+                      "Default is 35A")
     parser.add_option("-r","--radius",dest="radius",
                       default=2.0,
                       type=float,
-                      help="Radius for the XL")
+                      help="Radius for the XL. Default is 2.0")
     parser.add_option("-c","--color",dest="color",
                       default='93,238,93',
                       help="RGB colors for non-violated XL"
-                      "format is R,G,B where each value is out of 255")
+                      "format is R,G,B where each value is out of 255"
+                      "Default is green")
     parser.add_option("-v","--color_viol",dest="color_viol",
                       default='250,77,63',
                       help="RGB colors for violated XL (above options.threshold)"
-                      "format is R,G,B where each value is out of 255")
+                      "format is R,G,B where each value is out of 255"
+                      "Default is red")
 
     (options, args) = parser.parse_args()
     if len(args) != 3:

@@ -2046,8 +2046,8 @@ class Precision(object):
            self.structures_dictionary[structure_set_name]={}
            self.rmf_names_frames[structure_set_name]=[]
            cdict=self.structures_dictionary[structure_set_name]
-           rmflist=self.rmf_names_frames[structure_set_name]        
-        
+           rmflist=self.rmf_names_frames[structure_set_name]
+
         try:
           (particles_resolution_one, prots)=self.get_structure(rmf_frame_index,rmf_name)
         except:
@@ -2154,7 +2154,7 @@ class Precision(object):
         outfile   str  the output file name
         is_mpi    bool speed up calculation using openmpi
         skip      int  skip every n frames
-        
+
         '''
 
         import itertools
@@ -2180,7 +2180,7 @@ class Precision(object):
 
           number_of_structures_1=len(self.structures_dictionary[structure_set_name1][selection_name])
           number_of_structures_2=len(self.structures_dictionary[structure_set_name2][selection_name])
-          
+
           distances={}
 
           structure_pointers_1=range(number_of_structures_1)
@@ -2189,7 +2189,7 @@ class Precision(object):
           if skip is not None:
              structure_pointers_1=structure_pointers_1[0::skip]
              structure_pointers_2=structure_pointers_2[0::skip]
-           
+
           pair_combination_list=list(itertools.product(structure_pointers_1,structure_pointers_2))
 
           if len(pair_combination_list)==0:
@@ -2209,44 +2209,44 @@ class Precision(object):
               distances = IMP.pmi.tools.scatter_and_gather(distances)
 
           if rank == 0:
-             
+
             if structure_set_name1==structure_set_name2:
                 structure_pointers=structure_pointers_1
                 number_of_structures=number_of_structures_1
-                
+
                 # calculate the distance from the first centroid
                 # and determine the centroid
-                
+
                 distance=0.0
                 distances_to_structure={}
                 distances_to_structure_normalization={}
-    
+
                 for n in structure_pointers:
                     distances_to_structure[n]=0.0
                     distances_to_structure_normalization[n]=0
-    
+
                 for k in distances:
                     distance+=distances[k]
                     distances_to_structure[k[0]]+=distances[k]
                     distances_to_structure[k[1]]+=distances[k]
                     distances_to_structure_normalization[k[0]]+=1
                     distances_to_structure_normalization[k[1]]+=1
-    
+
                 for n in structure_pointers:
                     distances_to_structure[n]=distances_to_structure[n]/distances_to_structure_normalization[n]
-    
+
                 #for n,d in enumerate(distances_to_structure):
                 #    print self.rmf_names_frames[n],d
                 min_distance=min([distances_to_structure[n] for n in distances_to_structure])
                 centroid_index=[k for k, v in distances_to_structure.iteritems() if v == min_distance][0]
                 centroid_rmf_name=self.rmf_names_frames[structure_set_name1][centroid_index]
-    
+
                 centroid_distance=0.0
                 for n in range(number_of_structures):
                     centroid_distance+=self.get_distance(structure_set_name1,structure_set_name1,
                                                          selection_name,centroid_index,n)
-    
-    
+
+
                 #pairwise_distance=distance/len(distances.keys())
                 centroid_distance/=number_of_structures
                 #average_centroid_distance=sum(distances_to_structure)/len(distances_to_structure)
@@ -2286,7 +2286,7 @@ class Precision(object):
            for index in range(number_of_structures):
 
 
-              distances=self.get_particle_distances(structure_set_name, 
+              distances=self.get_particle_distances(structure_set_name,
                                                     structure_set_name,
                                                     selection_name,
                                                     centroid_index,index)
@@ -2386,6 +2386,32 @@ def get_hier_from_rmf(model, frame_number, rmf_file):
     model.update()
     del rh
     return prot
+
+def get_hier_and_restraints_from_rmf(model, frame_number, rmf_file):
+    # I have to deprecate this function
+    print "getting coordinates for frame %i rmf file %s" % (frame_number, rmf_file)
+
+    # load the frame
+    rh = RMF.open_rmf_file_read_only(rmf_file)
+
+    try:
+        prots = IMP.rmf.create_hierarchies(rh, model)
+        rs = IMP.rmf.create_restraints(rh, model)
+    except:
+        print "Unable to open rmf file %s" % (rmf_file)
+        prot = None
+        rs = None
+        return prot,rs
+    #IMP.rmf.link_hierarchies(rh, prots)
+    prot = prots[0]
+    try:
+        IMP.rmf.load_frame(rh, frame_number)
+    except:
+        print "Unable to open frame %i of file %s" % (frame_number, rmf_file)
+        prot = None
+    model.update()
+    del rh
+    return prot,rs
 
 def get_hiers_from_rmf(model, frame_number, rmf_file):
     print "getting coordinates for frame %i rmf file %s" % (frame_number, rmf_file)

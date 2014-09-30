@@ -1000,7 +1000,7 @@ class AnalysisReplicaExchange0(object):
                     rmf_frame_number = int(structure_name.split("|")[1])
 
                     clusstat.write(str(tmp_dict) + "\n")
-                    prot = IMP.pmi.analysis.get_hier_from_rmf(
+                    prot,rs = IMP.pmi.analysis.get_hier_and_restraints_from_rmf(
                         self.model,
                         rmf_frame_number,
                         rmf_name)
@@ -1038,7 +1038,7 @@ class AnalysisReplicaExchange0(object):
                     o.init_pdb(dircluster + str(k) + ".pdb", prot)
                     o.write_pdb(dircluster + str(k) + ".pdb")
 
-                    o.init_rmf(dircluster + str(k) + ".rmf3", [prot])
+                    o.init_rmf(dircluster + str(k) + ".rmf3", [prot],rs)
                     # IMP.rmf.add_restraints(o.dictionary_rmfs[dircluster+str(n)+".rmf3"],restraints)
                     o.write_rmf(dircluster + str(k) + ".rmf3")
                     o.close_rmf(dircluster + str(k) + ".rmf3")

@@ -141,7 +141,7 @@ class Output(object):
                 atom_index += 1
                 rt = residue.get_residue_type()
                 xyz = IMP.core.XYZ(p).get_coordinates()
-                radius = IMP.core.XYZR(p).get_radius()                
+                radius = IMP.core.XYZR(p).get_radius()
                 geometric_center[0] += xyz[0]
                 geometric_center[1] += xyz[1]
                 geometric_center[2] += xyz[2]
@@ -164,7 +164,7 @@ class Output(object):
                 atom_index += 1
                 rt = impatom.ResidueType('BEA')
                 xyz = IMP.core.XYZ(p).get_coordinates()
-                radius = IMP.core.XYZR(p).get_radius()                
+                radius = IMP.core.XYZR(p).get_radius()
                 geometric_center[0] += xyz[0]
                 geometric_center[1] += xyz[1]
                 geometric_center[2] += xyz[2]
@@ -179,7 +179,7 @@ class Output(object):
                     resindexes = IMP.pmi.tools.get_residue_indexes(p)
                     resind = resindexes[len(resindexes) / 2]
                     xyz = IMP.core.XYZ(p).get_coordinates()
-                    radius = IMP.core.XYZR(p).get_radius()                    
+                    radius = IMP.core.XYZR(p).get_radius()
                     geometric_center[0] += xyz[0]
                     geometric_center[1] += xyz[1]
                     geometric_center[2] += xyz[2]
@@ -300,13 +300,15 @@ class Output(object):
                 "self.best_score_list=" + str(self.best_score_list))
             best_score_file.close()
 
-    def init_rmf(self, name, hierarchies):
+    def init_rmf(self, name, hierarchies,rs=None):
         if not self.rmf_library:
             print "Output error: neet rmf library to init rmf"
             exit()
 
         rh = RMF.create_rmf_file(name)
         imprmf.add_hierarchies(rh, hierarchies)
+        if rs is not None:
+            IMP.rmf.add_restraints(rh,rs)
         self.dictionary_rmfs[name] = rh
 
     def add_restraints_to_rmf(self, name, objectlist):
@@ -860,7 +862,7 @@ def plot_fields_box_plots(name, values, positions, frequencies=None,
 def plot_xy_data(x,y,title=None,display=True):
         import matplotlib.pyplot as plt
         plt.rc('lines', linewidth=2)
-        
+
         fig, ax  = plt.subplots(nrows=1)
         fig.set_size_inches(8,4.5)
         if title is not None:

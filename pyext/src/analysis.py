@@ -449,7 +449,9 @@ class Clustering(object):
 class GetModelDensity(object):
     """A class to compute mean density maps from structures"""
     def __init__(self, custom_ranges, representation=None, voxel=5.0):
-        """Setup GetModelDensity object
+        """Setup GetModelDensity object. Keeps a dictionary of density maps,
+        keys are in the custom ranges. When you call add_subunits_density, it adds
+        particle coordinates to the existing density maps.
         @param custom_ranges  Required. It's a dictionary, keys are the density component names,
                               values are selection tuples
                               e.g. {'kin28':[['kin28',1,-1]],

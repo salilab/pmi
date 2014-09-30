@@ -321,27 +321,27 @@ def get_random_cross_link_dataset(representation,
 
     '''returns a random cross-link dataset into a string were every
     line is a residue pair, together with UniqueIdentifier and XL score'''
-                       
+
     residue_pairs=get_random_residue_pairs(representation, resolution, number_of_cross_links, avoid_same_particles)
-    
+
     from random import random
     unique_identifier=0
     cmin=float(min(confidence_score_range))
-    cmax=float(max(confidence_score_range))    
-    
+    cmax=float(max(confidence_score_range))
+
     dataset="#\n"
-    
+
     for (name1, r1, name2, r2) in residue_pairs:
         if random() > ambiguity_probability:
            unique_identifier+=1
         score=random()*(cmax-cmin)+cmin
         dataset+=str(name1)+" "+str(name2)+" "+str(r1)+" "+str(r2)+" "+str(score)+" "+str(unique_identifier)+"\n"
-    
+
     return dataset
-    
+
 
     #-------------------------------
-    
+
 def get_cross_link_data(directory, filename, (distmin, distmax, ndist),
                         (omegamin, omegamax, nomega),
                         (sigmamin, sigmamax, nsigma),
@@ -501,7 +501,7 @@ def get_closest_residue_position(hier, resindex, terminus="N"):
         niter += 1
         sel = IMP.atom.Selection(hier, residue_index=resindex,
                                  atom_type=IMP.atom.AT_CA)
-        
+
         if terminus == "N":
             resindex += 1
         if terminus == "C":
@@ -968,12 +968,11 @@ def get_residue_to_particle_map(particles):
 
 
 def scatter_and_gather(data):
+    """Synchronize data over a parallel run"""
     from mpi4py import MPI
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     number_of_processes = comm.size
-    # synchronize data over the parallel run
-    # the root is node 0
     comm.Barrier()
     if rank != 0:
         comm.send(data, dest=0, tag=11)
@@ -994,7 +993,6 @@ def scatter_and_gather(data):
 
     if rank != 0:
         data = comm.recv(source=0, tag=11)
-
     return data
 
 
@@ -1111,16 +1109,16 @@ def log_normal_density_function(expected_value, sigma, x):
     )
 
 
-def get_random_residue_pairs(representation, resolution, 
+def get_random_residue_pairs(representation, resolution,
                              number,
-                             avoid_same_particles=False, 
+                             avoid_same_particles=False,
                              names=None):
-                             
+
     from random import choice
     particles = []
     if names is None:
         names=representation.hier_dict.keys()
-    
+
     for name in names:
         prot = representation.hier_dict[name]
         particles += select(representation,name=name,resolution=resolution)
@@ -1134,7 +1132,7 @@ def get_random_residue_pairs(representation, resolution,
         name1 = representation.get_prot_name_from_particle(p1)
         name2 = representation.get_prot_name_from_particle(p2)
         random_residue_pairs.append((name1, r1, name2, r2))
-    
+
     return random_residue_pairs
 
 

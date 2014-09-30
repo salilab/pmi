@@ -1,5 +1,5 @@
 """@namespace IMP.pmi.macros
-   Set up of protocols.
+Protocols for sampling structures and analyzing them.
 """
 
 import IMP.pmi.representation
@@ -17,6 +17,11 @@ from collections import defaultdict
 import numpy as np
 
 class ReplicaExchange0(object):
+    """ A macro to help setup and run replica exchange,
+    supporting monte carlo and molecular dynamics.
+    Produces trajectory RMF files, best PDB structures,
+    and output stat files
+    """
 
     def __init__(self, model,
                  representation=None,
@@ -49,7 +54,7 @@ class ReplicaExchange0(object):
                  atomistic=False,
                  replica_exchange_object=None):
         """
-        Setup and run replica exchange, supporting monte carlo and molecular dynamics
+        Setup replica exchange.
         @param model                    The IMP model
         @param representation           PMI.Representation() (or list of them, for multi-state modeling)
         @param root_hier                Instead of passing Representation, just pass a hierarchy
@@ -659,7 +664,10 @@ class BuildModel1(object):
 # ----------------------------------------------------------------------
 
 class AnalysisReplicaExchange0(object):
-
+    """A macro for running all the basic operations of analysis.
+    Including clustering, precision analysis, and making ensemble density maps.
+    A number of plots are also supported.
+    """
     def __init__(self, model,
                  stat_file_name_suffix="stat",
                  # if you want to merge two calculation directories
@@ -673,7 +681,7 @@ class AnalysisReplicaExchange0(object):
                  rmf_dir='', #NOT USED
                  ):
 
-        """ A macro for running all the basic operations of analysis
+        """ Setup analysis.
         @param model                           The IMP model
         @param stat_file_name_suffix
         @param merge_directories               The directories containing output files
@@ -868,11 +876,11 @@ class AnalysisReplicaExchange0(object):
                                                               my_best_score_rmf_tuples,
                                                               alignment_components,
                                                               rmsd_calculation_components)
-            all_coordinates=got_coords[0]
-            alignment_coordinates=got_coords[1]
-            rmsd_coordinates=got_coords[2]
-            rmf_file_name_index_dict=got_coords[3]
-            all_rmf_file_names=got_coords[4]
+            all_coordinates=got_coords[0]          # dict:key=component name,val=coords per hit
+            alignment_coordinates=got_coords[1]    # same as above, limited to alignment bits
+            rmsd_coordinates=got_coords[2]         # same as above, limited to RMSD bits
+            rmf_file_name_index_dict=got_coords[3] # dictionary with key=RMF, value=score rank
+            all_rmf_file_names=got_coords[4]       # RMF file per hit
 
 
             # broadcast the coordinates
@@ -933,7 +941,7 @@ class AnalysisReplicaExchange0(object):
                 print "clustering with %s clusters" % str(number_of_clusters)
                 Clusters.do_cluster(number_of_clusters)
                 [best_score_feature_keyword_list_dict,
-                    rmf_file_name_index_dict] = self.load_objects(".macro.pkl")
+                 rmf_file_name_index_dict] = self.load_objects(".macro.pkl")
                 if display_plot:
                     if rank == 0:
                         Clusters.plot_matrix()

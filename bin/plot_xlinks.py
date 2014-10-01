@@ -4,86 +4,143 @@ import IMP.rmf
 import IMP.pmi
 import IMP.pmi.tools
 import IMP.pmi.analysis
-from optparse import OptionParser
+import argparse
 import sys,os
+from collections import defaultdict
 
 def parse_args():
-    usage = """%prog [options] <rmf_fn> <frame number> <out_fn.cmm>
-    """
-    parser = OptionParser(usage)
-    parser.add_option("-t","--threshold",dest="threshold",
-                      default=35.0,
-                      type=float,
-                      help="Above this threshold, use a different color. "
-                      "Default is 35A")
-    parser.add_option("-r","--radius",dest="radius",
-                      default=2.0,
-                      type=float,
-                      help="Radius for the XL. Default is 2.0")
-    parser.add_option("-c","--color",dest="color",
-                      default='93,238,93',
-                      help="RGB colors for non-violated XL"
-                      "format is R,G,B where each value is out of 255"
-                      "Default is green")
-    parser.add_option("-v","--color_viol",dest="color_viol",
-                      default='250,77,63',
-                      help="RGB colors for violated XL (above options.threshold)"
-                      "format is R,G,B where each value is out of 255"
-                      "Default is red")
-    parser.add_option("-m","--model_rs",dest="model_rs",
-                      help="Kluge to let you read the restraints from a different RMF file")
+    parser = argparse.ArgumentParser(
+        description = "Draw the crosslinks from an RMF file. You can specify two colors, one for"
+        "under the threshold and one for over. Also you can change the threshold."
+        "Outputs a CMM file, which is readable in chimera."
+        "Flag -h for more options")
+    parser.add_argument("-f","--rmf_fn",dest="rmf_fn",required=True,
+                        help="RMF file for extracting coordinates / restraints")
+    parser.add_argument("-n","--frame number",dest="frame_num",
+                        type=int,
+                        default=0,
+                        help="RMF frame number. Default is 0")
+    parser.add_argument("-o","--cmm_fn",dest="cmm_fn",
+                        help="Output CMM file. Default is the rmf_fn.cmm")
+    parser.add_argument("-t","--threshold",dest="threshold",
+                        default=35.0,
+                        type=float,
+                        help="Above this threshold, use a different color. "
+                        "Default is 35A")
+    parser.add_argument("-r","--radius",dest="radius",
+                        default=2.0,
+                        type=float,
+                        help="Radius for the XL. Default is 2.0")
+    parser.add_argument("-c","--color",dest="color",
+                        default='93,238,93',
+                        help="RGB colors for non-violated XL"
+                        "format is R,G,B where each value is out of 255"
+                        "Default is green")
+    parser.add_argument("-v","--color_viol",dest="color_viol",
+                        default='250,77,63',
+                        help="RGB colors for violated XL (above options.threshold)"
+                        "format is R,G,B where each value is out of 255"
+                        "Default is red")
+    parser.add_argument("-m","--model_rs",dest="model_rs",
+                        help="Kluge to let you read the restraints from a different RMF file")
+    parser.add_argument("-l","--limit_to",dest="limit_to",
+                        nargs="+",
+                        help="Only write these subunits or ranges. Can specify multiple."
+                        "e.g. -l med2 med3 med5 1,100,med14"
+                        "WARNING: this only works on canonical RMF files")
+    result = parser.parse_args()
+    return result
 
-    (options, args) = parser.parse_args()
-    if len(args) != 3:
-        parser.error("incorrect number of arguments")
-    return options,args
+def check_is_selected(limit_dict,p):
+    mname = IMP.atom.Hierarchy(p).get_parent().get_parent().get_name()
+    if '_Res' in mname:
+        mname = IMP.atom.Hierarchy(p).get_parent().get_parent().get_parent().get_name()
+    if mname in limit_dict.keys():
+        if limit_dict[mname]==-1:
+            return True
+        else:
+            s = set(IMP.atom.Fragment(p).get_residue_indexes())
+            if s <= limit_dict[mname]:
+                return True
+    return False
 
 def run():
-    options,args = parse_args()
-    rmf_fn,frame_num,out_fn = args
+    ### process input
+    args = parse_args()
     try:
-        color = map(lambda x: float(x)/255,options.color.split(','))
-        vcolor = map(lambda x: float(x)/255,options.color_viol.split(','))
+        color = map(lambda x: float(x)/255,args.color.split(','))
+        vcolor = map(lambda x: float(x)/255,args.color_viol.split(','))
         t = color[2]
         t = vcolor[2]
-        threshold = float(options.threshold)
-        radius = float(options.radius)
     except:
         raise InputError("Wrong color format")
+    threshold = float(args.threshold)
+    radius = float(args.radius)
+    if args.cmm_fn:
+        out_fn = args.cmm_fn
+    else:
+        out_fn = os.path.splitext(args.rmf_fn)[0]+'.cmm'
+    limit_dict=None
+    if args.limit_to:
+        limit_dict=defaultdict(set)
+        for lim in args.limit_to:
+            fields=lim.split(',')
+            if len(fields)==1:
+                limit_dict[lim]=-1
+            elif len(fields)==3:
+                limit_dict[fields[2]]|=set(range(int(fields[0]),int(fields[1])+1))
+            else:
+                raise Exception('The list of limits must be subunit names or '
+                                'start,stop,name tuples')
 
+    ### prepare output
     outf=open(out_fn,'w')
     outf.write('<marker_set name="xlinks">\n')
 
+    ### collect particles based on the restraints
     mdl = IMP.Model()
-    rh = RMF.open_rmf_file_read_only(rmf_fn)
+    rh = RMF.open_rmf_file_read_only(args.rmf_fn)
     prots = IMP.rmf.create_hierarchies(rh, mdl)
     prot=prots[0]
     rs = IMP.rmf.create_restraints(rh, mdl)
-    IMP.rmf.load_frame(rh,int(frame_num))
+    IMP.rmf.load_frame(rh,int(args.frame_num))
     pairs=[]
-    if options.model_rs:
+    if args.model_rs:
         ps_dict={}
         for p in IMP.core.get_leaves(prot):
             ps_dict[p.get_name()]=p
-        rh2 = RMF.open_rmf_file_read_only(options.model_rs)
+        rh2 = RMF.open_rmf_file_read_only(args.model_rs)
         prots2 = IMP.rmf.create_hierarchies(rh2, mdl)
         rs2 = IMP.rmf.create_restraints(rh2, mdl)
         IMP.rmf.load_frame(rh2,0)
         for r in rs2:
             ps2 = r.get_inputs()
             try:
-                c1,c2 = [IMP.core.XYZ(ps_dict[IMP.kernel.Particle.get_from(p).get_name()]).get_coordinates() for p in ps2]
+                pp = [ps_dict[IMP.kernel.Particle.get_from(p).get_name()] for p in ps2]
             except:
                 print 'the restraint particles',ps2,'could not be found in the new rmf'
                 exit()
-            pairs.append((c1,c2))
+            pairs.append(pp)
     else:
         for r in rs:
             ps = r.get_inputs()
-            c1,c2 = [IMP.core.XYZ(IMP.kernel.Particle.get_from(p)).get_coordinates() for p in ps]
-            pairs.append((c1,c2))
+            pp = [IMP.kernel.Particle.get_from(p) for p in ps]
+            pairs.append(pp)
+
+    ### filter the particles as requested
+    final_pairs = []
+    if limit_dict:
+        for p1,p2 in pairs:
+            if check_is_selected(limit_dict,p1) or check_is_selected(limit_dict,p2):
+                final_pairs.append([p1,p2])
+                print 'GOOD:',p1,p2
+    else:
+        final_pairs = pairs
+
+    ### draw the coordinates
     nv=0
-    for c1,c2 in pairs:
+    for pp in final_pairs:
+        c1,c2 = [IMP.core.XYZ(p).get_coordinates() for p in pp]
         dist = IMP.algebra.get_distance(c1,c2)
         if dist<threshold:
             r,g,b = color

@@ -2,24 +2,24 @@
    Output.
 """
 
+import IMP
+import IMP.atom
+import IMP.core
+import IMP.pmi
 import IMP.pmi.tools
+import os
+import RMF
+import numpy as np
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
+
 
 
 class Output(object):
 
     def __init__(self, ascii=True,atomistic=False):
-        global os, RMF, imprmf, cPickle, impatom, impcore, imp
-        import cPickle as cPickle
-        import os
-        import IMP as imp
-        import IMP.atom as impatom
-        import IMP.core as impcore
-        try:
-            import RMF
-            import IMP.rmf as imprmf
-            self.rmf_library = True
-        except ImportError:
-            self.rmf_library = False
 
         self.dictionary_pdbs = {}
         self.dictionary_rmfs = {}
@@ -31,7 +31,7 @@ class Output(object):
         self.replica_exchange = False
         self.ascii = ascii
         self.initoutput = {}
-        self.residuetypekey = imp.StringKey("ResidueName")
+        self.residuetypekey = IMP.StringKey("ResidueName")
         self.chainids = "ABCDEFGHIJKLMNOPQRSTUVXYWZabcdefghijklmnopqrstuvxywz"
         self.dictchain = {}
         self.particle_infos_for_pdb = {}
@@ -74,7 +74,7 @@ class Output(object):
             (xyz, atom_index, atom_type, residue_type,
              chain_id, residue_index,radius) = tupl
 
-            flpdb.write(impatom.get_pdb_string((xyz[0] - geometric_center[0],
+            flpdb.write(IMP.atom.get_pdb_string((xyz[0] - geometric_center[0],
                                                 xyz[1] - geometric_center[1],
                                                 xyz[2] - geometric_center[2]),
                                                atom_index, atom_type, residue_type,
@@ -101,7 +101,7 @@ class Output(object):
         atom_count = 0
         atom_index = 0
 
-        for n, p in enumerate(impatom.get_leaves(self.dictionary_pdbs[name])):
+        for n, p in enumerate(IMP.atom.get_leaves(self.dictionary_pdbs[name])):
 
             # this loop gets the protein name from the
             # particle leave by descending into the hierarchy
@@ -112,12 +112,12 @@ class Output(object):
             if protname not in resindexes_dict:
                 resindexes_dict[protname] = []
 
-            if impatom.Atom.get_is_setup(p) and self.atomistic:
+            if IMP.atom.Atom.get_is_setup(p) and self.atomistic:
                 atom_index += 1
-                residue = impatom.Residue(impatom.Atom(p).get_parent())
+                residue = IMP.atom.Residue(IMP.atom.Atom(p).get_parent())
                 rt = residue.get_residue_type()
                 resind = residue.get_index()
-                atomtype = impatom.Atom(p).get_atom_type()
+                atomtype = IMP.atom.Atom(p).get_atom_type()
                 xyz = list(IMP.core.XYZ(p).get_coordinates())
                 radius = IMP.core.XYZR(p).get_radius()
                 geometric_center[0] += xyz[0]
@@ -128,9 +128,9 @@ class Output(object):
                                                atomtype, rt, self.dictchain[name][protname], resind,radius))
                 resindexes_dict[protname].append(resind)
 
-            elif impatom.Residue.get_is_setup(p):
+            elif IMP.atom.Residue.get_is_setup(p):
 
-                residue = impatom.Residue(p)
+                residue = IMP.atom.Residue(p)
                 resind = residue.get_index()
                 # skip if the residue was already added by atomistic resolution
                 # 0
@@ -147,14 +147,14 @@ class Output(object):
                 geometric_center[2] += xyz[2]
                 atom_count += 1
                 particle_infos_for_pdb.append((xyz, atom_index,
-                                               impatom.AT_CA, rt, self.dictchain[name][protname], resind,radius))
+                                               IMP.atom.AT_CA, rt, self.dictchain[name][protname], resind,radius))
 
                 # if protname not in index_residue_pair_list:
                 #   index_residue_pair_list[protname]=[(atom_index,resind)]
                 # else:
                 # index_residue_pair_list[protname].append((atom_index,resind))
 
-            elif impatom.Fragment.get_is_setup(p) and not is_a_bead:
+            elif IMP.atom.Fragment.get_is_setup(p) and not is_a_bead:
                 resindexes = IMP.pmi.tools.get_residue_indexes(p)
                 resind = resindexes[len(resindexes) / 2]
                 if resind in resindexes_dict[protname]:
@@ -162,7 +162,7 @@ class Output(object):
                 else:
                     resindexes_dict[protname].append(resind)
                 atom_index += 1
-                rt = impatom.ResidueType('BEA')
+                rt = IMP.atom.ResidueType('BEA')
                 xyz = IMP.core.XYZ(p).get_coordinates()
                 radius = IMP.core.XYZR(p).get_radius()
                 geometric_center[0] += xyz[0]
@@ -170,12 +170,12 @@ class Output(object):
                 geometric_center[2] += xyz[2]
                 atom_count += 1
                 particle_infos_for_pdb.append((xyz, atom_index,
-                                               impatom.AT_CA, rt, self.dictchain[name][protname], resind,radius))
+                                               IMP.atom.AT_CA, rt, self.dictchain[name][protname], resind,radius))
 
             else:
                 if is_a_bead:
                     atom_index += 1
-                    rt = impatom.ResidueType('BEA')
+                    rt = IMP.atom.ResidueType('BEA')
                     resindexes = IMP.pmi.tools.get_residue_indexes(p)
                     resind = resindexes[len(resindexes) / 2]
                     xyz = IMP.core.XYZ(p).get_coordinates()
@@ -185,7 +185,7 @@ class Output(object):
                     geometric_center[2] += xyz[2]
                     atom_count += 1
                     particle_infos_for_pdb.append((xyz, atom_index,
-                                                   impatom.AT_CA, rt, self.dictchain[name][protname], resind,radius))
+                                                   IMP.atom.AT_CA, rt, self.dictchain[name][protname], resind,radius))
                 # if protname not in index_residue_pair_list:
                 #   index_residue_pair_list[protname]=[(atom_index,resind)]
                 # else:
@@ -301,12 +301,8 @@ class Output(object):
             best_score_file.close()
 
     def init_rmf(self, name, hierarchies,rs=None):
-        if not self.rmf_library:
-            print "Output error: neet rmf library to init rmf"
-            exit()
-
         rh = RMF.create_rmf_file(name)
-        imprmf.add_hierarchies(rh, hierarchies)
+        IMP.rmf.add_hierarchies(rh, hierarchies)
         if rs is not None:
             IMP.rmf.add_restraints(rh,rs)
         self.dictionary_rmfs[name] = rh
@@ -317,26 +313,26 @@ class Output(object):
                 rs = o.get_restraint_for_rmf()
             except:
                 rs = o.get_restraint()
-            imprmf.add_restraints(
+            IMP.rmf.add_restraints(
                 self.dictionary_rmfs[name],
                 rs.get_restraints())
 
     def add_geometries_to_rmf(self, name, objectlist):
         for o in objectlist:
             geos = o.get_geometries()
-            imprmf.add_geometries(self.dictionary_rmfs[name], geos)
+            IMP.rmf.add_geometries(self.dictionary_rmfs[name], geos)
 
     def add_particle_pair_from_restraints_to_rmf(self, name, objectlist):
         for o in objectlist:
 
             pps = o.get_particle_pairs()
             for pp in pps:
-                imprmf.add_geometry(
+                IMP.rmf.add_geometry(
                     self.dictionary_rmfs[name],
                     IMP.core.EdgePairGeometry(pp))
 
     def write_rmf(self, name):
-        imprmf.save_frame(self.dictionary_rmfs[name])
+        IMP.rmf.save_frame(self.dictionary_rmfs[name])
         self.dictionary_rmfs[name].flush()
 
     def close_rmf(self, name):
@@ -642,7 +638,6 @@ class ProcessOutput(object):
         return self.klist
 
     def show_keys(self, ncolumns=2, truncate=65):
-        import IMP.pmi.tools
         IMP.pmi.tools.print_multicolumn(self.get_keys(), ncolumns, truncate)
 
     def get_fields(
@@ -776,7 +771,6 @@ def plot_field_histogram(
 
     import matplotlib.pyplot as plt
     import matplotlib.cm as cm
-    import numpy as np
     fig = plt.figure(figsize=(18.0, 9.0))
 
     if colors is None:
@@ -829,7 +823,6 @@ def plot_fields_box_plots(name, values, positions, frequencies=None,
     '''
     import matplotlib.pyplot as plt
     from matplotlib.patches import Polygon
-    #import numpy as np
 
     bps = []
     fig = plt.figure(figsize=(float(len(positions)) / 2, 5.0))

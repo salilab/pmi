@@ -15,6 +15,10 @@ import IMP.rmf
 import RMF
 from operator import itemgetter
 from copy import deepcopy
+from math import log,sqrt
+import itertools
+import numpy as np
+from scipy.spatial.distance import cdist
 
 class Alignment(object):
 
@@ -33,13 +37,6 @@ class Alignment(object):
 
     def __init__(self, template, query):
 
-        global array, argwhere, mgrid, shape, reshape, zeros, diagonal, argsort, deepcopy, cdist, sqrt
-        global product, permutations
-        from numpy import array, argwhere, mgrid, shape, reshape, zeros, diagonal, argsort
-        from scipy.spatial.distance import cdist
-        from math import sqrt
-        from itertools import permutations, product
-
         self.query = query
         self.template = template
 
@@ -56,10 +53,10 @@ class Alignment(object):
         for p in prots_uniq:
             np = prots_uniq.count(p)
             copies = [i for i in self.proteins if i.split('..')[0] == p]
-            prmts = list(permutations(copies, len(copies)))
+            prmts = list(itertools.permutations(copies, len(copies)))
             P[p] = prmts
         self.P = P
-        self.Product = list(product(*P.values()))
+        self.Product = list(itertools.product(*P.values()))
 
     def get_rmsd(self):
 
@@ -69,7 +66,7 @@ class Alignment(object):
         torder = sum([list(i) for i in self.Product[0]], [])
         for t in torder:
             template_xyz += [i for i in self.template[t]]
-        template_xyz = array(template_xyz)
+        template_xyz = np.array(template_xyz)
 
         self.rmsd = 10000000000.
         for comb in self.Product:
@@ -77,13 +74,13 @@ class Alignment(object):
             query_xyz = []
             for p in order:
                 query_xyz += [i for i in self.query[p]]
-            query_xyz = array(query_xyz)
+            query_xyz = np.array(query_xyz)
             if len(template_xyz) != len(query_xyz):
                 print '''Alignment.get_rmsd: ERROR: the number of coordinates
                                in template and query does not match!'''
                 exit()
             dist = sqrt(
-                sum(diagonal(cdist(template_xyz, query_xyz) ** 2)) / len(template_xyz))
+                sum(np.diagonal(cdist(template_xyz, query_xyz) ** 2)) / len(template_xyz))
             if dist < self.rmsd:
                 self.rmsd = dist
         return self.rmsd
@@ -96,7 +93,7 @@ class Alignment(object):
         torder = sum([list(i) for i in self.Product[0]], [])
         for t in torder:
             template_xyz += [IMP.algebra.Vector3D(i) for i in self.template[t]]
-        #template_xyz = array(template_xyz)
+        #template_xyz = np.array(template_xyz)
 
         self.rmsd, Transformation = 10000000000., ''
         for comb in self.Product:
@@ -104,7 +101,7 @@ class Alignment(object):
             query_xyz = []
             for p in order:
                 query_xyz += [IMP.algebra.Vector3D(i) for i in self.query[p]]
-            #query_xyz = array(query_xyz)
+            #query_xyz = np.array(query_xyz)
 
             if len(template_xyz) != len(query_xyz):
                 print '''ERROR: the number of coordinates
@@ -118,7 +115,7 @@ class Alignment(object):
                             for n in query_xyz]
 
             dist = sqrt(
-                sum(diagonal(cdist(template_xyz, query_xyz_tr) ** 2)) / len(template_xyz))
+                sum(np.diagonal(cdist(template_xyz, query_xyz_tr) ** 2)) / len(template_xyz))
             if dist < self.rmsd:
                 self.rmsd = dist
                 Transformation = transformation
@@ -128,7 +125,6 @@ class Alignment(object):
 
 # TEST for the alignment ###
 """
-import numpy as np
 Proteins = {'a..1':np.array([np.array([-1.,1.])]),
             'a..2':np.array([np.array([1.,1.,])]),
             'a..3':np.array([np.array([-2.,1.])]),
@@ -149,10 +145,7 @@ else: print 'ERROR!'; exit()
 class Violations(object):
 
     def __init__(self, filename):
-        global deepcopy, cdist, array, argwhere, mgrid, shape, reshape, zeros, sqrt, diagonal, argsort
-        from numpy import array, argwhere, mgrid, shape, reshape, zeros, diagonal, argsort
-        from scipy.spatial.distance import cdist
-        from math import sqrt
+
         self.violation_thresholds = {}
         self.violation_counts = {}
 
@@ -183,11 +176,6 @@ class Clustering(object):
 
     def __init__(self):
 
-        global deepcopy, cdist, array, argwhere, mgrid, shape, reshape, zeros, sqrt, diagonal, argsort, npsum
-        from numpy import array, argwhere, mgrid, shape, reshape, zeros, diagonal, argsort
-        from numpy import sum as npsum
-        from scipy.spatial.distance import cdist
-        from math import sqrt
         self.all_coords = {}
         self.structure_cluster_ids = None
         self.tmpl_coords = None
@@ -205,7 +193,6 @@ class Clustering(object):
         self.all_coords[frame] = Coords
 
     def dist_matrix(self, is_mpi=False):
-        from itertools import combinations
 
         if is_mpi:
             from mpi4py import MPI
@@ -220,7 +207,7 @@ class Clustering(object):
         self.model_indexes = range(len(self.model_list_names))
         self.model_indexes_dict = dict(
             zip(self.model_list_names, self.model_indexes))
-        model_indexes_unique_pairs = list(combinations(self.model_indexes, 2))
+        model_indexes_unique_pairs = list(itertools.combinations(self.model_indexes, 2))
 
         my_model_indexes_unique_pairs = IMP.pmi.tools.chunk_list_into_segments(
             model_indexes_unique_pairs,
@@ -242,14 +229,14 @@ class Clustering(object):
             self.set_transformation_distance_dict_from_pickable(
                 pickable_transformations)
 
-        self.raw_distance_matrix = zeros(
+        self.raw_distance_matrix = np.zeros(
             (len(self.model_list_names), len(self.model_list_names)))
         for item in raw_distance_dict:
             (f1, f2) = item
             self.raw_distance_matrix[f1, f2] = raw_distance_dict[item]
             self.raw_distance_matrix[f2, f1] = raw_distance_dict[item]
 
-    def do_cluster(self, number_of_clusters):
+    def do_cluster(self, number_of_clusters,seed=42):
         from sklearn.cluster import KMeans
 
         kmeans = KMeans(n_clusters=number_of_clusters)
@@ -279,7 +266,6 @@ class Clustering(object):
 
     def save_distance_matrix_file(self, file_name='cluster.rawmatrix.pkl'):
         import pickle
-        import numpy as np
         outf = open(file_name + ".data", 'w')
 
         # to pickle the transformation dictionary
@@ -298,7 +284,6 @@ class Clustering(object):
 
     def load_distance_matrix_file(self, file_name='cluster.rawmatrix.pkl'):
         import pickle
-        import numpy as np
 
         inputf = open(file_name + ".data", 'r')
         (self.structure_cluster_ids, self.model_list_names,
@@ -365,7 +350,7 @@ class Clustering(object):
         if len(indexes) > 1:
             sub_distance_matrix = self.raw_distance_matrix[
                 indexes, :][:, indexes]
-            average_rmsd = npsum(sub_distance_matrix) / \
+            average_rmsd = np.sum(sub_distance_matrix) / \
                 (len(sub_distance_matrix)
                  ** 2 - len(sub_distance_matrix))
         else:
@@ -560,9 +545,6 @@ class GetModelDensity(object):
 class GetContactMap(object):
 
     def __init__(self, distance=15.):
-        global deepcopy, cdist, array, argwhere, mgrid, shape, reshape, zeros, sqrt, diagonal, argsort, log
-        from numpy import array, argwhere, mgrid, shape, reshape, zeros, diagonal, argsort, log
-        from scipy.spatial.distance import cdist
         self.distance = distance
         self.contactmap = ''
         self.namelist = []
@@ -600,16 +582,16 @@ class GetContactMap(object):
                     self.resmap[name][res] = new_name
                     namelist.append(new_name)
 
-                    crd = array([d.get_x(), d.get_y(), d.get_z()])
+                    crd = np.array([d.get_x(), d.get_y(), d.get_z()])
                     coords.append(crd)
                     radii.append(d.get_radius())
 
-        coords = array(coords)
-        radii = array(radii)
+        coords = np.array(coords)
+        radii = np.array(radii)
 
         if len(self.namelist) == 0:
             self.namelist = namelist
-            self.contactmap = zeros((len(coords), len(coords)))
+            self.contactmap = np.zeros((len(coords), len(coords)))
 
         distances = cdist(coords, coords)
         distances = (distances - radii).T - radii
@@ -641,7 +623,7 @@ class GetContactMap(object):
             for sgmnt in SortedSegments:
                 for leaf in IMP.atom.get_leaves(sgmnt[0]):
                     p = IMP.core.XYZR(leaf)
-                    crd = array([p.get_x(), p.get_y(), p.get_z()])
+                    crd = np.array([p.get_x(), p.get_y(), p.get_z()])
 
                     coords.append(crd)
                     radii.append(p.get_radius())
@@ -658,11 +640,11 @@ class GetContactMap(object):
                     for res in IMP.atom.Fragment(leaf).get_residue_indexes():
                         self.resmap[part.get_name()][res] = new_name
 
-        coords = array(coords)
-        radii = array(radii)
+        coords = np.array(coords)
+        radii = np.array(radii)
         if len(self.namelist) == 0:
             self.namelist = namelist
-            self.contactmap = zeros((len(coords), len(coords)))
+            self.contactmap = np.zeros((len(coords), len(coords)))
         distances = cdist(coords, coords)
         distances = (distances - radii).T - radii
         distances = distances <= self.distance
@@ -711,7 +693,7 @@ class GetContactMap(object):
                     pl1, pl2 = max(
                         self.resmap[proteins[p1]].keys()), max(self.resmap[proteins[p2]].keys())
                     pn1, pn2 = proteins[p1], proteins[p2]
-                    mtr = zeros((pl1 + 1, pl2 + 1))
+                    mtr = np.zeros((pl1 + 1, pl2 + 1))
                     print 'Creating matrix for: ', p1, p2, pn1, pn2, mtr.shape, pl1, pl2
                     for i1 in xrange(1, pl1 + 1):
                         for i2 in xrange(1, pl2 + 1):
@@ -737,7 +719,7 @@ class GetContactMap(object):
                     pl1, pl2 = max(
                         self.resmap[proteins[p1]].keys()), max(self.resmap[proteins[p2]].keys())
                     pn1, pn2 = proteins[p1], proteins[p2]
-                    mtr = zeros((pl1 + 1, pl2 + 1))
+                    mtr = np.zeros((pl1 + 1, pl2 + 1))
                     flg = 0
                     try:
                         xls = self.XL[(pn1, pn2)]
@@ -778,8 +760,8 @@ class GetContactMap(object):
         #    lst = []
         #    for x2 in xrange(len(K)):
         #        lst += [M[x1,x2]]*self.expanded[K[x2]]
-        #    for i in xrange(self.expanded[K[x1]]): NewM.append(array(lst))
-        #NewM = array(NewM)
+        #    for i in xrange(self.expanded[K[x1]]): NewM.append(np.array(lst))
+        #NewM = np.array(NewM)
 
         # make list of protein names and create coordinate lists
         C = proteins
@@ -876,8 +858,6 @@ class CrossLinkTable(object):
                 self.prot_length_dict[name] = max(residue_indexes)
 
     def set_coordinates_for_contact_map(self, rmf_name,rmf_frame_index):
-        from numpy import zeros, array, where
-        from scipy.spatial.distance import cdist
 
         rh= RMF.open_rmf_file_read_only(rmf_name)
         prots=IMP.rmf.create_hierarchies(rh, self.model)
@@ -907,7 +887,7 @@ class CrossLinkTable(object):
                     for res in range(min(residue_indexes), max(residue_indexes) + 1):
                         d = IMP.core.XYZR(p)
 
-                        crd = array([d.get_x(), d.get_y(), d.get_z()])
+                        crd = np.array([d.get_x(), d.get_y(), d.get_z()])
                         coords.append(crd)
                         radii.append(d.get_radius())
                         if name not in self.index_dictionary:
@@ -916,15 +896,15 @@ class CrossLinkTable(object):
                             self.index_dictionary[name].append(resindex)
                         resindex += 1
 
-        coords = array(coords)
-        radii = array(radii)
+        coords = np.array(coords)
+        radii = np.array(radii)
 
         distances = cdist(coords, coords)
         distances = (distances - radii).T - radii
 
-        distances = where(distances <= 20.0, 1.0, 0)
+        distances = np.where(distances <= 20.0, 1.0, 0)
         if self.contactmap is None:
-            self.contactmap = zeros((len(coords), len(coords)))
+            self.contactmap = np.zeros((len(coords), len(coords)))
         self.contactmap += distances
 
         for prot in prots: IMP.atom.destroy(prot)
@@ -942,8 +922,6 @@ class CrossLinkTable(object):
         # confidence class is a filter that
         # external datafile is a datafile that contains further information on the crosslinks
         # it will use the unique id to create the dictionary keys
-
-        import numpy as np
 
         po = IMP.pmi.output.ProcessOutput(data_file)
         keys = po.get_keys()
@@ -1223,7 +1201,6 @@ class CrossLinkTable(object):
 
         import matplotlib.pyplot as plt
         import matplotlib.cm as cm
-        import numpy as np
 
         fig = plt.figure(figsize=(10, 10))
         ax = fig.add_subplot(111)
@@ -1320,9 +1297,8 @@ class CrossLinkTable(object):
         print prot_listx, prot_listy
 
         if not self.contactmap is None:
-            from numpy import zeros
             import matplotlib.cm as cm
-            tmp_array = zeros((nresx, nresy))
+            tmp_array = np.zeros((nresx, nresy))
 
             for px in prot_listx:
                 print px
@@ -1700,7 +1676,6 @@ class CrossLinkTable(object):
     def plot_matrix_cross_link_distances_unique(self, figurename, prot_list,
                                                 prot_list2=None):
 
-        from numpy import zeros
         import pylab as pl
 
         tmp_matrix = []
@@ -1727,7 +1702,7 @@ class CrossLinkTable(object):
         tmp_matrix.sort(key=itemgetter(len(tmp_matrix[0]) - 1))
 
         # print len(tmp_matrix),  len(tmp_matrix[0])-1
-        matrix = zeros((len(tmp_matrix), len(tmp_matrix[0]) - 1))
+        matrix = np.zeros((len(tmp_matrix), len(tmp_matrix[0]) - 1))
 
         for i in range(len(tmp_matrix)):
             for k in range(len(tmp_matrix[i]) - 1):
@@ -1753,7 +1728,6 @@ class CrossLinkTable(object):
         nxl_per_row=20,
         arrangement="inter",
             confidence_input="None"):
-        import IMP.pmi.output
 
         data = []
         for xl in self.cross_link_distances:
@@ -1850,7 +1824,6 @@ class CrossLinkTable(object):
                                  format="png"):
         import matplotlib.pyplot as plt
         import matplotlib.cm as cm
-        import numpy as np
 
         fig = plt.figure(figsize=(10, 10))
         ax = fig.add_subplot(111)
@@ -2130,15 +2103,14 @@ class Precision(object):
 
     def get_particle_distances(self,structure_set_name1,structure_set_name2,
                                selection_name,index1,index2):
-        import numpy
-        import numpy.linalg
+        import np.linalg
         c1=self.structures_dictionary[structure_set_name1][selection_name][index1]
         c2=self.structures_dictionary[structure_set_name2][selection_name][index2]
 
         coordinates1=map(lambda c: IMP.algebra.Vector3D(c), c1)
         coordinates2=map(lambda c: IMP.algebra.Vector3D(c), c2)
 
-        distances=[numpy.linalg.norm(a-b) for (a,b) in zip(coordinates1,coordinates2)]
+        distances=[np.linalg.norm(a-b) for (a,b) in zip(coordinates1,coordinates2)]
 
         return distances
 
@@ -2156,8 +2128,6 @@ class Precision(object):
         skip      int  skip every n frames
 
         '''
-
-        import itertools
 
         if is_mpi:
             from mpi4py import MPI
@@ -2266,7 +2236,6 @@ class Precision(object):
         return centroid_index
 
     def get_rmsf(self,structure_set_name,outdir="./",is_mpi=False,skip=None,make_plot=False):
-        import numpy
         outfile=outdir+"/rmsf.dat"
         # get the centroid structure for the whole complex
         centroid_index=self.get_precision(outfile,structure_set_name,structure_set_name,
@@ -2303,7 +2272,7 @@ class Precision(object):
            rmsfs=[]
            for rn in residue_distances:
                residues.append(rn)
-               rmsf=numpy.std(residue_distances[rn])
+               rmsf=np.std(residue_distances[rn])
                rmsfs.append(rmsf)
                of.write(str(rn)+" "+str(residue_nblock[rn])+" "+str(rmsf)+"\n")
 

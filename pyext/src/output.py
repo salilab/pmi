@@ -1,5 +1,5 @@
 """@namespace IMP.pmi.output
-   Output.
+   Classes for writing output files and processing them.
 """
 
 import IMP
@@ -15,12 +15,9 @@ try:
 except ImportError:
     import pickle
 
-
-
 class Output(object):
-
+    """Class for easy writing of PDBs, RMFs, and stat files"""
     def __init__(self, ascii=True,atomistic=False):
-
         self.dictionary_pdbs = {}
         self.dictionary_rmfs = {}
         self.dictionary_stats = {}
@@ -350,11 +347,10 @@ class Output(object):
             flstat = open(name, 'wb')
             flstat.close()
 
-        # check that all objects in listofobjects have a  get_output method
-
+        # check that all objects in listofobjects have a get_output method
         for l in listofobjects:
             if not "get_output" in dir(l):
-                print "Output: object ", l, " doesn't have get_output() method"
+                print "Output: object", l,"doesn't have get_output() method"
                 exit()
         self.dictionary_stats[name] = listofobjects
 
@@ -593,7 +589,7 @@ class Output(object):
 
 
 class ProcessOutput(object):
-
+    """A class for reading stat files"""
     def __init__(self, filename):
         self.filename = filename
         self.isstat1 = False

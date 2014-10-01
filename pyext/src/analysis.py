@@ -21,7 +21,6 @@ import numpy as np
 from scipy.spatial.distance import cdist
 
 class Alignment(object):
-
     """
     This class performs alignment and RMSD calculation for two sets of coordinates
 
@@ -173,7 +172,10 @@ class Violations(object):
 
 # ----------------------------------
 class Clustering(object):
-
+    """A class to cluster structures.
+    Uses scipy's cdist function to compute distance matrices
+    And sklearn's kmeans clustering module.
+    """
     def __init__(self):
 
         self.all_coords = {}
@@ -236,9 +238,14 @@ class Clustering(object):
             self.raw_distance_matrix[f1, f2] = raw_distance_dict[item]
             self.raw_distance_matrix[f2, f1] = raw_distance_dict[item]
 
-    def do_cluster(self, number_of_clusters,seed=42):
+    def do_cluster(self, number_of_clusters,seed==None):
+        """Run K-means clustering
+        @param number_of_clusters Num means
+        @param seed the random seed
+        """
         from sklearn.cluster import KMeans
-
+        if seed is not None:
+            np.random.seed(seed)
         kmeans = KMeans(n_clusters=number_of_clusters)
         kmeans.fit_predict(self.raw_distance_matrix)
 

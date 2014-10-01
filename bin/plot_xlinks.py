@@ -30,6 +30,8 @@ def parse_args():
                       help="RGB colors for violated XL (above options.threshold)"
                       "format is R,G,B where each value is out of 255"
                       "Default is red")
+    parser.add_option("-m","--model_rs",dest="model_rs",
+                      help="Kluge to let you read the restraints from a different RMF file")
 
     (options, args) = parser.parse_args()
     if len(args) != 3:
@@ -58,10 +60,30 @@ def run():
     prot=prots[0]
     rs = IMP.rmf.create_restraints(rh, mdl)
     IMP.rmf.load_frame(rh,int(frame_num))
+    pairs=[]
+    if options.model_rs:
+        ps_dict={}
+        for p in IMP.core.get_leaves(prot):
+            ps_dict[p.get_name()]=p
+        rh2 = RMF.open_rmf_file_read_only(options.model_rs)
+        prots2 = IMP.rmf.create_hierarchies(rh2, mdl)
+        rs2 = IMP.rmf.create_restraints(rh2, mdl)
+        IMP.rmf.load_frame(rh2,0)
+        for r in rs2:
+            ps2 = r.get_inputs()
+            try:
+                c1,c2 = [IMP.core.XYZ(ps_dict[IMP.kernel.Particle.get_from(p).get_name()]).get_coordinates() for p in ps2]
+            except:
+                print 'the restraint particles',ps2,'could not be found in the new rmf'
+                exit()
+            pairs.append((c1,c2))
+    else:
+        for r in rs:
+            ps = r.get_inputs()
+            c1,c2 = [IMP.core.XYZ(IMP.kernel.Particle.get_from(p)).get_coordinates() for p in ps]
+            pairs.append((c1,c2))
     nv=0
-    for r in rs:
-        ps = r.get_inputs()
-        c1,c2 = [IMP.core.XYZ(IMP.kernel.Particle.get_from(p)).get_coordinates() for p in ps]
+    for c1,c2 in pairs:
         dist = IMP.algebra.get_distance(c1,c2)
         if dist<threshold:
             r,g,b = color
@@ -76,7 +98,7 @@ def run():
         nv+=2
     outf.write('</marker_set>\n')
     outf.close()
-    print 'wrote',len(rs),'XLs to',out_fn
+    print 'wrote',nv/2,'XLs to',out_fn
 
 if __name__=="__main__":
     run()

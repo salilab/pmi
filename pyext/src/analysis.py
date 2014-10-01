@@ -238,7 +238,7 @@ class Clustering(object):
             self.raw_distance_matrix[f1, f2] = raw_distance_dict[item]
             self.raw_distance_matrix[f2, f1] = raw_distance_dict[item]
 
-    def do_cluster(self, number_of_clusters,seed==None):
+    def do_cluster(self, number_of_clusters,seed=None):
         """Run K-means clustering
         @param number_of_clusters Num means
         @param seed the random seed

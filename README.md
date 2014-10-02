@@ -1,6 +1,6 @@
 \brief Python classes to represent, score, sample and analyze models.
 
-**News May 14 2014**
+*News May 14 2014*
 
 From Ben Webb:
 
@@ -8,16 +8,16 @@ PMI was added as an IMP submodule. But what might not be obvious is that a submo
 
 It's pretty easy: if you maintain PMI outside of IMP somewhere, just go into your IMP checkout, cd modules/pmi, then "git checkout <githash>" where <githash> is the version of PMI you want to live in IMP. Then you can go back up into IMP proper and git commit/git push that change. Or you can do what I do and work on the copy of PMI that's in IMP directly rather than checking it out separately. To do that, go into modules/pmi in your IMP checkout and run "git checkout develop" to get on the PMI develop branch. Then you can run all the normal git commands (e.g. git pull) in there. (Although note that you can't push by default; that's easy to fix though by running "git remote set-url --push origin git@github.com:salilab/pmi.git".) When you're done with your git push, you can cd up into IMP proper and commit the change in PMI githash there (without having to remember what it is).
 
-**News April 24 2014**
+*News April 24 2014*
 
 The main branch is now `develop` (not `master`) and the module is included
 in IMP by default.
 
-**News February 28 2014**
+*News February 28 2014*
 
 The [clustering analysis](http://nbviewer.ipython.org/github/salilab/pmi/blob/master/examples/analysis/clustering_analysis.ipynb?create=1) calculates the localization densities
 
-**News February 25 2014**
+*News February 25 2014*
 
 First working version of the [clustering analysis](http://nbviewer.ipython.org/github/salilab/pmi/blob/master/examples/analysis/clustering_analysis.ipynb?create=1). For the moment each cluster directory will only contain pdbs and rmfs
 of the structures, but soon I'll add statistics, features and localization densities.
@@ -25,23 +25,23 @@ of the structures, but soon I'll add statistics, features and localization densi
 To have full speed install the mpi4py python library
 
 
-**News February 10 2014**
+*News February 10 2014*
 
 Checkout the macros in macros.py
 
-**News February 6 2014**
+*News February 6 2014*
 
 Added a FAQ section in the wiki. There will be ipython notebook tutorials soon.
 Best IMP version so far: `ee1763c6859a29ab37415c8454d16549268d9668`
 Previous versions had a bug in the RigidClosePairsFinder [bug](https://github.com/salilab/pmi/issues/19)
 
 
-**News February 4 2014:**
+*News February 4 2014:*
 
 Best IMP version so far: `b700fff93ca45ba1551c8aa9d697c805fcb126dc`
 Previous versions might be considerably slow due to a [bug](https://github.com/salilab/imp/issues/724)
 
-**News January 30 2014:**
+*News January 30 2014:*
 
 Now the developed git branch is master and not resolution-zero.
 
@@ -54,15 +54,13 @@ it was copied into resolution-zero-old.
 
 To see what branch you're in, run (into the pmi source code directory):
 
-`git branch`
+    git branch
 
 If you want to update the code and you still are in resolution-zero branch,
 just run :
 
-```
-git checkout master
-git pull
-```
+    git checkout master
+    git pull
 
 Note that the interface is also changing,
 so you'll probably get deprecated warnings in your standard output more and more.
@@ -78,7 +76,11 @@ _Author(s)_: Riccardo Pellarin, Peter Cimermancic, Daniel Russel, Charles Greenb
 
 _Maintainer_: Riccardo Pellarin
 
-_License_: None
+_License_: [LGPL](http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
 
 _Publications_:
-- None
+ - See [main IMP papers list](@ref publications).

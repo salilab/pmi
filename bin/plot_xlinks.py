@@ -51,7 +51,12 @@ def parse_args():
     parser.add_argument("-s","--restrict",dest="restrict",
                         choices=['inter','intra','all'],
                         default='all',
-                        help="Optionally restrict to only inter or intra XLs."
+                        help="Optionally restrict to only inter- or intra-module XLs."
+                        "Modules defaulted to molecule name. Alternatively provide a topology file with -t"
+                        "WARNING: this only works on canonical RMF files")
+    parser.add_argument("-g","--topology_fn",dest="topology_fn",
+                        help="For use with restricting to inter/intra flag, -s"
+                        "It's a text file, each line is <modulename> <tuple1> <tuple2> ..."
                         "WARNING: this only works on canonical RMF files")
     result = parser.parse_args()
     return result
@@ -65,6 +70,36 @@ def get_molecule_name(p):
         mname = IMP.atom.Hierarchy(p).get_parent().get_parent().get_parent().get_name()
     return mname
 
+def get_module_name(p,topology_dict):
+    """Get the name of a MODULE for a particle.
+    If no modules are specified, just returns the molecule name."""
+    mname = get_molecule_name(p)
+    if topology_dict is None:
+        return mname
+    else:
+        if mname not in topology_dict.keys():
+            raise Exception("Alert! The molecule name %s is not in the topology file" %mname)
+        for res,module_name in topology_dict[mname]:
+            if res==-1:
+                return module_name
+            else:
+                s = get_particle_indices_as_set(p)
+                if s<=res:
+                    return module_name
+        raise Exception("Could not find particle %s in the topology file!"%p.get_name())
+
+def get_particle_indices_as_set(p):
+    """Return a set whether it's a residue or a fragment."""
+    if IMP.atom.Fragment.get_is_setup(p):
+        s = set(IMP.atom.Fragment(p).get_residue_indexes())
+    elif IMP.atom.Residue.get_is_setup(p):
+        s = set([IMP.atom.Residue(p).get_index()])
+    else:
+        print 'ALERT!',p,'is neither fragment nor residue!'
+        exit()
+    return s
+
+
 def check_is_selected(limit_dict,p):
     """ Check if the particle is in the limit dictionary"""
     mname = get_molecule_name(p)
@@ -72,21 +107,15 @@ def check_is_selected(limit_dict,p):
         if limit_dict[mname]==-1:
             return True
         else:
-            if IMP.atom.Fragment.get_is_setup(p):
-                s = set(IMP.atom.Fragment(p).get_residue_indexes())
-            elif IMP.atom.Residue.get_is_setup(p):
-                s = set([IMP.atom.Residue(p).get_index()])
-            else:
-                print 'ALERT!',p,'is neither fragment nor residue!'
-                exit()
+            s = get_particle_indices_as_set(p)
             if s <= limit_dict[mname]:
                 return True
     return False
 
-def check_status(restrict_flag,p1,p2):
+def check_status(restrict_flag,p1,p2,topology_dict):
     """Check if p1,p2 are inter or intra (depending on the flag)"""
-    n1 = get_molecule_name(p1)
-    n2 = get_molecule_name(p2)
+    n1 = get_module_name(p1,topology_dict)
+    n2 = get_module_name(p2,topology_dict)
     if restrict_flag=='inter' and n1!=n2:
         return True
     elif restrict_flag=='intra' and n1==n2:
@@ -121,10 +150,24 @@ def run():
             else:
                 raise Exception('The list of limits must be subunit names or '
                                 'start,stop,name tuples')
-
-    ### prepare output
-    outf=open(out_fn,'w')
-    outf.write('<marker_set name="xlinks">\n')
+    topology_dict=None
+    if args.restrict and args.topology_fn:
+        # kind of a kluge. we need to standardize "topology" files!
+        topology_dict=defaultdict(list) # keys are moleculename, values are [(set or -1(=all),module name)]
+        inf = open(args.topology_fn)
+        for l in inf:
+            if l[0]!='#':
+                fields = l.split()
+                module_name = fields[0]
+                for sel_tuple in fields[1:]:
+                    tsplit = sel_tuple.split(',')
+                    if len(tsplit)==1:
+                        topology_dict[sel_tuple].append((-1,module_name))
+                    elif len(tsplit)==3:
+                        topology_dict[tsplit[2]].append((set(range(int(tsplit[0]),int(tsplit[1])+1)),module_name))
+                    else:
+                        raise Exception('The list of limits must be subunit names or '
+                                'start,stop,name tuples')
 
     ### collect particles based on the restraints
     mdl = IMP.Model()
@@ -157,20 +200,32 @@ def run():
             pairs.append(pp+[True]) #flag for good/bad
 
     ### filter the particles as requested
+    name='xlinks'
     if limit_dict:
         for np,(p1,p2,flag) in enumerate(pairs):
             if not (check_is_selected(limit_dict,p1) or check_is_selected(limit_dict,p2)):
                 pairs[np][2]=False
     if args.restrict!='all':
+        name+='_'+args.restrict
         for np,(p1,p2,flag) in enumerate(pairs):
-            if not check_status(args.restrict,p1,p2):
+            if not check_status(args.restrict,p1,p2,topology_dict):
                 pairs[np][2]=False
+
+    ### prepare output
+    outf=open(out_fn,'w')
+    outf.write('<marker_set name="%s">\n'%name)
+
 
     ### draw the coordinates
     nv=0
     for p1,p2,flag in pairs:
         if not flag:
             continue
+        if args.topology_fn:
+            print 'writing XL between %s(%s) and %s(%s)'%(get_molecule_name(p1),get_module_name(p1,topology_dict),
+                                                          get_molecule_name(p2),get_module_name(p2,topology_dict))
+        else:
+            print 'writing XL between %s and %s'%(get_molecule_name(p1),get_molecule_name(p2))
         c1 = IMP.core.XYZ(p1).get_coordinates()
         c2 = IMP.core.XYZ(p2).get_coordinates()
         dist = IMP.algebra.get_distance(c1,c2)

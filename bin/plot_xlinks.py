@@ -45,19 +45,29 @@ def parse_args():
                         help="Kluge to let you read the restraints from a different RMF file")
     parser.add_argument("-l","--limit_to",dest="limit_to",
                         nargs="+",
-                        help="Only write these subunits or ranges. Can specify multiple."
+                        help="Only write XL's with at least one end in this list of subunits."
                         "e.g. -l med2 med3 med5 1,100,med14"
                         "WARNING: this only works on canonical RMF files")
-    parser.add_argument("-s","--string_match",dest="string_match",
-                        help="Require this substring in restraints."
-                        "e.g. 'inter' or 'intra' depending on how they're flagged")
+    parser.add_argument("-s","--restrict",dest="restrict",
+                        choices=['inter','intra','all'],
+                        default='all',
+                        help="Optionally restrict to only inter or intra XLs."
+                        "WARNING: this only works on canonical RMF files")
     result = parser.parse_args()
     return result
 
-def check_is_selected(limit_dict,p):
+def get_molecule_name(p):
+    """Get the name of the molecule for some particle.
+    Kind of a kluge until we properly use the Molecule decorator
+    """
     mname = IMP.atom.Hierarchy(p).get_parent().get_parent().get_name()
     if '_Res' in mname:
         mname = IMP.atom.Hierarchy(p).get_parent().get_parent().get_parent().get_name()
+    return mname
+
+def check_is_selected(limit_dict,p):
+    """ Check if the particle is in the limit dictionary"""
+    mname = get_molecule_name(p)
     if mname in limit_dict.keys():
         if limit_dict[mname]==-1:
             return True
@@ -71,6 +81,16 @@ def check_is_selected(limit_dict,p):
                 exit()
             if s <= limit_dict[mname]:
                 return True
+    return False
+
+def check_status(restrict_flag,p1,p2):
+    """Check if p1,p2 are inter or intra (depending on the flag)"""
+    n1 = get_molecule_name(p1)
+    n2 = get_molecule_name(p2)
+    if restrict_flag=='inter' and n1!=n2:
+        return True
+    elif restrict_flag=='intra' and n1==n2:
+        return True
     return False
 
 def run():
@@ -123,36 +143,36 @@ def run():
         rs2 = IMP.rmf.create_restraints(rh2, mdl)
         IMP.rmf.load_frame(rh2,0)
         for r in rs2:
-            if args.string_match and args.string_match not in r.get_name():
-                continue
             ps2 = r.get_inputs()
             try:
                 pp = [ps_dict[IMP.kernel.Particle.get_from(p).get_name()] for p in ps2]
             except:
                 print 'the restraint particles',ps2,'could not be found in the new rmf'
                 exit()
-            pairs.append(pp)
+            pairs.append(pp+[True]) #flag for good/bad
     else:
         for r in rs:
-            if args.string_match and args.string_match not in r.get_name():
-                continue
             ps = r.get_inputs()
             pp = [IMP.kernel.Particle.get_from(p) for p in ps]
-            pairs.append(pp)
+            pairs.append(pp+[True]) #flag for good/bad
 
     ### filter the particles as requested
-    final_pairs = []
     if limit_dict:
-        for p1,p2 in pairs:
-            if check_is_selected(limit_dict,p1) or check_is_selected(limit_dict,p2):
-                final_pairs.append([p1,p2])
-    else:
-        final_pairs = pairs
+        for np,(p1,p2,flag) in enumerate(pairs):
+            if not (check_is_selected(limit_dict,p1) or check_is_selected(limit_dict,p2)):
+                pairs[np][2]=False
+    if args.restrict!='all':
+        for np,(p1,p2,flag) in enumerate(pairs):
+            if not check_status(args.restrict,p1,p2):
+                pairs[np][2]=False
 
     ### draw the coordinates
     nv=0
-    for pp in final_pairs:
-        c1,c2 = [IMP.core.XYZ(p).get_coordinates() for p in pp]
+    for p1,p2,flag in pairs:
+        if not flag:
+            continue
+        c1 = IMP.core.XYZ(p1).get_coordinates()
+        c2 = IMP.core.XYZ(p2).get_coordinates()
         dist = IMP.algebra.get_distance(c1,c2)
         if dist<threshold:
             r,g,b = color

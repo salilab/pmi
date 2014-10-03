@@ -48,6 +48,9 @@ def parse_args():
                         help="Only write these subunits or ranges. Can specify multiple."
                         "e.g. -l med2 med3 med5 1,100,med14"
                         "WARNING: this only works on canonical RMF files")
+    parser.add_argument("-s","--string_match",dest="string_match",
+                        help="Require this substring in restraints."
+                        "e.g. 'inter' or 'intra' depending on how they're flagged")
     result = parser.parse_args()
     return result
 
@@ -120,6 +123,9 @@ def run():
         rs2 = IMP.rmf.create_restraints(rh2, mdl)
         IMP.rmf.load_frame(rh2,0)
         for r in rs2:
+            if args.string_match and args.string_match not in r.get_name():
+                print r.get_name()
+                continue
             ps2 = r.get_inputs()
             try:
                 pp = [ps_dict[IMP.kernel.Particle.get_from(p).get_name()] for p in ps2]
@@ -129,6 +135,8 @@ def run():
             pairs.append(pp)
     else:
         for r in rs:
+            if args.string_match and args.string_match not in r.get_name():
+                continue
             ps = r.get_inputs()
             pp = [IMP.kernel.Particle.get_from(p) for p in ps]
             pairs.append(pp)

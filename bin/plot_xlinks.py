@@ -124,7 +124,6 @@ def run():
         IMP.rmf.load_frame(rh2,0)
         for r in rs2:
             if args.string_match and args.string_match not in r.get_name():
-                print r.get_name()
                 continue
             ps2 = r.get_inputs()
             try:

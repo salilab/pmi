@@ -59,7 +59,13 @@ def check_is_selected(limit_dict,p):
         if limit_dict[mname]==-1:
             return True
         else:
-            s = set(IMP.atom.Fragment(p).get_residue_indexes())
+            if IMP.atom.Fragment.get_is_setup(p):
+                s = set(IMP.atom.Fragment(p).get_residue_indexes())
+            elif IMP.atom.Residue.get_is_setup(p):
+                s = set([IMP.atom.Residue(p).get_index()])
+            else:
+                print 'ALERT!',p,'is neither fragment nor residue!'
+                exit()
             if s <= limit_dict[mname]:
                 return True
     return False
@@ -133,7 +139,6 @@ def run():
         for p1,p2 in pairs:
             if check_is_selected(limit_dict,p1) or check_is_selected(limit_dict,p2):
                 final_pairs.append([p1,p2])
-                print 'GOOD:',p1,p2
     else:
         final_pairs = pairs
 

@@ -61,6 +61,12 @@ def parse_args():
     result = parser.parse_args()
     return result
 
+def get_unique_particle_name(p):
+    """Return molname:low-high"""
+    n = get_molecule_name(p)
+    r = get_particle_indices_as_set(p)
+    return '%s:%i-%i'%(n,min(r),max(r))
+
 def get_molecule_name(p):
     """Get the name of the molecule for some particle.
     Kind of a kluge until we properly use the Molecule decorator
@@ -68,6 +74,7 @@ def get_molecule_name(p):
     mname = IMP.atom.Hierarchy(p).get_parent().get_parent().get_name()
     if '_Res' in mname:
         mname = IMP.atom.Hierarchy(p).get_parent().get_parent().get_parent().get_name()
+    #print IMP.atom.Hierarchy(p).get_parent().get_parent(),mname
     return mname
 
 def get_module_name(p,topology_dict):
@@ -180,7 +187,8 @@ def run():
     if args.model_rs:
         ps_dict={}
         for p in IMP.core.get_leaves(prot):
-            ps_dict[p.get_name()]=p
+            if IMP.atom.Residue.get_is_setup(p) or IMP.atom.Fragment.get_is_setup(p):
+                ps_dict[get_unique_particle_name(p)]=p
         rh2 = RMF.open_rmf_file_read_only(args.model_rs)
         prots2 = IMP.rmf.create_hierarchies(rh2, mdl)
         rs2 = IMP.rmf.create_restraints(rh2, mdl)
@@ -188,10 +196,14 @@ def run():
         for r in rs2:
             ps2 = r.get_inputs()
             try:
-                pp = [ps_dict[IMP.kernel.Particle.get_from(p).get_name()] for p in ps2]
+                pp = [ps_dict[get_unique_particle_name(IMP.kernel.Particle.get_from(p))] for p in ps2]
             except:
                 print 'the restraint particles',ps2,'could not be found in the new rmf'
                 exit()
+            #n1 = get_molecule_name(pp[0])
+            #n2 = get_molecule_name(pp[1])
+            #print r,n1,n2
+
             pairs.append(pp+[True]) #flag for good/bad
     else:
         for r in rs:

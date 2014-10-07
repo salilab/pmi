@@ -9,19 +9,11 @@ import os,sys
 
 class PlottingTests(IMP.test.TestCase):
     def test_graphxl(self):
-        dd={"med14-NTD":[(1,711,"med14")],
-            "med14-CTD":[(712,1082,"med14")],
-            "med16":["med16"],
-            "med2":["med2"],
-            "med3":["med3"],
-            "med5":["med5"],
-            "med15":["med15"]}
-
-        """
         dd={"med6":["med6"],
             "med8":["med8"],
             "med11":["med11"],
-            "med17":["med17"],
+            "med17-NTD":[(1,102,"med17")],
+            "med17-CTD":[(103,687,"med17")],
             "med18":["med18"],
             "med20":["med20"],
             "med22":["med22"],
@@ -40,8 +32,8 @@ class PlottingTests(IMP.test.TestCase):
             "med5":["med5"],
             "med15":["med15"],
             "med16":["med16"]}
-        """
-        g = IMP.pmi.plotting.topology.TopologyPlot(IMP.Model(),dd,50.0)
+
+        g = IMP.pmi.plotting.topology.TopologyPlot(IMP.Model(),dd,15.0)
         g.add_rmf('0.rmf3',0)
         g.make_plot('out.png')
 

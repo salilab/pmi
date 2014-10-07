@@ -1,7 +1,7 @@
 import IMP.pmi
 import IMP.pmi.analysis
 import IMP.pmi.io.input
-import IMP.pmi.plotting.crosslinking
+import IMP.pmi.plotting.topology
 import IMP.test
 import RMF
 import IMP.rmf
@@ -41,7 +41,7 @@ class PlottingTests(IMP.test.TestCase):
             "med15":["med15"],
             "med16":["med16"]}
         """
-        g = IMP.pmi.plotting.crosslinking.GraphXL(IMP.Model(),dd,50.0)
+        g = IMP.pmi.plotting.topology.TopologyPlot(IMP.Model(),dd,50.0)
         g.add_rmf('0.rmf3',0)
         g.make_plot('out.png')
 

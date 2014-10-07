@@ -954,9 +954,10 @@ def recursive_graph(hier, graph, depth, depth_dict):
 def draw_graph(graph, labels_dict=None, graph_layout='spring',
                node_size=5, node_color='blue', node_alpha=0.3,
                node_text_size=11,
-               edge_color='blue', edge_alpha=0.3, edge_tickness=1,
+               edge_color='blue', edge_alpha=0.3, edge_thickness=1,
                edge_text_pos=0.3,
-               text_font='sans-serif'):
+               text_font='sans-serif',
+               out_filename=None):
 
     import networkx as nx
     import matplotlib.pyplot as plt
@@ -965,8 +966,21 @@ def draw_graph(graph, labels_dict=None, graph_layout='spring',
     G = nx.Graph()
 
     # add edges
-    for edge in graph:
-        G.add_edge(edge[0], edge[1])
+    if type(edge_thickness) is list:
+        for edge,weight in zip(graph,edge_thickness):
+            G.add_edge(edge[0], edge[1], weight=weight)
+    else:
+        for edge in graph:
+            G.add_edge(edge[0], edge[1])
+
+
+    # get node sizes if dictionary
+    if type(node_size) is dict:
+        tmpsize=[]
+        for node in G.nodes():
+            tmpsize.append(node_size[node])
+            print node,node_size[node]
+        node_size=tmpsize
 
     # these are different layouts for the network you may try
     # shell seems to work best
@@ -981,12 +995,15 @@ def draw_graph(graph, labels_dict=None, graph_layout='spring',
 
     # draw graph
     nx.draw_networkx_nodes(G, graph_pos, node_size=node_size,
-                           alpha=node_alpha, node_color=node_color)
-    nx.draw_networkx_edges(G, graph_pos, width=edge_tickness,
+                           alpha=node_alpha, node_color=node_color,
+                           linewidths=0)
+    nx.draw_networkx_edges(G, graph_pos, width=edge_thickness,
                            alpha=edge_alpha, edge_color=edge_color)
     nx.draw_networkx_labels(
         G, graph_pos, labels=labels_dict, font_size=node_text_size,
         font_family=text_font)
+    if out_filename:
+        plt.savefig(out_filename)
     plt.show()
 
 

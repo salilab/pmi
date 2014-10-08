@@ -7,7 +7,7 @@
 import IMP
 import IMP.atom
 import IMP.pmi
-import IMP.pmi.hierarchy_tools
+import IMP.pmi.topology.hierarchy_tools as hierarchy_tools
 
 def get_structure(mdl,pdb_fn,chain_id,res_range=[],offset=0,model_num=None):
     """read a structure from a PDB file and return a list of residues
@@ -90,7 +90,7 @@ def build_necklace(model,residues, resolution, input_coord=None):
     Generates a string of beads with given length
     '''
     outhiers = []
-    for chunk in list(IMP.pmi.hierarchy_tools.list_chunks_iterator(residues, resolution)):
+    for chunk in list(hierarchy_tools.list_chunks_iterator(residues, resolution)):
         outhiers.append(build_bead(model,chunk, input_coord=input_coord))
     return outhiers
 
@@ -143,7 +143,7 @@ def build_along_backbone(mdl,root,residues,rep_type,ca_centers=True):
                 continue
             frag = IMP.atom.Fragment.setup_particle(mdl,mdl.add_particle(name),res_nums)
             root.add_child(frag)
-            
+
             primary_rep_num=min(this_rep['balls'])
             frep = IMP.atom.Representation.setup_particle(frag,primary_rep_num)
             if 'balls' in this_rep:

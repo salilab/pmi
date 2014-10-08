@@ -16,7 +16,8 @@ import IMP
 import IMP.atom
 import IMP.pmi
 from collections import defaultdict
-import IMP.pmi.structure_tools as structure_tools
+import IMP.pmi.topology.structure_tools as structure_tools
+import IMP.pmi.topology.sequence_tools as sequence_tools
 from Bio import SeqIO
 
 class StructureError(Exception):
@@ -394,7 +395,7 @@ class _Residue(object):
         """
         self.molecule = molecule
         self.hier = IMP.atom.Residue.setup_particle(IMP.Particle(molecule.mdl),
-                                IMP.pmi.sequence_tools.get_residue_type_from_one_letter_code(code),
+                                sequence_tools.get_residue_type_from_one_letter_code(code),
                                 index)
         self.representations = defaultdict(set)
     def __str__(self):

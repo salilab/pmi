@@ -1,9 +1,9 @@
 import IMP
 import IMP.atom
 import IMP.pmi
-import IMP.pmi.representation_new as r
+import IMP.pmi.topology.representation_new as r
 import IMP.test
-import IMP.pmi.sequence_tools
+import IMP.pmi.topology.sequence_tools as sequence_tools
 
 def get_atomic_residue_list(residues):
     r1=[]
@@ -202,12 +202,12 @@ class RepresentationNewTest(IMP.test.TestCase):
                                      resolution=0).get_selected_particles()
             self.assertEquals(len(res),anums)
             self.assertEquals(IMP.atom.Residue(IMP.atom.Atom(res[0]).get_parent()).get_residue_type(),
-                              IMP.pmi.sequence_tools.get_residue_type_from_one_letter_code(rname))
+                              sequence_tools.get_residue_type_from_one_letter_code(rname))
             res1 = IMP.atom.Selection(hier,residue_index=rnum,
                                       resolution=1).get_selected_particles()
             self.assertEquals(len(res1),1)
             self.assertEquals(IMP.atom.Residue(res1[0]).get_residue_type(),
-                              IMP.pmi.sequence_tools.get_residue_type_from_one_letter_code(rname))
+                              sequence_tools.get_residue_type_from_one_letter_code(rname))
 
         # check if res10 created correctly
         sel = IMP.atom.Selection(hier,residue_indexes=[1,2],resolution=10)

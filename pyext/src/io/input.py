@@ -114,38 +114,38 @@ def read_coordinates_of_rmfs(model,
         template_coordinate_dict={}
         rmsd_coordinate_dict={}
         for pr in part_dict:
-             model_coordinate_dict[pr] = np.array(
-                [np.array(IMP.core.XYZ(i).get_coordinates()) for i in part_dict[pr]])
+            model_coordinate_dict[pr] = np.array(
+               [np.array(IMP.core.XYZ(i).get_coordinates()) for i in part_dict[pr]])
 
         if alignment_components is not None:
-          for pr in alignment_components:
-            if type(alignment_components[pr]) is str:
-               name=alignment_components[pr]
-               s=IMP.atom.Selection(prot,molecule=name)
-            elif type(alignment_components[pr]) is tuple:
-               name=alignment_components[pr][2]
-               rend=alignment_components[pr][1]
-               rbegin=alignment_components[pr][0]
-               s=IMP.atom.Selection(prot,molecule=name,residue_indexes=range(rbegin,rend+1))
-            ps=s.get_selected_particles()
-            filtered_particles=list(set(ps)&set(all_particles))
-            template_coordinate_dict[pr] = np.array(
-                [np.array(IMP.core.XYZ(i).get_coordinates()) for i in filtered_particles])
+            for pr in alignment_components:
+                if type(alignment_components[pr]) is str:
+                    name=alignment_components[pr]
+                    s=IMP.atom.Selection(prot,molecule=name)
+                elif type(alignment_components[pr]) is tuple:
+                    name=alignment_components[pr][2]
+                    rend=alignment_components[pr][1]
+                    rbegin=alignment_components[pr][0]
+                    s=IMP.atom.Selection(prot,molecule=name,residue_indexes=range(rbegin,rend+1))
+                ps=s.get_selected_particles()
+                filtered_particles=list(set(ps)&set(all_particles))
+                template_coordinate_dict[pr] = \
+                    [IMP.core.XYZ(i).get_coordinates() for i in filtered_particles]
 
         if rmsd_calculation_components is not None:
-          for pr in rmsd_calculation_components:
-            if type(rmsd_calculation_components[pr]) is str:
-               name=rmsd_calculation_components[pr]
-               s=IMP.atom.Selection(prot,molecule=name)
-            elif type(rmsd_calculation_components[pr]) is tuple:
-               name=rmsd_calculation_components[pr][2]
-               rend=rmsd_calculation_components[pr][1]
-               rbegin=rmsd_calculation_components[pr][0]
-               s=IMP.atom.Selection(prot,molecule=name,residue_indexes=range(rbegin,rend+1))
-            ps=s.get_selected_particles()
-            filtered_particles=[p for p in ps if p in all_ps_set]
-            rmsd_coordinate_dict[pr] = np.array(
-                [np.array(IMP.core.XYZ(i).get_coordinates()) for i in filtered_particles])
+            for pr in rmsd_calculation_components:
+                if type(rmsd_calculation_components[pr]) is str:
+                    name=rmsd_calculation_components[pr]
+                    s=IMP.atom.Selection(prot,molecule=name)
+                elif type(rmsd_calculation_components[pr]) is tuple:
+                    name=rmsd_calculation_components[pr][2]
+                    rend=rmsd_calculation_components[pr][1]
+                    rbegin=rmsd_calculation_components[pr][0]
+                    s=IMP.atom.Selection(prot,molecule=name,residue_indexes=range(rbegin,rend+1))
+                ps=s.get_selected_particles()
+                filtered_particles=[p for p in ps if p in all_ps_set]
+                rmsd_coordinate_dict[pr] = \
+                    [IMP.core.XYZ(i).get_coordinates() for i in filtered_particles]
 
         all_coordinates.append(model_coordinate_dict)
         alignment_coordinates.append(template_coordinate_dict)
@@ -154,7 +154,7 @@ def read_coordinates_of_rmfs(model,
         all_rmf_file_names.append(frame_name)
         rmf_file_name_index_dict[frame_name] = tpl[4]
     return all_coordinates,alignment_coordinates,rmsd_coordinates,rmf_file_name_index_dict,all_rmf_file_names
-    
+
 def get_bead_sizes(model,rmf_tuple,rmsd_calculation_components=None):
     '''
     @param model      The IMP model
@@ -176,20 +176,19 @@ def get_bead_sizes(model,rmf_tuple,rmsd_calculation_components=None):
     rmsd_bead_size_dict={}
 
     if rmsd_calculation_components is not None:
-      for pr in rmsd_calculation_components:
-        if type(rmsd_calculation_components[pr]) is str:
-           name=rmsd_calculation_components[pr]
-           s=IMP.atom.Selection(prot,molecule=name)
-        elif type(rmsd_calculation_components[pr]) is tuple:
-           name=rmsd_calculation_components[pr][2]
-           rend=rmsd_calculation_components[pr][1]
-           rbegin=rmsd_calculation_components[pr][0]
-           s=IMP.atom.Selection(prot,molecule=name,residue_indexes=range(rbegin,rend+1))
-        ps=s.get_selected_particles()
-        filtered_particles=[p for p in ps if p in all_ps_set]
-        rmsd_bead_size_dict[pr] = \
-            [len(IMP.pmi.tools.get_residue_indexes(p)) for p in filtered_particles]
+        for pr in rmsd_calculation_components:
+            if type(rmsd_calculation_components[pr]) is str:
+                name=rmsd_calculation_components[pr]
+                s=IMP.atom.Selection(prot,molecule=name)
+            elif type(rmsd_calculation_components[pr]) is tuple:
+                name=rmsd_calculation_components[pr][2]
+                rend=rmsd_calculation_components[pr][1]
+                rbegin=rmsd_calculation_components[pr][0]
+                s=IMP.atom.Selection(prot,molecule=name,residue_indexes=range(rbegin,rend+1))
+            ps=s.get_selected_particles()
+            filtered_particles=[p for p in ps if p in all_ps_set]
+            rmsd_bead_size_dict[pr] = \
+                [len(IMP.pmi.tools.get_residue_indexes(p)) for p in filtered_particles]
 
-    
+
     return rmsd_bead_size_dict
-    

@@ -87,7 +87,6 @@ class Alignment(object):
             #    exit()
             
             if self.weights is not None:
-                print weights
                 dist=IMP.algebra.get_weighted_rmsd(template_xyz, query_xyz, weights)
             else:
                 dist=IMP.algebra.get_rmsd(template_xyz, query_xyz)
@@ -251,7 +250,10 @@ class Clustering(object):
             (f1, f2) = item
             self.raw_distance_matrix[f1, f2] = raw_distance_dict[item]
             self.raw_distance_matrix[f2, f1] = raw_distance_dict[item]
-
+    
+    def get_dist_matrix(self):
+        return self.raw_distance_matrix
+    
     def do_cluster(self, number_of_clusters,seed=None):
         """Run K-means clustering
         @param number_of_clusters Num means

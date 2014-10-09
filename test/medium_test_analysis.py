@@ -27,6 +27,23 @@ class AnalysisTest(IMP.test.TestCase):
         ali=IMP.pmi.analysis.Alignment(coord_dict_0,coord_dict_1)
         self.assertAlmostEqual(ali.get_rmsd(),1.0/sqrt(2.0))
 
+    def test_alignment_with_permutation(self):
+        """Test alignment correctly aligns, handles multiple copies of same protein"""
+        
+        xyz10=IMP.algebra.Vector3D(0,0,0)
+        xyz20=IMP.algebra.Vector3D(1,1,1)
+        xyz30=IMP.algebra.Vector3D(2,2,2)
+        
+        xyz11=IMP.algebra.Vector3D(0,0,0)
+        xyz21=IMP.algebra.Vector3D(2,2,2)
+        xyz31=IMP.algebra.Vector3D(2,1,1)        
+        
+        coord_dict_0={"prot1":[xyz10],"prot2..1":[xyz20],"prot2..2":[xyz30]}
+        coord_dict_1={"prot1":[xyz11],"prot2..1":[xyz21],"prot2..2":[xyz31]}        
+        
+        ali=IMP.pmi.analysis.Alignment(coord_dict_0,coord_dict_1)
+        self.assertAlmostEqual(ali.get_rmsd(),1.0/sqrt(3.0))
+
 
     def test_alignment_with_weights(self):
         """Test alignment correctly aligns, handles multiple copies of same protein"""
@@ -40,11 +57,7 @@ class AnalysisTest(IMP.test.TestCase):
         
         weights={"prot1":[1.0],"prot2":[10.0]}
         ali=IMP.pmi.analysis.Alignment(coord_dict_0,coord_dict_1,weights)
-        self.assertAlmostEqual(ali.get_rmsd(),sqrt(10.0/11.0))        
-
-    def test_clustering(self):
-        """Test clustering can calculate distance matrix, align, and cluster correctly"""
-        pass
+        self.assertAlmostEqual(ali.get_rmsd(),sqrt(10.0/11.0))                                                        
 
     def precision(self):
         pass
@@ -82,6 +95,43 @@ class AnalysisTest(IMP.test.TestCase):
     def test_analysis_macro(self):
         """Test the analysis macro does everything correctly"""
         pass
+
+class ClusteringTest(IMP.test.TestCase):
+    def setUp(self):
+        IMP.test.TestCase.setUp(self)
+        self.model = IMP.Model()
+        
+    def test_dist_matrix(self):
+        """Test clustering can calculate distance matrix, align, and cluster correctly"""
+        xyz10=IMP.algebra.Vector3D(0,0,0)
+        xyz20=IMP.algebra.Vector3D(1,1,1)
+        xyz30=IMP.algebra.Vector3D(2,2,2)
+        
+        xyz11=IMP.algebra.Vector3D(0,0,0)
+        xyz21=IMP.algebra.Vector3D(2,2,2)
+        xyz31=IMP.algebra.Vector3D(2,1,1)        
+
+        xyz12=IMP.algebra.Vector3D(0,0,0)
+        xyz22=IMP.algebra.Vector3D(2,2,2)
+        xyz32=IMP.algebra.Vector3D(1,1,1) 
+        
+        coord_dict_0={"prot1":[xyz10],"prot2..1":[xyz20],"prot2..2":[xyz30]}
+        coord_dict_1={"prot1":[xyz11],"prot2..1":[xyz21],"prot2..2":[xyz31]}         
+        coord_dict_2={"prot1":[xyz12],"prot2..1":[xyz22],"prot2..2":[xyz32]} 
+
+        weights={"prot1":[1.0],"prot2..1":[10.0],"prot2..2":[10.0]}
+        
+        clu=IMP.pmi.analysis.Clustering(weights)
+        
+        clu.fill(0,coord_dict_0)
+        clu.fill(1,coord_dict_1)
+        clu.fill(2,coord_dict_2)
+        
+        clu.dist_matrix()
+        d=clu.get_dist_matrix()
+        self.assertAlmostEqual(d[0,0],0.0)
+        self.assertAlmostEqual(d[1,0],sqrt(10.0/21.0))
+        self.assertAlmostEqual(d[2,0],0.0)
 
 if __name__ == '__main__':
     IMP.test.main()

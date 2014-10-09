@@ -143,7 +143,7 @@ def read_coordinates_of_rmfs(model,
                rbegin=rmsd_calculation_components[pr][0]
                s=IMP.atom.Selection(prot,molecule=name,residue_indexes=range(rbegin,rend+1))
             ps=s.get_selected_particles()
-            filtered_particles=[p for p in ps if p in all_ps_set] #list(set(ps)&set(all_particles))
+            filtered_particles=[p for p in ps if p in all_ps_set]
             rmsd_coordinate_dict[pr] = np.array(
                 [np.array(IMP.core.XYZ(i).get_coordinates()) for i in filtered_particles])
 
@@ -154,3 +154,42 @@ def read_coordinates_of_rmfs(model,
         all_rmf_file_names.append(frame_name)
         rmf_file_name_index_dict[frame_name] = tpl[4]
     return all_coordinates,alignment_coordinates,rmsd_coordinates,rmf_file_name_index_dict,all_rmf_file_names
+    
+def get_bead_sizes(model,rmf_tuple,rmsd_calculation_components=None):
+    '''
+    @param model      The IMP model
+    @param rmf_tuple  score,filename,frame number,original order number, rank
+    @param rmsd_calculation_components Tuples to specify what components are used for RMSD calc
+    '''
+    rmf_file = rmf_tuple[1]
+    frame_number = rmf_tuple[2]
+
+    prot = IMP.pmi.analysis.get_hier_from_rmf(model,
+                                              frame_number,
+                                              rmf_file)
+
+    # getting the particles
+    part_dict = IMP.pmi.analysis.get_particles_at_resolution_one(prot)
+    all_particles=[pp for key in part_dict for pp in part_dict[key]]
+    all_ps_set=set(all_particles)
+    # getting the coordinates
+    rmsd_bead_size_dict={}
+
+    if rmsd_calculation_components is not None:
+      for pr in rmsd_calculation_components:
+        if type(rmsd_calculation_components[pr]) is str:
+           name=rmsd_calculation_components[pr]
+           s=IMP.atom.Selection(prot,molecule=name)
+        elif type(rmsd_calculation_components[pr]) is tuple:
+           name=rmsd_calculation_components[pr][2]
+           rend=rmsd_calculation_components[pr][1]
+           rbegin=rmsd_calculation_components[pr][0]
+           s=IMP.atom.Selection(prot,molecule=name,residue_indexes=range(rbegin,rend+1))
+        ps=s.get_selected_particles()
+        filtered_particles=[p for p in ps if p in all_ps_set]
+        rmsd_bead_size_dict[pr] = \
+            [len(IMP.pmi.tools.get_residue_indexes(p)) for p in filtered_particles]
+
+    
+    return rmsd_bead_size_dict
+    

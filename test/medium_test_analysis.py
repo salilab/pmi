@@ -5,6 +5,7 @@ import IMP.test
 import RMF
 import IMP.rmf
 import os,sys
+from math import sqrt
 
 
 class AnalysisTest(IMP.test.TestCase):
@@ -14,7 +15,32 @@ class AnalysisTest(IMP.test.TestCase):
 
     def test_alignment(self):
         """Test alignment correctly aligns, handles multiple copies of same protein"""
-        pass
+        
+        xyz10=IMP.algebra.Vector3D(0,0,0)
+        xyz20=IMP.algebra.Vector3D(1,1,1)
+        xyz11=IMP.algebra.Vector3D(0,0,0)
+        xyz21=IMP.algebra.Vector3D(2,1,1)
+        
+        coord_dict_0={"prot1":[xyz10],"prot2":[xyz20]}
+        coord_dict_1={"prot1":[xyz11],"prot2":[xyz21]}        
+        
+        ali=IMP.pmi.analysis.Alignment(coord_dict_0,coord_dict_1)
+        self.assertAlmostEqual(ali.get_rmsd(),1.0/sqrt(2.0))
+
+
+    def test_alignment_with_weights(self):
+        """Test alignment correctly aligns, handles multiple copies of same protein"""
+        xyz10=IMP.algebra.Vector3D(0,0,0)
+        xyz20=IMP.algebra.Vector3D(1,1,1)
+        xyz11=IMP.algebra.Vector3D(0,0,0)
+        xyz21=IMP.algebra.Vector3D(2,1,1)
+        
+        coord_dict_0={"prot1":[xyz10],"prot2":[xyz20]}
+        coord_dict_1={"prot1":[xyz11],"prot2":[xyz21]}        
+        
+        weights={"prot1":[1.0],"prot2":[10.0]}
+        ali=IMP.pmi.analysis.Alignment(coord_dict_0,coord_dict_1,weights)
+        self.assertAlmostEqual(ali.get_rmsd(),sqrt(10.0/11.0))        
 
     def test_clustering(self):
         """Test clustering can calculate distance matrix, align, and cluster correctly"""

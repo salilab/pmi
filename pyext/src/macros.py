@@ -761,8 +761,7 @@ class AnalysisReplicaExchange0(object):
             rank = 0
             number_of_processes = 1
 
-        print "setup clustering class"
-        Clusters = IMP.pmi.analysis.Clustering()
+
 
         if not load_distance_matrix_file:
             if len(self.stat_files)==0: print "ERROR: no stat file found in the given path"; return
@@ -872,6 +871,9 @@ class AnalysisReplicaExchange0(object):
 #-------------------------------------------------------------
 # read the coordinates
 # ------------------------------------------------------------
+            rmsd_weights = IMP.pmi.io.input.get_bead_sizes(self.model,
+                                                         my_best_score_rmf_tuples[0],
+                                                         rmsd_calculation_components)
             got_coords = IMP.pmi.io.input.read_coordinates_of_rmfs(self.model,
                                                               my_best_score_rmf_tuples,
                                                               alignment_components,
@@ -906,7 +908,9 @@ class AnalysisReplicaExchange0(object):
 # ------------------------------------------------------------------------
 # Calculate distance matrix and cluster
 # ------------------------------------------------------------------------
-
+            print "setup clustering class"
+            Clusters = IMP.pmi.analysis.Clustering(rmsd_weights)
+            
             for n, model_coordinate_dict in enumerate(all_coordinates):
                 template_coordinate_dict = {}
                 # let's try to align

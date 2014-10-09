@@ -34,10 +34,11 @@ class Alignment(object):
     in the following form: nameA..1, nameA..2 (note two dots).
     """
 
-    def __init__(self, template, query):
+    def __init__(self, template, query, weights=None):
 
         self.query = query
         self.template = template
+        self.weights=weights
 
         if len(self.query.keys()) != len(self.template.keys()):
             print '''ERROR: the number of proteins
@@ -62,24 +63,36 @@ class Alignment(object):
         self.permute()
 
         template_xyz = []
+        weights = []
         torder = sum([list(i) for i in self.Product[0]], [])
         for t in torder:
             template_xyz += [i for i in self.template[t]]
-        template_xyz = np.array(template_xyz)
+            if self.weights is not None:
+                weights += [i for i in self.weights[t]]
+        #template_xyz = np.array(template_xyz)
 
         self.rmsd = 10000000000.
         for comb in self.Product:
+            
+            
+            
             order = sum([list(i) for i in comb], [])
             query_xyz = []
             for p in order:
                 query_xyz += [i for i in self.query[p]]
-            query_xyz = np.array(query_xyz)
-            if len(template_xyz) != len(query_xyz):
-                print '''Alignment.get_rmsd: ERROR: the number of coordinates
-                               in template and query does not match!'''
-                exit()
-            dist = sqrt(
-                sum(np.diagonal(cdist(template_xyz, query_xyz) ** 2)) / len(template_xyz))
+            #query_xyz = np.array(query_xyz)
+            #if len(template_xyz) != len(query_xyz):
+            #    print '''Alignment.get_rmsd: ERROR: the number of coordinates
+            #                   in template and query does not match!'''
+            #    exit()
+            
+            if self.weights is not None:
+                print weights
+                dist=IMP.algebra.get_weighted_rmsd(template_xyz, query_xyz, weights)
+            else:
+                dist=IMP.algebra.get_rmsd(template_xyz, query_xyz)
+            #dist = sqrt(
+            #    sum(np.diagonal(cdist(template_xyz, query_xyz) ** 2)) / len(template_xyz))
             if dist < self.rmsd:
                 self.rmsd = dist
         return self.rmsd
@@ -176,11 +189,12 @@ class Clustering(object):
     Uses scipy's cdist function to compute distance matrices
     And sklearn's kmeans clustering module.
     """
-    def __init__(self):
+    def __init__(self,rmsd_weights=None):
 
         self.all_coords = {}
         self.structure_cluster_ids = None
         self.tmpl_coords = None
+        self.rmsd_weights=rmsd_weights
 
     def set_template(self, part_coords):
 
@@ -400,7 +414,7 @@ class Clustering(object):
                 for pr in rmsd_protein_names:
                     coords_f2[pr] = all_coords[model_list_names[f2]][pr]
 
-                Ali = IMP.pmi.analysis.Alignment(coords_f1, coords_f2)
+                Ali = IMP.pmi.analysis.Alignment(coords_f1, coords_f2, self.rmsd_weights)
                 rmsd = Ali.get_rmsd()
 
             elif do_alignment:

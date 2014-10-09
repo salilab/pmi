@@ -1,5 +1,11 @@
 \brief Python classes to represent, score, sample and analyze models.
 
+The intention of this module is to provide a variety of high-level Python
+classes to simplify the construction of a modeling protocol in IMP.
+
+*This module is still under heavy development, and should be considered
+experimental.*
+
 See also the [PMI changelog](@ref pmi_changelog).
 
 _Author(s)_: Riccardo Pellarin, Peter Cimermancic, Daniel Russel, Charles Greenberg, Ben Webb, Elina Tjioe, Seung Joong Kim, Max Bonomi, Yannick Spill

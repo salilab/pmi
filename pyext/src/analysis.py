@@ -66,7 +66,7 @@ class Alignment(object):
         weights = []
         torder = sum([list(i) for i in self.Product[0]], [])
         for t in torder:
-            template_xyz += [i for i in self.template[t]]
+            template_xyz += [IMP.algebra.Vector3D(i) for i in self.template[t]]
             if self.weights is not None:
                 weights += [i for i in self.weights[t]]
         #template_xyz = np.array(template_xyz)
@@ -79,7 +79,7 @@ class Alignment(object):
             order = sum([list(i) for i in comb], [])
             query_xyz = []
             for p in order:
-                query_xyz += [i for i in self.query[p]]
+                query_xyz += [IMP.algebra.Vector3D(i) for i in self.query[p]]
             #query_xyz = np.array(query_xyz)
             #if len(template_xyz) != len(query_xyz):
             #    print '''Alignment.get_rmsd: ERROR: the number of coordinates

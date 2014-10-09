@@ -130,7 +130,7 @@ def read_coordinates_of_rmfs(model,
                 ps=s.get_selected_particles()
                 filtered_particles=list(set(ps)&set(all_particles))
                 template_coordinate_dict[pr] = \
-                    [IMP.core.XYZ(i).get_coordinates() for i in filtered_particles]
+                    [map(float,IMP.core.XYZ(i).get_coordinates()) for i in filtered_particles]
 
         if rmsd_calculation_components is not None:
             for pr in rmsd_calculation_components:
@@ -145,7 +145,7 @@ def read_coordinates_of_rmfs(model,
                 ps=s.get_selected_particles()
                 filtered_particles=[p for p in ps if p in all_ps_set]
                 rmsd_coordinate_dict[pr] = \
-                    [IMP.core.XYZ(i).get_coordinates() for i in filtered_particles]
+                    [map(float,IMP.core.XYZ(i).get_coordinates()) for i in filtered_particles]
 
         all_coordinates.append(model_coordinate_dict)
         alignment_coordinates.append(template_coordinate_dict)

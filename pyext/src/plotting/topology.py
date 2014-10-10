@@ -25,10 +25,14 @@ class TopologyPlot(object):
         @param pos           A dictionary with positions (tuple, values) of subunits (keywords)
         @param proteomic_edges A list edges to represent proteomic data
         """
+        import itertools\
+
         self.mdl = model
         self.selections = selections
         self.contact_counts={}
         self.edges=defaultdict(int)
+        for (name1,name2) in itertools.combinations(self.selections.keys(),2):
+            self.edges[tuple(sorted((name1,name2)))]=0
         self.cutoff = cutoff
         self.frequency_cutoff=frequency_cutoff
         self.gcpf = IMP.core.GridClosePairsFinder()
@@ -68,6 +72,9 @@ class TopologyPlot(object):
                 else:
                     raise Exception('could not understand selection tuple '+str(seg))
                 parts = list(set(s.get_selected_particles()) & set(all_particles_by_resolution))
+                print component_name
+                for p in parts:
+                    print component_name,p.get_name(),IMP.core.XYZ(p)
                 ps_per_component[component_name] += IMP.get_indexes(parts)
                 if self.num_rmf==0:
                     self.size_per_component[component_name] += sum(len(IMP.pmi.tools.get_residue_indexes(p)) for p in parts)
@@ -78,11 +85,66 @@ class TopologyPlot(object):
                                                      ps_per_component[name1],
                                                      ps_per_component[name2]))
                 if ncontacts>0:
-                    self.edges[tuple(sorted((name1,name2)))]+=1
+                    self.edges[tuple(sorted((name1,name2)))]+=1.0
 
         self.num_rmf+=1
 
-    def make_plot(self,out_fn):
+    def make_plot(self,groups,out_fn):
+        '''
+        plot the interaction matrix
+        @param groups is the list of groups of domains, eg,
+                      [["protA_1-10","prot1A_11-100"],["protB"]....]
+                      it will plot a space between different groups
+        '''
+        import numpy as np
+        import matplotlib.pyplot as plt
+        from matplotlib import cm
+
+        ax=plt.gca()
+        plt.set_cmap('Greys')
+        ax.set_aspect('equal', 'box')
+        ax.xaxis.set_major_locator(plt.NullLocator())
+        ax.yaxis.set_major_locator(plt.NullLocator())
+
+        space=0.2
+        squaredistance=1.0
+        squaresize=0.9
+        domain_xlocations={}
+        domain_ylocations={}
+
+        xoffset=squaredistance
+        yoffset=squaredistance
+        xlabels=[]
+        ylabels=[]
+        for group in groups:
+            xoffset+=space
+            yoffset+=space
+            for domain in group:
+                domain_xlocations[domain]=xoffset
+                domain_ylocations[domain]=yoffset
+                rect = plt.Rectangle([xoffset- squaresize / 2, yoffset - squaresize / 2], squaresize, squaresize,
+                                     facecolor=(1,1,1,1.0), edgecolor=(0,0,0,0.5))
+
+                ax.add_patch(rect)
+                ax.text(xoffset , yoffset ,domain,horizontalalignment='left',verticalalignment='center',rotation=-45.0)
+                xoffset+=squaredistance
+                yoffset+=squaredistance
+
+        for edge,count in self.edges.iteritems():
+            density=1.0-float(count)/self.num_rmf
+            color=(density,density,density,1.0)
+            x=domain_xlocations[edge[0]]
+            y=domain_ylocations[edge[1]]
+            if x>y: xtmp=y; ytmp=x; x=xtmp; y=ytmp
+            rect = plt.Rectangle([x - squaresize / 2, y - squaresize / 2], squaresize, squaresize,
+                             facecolor=color, edgecolor=(0,0,0,0.1))
+            ax.add_patch(rect)
+
+
+        ax.autoscale_view()
+        plt.show()
+
+    def make_graph(self,out_fn):
         edges=[]
         weights=[]
         print 'num edges',len(self.edges)

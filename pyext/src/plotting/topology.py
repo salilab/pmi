@@ -72,9 +72,6 @@ class TopologyPlot(object):
                 else:
                     raise Exception('could not understand selection tuple '+str(seg))
                 parts = list(set(s.get_selected_particles()) & set(all_particles_by_resolution))
-                print component_name
-                for p in parts:
-                    print component_name,p.get_name(),IMP.core.XYZ(p)
                 ps_per_component[component_name] += IMP.get_indexes(parts)
                 if self.num_rmf==0:
                     self.size_per_component[component_name] += sum(len(IMP.pmi.tools.get_residue_indexes(p)) for p in parts)
@@ -101,14 +98,14 @@ class TopologyPlot(object):
         from matplotlib import cm
 
         ax=plt.gca()
-        plt.set_cmap('Greys')
         ax.set_aspect('equal', 'box')
         ax.xaxis.set_major_locator(plt.NullLocator())
         ax.yaxis.set_major_locator(plt.NullLocator())
 
-        space=0.2
+        largespace=0.6
+        smallspace=0.5
         squaredistance=1.0
-        squaresize=0.9
+        squaresize=0.99
         domain_xlocations={}
         domain_ylocations={}
 
@@ -117,32 +114,39 @@ class TopologyPlot(object):
         xlabels=[]
         ylabels=[]
         for group in groups:
-            xoffset+=space
-            yoffset+=space
-            for domain in group:
-                domain_xlocations[domain]=xoffset
-                domain_ylocations[domain]=yoffset
-                rect = plt.Rectangle([xoffset- squaresize / 2, yoffset - squaresize / 2], squaresize, squaresize,
-                                     facecolor=(1,1,1,1.0), edgecolor=(0,0,0,0.5))
-
-                ax.add_patch(rect)
-                ax.text(xoffset , yoffset ,domain,horizontalalignment='left',verticalalignment='center',rotation=-45.0)
-                xoffset+=squaredistance
-                yoffset+=squaredistance
+            xoffset+=largespace
+            yoffset+=largespace
+            for subgroup in group:
+                xoffset+=smallspace
+                yoffset+=smallspace
+                for domain in subgroup:
+                    domain_xlocations[domain]=xoffset
+                    domain_ylocations[domain]=yoffset
+                    #rect = plt.Rectangle([xoffset- squaresize / 2, yoffset - squaresize / 2], squaresize, squaresize,
+                    #                     facecolor=(1,1,1), edgecolor=(0.1,0.1,0.1))
+    
+                    #ax.add_patch(rect)
+                    #ax.text(xoffset , yoffset ,domain,horizontalalignment='left',verticalalignment='center',rotation=-45.0)
+                    xoffset+=squaredistance
+                    yoffset+=squaredistance
 
         for edge,count in self.edges.iteritems():
-            density=1.0-float(count)/self.num_rmf
-            color=(density,density,density,1.0)
+            density=(1.0-float(count)/self.num_rmf)
+            color=(density,density,1.0)
             x=domain_xlocations[edge[0]]
             y=domain_ylocations[edge[1]]
             if x>y: xtmp=y; ytmp=x; x=xtmp; y=ytmp
             rect = plt.Rectangle([x - squaresize / 2, y - squaresize / 2], squaresize, squaresize,
-                             facecolor=color, edgecolor=(0,0,0,0.1))
+                             facecolor=color, edgecolor='Gray', linewidth=0.1)
+            ax.add_patch(rect)
+            rect = plt.Rectangle([y - squaresize / 2, x - squaresize / 2], squaresize, squaresize,
+                             facecolor=color, edgecolor='Gray', linewidth=0.1)
             ax.add_patch(rect)
 
-
         ax.autoscale_view()
+        plt.savefig(out_fn)
         plt.show()
+        exit()
 
     def make_graph(self,out_fn):
         edges=[]

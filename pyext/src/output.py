@@ -793,7 +793,7 @@ def plot_field_histogram(
     plt.ylabel("Frequency", size="xx-large")
 
     if not yplotrange is None:
-        plt.ylim(yplotrange)
+        plt.ylim()
     if not xplotrange is None:
         plt.xlim(xplotrange)
 
@@ -848,7 +848,7 @@ def plot_fields_box_plots(name, values, positions, frequencies=None,
     plt.show()
 
 
-def plot_xy_data(x,y,title=None,display=True):
+def plot_xy_data(x,y,title=None,display=True,set_plot_yaxis_range=None):
     import matplotlib.pyplot as plt
     plt.rc('lines', linewidth=2)
 
@@ -862,6 +862,8 @@ def plot_xy_data(x,y,title=None,display=True):
         plt.savefig(title+".pdf")
     if display:
         plt.show()
+    if not yplotrange is None:
+        plt.ylim(set_plot_yaxis_range)
     plt.close(fig)
 
 def plot_scatter_xy_data(x,y,labelx="None",labely="None",

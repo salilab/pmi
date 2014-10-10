@@ -2126,7 +2126,7 @@ class Precision(object):
 
     def get_particle_distances(self,structure_set_name1,structure_set_name2,
                                selection_name,index1,index2):
-        import np.linalg
+        import numpy as np
         c1=self.structures_dictionary[structure_set_name1][selection_name][index1]
         c2=self.structures_dictionary[structure_set_name2][selection_name][index2]
 
@@ -2258,7 +2258,10 @@ class Precision(object):
         of.close()
         return centroid_index
 
-    def get_rmsf(self,structure_set_name,outdir="./",is_mpi=False,skip=None,make_plot=False):
+    def get_rmsf(self,structure_set_name,outdir="./",
+                      is_mpi=False,skip=None,
+                     make_plot=False,set_plot_yaxis_range=None):
+
         outfile=outdir+"/rmsf.dat"
         # get the centroid structure for the whole complex
         centroid_index=self.get_precision(outfile,structure_set_name,structure_set_name,
@@ -2299,7 +2302,8 @@ class Precision(object):
                rmsfs.append(rmsf)
                of.write(str(rn)+" "+str(residue_nblock[rn])+" "+str(rmsf)+"\n")
 
-           IMP.pmi.output.plot_xy_data(residues,rmsfs,title=outdir+"/rmsf."+p,display=False)
+           IMP.pmi.output.plot_xy_data(residues,rmsfs,title=outdir+"/rmsf."+p,display=False,
+                                       set_plot_yaxis_range=None)
            of.close()
 
 

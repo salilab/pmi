@@ -11,22 +11,33 @@ from scipy.spatial.distance import cdist
 
 class TopologyPlot(object):
     """A class to read RMF files and make a network contact map"""
-    def __init__(self,model,selections,cutoff):
+    def __init__(self,model,selections,cutoff,frequency_cutoff,
+                      colors=None,fixed=None,pos=None,proteomic_edges=None):
         """Set up a new graphXL object
         @param model          The IMP model
         @param selection_dict A dictionary containing component names.
                               Keys are labels
                               values are either moleculename or start,stop,moleculename
-        @param cutoff        The
+        @param cutoff        The distance cutoff
+        @param frequency_cutoff The frequency cutoff
+        @param colors        A dictionary of colors (HEX code,values) for subunits (keywords)
+        @param fixed         A list of subunits that are kept fixed
+        @param pos           A dictionary with positions (tuple, values) of subunits (keywords)
+        @param proteomic_edges A list edges to represent proteomic data
         """
         self.mdl = model
         self.selections = selections
         self.contact_counts={}
         self.edges=defaultdict(int)
         self.cutoff = cutoff
+        self.frequency_cutoff=frequency_cutoff
         self.gcpf = IMP.core.GridClosePairsFinder()
         self.gcpf.set_distance(self.cutoff)
         self.names = self.selections.keys()
+        self.colors=colors
+        self.fixed=fixed
+        self.pos=pos
+        self.proteomic_edges=proteomic_edges
         self.num_rmf=0
 
     def add_rmf(self,rmf_fn,nframe):
@@ -37,7 +48,8 @@ class TopologyPlot(object):
         hier = prots[0]
         IMP.rmf.load_frame(rh,0)
         ps_per_component=defaultdict(list)
-        self.size_per_component=defaultdict(int)
+        if self.num_rmf==0:
+            self.size_per_component=defaultdict(int)
         self.mdl.update()
 
         #gathers particles for all components
@@ -66,7 +78,8 @@ class TopologyPlot(object):
                                                      ps_per_component[name1],
                                                      ps_per_component[name2]))
                 if ncontacts>0:
-                    self.edges[tuple(sorted((name1,name2)))]+=ncontacts
+                    self.edges[tuple(sorted((name1,name2)))]+=1
+
         self.num_rmf+=1
 
     def make_plot(self,out_fn):
@@ -74,12 +87,20 @@ class TopologyPlot(object):
         weights=[]
         print 'num edges',len(self.edges)
         for edge,count in self.edges.iteritems():
-            edges.append(edge)
-            weights.append(count)
+            # filter if frequency of contacts is greater than frequency_cutoff
+            if float(count)/self.num_rmf>self.frequency_cutoff:
+                print count,edge
+                edges.append(edge)
+                weights.append(count)
         for nw,w in enumerate(weights):
             weights[nw]=float(weights[nw])/max(weights)
         IMP.pmi.output.draw_graph(edges,#node_size=1000,
                                   node_size=dict(self.size_per_component),
+                                  node_color=self.colors,
+                                  fixed=self.fixed,
+                                  pos=self.pos,
                                   edge_thickness=1, #weights,
                                   edge_alpha=0.3,
-                                  out_filename=out_fn)
+                                  edge_color='gray',
+                                  out_filename=out_fn,
+                                  validation_edges=self.proteomic_edges)

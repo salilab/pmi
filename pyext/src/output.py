@@ -849,20 +849,20 @@ def plot_fields_box_plots(name, values, positions, frequencies=None,
 
 
 def plot_xy_data(x,y,title=None,display=True):
-        import matplotlib.pyplot as plt
-        plt.rc('lines', linewidth=2)
+    import matplotlib.pyplot as plt
+    plt.rc('lines', linewidth=2)
 
-        fig, ax  = plt.subplots(nrows=1)
-        fig.set_size_inches(8,4.5)
-        if title is not None:
-          fig.canvas.set_window_title(title)
-        plt.rc('axes', color_cycle=['r'])
-        ax.plot(x,y)
-        if title is not None:
-          plt.savefig(title+".pdf")
-        if display:
-          plt.show()
-        plt.close(fig)
+    fig, ax  = plt.subplots(nrows=1)
+    fig.set_size_inches(8,4.5)
+    if title is not None:
+        fig.canvas.set_window_title(title)
+    plt.rc('axes', color_cycle=['r'])
+    ax.plot(x,y)
+    if title is not None:
+        plt.savefig(title+".pdf")
+    if display:
+        plt.show()
+    plt.close(fig)
 
 def plot_scatter_xy_data(x,y,labelx="None",labely="None",
                          xmin=None,xmax=None,ymin=None,ymax=None,
@@ -897,9 +897,9 @@ def plot_scatter_xy_data(x,y,labelx="None",labely="None",
     fig.set_size_inches(8.0, 8.0)
     fig.subplots_adjust(left=0.161, right=0.850, top=0.95, bottom=0.11)
     if (not ymin is None) and (not ymax is None):
-       axs0.set_ylim(ymin,ymax)
+        axs0.set_ylim(ymin,ymax)
     if (not xmin is None) and (not xmax is None):
-       axs0.set_xlim(xmin,xmax)
+        axs0.set_xlim(xmin,xmax)
 
     #plt.show()
     if savefile:
@@ -952,15 +952,17 @@ def recursive_graph(hier, graph, depth, depth_dict):
 
 
 def draw_graph(graph, labels_dict=None, graph_layout='spring',
-               node_size=5, node_color='blue', node_alpha=0.3,
-               node_text_size=11,
+               node_size=5, node_color=None, node_alpha=0.3,
+               node_text_size=11, fixed=None, pos=None,
                edge_color='blue', edge_alpha=0.3, edge_thickness=1,
                edge_text_pos=0.3,
+               validation_edges=None,
                text_font='sans-serif',
                out_filename=None):
 
     import networkx as nx
     import matplotlib.pyplot as plt
+    from math import sqrt, pi
 
     # create networkx graph
     G = nx.Graph()
@@ -973,19 +975,55 @@ def draw_graph(graph, labels_dict=None, graph_layout='spring',
         for edge in graph:
             G.add_edge(edge[0], edge[1])
 
+    if node_color==None:
+        node_color_rgb=(0,0,0)
+        node_color_hex="000000"
+    else:
+        cc=IMP.pmi.tools.ColorChange()
+        tmpcolor_rgb=[]
+        tmpcolor_hex=[]
+        for node in G.nodes():
+            cctuple=cc.rgb(node_color[node])
+            tmpcolor_rgb.append((cctuple[0]/255,cctuple[1]/255,cctuple[2]/255))
+            tmpcolor_hex.append(node_color[node])
+        node_color_rgb=tmpcolor_rgb
+        node_color_hex=tmpcolor_hex
 
     # get node sizes if dictionary
     if type(node_size) is dict:
         tmpsize=[]
         for node in G.nodes():
-            tmpsize.append(node_size[node])
-            print node,node_size[node]
+            size=sqrt(node_size[node])/pi*10.0
+            tmpsize.append(size)
         node_size=tmpsize
+
+    for n,node in enumerate(G.nodes()):
+        color=node_color_hex[n]
+        size=node_size[n]
+        nx.set_node_attributes(G, "graphics", {node : {'type': 'ellipse','w': size, 'h': size,'fill': '#'+color, 'label': node}})
+        nx.set_node_attributes(G, "LabelGraphics", {node : {'type': 'text','text':node, 'color':'#000000', 'visible':'true'}})
+
+    for edge in G.edges():
+        nx.set_edge_attributes(G, "graphics", {edge : {'width': 1,'fill': '#000000'}})
+
+    for ve in validation_edges:
+        print ve
+        if (ve[0],ve[1]) in G.edges():
+            print "found forward"
+            nx.set_edge_attributes(G, "graphics", {ve : {'width': 1,'fill': '#00FF00'}})
+        elif (ve[1],ve[0]) in G.edges():
+            print "found backward"
+            nx.set_edge_attributes(G, "graphics", {(ve[1],ve[0]) : {'width': 1,'fill': '#00FF00'}})
+        else:
+            G.add_edge(ve[0], ve[1])
+            print "not found"
+            nx.set_edge_attributes(G, "graphics", {ve : {'width': 1,'fill': '#FF0000'}})
 
     # these are different layouts for the network you may try
     # shell seems to work best
     if graph_layout == 'spring':
-        graph_pos = nx.spring_layout(G)
+        print fixed, pos
+        graph_pos = nx.spring_layout(G,k=1.0/8.0,fixed=fixed,pos=pos)
     elif graph_layout == 'spectral':
         graph_pos = nx.spectral_layout(G)
     elif graph_layout == 'random':
@@ -993,9 +1031,10 @@ def draw_graph(graph, labels_dict=None, graph_layout='spring',
     else:
         graph_pos = nx.shell_layout(G)
 
+
     # draw graph
     nx.draw_networkx_nodes(G, graph_pos, node_size=node_size,
-                           alpha=node_alpha, node_color=node_color,
+                           alpha=node_alpha, node_color=node_color_rgb,
                            linewidths=0)
     nx.draw_networkx_edges(G, graph_pos, width=edge_thickness,
                            alpha=edge_alpha, edge_color=edge_color)
@@ -1004,6 +1043,7 @@ def draw_graph(graph, labels_dict=None, graph_layout='spring',
         font_family=text_font)
     if out_filename:
         plt.savefig(out_filename)
+        nx.write_gml(G,'out.gml')
     plt.show()
 
 

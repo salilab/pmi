@@ -85,10 +85,10 @@ class ParticleToSampleFilter(object):
             for key in ps_dict:
                 for f in self.filters:
                     if f in key:
-                       if key not in particles_to_sample:
-                           particles_to_sample[key]=ps_dict[key]
-                       else:
-                           particles_to_sample[key]+=ps_dict[key]
+                        if key not in particles_to_sample:
+                            particles_to_sample[key]=ps_dict[key]
+                        else:
+                            particles_to_sample[key]+=ps_dict[key]
         return particles_to_sample
 
 class ParticleToSampleList(object):
@@ -333,7 +333,7 @@ def get_random_cross_link_dataset(representation,
 
     for (name1, r1, name2, r2) in residue_pairs:
         if random() > ambiguity_probability:
-           unique_identifier+=1
+            unique_identifier+=1
         score=random()*(cmax-cmin)+cmin
         dataset+=str(name1)+" "+str(name2)+" "+str(r1)+" "+str(r2)+" "+str(score)+" "+str(unique_identifier)+"\n"
 
@@ -609,24 +609,24 @@ class map(object):
 
     def get_map_element(self, invalue):
         if type(invalue) == float:
-          n = 0
-          mindist = 1
-          for x in self.map:
-              dist = (invalue - x) * (invalue - x)
+            n = 0
+            mindist = 1
+            for x in self.map:
+                dist = (invalue - x) * (invalue - x)
 
-              if n == 0:
-                  mindist = dist
-                  minx = x
-              if dist < mindist:
-                  mindist = dist
-                  minx = x
-              n += 1
-          return self.map[minx]
+                if n == 0:
+                    mindist = dist
+                    minx = x
+                if dist < mindist:
+                    mindist = dist
+                    minx = x
+                n += 1
+            return self.map[minx]
         elif type(invalue) == str:
-          return self.map[invalue]
+            return self.map[invalue]
         else:
-          print "wrong type for map"
-          exit()
+            print "wrong type for map"
+            exit()
 
 
 def select(representation,
@@ -1345,6 +1345,23 @@ def sse_selections_to_chimera_colors(dssp_dict, chimera_model_num=0):
                 cmds[
                     skey] += '#%i:%s-%s.%s ' % (chimera_model_num, start, stop, chain)
     print '; '.join([cmds[k] for k in cmds])
+
+
+
+
+class ColorChange(object):
+    '''a class to change color code to hexadecimal to rgb'''
+    def __init__(self):
+        self._NUMERALS = '0123456789abcdefABCDEF'
+        self._HEXDEC = {v: int(v, 16) for v in (x+y for x in self._NUMERALS for y in self._NUMERALS)}
+        self.LOWERCASE, self.UPPERCASE = 'x', 'X'
+
+    def rgb(self,triplet):
+        return float(self._HEXDEC[triplet[0:2]]), float(self._HEXDEC[triplet[2:4]]), float(self._HEXDEC[triplet[4:6]])
+
+    def triplet(self,rgb, lettercase=None):
+        if lettercase is None: lettercase=self.LOWERCASE
+        return format(rgb[0]<<16 | rgb[1]<<8 | rgb[2], '06'+lettercase)
 
 
 class OrderedSet(collections.MutableSet):

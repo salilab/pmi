@@ -119,6 +119,7 @@ def read_coordinates_of_rmfs(model,
 
         if alignment_components is not None:
             for pr in alignment_components:
+                print pr
                 if type(alignment_components[pr]) is str:
                     name=alignment_components[pr]
                     s=IMP.atom.Selection(prot,molecule=name)

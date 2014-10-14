@@ -1,7 +1,10 @@
 \brief Python classes to represent, score, sample and analyze models.
 
 The intention of this module is to provide a variety of high-level Python
-classes to simplify the construction of a modeling protocol in IMP.
+classes to simplify the construction of a modeling protocol in IMP. One recent
+use of PMI is the modeling of the
+[Nup84 subcomplex of the nuclear pore complex](http://salilab.org/nup84/).
+
 
 *This module is still under heavy development, and should be considered
 experimental.*

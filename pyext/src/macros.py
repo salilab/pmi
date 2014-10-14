@@ -851,7 +851,7 @@ class AnalysisReplicaExchange0(object):
 
                     o=IMP.pmi.output.Output()
                     out_pdb_fn=os.path.join(dircluster,str(cnt)+"."+str(rank)+".pdb")
-                    out_rmf_fn=os.path.join(dircluster,str(cnt)+"."+str(rank)+".pdb")
+                    out_rmf_fn=os.path.join(dircluster,str(cnt)+"."+str(rank)+".rmf")
                     o.init_pdb(out_pdb_fn,prot)
                     o.write_pdb(out_pdb_fn,
                                 translate_to_geometric_center=write_pdb_with_centered_coordinates)

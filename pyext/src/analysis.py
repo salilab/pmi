@@ -2301,9 +2301,9 @@ class Precision(object):
                 rmsfs.append(rmsf)
                 of.write(str(rn)+" "+str(residue_nblock[rn])+" "+str(rmsf)+"\n")
 
-           IMP.pmi.output.plot_xy_data(residues,rmsfs,title=outdir+"/rmsf."+p,display=False,
+            IMP.pmi.output.plot_xy_data(residues,rmsfs,title=outdir+"/rmsf."+p,display=False,
                                        set_plot_yaxis_range=None)
-           of.close()
+            of.close()
 
 
 

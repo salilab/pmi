@@ -1353,7 +1353,7 @@ class ColorChange(object):
     '''a class to change color code to hexadecimal to rgb'''
     def __init__(self):
         self._NUMERALS = '0123456789abcdefABCDEF'
-        self._HEXDEC = {v: int(v, 16) for v in (x+y for x in self._NUMERALS for y in self._NUMERALS)}
+        self._HEXDEC = dict((v, int(v, 16)) for v in (x+y for x in self._NUMERALS for y in self._NUMERALS))
         self.LOWERCASE, self.UPPERCASE = 'x', 'X'
 
     def rgb(self,triplet):

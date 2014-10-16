@@ -878,6 +878,10 @@ class AnalysisReplicaExchange0(object):
                                                               my_best_score_rmf_tuples,
                                                               alignment_components,
                                                               rmsd_calculation_components)
+
+            # note! the coordinates are simple float tuples, NOT decorators, NOT Vector3D,
+            # NOR particles, because these object cannot be serialized. We need serialization
+            # for the parallel computation based on mpi.
             all_coordinates=got_coords[0]          # dict:key=component name,val=coords per hit
             alignment_coordinates=got_coords[1]    # same as above, limited to alignment bits
             rmsd_coordinates=got_coords[2]         # same as above, limited to RMSD bits
@@ -999,7 +1003,6 @@ class AnalysisReplicaExchange0(object):
                             key] = best_score_feature_keyword_list_dict[
                             key][
                             index]
-
                     # get the rmf name and the frame number from the list of
                     # frame names
                     rmf_name = structure_name.split("|")[0]
@@ -1040,6 +1043,7 @@ class AnalysisReplicaExchange0(object):
                     if density_custom_ranges:
                         DensModule.add_subunits_density(prot)
 
+                    # pdb writing should be optimized!
                     o = IMP.pmi.output.Output()
                     o.init_pdb(dircluster + str(k) + ".pdb", prot)
                     o.write_pdb(dircluster + str(k) + ".pdb")

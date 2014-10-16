@@ -483,6 +483,14 @@ class GetModelDensity(object):
                          If not passed, will just read the representation.
         """
         self.count_models += 1.0
+
+        if hierarchy:
+            part_dict = get_particles_at_resolution_one(hierarchy)
+            all_particles_by_resolution = []
+            for name in part_dict:
+                all_particles_by_resolution += part_dict[name]
+
+
         for density_name in self.custom_ranges:
             parts = []
             if hierarchy:
@@ -494,24 +502,16 @@ class GetModelDensity(object):
                                                        seg, resolution=1, name_is_ambiguous=False)
                 else:
                     if type(seg) == str:
-                        children = [child for child in hierarchy.get_children()
-                                    if child.get_name() == seg]
-                        s = IMP.atom.Selection(children)
+                        s = IMP.atom.Selection(hierarchy,molecule=seg)
                     elif type(seg) == tuple:
-                        children = [child for child in hierarchy.get_children()
-                                    if child.get_name() == seg[2]]
                         s = IMP.atom.Selection(
-                            children, residue_indexes=range(seg[0], seg[1] + 1))
+                            hierarchy, molecule=seg[2],residue_indexes=range(seg[0], seg[1] + 1))
                     else:
                         raise Exception('could not understand selection tuple '+str(seg))
 
                     all_particles_by_segments += s.get_selected_particles()
 
             if hierarchy:
-                part_dict = get_particles_at_resolution_one(hierarchy)
-                all_particles_by_resolution = []
-                for name in part_dict:
-                    all_particles_by_resolution += part_dict[name]
                 parts = list(
                     set(all_particles_by_segments) & set(all_particles_by_resolution))
 

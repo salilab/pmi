@@ -119,7 +119,6 @@ def read_coordinates_of_rmfs(model,
 
         if alignment_components is not None:
             for pr in alignment_components:
-                print pr
                 if type(alignment_components[pr]) is str:
                     name=alignment_components[pr]
                     s=IMP.atom.Selection(prot,molecule=name)
@@ -129,7 +128,7 @@ def read_coordinates_of_rmfs(model,
                     rbegin=alignment_components[pr][0]
                     s=IMP.atom.Selection(prot,molecule=name,residue_indexes=range(rbegin,rend+1))
                 ps=s.get_selected_particles()
-                filtered_particles=list(set(ps)&set(all_particles))
+                filtered_particles=[p for p in ps if p in all_ps_set]
                 template_coordinate_dict[pr] = \
                     [map(float,IMP.core.XYZ(i).get_coordinates()) for i in filtered_particles]
 

@@ -441,7 +441,7 @@ class Clustering(object):
                     coords_f2[pr] = [transformation.get_transformed(
                         i) for i in all_coords[model_list_names[f2]][pr]]
 
-                Ali = IMP.pmi.analysis.Alignment(coords_f1, coords_f2)
+                Ali = IMP.pmi.analysis.Alignment(coords_f1, coords_f2, self.rmsd_weights)
                 rmsd = Ali.get_rmsd()
 
             raw_distance_dict[(f1, f2)] = rmsd
@@ -2080,9 +2080,9 @@ class Precision(object):
 
     def select_coordinates(self,tuple_selections,structure,prot):
         selected_coordinates=[]
-        for t in tuple_selections:
+        for t in tuple_selections: 
             if type(t)==tuple and len(t)==3:
-                s=IMP.atom.Selection(prot,molecules=[t[0]],residue_indexes=range(t[1],t[2]+1))
+                s=IMP.atom.Selection(prot,molecules=[t[2]],residue_indexes=range(t[0],t[1]+1))
                 all_selected_particles=s.get_selected_particles()
                 intersection=list(set(all_selected_particles) & set(structure))
                 sorted_intersection=IMP.pmi.tools.sort_by_residues(intersection)
@@ -2324,15 +2324,13 @@ class Precision(object):
 
         for selection_name in self.selection_dictionary:
             reference_coordinates=self.reference_structures_dictionary[selection_name]
-
+            coordinates2=map(lambda c: IMP.algebra.Vector3D(c), reference_coordinates)
             distances=[]
 
             for sc in self.structures_dictionary[structure_set_name][selection_name]:
-
-                for rc in self.reference_structures_dictionary[selection_name]:
-
+                    
                     coordinates1=map(lambda c: IMP.algebra.Vector3D(c), sc)
-                    coordinates2=map(lambda c: IMP.algebra.Vector3D(c), rc)
+                    
 
                     if self.style=='pairwise_drmsd_k':
                         distance=IMP.atom.get_drmsd(coordinates1,coordinates2)
@@ -2340,6 +2338,8 @@ class Precision(object):
                         distance=IMP.atom.get_drms(coordinates1,coordinates2)
                     if self.style=='pairwise_drmsd_Q':
                         distance=IMP.atom.get_drmsd_Q(coordinates1,coordinates2,self.threshold)
+                    if self.style=='pairwise_rmsd':
+                        distance=IMP.atom.get_rmsd(coordinates1,coordinates2,IMP.algebra.get_identity_transformation_3d())
 
                     distances.append(distance)
 

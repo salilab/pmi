@@ -862,7 +862,7 @@ def plot_xy_data(x,y,title=None,display=True,set_plot_yaxis_range=None):
         plt.savefig(title+".pdf")
     if display:
         plt.show()
-    if not yplotrange is None:
+    if not set_plot_yaxis_range is None:
         plt.ylim(set_plot_yaxis_range)
     plt.close(fig)
 

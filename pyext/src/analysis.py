@@ -263,11 +263,11 @@ class Clustering(object):
         if seed is not None:
             np.random.seed(seed)
         try:
-           # check whether we have the right version of sklearn
-           kmeans = KMeans(n_clusters=number_of_clusters)
+            # check whether we have the right version of sklearn
+            kmeans = KMeans(n_clusters=number_of_clusters)
         except TypeError:
-           # sklearn older than 0.12
-           kmeans = KMeans(k=number_of_clusters)           
+            # sklearn older than 0.12
+            kmeans = KMeans(k=number_of_clusters)
         kmeans.fit_predict(self.raw_distance_matrix)
 
         self.structure_cluster_ids = kmeans.labels_
@@ -2085,7 +2085,7 @@ class Precision(object):
 
     def select_coordinates(self,tuple_selections,structure,prot):
         selected_coordinates=[]
-        for t in tuple_selections: 
+        for t in tuple_selections:
             if type(t)==tuple and len(t)==3:
                 s=IMP.atom.Selection(prot,molecules=[t[2]],residue_indexes=range(t[0],t[1]+1))
                 all_selected_particles=s.get_selected_particles()
@@ -2333,20 +2333,20 @@ class Precision(object):
             distances=[]
 
             for sc in self.structures_dictionary[structure_set_name][selection_name]:
-                    
-                    coordinates1=map(lambda c: IMP.algebra.Vector3D(c), sc)
-                    
 
-                    if self.style=='pairwise_drmsd_k':
-                        distance=IMP.atom.get_drmsd(coordinates1,coordinates2)
-                    if self.style=='pairwise_drms_k':
-                        distance=IMP.atom.get_drms(coordinates1,coordinates2)
-                    if self.style=='pairwise_drmsd_Q':
-                        distance=IMP.atom.get_drmsd_Q(coordinates1,coordinates2,self.threshold)
-                    if self.style=='pairwise_rmsd':
-                        distance=IMP.atom.get_rmsd(coordinates1,coordinates2,IMP.algebra.get_identity_transformation_3d())
+                coordinates1=map(lambda c: IMP.algebra.Vector3D(c), sc)
 
-                    distances.append(distance)
+
+                if self.style=='pairwise_drmsd_k':
+                    distance=IMP.atom.get_drmsd(coordinates1,coordinates2)
+                if self.style=='pairwise_drms_k':
+                    distance=IMP.atom.get_drms(coordinates1,coordinates2)
+                if self.style=='pairwise_drmsd_Q':
+                    distance=IMP.atom.get_drmsd_Q(coordinates1,coordinates2,self.threshold)
+                if self.style=='pairwise_rmsd':
+                    distance=IMP.atom.get_rmsd(coordinates1,coordinates2,IMP.algebra.get_identity_transformation_3d())
+
+                distances.append(distance)
 
 
             print selection_name,"average distance",sum(distances)/len(distances),"minimum distance",min(distances)

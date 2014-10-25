@@ -262,7 +262,12 @@ class Clustering(object):
         from sklearn.cluster import KMeans
         if seed is not None:
             np.random.seed(seed)
-        kmeans = KMeans(n_clusters=number_of_clusters)
+        try:
+           # check whether we have the right version of sklearn
+           kmeans = KMeans(n_clusters=number_of_clusters)
+        except TypeError:
+           # sklearn older than 0.12
+           kmeans = KMeans(k=number_of_clusters)           
         kmeans.fit_predict(self.raw_distance_matrix)
 
         self.structure_cluster_ids = kmeans.labels_

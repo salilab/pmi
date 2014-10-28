@@ -475,6 +475,7 @@ class BuildModel1(object):
                 self.simo.add_component_sequence(comp_name,fasta_file,fasta_id)
             outhier=self.autobuild(self.simo,comp_name,pdb_name,chain_id,res_range,read=read_em_files,beadsize=bead_size,color=color,offset=offset)
 
+
             if not read_em_files is None:
                 if em_txt_file_name is " ": em_txt_file_name=self.gmm_models_directory+"/"+hier_name+".txt"
                 if em_mrc_file_name is " ": em_mrc_file_name=self.gmm_models_directory+"/"+hier_name+".mrc"
@@ -577,7 +578,13 @@ class BuildModel1(object):
         #density generation for the EM restraint
         (pdbbits,beadbits,helixbits)=self.get_pdb_bead_bits(comphier)
 
+        #get the number of residues from the pdb bits
+        res_ind=[]
+        for pb in pdbbits+helixbits:
+            for p in IMP.core.get_leaves(pb):
+                res_ind+=IMP.pmi.tools.get_residue_indexes(p)
 
+        number_of_residues=len(set(res_ind))
         outhier=[]
         if read:
             if len(pdbbits)!=0:
@@ -596,6 +603,10 @@ class BuildModel1(object):
 
         else:
             if len(pdbbits)!=0:
+                if num_components<0:
+                    #if negative calculate the number of gmm components automatically
+                    # from the number of residues
+                    num_components=number_of_residues/abs(num_components)
                 outhier+=simo.add_component_density(compname,
                                          pdbbits,
                                          num_components=num_components, # number of gaussian into which the simulated density is approximated
@@ -605,6 +616,10 @@ class BuildModel1(object):
                                          multiply_by_total_mass=True) # do the calculation and output the mrc
 
             if len(helixbits)!=0:
+                if num_components<0:
+                    #if negative calculate the number of gmm components automatically
+                    # from the number of residues
+                    num_components=number_of_residues/abs(num_components)
                 outhier+=simo.add_component_density(compname,
                                          helixbits,
                                          num_components=num_components, # number of gaussian into which the simulated density is approximated

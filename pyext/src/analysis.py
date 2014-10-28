@@ -2024,7 +2024,7 @@ class Precision(object):
 
                     for key in self.structures_dictionary:
 
-                        self.structures_dictionary[key]+=data_tmp[key]
+                        self.structures_dictionary[key].update(data_tmp[key])
 
                 for i in range(1, number_of_processes):
                     comm.send(self.structures_dictionary, dest=i, tag=11)
@@ -2198,7 +2198,7 @@ class Precision(object):
 
             for n,pair in enumerate(my_pair_combination_list):
                 progression=int(float(n)/my_length*100.0)
-                #print rank,progression,len(pair_combination_list),my_length,n
+                print rank,progression,len(pair_combination_list),my_length,n
                 distances[pair]=self.get_distance(structure_set_name1,structure_set_name2,
                                                   selection_name,pair[0],pair[1])
 

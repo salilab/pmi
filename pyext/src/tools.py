@@ -929,7 +929,7 @@ def get_prot_name_from_particle(p, list_of_names):
 def get_residue_indexes(hier):
     '''
     This "overloaded" function retrieves the residue indexes
-    for each particle which is an instance of Fragmen,Residue or Atom
+    for each particle which is an instance of Fragment,Residue or Atom
     '''
     resind = []
     if IMP.atom.Fragment.get_is_setup(hier):

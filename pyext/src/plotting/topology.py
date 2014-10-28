@@ -12,7 +12,7 @@ from scipy.spatial.distance import cdist
 class TopologyPlot(object):
     """A class to read RMF files and make a network contact map"""
     def __init__(self,model,selections,cutoff,frequency_cutoff,
-                      colors=None,fixed=None,pos=None,proteomic_edges=None):
+                      colors=None,fixed=None,pos=None,proteomic_edges=None,quantitative_proteomic_data=None):
         """Set up a new graphXL object
         @param model          The IMP model
         @param selection_dict A dictionary containing component names.
@@ -24,6 +24,8 @@ class TopologyPlot(object):
         @param fixed         A list of subunits that are kept fixed
         @param pos           A dictionary with positions (tuple, values) of subunits (keywords)
         @param proteomic_edges A list edges to represent proteomic data
+        @param quantitative_proteomic_data A dictionary of edges to represent
+                             quantitative proteomic data such as PE Scores, or genetic interactions
         """
         import itertools\
 
@@ -42,6 +44,7 @@ class TopologyPlot(object):
         self.fixed=fixed
         self.pos=pos
         self.proteomic_edges=proteomic_edges
+        self.quantitative_proteomic_data=quantitative_proteomic_data
         self.num_rmf=0
 
     def add_rmf(self,rmf_fn,nframe):
@@ -86,12 +89,13 @@ class TopologyPlot(object):
 
         self.num_rmf+=1
 
-    def make_plot(self,groups,out_fn):
+    def make_plot(self,groups,out_fn,quantitative_proteomic_data=False):
         '''
         plot the interaction matrix
         @param groups is the list of groups of domains, eg,
                       [["protA_1-10","prot1A_11-100"],["protB"]....]
                       it will plot a space between different groups
+        @param quantitative_proteomic_data plot the quantitative proteomic data
         '''
         import numpy as np
         import matplotlib.pyplot as plt
@@ -124,14 +128,28 @@ class TopologyPlot(object):
                     domain_ylocations[domain]=yoffset
                     #rect = plt.Rectangle([xoffset- squaresize / 2, yoffset - squaresize / 2], squaresize, squaresize,
                     #                     facecolor=(1,1,1), edgecolor=(0.1,0.1,0.1))
-    
+
                     #ax.add_patch(rect)
                     #ax.text(xoffset , yoffset ,domain,horizontalalignment='left',verticalalignment='center',rotation=-45.0)
                     xoffset+=squaredistance
                     yoffset+=squaredistance
 
         for edge,count in self.edges.iteritems():
-            density=(1.0-float(count)/self.num_rmf)
+
+            if quantitative_proteomic_data:
+                #normalize
+                maxqpd=max(self.quantitative_proteomic_data.values())
+                minqpd=min(self.quantitative_proteomic_data.values())
+                if edge in self.quantitative_proteomic_data:
+                    value=self.quantitative_proteomic_data[edge]
+                elif (edge[1],edge[0]) in self.quantitative_proteomic_data:
+                    value=self.quantitative_proteomic_data[(edge[1],edge[0])]
+                else:
+                    value=0.0
+                print minqpd,maxqpd
+                density=(1.0-(value-minqpd)/(maxqpd-minqpd))
+            else:
+                density=(1.0-float(count)/self.num_rmf)
             color=(density,density,1.0)
             x=domain_xlocations[edge[0]]
             y=domain_ylocations[edge[1]]

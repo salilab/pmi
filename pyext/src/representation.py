@@ -189,8 +189,8 @@ class Representation(object):
 
         self.sequence_dict[name] = str(record_dict[id].seq).replace("*", "")
         if offs is not None:
-           offs_str="-"*offs
-           self.sequence_dict[name]=offs_str+self.sequence_dict[name]
+            offs_str="-"*offs
+            self.sequence_dict[name]=offs_str+self.sequence_dict[name]
 
         self.elements[name].append((length, length, " ", "end"))
 
@@ -568,9 +568,9 @@ class Representation(object):
         self.representation_is_modified = True
         outhiers = []
         if color is None:
-           colors=None
+            colors=None
         else:
-           colors=[color]
+            colors=[color]
         for chunk in list(IMP.pmi.tools.list_chunks_iterator(range(begin, end + 1), length)):
             outhiers += self.add_component_beads(name,
                                                  [(chunk[0], chunk[-1])], colors=colors,incoord=incoord)
@@ -765,7 +765,7 @@ class Representation(object):
             rad=IMP.core.XYZR(p).get_radius()
             mass=IMP.atom.Mass(p).get_mass()
             trans=IMP.algebra.Transformation3D(IMP.algebra.get_identity_rotation_3d(),
-															  center)
+                                                                                                                          center)
             shape=IMP.algebra.Gaussian3D(IMP.algebra.ReferenceFrame3D(trans),[rad]*3)
             IMP.core.Gaussian.setup_particle(p,shape)
             #print 'setting up',n,p
@@ -1076,6 +1076,7 @@ class Representation(object):
         bounding box is defined by ((x1,y1,z1),(x2,y2,z2))
 
         '''
+
         if excluded_rigid_bodies is None:
             excluded_rigid_bodies = []
         if hierarchies_excluded_from_collision is None:
@@ -1087,9 +1088,13 @@ class Representation(object):
         gcpf = IMP.core.GridClosePairsFinder()
         gcpf.set_distance(cutoff)
         ps = []
+        hierarchies_excluded_from_collision_indexes = []
         for p in IMP.atom.get_leaves(self.prot):
             if IMP.core.XYZ.get_is_setup(p):
                 ps.append(p)
+            if IMP.core.Gaussian.get_is_setup(p):
+                # remove the densities particles out of the calculation
+                hierarchies_excluded_from_collision_indexes += IMP.get_indexes([p])
         allparticleindexes = IMP.get_indexes(ps)
 
         if not bounding_box is None:
@@ -1098,21 +1103,15 @@ class Representation(object):
             lb = IMP.algebra.Vector3D(x2, y2, z2)
             bb = IMP.algebra.BoundingBox3D(ub, lb)
 
-        hierarchies_excluded_from_collision_indexes = []
         for h in hierarchies_excluded_from_collision:
             hierarchies_excluded_from_collision_indexes += IMP.get_indexes(IMP.atom.get_leaves(h))
 
-        # remove the densities particles out of the calculation
-        for name in self.hier_representation:
-            try:
-                IMP.atom.get_leaves(
-                    self.hier_representation[name]["Densities"])
-                hierarchies_excluded_from_collision_indexes += IMP.get_indexes(ps)
-            except:
-                pass
 
         allparticleindexes = list(
             set(allparticleindexes) - set(hierarchies_excluded_from_collision_indexes))
+
+        print hierarchies_excluded_from_collision
+        print len(allparticleindexes),len(hierarchies_excluded_from_collision_indexes)
 
         for rb in self.rigid_bodies:
             if rb not in excluded_rigid_bodies:
@@ -1124,6 +1123,7 @@ class Representation(object):
                         set(rbindexes) - set(hierarchies_excluded_from_collision_indexes))
                     otherparticleindexes = list(
                         set(allparticleindexes) - set(rbindexes))
+
                     if len(otherparticleindexes) is None:
                         continue
 
@@ -1506,14 +1506,14 @@ class Representation(object):
             print "set_rigid_body_from_hierarchies> adding %s to the rigid body" % hier.get_name()
 
         if len(list(rigid_parts)) != 0:
-           rb = IMP.atom.create_rigid_body(list(rigid_parts))
-           rb.set_coordinates_are_optimized(True)
-           rb.set_name(name + "rigid_body")
-           self.rigid_bodies.append(rb)
-           return rb
+            rb = IMP.atom.create_rigid_body(list(rigid_parts))
+            rb.set_coordinates_are_optimized(True)
+            rb.set_name(name + "rigid_body")
+            self.rigid_bodies.append(rb)
+            return rb
 
         else:
-           print "set_rigid_body_from_hierarchies> rigid body could not be setup"
+            print "set_rigid_body_from_hierarchies> rigid body could not be setup"
 
     def set_rigid_bodies(self, subunits):
         '''
@@ -1598,7 +1598,7 @@ class Representation(object):
 
     def fix_rigid_bodies(self, rigid_bodies):
         self.fixed_rigid_bodies += rigid_bodies
-        
+
 
     def set_chain_of_super_rigid_bodies(
         self,
@@ -1664,7 +1664,7 @@ class Representation(object):
                 if p in self.floppy_bodies:
                     print "remove_floppy_bodies: removing %s from floppy body list" % p.get_name()
                     self.floppy_bodies.remove(p)
-                        
+
 
     def set_floppy_bodies(self):
         for p in self.floppy_bodies:

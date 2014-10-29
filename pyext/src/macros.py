@@ -237,20 +237,22 @@ class ReplicaExchange0(object):
 
         print "Setting up best pdb files"
         if not self.is_multi_state:
-            output.init_pdb_best_scoring(pdb_dir + "/" +
-                                         self.vars["best_pdb_name_suffix"],
-                                         self.root_hier,
-                                         self.vars[
-                                             "number_of_best_scoring_models"],
-                                         replica_exchange=True)
-        else:
-            for n in range(self.vars["number_of_states"]):
-                output.init_pdb_best_scoring(pdb_dir + "/" + str(n) + "/" +
+            if self.vars["number_of_best_scoring_models"] > 0:
+                output.init_pdb_best_scoring(pdb_dir + "/" +
                                              self.vars["best_pdb_name_suffix"],
-                                             self.root_hiers[n],
+                                             self.root_hier,
                                              self.vars[
                                                  "number_of_best_scoring_models"],
                                              replica_exchange=True)
+        else:
+            if self.vars["number_of_best_scoring_models"] > 0:
+                for n in range(self.vars["number_of_states"]):
+                    output.init_pdb_best_scoring(pdb_dir + "/" + str(n) + "/" +
+                                               self.vars["best_pdb_name_suffix"],
+                                               self.root_hiers[n],
+                                               self.vars[
+                                                   "number_of_best_scoring_models"],
+                                               replica_exchange=True)
 
 # ---------------------------------------------
 
@@ -313,7 +315,8 @@ class ReplicaExchange0(object):
 
                 if i % self.vars["nframes_write_coordinates"]==0:
                     print '--- writing coordinates'
-                    output.write_pdb_best_scoring(score)
+                    if self.vars["number_of_best_scoring_models"] > 0:
+                        output.write_pdb_best_scoring(score)
                     output.write_rmf(rmfname)
                     output.set_output_entry("rmf_file", rmfname)
                     output.set_output_entry("rmf_frame_index", ntimes_at_low_temp)

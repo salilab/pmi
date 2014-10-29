@@ -717,6 +717,8 @@ class ProcessOutput(object):
 
 
 def plot_fields(fields, framemin=None, framemax=None):
+    import matplotlib as mpl
+    mpl.use('Agg')
     import matplotlib.pyplot as plt
 
     plt.rc('lines', linewidth=4)
@@ -765,6 +767,8 @@ def plot_field_histogram(
     @param leg_names names for the legend
     '''
 
+    import matplotlib as mpl
+    mpl.use('Agg')
     import matplotlib.pyplot as plt
     import matplotlib.cm as cm
     fig = plt.figure(figsize=(18.0, 9.0))
@@ -817,6 +821,8 @@ def plot_fields_box_plots(name, values, positions, frequencies=None,
     fields is a list of time series, positions are the x-values
     valuename is the y-label, positionname is the x-label
     '''
+    import matplotlib as mpl
+    mpl.use('Agg')
     import matplotlib.pyplot as plt
     from matplotlib.patches import Polygon
 
@@ -849,6 +855,8 @@ def plot_fields_box_plots(name, values, positions, frequencies=None,
 
 
 def plot_xy_data(x,y,title=None,display=True,set_plot_yaxis_range=None):
+    import matplotlib as mpl
+    mpl.use('Agg')
     import matplotlib.pyplot as plt
     plt.rc('lines', linewidth=2)
 
@@ -870,6 +878,8 @@ def plot_scatter_xy_data(x,y,labelx="None",labely="None",
                          xmin=None,xmax=None,ymin=None,ymax=None,
                          savefile=False,filename="None.eps",alpha=0.75):
 
+    import matplotlib as mpl
+    mpl.use('Agg')
     import matplotlib.pyplot as plt
     import sys
     from matplotlib import rc
@@ -962,6 +972,8 @@ def draw_graph(graph, labels_dict=None, graph_layout='spring',
                text_font='sans-serif',
                out_filename=None):
 
+    import matplotlib as mpl
+    mpl.use('Agg')
     import networkx as nx
     import matplotlib.pyplot as plt
     from math import sqrt, pi

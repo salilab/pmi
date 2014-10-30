@@ -351,16 +351,41 @@ class MolecularDynamics(object):
         self.md = IMP.atom.MolecularDynamics(self.m)
         self.md.set_maximum_time_step(maximum_time_step)
         self.md.add_optimizer_state(self.ltstate)
+        self.simulated_annealing = False
 
     def set_kt(self,kt):
         temp=kt/0.0019872041
         self.ltstate.set_temperature(temp)
         self.md.assign_velocities(temp)
 
+    def set_simulated_annealing(
+        self,
+        min_temp,
+        max_temp,
+        min_temp_time,
+        max_temp_time):
+        self.simulated_annealing = True
+        self.tempmin = min_temp
+        self.tempmax = max_temp
+        self.timemin = min_temp_time
+        self.timemax = max_temp_time
+
+    def temp_simulated_annealing(self):
+        if self.nframe % (self.timemin + self.timemax) < self.timemin:
+            value = 0.0
+        else:
+            value = 1.0
+        temp = self.tempmin + (self.tempmax - self.tempmin) * value
+        return temp
+
     def set_gamma(self,gamma):
         self.ltstate.set_gamma(gamma)
 
     def optimize(self,nsteps):
+        # apply simulated annealing protocol
+        if self.simulated_annealing:
+            self.temp = self.temp_simulated_annealing()
+            self.set_kt(self.temp)
         self.md.optimize(nsteps)
 
     def get_output(self):
@@ -412,7 +437,7 @@ class ReplicaExchange(object):
         '''
         samplerobjects can be a list of MonteCarlo or MolecularDynamics
         '''
-        
+
 
         self.m = model
         self.samplerobjects = samplerobjects

@@ -72,6 +72,8 @@ class TopologyReader(object):
         c.fasta_file    = defaults['fasta_dir'] + values[fields.index("fasta_fn")]
         c.fasta_id      = values[fields.index("fasta_id")]
         c.pdb_file      = defaults['pdb_dir'] + values[fields.index("pdb_fn")]
+        # Need to find a way to define color
+        c.color         = 0.1  
 
         # PDB Chain
         if len(values[fields.index("chain")])==1 and values[fields.index("chain")].isupper()==True:
@@ -187,5 +189,6 @@ class ComponentTopology(object):
         self.gmm_file=None
         self.mrc_file=None
         self.read_em_files=None
+        self.color=None
 
 

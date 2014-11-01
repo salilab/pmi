@@ -449,7 +449,10 @@ data = [("Rpb1",     pdbfile,   "A",     0.00000000,  (fastafile,    0)),
 
 class BuildModel1(object):
 
-    ''' this building scheme needs a data structure with the following fields
+    ''' this building scheme requires one of two data types:
+          1) a topology class item along with lists of rigid_bodies and super_rigid_bodies
+
+          a data structure with the following fields
           comp_name
           hier_name
           color
@@ -474,35 +477,72 @@ class BuildModel1(object):
     def set_gmm_models_directory(self,directory_name):
         self.gmm_models_directory=directory_name
 
-    def build_model(self,data_structure,sequence_connectivity_scale=4.0):
+    def build_model(self,component_topologies=None,list_of_rigid_bodies=None, list_of_super_rigid_bodies=None,chain_of_super_rigid_bodies=None,data_structure=None,sequence_connectivity_scale=4.0):
 
-        self.domain_dict={}
-        self.resdensities={}
-        super_rigid_bodies={}
-        chain_super_rigid_bodies={}
-        rigid_bodies={}
+        if component_topologies != None:
+            data=component_topologies
+            data_type="topology"
+            if list_of_rigid_bodies==None: print "WARNING: No list of rigid bodies inputted to build_model()" 
+            if list_of_super_rigid_bodies==None: print "WARNING: No list of super rigid bodies inputted to build_model()" 
+            if chain_of_super_rigid_bodies==None: print "WARNING: No chain of super rigid bodies inputted to build_model()" 
+        elif data_structure != None:
+            data=data_structure
+            data_type=="dict"
+        else:
+            print "ERROR: No data structure or topology information given to build_model(). Exiting..."
+            exit()
+        
+        for c in data:
+            self.domain_dict={}
+            self.resdensities={}
+            super_rigid_bodies={}
+            chain_super_rigid_bodies={}
+            rigid_bodies={}  
+            if data_type=="topology":     
+                comp_name         = c.name
+                hier_name         = c.domain_name
+                color             = c.color
+                fasta_file        = c.fasta_file
+                fasta_id          = c.fasta_id
+                pdb_name          = c.pdb_file
+                chain_id          = c.chain
+                res_range         = c.residue_range
+                offset            = c.pdb_offset
+                read_em_files     = c.read_em_files
+                bead_size         = c.bead_size
+                rb                = list_of_rigid_bodies
+                super_rb          = list_of_super_rigid_bodies
+                em_num_components = c.em_residues_per_gaussian
+                em_txt_file_name  = c.gmm_file
+                em_mrc_file_name  = c.mrc_file
+                chain_of_super_rb = chain_of_super_rigid_bodies
+   
+            elif data_type=="dict":
+  
+                comp_name         = d[0]
+                hier_name         = d[1]
+                color             = d[2]
+                fasta_file        = d[3]
+                fasta_id          = d[4]
+                pdb_name          = d[5]
+                chain_id          = d[6]
+                res_range         = d[7][0:2]
+                try:
+                    offset         = d[7][2]
+                except:
+                    offset         = 0
+                read_em_files     = d[8]
+                bead_size         = d[9]
+                rb                = d[10]
+                super_rb          = d[11]
+                em_num_components = d[12]
+                em_txt_file_name  = d[13]
+                em_mrc_file_name  = d[14]
+                chain_of_super_rb = d[15]
 
-        for d in data_structure:
-            comp_name         = d[0]
-            hier_name         = d[1]
-            color             = d[2]
-            fasta_file        = d[3]
-            fasta_id          = d[4]
-            pdb_name          = d[5]
-            chain_id          = d[6]
-            res_range         = d[7][0:2]
-            try:
-                offset         = d[7][2]
-            except:
-                offset         = 0
-            read_em_files     = d[8]
-            bead_size         = d[9]
-            rb                = d[10]
-            super_rb          = d[11]
-            em_num_components = d[12]
-            em_txt_file_name  = d[13]
-            em_mrc_file_name  = d[14]
-            chain_of_super_rb = d[15]
+            else:
+                print "Something went horribly wrong. This error should never appear"
+                exit()
 
             if comp_name not in self.simo.get_component_names():
                 self.simo.create_component(comp_name,color=0.0)

@@ -1903,7 +1903,7 @@ class CrossLinkTable(object):
 #
 
 class Precision(object):
-    def __init__(self,model,resolution='one',selection_dictionary=None):
+    def __init__(self,model,resolution='one',selection_dictionary={}):
 
         ''' selection_dictionary is a dictionary where we store coordinates
             selection_dictionary = {"Selection_name_1":selection_tuple1,

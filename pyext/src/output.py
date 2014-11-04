@@ -872,7 +872,6 @@ def plot_xy_data(x,y,title=None,display=True,set_plot_yaxis_range=None):
         y1=set_plot_yaxis_range[0]
         y2=set_plot_yaxis_range[1]
         plt.axis((x1,x2,y1,y2))
-        print plt.axis()
     if title is not None:
         plt.savefig(title+".pdf")
     if display:

@@ -1957,7 +1957,6 @@ class Precision(object):
         else:
             if self.protein_names!=protein_names:
                 print "Error: the protein names of the new coordinate set is not compatible with the previous one"
-                exit()
 
         if self.len_particles_resolution_one==None:
             self.len_particles_resolution_one=len(particles_resolution_one)
@@ -2276,8 +2275,11 @@ class Precision(object):
             of=open(outfile,"w")
             selection_name=p
             self.selection_dictionary.update({selection_name:[p]})
-            number_of_structures=len(self.structures_dictionary[structure_set_name][selection_name])
-
+            try:
+                number_of_structures=len(self.structures_dictionary[structure_set_name][selection_name])
+            except KeyError:
+                # that protein was not included in the selection
+                continue
             rpim=self.residue_particle_index_map[p]
 
             residue_distances={}
@@ -2307,7 +2309,7 @@ class Precision(object):
                 of.write(str(rn)+" "+str(residue_nblock[rn])+" "+str(rmsf)+"\n")
 
             IMP.pmi.output.plot_xy_data(residues,rmsfs,title=outdir+"/rmsf."+p,display=False,
-                                       set_plot_yaxis_range=None)
+                                       set_plot_yaxis_range=set_plot_yaxis_range)
             of.close()
 
 

@@ -864,14 +864,19 @@ def plot_xy_data(x,y,title=None,display=True,set_plot_yaxis_range=None):
     fig.set_size_inches(8,4.5)
     if title is not None:
         fig.canvas.set_window_title(title)
+
     plt.rc('axes', color_cycle=['r'])
     ax.plot(x,y)
+    if not set_plot_yaxis_range is None:
+        x1,x2,y1,y2=plt.axis()
+        y1=set_plot_yaxis_range[0]
+        y2=set_plot_yaxis_range[1]
+        plt.axis((x1,x2,y1,y2))
+        print plt.axis()
     if title is not None:
         plt.savefig(title+".pdf")
     if display:
         plt.show()
-    if not set_plot_yaxis_range is None:
-        plt.ylim(set_plot_yaxis_range)
     plt.close(fig)
 
 def plot_scatter_xy_data(x,y,labelx="None",labely="None",

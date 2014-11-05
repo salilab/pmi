@@ -865,8 +865,8 @@ def plot_xy_data(x,y,title=None,display=True,set_plot_yaxis_range=None):
     if title is not None:
         fig.canvas.set_window_title(title)
 
-    plt.rc('axes', color_cycle=['r'])
-    ax.plot(x,y)
+    #plt.rc('axes', color='r')
+    ax.plot(x,y,color='r')
     if not set_plot_yaxis_range is None:
         x1,x2,y1,y2=plt.axis()
         y1=set_plot_yaxis_range[0]

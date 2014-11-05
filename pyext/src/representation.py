@@ -1919,7 +1919,7 @@ class Representation(object):
         # cb2.set_label(k)
 
         pyplot.savefig(
-            k + "structure.png",
+            k + "structure.pdf",
             dpi=150,
             transparent="True",
             bbox_extra_artists=(extra_artists),

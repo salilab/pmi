@@ -1,4 +1,3 @@
-import os
 import IMP
 import IMP.core
 import IMP.base
@@ -239,7 +238,3 @@ test(result_dict["resolution=2"], len(tools.select(simo, resolution=2)))
 test(result_dict["resolution=7"], len(tools.select(simo, resolution=7)))
 test(result_dict["resolution=10"], len(tools.select(simo, resolution=10)))
 test(result_dict["resolution=100"], len(tools.select(simo, resolution=100)))
-
-for output in ['excluded.None.xl.db', 'included.None.xl.db',
-               'missing.None.xl.db']:
-    os.unlink(output)

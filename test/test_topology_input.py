@@ -4,7 +4,7 @@ import IMP.pmi.topology
 import IMP.pmi.topology.topology_io
 import IMP.pmi.macros
 
-topology_file="/flute1/home/saltzberg/swr/imp/modules/pmi/data/topology.txt"
+topology_file=IMP.pmi.get_data_path("topology.txt")
 
 t=IMP.pmi.topology.topology_io.TopologyReader(topology_file)
 

@@ -54,7 +54,6 @@ class Output(object):
 
     def write_pdb(self,name,appendmode=True,
                   translate_to_geometric_center=False):
-        import resource
         if appendmode:
             flpdb = open(name, 'a')
         else:

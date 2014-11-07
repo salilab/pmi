@@ -1,12 +1,16 @@
 import IMP.pmi
-import IMP.pmi.analysis
 import IMP.pmi.io.input
 import IMP.test
 import RMF
 import IMP.rmf
 import os,sys
 from math import sqrt
-
+try:
+    import scipy
+except ImportError:
+    scipy = None
+if scipy is not None:
+    import IMP.pmi.analysis
 
 class AnalysisTest(IMP.test.TestCase):
     def setUp(self):
@@ -15,6 +19,8 @@ class AnalysisTest(IMP.test.TestCase):
 
     def test_alignment_simple(self):
         """Test alignment, random transformation"""
+        if scipy is None:
+            self.skipTest("no scipy module")
         m=IMP.Model()
         xyz10=IMP.algebra.Vector3D(1,0,0)
         xyz20=IMP.algebra.Vector3D(0,0,0)
@@ -68,6 +74,8 @@ class AnalysisTest(IMP.test.TestCase):
 
     def test_alignment_and_rmsd(self):
         """Test alignment, random transformation"""
+        if scipy is None:
+            self.skipTest("no scipy module")
         m=IMP.Model()
         xyz10=IMP.algebra.Vector3D(1,0,0)
         xyz20=IMP.algebra.Vector3D(0,0,1)
@@ -138,6 +146,8 @@ class AnalysisTest(IMP.test.TestCase):
         """Test rmsd of already aligned particles,
         handles multiple copies of same protein"""
 
+        if scipy is None:
+            self.skipTest("no scipy module")
         xyz10=IMP.algebra.Vector3D(0,0,0)
         xyz20=IMP.algebra.Vector3D(1,1,1)
         xyz11=IMP.algebra.Vector3D(0,0,0)
@@ -152,6 +162,8 @@ class AnalysisTest(IMP.test.TestCase):
     def test_alignment_rmsd_with_permutation(self):
         """Test rmsd of already aligned particles,
         handles multiple copies of same protein"""
+        if scipy is None:
+            self.skipTest("no scipy module")
 
         xyz10=IMP.algebra.Vector3D(0,0,0)
         xyz20=IMP.algebra.Vector3D(1,1,1)
@@ -171,6 +183,8 @@ class AnalysisTest(IMP.test.TestCase):
         """Test rmsd of already aligned particles,
         handles multiple copies of same protein"""
 
+        if scipy is None:
+            self.skipTest("no scipy module")
         xyz10=IMP.algebra.Vector3D(0,0,0)
         xyz20=IMP.algebra.Vector3D(1,1,1)
         xyz11=IMP.algebra.Vector3D(0,0,0)
@@ -188,6 +202,8 @@ class AnalysisTest(IMP.test.TestCase):
 
     def test_get_model_density(self):
         """Test GetModelDensity correctly creates and adds density maps"""
+        if scipy is None:
+            self.skipTest("no scipy module")
         custom_ranges={'med2':[(1,100,'med2')],
                        'med16':['med16']}
         mdens = IMP.pmi.analysis.GetModelDensity(custom_ranges)
@@ -227,6 +243,8 @@ class ClusteringTest(IMP.test.TestCase):
 
     def test_dist_matrix(self):
         """Test clustering can calculate distance matrix, align, and cluster correctly"""
+        if scipy is None:
+            self.skipTest("no scipy module")
         xyz10=IMP.algebra.Vector3D(0,0,0)
         xyz20=IMP.algebra.Vector3D(1,1,1)
         xyz30=IMP.algebra.Vector3D(2,2,2)

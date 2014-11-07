@@ -30,15 +30,15 @@ fasta_id_protein_name_map={'1WCM:A|PDBID|CHAIN|SEQUENCE':'Rpb1',
                            '1WCM:H|PDBID|CHAIN|SEQUENCE':'Rpb8',
                            '1WCM:I|PDBID|CHAIN|SEQUENCE':'Rpb9',
                            '1WCM:J|PDBID|CHAIN|SEQUENCE':'Rpb10',
-                           '1WCM:K|PDBID|CHAIN|SEQUENCE':'Rpb11',          
-                           '1WCM:L|PDBID|CHAIN|SEQUENCE':'Rpb12'} 
+                           '1WCM:K|PDBID|CHAIN|SEQUENCE':'Rpb11',
+                           '1WCM:L|PDBID|CHAIN|SEQUENCE':'Rpb12'}
 
 
 ### read sequences into a little data structure
 seqs = IMP.pmi.representation_new.Sequences(fasta_fn=fasta_file,
                                             name_map=fasta_id_protein_name_map)
 
-        
+
 
 
 
@@ -49,18 +49,18 @@ state1 = system.create_state()
 molecules={}
 offset_list=[0,0,0,-3,0,0,0,0,0,0,0,0]
 for i in range(1,13):
-   
-   name='Rpb'+str(i)
-   
-   if name == "Rpb4":
-      continue
-   chain=string.uppercase[i-1]
-   print name, chain
-   molecules[name]   = state1.create_molecule(name,  sequence=seqs[name],  chain_id=chain)
-   structured_part   = molecules[name].add_structure(pdb_fn=pdb_file,chain_id=chain,offset=offset_list[i-1])
-   unstructured_part = molecules[name].get_residues()-structured_part
-   molecules[name].add_representation(structured_part,  'balls',[1,10])
-   molecules[name].add_representation(unstructured_part,'balls',[10])
+
+    name='Rpb'+str(i)
+
+    if name == "Rpb4":
+        continue
+    chain=string.uppercase[i-1]
+    print name, chain
+    molecules[name]   = state1.create_molecule(name,  sequence=seqs[name],  chain_id=chain)
+    structured_part   = molecules[name].add_structure(pdb_fn=pdb_file,chain_id=chain,offset=offset_list[i-1])
+    unstructured_part = molecules[name].get_residues()-structured_part
+    molecules[name].add_representation(structured_part,  'balls',[1,10])
+    molecules[name].add_representation(unstructured_part,'balls',[10])
 
 hier=system.build()
 IMP.atom.show_molecular_hierarchy(hier)
@@ -91,5 +91,3 @@ srb1.set_max_translation(1.0)
 nuis1=dof.create_parameter()
 nuis1.add_particles(restraint)
 nuis1.set_max_translation(1.0)
-
-

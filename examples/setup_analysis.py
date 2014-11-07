@@ -1,7 +1,5 @@
 ## \example pmi/setup_analysis.py
 
-#!/usr/bin/env python
-
 """This script creates input files for pmi/bin/run_clustering.py
 """
 import sys,os

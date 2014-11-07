@@ -9,7 +9,7 @@ datadirectory="../data/"
 
 
 
-# compname         hier_name     color    fastafile                      fastaid  pdbname                   chain resrange    read                          beadsize  density_rigid_body super_rigid_body emnum_components, emtxtfilename                               emmrcfilename                    
+# compname         hier_name     color    fastafile                      fastaid  pdbname                   chain resrange    read                          beadsize  density_rigid_body super_rigid_body emnum_components, emtxtfilename                               emmrcfilename
 domains=[("Rpb1",  "Rpb1_1",       0.0,     datadirectory+"1WCM.fasta.txt", "1WCM:A|PDBID|CHAIN|SEQUENCE",  datadirectory+"1WCM.pdb", "A",  (1,1140),       5,       0,                 [0,1,2]),
          ("Rpb1",  "Rpb1_2",       0.0,     datadirectory+"1WCM.fasta.txt", "1WCM:A|PDBID|CHAIN|SEQUENCE",  datadirectory+"1WCM.pdb", "A",  (1141,1274),    5,       1,                 [0,1,2]),
          ("Rpb1",  "Rpb1_3",       0.0,     datadirectory+"1WCM.fasta.txt", "1WCM:A|PDBID|CHAIN|SEQUENCE",  datadirectory+"1WCM.pdb", "A",  (1275,-1),      5,       0,                 [0,1,2]),
@@ -44,46 +44,46 @@ for d in domains:
     bead_size        =d[8]
     dens             =d[9]
     super_rb         =d[10]
-    
-    if comp_name not in simo.get_component_names():
-       simo.create_component(comp_name,color=color)
-       simo.add_component_sequence(comp_name,fasta_file,fasta_id)
-       outhier=shared_functions.autobuild(simo,comp_name,pdb_name,chain_id,res_range,read=read_em,beadsize=bead_size,color=color)
-    
-    
-    #print len(outhier),dens
-    
-    if not str(dens) in densities:
-       #print "creating a new entry %s %s " % (str(dens),str(len(outhier)))
-       densities[str(dens)]=[outhier,set(super_rb)]
-    else:
-       #print "adding a new entry %s %s " % (str(dens),str(len(outhier)))
-       densities[str(dens)][0]+=outhier
-       for k in super_rb:
-           densities[str(dens)][1].add(k)
-    
 
-   
-    
+    if comp_name not in simo.get_component_names():
+        simo.create_component(comp_name,color=color)
+        simo.add_component_sequence(comp_name,fasta_file,fasta_id)
+        outhier=shared_functions.autobuild(simo,comp_name,pdb_name,chain_id,res_range,read=read_em,beadsize=bead_size,color=color)
+
+
+    #print len(outhier),dens
+
+    if not str(dens) in densities:
+        #print "creating a new entry %s %s " % (str(dens),str(len(outhier)))
+        densities[str(dens)]=[outhier,set(super_rb)]
+    else:
+        #print "adding a new entry %s %s " % (str(dens),str(len(outhier)))
+        densities[str(dens)][0]+=outhier
+        for k in super_rb:
+            densities[str(dens)][1].add(k)
+
+
+
+
 for f in densities:
     hier=densities[f][0]
-    
+
     dens_hier=shared_functions.create_density(simo,str(f)+"_dens",hier,
                              datadirectory+"/densities/"+str(f)+".txt",
                              datadirectory+"/densities/"+str(f)+".mrc",
-                             read_em)   
+                             read_em)
     resdensities+=dens_hier
     simo.set_rigid_body_from_hierarchies(hier+dens_hier)
-    
+
     super_rb=list(densities[f][1])
     for k in super_rb:
-        if not k in super_rigid_bodies: 
-           super_rigid_bodies[k]=hier
+        if not k in super_rigid_bodies:
+            super_rigid_bodies[k]=hier
         else:
-           super_rigid_bodies[k]+=hier
+            super_rigid_bodies[k]+=hier
         super_rigid_bodies[k]+=dens_hier
 
-    
+
 for c in simo.get_component_names():
     simo.setup_component_sequence_connectivity(c,resolution=1.0,scale=3.0)
     simo.setup_component_geometry(c)
@@ -93,4 +93,3 @@ for k in super_rigid_bodies:
     simo.set_super_rigid_body_from_hierarchies(super_rigid_bodies[k])
 
 simo.set_floppy_bodies()
-

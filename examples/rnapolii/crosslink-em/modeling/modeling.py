@@ -166,4 +166,3 @@ for i in range(nframes):
     output.write_stats2()
     output.write_pdb_best_scoring(score)
     output.write_rmf(rmffile)
-

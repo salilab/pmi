@@ -1,7 +1,5 @@
 ## \example pmi/glycophorin/glycophorin.modeling.py
 
-#!/usr/bin/env python
-
 import IMP
 import IMP.core
 import IMP.base
@@ -29,11 +27,11 @@ r.create_component("chainA",color=0.25)
 r.add_component_sequence("chainA","data/seq.fasta", id="chainA",offs=61)
 a1=[]
 for i in range(62,72+1):
- a1+=r.add_component_beads("chainA",[(i,i)])
+    a1+=r.add_component_beads("chainA",[(i,i)])
 a2 =r.add_component_ideal_helix("chainA",resolutions=[1],resrange=(73,99))
 a3=[]
 for i in range(100,101+1):
-  a3+=r.add_component_beads("chainA",[(i,i)])
+    a3+=r.add_component_beads("chainA",[(i,i)])
 
 r.setup_component_geometry("chainA")
 r.show_component_table("chainA")
@@ -43,11 +41,11 @@ r.add_component_sequence("chainB","data/seq.fasta", id="chainB",offs=61)
 
 b1=[]
 for i in range(62,72+1):
-   b1+=r.add_component_beads("chainB",[(i,i)])
+    b1+=r.add_component_beads("chainB",[(i,i)])
 b2=r.add_component_ideal_helix("chainB",resolutions=[1],resrange=(73,99))
 b3=[]
 for i in range(100,101+1):
-   b3+=r.add_component_beads("chainB",[(i,i)])
+    b3+=r.add_component_beads("chainB",[(i,i)])
 
 r.setup_component_geometry("chainB")
 r.show_component_table("chainB")

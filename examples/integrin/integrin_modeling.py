@@ -1,7 +1,5 @@
 ## \example pmi/integrin/integrin.modeling.py
 
-#!/usr/bin/env python
-
 import IMP
 import IMP.core
 import IMP.base
@@ -13,7 +11,7 @@ import IMP.pmi
 import IMP.pmi.restraints.basic
 import IMP.pmi.restraints.stereochemistry
 import IMP.pmi.restraints.crosslinking
-import IMP.pmi.representation 
+import IMP.pmi.representation
 import IMP.pmi.tools
 import IMP.pmi.samplers
 import IMP.pmi.output
@@ -33,11 +31,11 @@ r.add_component_sequence("alpha","data/seq.fasta", id="chainA",offs=957)
 
 a1=[]
 for i in range(958,966+1):
- a1+=r.add_component_beads("alpha",[(i,i)])
+    a1+=r.add_component_beads("alpha",[(i,i)])
 a2 =r.add_component_ideal_helix("alpha",resolutions=[1],resrange=(967,990))
 a3=[]
 for i in range(991,998+1):
-  a3+=r.add_component_beads("alpha",[(i,i)])
+    a3+=r.add_component_beads("alpha",[(i,i)])
 
 r.setup_component_geometry("alpha")
 r.show_component_table("alpha")
@@ -47,11 +45,11 @@ r.add_component_sequence("beta","data/seq.fasta", id="chainB",offs=685)
 
 b1=[]
 for i in range(686,693+1):
-   b1+=r.add_component_beads("beta",[(i,i)])
+    b1+=r.add_component_beads("beta",[(i,i)])
 b2=r.add_component_ideal_helix("beta",resolutions=[1],resrange=(694,725))
 b3=[]
 for i in range(726,737+1):
-   b3+=r.add_component_beads("beta",[(i,i)])
+    b3+=r.add_component_beads("beta",[(i,i)])
 
 r.setup_component_geometry("beta")
 r.show_component_table("beta")

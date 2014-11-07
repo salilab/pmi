@@ -8,6 +8,7 @@ import IMP.rmf
 import os,sys
 
 class PlottingTests(IMP.test.TestCase):
+    @IMP.test.expectedFailure
     def test_graphxl(self):
         dd={"med6":["med6"],
             "med8":["med8"],

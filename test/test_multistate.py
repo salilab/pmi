@@ -4,6 +4,7 @@
 # <codecell>
 
 import IMP
+import os
 import IMP.pmi.representation
 import IMP.pmi.restraints.basic
 
@@ -155,25 +156,14 @@ mc.set_simulated_annealing(min_temp=1.0,
 o.init_stat2("modeling.stat", [mc, xl] + representations)
 
 
-for i in range(1,100):
+for i in range(1,20):
     xyz31.set_coordinates((float(i), 0, 0))
-    for j in range(1,100):
+    for j in range(1,20):
         xyz32.set_coordinates((float(j), 0, 0))
         print i,j,m.evaluate(False)
         o.write_stats2()
 
 
-'''
-
-for i in range(0, 50000):
-    mc.optimize(10)
-    o.write_rmf("trajectory.rmf3")
-    o.write_stats2()
-    if i % 100 == 0:
-        print i
-
-o.close_rmf("trajectory.rmf3")
-'''
 # <codecell>
 
 
@@ -199,75 +189,6 @@ print fs.keys()
 
 # <codecell>
 
-#% matplotlib inline
-
-# <codecell>
-from matplotlib.mlab import griddata
-import matplotlib.pyplot as plt
-import numpy as np
-
-x=map(float,fs['ISDCrossLinkMS_Distance_interrb-State:0-5:particle1_5:particle3-1-1-0.05_None'])
-y=map(float,fs['ISDCrossLinkMS_Distance_interrb-State:1-5:particle1_5:particle3-1-1-0.05_None'])
-z=map(float,fs['SimplifiedModel_Total_Score_None'])
-
-print x
-print y
-print z
-
-# define grid.
-xi = np.linspace(min(x),max(x),100)
-yi = np.linspace(min(y),max(y),100)
-# grid the data.
-zi = griddata(x,y,z,xi,yi)
-# contour the gridded data, plotting dots at the nonuniform data points.
-CS = plt.contour(xi,yi,zi,15,linewidths=0.5,colors='k')
-CS = plt.contourf(xi,yi,zi,15,cmap=plt.cm.rainbow,
-                  vmax=abs(zi).max(), vmin=-abs(zi).max())
-plt.colorbar() # draw colorbar
-# plot data points.
-#plt.scatter(x,y,marker='o',c='b',s=0.1,zorder=10)
-#plt.xlim(-2,2)
-#plt.ylim(-2,2)
-plt.show()
-
-exit()
-
-
-
-
-
-
-
-IMP.pmi.output.plot_scatter_xy_data(
-    fs['ISDCrossLinkMS_Distance_interrb-State:0-5:particle1_5:particle3-1-1-0.05_None'],
-    fs['ISDCrossLinkMS_Distance_interrb-State:1-5:particle1_5:particle3-1-1-0.05_None'])
-
-IMP.pmi.output.plot_scatter_xy_data(
-    fs['ISDCrossLinkMS_Distance_interrb-State:0-5:particle2_5:particle3-1-1-0.05_None'],
-    fs['ISDCrossLinkMS_Distance_interrb-State:1-5:particle2_5:particle3-1-1-0.05_None'])
-
-IMP.pmi.output.plot_scatter_xy_data(
-    fs['ISDCrossLinkMS_Distance_interrb-State:0-5:particle2_5:particle3-1-1-0.05_None'],
-    fs['ISDCrossLinkMS_Distance_interrb-State:0-5:particle1_5:particle3-1-1-0.05_None'])
-
-IMP.pmi.output.plot_scatter_xy_data(
-    fs['ISDCrossLinkMS_Distance_interrb-State:1-5:particle2_5:particle3-1-1-0.05_None'],
-    fs['ISDCrossLinkMS_Distance_interrb-State:1-5:particle1_5:particle3-1-1-0.05_None'])
-
-IMP.pmi.output.plot_scatter_xy_data(
-    fs['ISDCrossLinkMS_Distance_interrb-State:0-5:particle1_5:particle3-1-1-0.05_None'],
-    fs['ISDCrossLinkMS_Distance_interrb-State:1-5:particle2_5:particle3-1-1-0.05_None'])
-
-
-IMP.pmi.output.plot_scatter_xy_data(
-    fs['ISDCrossLinkMS_Distance_interrb-State:1-5:particle2_5:particle3-1-1-0.05_None'],
-    fs['ISDCrossLinkMS_Distance_interrb-State:0-5:particle1_5:particle3-1-1-0.05_None'])
-
-IMP.pmi.output.plot_scatter_xy_data(
-    fs['ISDCrossLinkMS_Distance_interrb-State:0-5:particle2_5:particle3-1-1-0.05_None'],
-    fs['ISDCrossLinkMS_Distance_interrb-State:1-5:particle1_5:particle3-1-1-0.05_None'])
-# <codecell>
-
-IMP.pmi.output.plot_fields(fs)
-
-# <codecell>
+for output in ['excluded.None.xl.db', 'included.None.xl.db',
+               'missing.None.xl.db', 'modeling.stat', 'trajectory.rmf3']:
+    os.unlink(output)

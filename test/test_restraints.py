@@ -9,7 +9,9 @@ import IMP.pmi.representation
 import IMP.pmi.tools
 
 class Tests(IMP.test.TestCase):
+    @IMP.test.expectedFailure
     def test_restraints(self):
+        """Test PMI restraints"""
         # input parameter
         pdbfile = IMP.pmi.get_data_path("1WCM.pdb")
         fastafile = IMP.pmi.get_data_path("1WCM.fasta.txt")

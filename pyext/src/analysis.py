@@ -18,7 +18,6 @@ from copy import deepcopy
 from math import log,sqrt
 import itertools
 import numpy as np
-from scipy.spatial.distance import cdist
 
 class Alignment(object):
     """
@@ -97,6 +96,7 @@ class Alignment(object):
         return self.rmsd
 
     def align(self):
+        from scipy.spatial.distance import cdist
 
         self.permute()
 
@@ -582,6 +582,7 @@ class GetContactMap(object):
         self.resmap = {}
 
     def set_prot(self, prot):
+        from scipy.spatial.distance import cdist
         self.prot = prot
         self.protnames = []
         coords = []
@@ -632,6 +633,7 @@ class GetContactMap(object):
         self.contactmap += distances
 
     def get_subunit_coords(self, frame, align=0):
+        from scipy.spatial.distance import cdist
         coords = []
         radii = []
         namelist = []
@@ -886,6 +888,7 @@ class CrossLinkTable(object):
                 self.prot_length_dict[name] = max(residue_indexes)
 
     def set_coordinates_for_contact_map(self, rmf_name,rmf_frame_index):
+        from scipy.spatial.distance import cdist
 
         rh= RMF.open_rmf_file_read_only(rmf_name)
         prots=IMP.rmf.create_hierarchies(rh, self.model)

@@ -4,6 +4,7 @@
 # <codecell>
 
 import IMP
+import os
 import IMP.pmi.representation
 
 # <codecell>
@@ -105,7 +106,7 @@ import IMP.pmi.output
 o = IMP.pmi.output.Output()
 o.init_stat2("modeling.stat", [mc, xl] + representations)
 
-for i in range(0, 10000):
+for i in range(0, 100):
     mc.optimize(10)
     o.write_stats2()
     if i % 100 == 0:
@@ -130,18 +131,6 @@ fs = po.get_fields(
      'ISDCrossLinkMS_Linear_Score_None',
      'ISDCrossLinkMS_Psi_0.05_None'])
 
-# <codecell>
-
-#% matplotlib inline
-
-# <codecell>
-
-IMP.pmi.output.plot_scatter_xy_data(
-    fs['ISDCrossLinkMS_Distance_interrb-State:0-1:particle1_2:particle3-1-1-0.05_None'],
-    fs['ISDCrossLinkMS_Distance_interrb-State:0-1:particle2_5:particle3-1-1-0.05_None'])
-
-# <codecell>
-
-IMP.pmi.output.plot_fields(fs)
-
-# <codecell>
+for output in ["excluded.None.xl.db", "included.None.xl.db",
+               "missing.None.xl.db", "modeling.stat"]:
+    os.unlink(output)

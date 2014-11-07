@@ -1,5 +1,4 @@
 import IMP.pmi
-import IMP.pmi.io.input
 import IMP.test
 import RMF
 import IMP.rmf
@@ -11,6 +10,7 @@ except ImportError:
     scipy = None
 if scipy is not None:
     import IMP.pmi.analysis
+    import IMP.pmi.io.input
 
 class AnalysisTest(IMP.test.TestCase):
     def setUp(self):

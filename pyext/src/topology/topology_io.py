@@ -6,7 +6,9 @@
 
 import IMP
 import IMP.pmi
+import IMP.base
 import csv
+import os
 
 class TopologyReader(object):
     '''
@@ -14,6 +16,7 @@ class TopologyReader(object):
     and stores the items as a topology class for input into IMP.pmi.autobuild_model()
     '''
     def __init__(self, topology_file):
+        self.topology_file = topology_file
         is_defaults=False
         is_topology=False
         defaults_dict={}
@@ -56,6 +59,11 @@ class TopologyReader(object):
 
                 #print self.defaults
 
+    def _make_path(self, dirname, fname):
+        "Get the full path to a file, possibly relative to the topology file"
+        dirname = IMP.base.get_relative_path(self.topology_file, dirname)
+        return os.path.join(dirname, fname)
+
     def create_component_topology(self, component_line, topology_fields, defaults, linenum, color="0.1"):
 
     #Reads a grid of topology values and matches them to their key.
@@ -69,9 +77,11 @@ class TopologyReader(object):
     ##### Required fields
         c.name          = values[fields.index("component_name")]
         c.domain_name   = values[fields.index("domain_name")]
-        c.fasta_file    = defaults['fasta_dir'] + values[fields.index("fasta_fn")]
+        c.fasta_file    = self._make_path(defaults['fasta_dir'],
+                                          values[fields.index("fasta_fn")])
         c.fasta_id      = values[fields.index("fasta_id")]
-        c.pdb_file      = defaults['pdb_dir'] + values[fields.index("pdb_fn")]
+        c.pdb_file      = self._make_path(defaults['pdb_dir'],
+                                          values[fields.index("pdb_fn")])
         # Need to find a way to define color
         c.color         = 0.1
 
@@ -131,8 +141,10 @@ class TopologyReader(object):
             if self.is_int(f):
                 if int(f) > 0:
                     c.read_gmm_files=True
-                    c.gmm_file=defaults['gmm_dir'] + c.domain_name.strip() + ".txt"
-                    c.mrc_file=defaults['gmm_dir'] + c.domain_name.strip() + ".mrc"
+                    c.gmm_file=self._make_path(defaults['gmm_dir'],
+                                           c.domain_name.strip() + ".txt")
+                    c.mrc_file=self._make_path(defaults['gmm_dir'],
+                                           c.domain_name.strip() + ".mrc")
                 c.em_residues_per_gaussian=int(f)
             else:
                 print "em_residues_per_gaussian format for component ", c.name, ", line ", linenum, " is not correct"

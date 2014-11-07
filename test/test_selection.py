@@ -1,3 +1,4 @@
+import os
 import IMP
 import IMP.core
 import IMP.base
@@ -42,13 +43,12 @@ for n in range(len(components)):
 
 
 def test(a, b):
-    if a != b:
-        print a, b, "Error"
+    assert a==b, "%d != %d" % (a,b)
 
 
 result_dict = {
-    "All": 690,
-    "resolution=1": 620,
+    "All": 691,
+    "resolution=1": 621,
     "resolution=1,resid=10": 3,
     "resolution=1,resid=10,name=Rpb3": 1,
     "resolution=1,resid=10,name=Rpb3,ambiguous": 2,
@@ -65,12 +65,12 @@ result_dict = {
     "Rpb4_4-76_pdb resolution=1": 73,
     "Rpb4_4-76_pdb resolution=10": 0,
     "Rpb4_4-76_pdb resolution=100": 0,
-    "Rpb4_4-76_pdb resolution=1": 0,
-    "Rpb4_4-76_pdb resolution=10": 8,
-    "Rpb4_4-76_pdb resolution=100": 0,
-    "Rpb4_4-76_pdb resolution=1": 0,
-    "Rpb4_4-76_pdb resolution=10": 0,
-    "Rpb4_4-76_pdb resolution=100": 1,
+    "Rpb4_4-76_pdb#2 resolution=1": 0,
+    "Rpb4_4-76_pdb#2 resolution=10": 8,
+    "Rpb4_4-76_pdb#2 resolution=100": 0,
+    "Rpb4_4-76_pdb#3 resolution=1": 0,
+    "Rpb4_4-76_pdb#3 resolution=10": 0,
+    "Rpb4_4-76_pdb#3 resolution=100": 1,
     "Rpb4_77-96_bead resolution=1": 1,
     "Rpb4_77-96_bead resolution=10": 1,
     "Rpb4_77-96_bead resolution=100": 1,
@@ -83,36 +83,36 @@ result_dict = {
     "Rpb4_118-215_pdb resolution=1": 98,
     "Rpb4_118-215_pdb resolution=10": 0,
     "Rpb4_118-215_pdb resolution=100": 0,
-    "Rpb4_118-215_pdb resolution=1": 0,
-    "Rpb4_118-215_pdb resolution=10": 10,
-    "Rpb4_118-215_pdb resolution=100": 0,
-    "Rpb4_118-215_pdb resolution=1": 0,
-    "Rpb4_118-215_pdb resolution=10": 0,
-    "Rpb4_118-215_pdb resolution=100": 1,
+    "Rpb4_118-215_pdb#2 resolution=1": 0,
+    "Rpb4_118-215_pdb#2 resolution=10": 10,
+    "Rpb4_118-215_pdb#2 resolution=100": 0,
+    "Rpb4_118-215_pdb#3 resolution=1": 0,
+    "Rpb4_118-215_pdb#3 resolution=10": 0,
+    "Rpb4_118-215_pdb#3 resolution=100": 1,
     "Rpb3.copy_1-2_bead resolution=1": 1,
     "Rpb3.copy_1-2_bead resolution=10": 1,
     "Rpb3.copy_1-2_bead resolution=100": 1,
     "Rpb3.copy_3-177_pdb resolution=1": 175,
     "Rpb3.copy_3-177_pdb resolution=10": 0,
     "Rpb3.copy_3-177_pdb resolution=100": 0,
-    "Rpb3.copy_3-177_pdb resolution=1": 0,
-    "Rpb3.copy_3-177_pdb resolution=10": 18,
-    "Rpb3.copy_3-177_pdb resolution=100": 0,
-    "Rpb3.copy_3-177_pdb resolution=1": 0,
-    "Rpb3.copy_3-177_pdb resolution=10": 0,
-    "Rpb3.copy_3-177_pdb resolution=100": 2,
+    "Rpb3.copy_3-177_pdb#2 resolution=1": 0,
+    "Rpb3.copy_3-177_pdb#2 resolution=10": 18,
+    "Rpb3.copy_3-177_pdb#2 resolution=100": 0,
+    "Rpb3.copy_3-177_pdb#3 resolution=1": 0,
+    "Rpb3.copy_3-177_pdb#3 resolution=10": 0,
+    "Rpb3.copy_3-177_pdb#3 resolution=100": 2,
     "Rpb3_1-2_bead resolution=1": 1,
     "Rpb3_1-2_bead resolution=10": 1,
     "Rpb3_1-2_bead resolution=100": 1,
     "Rpb3_3-268_pdb resolution=1": 266,
     "Rpb3_3-268_pdb resolution=10": 0,
     "Rpb3_3-268_pdb resolution=100": 0,
-    "Rpb3_3-268_pdb resolution=1": 0,
-    "Rpb3_3-268_pdb resolution=10": 27,
-    "Rpb3_3-268_pdb resolution=100": 0,
-    "Rpb3_3-268_pdb resolution=1": 0,
-    "Rpb3_3-268_pdb resolution=10": 0,
-    "Rpb3_3-268_pdb resolution=100": 3,
+    "Rpb3_3-268_pdb#2 resolution=1": 0,
+    "Rpb3_3-268_pdb#2 resolution=10": 27,
+    "Rpb3_3-268_pdb#2 resolution=100": 0,
+    "Rpb3_3-268_pdb#3 resolution=1": 0,
+    "Rpb3_3-268_pdb#3 resolution=10": 0,
+    "Rpb3_3-268_pdb#3 resolution=100": 3,
     "Rpb3_269-288_bead resolution=1": 1,
     "Rpb3_269-288_bead resolution=10": 1,
     "Rpb3_269-288_bead resolution=100": 1,
@@ -122,18 +122,18 @@ result_dict = {
     "Rpb3_309-318_bead resolution=1": 1,
     "Rpb3_309-318_bead resolution=10": 1,
     "Rpb3_309-318_bead resolution=100": 1,
-    "Beads": 8,
-    "Molecule": 690,
-    "resolution=1,Molecule": 620,
-    "resolution=10,Molecule": 71,
-    "resolution=100,Molecule": 15,
-    "resolution=1,Beads": 8,
-    "resolution=10,Beads": 8,
-    "resolution=100,Beads": 8,
-    "resolution=2": 620,
-    "resolution=7": 71,
-    "resolution=10": 71,
-    "resolution=100": 15}
+    "Beads": 9,
+    "Molecule": 691,
+    "resolution=1,Molecule": 621,
+    "resolution=10,Molecule": 72,
+    "resolution=100,Molecule": 16,
+    "resolution=1,Beads": 9,
+    "resolution=10,Beads": 9,
+    "resolution=100,Beads": 9,
+    "resolution=2": 621,
+    "resolution=7": 72,
+    "resolution=10": 72,
+    "resolution=100": 16}
 
 test(result_dict["All"], len(tools.select(simo)))
 test(result_dict["resolution=1"], len(tools.select(simo, resolution=1)))
@@ -202,12 +202,20 @@ test(
                      last_residue=20)))
 
 for key in hierarchies:
+    seen = {}
     for h in hierarchies[key]:
-        test(result_dict[str(h.get_name()) + " " + "resolution=1"],
+        # Handle duplicate names
+        if h.get_name() in seen:
+            name = h.get_name() + "#%d" % seen[h.get_name()]
+            seen[h.get_name()] += 1
+        else:
+            name = h.get_name()
+            seen[h.get_name()] = 2
+        test(result_dict[name + " resolution=1"],
              len(tools.select(simo, resolution=1, hierarchies=[h])))
-        test(result_dict[str(h.get_name()) + " " + "resolution=10"],
+        test(result_dict[name + " resolution=10"],
              len(tools.select(simo, resolution=10, hierarchies=[h])))
-        test(result_dict[str(h.get_name()) + " " + "resolution=100"],
+        test(result_dict[name + " resolution=100"],
              len(tools.select(simo, resolution=100, hierarchies=[h])))
 
 test(result_dict["Beads"],
@@ -231,3 +239,7 @@ test(result_dict["resolution=2"], len(tools.select(simo, resolution=2)))
 test(result_dict["resolution=7"], len(tools.select(simo, resolution=7)))
 test(result_dict["resolution=10"], len(tools.select(simo, resolution=10)))
 test(result_dict["resolution=100"], len(tools.select(simo, resolution=100)))
+
+for output in ['excluded.None.xl.db', 'included.None.xl.db',
+               'missing.None.xl.db']:
+    os.unlink(output)

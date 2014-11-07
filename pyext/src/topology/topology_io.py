@@ -47,13 +47,13 @@ class TopologyReader(object):
                 elif is_defaults==True:
                 # grab value for default and put into class attribute
                     self.add_default_parameter(line, linenum)
-                    
+
                 elif line.split('|')[1]=="directories":
                     is_defaults=True
 
                 #print line, is_defaults, is_topology
                 linenum=linenum+1
-            
+
                 #print self.defaults
 
     def create_component_topology(self, component_line, topology_fields, defaults, linenum, color="0.1"):
@@ -64,7 +64,7 @@ class TopologyReader(object):
 
         fields=topology_fields.split('|')
         values=component_line.split('|')
-        c=ComponentTopology()   
+        c=ComponentTopology()
         no_error=True
     ##### Required fields
         c.name          = values[fields.index("component_name")]
@@ -73,7 +73,7 @@ class TopologyReader(object):
         c.fasta_id      = values[fields.index("fasta_id")]
         c.pdb_file      = defaults['pdb_dir'] + values[fields.index("pdb_fn")]
         # Need to find a way to define color
-        c.color         = 0.1  
+        c.color         = 0.1
 
         # PDB Chain
         if len(values[fields.index("chain")])==1 and values[fields.index("chain")].isupper()==True:
@@ -81,7 +81,7 @@ class TopologyReader(object):
         else:
             print "PDB Chain format for component ", c.name, ", line ", linenum, " is not correct"
             print "Correct syntax is a single uppercase letter. |", values[fields.index("chain")], "| was given."
-            no_error=False        
+            no_error=False
 
     ##### Optional fields
         # Residue Range
@@ -99,7 +99,7 @@ class TopologyReader(object):
                 no_error=False
         else:
             c.residue_range=defaults["residue_range"]
-       
+
 
         # PDB Offset
         if "pdb_offset" in fields:
@@ -140,7 +140,7 @@ class TopologyReader(object):
                 no_error=False
         else:
             c.em_residues_per_gaussian=defaults["em_residues_per_gaussian"]
-       
+
         if no_error==True:
             return c
         else:
@@ -155,7 +155,7 @@ class TopologyReader(object):
             return float(s).is_integer()
         except ValueError:
             return False
-            
+
 
     def add_default_parameter(self,line, linenum):
     #Separates a line into a key:value pair.
@@ -165,7 +165,7 @@ class TopologyReader(object):
             print "Default value syntax not correct for ", line
             print "Line number", linenum," contains ", len(f)-2, " fields."
             print "Please reformat to |KEY|VALUE|"
-        self.defaults[f[1]]=f[2] 
+        self.defaults[f[1]]=f[2]
 
 
 
@@ -173,7 +173,7 @@ class ComponentTopology(object):
     '''
     Topology class stores the components required to build a standard IMP hierarchy
     using IMP.pmi.autobuild_model()
-    ''' 
+    '''
     def __init__(self):
         self.name=None
         self.domain_name=None
@@ -190,5 +190,3 @@ class ComponentTopology(object):
         self.mrc_file=None
         self.read_em_files=None
         self.color=None
-
-

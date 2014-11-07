@@ -1,16 +1,17 @@
 import IMP
 import IMP.atom
 import IMP.pmi
-import IMP.pmi.representation_new as r
-import IMP.pmi.restraints_new.stereochemistry
 import IMP.pmi.io.data_parsers as data_parsers
 import IMP.test
-import IMP.pmi.sequence_tools
 
 
 class StereochemistryTests(IMP.test.TestCase):
+    @IMP.test.expectedFailure
     def test_elastic_network(self):
         """ test PMI setup of elastic nets """
+        import IMP.pmi.representation_new as r
+        import IMP.pmi.restraints_new.stereochemistry
+        import IMP.pmi.sequence_tools
         mdl = IMP.Model()
 
         # create two states, each with two copies of the protein

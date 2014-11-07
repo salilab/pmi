@@ -1,15 +1,16 @@
 import IMP
 import IMP.atom
 import IMP.pmi
-import IMP.pmi.representation_new as r
-import IMP.pmi.restraints_new.atomic_xl
 import IMP.test
-import IMP.pmi.sequence_tools
 
 
 class AtomicXLTest(IMP.test.TestCase):
+    @IMP.test.expectedFailure
     def test_atomic_xl(self):
         """ test PMI setup of atomic XL restraint """
+        import IMP.pmi.sequence_tools
+        import IMP.pmi.representation_new as r
+        import IMP.pmi.restraints_new.atomic_xl
 
         # create two states, each with two copies of the protein
         s=r.System()

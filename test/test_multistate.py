@@ -186,6 +186,7 @@ fs = po.get_fields(
      'ISDCrossLinkMS_Psi_0.05_None'])
 
 print fs.keys()
+o.close_rmf("trajectory.rmf3")
 
 # <codecell>
 

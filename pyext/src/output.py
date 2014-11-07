@@ -77,7 +77,7 @@ class Output(object):
                                                atom_index, atom_type, residue_type,
                                                chain_id, residue_index,' ',1.00,radius))
 
-        flpdb.write("ENDMOL\n")
+        flpdb.write("ENDMDL\n")
         flpdb.close()
 
         del particle_infos_for_pdb

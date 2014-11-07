@@ -17,8 +17,9 @@
 
 IMPPMI_BEGIN_NAMESPACE
 
-//! Add Uncertainty to a particle
-/** The Uncertainty of the particle can be assumed to be the radius of a particle.
+//! Add uncertainty to a particle
+/** The uncertainty of the particle can be assumed to be the radius
+    of a particle.
  */
 class IMPPMIEXPORT Uncertainty : public Decorator {
   static void do_setup_particle(Model *m, ParticleIndex pi, double uncertainty) {
@@ -35,9 +36,9 @@ class IMPPMIEXPORT Uncertainty : public Decorator {
                                       get_particle_index());
   }
 
-  void set_Uncertainty(Float d) { get_model()->set_attribute(get_uncertainty_key(),
-                                                      get_particle_index(),
-                                                      d); }
+  void set_uncertainty(Float d) {
+    get_model()->set_attribute(get_uncertainty_key(), get_particle_index(), d);
+  }
 
   IMP_DECORATOR_METHODS(Uncertainty, Decorator);
   /** Add the specified Uncertainty to the particle. */

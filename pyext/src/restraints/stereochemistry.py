@@ -140,12 +140,10 @@ class ResidueBondRestraint(object):
         for ps in IMP.pmi.tools.sublist_iterator(particles, 2, 2):
             pair = []
             if len(ps) != 2:
-                print "ResidueBondRestraint: wrong length of pair"
-                exit()
+                raise ValueError("wrong length of pair")
             for p in ps:
                 if not IMP.atom.Residue.get_is_setup(p):
-                    print "ResidueBondRestraint: not a residue"
-                    exit()
+                    raise TypeError("not a residue")
                 else:
                     pair.append(p)
             print "ResidueBondRestraint: adding a restraint between %s %s" % (pair[0].get_name(), pair[1].get_name())
@@ -217,12 +215,10 @@ class ResidueAngleRestraint(object):
         for ps in IMP.pmi.tools.sublist_iterator(particles, 3, 3):
             triplet = []
             if len(ps) != 3:
-                print "ResidueAngleRestraint: wrong length of triplet"
-                exit()
+                raise ValueError("wrong length of triplet")
             for p in ps:
                 if not IMP.atom.Residue.get_is_setup(p):
-                    print "ResidueAngleRestraint: not a residue"
-                    exit()
+                    raise TypeError("not a residue")
                 else:
                     triplet.append(p)
             print "ResidueAngleRestraint: adding a restraint between %s %s %s" % (triplet[0].get_name(), triplet[1].get_name(), triplet[2].get_name())
@@ -297,12 +293,10 @@ class ResidueDihedralRestraint(object):
         for n, ps in enumerate(IMP.pmi.tools.sublist_iterator(particles, 4, 4)):
             quadruplet = []
             if len(ps) != 4:
-                print "ResidueDihedralRestraint: wrong length of quadruplet"
-                exit()
+                raise ValueError("wrong length of quadruplet")
             for p in ps:
                 if not IMP.atom.Residue.get_is_setup(p):
-                    print "ResidueDihedralRestraint: not a residue"
-                    exit()
+                    raise TypeError("not a residue")
                 else:
                     quadruplet.append(p)
             dihedraltype = stringsequence[n]
@@ -379,8 +373,7 @@ class SecondaryStructure(object):
             kt_caff=0.1):
 
         if no_isd_emxl:
-            print "SecondaryStructure: IMP.isd_emxl is needed"
-            exit()
+            raise ValueError("IMP.isd_emxl is needed")
 
         # check that the secondary structure string
         # is compatible with the ssstring

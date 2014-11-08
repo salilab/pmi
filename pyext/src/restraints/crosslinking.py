@@ -341,17 +341,19 @@ class SimplifiedCrossLinkMS(object):
                 residue=r2)
 
             if len(ps1) > 1:
-                print "SimplifiedCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles" % (r1, c1)
-                print "particles are: ", [p.get_name() for p in ps1]
-                exit()
+                raise ValueError(
+                   "residue %d of chain %s selects multiple particles; "
+                   "particles are: %s"
+                   % (r1, c1, "".join(p.get_name() for p in ps1)))
             elif len(ps1) == 0:
                 print "SimplifiedCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1, c1)
                 continue
 
             if len(ps2) > 1:
-                print "SimplifiedCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles" % (r2, c2)
-                print "particles are: ", [p.get_name() for p in ps2]
-                exit()
+                raise ValueError(
+                   "residue %d of chain %s selects multiple particles; "
+                   "particles are: %s"
+                   % (r2, c2, "".join(p.get_name() for p in ps2)))
             elif len(ps2) == 0:
                 print "SimplifiedCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2, c2)
                 continue
@@ -585,16 +587,14 @@ class SigmoidalCrossLinkMS(object):
                 residue=r2)
 
             if len(ps1) > 1:
-                print "SigmoidalCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s" % (r1, c1, str(ps1))
-                exit()
+                raise ValueError("residue %d of chain %s selects multiple particles %s" % (r1, c1, str(ps1)))
             elif len(ps1) == 0:
                 print "SigmoidalCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1, c1)
                 midb.write(str(entry) + "\n")
                 continue
 
             if len(ps2) > 1:
-                print "SigmoidalCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s" % (r2, c2, str(ps2))
-                exit()
+                raise ValueError("residue %d of chain %s selects multiple particles %s" % (r2, c2, str(ps2)))
             elif len(ps2) == 0:
                 print "SigmoidalCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2, c2)
                 midb.write(str(entry) + "\n")
@@ -861,8 +861,7 @@ class ISDCrossLinkMS(_NuisancesBase):
                 # you have to broadcast the same restraints to every
                 # replica
 
-                print "jackknifing not yet implemented"
-                exit()
+                raise NotImplementedError("jackknifing not yet implemented")
 
             if not csvfile:
                 tokens = entry.split()
@@ -962,16 +961,14 @@ class ISDCrossLinkMS(_NuisancesBase):
                     residue=r2)
 
                 if len(ps1) > 1:
-                    print "ISDCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s" % (r1, c1, str(ps1))
-                    exit()
+                    raise ValueError("residue %d of chain %s selects multiple particles %s" % (r1, c1, str(ps1)))
                 elif len(ps1) == 0:
                     print "ISDCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1, c1)
                     midb.write(str(entry) + "\n")
                     continue
 
                 if len(ps2) > 1:
-                    print "ISDCrossLinkMS: ERROR> residue %d of chain %s selects multiple particles %s" % (r2, c2, str(ps2))
-                    exit()
+                    raise ValueError("residue %d of chain %s selects multiple particles %s" % (r2, c2, str(ps2)))
                 elif len(ps2) == 0:
                     print "ISDCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2, c2)
                     midb.write(str(entry) + "\n")

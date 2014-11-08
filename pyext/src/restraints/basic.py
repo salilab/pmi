@@ -89,12 +89,8 @@ class DistanceRestraint(object):
         for p in particles2:
             print p.get_name()
 
-        if len(particles1) > 1:
-            print "DistanceRestraint error: more than one particle selected"
-            exit()
-        if len(particles2) > 1:
-            print "DistanceRestraint error: more than one particle selected"
-            exit()
+        if len(particles1) > 1 or len(particles2) > 1:
+            raise ValueError("more than one particle selected")
 
         self.rs.add_restraint(
             IMP.core.DistanceRestraint(ts1,

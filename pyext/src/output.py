@@ -268,6 +268,9 @@ class Output(object):
                 for i in range(len(self.best_score_list) - 2, index - 1, -1):
                     oldname = suffix + "." + str(i) + ".pdb"
                     newname = suffix + "." + str(i + 1) + ".pdb"
+                    # rename on Windows fails if newname already exists
+                    if os.path.exists(newname):
+                        os.unlink(newname)
                     os.rename(oldname, newname)
                 filetoadd = suffix + "." + str(index) + ".pdb"
                 self.write_pdb(filetoadd, appendmode=False)

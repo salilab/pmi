@@ -7,6 +7,11 @@ import IMP.pmi.restraints.proteomics
 import IMP.pmi.restraints.crosslinking
 import IMP.pmi.representation
 import IMP.pmi.tools
+try:
+    import IMP.isd_emxl
+    no_isd_emxl = False
+except ImportError:
+    no_isd_emxl = True
 
 class Tests(IMP.test.TestCase):
     @IMP.test.expectedFailure
@@ -70,11 +75,12 @@ class Tests(IMP.test.TestCase):
         print ra.get_output()
         print m.evaluate(False)
 
-        ss = IMP.pmi.restraints.stereochemistry.SecondaryStructure(
-            simo, (30, 40, "Rpb3"), "HHHHHHHHHHH")
-        ss.add_to_model()
-        print ss.get_output()
-        print m.evaluate(False)
+        if not no_isd_emxl:
+            ss = IMP.pmi.restraints.stereochemistry.SecondaryStructure(
+                simo, (30, 40, "Rpb3"), "HHHHHHHHHHH")
+            ss.add_to_model()
+            print ss.get_output()
+            print m.evaluate(False)
 
         eb1 = IMP.pmi.restraints.basic.ExternalBarrier(simo, 50)
         eb1.add_to_model()

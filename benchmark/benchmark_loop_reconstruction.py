@@ -6,6 +6,8 @@ import IMP.atom
 import IMP.container
 import IMP.benchmark
 import time
+import sys
+import os
 
 import IMP.pmi.restraints.stereochemistry as stereochemistry
 import IMP.pmi.restraints.crosslinking as crosslinking
@@ -16,14 +18,13 @@ import IMP.pmi.output as output
 
 IMP.base.set_log_level(IMP.base.SILENT)
 
+# Redirect chatty PMI output so we can see benchmark output
+old_stdout = sys.stdout
 
-def check_time(stop_watch_object, threshold):
-    elapsed_time = float(
-        stop_watch_object.get_output()["Stopwatch_None_delta_seconds"])
-    if (elapsed_time > threshold):
-        print "WARNING: the calculation time of " + str(elapsed_time) + " is above the " + str(threshold) + " threshold"
-    else:
-        print "the calculation time of " + str(elapsed_time) + " is below the threshold"
+class DummyFile(object):
+    def write(self, txt):
+        pass
+sys.stdout = DummyFile()
 
 # input parameter
 
@@ -74,9 +75,6 @@ for d in data:
 
     r.show_component_table(component_name)
 
-check_time(sw, 3.0)
-
-
 rbAB = r.set_rigid_bodies(["chainA", "chainB"])
 
 r.set_floppy_bodies()
@@ -118,8 +116,6 @@ ev.add_excluded_particle_pairs(listofexcludedpairs)
 ev.add_to_model()
 log_objects.append(ev)
 
-check_time(sw, 5.0)
-
 mc = samplers.MonteCarlo(m, [r], 1.0)
 log_objects.append(mc)
 
@@ -132,13 +128,17 @@ o.init_pdb("conformations.pdb", r.prot)
 
 start_time = time.clock()
 for i in range(0, 2):
-    print "Running job, frame number ", i
+    #print "Running job, frame number ", i
 
     mc.optimize(10)
 
     o.write_rmf("conformations.rmf3")
     o.write_pdbs()
-    check_time(sw, 3.0)
     o.write_stats2()
 o.close_rmf("conformations.rmf3")
+
+sys.stdout = old_stdout
 IMP.benchmark.report("pmi loop", time.clock() - start_time, 0)
+
+for output in ["conformations.pdb", "conformations.rmf3", "modeling.stat"]:
+    os.unlink(output)

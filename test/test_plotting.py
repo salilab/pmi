@@ -1,7 +1,6 @@
 import IMP.pmi
 import IMP.pmi.analysis
 import IMP.pmi.io.input
-import IMP.pmi.plotting.topology
 import IMP.test
 import RMF
 import IMP.rmf
@@ -10,6 +9,7 @@ import os,sys
 class PlottingTests(IMP.test.TestCase):
     @IMP.test.expectedFailure
     def test_graphxl(self):
+        import IMP.pmi.plotting.topology
         dd={"med6":["med6"],
             "med8":["med8"],
             "med11":["med11"],

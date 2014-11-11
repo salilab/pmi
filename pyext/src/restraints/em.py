@@ -6,7 +6,6 @@ import IMP.algebra
 import IMP.atom
 import IMP.container
 import IMP.isd
-import IMP.isd.gmm_tools
 
 
 class GaussianEMRestraint(object):
@@ -29,7 +28,9 @@ class GaussianEMRestraint(object):
         global sys, tools
         import sys
         import IMP.pmi.tools as tools
+        import IMP.isd.gmm_tools
         from math import sqrt
+
 
         # some parameters
         self.label = "None"

@@ -5,6 +5,7 @@ import IMP.base
 import IMP.algebra
 import IMP.atom
 import IMP.container
+import IMP.isd
 
 
 class GaussianEMRestraint(object):
@@ -26,8 +27,6 @@ class GaussianEMRestraint(object):
                  backbone_slope=False):
         global sys, tools
         import sys
-        import IMP.isd_emxl
-        import IMP.isd_emxl.gmm_tools
         import IMP.pmi.tools as tools
         from math import sqrt
 
@@ -47,7 +46,7 @@ class GaussianEMRestraint(object):
         print 'will scale target mass by', target_mass_scale
         if target_fn != '':
             self.target_ps = []
-            IMP.isd_emxl.gmm_tools.decorate_gmm_from_text(
+            IMP.isd.gmm_tools.decorate_gmm_from_text(
                 target_fn,
                 self.target_ps,
                 self.m,
@@ -89,7 +88,7 @@ class GaussianEMRestraint(object):
         log_score=False
         if not pointwise_restraint:
             self.gaussianEM_restraint = \
-               IMP.isd_emxl.GaussianEMRestraint(self.m,
+               IMP.isd.GaussianEMRestraint(self.m,
                                                 IMP.get_indexes(self.model_ps),
                                                 IMP.get_indexes(self.target_ps),
                                                 self.sigmaglobal.get_particle().get_index(),
@@ -98,7 +97,8 @@ class GaussianEMRestraint(object):
                                                 slope,
                                                 update_model, backbone_slope)
         else:
-            print 'USING POINTWISE RESTRAINT'
+            print 'USING POINTWISE RESTRAINT - requires isd_emxl'
+            import IMP.isd_emxl
             print 'update model?',update_model
             self.gaussianEM_restraint = \
                IMP.isd_emxl.PointwiseGaussianEMRestraint(self.m,

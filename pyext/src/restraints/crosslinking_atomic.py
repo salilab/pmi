@@ -5,8 +5,7 @@ import IMP.base
 import IMP.algebra
 import IMP.atom
 import IMP.container
-import IMP.isd_emxl
-import IMP.pmi.hierarchy_tools as hierarchy_tools
+import IMP.isd
 import IMP.pmi.sampling_tools as sampling_tools
 import itertools
 from collections import defaultdict
@@ -22,6 +21,32 @@ def setup_nuisance(m,rs,init_val,min_val,max_val,is_opt=True):
     rs.add_restraint(IMP.isd.UniformPrior(m,nuisance,1000000000.0,
                                           max_val,min_val))
     return nuisance
+
+def combine_dicts(a1,a2):
+    """ Combine Selection dictionaries. The first one has higher priority.
+    Keeps unique keys from each dictionary.
+    If keys overlap, but both point to lists, the lists are combined.
+    If keys overlap but they don't point to lists, only the first is kept.
+    """
+    final={}
+    if a1 is None:
+        return a2
+    elif a2 is None:
+        return a1
+    elif a1 is None and a2 is None:
+        return None
+    for k in a1:
+        final[k]=a1[k]
+    for k in a2:
+        if k in final:
+            if type(final[k]) is not list:
+                print "ERROR: you have overlapping keys that aren't lists"
+            else:
+                final[k]+=a2[k]
+        else:
+            final[k]=a2[k]
+    return final
+
 
 class RestraintSetupError(Exception):
     pass
@@ -45,7 +70,7 @@ class AtomicCrossLinkMSRestraint(object):
                  nuisances_are_optimized=True,
                  sigma_init=5.0,
                  psi_init = 0.01):
-        """Create XL restraint. Provide selections for the particles to restrain.
+        """Experimental ATOMIC XL restraint. Provide selections for the particles to restrain.
         Automatically creates one "sigma" per crosslinked residue and one "psis" per pair.
         Other nuisance options are available.
         \note Will return an error if the data+extra_sel don't specify two particles per XL pair.
@@ -120,7 +145,7 @@ class AtomicCrossLinkMSRestraint(object):
 
             # create restraint for this data point
             #print 'creating xl with unique id',unique_id
-            r = IMP.isd_emxl.AtomicCrossLinkMSRestraint(self.mdl,self.length,slope,True)
+            r = IMP.isd.AtomicCrossLinkMSRestraint(self.mdl,self.length,slope,True)
             xlrs.append(r)
             num_contributions=0
 
@@ -134,11 +159,11 @@ class AtomicCrossLinkMSRestraint(object):
                 for xl in data[unique_id]:
                     # select the particles (should grab all copies)
                     #print '\t',xl
-                    sel1 = IMP.atom.Selection(root,**hierarchy_tools.combine_dicts(
+                    sel1 = IMP.atom.Selection(root,**combine_dicts(
                         xl['r1'],esel)).get_selected_particles()
                     #print '\tsel1:',xl['r1']
 
-                    sel2 = IMP.atom.Selection(root,**hierarchy_tools.combine_dicts(
+                    sel2 = IMP.atom.Selection(root,**combine_dicts(
                         xl['r2'],esel)).get_selected_particles()
                     #print '\tsel2:',xl['r2']
                     self.particles+=sel1+sel2
@@ -187,7 +212,7 @@ class AtomicCrossLinkMSRestraint(object):
 
 
         print 'created',len(xlrs),'XL restraints'
-        self.rs=IMP.isd_emxl.LogWrapper(xlrs,self.weight)
+        self.rs=IMP.isd.LogWrapper(xlrs,self.weight)
 
     def set_weight(self,weight):
         self.weight = weight
@@ -214,7 +239,7 @@ class AtomicCrossLinkMSRestraint(object):
         hps = IMP.core.HarmonicDistancePairScore(self.length,1.0)
         dummy_rs=[]
         for nxl in range(self.rs.get_number_of_restraints()):
-            xl=IMP.isd_emxl.AtomicCrossLinkMSRestraint.cast(self.rs.get_restraint(nxl))
+            xl=IMP.isd.AtomicCrossLinkMSRestraint.cast(self.rs.get_restraint(nxl))
             rs = IMP.RestraintSet(dummy_mdl, 'atomic_xl_'+str(nxl))
             for ncontr in range(xl.get_number_of_contributions()):
                 ps=xl.get_contribution(ncontr)
@@ -246,7 +271,7 @@ class AtomicCrossLinkMSRestraint(object):
         """
         import subprocess
         for nxl in range(self.rs.get_number_of_restraints()):
-            xl=IMP.isd_emxl.AtomicCrossLinkMSRestraint.cast(self.rs.get_restraint(nxl))
+            xl=IMP.isd.AtomicCrossLinkMSRestraint.cast(self.rs.get_restraint(nxl))
             sig1_val = float(subprocess.check_output(["process_output.py","-f",in_fn,
                                     "-s","AtomicXLRestraint_%i_Sig1"%nxl]).split('\n>')[1+nframe])
             sig2_val = float(subprocess.check_output(["process_output.py","-f",in_fn,
@@ -287,7 +312,7 @@ class AtomicCrossLinkMSRestraint(object):
 
         # for each crosslink, evaluate probability and lowest distance for each state
         for nxl in range(self.rs.get_number_of_restraints()):
-            xl=IMP.isd_emxl.AtomicCrossLinkMSRestraint.cast(self.rs.get_restraint(nxl))
+            xl=IMP.isd.AtomicCrossLinkMSRestraint.cast(self.rs.get_restraint(nxl))
             best_contr_per_state=[[1e6,None] for i in range(self.nstates)] # [low dist, idx low contr]
             ncontr_per_state=[[] for i in range(self.nstates)]     # [list of the ncontr in each state]
 
@@ -390,7 +415,7 @@ class AtomicCrossLinkMSRestraint(object):
         # count distances above length
         bad_count=0
         for nxl in range(self.rs.get_number_of_restraints()):
-            xl=IMP.isd_emxl.AtomicCrossLinkMSRestraint.cast(self.rs.get_restraint(nxl))
+            xl=IMP.isd.AtomicCrossLinkMSRestraint.cast(self.rs.get_restraint(nxl))
             prob = xl.unprotected_evaluate(None)
             if prob<0.1:
                 bad_count+=1

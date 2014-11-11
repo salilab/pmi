@@ -2,19 +2,15 @@ import IMP
 import IMP.atom
 import IMP.pmi
 import IMP.test
-
+import IMP.pmi.topology as topology
+import IMP.pmi.restraints.crosslinking_atomic
 
 class AtomicXLTest(IMP.test.TestCase):
-    @IMP.test.expectedFailure
     def test_atomic_xl(self):
         """ test PMI setup of atomic XL restraint """
-        import IMP.pmi.sequence_tools
-        import IMP.pmi.representation_new as r
-        import IMP.pmi.restraints_new.atomic_xl
-
         # create two states, each with two copies of the protein
-        s=r.System()
-        seqs=r.Sequences(self.get_input_file_name('multi_seq.fasta'),
+        s=topology.System()
+        seqs=topology.Sequences(self.get_input_file_name('multi_seq.fasta'),
                          name_map={'Protein_1':'Prot1'})
         # build state 1
         st1=s.create_state()
@@ -40,13 +36,13 @@ class AtomicXLTest(IMP.test.TestCase):
         data[0]=[{'r1':{'molecule':'Prot1','residue_index':7},
                   'r2':{'molecule':'Prot1','residue_index':39},
                   'score':1}]
-        xl = IMP.pmi.restraints_new.atomic_xl.AtomicCrossLinkMSRestraint(hier,data,nstates=2)
+        xl = IMP.pmi.restraints.crosslinking_atomic.AtomicCrossLinkMSRestraint(hier,data,nstates=2)
 
         # check that you created 8 restraints (2 copies => 4 restraints. x2 states)
         rs=xl.get_restraint_set()
         self.assertEqual(rs.get_number_of_restraints(),1)
-        xlrs=IMP.isd_emxl.AtomicCrossLinkMSRestraint.cast(rs.get_restraint(0))
-        self.assertIsInstance(xlrs,IMP.isd_emxl.AtomicCrossLinkMSRestraint)
+        xlrs=IMP.isd.AtomicCrossLinkMSRestraint.cast(rs.get_restraint(0))
+        self.assertIsInstance(xlrs,IMP.isd.AtomicCrossLinkMSRestraint)
         self.assertEqual(xlrs.get_number_of_contributions(),8)
 
 

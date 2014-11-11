@@ -11,6 +11,7 @@ import IMP.algebra
 import IMP.atom
 import IMP.display
 import IMP.pmi
+import IMP.isd
 from math import pi, sqrt
 
 from operator import itemgetter
@@ -616,8 +617,6 @@ class Representation(object):
         use_precomputed_gaussians: Set this flag and pass fragments - will use roughly spherical gaussian setup
         '''
 
-        import IMP.isd_emxl
-        import IMP.isd_emxl.gmm_tools
         import numpy as np
         import sys
         import IMP.em
@@ -650,7 +649,7 @@ class Representation(object):
         # compute or read gaussians
         density_particles = []
         if inputfile:
-            IMP.isd_emxl.gmm_tools.decorate_gmm_from_text(
+            IMP.isd.gmm_tools.decorate_gmm_from_text(
                 inputfile, density_particles,
                 self.m, transform)
         elif density_ps_to_copy:
@@ -673,12 +672,12 @@ class Representation(object):
                 pos=IMP.core.XYZ(self.m,p.get_particle_index()).get_coordinates()
                 density_particles=[]
                 try:
-                    IMP.isd_emxl.get_data_path("beads/bead_%i.txt"%nres)
+                    IMP.isd.get_data_path("beads/bead_%i.txt"%nres)
                 except:
                     raise Exception("We haven't created a bead file for",nres,"residues")
                 transform = IMP.algebra.Transformation3D(pos)
-                IMP.isd_emxl.gmm_tools.decorate_gmm_from_text(
-                    IMP.isd_emxl.get_data_path("beads/bead_%i.txt"%nres), density_particles,
+                IMP.isd.gmm_tools.decorate_gmm_from_text(
+                    IMP.isd.get_data_path("beads/bead_%i.txt"%nres), density_particles,
                     self.m, transform)
         else:
             #compute the gaussians here
@@ -686,7 +685,7 @@ class Representation(object):
                 print "add_component_density: no particle was selected"
                 return out_hier
 
-            density_particles = IMP.isd_emxl.gmm_tools.sample_and_fit_to_particles(
+            density_particles = IMP.isd.gmm_tools.sample_and_fit_to_particles(
                 self.m,
                 fragment_particles,
                 num_components,
@@ -727,8 +726,6 @@ class Representation(object):
         intermediate_map_fn:    for debugging, this will write the itermediate (simulated) map
         '''
 
-        import IMP.isd_emxl
-        import IMP.isd_emxl.gmm_tools
         import IMP.em
         import numpy as np
         import sys
@@ -770,7 +767,7 @@ class Representation(object):
 
         if not output_map is None:
             print 'writing map to', output_map
-            IMP.isd_emxl.gmm_tools.write_gmm_to_map(
+            IMP.isd.gmm_tools.write_gmm_to_map(
                 fragment_particles,
                 output_map,
                 voxel_size)

@@ -6,6 +6,7 @@ import IMP.algebra
 import IMP.atom
 import IMP.container
 import IMP.isd
+import IMP.isd.gmm_tools
 
 
 class GaussianEMRestraint(object):

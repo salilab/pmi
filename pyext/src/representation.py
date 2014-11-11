@@ -620,6 +620,7 @@ class Representation(object):
         import numpy as np
         import sys
         import IMP.em
+        import IMP.isd.gmm_tools
 
         # prepare output
         self.representation_is_modified = True

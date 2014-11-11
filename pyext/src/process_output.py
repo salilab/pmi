@@ -63,11 +63,11 @@ if argparse:
         help="Search a line from the file. Specify the value to be searched for. ")
     parser.add_argument(
         '--nframe',
-        action="store_true",        
+        action="store_true",
         dest="nframe",
         default=False,
         help="Print the frame number as initial column")
-        
+
     result = parser.parse_args()
 
 else:
@@ -142,7 +142,7 @@ else:
     parser.add_option(
         '--nframe',
         dest="nframe",
-        action="store_true",        
+        action="store_true",
         default=False,
         help="Print the frame number as initial column")
 
@@ -244,7 +244,7 @@ if not result.fields is None:
         if not result.nframe:
             print "> " + s0
         else:
-            print str(line_number)+ " > " + s0            
+            print str(line_number)+ " > " + s0
     f.close()
 
 

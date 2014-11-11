@@ -33,10 +33,10 @@ class ReplicaExchange0(object):
                  crosslink_restraints=None,
                  monte_carlo_temperature=1.0,
                  simulated_annealing=False,
-                 simulated_annealing_minimum_temperature=1.0, 
-                 simulated_annealing_maximum_temperature=2.5,  
-                 simulated_annealing_minimum_temperature_nframes=100,    
-                 simulated_annealing_maximum_temperature_nframes=100,                                                               
+                 simulated_annealing_minimum_temperature=1.0,
+                 simulated_annealing_maximum_temperature=2.5,
+                 simulated_annealing_minimum_temperature_nframes=100,
+                 simulated_annealing_maximum_temperature_nframes=100,
                  replica_exchange_minimum_temperature=1.0,
                  replica_exchange_maximum_temperature=2.5,
                  num_sample_rounds=1,
@@ -124,12 +124,12 @@ class ReplicaExchange0(object):
         self.vars["simulated_annealing_minimum_temperature"]=\
                                    simulated_annealing_minimum_temperature
         self.vars["simulated_annealing_maximum_temperature"]=\
-                                   simulated_annealing_maximum_temperature 
+                                   simulated_annealing_maximum_temperature
         self.vars["simulated_annealing_minimum_temperature_nframes"]=\
                                    simulated_annealing_minimum_temperature_nframes
         self.vars["simulated_annealing_maximum_temperature_nframes"]=\
                                    simulated_annealing_maximum_temperature_nframes
-            
+
         self.vars["num_sample_rounds"] = num_sample_rounds
         self.vars[
             "number_of_best_scoring_models"] = number_of_best_scoring_models
@@ -174,26 +174,26 @@ class ReplicaExchange0(object):
                                                  self.monte_carlo_sample_objects,
                                                  self.vars["monte_carlo_temperature"])
             if self.vars["simulated_annealing"]:
-               tmin=self.vars["simulated_annealing_minimum_temperature"]
-               tmax=self.vars["simulated_annealing_maximum_temperature"]
-               nfmin=self.vars["simulated_annealing_minimum_temperature_nframes"]
-               nfmax=self.vars["simulated_annealing_maximum_temperature_nframes"]
-               sampler_mc.set_simulated_annealing(tmin,tmax,nfmin,nfmax)
+                tmin=self.vars["simulated_annealing_minimum_temperature"]
+                tmax=self.vars["simulated_annealing_maximum_temperature"]
+                nfmin=self.vars["simulated_annealing_minimum_temperature_nframes"]
+                nfmax=self.vars["simulated_annealing_maximum_temperature_nframes"]
+                sampler_mc.set_simulated_annealing(tmin,tmax,nfmin,nfmax)
             self.output_objects.append(sampler_mc)
             samplers.append(sampler_mc)
-            
-            
+
+
         if self.molecular_dynamics_sample_objects is not None:
             print "Setting up MolecularDynamics"
             sampler_md = IMP.pmi.samplers.MolecularDynamics(self.model,
                                                        self.molecular_dynamics_sample_objects,
                                                        self.vars["monte_carlo_temperature"])
             if self.vars["simulated_annealing"]:
-               tmin=self.vars["simulated_annealing_minimum_temperature"]
-               tmax=self.vars["simulated_annealing_maximum_temperature"]
-               nfmin=self.vars["simulated_annealing_minimum_temperature_nframes"]
-               nfmax=self.vars["simulated_annealing_maximum_temperature_nframes"]
-               sampler_md.set_simulated_annealing(tmin,tmax,nfmin,nfmax)                                                       
+                tmin=self.vars["simulated_annealing_minimum_temperature"]
+                tmax=self.vars["simulated_annealing_maximum_temperature"]
+                nfmin=self.vars["simulated_annealing_minimum_temperature_nframes"]
+                nfmax=self.vars["simulated_annealing_maximum_temperature_nframes"]
+                sampler_md.set_simulated_annealing(tmin,tmax,nfmin,nfmax)
             self.output_objects.append(sampler_md)
             samplers.append(sampler_md)
 # -------------------------------------------------------------------------
@@ -482,23 +482,23 @@ class BuildModel1(object):
         if component_topologies != None:
             data=component_topologies
             data_type="topology"
-            if list_of_rigid_bodies==None: print "WARNING: No list of rigid bodies inputted to build_model()" 
-            if list_of_super_rigid_bodies==None: print "WARNING: No list of super rigid bodies inputted to build_model()" 
-            if chain_of_super_rigid_bodies==None: print "WARNING: No chain of super rigid bodies inputted to build_model()" 
+            if list_of_rigid_bodies==None: print "WARNING: No list of rigid bodies inputted to build_model()"
+            if list_of_super_rigid_bodies==None: print "WARNING: No list of super rigid bodies inputted to build_model()"
+            if chain_of_super_rigid_bodies==None: print "WARNING: No chain of super rigid bodies inputted to build_model()"
         elif data_structure != None:
             data=data_structure
             data_type=="dict"
         else:
             print "ERROR: No data structure or topology information given to build_model(). Exiting..."
             exit()
-        
+
         for c in data:
             self.domain_dict={}
             self.resdensities={}
             super_rigid_bodies={}
             chain_super_rigid_bodies={}
-            rigid_bodies={}  
-            if data_type=="topology":     
+            rigid_bodies={}
+            if data_type=="topology":
                 comp_name         = c.name
                 hier_name         = c.domain_name
                 color             = c.color
@@ -516,9 +516,9 @@ class BuildModel1(object):
                 em_txt_file_name  = c.gmm_file
                 em_mrc_file_name  = c.mrc_file
                 chain_of_super_rb = chain_of_super_rigid_bodies
-   
+
             elif data_type=="dict":
-  
+
                 comp_name         = d[0]
                 hier_name         = d[1]
                 color             = d[2]

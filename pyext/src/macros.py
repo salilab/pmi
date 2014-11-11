@@ -487,7 +487,7 @@ class BuildModel1(object):
             if chain_of_super_rigid_bodies==None: print "WARNING: No chain of super rigid bodies inputted to build_model()"
         elif data_structure != None:
             data=data_structure
-            data_type=="dict"
+            data_type="dict"
         else:
             raise ValueError("No data structure or topology information given to build_model().")
         for c in data:
@@ -517,26 +517,26 @@ class BuildModel1(object):
 
             elif data_type=="dict":
 
-                comp_name         = d[0]
-                hier_name         = d[1]
-                color             = d[2]
-                fasta_file        = d[3]
-                fasta_id          = d[4]
-                pdb_name          = d[5]
-                chain_id          = d[6]
-                res_range         = d[7][0:2]
+                comp_name         = c[0]
+                hier_name         = c[1]
+                color             = c[2]
+                fasta_file        = c[3]
+                fasta_id          = c[4]
+                pdb_name          = c[5]
+                chain_id          = c[6]
+                res_range         = c[7][0:2]
                 try:
-                    offset         = d[7][2]
+                    offset         = c[7][2]
                 except:
                     offset         = 0
-                read_em_files     = d[8]
-                bead_size         = d[9]
-                rb                = d[10]
-                super_rb          = d[11]
-                em_num_components = d[12]
-                em_txt_file_name  = d[13]
-                em_mrc_file_name  = d[14]
-                chain_of_super_rb = d[15]
+                read_em_files     = c[8]
+                bead_size         = c[9]
+                rb                = c[10]
+                super_rb          = c[11]
+                em_num_components = c[12]
+                em_txt_file_name  = c[13]
+                em_mrc_file_name  = c[14]
+                chain_of_super_rb = c[15]
 
             else:
                 raise RuntimeError("Something went horribly wrong. This error should never appear")

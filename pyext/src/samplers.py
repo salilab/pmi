@@ -103,8 +103,7 @@ class MonteCarlo(object):
 
                 if "Nuisances" in k:
                     if not self.isd_available:
-                        print "MonteCarlo: isd module needed to use nuisances"
-                        exit()
+                        raise ValueError("isd module needed to use nuisances")
                     mvs = self.get_nuisance_movers(pts[k][0], pts[k][1])
                     for mv in mvs:
                         mv.set_name(k)
@@ -112,8 +111,7 @@ class MonteCarlo(object):
 
                 if "Weights" in k:
                     if not self.isd_available:
-                        print "MonteCarlo: isd module needed to use weights"
-                        exit()
+                        raise ValueError("isd module needed to use weights")
                     mvs = self.get_weight_movers(pts[k][0], pts[k][1])
                     for mv in mvs:
                         mv.set_name(k)
@@ -287,8 +285,7 @@ class MonteCarlo(object):
         for fb in fbs:
             # check is that is a rigid body member:
             if IMP.core.NonRigidMember.get_is_setup(fb):
-                print "particle is part of a rigid body"
-                exit()
+                raise ValueError("particle is part of a rigid body")
             else:
                 # otherwise use the normal ball mover
                 mvs.append(IMP.core.NormalMover([fb], [Xfloatkey], maxtrans))

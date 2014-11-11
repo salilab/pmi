@@ -40,9 +40,8 @@ class Alignment(object):
         self.weights=weights
 
         if len(self.query.keys()) != len(self.template.keys()):
-            print '''ERROR: the number of proteins
-                               in template and query does not match!'''
-            exit()
+            raise ValueError('''the number of proteins
+                               in template and query does not match!''')
 
     def permute(self):
 
@@ -115,9 +114,8 @@ class Alignment(object):
             #query_xyz = np.array(query_xyz)
 
             if len(template_xyz) != len(query_xyz):
-                print '''ERROR: the number of coordinates
-                               in template and query does not match!'''
-                exit()
+                raise ValueError('''the number of coordinates
+                               in template and query does not match!''')
 
             transformation = IMP.algebra.get_transformation_aligning_first_to_second(
                 query_xyz,
@@ -740,8 +738,7 @@ class GetContactMap(object):
         # add cross-links
         if skip_xl == 0:
             if self.XL == {}:
-                print "ERROR: cross-links were not provided, use add_xlinks function!"
-                exit()
+                raise ValueError("cross-links were not provided, use add_xlinks function!")
             Matrices_xl = {}
             missing_xl = []
             for p1 in xrange(len(proteins)):
@@ -780,8 +777,7 @@ class GetContactMap(object):
                                 xl2 = pl2
                             mtr[xl2 - 1, xl1 - 1] = 100
                     else:
-                        print 'WTF!'
-                        exit()
+                        raise RuntimeError('WTF!')
                     Matrices_xl[(pn1, pn2)] = mtr
 
         # expand the matrix to individual residues
@@ -1933,7 +1929,7 @@ class Precision(object):
         if resolution in ["one", "ten"]:
             self.resolution=resolution
         else:
-            print "no such resolution"; exit()
+            raise KeyError("no such resolution")
 
 
 
@@ -1965,8 +1961,7 @@ class Precision(object):
             self.len_particles_resolution_one=len(particles_resolution_one)
         else:
             if self.len_particles_resolution_one!=len(particles_resolution_one):
-                print "Error: the new coordinate set is not compatible with the previous one"
-                exit()
+                raise ValueError("the new coordinate set is not compatible with the previous one")
 
         return particles_resolution_one, prots
 
@@ -2104,8 +2099,7 @@ class Precision(object):
                 cc=map(lambda p: tuple(IMP.core.XYZ(p).get_coordinates()), sorted_intersection)
                 selected_coordinates+=cc
             else:
-                print "Selection error"
-                exit()
+                raise ValueError("Selection error")
         return selected_coordinates
 
     def set_threshold(self,threshold):
@@ -2192,8 +2186,7 @@ class Precision(object):
             pair_combination_list=list(itertools.product(structure_pointers_1,structure_pointers_2))
 
             if len(pair_combination_list)==0:
-                print "get_precision> no structure selected. Check the skip parameter."
-                exit()
+                raise ValueError("no structure selected. Check the skip parameter.")
 
             my_pair_combination_list=IMP.pmi.tools.chunk_list_into_segments(pair_combination_list,number_of_processes)[rank]
             my_length=len(my_pair_combination_list)
@@ -2364,7 +2357,7 @@ class Precision(object):
         if style in self.styles:
             self.style=style
         else:
-            print "No such style"; exit()
+            raise ValueError("No such style")
 
 
 

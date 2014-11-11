@@ -156,8 +156,7 @@ isstat2 = False
 if not result.filename is None:
     f = open(result.filename, "r")
 else:
-    print "Error: No file name provided. Use -h for help"
-    exit()
+    raise ValueError("No file name provided. Use -h for help")
 
 # get the keys from the first line
 for line in f.readlines():
@@ -215,8 +214,7 @@ if not result.fields is None:
             1,
             match_strictness)
         if len(found_entries) == 0:
-            print "Error: field " + field + " non found"
-            exit()
+            raise ValueError("field " + field + " non found")
         else:
             field_list.append(found_entries[0])
 
@@ -283,8 +281,7 @@ if (not result.search_field is None) and (not result.search_value is None):
         1,
         match_strictness)
     if len(found_entries) == 0:
-        print "Error: field " + results.search_field + " non found"
-        exit()
+        raise ValueError("field " + results.search_field + " non found")
     else:
         corrected_field = found_entries[0]
     # print fields values

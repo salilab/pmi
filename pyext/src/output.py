@@ -352,8 +352,7 @@ class Output(object):
         # check that all objects in listofobjects have a get_output method
         for l in listofobjects:
             if not "get_output" in dir(l):
-                print "Output: object", l,"doesn't have get_output() method"
-                exit()
+                raise ValueError("Output: object %s doesn't have get_output() method" % str(l))
         self.dictionary_stats[name] = listofobjects
 
     def set_output_entry(self, key, value):
@@ -404,8 +403,7 @@ class Output(object):
         output = self.initoutput
         for l in listofobjects:
             if not "get_test_output" in dir(l) and not "get_output" in dir(l):
-                print "Output: object ", l, " doesn't have get_output() or get_test_output() method"
-                exit()
+                raise ValueError("Output: object %s doesn't have get_output() or get_test_output() method" % str(l))
         self.dictionary_stats[name] = listofobjects
 
         for obj in self.dictionary_stats[name]:
@@ -427,8 +425,7 @@ class Output(object):
         output = self.initoutput
         for l in listofobjects:
             if not "get_test_output" in dir(l) and not "get_output" in dir(l):
-                print "Output: object ", l, " doesn't have get_output() or get_test_output() method"
-                exit()
+                raise ValueError("Output: object %s doesn't have get_output() or get_test_output() method" % str(l))
         for obj in listofobjects:
             try:
                 output.update(obj.get_test_output())
@@ -512,8 +509,7 @@ class Output(object):
 
         for l in listofobjects:
             if not "get_output" in dir(l):
-                print "Output: object ", l, " doesn't have get_output() method"
-                exit()
+                raise ValueError("Output: object %s doesn't have get_output() method" % str(l))
             else:
                 d = l.get_output()
                 # remove all entries that begin with _ (private entries)
@@ -525,12 +521,10 @@ class Output(object):
         for l in listofsummedobjects:
             for t in l[0]:
                 if not "get_output" in dir(t):
-                    print "Output: object ", t, " doesn't have get_output() method"
-                    exit()
+                    raise ValueError("Output: object %s doesn't have get_output() method" % str(t))
                 else:
                     if "_TotalScore" not in t.get_output():
-                        print "Output: object ", t, " doesn't have _TotalScore entry to be summed"
-                        exit()
+                        raise ValueError("Output: object %s doesn't have _TotalScore entry to be summed" % str(t))
                     else:
                         output.update({l[1]: 0.0})
 
@@ -601,8 +595,7 @@ class ProcessOutput(object):
         if not self.filename is None:
             f = open(self.filename, "r")
         else:
-            print "Error: No file name provided. Use -h for help"
-            exit()
+            raise ValueError("No file name provided. Use -h for help")
 
         # get the keys from the first line
         for line in f.readlines():

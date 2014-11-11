@@ -107,8 +107,7 @@ class ParticleToSampleList(object):
         particle_transformation,
             name):
         if not particle_type in ["Rigid_Bodies", "Floppy_Bodies", "Nuisances", "X_coord", "Weights"]:
-            print "ParticleToSampleList: not the right particle type"
-            exit()
+            raise TypeError("not the right particle type")
         else:
             self.dictionary_particle_type[particle] = particle_type
             if particle_type == "Rigid_Bodies":
@@ -117,16 +116,14 @@ class ParticleToSampleList(object):
                         particle] = particle_transformation
                     self.dictionary_particle_name[particle] = name
                 else:
-                    print "ParticleToSampleList: not the right transformation format for Rigid_Bodies, should be a tuple a floats"
-                    exit()
+                    raise TypeError("ParticleToSampleList: not the right transformation format for Rigid_Bodies, should be a tuple a floats")
             else:
                 if type(particle_transformation) == float:
                     self.dictionary_particle_transformation[
                         particle] = particle_transformation
                     self.dictionary_particle_name[particle] = name
                 else:
-                    print "ParticleToSampleList: not the right transformation format sould be a float"
-                    exit()
+                    raise TypeError("ParticleToSampleList: not the right transformation format sould be a float")
 
     def get_particles_to_sample(self):
         ps = {}
@@ -519,10 +516,7 @@ def get_closest_residue_position(hier, resindex, terminus="N"):
         raise Exception, "get_closest_residue_position: got NO residues for hierarchy %s and residue %i" % (
             hier, resindex)
     else:
-        print "get_closest_residue_position: got multiple residues for hierarchy %s and residue %i" % (hier, resindex)
-        print "the list of particles is", [pp.get_name() for pp in p]
-        exit()
-
+        raise ValueError("got multiple residues for hierarchy %s and residue %i; the list of particles is %s" % (hier, resindex, str([pp.get_name() for pp in p])))
 
 def get_position_terminal_residue(hier, terminus="C", resolution=1):
     '''
@@ -550,8 +544,7 @@ def get_position_terminal_residue(hier, terminus="C", resolution=1):
                     termresidue = min(residues)
                     termparticle = p
             else:
-                print "get_position_terminal_residue> terminus argument should be either N or C"
-                exit()
+                raise ValueError("terminus argument should be either N or C")
 
     return IMP.core.XYZ(termparticle).get_coordinates()
 
@@ -625,8 +618,7 @@ class map(object):
         elif type(invalue) == str:
             return self.map[invalue]
         else:
-            print "wrong type for map"
-            exit()
+            raise TypeError("wrong type for map")
 
 
 def select(representation,
@@ -742,8 +734,7 @@ def select_by_tuple(
                                          name=tupleselection,
                                          name_is_ambiguous=name_is_ambiguous)
     else:
-        print 'you passed something bad to select_by_tuple()'
-        exit()
+        raise ValueError('you passed something bad to select_by_tuple()')
     # now order the result by residue number
     particles = IMP.pmi.tools.sort_by_residues(particles)
 
@@ -985,8 +976,7 @@ def scatter_and_gather(data):
             elif type(data) == dict:
                 data.update(data_tmp)
             else:
-                print "tools.scatter_and_gather: data not supported, use list or dictionaries"
-                exit()
+                raise TypeError("data not supported, use list or dictionaries")
 
         for i in range(1, number_of_processes):
             comm.send(data, dest=i, tag=11)

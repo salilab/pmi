@@ -489,9 +489,7 @@ class BuildModel1(object):
             data=data_structure
             data_type=="dict"
         else:
-            print "ERROR: No data structure or topology information given to build_model(). Exiting..."
-            exit()
-
+            raise ValueError("No data structure or topology information given to build_model().")
         for c in data:
             self.domain_dict={}
             self.resdensities={}
@@ -541,8 +539,7 @@ class BuildModel1(object):
                 chain_of_super_rb = d[15]
 
             else:
-                print "Something went horribly wrong. This error should never appear"
-                exit()
+                raise RuntimeError("Something went horribly wrong. This error should never appear")
 
             if comp_name not in self.simo.get_component_names():
                 self.simo.create_component(comp_name,color=0.0)

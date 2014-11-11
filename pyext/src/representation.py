@@ -184,8 +184,7 @@ class Representation(object):
         try:
             length = len(record_dict[id].seq)
         except KeyError:
-            print "add_component_sequence: id %s not found in fasta file" % id
-            exit()
+            raise KeyError("id %s not found in fasta file" % id)
 
         self.sequence_dict[name] = str(record_dict[id].seq).replace("*", "")
         if offs is not None:
@@ -385,9 +384,8 @@ class Representation(object):
 
         ps = sel.get_selected_particles()
         if len(ps) == 0:
-            print "ERROR add_component_pdb: %s no residue found in pdb %s chain %s that overlaps with the queried stretch %s-%s" \
-                  % (name, pdbname, str(chain), str(resrange[0]), str(resrange[1]))
-            exit()
+            raise ValueError("%s no residue found in pdb %s chain %s that overlaps with the queried stretch %s-%s" \
+                  % (name, pdbname, str(chain), str(resrange[0]), str(resrange[1])))
         c0 = IMP.atom.Chain.setup_particle(IMP.Particle(self.m), "X")
 
         for p in ps:
@@ -835,9 +833,7 @@ class Representation(object):
             rmf_file_name)
 
         if not prot:
-
-            print "set_coordinates_from_rmf: cannot read hiearchy from rmf"
-            exit()
+            raise ValueError("cannot read hiearchy from rmf")
         # if len(self.rigid_bodies)!=0:
         #   print "set_coordinates_from_rmf: cannot proceed if rigid bodies were initialized. Use the function before defining the rigid bodies"
         #   exit()
@@ -856,19 +852,16 @@ class Representation(object):
         psrepr = IMP.atom.get_leaves(self.hier_dict[component_name])
 
         if len(psrmf) != len(psrepr):
-            print "set_coordinates_from_rmf: cannot proceed the rmf and the representation don't have the same number of particles"
-            print "particles in rmf: %s particles in the representation: %s" % (str(len(psrmf)), str(len(psrepr)))
-            exit()
+            raise ValueError("cannot proceed the rmf and the representation don't have the same number of particles; "
+                           "particles in rmf: %s particles in the representation: %s" % (str(len(psrmf)), str(len(psrepr))))
 
         for n, prmf in enumerate(psrmf):
             prmfname = prmf.get_name()
             preprname = psrepr[n].get_name()
             if IMP.core.RigidMember.get_is_setup(psrepr[n]):
-                print "set_coordinates_from_rmf: component %s cannot proceed if rigid bodies were initialized. Use the function before defining the rigid bodies" % component_name
-                exit()
+                raise ValueError("component %s cannot proceed if rigid bodies were initialized. Use the function before defining the rigid bodies" % component_name)
             if IMP.core.NonRigidMember.get_is_setup(psrepr[n]):
-                print "set_coordinates_from_rmf: component %s cannot proceed if rigid bodies were initialized. Use the function before defining the rigid bodies" % component_name
-                exit()
+                raise ValueError("component %s cannot proceed if rigid bodies were initialized. Use the function before defining the rigid bodies" % component_name)
 
             if prmfname != preprname:
                 print "set_coordinates_from_rmf: WARNING rmf particle and representation particles have not the same name %s %s " % (prmfname, preprname)
@@ -1160,8 +1153,7 @@ class Representation(object):
                             print "shuffle_configuration: rigid body placed close to other %d particles, trying again..." % npairs
                             print "shuffle_configuration: rigid body name: " + rb.get_name()
                             if niter == niterations:
-                                print "shuffle_configuration: tried the maximum number of iterations to avoid collisions, increase the distance cutoff"
-                                exit()
+                                raise ValueError("tried the maximum number of iterations to avoid collisions, increase the distance cutoff")
                     else:
                         break
 
@@ -1207,8 +1199,7 @@ class Representation(object):
                         niter += 1
                         print "shuffle_configuration: floppy body placed close to other %d particles, trying again..." % npairs
                         if niter == niterations:
-                            print "shuffle_configuration: tried the maximum number of iterations to avoid collisions, increase the distance cutoff"
-                            exit()
+                            raise ValueError("tried the maximum number of iterations to avoid collisions, increase the distance cutoff")
                 else:
                     break
 

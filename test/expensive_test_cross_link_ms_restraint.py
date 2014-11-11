@@ -82,7 +82,7 @@ def init_representation_complex(m):
     hierarchies = {}
     for n in range(len(components)):
         r.create_component(components[n], color=colors[n])
-        r.add_component_sequence(components[n], fastafile, id="1WCM:"+chains[n]+"|PDBID|CHAIN|SEQUENCE")
+        r.add_component_sequence(components[n], fastafile, id="1WCM:"+chains[n])
         hierarchies[components[n]] = r.autobuild_model(
             components[n], pdbfile, chains[n],
             resolutions=[1, 10, 100], missingbeadsize=beadsize)

@@ -480,22 +480,25 @@ class BuildModel1(object):
     def build_model(self,component_topologies=None,list_of_rigid_bodies=None, list_of_super_rigid_bodies=None,chain_of_super_rigid_bodies=None,data_structure=None,sequence_connectivity_scale=4.0):
 
         if component_topologies != None:
-            data=component_topologies
-            data_type="topology"
+            data = component_topologies
+            data_type = "topology"
             if list_of_rigid_bodies==None: print "WARNING: No list of rigid bodies inputted to build_model()"
             if list_of_super_rigid_bodies==None: print "WARNING: No list of super rigid bodies inputted to build_model()"
             if chain_of_super_rigid_bodies==None: print "WARNING: No chain of super rigid bodies inputted to build_model()"
         elif data_structure != None:
-            data=data_structure
-            data_type="dict"
+            data = data_structure
+            data_type = "dict"
         else:
             raise ValueError("No data structure or topology information given to build_model().")
+
+        self.domain_dict={}
+        self.resdensities={}
+        super_rigid_bodies={}
+        chain_super_rigid_bodies={}
+        rigid_bodies={}
+
         for c in data:
-            self.domain_dict={}
-            self.resdensities={}
-            super_rigid_bodies={}
-            chain_super_rigid_bodies={}
-            rigid_bodies={}
+
             if data_type=="topology":
                 comp_name         = c.name
                 hier_name         = c.domain_name
@@ -516,7 +519,6 @@ class BuildModel1(object):
                 chain_of_super_rb = chain_of_super_rigid_bodies
 
             elif data_type=="dict":
-
                 comp_name         = c[0]
                 hier_name         = c[1]
                 color             = c[2]

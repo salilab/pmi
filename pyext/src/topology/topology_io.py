@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
 """@namespace IMP.pmi.topology_io
-   Utilities for interpreting and analyzing sequence data
+   * Class for storing topology elements of PMI components
+   * Functions for reading these elementsfrom a formatted PMI topology file
+   * Functions for converting an existing IMP hierarchy into PMI topology
+   * TopologyWriter for writing PMI topology files
 """
 
 import IMP
@@ -10,10 +13,11 @@ import IMP.base
 import csv
 import os
 
+
 class TopologyReader(object):
     '''
     This class reads in a standard pipe-delimited PMI topology file
-    and stores the items as a topology class for input into IMP.pmi.autobuild_model()
+    and stores the items as a ComponentTopology class for input into IMP.pmi.autobuild_model()
     '''
     def __init__(self, topology_file):
         self.topology_file = topology_file

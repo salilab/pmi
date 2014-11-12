@@ -57,7 +57,7 @@ class TopologyReader(object):
         with open(topology_file) as infile:
             for line in infile:
 
-                if line.lstrip()=="":
+                if line.lstrip()=="" or line[0]=="#":
                     continue
 
                 elif line.split('|')[1]=="topology_dictionary":
@@ -101,11 +101,11 @@ class TopologyReader(object):
         c=ComponentTopology()
         no_error=True
     ##### Required fields
-        c.name          = values[fields.index("component_name")]
-        c.domain_name   = values[fields.index("domain_name")]
+        c.name          = values[fields.index("component_name")].strip()
+        c.domain_name   = values[fields.index("domain_name")].strip()
         c.fasta_file    = self._make_path(defaults['fasta_dir'],
                                           values[fields.index("fasta_fn")])
-        c.fasta_id      = values[fields.index("fasta_id")]
+        c.fasta_id      = values[fields.index("fasta_id")].strip()
         c.pdb_file      = self._make_path(defaults['pdb_dir'],
                                           values[fields.index("pdb_fn")])
         # Need to find a way to define color

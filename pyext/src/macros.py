@@ -511,10 +511,10 @@ class BuildModel1(object):
                 print "WARNING: No list of super rigid bodies inputted to build_model()"
             if chain_of_super_rigid_bodies is None:
                 print "WARNING: No chain of super rigid bodies inputted to build_model()"
-            all_dnames = [d for sublist in list_of_rigid_bodies+list_of_super_rigid_bodies\
-                          +chain_of_super_rigid_bodies for d in sublist]
-            if any((dname in [c.domain_name for c in component_topologies] \
-                    for dname in all_dnames)):
+            all_dnames = set([d for sublist in list_of_rigid_bodies+list_of_super_rigid_bodies\
+                          +chain_of_super_rigid_bodies for d in sublist])
+            all_available = set([c.domain_name for c in component_topologies])
+            if not all_dnames <= all_available:
                 raise ValueError("All requested movers must reference domain "
                                  "names in the component topologies")
 
@@ -523,7 +523,7 @@ class BuildModel1(object):
             data_type="dict"
         else:
             raise ValueError("No data structure or topology information given to build_model().")
-
+        print "Data type is",data_type
         self.domain_dict={}
         self.resdensities={}
         super_rigid_bodies={}
@@ -635,7 +635,7 @@ class BuildModel1(object):
             # store densities
             self.resdensities[hier_name]=dens_hier
             self.domain_dict[hier_name]=outhier+dens_hier
-
+        print 'got domains',self.domain_dict.keys()
         # setup basic restraints
         for c in self.simo.get_component_names():
             self.simo.setup_component_sequence_connectivity(c,scale=sequence_connectivity_scale)
@@ -657,7 +657,7 @@ class BuildModel1(object):
                 crb=[]
                 for crbmember in rblist:
                     crb+=[h for h in self.domain_dict[crbmember]]
-                self.simo.set_set_chain_of_super_rigid_bodies(crb,2,3)
+                self.simo.set_chain_of_super_rigid_bodies(crb,2,3)
 
         elif data_type=="dict":
             for rb in rigid_bodies:

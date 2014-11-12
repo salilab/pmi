@@ -20,5 +20,3 @@
 |Rpb10|Rpb10 |1WCM.fasta.txt|1WCM:J|1WCM_map_fitted.pdb|J|all      |0|5|0 |
 |Rpb11|Rpb11 |1WCM.fasta.txt|1WCM:K|1WCM_map_fitted.pdb|K|all      |0|5|0 |
 |Rpb12|Rpb12 |1WCM.fasta.txt|1WCM:L|1WCM_map_fitted.pdb|L|all      |0|5|0 |
-
-

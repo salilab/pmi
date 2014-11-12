@@ -452,7 +452,7 @@ class BuildModel1(object):
     ''' this building scheme requires one of two data types:
           1) a topology class item along with lists of rigid_bodies and super_rigid_bodies
 
-          a data structure with the following fields
+          2) a data structure with the following fields
           comp_name
           hier_name
           color
@@ -477,17 +477,50 @@ class BuildModel1(object):
     def set_gmm_models_directory(self,directory_name):
         self.gmm_models_directory=directory_name
 
-    def build_model(self,component_topologies=None,list_of_rigid_bodies=None, list_of_super_rigid_bodies=None,chain_of_super_rigid_bodies=None,data_structure=None,sequence_connectivity_scale=4.0):
-
+    def build_model(self,
+                    data_structure=None,
+                    component_topologies=None,
+                    list_of_rigid_bodies=None,
+                    list_of_super_rigid_bodies=None,
+                    chain_of_super_rigid_bodies=None,
+                    sequence_connectivity_scale=4.0,
+                    add_each_domain_as_rigid_body=False,
+                    force_create_gmm_files=False):
+        """ Construct the model with topology class + list of movers.
+        @param data_structure Legacy format. Data structure is list of these entries:
+             comp_name, hier_name, color, fasta_file, fasta_id, pdb_name, chain_id,
+             res_range, read_em_files, bead_size, rb, super_rb,
+             em_num_components, em_txt_file_name, em_mrc_file_name
+        @param component_topologies List of IMP.pmi.topology.ComponentTopology items
+        @param list_of_rigid_bodies List of lists of domain names from the components.
+        @param list_of_super_rigid_bodies List of lists of domain names from the components.
+        @param chain_of_super_rigid_bodies List of lists of domain names from the components
+                                           Choices can only be from the same molecule
+        @param sequence_connectivity_scale For scaling the connectivity restraint
+        @param add_each_domain_as_rigid_body That way you don't have to put all of them in the list
+        @param force_create_gmm_files If True, will sample and create GMMs no matter what.
+                                  If False, will only only sample if the files don't exist.
+                                  If number of Gaussians is zero, won't do anything.
+        """
         if component_topologies is not None:
-            data = component_topologies
-            data_type = "topology"
-            if list_of_rigid_bodies is None: print "WARNING: No list of rigid bodies inputted to build_model()"
-            if list_of_super_rigid_bodies is None: print "WARNING: No list of super rigid bodies inputted to build_model()"
-            if chain_of_super_rigid_bodies is None: print "WARNING: No chain of super rigid bodies inputted to build_model()"
+            data=component_topologies
+            data_type="topology"
+            if list_of_rigid_bodies is None:
+                print "WARNING: No list of rigid bodies inputted to build_model()"
+            if list_of_super_rigid_bodies is None:
+                print "WARNING: No list of super rigid bodies inputted to build_model()"
+            if chain_of_super_rigid_bodies is None:
+                print "WARNING: No chain of super rigid bodies inputted to build_model()"
+            all_dnames = [d for sublist in list_of_rigid_bodies+list_of_super_rigid_bodies\
+                          +chain_of_super_rigid_bodies for d in sublist]
+            if any((dname in [c.domain_name for c in component_topologies] \
+                    for dname in all_dnames)):
+                raise ValueError("All requested movers must reference domain "
+                                 "names in the component topologies")
+
         elif data_structure is not None:
-            data = data_structure
-            data_type = "dict"
+            data=data_structure
+            data_type="dict"
         else:
             raise ValueError("No data structure or topology information given to build_model().")
 
@@ -498,7 +531,6 @@ class BuildModel1(object):
         rigid_bodies={}
 
         for c in data:
-
             if data_type=="topology":
                 comp_name         = c.name
                 hier_name         = c.domain_name
@@ -509,15 +541,10 @@ class BuildModel1(object):
                 chain_id          = c.chain
                 res_range         = c.residue_range
                 offset            = c.pdb_offset
-                read_em_files     = c.read_em_files
                 bead_size         = c.bead_size
-                rb                = list_of_rigid_bodies
-                super_rb          = list_of_super_rigid_bodies
                 em_num_components = c.em_residues_per_gaussian
                 em_txt_file_name  = c.gmm_file
                 em_mrc_file_name  = c.mrc_file
-                chain_of_super_rb = chain_of_super_rigid_bodies
-
             elif data_type=="dict":
                 comp_name         = c[0]
                 hier_name         = c[1]
@@ -540,67 +567,105 @@ class BuildModel1(object):
                 em_mrc_file_name  = c[14]
                 chain_of_super_rb = c[15]
 
-            else:
-                raise RuntimeError("Something went horribly wrong. This error should never appear")
-
             if comp_name not in self.simo.get_component_names():
                 self.simo.create_component(comp_name,color=0.0)
                 self.simo.add_component_sequence(comp_name,fasta_file,fasta_id)
-            outhier=self.autobuild(self.simo,comp_name,pdb_name,chain_id,res_range,read=read_em_files,beadsize=bead_size,color=color,offset=offset)
 
+            # call autobuild, which sets up the resolutions and adds flexible beads connecting things
 
-            if not read_em_files is None:
-                if em_txt_file_name is " ": em_txt_file_name=self.gmm_models_directory+"/"+hier_name+".txt"
-                if em_mrc_file_name is " ": em_mrc_file_name=self.gmm_models_directory+"/"+hier_name+".mrc"
+            if data_type=="topology":
+                # create hierarchy and optionally add EM data
+                if em_num_components==0:
+                    read_em_files=False
+                else:
+                    if (not os.path.isfile(em_txt_file_name)) or force_create_gmm_files:
+                        read_em_files=False
+                    else:
+                        read_em_files=True
+                outhier=self.autobuild(self.simo,comp_name,pdb_name,chain_id,
+                                       res_range,read=read_em_files,beadsize=bead_size,
+                                       color=color,offset=offset)
+                if em_num_components!=0:
+                    dens_hier,beads=self.create_density(self.simo,comp_name,outhier,em_txt_file_name,
+                                                        em_mrc_file_name,em_num_components,read_em_files)
+                    self.simo.add_all_atom_densities(comp_name, hierarchies=beads)
+                    dens_hier+=beads
+                else:
+                    dens_hier=[]
 
+            elif data_type=="dict":
+                # legacy setup
+                outhier=self.autobuild(self.simo,comp_name,pdb_name,chain_id,
+                                       res_range,read=read_em_files,beadsize=bead_size,
+                                       color=color,offset=offset)
 
-                dens_hier,beads=self.create_density(self.simo,comp_name,outhier,em_txt_file_name,em_mrc_file_name,em_num_components,read_em_files)
-                self.simo.add_all_atom_densities(comp_name, hierarchies=beads)
-                dens_hier+=beads
+                if read_em_files is not None:
+                    if em_txt_file_name is " ":
+                        em_txt_file_name=self.gmm_models_directory+"/"+hier_name+".txt"
+                    if em_mrc_file_name is " ":
+                        em_mrc_file_name=self.gmm_models_directory+"/"+hier_name+".mrc"
+                    dens_hier,beads=self.create_density(self.simo,comp_name,outhier,em_txt_file_name,
+                                                        em_mrc_file_name,em_num_components,read_em_files)
+                    self.simo.add_all_atom_densities(comp_name, hierarchies=beads)
+                    dens_hier+=beads
 
-            else:
-                dens_hier=[]
+                else:
+                    dens_hier=[]
 
+                if rb is not None:
+                    if rb not in rigid_bodies:
+                        rigid_bodies[rb]=[h for h in self.domain_dict[hier_name]]
+                    else:
+                        rigid_bodies[rb]+=[h for h in self.domain_dict[hier_name]]
+
+                if super_rb is not None:
+                    for k in super_rb:
+                        if k not in super_rigid_bodies:
+                            super_rigid_bodies[k]=[h for h in self.domain_dict[hier_name]]
+                        else:
+                            super_rigid_bodies[k]+=[h for h in self.domain_dict[hier_name]]
+
+                if chain_of_super_rb is not None:
+                    for k in chain_of_super_rb:
+                        if k not in chain_super_rigid_bodies:
+                            chain_super_rigid_bodies[k]=[h for h in self.domain_dict[hier_name]]
+                        else:
+                            chain_super_rigid_bodies[k]+=[h for h in self.domain_dict[hier_name]]
+
+            # store densities
             self.resdensities[hier_name]=dens_hier
             self.domain_dict[hier_name]=outhier+dens_hier
 
-            if rb is not None:
-                if rb not in rigid_bodies:
-                    rigid_bodies[rb]=[h for h in self.domain_dict[hier_name]]
-                else:
-                    rigid_bodies[rb]+=[h for h in self.domain_dict[hier_name]]
-
-
-            if super_rb is not None:
-                for k in super_rb:
-                    if k not in super_rigid_bodies:
-                        super_rigid_bodies[k]=[h for h in self.domain_dict[hier_name]]
-                    else:
-                        super_rigid_bodies[k]+=[h for h in self.domain_dict[hier_name]]
-
-            if  chain_of_super_rb is not None:
-                for k in chain_of_super_rb:
-                    if k not in chain_super_rigid_bodies:
-                        chain_super_rigid_bodies[k]=[h for h in self.domain_dict[hier_name]]
-                    else:
-                        chain_super_rigid_bodies[k]+=[h for h in self.domain_dict[hier_name]]
-
-        self.rigid_bodies=rigid_bodies
-
-
+        # setup basic restraints
         for c in self.simo.get_component_names():
             self.simo.setup_component_sequence_connectivity(c,scale=sequence_connectivity_scale)
             self.simo.setup_component_geometry(c)
 
+        # create movers
+        if data_type=="topology":
+            for rblist in list_of_rigid_bodies:
+                rb=[]
+                for rbmember in rblist:
+                    rb+=[h for h in self.domain_dict[rbmember]]
+                self.simo.set_rigid_body_from_hierarchies(rb)
+            for srblist in list_of_super_rigid_bodies:
+                srb=[]
+                for srbmember in rblist:
+                    srb+=[h for h in self.domain_dict[srbmember]]
+                self.simo.set_super_rigid_body_from_hierarchies(srb)
+            for clist in chain_of_super_rigid_bodies:
+                crb=[]
+                for crbmember in rblist:
+                    crb+=[h for h in self.domain_dict[crbmember]]
+                self.simo.set_set_chain_of_super_rigid_bodies(crb,2,3)
 
-        for rb in rigid_bodies:
-            self.simo.set_rigid_body_from_hierarchies(rigid_bodies[rb])
-
-        for k in super_rigid_bodies:
-            self.simo.set_super_rigid_body_from_hierarchies(super_rigid_bodies[k])
-
-        for k in chain_super_rigid_bodies:
-            self.simo.set_chain_of_super_rigid_bodies(chain_super_rigid_bodies[k],2,3)
+        elif data_type=="dict":
+            for rb in rigid_bodies:
+                self.simo.set_rigid_body_from_hierarchies(rigid_bodies[rb])
+            for k in super_rigid_bodies:
+                self.simo.set_super_rigid_body_from_hierarchies(super_rigid_bodies[k])
+            for k in chain_super_rigid_bodies:
+                self.simo.set_chain_of_super_rigid_bodies(chain_super_rigid_bodies[k],2,3)
 
         self.simo.set_floppy_bodies()
         self.simo.setup_bonds()
@@ -704,9 +769,9 @@ class BuildModel1(object):
         return outhier,beadbits
 
     def autobuild(self,simo,comname,pdbname,chain,resrange,read=True,beadsize=5,color=0.0,offset=0):
-
         if pdbname is not None and pdbname is not "IDEAL_HELIX" and pdbname is not "BEADS" :
-            if resrange[-1]==-1: resrange=(resrange[0],len(simo.sequence_dict[comname]))
+            if resrange[-1]==-1:
+                resrange=(resrange[0],len(simo.sequence_dict[comname]))
             if read==False:
                 outhier=simo.autobuild_model(comname,
                                  pdbname=pdbname,

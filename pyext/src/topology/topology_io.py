@@ -166,7 +166,6 @@ class TopologyReader(object):
             f=values[fields.index("em_residues_per_gaussian")]
             if self.is_int(f):
                 if int(f) > 0:
-                    c.read_gmm_files=True
                     c.gmm_file=self._make_path(defaults['gmm_dir'],
                                            c.domain_name.strip() + ".txt")
                     c.mrc_file=self._make_path(defaults['gmm_dir'],
@@ -223,8 +222,6 @@ class ComponentTopology(object):
         self.pdb_offset=None
         self.bead_size=None
         self.em_residues_per_gaussian=None
-        self.read_gmm_files=None
         self.gmm_file=None
         self.mrc_file=None
-        self.read_em_files=None
         self.color=None

@@ -14,7 +14,7 @@ import csv
 import os
 
 
-class Topology(object):
+class TopologyReader(object):
     '''
     This class reads in a standard pipe-delimited PMI topology file
     and stores the items as a ComponentTopology class for input into IMP.pmi.autobuild_model()

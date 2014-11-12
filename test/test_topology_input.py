@@ -7,7 +7,7 @@ import os
 
 topology_file=IMP.pmi.get_data_path("topology.txt")
 
-t=IMP.pmi.topology.topology_io.Topology(topology_file)
+t=IMP.pmi.topology.topology_io.TopologyReader(topology_file)
 
 #for c in t.component_list:
 #    print c.name, c.pdb_file, c.residue_range, c.gmm_file

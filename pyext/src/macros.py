@@ -489,7 +489,7 @@ class BuildModel1(object):
             data = data_structure
             data_type = "dict"
         else:
-            raise ValueEr("No data structure or topology information given to build_model().")
+            raise ValueError("No data structure or topology information given to build_model().")
 
         self.domain_dict={}
         self.resdensities={}

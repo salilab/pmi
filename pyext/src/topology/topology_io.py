@@ -14,23 +14,45 @@ import csv
 import os
 
 
-class TopologyReader(object):
+class Topology(object):
     '''
     This class reads in a standard pipe-delimited PMI topology file
     and stores the items as a ComponentTopology class for input into IMP.pmi.autobuild_model()
     '''
     def __init__(self, topology_file):
-        self.topology_file = topology_file
-        is_defaults=False
-        is_topology=False
-        defaults_dict={}
-        linenum=1
+        self.topology_file=topology_file
         self.component_list=[]
         self.defaults={'bead_size'                : 10,
                        'residue_range'            : 'all',
                        'pdb_offset'               : 0,
                        'em_residues_per_gaussian' : 0};
+        self.component_list=self.import_topology_file(topology_file)
 
+
+    def write_topology_file(self,outfile):
+        f=open(outfile, "w")
+        f.write("|directories|\n")
+        print self.defaults
+        for key, value in self.defaults.iteritems():
+            output="|"+str(key)+"|"+str(value)+"|\n"
+            f.write(output)
+        f.write("\n\n")
+        f.write("|topology_dictionary|\n")
+        f.write("|component_name|domain_name|fasta_fn|fasta_id|pdb_fn|chain|residue_range|pdb_offset|bead_size|em_residues_per_gaussian|\n")
+        for c in self.component_list:
+            output="|"+str(c.name)+"|"+str(c.domain_name)+"|"+str(c.fasta_file)+"|"+str(c.fasta_id)+"|"+str(c.pdb_file)+"|"+str(c.chain)+"|"+str(c.residue_range).strip("(").strip(")")+"|"+str(c.pdb_offset)+"|"+str(c.bead_size)+"|"+str(c.em_residues_per_gaussian)+"|\n"
+            f.write(output)
+        return outfile
+
+    def import_topology_file(self, topology_file, append=False):
+        """ Import system components from topology file. append=False will erase current topology and overwrite with new """
+        is_defaults=False
+        is_topology=False
+        defaults_dict={}
+        linenum=1
+
+        if append==False:
+            self.component_list=[]
 
         with open(topology_file) as infile:
             for line in infile:
@@ -60,8 +82,8 @@ class TopologyReader(object):
 
                 #print line, is_defaults, is_topology
                 linenum=linenum+1
-
                 #print self.defaults
+        return self.component_list
 
     def _make_path(self, dirname, fname):
         "Get the full path to a file, possibly relative to the topology file"

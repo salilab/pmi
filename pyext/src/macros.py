@@ -479,17 +479,17 @@ class BuildModel1(object):
 
     def build_model(self,component_topologies=None,list_of_rigid_bodies=None, list_of_super_rigid_bodies=None,chain_of_super_rigid_bodies=None,data_structure=None,sequence_connectivity_scale=4.0):
 
-        if component_topologies != None:
+        if component_topologies is not None:
             data = component_topologies
             data_type = "topology"
-            if list_of_rigid_bodies==None: print "WARNING: No list of rigid bodies inputted to build_model()"
-            if list_of_super_rigid_bodies==None: print "WARNING: No list of super rigid bodies inputted to build_model()"
-            if chain_of_super_rigid_bodies==None: print "WARNING: No chain of super rigid bodies inputted to build_model()"
-        elif data_structure != None:
+            if list_of_rigid_bodies is None: print "WARNING: No list of rigid bodies inputted to build_model()"
+            if list_of_super_rigid_bodies is None: print "WARNING: No list of super rigid bodies inputted to build_model()"
+            if chain_of_super_rigid_bodies is None: print "WARNING: No chain of super rigid bodies inputted to build_model()"
+        elif data_structure is not None:
             data = data_structure
             data_type = "dict"
         else:
-            raise ValueError("No data structure or topology information given to build_model().")
+            raise ValueEr("No data structure or topology information given to build_model().")
 
         self.domain_dict={}
         self.resdensities={}

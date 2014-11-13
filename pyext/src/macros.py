@@ -480,9 +480,9 @@ class BuildModel1(object):
     def build_model(self,
                     data_structure=None,
                     component_topologies=None,
-                    list_of_rigid_bodies=None,
-                    list_of_super_rigid_bodies=None,
-                    chain_of_super_rigid_bodies=None,
+                    list_of_rigid_bodies=[],
+                    list_of_super_rigid_bodies=[],
+                    chain_of_super_rigid_bodies=[],
                     sequence_connectivity_scale=4.0,
                     add_each_domain_as_rigid_body=False,
                     force_create_gmm_files=False):
@@ -505,11 +505,11 @@ class BuildModel1(object):
         if component_topologies is not None:
             data=component_topologies
             data_type="topology"
-            if list_of_rigid_bodies is None:
+            if list_of_rigid_bodies==[]:
                 print "WARNING: No list of rigid bodies inputted to build_model()"
-            if list_of_super_rigid_bodies is None:
+            if list_of_super_rigid_bodies==[]:
                 print "WARNING: No list of super rigid bodies inputted to build_model()"
-            if chain_of_super_rigid_bodies is None:
+            if chain_of_super_rigid_bodies==[]:
                 print "WARNING: No chain of super rigid bodies inputted to build_model()"
             all_dnames = set([d for sublist in list_of_rigid_bodies+list_of_super_rigid_bodies\
                           +chain_of_super_rigid_bodies for d in sublist])
@@ -577,13 +577,16 @@ class BuildModel1(object):
                 # create hierarchy and optionally add EM data
                 if em_num_components==0:
                     read_em_files=False
+                    include_res0=False
                 else:
                     if (not os.path.isfile(em_txt_file_name)) or force_create_gmm_files:
                         read_em_files=False
+                        include_res0=True
                     else:
                         read_em_files=True
+                        include_res0=False
                 outhier=self.autobuild(self.simo,comp_name,pdb_name,chain_id,
-                                       res_range,read=read_em_files,beadsize=bead_size,
+                                       res_range,include_res0,beadsize=bead_size,
                                        color=color,offset=offset)
                 if em_num_components!=0:
                     dens_hier,beads=self.create_density(self.simo,comp_name,outhier,em_txt_file_name,
@@ -596,7 +599,7 @@ class BuildModel1(object):
             elif data_type=="dict":
                 # legacy setup
                 outhier=self.autobuild(self.simo,comp_name,pdb_name,chain_id,
-                                       res_range,read=read_em_files,beadsize=bead_size,
+                                       res_range,not read_em_files,beadsize=bead_size,
                                        color=color,offset=offset)
 
                 if read_em_files is not None:
@@ -741,10 +744,7 @@ class BuildModel1(object):
 
         else:
             if len(pdbbits)!=0:
-                if num_components<0:
-                    #if negative calculate the number of gmm components automatically
-                    # from the number of residues
-                    num_components=number_of_residues/abs(num_components)
+                num_components=number_of_residues/abs(num_components)
                 outhier+=simo.add_component_density(compname,
                                          pdbbits,
                                          num_components=num_components, # number of gaussian into which the simulated density is approximated
@@ -754,10 +754,7 @@ class BuildModel1(object):
                                          multiply_by_total_mass=True) # do the calculation and output the mrc
 
             if len(helixbits)!=0:
-                if num_components<0:
-                    #if negative calculate the number of gmm components automatically
-                    # from the number of residues
-                    num_components=number_of_residues/abs(num_components)
+                num_components=number_of_residues/abs(num_components)
                 outhier+=simo.add_component_density(compname,
                                          helixbits,
                                          num_components=num_components, # number of gaussian into which the simulated density is approximated
@@ -768,11 +765,12 @@ class BuildModel1(object):
 
         return outhier,beadbits
 
-    def autobuild(self,simo,comname,pdbname,chain,resrange,read=True,beadsize=5,color=0.0,offset=0):
+    def autobuild(self,simo,comname,pdbname,chain,resrange,include_res0=False,
+                  beadsize=5,color=0.0,offset=0):
         if pdbname is not None and pdbname is not "IDEAL_HELIX" and pdbname is not "BEADS" :
             if resrange[-1]==-1:
                 resrange=(resrange[0],len(simo.sequence_dict[comname]))
-            if read==False:
+            if include_res0:
                 outhier=simo.autobuild_model(comname,
                                  pdbname=pdbname,
                                  chain=chain,

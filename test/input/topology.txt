@@ -7,16 +7,16 @@
 |component_name|domain_name|fasta_fn|fasta_id|pdb_fn|chain|residue_range|pdb_offset|bead_size|em_residues_per_gaussian|
 |Rpb1 |Rpb1_1|1WCM.fasta.txt|1WCM:A|1WCM_map_fitted.pdb|A|1,1140   |0|5|0 |
 |Rpb1 |Rpb1_2|1WCM.fasta.txt|1WCM:A|1WCM_map_fitted.pdb|A|1141,1274|0|5|0 |
-|Rpb1 |Rpb1_3|1WCM.fasta.txt|1WCM:A|1WCM_map_fitted.pdb|A|1275,-1  |0|5|0 |
-|Rpb2 |Rpb2_1|1WCM.fasta.txt|1WCM:B|1WCM_map_fitted.pdb|B|1,1102   |0|5|0 |
-|Rpb2 |Rpb2_2|1WCM.fasta.txt|1WCM:B|1WCM_map_fitted.pdb|B|1103,-1  |0|5|0 |
-|Rpb3 |Rpb3  |1WCM.fasta.txt|1WCM:C|1WCM_map_fitted.pdb|C|all      |0|5|0 |
+#|Rpb1 |Rpb1_3|1WCM.fasta.txt|1WCM:A|1WCM_map_fitted.pdb|A|1275,-1  |0|5|0 |
+#|Rpb2 |Rpb2_1|1WCM.fasta.txt|1WCM:B|1WCM_map_fitted.pdb|B|1,1102   |0|5|0 |
+#|Rpb2 |Rpb2_2|1WCM.fasta.txt|1WCM:B|1WCM_map_fitted.pdb|B|1103,-1  |0|5|0 |
+#|Rpb3 |Rpb3  |1WCM.fasta.txt|1WCM:C|1WCM_map_fitted.pdb|C|all      |0|5|0 |
 |Rpb4 |Rpb4  |1WCM.fasta.txt|1WCM:D|1WCM_map_fitted.pdb|D|all      |0|5|40|
-|Rpb5 |Rpb5  |1WCM.fasta.txt|1WCM:E|1WCM_map_fitted.pdb|E|all      |0|5|0 |
-|Rpb6 |Rpb6  |1WCM.fasta.txt|1WCM:F|1WCM_map_fitted.pdb|F|all      |0|5|0 |
-|Rpb7 |Rpb7  |1WCM.fasta.txt|1WCM:G|1WCM_map_fitted.pdb|G|all      |0|5|40|
-|Rpb8 |Rpb8  |1WCM.fasta.txt|1WCM:H|1WCM_map_fitted.pdb|H|all      |0|5|0 |
-|Rpb9 |Rpb9  |1WCM.fasta.txt|1WCM:I|1WCM_map_fitted.pdb|I|all      |0|5|0 |
-|Rpb10|Rpb10 |1WCM.fasta.txt|1WCM:J|1WCM_map_fitted.pdb|J|all      |0|5|0 |
-|Rpb11|Rpb11 |1WCM.fasta.txt|1WCM:K|1WCM_map_fitted.pdb|K|all      |0|5|0 |
-|Rpb12|Rpb12 |1WCM.fasta.txt|1WCM:L|1WCM_map_fitted.pdb|L|all      |0|5|0 |
+#|Rpb5 |Rpb5  |1WCM.fasta.txt|1WCM:E|1WCM_map_fitted.pdb|E|all      |0|5|0 |
+#|Rpb6 |Rpb6  |1WCM.fasta.txt|1WCM:F|1WCM_map_fitted.pdb|F|all      |0|5|0 |
+#|Rpb7 |Rpb7  |1WCM.fasta.txt|1WCM:G|1WCM_map_fitted.pdb|G|all      |0|5|40|
+#|Rpb8 |Rpb8  |1WCM.fasta.txt|1WCM:H|1WCM_map_fitted.pdb|H|all      |0|5|0 |
+#|Rpb9 |Rpb9  |1WCM.fasta.txt|1WCM:I|1WCM_map_fitted.pdb|I|all      |0|5|0 |
+#|Rpb10|Rpb10 |1WCM.fasta.txt|1WCM:J|1WCM_map_fitted.pdb|J|all      |0|5|0 |
+#|Rpb11|Rpb11 |1WCM.fasta.txt|1WCM:K|1WCM_map_fitted.pdb|K|all      |0|5|0 |
+#|Rpb12|Rpb12 |1WCM.fasta.txt|1WCM:L|1WCM_map_fitted.pdb|L|all      |0|5|0 |

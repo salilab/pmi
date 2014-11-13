@@ -812,9 +812,15 @@ class BuildModel1(object):
         self.gmm_models_directory=directory_name
 
     def build_model(self,data_structure):
-        bm = BuildModel(self.simo.m,
+        self.bm = BuildModel(self.simo.m,
                         data_structure=data_structure,
                         representation=self.simo)
+
+    def scale_bead_radii(self,nresidues,scale):
+        self.bm.scale_bead_radii(nresidues,scale)
+
+    def get_density_hierarchies(self,hier_name_list):
+        self.bm.get_density_hierarchies(hier_name_list)
 
 # ----------------------------------------------------------------------
 

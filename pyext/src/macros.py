@@ -579,6 +579,8 @@ class BuildModel(object):
                 else:
                     dens_hier=[]
 
+                self.resdensities[hier_name]=dens_hier
+                self.domain_dict[hier_name]=outhier+dens_hier
             elif data_type=="dict":
                 # legacy setup
                 outhier=self.autobuild(self.simo,comp_name,pdb_name,chain_id,
@@ -597,6 +599,9 @@ class BuildModel(object):
 
                 else:
                     dens_hier=[]
+
+                self.resdensities[hier_name]=dens_hier
+                self.domain_dict[hier_name]=outhier+dens_hier
 
                 if rb is not None:
                     if rb not in rigid_bodies:
@@ -618,10 +623,6 @@ class BuildModel(object):
                         else:
                             chain_super_rigid_bodies[k]+=[h for h in self.domain_dict[hier_name]]
 
-            # store densities
-            self.resdensities[hier_name]=dens_hier
-            self.domain_dict[hier_name]=outhier+dens_hier
-        print 'got domains',self.domain_dict.keys()
         # setup basic restraints
         for c in self.simo.get_component_names():
             self.simo.setup_component_sequence_connectivity(c,scale=sequence_connectivity_scale)

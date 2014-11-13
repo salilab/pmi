@@ -25,6 +25,22 @@ class TopologyReaderTests(IMP.test.TestCase):
         self.assertEqual(t.component_list[2].domain_name,"Rpb4")
         self.assertEqual(t.component_list[2].name,"Rpb4")
 
+    def test_change_dir(self):
+        '''Test changing default pdb directory'''
+        newdir="../../"
+        topology_file=self.get_input_file_name("topology.txt")
+        t=IMP.pmi.topology.TopologyReader(topology_file)
+        t.set_dir("pdb_dir", newdir)
+        self.assertEqual(t.defaults["pdb_dir"], newdir)
+        self.assertEqual(t.component_list[0].pdb_file, "/flute1/home/saltzberg/swr/imp/modules/pmi/test/input/../../1WCM_map_fitted.pdb")
+
+    def test_get_components(self):
+        topology_file=self.get_input_file_name("topology.txt")
+        t=IMP.pmi.topology.TopologyReader(topology_file)
+        components=t.get_component_topologies([1,0,2])
+        self.assertEqual(components[0].domain_name, "Rpb1_2")
+        self.assertEqual(components[1].domain_name, "Rpb1_1")
+
     def test_round_trip(self):
         '''Test reading and writing'''
         topology_file=self.get_input_file_name("topology.txt")
@@ -74,5 +90,6 @@ class TopologyReaderTests(IMP.test.TestCase):
     def test_build_with_movers(self):
         '''Check if rigid bodies etc are set up as requested'''
         pass
+
 if __name__=="__main__":
     IMP.test.main()

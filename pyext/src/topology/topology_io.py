@@ -32,7 +32,7 @@ class TopologyReader(object):
     def write_topology_file(self,outfile):
         f=open(outfile, "w")
         f.write("|directories|\n")
-        print self.defaults
+        #print self.defaults
         for key, value in self.defaults.iteritems():
             output="|"+str(key)+"|"+str(value)+"|\n"
             f.write(output)
@@ -43,6 +43,39 @@ class TopologyReader(object):
             output="|"+str(c.name)+"|"+str(c.domain_name)+"|"+str(c.fasta_file)+"|"+str(c.fasta_id)+"|"+str(c.pdb_file)+"|"+str(c.chain)+"|"+str(c.residue_range).strip("(").strip(")")+"|"+str(c.pdb_offset)+"|"+str(c.bead_size)+"|"+str(c.em_residues_per_gaussian)+"|\n"
             f.write(output)
         return outfile
+
+    def get_component_topologies(self, topology_list = "all"):
+        """ Return list of ComponentTopologies for selected components given a list of indices"""
+        if topology_list == "all":
+            topologies = self.component_list
+        else:
+            topologies=[]
+            for i in topology_list:
+                topologies.append(self.component_list[i])
+        return topologies
+
+    def set_dir(self, default_dir, new_dir):
+        """ Changes the default directories and renames the files for each ComponentTopology object """
+        if default_dir in self.defaults.keys():
+            self.defaults[default_dir]=new_dir
+        else:
+            print default_dir, "is not a correct directory key"
+            exit()
+        for c in self.component_list:
+            pdb_file=c.pdb_file.split("/")[-1]
+            c.pdb_file=self._make_path(self.defaults['pdb_dir'],
+                                        pdb_file)
+            fasta_file=c.fasta_file.split("/")[-1]
+            c.fasta_file=self._make_path(self.defaults['fasta_dir'],
+                                        fasta_file)
+            if c.gmm_file is not None:
+                gmm_file=c.gmm_file.split("/")[-1]
+                c.gmm_file=self._make_path(self.defaults['gmm_dir'],
+                                        gmm_file)
+                mrc_file=c.mrc_file.split("/")[-1]
+                c.mrc_file=self._make_path(self.defaults['gmm_dir'],
+                                        mrc_file)
+
 
     def import_topology_file(self, topology_file, append=False):
         """ Import system components from topology file. append=False will erase current topology and overwrite with new """
@@ -225,3 +258,7 @@ class ComponentTopology(object):
         self.gmm_file=None
         self.mrc_file=None
         self.color=None
+
+    def recompute_default_dirs(self, topology):
+        pdb_filename=self.pdb_file.split("/")[-1]
+        self.pdb_filename=IMP.base.get_relative_path(topology.topology_file, topology.defaults)

@@ -41,23 +41,24 @@ class TopologyReaderTests(IMP.test.TestCase):
 
     def test_build(self):
         '''Test building with macro BuildModel1 using a topology file'''
+        mdl = IMP.Model()
+
         topology_file=self.get_input_file_name("topology.txt")
-
-        m = IMP.Model()
-        simo = IMP.pmi.representation.Representation(m,upperharmonic=True,disorderedlength=False)
-        bm=IMP.pmi.macros.BuildModel1(simo)
-
         t=IMP.pmi.topology.TopologyReader(topology_file)
         self.assertEqual(t.defaults['gmm_dir'],'./')
-        bm.build_model(component_topologies=t.component_list,
-                       force_create_gmm_files=True)
+
+        bm = IMP.pmi.macros.BuildModel(mdl,
+                                       component_topologies=t.component_list,
+                                       force_create_gmm_files=True)
+        rep = bm.get_representation()
+
         o = IMP.pmi.output.Output()
         rmf_fn = self.get_tmp_file_name("buildmodeltest.rmf")
-        o.init_rmf(rmf_fn, [simo.prot])
+        o.init_rmf(rmf_fn, [rep.prot])
         o.write_rmf(rmf_fn)
         o.close_rmf(rmf_fn)
         f = RMF.open_rmf_file_read_only(rmf_fn)
-        r = IMP.rmf.create_hierarchies(f, m)[0]
+        r = IMP.rmf.create_hierarchies(f, mdl)[0]
         IMP.rmf.load_frame(f, 0)
         self.assertEqual(len(r.get_children()),2)
         cdict=children_as_dict(r)

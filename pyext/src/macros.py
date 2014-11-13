@@ -447,50 +447,21 @@ data = [("Rpb1",     pdbfile,   "A",     0.00000000,  (fastafile,    0)),
 
 # ----------------------------------------------------------------------
 
-class BuildModel1(object):
+class BuildModel(object):
+    '''A macro to build a Representation based on a Topology and lists of movers'''
+    def __init__(self,
+                 model,
+                 component_topologies=None,
+                 list_of_rigid_bodies=[],
+                 list_of_super_rigid_bodies=[],
+                 chain_of_super_rigid_bodies=[],
+                 sequence_connectivity_scale=4.0,
+                 add_each_domain_as_rigid_body=False,
+                 force_create_gmm_files=False,
+                 representation=None,
+                 data_structure=None):
+        """ Construct a Representation with topology class + list of movers.
 
-    ''' this building scheme requires one of two data types:
-          1) a topology class item along with lists of rigid_bodies and super_rigid_bodies
-
-          2) a data structure with the following fields
-          comp_name
-          hier_name
-          color
-          fasta_file
-          fasta_id
-          pdb_name
-          chain_id
-          res_range
-          read_em_files
-          bead_size
-          rb
-          super_rb
-          em_num_components
-          em_txt_file_name
-          em_mrc_file_name
-    '''
-
-    def __init__(self, representation):
-        self.simo=representation
-        self.gmm_models_directory="."
-
-    def set_gmm_models_directory(self,directory_name):
-        self.gmm_models_directory=directory_name
-
-    def build_model(self,
-                    data_structure=None,
-                    component_topologies=None,
-                    list_of_rigid_bodies=[],
-                    list_of_super_rigid_bodies=[],
-                    chain_of_super_rigid_bodies=[],
-                    sequence_connectivity_scale=4.0,
-                    add_each_domain_as_rigid_body=False,
-                    force_create_gmm_files=False):
-        """ Construct the model with topology class + list of movers.
-        @param data_structure Legacy format. Data structure is list of these entries:
-             comp_name, hier_name, color, fasta_file, fasta_id, pdb_name, chain_id,
-             res_range, read_em_files, bead_size, rb, super_rb,
-             em_num_components, em_txt_file_name, em_mrc_file_name
         @param component_topologies List of IMP.pmi.topology.ComponentTopology items
         @param list_of_rigid_bodies List of lists of domain names from the components.
         @param list_of_super_rigid_bodies List of lists of domain names from the components.
@@ -501,7 +472,19 @@ class BuildModel1(object):
         @param force_create_gmm_files If True, will sample and create GMMs no matter what.
                                   If False, will only only sample if the files don't exist.
                                   If number of Gaussians is zero, won't do anything.
+        @param representation For backwards compatibility. Pass an empty representation
+        @param data_structure Legacy format. Data structure is list of these entries:
+             comp_name, hier_name, color, fasta_file, fasta_id, pdb_name, chain_id,
+             res_range, read_em_files, bead_size, rb, super_rb,
+             em_num_components, em_txt_file_name, em_mrc_file_name
         """
+        self.m = model
+        if representation is None:
+            self.simo = IMP.pmi.representation.Representation(self.m,
+                                                              upperharmonic=True,
+                                                              disorderedlength=False)
+        else:
+            self.simo = representation
         if component_topologies is not None:
             data=component_topologies
             data_type="topology"
@@ -673,6 +656,10 @@ class BuildModel1(object):
         self.simo.set_floppy_bodies()
         self.simo.setup_bonds()
 
+    def get_representation(self):
+        '''Return the Representation object'''
+        return self.simo
+
     def get_density_hierarchies(self,hier_name_list):
         # return a list of density hierarchies
         # specify the list of hierarchy names
@@ -811,6 +798,22 @@ class BuildModel1(object):
 
         return outhier
 
+
+class BuildModel1(object):
+    '''Deprecated macro'''
+
+    def __init__(self, representation):
+        print "Warning: BuildModel1 is deprecated. Use BuildModel (along with the Topology class) for representation setup"
+        self.simo=representation
+        self.gmm_models_directory="."
+
+    def set_gmm_models_directory(self,directory_name):
+        self.gmm_models_directory=directory_name
+
+    def build_model(self,data_structure):
+        bm = BuildModel(self.simo.m,
+                        data_structure=data_structure,
+                        representation=self.simo)
 
 # ----------------------------------------------------------------------
 

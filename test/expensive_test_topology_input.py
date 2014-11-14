@@ -59,6 +59,10 @@ class TopologyReaderTests(IMP.test.TestCase):
 
     def test_build(self):
         '''Test building with macro BuildModel1 using a topology file'''
+        try:
+            import sklearn
+        except ImportError:
+            self.skipTest("no sklearn package")
         mdl = IMP.Model()
 
         topology_file=self.get_input_file_name("topology.txt")

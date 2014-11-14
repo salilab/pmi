@@ -32,7 +32,9 @@ class TopologyReaderTests(IMP.test.TestCase):
         t=IMP.pmi.topology.TopologyReader(topology_file)
         t.set_dir("pdb_dir", newdir)
         self.assertEqual(t.defaults["pdb_dir"], newdir)
-        self.assertEqual(t.component_list[0].pdb_file, "/flute1/home/saltzberg/swr/imp/modules/pmi/test/input/../../1WCM_map_fitted.pdb")
+        self.assertEqual(t.component_list[0].pdb_file,
+                         os.path.dirname(topology_file) \
+                         + '/../../1WCM_map_fitted.pdb')
 
     def test_get_components(self):
         topology_file=self.get_input_file_name("topology.txt")

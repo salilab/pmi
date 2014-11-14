@@ -88,6 +88,9 @@ class TopologyReaderTests(IMP.test.TestCase):
         self.assertEqual(len(r1dict["Rpb1_Res:1"].get_children()),6)
         r4dict=children_as_dict(cdict["Rpb4"])
         self.assertEqual(len(r4dict["Densities"].get_children()[0].get_children()),3)
+        # Remove pollution from test input directory
+        for output in ['Rpb4.mrc', 'Rpb4.txt']:
+            os.unlink(self.get_input_file_name(output))
 
     def test_build_with_movers(self):
         '''Check if rigid bodies etc are set up as requested'''

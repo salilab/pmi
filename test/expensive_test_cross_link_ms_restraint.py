@@ -1,4 +1,5 @@
 import IMP
+import os
 import IMP.test
 import IMP.core
 import IMP.container
@@ -215,7 +216,10 @@ class ISDCrossMSTest(IMP.test.TestCase):
         log_wrapper_score=rs.unprotected_evaluate(None)
         test_log_wrapper_score=log_evaluate(restraints)
         self.assertAlmostEqual(log_wrapper_score, test_log_wrapper_score, delta=0.00001)
-
+        for output in ['excluded.None.xl.db',
+                       'expensive_test_cross_link_ms_restraint.dat',
+                       'included.None.xl.db', 'missing.None.xl.db']:
+            os.unlink(output)
 
     def test_restraint_probability_beads(self):
         m = IMP.Model()
@@ -293,6 +297,9 @@ class ISDCrossMSTest(IMP.test.TestCase):
                 prob=cross_link_dict[xlid][5]
 
                 self.assertAlmostEqual(prob/test_prob,1.0, delta=0.0001)
+        for output in ['excluded.None.xl.db',
+                       'included.None.xl.db', 'missing.None.xl.db']:
+            os.unlink(output)
 
 if __name__ == '__main__':
     IMP.test.main()

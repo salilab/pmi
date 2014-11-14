@@ -69,26 +69,6 @@ def log_evaluate(restraints):
     score=score-log(prob)
     return score
 
-def init_representation_complex(m):
-    pdbfile = IMP.pmi.get_data_path("1WCM.pdb")
-    fastafile = IMP.pmi.get_data_path("1WCM.fasta.txt")
-    components = ["Rpb1","Rpb2","Rpb3","Rpb4"]
-    chains = "ABCD"
-    colors = [0.,0.1,0.5,1.0]
-    beadsize = 20
-    fastids = IMP.pmi.tools.get_ids_from_fasta_file(fastafile)
-
-    r = IMP.pmi.representation.Representation(m)
-    hierarchies = {}
-    for n in range(len(components)):
-        r.create_component(components[n], color=colors[n])
-        r.add_component_sequence(components[n], fastafile, id="1WCM:"+chains[n])
-        hierarchies[components[n]] = r.autobuild_model(
-            components[n], pdbfile, chains[n],
-            resolutions=[1, 10, 100], missingbeadsize=beadsize)
-        r.setup_component_sequence_connectivity(components[n], 1)
-    return r
-
 def init_representation_beads(m):
     r = IMP.pmi.representation.Representation(m)
     r.create_component("ProtA",color=1.0)
@@ -171,9 +151,30 @@ def setup_crosslinks_beads(representation,mode):
 
 class ISDCrossMSTest(IMP.test.TestCase):
 
+    def init_representation_complex(self, m):
+        pdbfile = self.get_input_file_name("1WCM.pdb")
+        fastafile = self.get_input_file_name("1WCM.fasta.txt")
+        components = ["Rpb1","Rpb2","Rpb3","Rpb4"]
+        chains = "ABCD"
+        colors = [0.,0.1,0.5,1.0]
+        beadsize = 20
+        fastids = IMP.pmi.tools.get_ids_from_fasta_file(fastafile)
+
+        r = IMP.pmi.representation.Representation(m)
+        hierarchies = {}
+        for n in range(len(components)):
+            r.create_component(components[n], color=colors[n])
+            r.add_component_sequence(components[n], fastafile,
+                                     id="1WCM:"+chains[n])
+            hierarchies[components[n]] = r.autobuild_model(
+                components[n], pdbfile, chains[n],
+                resolutions=[1, 10, 100], missingbeadsize=beadsize)
+            r.setup_component_sequence_connectivity(components[n], 1)
+        return r
+
     def test_restraint_probability_complex(self):
         m = IMP.Model()
-        rcomplex=init_representation_complex(m)
+        rcomplex=self.init_representation_complex(m)
         xlc=setup_crosslinks_complex(rcomplex,"single_category")
 
         # check all internals didn't change since last time

@@ -41,7 +41,7 @@ class AtomicXLTest(IMP.test.TestCase):
         # check that you created 8 restraints (2 copies => 4 restraints. x2 states)
         rs=xl.get_restraint_set()
         self.assertEqual(rs.get_number_of_restraints(),1)
-        xlrs=IMP.isd.AtomicCrossLinkMSRestraint.cast(rs.get_restraint(0))
+        xlrs=IMP.isd.AtomicCrossLinkMSRestraint.get_from(rs.get_restraint(0))
         self.assertIsInstance(xlrs,IMP.isd.AtomicCrossLinkMSRestraint)
         self.assertEqual(xlrs.get_number_of_contributions(),8)
 

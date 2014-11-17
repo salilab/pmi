@@ -6,7 +6,7 @@ use of PMI is the modeling of the
 [Nup84 subcomplex of the nuclear pore complex](http://salilab.org/nup84/).
 
 
-*This module is still under heavy development, and should be considered experimental.*
+_This module is still under heavy development, and should be considered experimental._
 
 See also the [PMI changelog](@ref pmi_changelog).
 

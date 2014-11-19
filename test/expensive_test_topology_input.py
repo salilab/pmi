@@ -57,8 +57,40 @@ class TopologyReaderTests(IMP.test.TestCase):
         self.assertEqual(t.component_list[2].domain_name,"Rpb4")
         self.assertEqual(t.component_list[2].name,"Rpb4")
 
-    def test_build(self):
-        '''Test building with macro BuildModel1 using a topology file'''
+    def test_build_read_gmms(self):
+        '''Test building with macro BuildModel using a topology file'''
+        mdl = IMP.Model()
+
+        topology_file=self.get_input_file_name("topology.txt")
+        t=IMP.pmi.topology.TopologyReader(topology_file)
+        self.assertEqual(t.defaults['gmm_dir'],'./')
+
+        bm = IMP.pmi.macros.BuildModel(mdl,
+                                       component_topologies=t.component_list,
+                                       force_create_gmm_files=False)
+        rep = bm.get_representation()
+
+        o = IMP.pmi.output.Output()
+        rmf_fn = self.get_tmp_file_name("buildmodeltest.rmf")
+        o.init_rmf(rmf_fn, [rep.prot])
+        o.write_rmf(rmf_fn)
+        o.close_rmf(rmf_fn)
+        f = RMF.open_rmf_file_read_only(rmf_fn)
+        r = IMP.rmf.create_hierarchies(f, mdl)[0]
+        IMP.rmf.load_frame(f, 0)
+        self.assertEqual(len(r.get_children()),2)
+        cdict=children_as_dict(r)
+        self.assertEqual(set([c.get_name() for c in cdict["Rpb1"].get_children()]),
+                         set(["Beads" , "Rpb1_Res:1" , "Rpb1_Res:10"]))
+        self.assertEqual(set([c.get_name() for c in cdict["Rpb4"].get_children()]),
+                         set(["Beads","Rpb4_Res:1", "Rpb4_Res:10","Densities"]))
+        r1dict=children_as_dict(cdict["Rpb1"])
+        self.assertEqual(len(r1dict["Rpb1_Res:1"].get_children()),6)
+        r4dict=children_as_dict(cdict["Rpb4"])
+        self.assertEqual(len(r4dict["Densities"].get_children()[0].get_children()),3)
+
+    def test_build_create_gmms(self):
+        '''Test building with macro using sklearn to create stuff'''
         try:
             import sklearn
         except ImportError:
@@ -67,7 +99,7 @@ class TopologyReaderTests(IMP.test.TestCase):
 
         topology_file=self.get_input_file_name("topology.txt")
         t=IMP.pmi.topology.TopologyReader(topology_file)
-        self.assertEqual(t.defaults['gmm_dir'],'./')
+        t.set_dir("gmm_dir","../")
 
         bm = IMP.pmi.macros.BuildModel(mdl,
                                        component_topologies=t.component_list,
@@ -92,8 +124,7 @@ class TopologyReaderTests(IMP.test.TestCase):
         self.assertEqual(len(r1dict["Rpb1_Res:1"].get_children()),6)
         r4dict=children_as_dict(cdict["Rpb4"])
         self.assertEqual(len(r4dict["Densities"].get_children()[0].get_children()),3)
-        # Remove pollution from test input directory
-        for output in ['Rpb4.mrc', 'Rpb4.txt']:
+        for output in ['../Rpb4.mrc', '../Rpb4.txt']:
             os.unlink(self.get_input_file_name(output))
 
     def test_build_with_movers(self):

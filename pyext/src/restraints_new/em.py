@@ -221,3 +221,90 @@ class GaussianEMRestraint(object):
 
     def evaluate(self):
         return self.weight * self.rs.unprotected_evaluate(None)
+
+class GaussianPointRestraint(object):
+    def __init__(self,
+                 hier,
+                 target_map_fn,
+                 resolution,
+                 voxel_size=None,
+                 origin=None,
+                 cutoff_dist=0.0,
+                 target_mass_scale=1.0,
+                 slope=0.0,
+                 backbone_slope=False,
+                 label=""):
+
+        # some parameters
+        self.label = label
+        self.weight = 1
+        self.cutoff_dist = cutoff_dist
+
+        # setup target GMM
+        self.model_ps=IMP.atom.get_leaves(hier)
+        var = [resolution]*3
+        for p in self.model_ps:
+            shape = IMP.algebra.Gaussian3D(IMP.algebra.ReferenceFrame3D(),var)
+            IMP.core.Gaussian.setup_particle(p,shape)
+
+        self.m = self.model_ps[0].get_model()
+        print 'will scale target mass by', target_mass_scale
+
+
+        self.dmap=IMP.em.read_map(target_map_fn,IMP.em.MRCReaderWriter())
+        if voxel_size is not None:
+            self.dmap.update_voxel_size(1.06)
+        dh = self.dmap.get_header()
+        dh.set_resolution(4.0)
+        if origin is not None:
+            self.dmap.set_origin(-origin[0]/voxel_size,
+                                 -origin[1]/voxel_size,
+                                 -origin[2]/voxel_size)
+
+        self.fr = IMP.em.FitRestraint(self.model_ps,self.dmap,[0.,0.],
+                                      IMP.atom.Mass.get_mass_key(),1.0,
+                                      False)
+        frscore = self.fr.unprotected_evaluate(None)
+        print 'init CC eval!',1.0-frscore
+        self.get_cc=True
+
+        self.gaussian_restraint = IMP.isd_emxl.GaussianPointRestraint(self.m,
+                                                IMP.get_indexes(self.model_ps),
+                                                                      self.dmap,
+                                                                      self.cutoff_dist,
+                                                slope,
+                                                backbone_slope)
+
+        self.rs = IMP.RestraintSet(self.m, 'GaussianPointRestraint')
+        self.rs.add_restraint(self.gaussian_restraint)
+        print 'done EM setup'
+
+    def set_weight(self,weight):
+        self.weight = weight
+        self.rs.set_weight(weight)
+
+    def set_label(self, label):
+        self.label = label
+
+    def add_to_model(self):
+        self.m.add_restraint(self.rs)
+
+    def get_restraint_set(self):
+        return self.rs
+
+    def get_output(self):
+        self.m.update()
+        output = {}
+        score = self.weight * self.rs.unprotected_evaluate(None)
+        output["_TotalScore"] = str(score)
+        output["GaussianPointRestraint_" +
+               self.label] = str(score)
+        if self.get_cc:
+            frscore = self.fr.unprotected_evaluate(None)
+            output["CrossCorrelation"] = str(1.0-frscore)
+        #dd = self.fr.get_model_dens_map()
+        #IMP.em.write_map(dd,'test_map.mrc')
+        return output
+
+    def evaluate(self):
+        return self.weight * self.rs.unprotected_evaluate(None)

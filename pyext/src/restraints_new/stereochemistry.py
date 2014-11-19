@@ -4,9 +4,7 @@ import IMP.core
 import IMP.atom
 import IMP.isd
 import itertools
-from IMP.pmi.io.data_storage import SelectionDict
 import IMP.pmi
-import IMP.pmi.hierarchy_tools as hierarchy_tools
 
 class CharmmForceFieldRestraint(object):
     """ Enable CHARMM force field """
@@ -98,37 +96,28 @@ class CharmmForceFieldRestraint(object):
 
 class ElasticNetworkRestraint(object):
     def __init__(self,root,
-                 selection_dicts=None,
+                 subsequence=None,
                  label='',
-                 add_info_to_label=True,
                  strength=10.0,
                  dist_cutoff=10.0,
                  **kwargs):
         """ Add harmonic restraints between all pairs below a specified distance
         @param root             Root hierarchy for applying selections
-        @param selection_dicts  List of SelectionDict objects to form into elastic net
+        @param subsequence      A PMI Subsequence class
         @param strength         The elastic bond strength
         @param dist_cutoff      Create bonds when below this distance
         \note any additional keyword arguments are passed to the Selection
-        E.g. you could pass atom_type=IMP.atom.AtomType("CA")
+        E.g. you could pass atom_type=IMP.atom.AtomType("CA")c
         """
         self.mdl = root.get_model()
         self.rs = IMP.RestraintSet(self.mdl, "ElasticNetwork")
         self.weight = 1
         self.pairslist = []
         self.label=label
-        if selection_dicts is None:
-            selection_dicts=[SelectionDict(self.mdl)]
-        ps=[]
-        for osel in selection_dicts:
-            osel.add_fields(**kwargs)
-            ps += osel.select(root).get_selected_particles()
-            if add_info_to_label:
-                self.label+='_'
-                if 'chain' in osel:
-                    self.label+=osel['chain']
-                if 'residue_indexes' in osel:
-                    self.label+=':%i-%i'%(min(osel['residue_indexes']),max(osel['residue_indexes']))
+        if subsequence is not None:
+            ps = subsequence.get_selection(root,**kwargs).get_selected_particles()
+        else:
+            ps = IMP.atom.Selection(root,**kwargs).get_selected_particles()
         if len(ps)==0:
             print 'ERROR: Did not select any particles!'
             exit()

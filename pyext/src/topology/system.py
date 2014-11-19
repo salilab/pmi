@@ -1,4 +1,4 @@
-"""@namespace IMP.pmi.topology.topology
+"""@namespace IMP.pmi.topology.system
    Experimental class, eventually to replace the Representation class
    It helps to construct the hierarchy
    and deal with multi-state, multi-scale, multi-copies
@@ -14,7 +14,7 @@ import IMP
 import IMP.atom
 import IMP.pmi
 from collections import defaultdict
-import topology_tools
+import system_tools
 from Bio import SeqIO
 
 def get_residue_type_from_one_letter_code(code):
@@ -277,7 +277,7 @@ class _Molecule(SystemBase):
         \note After offset, we expect the PDB residue numbering to match the FASTA file
         """
         # get IMP.atom.Residues from the pdb file
-        rhs=topology_tools.get_structure(self.mdl,pdb_fn,chain_id,res_range,offset)
+        rhs=system_tools.get_structure(self.mdl,pdb_fn,chain_id,res_range,offset)
         if len(rhs)>len(self.residues):
             print 'ERROR: You are loading',len(rhs), \
                 'pdb residues for a sequence of length',len(self.residues),'(too many)'
@@ -332,7 +332,7 @@ class _Molecule(SystemBase):
 
             # group into Fragments along backbone
             if merge_type=="backbone":
-                topology_tools.build_along_backbone(self.mdl,self.hier,self.residues,
+                system_tools.build_along_backbone(self.mdl,self.hier,self.residues,
                                                      IMP.atom.BALLS,ca_centers)
 
 

@@ -168,7 +168,7 @@ class RepresentationNewTest(IMP.test.TestCase):
                                     chain_id='A',res_range=(1,10),offset=-54)
         m1.add_representation(resolutions=[1])
         m1.add_representation(atomic_res,resolutions=[0])
-        for na in (0,1,4,5,6,7,8):
+c        for na in (0,1,4,5,6,7,8):
             self.assertEqual(m1[na].representations['balls'],set([0,1]))
         for nna in (2,3,9):
             self.assertEqual(m1[nna].representations['balls'],set([1]))

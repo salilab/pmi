@@ -187,7 +187,14 @@ class Clustering(object):
     And sklearn's kmeans clustering module.
     """
     def __init__(self,rmsd_weights=None):
-
+        try:
+            from mpi4py import MPI
+            comm = MPI.COMM_WORLD
+            rank = comm.Get_rank()
+            self.number_of_processes = comm.size
+        except ImportError:
+            self.number_of_processes = 1
+            rank = 0
         self.all_coords = {}
         self.structure_cluster_ids = None
         self.tmpl_coords = None
@@ -205,16 +212,7 @@ class Clustering(object):
 
         self.all_coords[frame] = Coords
 
-    def dist_matrix(self, is_mpi=False):
-
-        if is_mpi:
-            from mpi4py import MPI
-            comm = MPI.COMM_WORLD
-            rank = comm.Get_rank()
-            number_of_processes = comm.size
-        else:
-            number_of_processes = 1
-            rank = 0
+    def dist_matrix(self):
 
         self.model_list_names = self.all_coords.keys()
         self.model_indexes = range(len(self.model_list_names))
@@ -224,7 +222,7 @@ class Clustering(object):
 
         my_model_indexes_unique_pairs = IMP.pmi.tools.chunk_list_into_segments(
             model_indexes_unique_pairs,
-            number_of_processes)[rank]
+            self.number_of_processes)[rank]
 
         print "process %s assigned with %s pairs" % (str(rank), str(len(my_model_indexes_unique_pairs)))
 
@@ -232,7 +230,7 @@ class Clustering(object):
                                                                                          self.tmpl_coords,
                                                                                          my_model_indexes_unique_pairs)
 
-        if number_of_processes > 1:
+        if self.number_of_processes > 1:
             raw_distance_dict = IMP.pmi.tools.scatter_and_gather(
                 raw_distance_dict)
             pickable_transformations = self.get_pickable_transformation_distance_dict(
@@ -1908,6 +1906,15 @@ class Precision(object):
             selection_dictionary = {"Selection_name_1":selection_tuple1,
                                     "Selection_name_2":selection_tuple2}'''
 
+        try:
+            from mpi4py import MPI
+            comm = MPI.COMM_WORLD
+            rank = comm.Get_rank()
+            self.number_of_processes = comm.size
+        except ImportError:
+            self.number_of_processes=1
+            rank=0
+
 
         self.styles=['pairwise_rmsd','pairwise_drmsd_k','pairwise_drmsd_Q','pairwise_drms_k','pairwise_rmsd','drmsd_from_center']
         self.style='pairwise_drmsd_k'
@@ -1966,20 +1973,12 @@ class Precision(object):
         return particles_resolution_one, prots
 
 
-    def add_structures(self,rmf_name_frame_tuples,structure_set_name,is_mpi=False):
+    def add_structures(self,rmf_name_frame_tuples,structure_set_name):
         '''this function helps reading a list of rmfs, the input is a list of
         tuples, containing the file name and the frame number'''
 
-        if is_mpi:
-            from mpi4py import MPI
-            comm = MPI.COMM_WORLD
-            rank = comm.Get_rank()
-            number_of_processes = comm.size
-        else:
-            number_of_processes=1
-            rank=0
-
-        my_rmf_name_frame_tuples=IMP.pmi.tools.chunk_list_into_segments(rmf_name_frame_tuples,number_of_processes)[rank]
+        my_rmf_name_frame_tuples=IMP.pmi.tools.chunk_list_into_segments(
+            rmf_name_frame_tuples,self.number_of_processes)[rank]
 
 
         for nfr,tup in enumerate(my_rmf_name_frame_tuples):
@@ -2008,7 +2007,7 @@ class Precision(object):
                     self.residue_particle_index_map[prot_name]=self.get_residue_particle_index_map(prot_name,particles_resolution_one,prots[0])
 
 
-        if number_of_processes > 1:
+        if self.number_of_processes > 1:
             # synchronize the internal self.selection_dictionary data structure
             self.rmf_names_frames=IMP.pmi.tools.scatter_and_gather(self.rmf_names_frames)
 
@@ -2016,14 +2015,14 @@ class Precision(object):
                 comm.send(self.structures_dictionary, dest=0, tag=11)
 
             elif rank == 0:
-                for i in range(1, number_of_processes):
+                for i in range(1, self.number_of_processes):
                     data_tmp = comm.recv(source=i, tag=11)
 
                     for key in self.structures_dictionary:
 
                         self.structures_dictionary[key].update(data_tmp[key])
 
-                for i in range(1, number_of_processes):
+                for i in range(1, self.number_of_processes):
                     comm.send(self.structures_dictionary, dest=i, tag=11)
 
             if rank != 0:
@@ -2139,7 +2138,7 @@ class Precision(object):
         return distances
 
     def get_precision(self,outfile,structure_set_name1,structure_set_name2,
-                      is_mpi=False,skip=None,selection_keywords=None):
+                      skip=None,selection_keywords=None):
 
         '''
         when the structure_set_name1 is different from the structure_set_name2, you get the
@@ -2148,20 +2147,9 @@ class Precision(object):
         structure_set_name2  string name of the second structure set
         skip Int analyse every skip structure for the distance matrix calculation
         outfile   str  the output file name
-        is_mpi    bool speed up calculation using openmpi
         skip      int  skip every n frames
 
         '''
-
-        if is_mpi:
-            from mpi4py import MPI
-            comm = MPI.COMM_WORLD
-            rank = comm.Get_rank()
-            number_of_processes = comm.size
-        else:
-            number_of_processes=1
-            rank=0
-
         of=open(outfile,"w")
 
         if selection_keywords is None:
@@ -2188,7 +2176,8 @@ class Precision(object):
             if len(pair_combination_list)==0:
                 raise ValueError("no structure selected. Check the skip parameter.")
 
-            my_pair_combination_list=IMP.pmi.tools.chunk_list_into_segments(pair_combination_list,number_of_processes)[rank]
+            my_pair_combination_list=IMP.pmi.tools.chunk_list_into_segments(
+                pair_combination_list,self.number_of_processes)[rank]
             my_length=len(my_pair_combination_list)
 
             for n,pair in enumerate(my_pair_combination_list):
@@ -2197,7 +2186,7 @@ class Precision(object):
                 distances[pair]=self.get_distance(structure_set_name1,structure_set_name2,
                                                   selection_name,pair[0],pair[1])
 
-            if number_of_processes > 1:
+            if self.number_of_processes > 1:
                 distances = IMP.pmi.tools.scatter_and_gather(distances)
 
             if rank == 0:
@@ -2258,13 +2247,12 @@ class Precision(object):
         return centroid_index
 
     def get_rmsf(self,structure_set_name,outdir="./",
-                      is_mpi=False,skip=None,
-                     make_plot=False,set_plot_yaxis_range=None):
+                 skip=None,make_plot=False,set_plot_yaxis_range=None):
 
         outfile=outdir+"/rmsf.dat"
         # get the centroid structure for the whole complex
         centroid_index=self.get_precision(outfile,structure_set_name,structure_set_name,
-                     is_mpi=is_mpi,skip=skip,selection_keywords=["All"])
+                                          skip=skip,selection_keywords=["All"])
 
         for p in self.protein_names:
             outfile=outdir+"/rmsf."+p+".dat"

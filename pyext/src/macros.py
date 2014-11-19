@@ -854,6 +854,16 @@ class AnalysisReplicaExchange0(object):
         @param global_analysis_result_directory
         """
 
+        try:
+            from mpi4py import MPI
+            comm = MPI.COMM_WORLD
+            rank = comm.Get_rank()
+            self.number_of_processes = comm.size
+        except ImportError:
+            rank = 0
+            number_of_processes = 1
+
+
         self.model = model
         stat_dir = global_output_directory
         self.stat_files = []
@@ -874,7 +884,6 @@ class AnalysisReplicaExchange0(object):
                    rmsd_calculation_components=None,
                    distance_matrix_file=None,
                    load_distance_matrix_file=False,
-                   is_mpi=False,
                    skip_clustering=False,
                    number_of_clusters=1,
                    display_plot=False,
@@ -899,7 +908,6 @@ class AnalysisReplicaExchange0(object):
                                                    e.g. ["Rpb1", (20,100,"Rpb2"), .....]
         @param distance_matrix_file                Where to store/read the distance matrix
         @param load_distance_matrix_file           Try to load the distance matrix file
-        @param is_mpi                              Enable MPI
         @param skip_clustering                     Just extract the best scoring models and save the pdbs
         @param number_of_clusters                  Number of k-means clusters
         @param display_plot                        Display the distance matrix
@@ -913,14 +921,6 @@ class AnalysisReplicaExchange0(object):
         @param write_pdb_with_centered_coordinates
         @param voxel_size                          Used for the density output
         """
-        if is_mpi:
-            from mpi4py import MPI
-            comm = MPI.COMM_WORLD
-            rank = comm.Get_rank()
-            number_of_processes = comm.size
-        else:
-            rank = 0
-            number_of_processes = 1
 
 
 
@@ -1087,7 +1087,7 @@ class AnalysisReplicaExchange0(object):
             print "Global calculating the distance matrix"
 
             # calculate distance matrix, all against all
-            Clusters.dist_matrix(is_mpi=is_mpi)
+            Clusters.dist_matrix()
 
             # perform clustering and optionally display
             if rank == 0:
@@ -1221,7 +1221,7 @@ class AnalysisReplicaExchange0(object):
                     DensModule.write_mrc(path=dircluster)
                     del DensModule
 
-        if is_mpi:
+        if self.number_of_processes>1:
             comm.Barrier()
 
     def save_objects(self, objects, file_name):

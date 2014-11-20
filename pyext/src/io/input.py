@@ -25,7 +25,7 @@ def save_best_models(mdl,
                      rmf_file_frame_key="rmf_frame_index",
                      override_rmf_dir=None):
     """Given a list of stat files, read them all and find the best models.
-    Save to a single RMF along with a stat file and a list of the extracted frames.
+    Save to a single RMF along with a stat file.
     @param mdl The IMP Model
     @param out_dir The output directory. Will save 3 files (RMF, stat, summary)
     @param stat_files List of all stat files to collect
@@ -117,6 +117,8 @@ def save_best_models(mdl,
         IMP.rmf.add_hierarchies(outf,prots)
         for nm,i in enumerate(order[:number_of_best_scoring_models]):
             dline=dict((k,all_fields[k][i]) for k in all_fields)
+            dline['orig_rmf_file']=dline[rmf_file_key]
+            dline['orig_rmf_frame_index']=dline[rmf_file_frame_key]
             dline[rmf_file_key]=out_rmf_fn
             dline[rmf_file_frame_key]=nm
             rh = RMF.open_rmf_file_read_only(

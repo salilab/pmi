@@ -1,8 +1,10 @@
 import IMP.pmi
-import IMP.pmi.io.input
+import IMP.pmi.io
+import IMP.pmi.analysis
 import IMP.test
+import IMP.rmf
+import RMF
 import os,sys
-
 
 class InputTest(IMP.test.TestCase):
     def setUp(self):
@@ -15,6 +17,36 @@ class InputTest(IMP.test.TestCase):
                              'ISDCrossLinkMS_Data_Score','SimplifiedModel_Linker_Score_None',
                              'ISDCrossLinkMS_Psi','ISDCrossLinkMS_Sigma','GaussianEMRestraint_None']
         self.score_key = "SimplifiedModel_Total_Score_None"
+
+    def test_save_best_models(self):
+        """Test function to collect top models into a single RMF file"""
+        IMP.pmi.io.save_best_models(self.mdl,'./',self.stat_files,
+                                    number_of_best_scoring_models=3,
+                                    score_key=self.score_key,
+                                    feature_keys=self.feature_keys)
+        po = IMP.pmi.output.ProcessOutput('top_3.out')
+        fields = po.get_fields([self.score_key])
+        self.assertEqual(len(fields[self.score_key]),3)
+        self.assertEqual(float(fields[self.score_key][0]),301.048975729)
+        rh = RMF.open_rmf_file_read_only('top_3.rmf3')
+        prots = IMP.rmf.create_hierarchies(rh,self.mdl)
+
+        # testing first coordinate of med2 for each frame
+        check_coords=[[17.23349762, 27.99548721,-8.91260719],
+                      [24.54545784, 59.26082993, -3.0899663 ],
+                      [25.41869354, 63.82009125, -16.76820946]]
+
+        for i in range(3):
+            IMP.rmf.load_frame(rh,i)
+            psdict = IMP.pmi.analysis.get_particles_at_resolution_one(prots[0])
+            coord = IMP.core.XYZ(psdict['med2'][0]).get_coordinates()
+            print coord
+            self.assertAlmostEqual(IMP.algebra.get_distance(coord,
+                                                            IMP.algebra.Vector3D(check_coords[i])),0.0)
+        os.unlink('top_3.rmf3')
+        os.unlink('top_3.out')
+
+
     def test_get_best_models(self):
         results = IMP.pmi.io.input.get_best_models(self.stat_files,
                                                    self.score_key,

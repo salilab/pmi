@@ -13,23 +13,29 @@ import sys,os
 import numpy as np
 from collections import defaultdict
 
-def _append_to_dict(d0,d1):
-    for k in d0:
-        d0[k]+=d1[k]
 
 def save_best_models(mdl,
                      out_dir,
                      stat_files,
                      number_of_best_scoring_models=10,
+                     get_every=1,
                      score_key="SimplifiedModel_Total_Score_None",
                      feature_keys=None,
                      rmf_file_key="rmf_file",
                      rmf_file_frame_key="rmf_frame_index",
-                     prefiltervalue=None,
-                     get_every=1,
                      override_rmf_dir=None):
     """Given a list of stat files, read them all and find the best models.
     Save to a single RMF along with a stat file and a list of the extracted frames.
+    @param mdl The IMP Model
+    @param out_dir The output directory. Will save 3 files (RMF, stat, summary)
+    @param stat_files List of all stat files to collect
+    @param number_of_best_scoring_models Num best models to gather
+    @param get_every Skip frames
+    @param score_key Used for the ranking
+    @param feature_keys Keys to keep around
+    @param rmf_file_key The key that says RMF file name
+    @param rmf_file_frame_key The key that says RMF frame number
+    @param override_rmf_dir For output, change the name of the RMF directory (experiment)
     """
 
     # start by splitting into jobs
@@ -63,20 +69,12 @@ def save_best_models(mdl,
             for fk in feature_keys:
                 if fk in k:
                     all_keys.append(k)
-
-        # optionally filter based on score
-        if prefiltervalue is None:
-            fields = po.get_fields(all_keys,
-                                   get_every=get_every)
-        else:
-            fields = po.get_fields(all_keys,
-                                   filtertuple=(score_key,"<",prefiltervalue),
-                                   get_every=get_every)
+        fields = po.get_fields(all_keys,
+                               get_every=get_every)
 
         # check that all lengths are all equal
         length_set = set([len(fields[f]) for f in fields])
         minlen = min(length_set)
-
         # if some of the fields are missing, truncate
         # the feature files to the shortest one
         if len(length_set) > 1:
@@ -117,8 +115,10 @@ def save_best_models(mdl,
         del rh0
         outf = RMF.create_rmf_file(out_rmf_fn)
         IMP.rmf.add_hierarchies(outf,prots)
-        for i in order[:number_of_best_scoring_models]:
+        for nm,i in enumerate(order[:number_of_best_scoring_models]):
             dline=dict((k,all_fields[k][i]) for k in all_fields)
+            dline[rmf_file_key]=out_rmf_fn
+            dline[rmf_file_frame_key]=nm
             rh = RMF.open_rmf_file_read_only(
                 os.path.join(root_directory_of_stat_file,all_fields[rmf_file_key][i]))
             IMP.rmf.link_hierarchies(rh,prots)

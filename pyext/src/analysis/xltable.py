@@ -4,12 +4,12 @@
    A class for displaying crosslink data
 """
 
+import analysis
 import IMP
 import IMP.algebra
 import IMP.em
 import IMP.pmi
 import IMP.pmi.tools
-import IMP.pmi.analysis
 import IMP.pmi.output
 import IMP.rmf
 import RMF
@@ -57,7 +57,7 @@ class CrossLinkTable(object):
         radii = []
         namelist = []
 
-        particles_dictionary = get_particles_at_resolution_one(prots[0])
+        particles_dictionary = analysis.get_particles_at_resolution_one(prots[0])
 
         resindex = 0
         self.index_dictionary = {}

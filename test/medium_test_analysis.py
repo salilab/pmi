@@ -10,7 +10,7 @@ except ImportError:
     scipy = None
 if scipy is not None:
     import IMP.pmi.analysis
-    import IMP.pmi.io.input
+    import IMP.pmi.io
 
 class AnalysisTest(IMP.test.TestCase):
     def setUp(self):
@@ -68,8 +68,6 @@ class AnalysisTest(IMP.test.TestCase):
         for i in [0,1,2]:
             self.assertAlmostEqual(xyz11[i],xyz10[i])
             self.assertAlmostEqual(xyz21[i],xyz20[i])
-
-
 
 
     def test_alignment_and_rmsd(self):

@@ -8,10 +8,130 @@ import IMP.rmf
 import IMP.pmi.analysis
 import IMP.pmi.output
 import IMP.pmi.tools
-import glob
+import RMF
 import sys,os
 import numpy as np
 from collections import defaultdict
+
+def _append_to_dict(d0,d1):
+    for k in d0:
+        d0[k]+=d1[k]
+
+def save_best_models(mdl,
+                     out_dir,
+                     stat_files,
+                     number_of_best_scoring_models=10,
+                     score_key="SimplifiedModel_Total_Score_None",
+                     feature_keys=None,
+                     rmf_file_key="rmf_file",
+                     rmf_file_frame_key="rmf_frame_index",
+                     prefiltervalue=None,
+                     get_every=1,
+                     override_rmf_dir=None):
+    """Given a list of stat files, read them all and find the best models.
+    Save to a single RMF along with a stat file and a list of the extracted frames.
+    """
+
+    # start by splitting into jobs
+    try:
+        from mpi4py import MPI
+        comm = MPI.COMM_WORLD
+        rank = comm.Get_rank()
+        number_of_processes = comm.size
+    except ImportError:
+        rank = 0
+        number_of_processes = 1
+    my_stat_files=IMP.pmi.tools.chunk_list_into_segments(
+        stat_files,number_of_processes)[rank]
+
+    # filenames
+    out_stat_fn = os.path.join(out_dir,"top_"+str(number_of_best_scoring_models)+".out")
+    out_rmf_fn = os.path.join(out_dir,"top_"+str(number_of_best_scoring_models)+".rmf3")
+
+    # extract all the models
+    all_fields=[]
+    for nsf,sf in enumerate(my_stat_files):
+
+        # get list of keywords
+        root_directory_of_stat_file = os.path.dirname(os.path.dirname(sf))
+        print "getting data from file %s" % sf
+        po = IMP.pmi.output.ProcessOutput(sf)
+        all_keys = [score_key,
+                    rmf_file_key,
+                    rmf_file_frame_key]
+        for k in po.get_keys():
+            for fk in feature_keys:
+                if fk in k:
+                    all_keys.append(k)
+
+        # optionally filter based on score
+        if prefiltervalue is None:
+            fields = po.get_fields(all_keys,
+                                   get_every=get_every)
+        else:
+            fields = po.get_fields(all_keys,
+                                   filtertuple=(score_key,"<",prefiltervalue),
+                                   get_every=get_every)
+
+        # check that all lengths are all equal
+        length_set = set([len(fields[f]) for f in fields])
+        minlen = min(length_set)
+
+        # if some of the fields are missing, truncate
+        # the feature files to the shortest one
+        if len(length_set) > 1:
+            print "get_best_models: the statfile is not synchronous"
+            minlen = min(length_set)
+            for f in fields:
+                fields[f] = fields[f][0:minlen]
+        if nsf==0:
+            all_fields=fields
+        else:
+            for k in fields:
+                all_fields[k]+=fields[k]
+
+        if override_rmf_dir is not None:
+            for i in range(minlen):
+                all_fields[rmf_file_key][i]=os.path.join(
+                    override_rmf_dir,os.path.basename(all_fields[rmf_file_key][i]))
+
+    # gather info, sort, write
+    comm.Barrier()
+    if rank!=0:
+        comm.send(all_fields, dest=0, tag=11)
+    else:
+        for i in range(1,number_of_processes):
+            data_tmp = comm.recv(source=i, tag=11)
+            for k in all_fields:
+                all_fields[k]+=data_tmp[k]
+
+        # sort by total score
+        order = sorted(range(len(all_fields[score_key])),
+                       key=lambda i: float(all_fields[score_key][i]))
+
+        # write the stat and RMF files
+        stat = open(out_stat_fn,'w')
+        rh0 = RMF.open_rmf_file_read_only(
+            os.path.join(root_directory_of_stat_file,all_fields[rmf_file_key][0]))
+        prots = IMP.rmf.create_hierarchies(rh0,mdl)
+        del rh0
+        outf = RMF.create_rmf_file(out_rmf_fn)
+        IMP.rmf.add_hierarchies(outf,prots)
+        for i in order[:number_of_best_scoring_models]:
+            dline=dict((k,all_fields[k][i]) for k in all_fields)
+            rh = RMF.open_rmf_file_read_only(
+                os.path.join(root_directory_of_stat_file,all_fields[rmf_file_key][i]))
+            IMP.rmf.link_hierarchies(rh,prots)
+            IMP.rmf.load_frame(rh,all_fields[rmf_file_frame_key][i])
+            IMP.rmf.save_frame(outf)
+            del rh
+            stat.write(str(dline)+'\n')
+        stat.close()
+        print 'wrote stats to',out_stat_fn
+        print 'wrote rmfs to',out_rmf_fn
+
+
+
 
 def get_best_models(stat_files,
                     score_key="SimplifiedModel_Total_Score_None",

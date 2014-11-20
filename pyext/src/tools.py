@@ -985,6 +985,28 @@ def scatter_and_gather(data):
         data = comm.recv(source=0, tag=11)
     return data
 
+def scatter_and_gather_dict_append(data):
+    """Synchronize data over a parallel run"""
+    from mpi4py import MPI
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    number_of_processes = comm.size
+    comm.Barrier()
+    if rank != 0:
+        comm.send(data, dest=0, tag=11)
+    elif rank == 0:
+        for i in range(1, number_of_processes):
+            data_tmp = comm.recv(source=i, tag=11)
+            for k in data:
+                data[k]+=data_tmp[k]
+
+        for i in range(1, number_of_processes):
+            comm.send(data, dest=i, tag=11)
+
+    if rank != 0:
+        data = comm.recv(source=0, tag=11)
+    return data
+
 
 #
 ### Lists and iterators

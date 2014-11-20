@@ -190,11 +190,11 @@ class Clustering(object):
         try:
             from mpi4py import MPI
             comm = MPI.COMM_WORLD
-            rank = comm.Get_rank()
+            self.rank = comm.Get_rank()
             self.number_of_processes = comm.size
         except ImportError:
             self.number_of_processes = 1
-            rank = 0
+            self.rank = 0
         self.all_coords = {}
         self.structure_cluster_ids = None
         self.tmpl_coords = None
@@ -222,9 +222,9 @@ class Clustering(object):
 
         my_model_indexes_unique_pairs = IMP.pmi.tools.chunk_list_into_segments(
             model_indexes_unique_pairs,
-            self.number_of_processes)[rank]
+            self.number_of_processes)[self.rank]
 
-        print "process %s assigned with %s pairs" % (str(rank), str(len(my_model_indexes_unique_pairs)))
+        print "process %s assigned with %s pairs" % (str(self.rank), str(len(my_model_indexes_unique_pairs)))
 
         (raw_distance_dict, self.transformation_distance_dict) = self.matrix_calculation(self.all_coords,
                                                                                          self.tmpl_coords,
@@ -1909,11 +1909,11 @@ class Precision(object):
         try:
             from mpi4py import MPI
             comm = MPI.COMM_WORLD
-            rank = comm.Get_rank()
+            self.rank = comm.Get_rank()
             self.number_of_processes = comm.size
         except ImportError:
             self.number_of_processes=1
-            rank=0
+            self.rank=0
 
 
         self.styles=['pairwise_rmsd','pairwise_drmsd_k','pairwise_drmsd_Q','pairwise_drms_k','pairwise_rmsd','drmsd_from_center']
@@ -1978,7 +1978,7 @@ class Precision(object):
         tuples, containing the file name and the frame number'''
 
         my_rmf_name_frame_tuples=IMP.pmi.tools.chunk_list_into_segments(
-            rmf_name_frame_tuples,self.number_of_processes)[rank]
+            rmf_name_frame_tuples,self.number_of_processes)[self.rank]
 
 
         for nfr,tup in enumerate(my_rmf_name_frame_tuples):
@@ -2011,10 +2011,10 @@ class Precision(object):
             # synchronize the internal self.selection_dictionary data structure
             self.rmf_names_frames=IMP.pmi.tools.scatter_and_gather(self.rmf_names_frames)
 
-            if rank != 0:
+            if self.rank != 0:
                 comm.send(self.structures_dictionary, dest=0, tag=11)
 
-            elif rank == 0:
+            elif self.rank == 0:
                 for i in range(1, self.number_of_processes):
                     data_tmp = comm.recv(source=i, tag=11)
 
@@ -2025,7 +2025,7 @@ class Precision(object):
                 for i in range(1, self.number_of_processes):
                     comm.send(self.structures_dictionary, dest=i, tag=11)
 
-            if rank != 0:
+            if self.rank != 0:
                 self.structures_dictionary = comm.recv(source=0, tag=11)
 
 
@@ -2177,19 +2177,19 @@ class Precision(object):
                 raise ValueError("no structure selected. Check the skip parameter.")
 
             my_pair_combination_list=IMP.pmi.tools.chunk_list_into_segments(
-                pair_combination_list,self.number_of_processes)[rank]
+                pair_combination_list,self.number_of_processes)[self.rank]
             my_length=len(my_pair_combination_list)
 
             for n,pair in enumerate(my_pair_combination_list):
                 progression=int(float(n)/my_length*100.0)
-                print rank,progression,len(pair_combination_list),my_length,n
+                #print self.rank,progression,len(pair_combination_list),my_length,n
                 distances[pair]=self.get_distance(structure_set_name1,structure_set_name2,
                                                   selection_name,pair[0],pair[1])
 
             if self.number_of_processes > 1:
                 distances = IMP.pmi.tools.scatter_and_gather(distances)
 
-            if rank == 0:
+            if self.rank == 0:
 
                 if structure_set_name1==structure_set_name2:
                     structure_pointers=structure_pointers_1

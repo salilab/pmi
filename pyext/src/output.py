@@ -10,6 +10,7 @@ import IMP.pmi.tools
 import os
 import RMF
 import numpy as np
+import operator
 try:
     import cPickle as pickle
 except ImportError:
@@ -603,7 +604,6 @@ class ProcessOutput(object):
             self.klist = d.keys()
             # check if it is a stat2 file
             if "STAT2HEADER" in self.klist:
-                import operator
                 self.isstat2 = True
                 for k in self.klist:
                     if "STAT2HEADER" in str(k):

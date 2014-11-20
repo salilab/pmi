@@ -861,7 +861,7 @@ class AnalysisReplicaExchange0(object):
             self.number_of_processes = comm.size
         except ImportError:
             rank = 0
-            number_of_processes = 1
+            self.number_of_processes = 1
 
 
         self.model = model
@@ -926,14 +926,15 @@ class AnalysisReplicaExchange0(object):
 
         if not load_distance_matrix_file:
             if len(self.stat_files)==0: print "ERROR: no stat file found in the given path"; return
-            my_stat_files=IMP.pmi.tools.chunk_list_into_segments(self.stat_files,number_of_processes)[rank]
-            best_models = IMP.pmi.io.input.get_best_models(my_stat_files,
-                                                          score_key,
-                                                          feature_keys,
-                                                          rmf_file_key,
-                                                          rmf_file_frame_key,
-                                                          prefiltervalue,
-                                                          get_every)
+            my_stat_files=IMP.pmi.tools.chunk_list_into_segments(
+                self.stat_files,self.number_of_processes)[rank]
+            best_models = IMP.pmi.io.get_best_models(my_stat_files,
+                                                     score_key,
+                                                     feature_keys,
+                                                     rmf_file_key,
+                                                     rmf_file_frame_key,
+                                                     prefiltervalue,
+                                                     get_every)
             rmf_file_list=best_models[0]
             rmf_file_frame_list=best_models[1]
             score_list=best_models[2]
@@ -943,7 +944,7 @@ class AnalysisReplicaExchange0(object):
 # collect all the files and scores
 # ------------------------------------------------------------------------
 
-            if number_of_processes > 1:
+            if self.number_of_processes > 1:
                 score_list = IMP.pmi.tools.scatter_and_gather(score_list)
                 rmf_file_list = IMP.pmi.tools.scatter_and_gather(rmf_file_list)
                 rmf_file_frame_list = IMP.pmi.tools.scatter_and_gather(
@@ -982,7 +983,7 @@ class AnalysisReplicaExchange0(object):
 
             my_best_score_rmf_tuples = IMP.pmi.tools.chunk_list_into_segments(
                 best_score_rmf_tuples,
-                number_of_processes)[rank]
+                self.number_of_processes)[rank]
 
 # ------------------------------------------------------------------------
 # optionally don't compute distance matrix or cluster, just write top files
@@ -1032,13 +1033,13 @@ class AnalysisReplicaExchange0(object):
 #-------------------------------------------------------------
 # read the coordinates
 # ------------------------------------------------------------
-            rmsd_weights = IMP.pmi.io.input.get_bead_sizes(self.model,
-                                                         my_best_score_rmf_tuples[0],
-                                                         rmsd_calculation_components)
-            got_coords = IMP.pmi.io.input.read_coordinates_of_rmfs(self.model,
-                                                              my_best_score_rmf_tuples,
-                                                              alignment_components,
-                                                              rmsd_calculation_components)
+            rmsd_weights = IMP.pmi.io.get_bead_sizes(self.model,
+                                                     my_best_score_rmf_tuples[0],
+                                                     rmsd_calculation_components)
+            got_coords = IMP.pmi.io.read_coordinates_of_rmfs(self.model,
+                                                             my_best_score_rmf_tuples,
+                                                             alignment_components,
+                                                             rmsd_calculation_components)
 
             # note! the coordinates are simple float tuples, NOT decorators, NOT Vector3D,
             # NOR particles, because these object cannot be serialized. We need serialization
@@ -1051,7 +1052,7 @@ class AnalysisReplicaExchange0(object):
 
 
             # broadcast the coordinates
-            if number_of_processes > 1:
+            if self.number_of_processes > 1:
                 all_coordinates = IMP.pmi.tools.scatter_and_gather(
                     all_coordinates)
                 all_rmf_file_names = IMP.pmi.tools.scatter_and_gather(
@@ -1095,7 +1096,7 @@ class AnalysisReplicaExchange0(object):
                 if display_plot:
                     if rank == 0:
                         Clusters.plot_matrix()
-                    if number_of_processes > 1:
+                    if self.number_of_processes > 1:
                         comm.Barrier()
                     if exit_after_display:
                         exit()
@@ -1116,7 +1117,7 @@ class AnalysisReplicaExchange0(object):
                 if display_plot:
                     if rank == 0:
                         Clusters.plot_matrix()
-                    if number_of_processes > 1:
+                    if self.number_of_processes > 1:
                         comm.Barrier()
                     if exit_after_display:
                         exit()

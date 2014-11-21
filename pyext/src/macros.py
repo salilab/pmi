@@ -830,17 +830,14 @@ class AnalysisReplicaExchange0(object):
     A number of plots are also supported.
     """
     def __init__(self, model,
-                 stat_file_name_suffix="stat",
-                 # if you want to merge two calculation directories
                  merge_directories=["./"],
+                 stat_file_name_suffix="stat",
                  best_pdb_name_suffix="model",
                  do_clean_first=True,
                  do_create_directories=True,
-                 global_output_directory="./",
+                 global_output_directory="output/",
                  replica_stat_file_suffix="stat_replica",
-                 global_analysis_result_directory="./analysis/",
-                 rmf_dir='', #NOT USED
-                 ):
+                 global_analysis_result_directory="./analysis/"):
 
         """ Setup analysis.
         @param model                           The IMP model
@@ -857,12 +854,11 @@ class AnalysisReplicaExchange0(object):
         try:
             from mpi4py import MPI
             comm = MPI.COMM_WORLD
-            rank = comm.Get_rank()
+            self.rank = comm.Get_rank()
             self.number_of_processes = comm.size
         except ImportError:
-            rank = 0
+            self.rank = 0
             self.number_of_processes = 1
-
 
         self.model = model
         stat_dir = global_output_directory
@@ -870,7 +866,10 @@ class AnalysisReplicaExchange0(object):
         # it contains the position of the root directories
         for rd in merge_directories:
             stat_files = glob.glob(rd + "/" + stat_dir + "/stat.*.out")
+            if len(stat_files)==0:
+                print "WARNING: no stat files found in",rd + "/" + stat_dir + "/stat.*.out"
             self.stat_files += stat_files
+
 
     def clustering(self,
                    score_key="SimplifiedModel_Total_Score_None",
@@ -927,7 +926,7 @@ class AnalysisReplicaExchange0(object):
         if not load_distance_matrix_file:
             if len(self.stat_files)==0: print "ERROR: no stat file found in the given path"; return
             my_stat_files=IMP.pmi.tools.chunk_list_into_segments(
-                self.stat_files,self.number_of_processes)[rank]
+                self.stat_files,self.number_of_processes)[self.rank]
             best_models = IMP.pmi.io.get_best_models(my_stat_files,
                                                      score_key,
                                                      feature_keys,
@@ -983,7 +982,7 @@ class AnalysisReplicaExchange0(object):
 
             my_best_score_rmf_tuples = IMP.pmi.tools.chunk_list_into_segments(
                 best_score_rmf_tuples,
-                self.number_of_processes)[rank]
+                self.number_of_processes)[self.rank]
 
 # ------------------------------------------------------------------------
 # optionally don't compute distance matrix or cluster, just write top files
@@ -998,7 +997,7 @@ class AnalysisReplicaExchange0(object):
                     os.mkdir(dircluster)
                 except:
                     pass
-                clusstat=open(os.path.join(dircluster,"stat."+str(rank)+".out"),"w")
+                clusstat=open(os.path.join(dircluster,"stat."+str(self.rank)+".out"),"w")
                 for cnt,tpl in enumerate(my_best_score_rmf_tuples):
                     rmf_name=tpl[1]
                     rmf_frame_number=tpl[2]
@@ -1012,8 +1011,8 @@ class AnalysisReplicaExchange0(object):
                         continue
 
                     o=IMP.pmi.output.Output()
-                    out_pdb_fn=os.path.join(dircluster,str(cnt)+"."+str(rank)+".pdb")
-                    out_rmf_fn=os.path.join(dircluster,str(cnt)+"."+str(rank)+".rmf")
+                    out_pdb_fn=os.path.join(dircluster,str(cnt)+"."+str(self.rank)+".pdb")
+                    out_rmf_fn=os.path.join(dircluster,str(cnt)+"."+str(self.rank)+".rmf")
                     o.init_pdb(out_pdb_fn,prot)
                     o.write_pdb(out_pdb_fn,
                                 translate_to_geometric_center=write_pdb_with_centered_coordinates)
@@ -1064,7 +1063,7 @@ class AnalysisReplicaExchange0(object):
                 rmsd_coordinates=IMP.pmi.tools.scatter_and_gather(
                     rmsd_coordinates)
 
-            if rank == 0:
+            if self.rank == 0:
                 # save needed informations in external files
                 self.save_objects(
                     [best_score_feature_keyword_list_dict,
@@ -1091,10 +1090,10 @@ class AnalysisReplicaExchange0(object):
             Clusters.dist_matrix()
 
             # perform clustering and optionally display
-            if rank == 0:
+            if self.rank == 0:
                 Clusters.do_cluster(number_of_clusters)
                 if display_plot:
-                    if rank == 0:
+                    if self.rank == 0:
                         Clusters.plot_matrix()
                     if self.number_of_processes > 1:
                         comm.Barrier()
@@ -1106,7 +1105,7 @@ class AnalysisReplicaExchange0(object):
 # Alteratively, load the distance matrix from file and cluster that
 # ------------------------------------------------------------------------
         else:
-            if rank==0:
+            if self.rank==0:
                 print "setup clustering class"
                 Clusters = IMP.pmi.analysis.Clustering()
                 Clusters.load_distance_matrix_file(file_name=distance_matrix_file)
@@ -1115,7 +1114,7 @@ class AnalysisReplicaExchange0(object):
                 [best_score_feature_keyword_list_dict,
                  rmf_file_name_index_dict] = self.load_objects(".macro.pkl")
                 if display_plot:
-                    if rank == 0:
+                    if self.rank == 0:
                         Clusters.plot_matrix()
                     if self.number_of_processes > 1:
                         comm.Barrier()
@@ -1126,10 +1125,10 @@ class AnalysisReplicaExchange0(object):
 # now save all informations about the clusters
 # ------------------------------------------------------------------------
 
-        if rank == 0:
+        if self.rank == 0:
             print Clusters.get_cluster_labels()
             for n, cl in enumerate(Clusters.get_cluster_labels()):
-                print "rank %s " % str(rank)
+                print "rank %s " % str(self.rank)
                 print "cluster %s " % str(n)
                 print "cluster label %s " % str(cl)
                 print Clusters.get_cluster_label_names(cl)

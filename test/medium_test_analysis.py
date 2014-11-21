@@ -4,6 +4,7 @@ import RMF
 import IMP.rmf
 import os,sys
 from math import sqrt
+import itertools
 try:
     import scipy
 except ImportError:
@@ -195,9 +196,6 @@ class AnalysisTest(IMP.test.TestCase):
         ali=IMP.pmi.analysis.Alignment(coord_dict_0,coord_dict_1,weights)
         self.assertAlmostEqual(ali.get_rmsd(),sqrt(10.0/11.0))
 
-    def precision(self):
-        pass
-
     def test_get_model_density(self):
         """Test GetModelDensity correctly creates and adds density maps"""
         if scipy is None:
@@ -272,6 +270,78 @@ class ClusteringTest(IMP.test.TestCase):
         self.assertAlmostEqual(d[0,0],0.0)
         self.assertAlmostEqual(d[1,0],sqrt(10.0/21.0))
         self.assertAlmostEqual(d[2,0],0.0)
+
+class PrecisionTest(IMP.test.TestCase):
+    """ The precision class reads some structures and checks
+    the all-against-all RMSD. You just have to check that it correctly reads
+    an RMF file and gets the right value. I guess. """
+    def get_drms(self,coords0,coords1):
+        total=0.0
+        ct=0
+        ncoords = len(coords1)
+        for p0 in range(ncoords):
+            for p1 in range(p0+1,ncoords):
+                d0 = sqrt(sum([(c1-c2)**2 for c1,c2 in zip(coords0[p0],coords0[p1])]))
+                d1 = sqrt(sum([(c1-c2)**2 for c1,c2 in zip(coords1[p0],coords1[p1])]))
+                total+=(d0-d1)**2
+                ct+=1
+        return sqrt(total/ct)
+    def test_precision(self):
+        import random
+        mdl = IMP.Model()
+
+        # create some frames and store in RMF
+        root = IMP.atom.Hierarchy.setup_particle(IMP.Particle(mdl))
+        h = IMP.atom.Molecule.setup_particle(IMP.Particle(mdl))
+        h.set_name("testmol")
+        res1 = IMP.atom.Hierarchy.setup_particle(IMP.Particle(mdl))
+        res1.set_name("testmol_Res:1")
+        root.add_child(h)
+        h.add_child(res1)
+        ds=[]
+        all_coords=[]
+        for i in range(4):
+            p = IMP.Particle(mdl)
+            v = IMP.algebra.Vector3D(0,0,0)
+            d = IMP.core.XYZR.setup_particle(p)
+            d.set_coordinates(v)
+            d.set_radius(0.5)
+            IMP.atom.Mass.setup_particle(p,0.0)
+            IMP.atom.Residue.setup_particle(p,IMP.atom.ResidueType("ALA"),i)
+            res1.add_child(d)
+            ds.append(d)
+        fn = self.get_tmp_file_name('test_precision.rmf3')
+        f = RMF.create_rmf_file(fn)
+        IMP.rmf.add_hierarchies(f,[root])
+        for nframe in range(4):
+            tmp_coords=[]
+            for i in range(4):
+                coord=[]
+                for nv in range(3):
+                    coord.append(random.random()*10-5)
+                ds[i].set_coordinates(IMP.algebra.Vector3D(coord))
+                tmp_coords.append(coord)
+            IMP.rmf.save_frame(f,0)
+            all_coords.append(tmp_coords)
+        del f
+
+        # calculate av distance between all pairs of the two sets
+        dist=self.get_drms(all_coords[0],all_coords[2])
+        dist+=self.get_drms(all_coords[0],all_coords[3])
+        dist+=self.get_drms(all_coords[1],all_coords[2])
+        dist+=self.get_drms(all_coords[1],all_coords[3])
+        dist/=4.0
+
+        # read into precision class as two separate groups
+        ofn = self.get_tmp_file_name('test_precision.out')
+        pr = IMP.pmi.analysis.Precision(mdl,resolution=1)
+        pr.add_structures([[fn,0],[fn,1]],'set0')
+        pr.add_structures([[fn,2],[fn,3]],'set1')
+        pr.get_precision('set0','set1',outfile=ofn)
+        inf = open(ofn,'r')
+        pdist = float(inf.readline().strip().split()[-1])
+        self.assertAlmostEqual(dist,pdist,places=2)
+
 
 if __name__ == '__main__':
     IMP.test.main()

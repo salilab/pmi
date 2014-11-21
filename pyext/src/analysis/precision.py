@@ -31,11 +31,11 @@ class Precision(object):
     Step 3) call get_rmsf() to evaluate within-group fluctuations
     """
     def __init__(self,model,
-                 resolution='one',
+                 resolution=1,
                  selection_dictionary={}):
         """ Set up the Precision object.
         @param model The IMP Model
-        @param resolution Use 1 or 10 only for now
+        @param resolution Use 1 or 10 (kluge: requires that "_Res:X" is part of the hier name)
         @param selection_dictionary Dictionary where keys are names for selections
                                     and values are selection tuples for scoring precision
         \note All coordinates are actually read in, so you can calculate
@@ -153,7 +153,6 @@ class Precision(object):
                        self._get_residue_particle_index_map(
                            prot_name,
                            particles_resolution_one,prots[0])
-
         for prot in prots:
             IMP.atom.destroy(prot)
 
@@ -238,7 +237,7 @@ class Precision(object):
                      selection_name,
                      index1,
                      index2):
-        """ Compute distance between structures """
+        """ Compute distance between structures with various metrics """
         c1=self.structures_dictionary[structure_set_name1][selection_name][index1]
         c2=self.structures_dictionary[structure_set_name2][selection_name][index2]
 
@@ -270,14 +269,14 @@ class Precision(object):
         return distances
 
     def get_precision(self,
-                      outfile,
                       structure_set_name1,
                       structure_set_name2,
+                      outfile=None,
                       skip=1,
                       selection_keywords=None):
         """ Evaluate the precision of two named structure groups. Supports MPI.
         When the structure_set_name1 is different from the structure_set_name2,
-        this evaluates the cross-precision
+        this evaluates the cross-precision.
         @param outfile Name of the precision output file
         @param structure_set_name1  string name of the first structure set
         @param structure_set_name2  string name of the second structure set
@@ -295,7 +294,8 @@ class Precision(object):
                         + k + " which was not requested in the constructor")
             sel_keys=selection_keywords
 
-        of=open(outfile,"w")
+        if outfile is not None:
+            of=open(outfile,"w")
         centroid_index=0
         for selection_name in sel_keys:
             number_of_structures_1=len(self.structures_dictionary[structure_set_name1][selection_name])
@@ -313,18 +313,15 @@ class Precision(object):
             my_pair_combination_list=IMP.pmi.tools.chunk_list_into_segments(
                 pair_combination_list,self.number_of_processes)[self.rank]
             my_length=len(my_pair_combination_list)
-
             for n,pair in enumerate(my_pair_combination_list):
+
                 progression=int(float(n)/my_length*100.0)
-                #print self.rank,progression,len(pair_combination_list),my_length,n
                 distances[pair]=self._get_distance(structure_set_name1,structure_set_name2,
                                                   selection_name,pair[0],pair[1])
 
             if self.number_of_processes > 1:
                 distances = IMP.pmi.tools.scatter_and_gather(distances)
-
             if self.rank == 0:
-
                 if structure_set_name1==structure_set_name2:
                     structure_pointers=structure_pointers_1
                     number_of_structures=number_of_structures_1
@@ -359,22 +356,23 @@ class Precision(object):
                         centroid_distance+=self._get_distance(structure_set_name1,structure_set_name1,
                                                              selection_name,centroid_index,n)
 
-
                     #pairwise_distance=distance/len(distances.keys())
                     centroid_distance/=number_of_structures
                     #average_centroid_distance=sum(distances_to_structure)/len(distances_to_structure)
-                    of.write(str(selection_name)+" "+structure_set_name1+
-                                    " average centroid distance "+str(centroid_distance)+"\n")
-                    of.write(str(selection_name)+" "+structure_set_name1+
-                                    " centroid index "+str(centroid_index)+"\n")
-                    of.write(str(selection_name)+" "+structure_set_name1+
-                                    " centroid rmf name "+str(centroid_rmf_name)+"\n")
+                    if outfile is not None:
+                        of.write(str(selection_name)+" "+structure_set_name1+
+                                        " average centroid distance "+str(centroid_distance)+"\n")
+                        of.write(str(selection_name)+" "+structure_set_name1+
+                                        " centroid index "+str(centroid_index)+"\n")
+                        of.write(str(selection_name)+" "+structure_set_name1+
+                                        " centroid rmf name "+str(centroid_rmf_name)+"\n")
 
                 average_pairwise_distances=sum(distances.values())/len(distances.values())
-                of.write(str(selection_name)+" "+structure_set_name1+" "+structure_set_name2+
-                           " average pairwise distance "+str(average_pairwise_distances)+"\n")
-
-        of.close()
+                if outfile is not None:
+                    of.write(str(selection_name)+" "+structure_set_name1+" "+structure_set_name2+
+                             " average pairwise distance "+str(average_pairwise_distances)+"\n")
+        if outfile is not None:
+            of.close()
         return centroid_index
 
     def get_rmsf(self,
@@ -389,13 +387,12 @@ class Precision(object):
         @param skip Skip this number of structures
         @param set_plot_yaxis_range In case you need to change the plot
         """
-        outfile=os.path.join(outdir,"rmsf.dat")
-
         # get the centroid structure for the whole complex
-        centroid_index=self.get_precision(outfile,
-                                          structure_set_name,
-                                          structure_set_name,
-                                          skip=skip)
+        centroid_index=self.get_precision(
+            structure_set_name,
+            structure_set_name,
+            outfile=None,
+            skip=skip)
         for sel_name in self.protein_names:
             self.selection_dictionary.update({sel_name:[sel_name]})
             try:

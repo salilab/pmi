@@ -94,7 +94,8 @@ def save_best_models(mdl,
                     override_rmf_dir,os.path.basename(all_fields[rmf_file_key][i]))
 
     # gather info, sort, write
-    comm.Barrier()
+    if number_of_processes!=1:
+        comm.Barrier()
     if rank!=0:
         comm.send(all_fields, dest=0, tag=11)
     else:

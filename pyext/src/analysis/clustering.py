@@ -20,9 +20,7 @@ import numpy as np
 
 
 class Alignment(object):
-    """
-    This class performs alignment and RMSD calculation for two sets of coordinates
-
+    """Performs alignment and RMSD calculation for two sets of coordinates
     Inputs:
 
       - query = {'p1':coords(L,3), 'p2':coords(L,3)}

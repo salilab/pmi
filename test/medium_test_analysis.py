@@ -287,6 +287,9 @@ class PrecisionTest(IMP.test.TestCase):
                 ct+=1
         return sqrt(total/ct)
     def test_precision(self):
+        if scipy is None:
+            self.skipTest("no scipy module")
+
         import random
         mdl = IMP.Model()
 

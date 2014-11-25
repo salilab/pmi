@@ -884,7 +884,7 @@ class AnalysisReplicaExchange0(object):
                                 rmf_file_frame_key="rmf_frame_index",
                                 outputdir="./",
                                 get_every=1,
-                                nframes_trajectory=100)
+                                nframes_trajectory=100):
         """ Get a trajectory of the modeling run, for generating demonstrative movies
         @param score_key                           The score for ranking models
         @param rmf_file_key                        Key pointing to RMF filename

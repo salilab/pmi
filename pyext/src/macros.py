@@ -907,8 +907,8 @@ class AnalysisReplicaExchange0(object):
         max_score=max(score_list)
         min_score=min(score_list)
 
-        step=(max_score-min_score)/nframes_trajectory
-        bins=[min_score+step*float(i) for i in range(nframes_trajectory)]
+
+        bins=[(max_score-min_score)*1.0/float(i)+min_score for i in range(nframes_trajectory)]
         binned_scores=[None]*nframes_trajectory
         binned_model_indexes=[-1]*nframes_trajectory
 

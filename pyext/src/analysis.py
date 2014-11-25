@@ -21,10 +21,8 @@ import numpy as np
 
 class Alignment(object):
     """Performs alignment and RMSD calculation for two sets of coordinates
-    Inputs:
-
-      - query = {'p1':coords(L,3), 'p2':coords(L,3)}
-      - template = {'p1':coords(L,3), 'p2':coords(L,3)}
+    @param query {'p1':coords(L,3), 'p2':coords(L,3)}
+    @param template {'p1':coords(L,3), 'p2':coords(L,3)}
 
     The class also takes into accout non-equal stoichiometry of the proteins. If this
     is the case, the protein names of protein in multiple copies should be delivered
@@ -183,6 +181,7 @@ class Clustering(object):
     """A class to cluster structures.
     Uses scipy's cdist function to compute distance matrices
     And sklearn's kmeans clustering module.
+    @param rmsd_weights Flat list of weights for each particle (if they're coarse)
     """
     def __init__(self,rmsd_weights=None):
         try:
@@ -456,22 +455,19 @@ class Precision(object):
     Also can evaluate the cross-precision of multiple ensembles.
     Supports MPI for coordinate reading.
     Recommended procedure:
-    Step 0) initialize object and pass the selection for evaluating precision
-    Step 1) call add_structures() to read in the data (specify group name)"
-    Step 2) call get_precision() to evaluate inter/intra precision
-    Step 3) call get_rmsf() to evaluate within-group fluctuations
+      -# initialize object and pass the selection for evaluating precision
+      -# call add_structures() to read in the data (specify group name)"
+      -# call get_precision() to evaluate inter/intra precision
+      -# call get_rmsf() to evaluate within-group fluctuations
+    @param model The IMP Model
+    @param resolution Use 1 or 10 (kluge: requires that "_Res:X" is part of the hier name)
+    @param selection_dictionary Dictionary where keys are names for selections
+                                    and values are selection tuples for scoring precision.
+                                "All" is automatically made as well
     """
     def __init__(self,model,
                  resolution=1,
                  selection_dictionary={}):
-        """ Set up the Precision object.
-        @param model The IMP Model
-        @param resolution Use 1 or 10 (kluge: requires that "_Res:X" is part of the hier name)
-        @param selection_dictionary Dictionary where keys are names for selections
-                                    and values are selection tuples for scoring precision
-        \note All coordinates are actually read in, so you can calculate
-              precision for "All" if you want
-        """
         try:
             from mpi4py import MPI
             comm = MPI.COMM_WORLD
@@ -917,21 +913,21 @@ class Precision(object):
 
 
 class GetModelDensity(object):
-    """A class to compute mean density maps from structures"""
-    def __init__(self, custom_ranges, representation=None, voxel=5.0):
-        """Setup GetModelDensity object. Keeps a dictionary of density maps,
-        keys are in the custom ranges. When you call add_subunits_density, it adds
-        particle coordinates to the existing density maps.
-        @param custom_ranges  Required. It's a dictionary, keys are the density component names,
-                              values are selection tuples
-                              e.g. {'kin28':[['kin28',1,-1]],
-                                   'density_name_1' :[('ccl1')],
-                                   'density_name_2' :[(1,142,'tfb3d1'),(143,700,'tfb3d2')],
-        @param representation PMI representation, for doing selections.
-                              not needed if you only pass hierarchies
-        @param voxel          The voxel size for the output map (lower is slower)
+    """A class to compute mean density maps from structures
+    Keeps a dictionary of density maps,
+    keys are in the custom ranges. When you call add_subunits_density, it adds
+    particle coordinates to the existing density maps.
+    @param custom_ranges  Required. It's a dictionary, keys are the density component names,
+                          values are selection tuples
+                          e.g. {'kin28':[['kin28',1,-1]],
+                               'density_name_1' :[('ccl1')],
+                               'density_name_2' :[(1,142,'tfb3d1'),(143,700,'tfb3d2')],
+    @param representation PMI representation, for doing selections.
+                          not needed if you only pass hierarchies
+    @param voxel          The voxel size for the output map (lower is slower)
+    """
 
-        """
+    def __init__(self, custom_ranges, representation=None, voxel=5.0):
 
         self.representation = representation
         self.voxel = voxel
@@ -1444,7 +1440,7 @@ def select_by_tuple(first_res_last_res_name_tuple):
     name = first_res_last_res_hier_tuple[2]
 
 class CrossLinkTable(object):
-
+    """Visualization of crosslinks"""
     def __init__(self):
         self.crosslinks = []
         self.external_csv_data = None

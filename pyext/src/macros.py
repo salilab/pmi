@@ -17,12 +17,28 @@ from collections import defaultdict
 import numpy as np
 
 class ReplicaExchange0(object):
-    """ A macro to help setup and run replica exchange,
-    supporting monte carlo and molecular dynamics.
+    """A macro to help setup and run replica exchange.
+    Supports monte carlo and molecular dynamics.
     Produces trajectory RMF files, best PDB structures,
-    and output stat files
+    and output stat files.
+    @param model                    The IMP model
+    @param representation           PMI.Representation() (or list of them, for multi-state modeling)
+    @param root_hier                Instead of passing Representation, just pass a hierarchy
+    @param mote_carlo_sample_objcts Objects for MC sampling
+    @param molecular_dynamics_sample_objects Objects for MD sampling
+    @param output_objects           Objects with get_output() for packing into stat files
+    @param crosslink_restraints     Harmonic restraints to go in output RMF files
+    @param monte_carlo_temperature  MC temp
+    @param replica_exchange_minimum_temperature Low temp for REX
+    @param replica_exchange_maximum_temperature High temp for REX
+    @param num_sample_rounds        Number of rounds of MC/MD per cycle
+    @param number_of_best_scoring_models Number of top-scoring PDB models to keep around
+    @param monte_carlo_steps        Number of MC steps per round
+    @param molecular_dynamics_steps  Number of MD steps per round
+    @param number_of_frames         Number of REX frames to run
+    @param nframes_write_coordinates How often to write the coordinates of a frame
+    @param write_initial_rmf        Write the initial configuration
     """
-
     def __init__(self, model,
                  representation=None,
                  root_hier=None,
@@ -58,26 +74,6 @@ class ReplicaExchange0(object):
                  em_object_for_rmf=None,
                  atomistic=False,
                  replica_exchange_object=None):
-        """
-        Setup replica exchange.
-        @param model                    The IMP model
-        @param representation           PMI.Representation() (or list of them, for multi-state modeling)
-        @param root_hier                Instead of passing Representation, just pass a hierarchy
-        @param mote_carlo_sample_objcts Objects for MC sampling
-        @param molecular_dynamics_sample_objects Objects for MD sampling
-        @param output_objects           Objects with get_output() for packing into stat files
-        @param crosslink_restraints     Harmonic restraints to go in output RMF files
-        @param monte_carlo_temperature  MC temp
-        @param replica_exchange_minimum_temperature Low temp for REX
-        @param replica_exchange_maximum_temperature High temp for REX
-        @param num_sample_rounds        Number of rounds of MC/MD per cycle
-        @param number_of_best_scoring_models Number of top-scoring PDB models to keep around
-        @param monte_carlo_steps        Number of MC steps per round
-        @param molecular_dynamics_steps  Number of MD steps per round
-        @param number_of_frames         Number of REX frames to run
-        @param nframes_write_coordinates How often to write the coordinates of a frame
-        @param write_initial_rmf        Write the initial configuration
-        """
 
         self.model = model
         self.vars = {}
@@ -448,7 +444,19 @@ data = [("Rpb1",     pdbfile,   "A",     0.00000000,  (fastafile,    0)),
 # ----------------------------------------------------------------------
 
 class BuildModel(object):
-    '''A macro to build a Representation based on a Topology and lists of movers'''
+    """A macro to build a Representation based on a Topology and lists of movers
+    @param model The IMP model
+    @param component_topologies List of IMP.pmi.topology.ComponentTopology items
+    @param list_of_rigid_bodies List of lists of domain names from the components.
+    @param list_of_super_rigid_bodies List of lists of domain names from the components.
+    @param chain_of_super_rigid_bodies List of lists of domain names from the components
+                                       Choices can only be from the same molecule
+    @param sequence_connectivity_scale For scaling the connectivity restraint
+    @param add_each_domain_as_rigid_body That way you don't have to put all of them in the list
+    @param force_create_gmm_files If True, will sample and create GMMs no matter what.
+                              If False, will only only sample if the files don't exist.
+                              If number of Gaussians is zero, won't do anything.
+    """
     def __init__(self,
                  model,
                  component_topologies,
@@ -458,19 +466,6 @@ class BuildModel(object):
                  sequence_connectivity_scale=4.0,
                  add_each_domain_as_rigid_body=False,
                  force_create_gmm_files=False):
-        """ Construct a Representation with topology class + list of movers.
-        @param model The IMP model
-        @param component_topologies List of IMP.pmi.topology.ComponentTopology items
-        @param list_of_rigid_bodies List of lists of domain names from the components.
-        @param list_of_super_rigid_bodies List of lists of domain names from the components.
-        @param chain_of_super_rigid_bodies List of lists of domain names from the components
-                                           Choices can only be from the same molecule
-        @param sequence_connectivity_scale For scaling the connectivity restraint
-        @param add_each_domain_as_rigid_body That way you don't have to put all of them in the list
-        @param force_create_gmm_files If True, will sample and create GMMs no matter what.
-                                  If False, will only only sample if the files don't exist.
-                                  If number of Gaussians is zero, won't do anything.
-        """
         self.m = model
         self.simo = IMP.pmi.representation.Representation(self.m,
                                                           upperharmonic=True,
@@ -715,7 +710,9 @@ class BuildModel(object):
 
 
 class BuildModel1(object):
-    '''Deprecated macro - use BuildModel()'''
+    """Deprecated building macro - use BuildModel()
+    @param representation The PMI representation"""
+
     def __init__(self, representation):
         self.simo=representation
         self.gmm_models_directory="."
@@ -724,7 +721,13 @@ class BuildModel1(object):
         self.gmm_models_directory=directory_name
 
     def build_model(self,data_structure,sequence_connectivity_scale=4.0):
-
+        """Create model.
+        @param data_structure List of lists containing these entries:
+             comp_name, hier_name, color, fasta_file, fasta_id, pdb_name, chain_id,
+             res_range, read_em_files, bead_size, rb, super_rb,
+             em_num_components, em_txt_file_name, em_mrc_file_name
+        @param sequence_connectivity_scale
+        """
         self.domain_dict={}
         self.resdensities={}
         super_rigid_bodies={}
@@ -964,8 +967,17 @@ class BuildModel1(object):
 
 class AnalysisReplicaExchange0(object):
     """A macro for running all the basic operations of analysis.
-    Including clustering, precision analysis, and making ensemble density maps.
+    Includes clustering, precision analysis, and making ensemble density maps.
     A number of plots are also supported.
+    @param model                           The IMP model
+    @param stat_file_name_suffix
+    @param merge_directories               The directories containing output files
+    @param best_pdb_name_suffix
+    @param do_clean_first
+    @param do_create_directories
+    @param global_output_directory          Where everything is
+    @param replica_stat_file_suffix
+    @param global_analysis_result_directory
     """
     def __init__(self, model,
                  merge_directories=["./"],
@@ -977,17 +989,6 @@ class AnalysisReplicaExchange0(object):
                  replica_stat_file_suffix="stat_replica",
                  global_analysis_result_directory="./analysis/"):
 
-        """ Setup analysis.
-        @param model                           The IMP model
-        @param stat_file_name_suffix
-        @param merge_directories               The directories containing output files
-        @param best_pdb_name_suffix
-        @param do_clean_first
-        @param do_create_directories
-        @param global_output_directory          Where everything is
-        @param replica_stat_file_suffix
-        @param global_analysis_result_directory
-        """
 
         try:
             from mpi4py import MPI

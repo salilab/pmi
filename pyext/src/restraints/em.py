@@ -43,7 +43,6 @@ class GaussianEMRestraint(object):
         self.sigmainit = 2.0
         self.label = "None"
         self.densities = densities
-        self.set_weight(weight)
 
         # setup target GMM
         self.m = self.densities[0].get_model()
@@ -121,6 +120,7 @@ class GaussianEMRestraint(object):
         print 'done EM setup'
         self.rs = IMP.RestraintSet(self.m, 'GaussianEMRestraint')
         self.rs.add_restraint(self.gaussianEM_restraint)
+        self.set_weight(weight)
 
     def center_target_density_on_model(self):
         target_com = IMP.algebra.Vector3D(0, 0, 0)

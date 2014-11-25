@@ -616,7 +616,6 @@ class Representation(object):
         density_ps_to_copy:     in case you already created the appropriate GMM (eg, for beads)
         use_precomputed_gaussians: Set this flag and pass fragments - will use roughly spherical gaussian setup
         '''
-
         import numpy as np
         import sys
         import IMP.em
@@ -731,7 +730,7 @@ class Representation(object):
         import numpy as np
         import sys
         from math import sqrt
-        self.representation_is_modified = True
+        self.representation_is_modified = False
 
         if particles is None:
             fragment_particles = []
@@ -754,7 +753,7 @@ class Representation(object):
             print "add all atom densities: no particle was selected"
             return
 
-        # create a sphereical gaussian for each particle based on atom type
+        # create a spherical gaussian for each particle based on atom type
         print 'setting up all atom gaussians num_particles',len(fragment_particles)
         for n,p in enumerate(fragment_particles):
             center=IMP.core.XYZ(p).get_coordinates()
@@ -764,7 +763,7 @@ class Representation(object):
                                                                                                                           center)
             shape=IMP.algebra.Gaussian3D(IMP.algebra.ReferenceFrame3D(trans),[rad]*3)
             IMP.core.Gaussian.setup_particle(p,shape)
-            #print 'setting up',n,p
+            print 'setting up particle',p.get_name(), " as individual gaussian particle"
 
         if not output_map is None:
             print 'writing map to', output_map

@@ -459,7 +459,8 @@ class BuildModel(object):
                  add_each_domain_as_rigid_body=False,
                  force_create_gmm_files=False,
                  representation=None,
-                 data_structure=None):
+                 data_structure=None,
+                 gmm_models_directory="."):
         """ Construct a Representation with topology class + list of movers.
 
         @param component_topologies List of IMP.pmi.topology.ComponentTopology items
@@ -507,6 +508,7 @@ class BuildModel(object):
         else:
             raise ValueError("No data structure or topology information given to build_model().")
         print "Data type is",data_type
+        self.gmm_models_directory=gmm_models_directory
         self.domain_dict={}
         self.resdensities={}
         super_rigid_bodies={}
@@ -588,10 +590,11 @@ class BuildModel(object):
                                        color=color,offset=offset)
 
                 if read_em_files is not None:
-                    if em_txt_file_name is " ":
+                    if em_txt_file_name is " " or em_txt_file_name is None :
                         em_txt_file_name=self.gmm_models_directory+"/"+hier_name+".txt"
-                    if em_mrc_file_name is " ":
+                    if em_mrc_file_name is " " or em_mrc_file_name is None:
                         em_mrc_file_name=self.gmm_models_directory+"/"+hier_name+".mrc"
+
                     dens_hier,beads=self.create_density(self.simo,comp_name,outhier,em_txt_file_name,
                                                         em_mrc_file_name,em_num_components,read_em_files)
                     self.simo.add_all_atom_densities(comp_name, hierarchies=beads)
@@ -670,6 +673,9 @@ class BuildModel(object):
             dens_hier_list+=self.resdensities[hn]
         return dens_hier_list
 
+    def set_gmm_models_directory(self,directory_name):
+        self.gmm_models_directory=directory_name
+
     def get_pdb_bead_bits(self,hierarchy):
         pdbbits=[]
         beadbits=[]
@@ -706,7 +712,6 @@ class BuildModel(object):
     def create_density(self,simo,compname,comphier,txtfilename,mrcfilename,num_components,read=True):
         #density generation for the EM restraint
         (pdbbits,beadbits,helixbits)=self.get_pdb_bead_bits(comphier)
-
         #get the number of residues from the pdb bits
         res_ind=[]
         for pb in pdbbits+helixbits:
@@ -732,7 +737,8 @@ class BuildModel(object):
 
         else:
             if len(pdbbits)!=0:
-                num_components=number_of_residues/abs(num_components)
+                if num_components < 0:
+                    num_components=number_of_residues/abs(num_components)
                 outhier+=simo.add_component_density(compname,
                                          pdbbits,
                                          num_components=num_components, # number of gaussian into which the simulated density is approximated
@@ -742,7 +748,8 @@ class BuildModel(object):
                                          multiply_by_total_mass=True) # do the calculation and output the mrc
 
             if len(helixbits)!=0:
-                num_components=number_of_residues/abs(num_components)
+                if num_components < 0:
+                    num_components=number_of_residues/abs(num_components)
                 outhier+=simo.add_component_density(compname,
                                          helixbits,
                                          num_components=num_components, # number of gaussian into which the simulated density is approximated
@@ -814,7 +821,7 @@ class BuildModel1(object):
     def build_model(self,data_structure):
         self.bm = BuildModel(self.simo.m,
                         data_structure=data_structure,
-                        representation=self.simo)
+                        representation=self.simo,gmm_models_directory=self.gmm_models_directory)
 
     def scale_bead_radii(self,nresidues,scale):
         self.bm.scale_bead_radii(nresidues,scale)

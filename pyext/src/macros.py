@@ -902,7 +902,7 @@ class AnalysisReplicaExchange0(object):
                                                  get_every)
         rmf_file_list=trajectory_models[0]
         rmf_file_frame_list=trajectory_models[1]
-        score_list=best_models[2]
+        score_list=trajectory_models[2]
 
 
         max_score=max(score_list)

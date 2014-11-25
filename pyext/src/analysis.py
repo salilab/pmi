@@ -415,7 +415,7 @@ class Clustering(object):
                 for pr in rmsd_protein_names:
                     coords_f2[pr] = all_coords[model_list_names[f2]][pr]
 
-                Ali = IMP.pmi.analysis.Alignment(coords_f1, coords_f2, self.rmsd_weights)
+                Ali = Alignment(coords_f1, coords_f2, self.rmsd_weights)
                 rmsd = Ali.get_rmsd()
 
             elif do_alignment:
@@ -427,7 +427,7 @@ class Clustering(object):
                 coords_f2 = dict([(pr, all_coords[model_list_names[f2]][pr])
                                  for pr in alignment_template_protein_names])
 
-                Ali = IMP.pmi.analysis.Alignment(coords_f1, coords_f2)
+                Ali = Alignment(coords_f1, coords_f2)
                 template_rmsd, transformation = Ali.align()
 
                 # here we calculate the rmsd
@@ -440,7 +440,7 @@ class Clustering(object):
                     coords_f2[pr] = [transformation.get_transformed(
                         i) for i in all_coords[model_list_names[f2]][pr]]
 
-                Ali = IMP.pmi.analysis.Alignment(coords_f1, coords_f2, self.rmsd_weights)
+                Ali = Alignment(coords_f1, coords_f2, self.rmsd_weights)
                 rmsd = Ali.get_rmsd()
 
             raw_distance_dict[(f1, f2)] = rmsd
@@ -504,7 +504,6 @@ class Precision(object):
 
     def _get_structure(self,rmf_frame_index,rmf_name):
         """Read an RMF file and return the particles"""
-
         rh= RMF.open_rmf_file_read_only(rmf_name)
         prots=IMP.rmf.create_hierarchies(rh, self.model)
         IMP.rmf.load_frame(rh, rmf_frame_index)
@@ -512,9 +511,9 @@ class Precision(object):
         del rh
 
         if self.resolution==1:
-            particle_dict = analysis.get_particles_at_resolution_one(prots[0])
+            particle_dict = get_particles_at_resolution_one(prots[0])
         elif self.resolution==10:
-            particle_dict = analysis.get_particles_at_resolution_ten(prots[0])
+            particle_dict = get_particles_at_resolution_ten(prots[0])
 
         protein_names=particle_dict.keys()
         particles_resolution_one=[]
@@ -1481,7 +1480,7 @@ class CrossLinkTable(object):
         radii = []
         namelist = []
 
-        particles_dictionary = analysis.get_particles_at_resolution_one(prots[0])
+        particles_dictionary = get_particles_at_resolution_one(prots[0])
 
         resindex = 0
         self.index_dictionary = {}

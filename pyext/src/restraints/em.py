@@ -17,14 +17,16 @@ class GaussianEMRestraint(object):
                  cutoff_dist_model_data=0.0,
                  overlap_threshold=0.0,
                  target_mass_scale=1.0,
-                 target_radii_scale=1.0,
+                 target_radii_scale=3.0,
                  model_radii_scale=1.0,
                  slope=0.0,
                  spherical_gaussians=False,
                  pointwise_restraint=False,
                  local_mm=False,
                  close_pair_container=None,
-                 backbone_slope=False):
+                 backbone_slope=False,
+                 scale_target_to_mass=False,
+                 weight=1.0):
         global sys, tools
         import sys
         import IMP.pmi.tools as tools
@@ -41,10 +43,12 @@ class GaussianEMRestraint(object):
         self.sigmainit = 2.0
         self.label = "None"
         self.densities = densities
-        self.weight=1
+        self.set_weight(weight)
 
         # setup target GMM
         self.m = self.densities[0].get_model()
+        if scale_target_to_mass:
+            target_mass_scale = sum((IMP.atom.Mass(p).get_mass() for h in densities for p in IMP.atom.get_leaves(h)))
         print 'will scale target mass by', target_mass_scale
         if target_fn != '':
             self.target_ps = []

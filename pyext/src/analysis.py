@@ -916,6 +916,7 @@ class Precision(object):
         else:
             raise ValueError("No such style")
 
+
 class GetModelDensity(object):
     """A class to compute mean density maps from structures"""
     def __init__(self, custom_ranges, representation=None, voxel=5.0):

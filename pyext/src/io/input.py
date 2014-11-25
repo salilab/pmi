@@ -199,6 +199,52 @@ def get_best_models(stat_files,
 
     return rmf_file_list,rmf_file_frame_list,score_list,feature_keyword_list_dict
 
+def get_trajectory_models(stat_files,
+                          score_key="SimplifiedModel_Total_Score_None",
+                          rmf_file_key="rmf_file",
+                          rmf_file_frame_key="rmf_frame_index",
+                          get_every=1):
+    """ Given a list of stat files, read them all and find a trajectory of models.
+    Returns the rmf filenames, frame numbers, scores, and values for feature keywords
+    """
+    rmf_file_list=[]              # best RMF files
+    rmf_file_frame_list=[]        # best RMF frames
+    score_list=[]                 # best scores
+    for sf in stat_files:
+        root_directory_of_stat_file = os.path.dirname(os.path.dirname(sf))
+        print "getting data from file %s" % sf
+        po = IMP.pmi.output.ProcessOutput(sf)
+        keywords = po.get_keys()
+
+        feature_keywords = [score_key,
+                            rmf_file_key,
+                            rmf_file_frame_key]
+
+        fields = po.get_fields(feature_keywords,
+                                   get_every=get_every)
+
+        # check that all lengths are all equal
+        length_set = set()
+        for f in fields:
+            length_set.add(len(fields[f]))
+
+        # if some of the fields are missing, truncate
+        # the feature files to the shortest one
+        if len(length_set) > 1:
+            print "get_best_models: the statfile is not synchronous"
+            minlen = min(length_set)
+            for f in fields:
+                fields[f] = fields[f][0:minlen]
+
+        # append to the lists
+        score_list += fields[score_key]
+        for rmf in fields[rmf_file_key]:
+            rmf_file_list.append(os.path.join(root_directory_of_stat_file,rmf))
+
+        rmf_file_frame_list += fields[rmf_file_frame_key]
+
+    return rmf_file_list,rmf_file_frame_list,score_list
+
 
 def read_coordinates_of_rmfs(model,
                              rmf_tuples,

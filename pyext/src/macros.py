@@ -878,6 +878,59 @@ class AnalysisReplicaExchange0(object):
             self.stat_files += stat_files
 
 
+    def get_modeling_trajectory(self,
+                                score_key="SimplifiedModel_Total_Score_None",
+                                rmf_file_key="rmf_file",
+                                rmf_file_frame_key="rmf_frame_index",
+                                outputdir="./",
+                                get_every=1,
+                                nframes_trajectory=100)
+        """ Get a trajectory of the modeling run, for generating demonstrative movies
+        @param score_key                           The score for ranking models
+        @param rmf_file_key                        Key pointing to RMF filename
+        @param rmf_file_frame_key                  Key pointing to RMF frame number
+        @param outputdir                           The local output directory used in the run
+        @param get_every                           Extract every nth frame
+        @param nframes_trajectory                  Total number of frames of the trajectory
+        """
+        from operator import itemgetter
+
+        trajectory_models = IMP.pmi.io.get_trajectory_models(self.stat_files,
+                                                 score_key,
+                                                 rmf_file_key,
+                                                 rmf_file_frame_key,
+                                                 get_every)
+        rmf_file_list=trajectory_models[0]
+        rmf_file_frame_list=trajectory_models[1]
+        score_list=best_models[2]
+
+
+        max_score=max(score_list)
+        min_score=min(score_list)
+
+        step=(max_score-min_score)/nframes_trajectory
+        bins=[min_score+step*float(i) for i in range(nframes_trajectory)]
+        binned_scores=[None]*nframes_trajectory
+        binned_model_indexes=[-1]*nframes_trajectory
+
+        for model_index,s in enumerate(score_list):
+            bins_score_diffs=[abs(s-b) for b in bins]
+            bin_index=min(enumerate(bins_score_diffs), key=itemgetter(1))[0]
+            if binned_scores[bin_index]==None:
+                binned_scores[bin_index]=s
+                binned_model_indexes[bin_index]=model_index
+            else:
+                old_diff=abs(binned_scores[bin_index]-bins[bin_index])
+                new_diff=abs(s-bins[bin_index])
+                if new_diff < old_diff:
+                    binned_scores[bin_index]=s
+                    binned_model_indexes[bin_index]=model_index
+
+        print binned_scores
+        print binned_model_indexes
+
+
+
     def clustering(self,
                    score_key="SimplifiedModel_Total_Score_None",
                    rmf_file_key="rmf_file",

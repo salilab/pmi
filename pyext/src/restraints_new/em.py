@@ -5,6 +5,7 @@ import IMP.em
 import IMP.isd_emxl
 import IMP.isd_emxl.gmm_tools
 import IMP.pmi.tools as tools
+import IMP.pmi.sampling_tools as sampling_tools
 from math import sqrt
 
 class EMRestraint(object):
@@ -232,6 +233,7 @@ class GaussianPointRestraint(object):
                  cutoff_dist=0.0,
                  target_mass_scale=1.0,
                  slope=0.0,
+                 mass_fraction=1.0,
                  backbone_slope=False,
                  label=""):
 
@@ -242,20 +244,22 @@ class GaussianPointRestraint(object):
 
         # setup target GMM
         self.model_ps=IMP.atom.get_leaves(hier)
+        self.m = self.model_ps[0].get_model()
+        IMP.atom.add_radii(hier)
         var = [resolution]*3
         for p in self.model_ps:
-            shape = IMP.algebra.Gaussian3D(IMP.algebra.ReferenceFrame3D(),var)
+            shape = IMP.algebra.Gaussian3D(IMP.algebra.ReferenceFrame3D(
+                IMP.algebra.Transformation3D(IMP.core.XYZ(p).get_coordinates())),var)
             IMP.core.Gaussian.setup_particle(p,shape)
 
-        self.m = self.model_ps[0].get_model()
-        print 'will scale target mass by', target_mass_scale
 
+        print 'will scale target mass by', target_mass_scale
 
         self.dmap=IMP.em.read_map(target_map_fn,IMP.em.MRCReaderWriter())
         if voxel_size is not None:
-            self.dmap.update_voxel_size(1.06)
+            self.dmap.update_voxel_size(voxel_size)
         dh = self.dmap.get_header()
-        dh.set_resolution(4.0)
+        dh.set_resolution(resolution)
         if origin is not None:
             self.dmap.set_origin(-origin[0]/voxel_size,
                                  -origin[1]/voxel_size,
@@ -268,12 +272,19 @@ class GaussianPointRestraint(object):
         print 'init CC eval!',1.0-frscore
         self.get_cc=True
 
+        sigmaissampled=True
+        self.sigma = tools.SetupNuisance(self.m, 1.0,
+                                    0.1, 100,
+                                    sigmaissampled).get_particle()
+
         self.gaussian_restraint = IMP.isd_emxl.GaussianPointRestraint(self.m,
-                                                IMP.get_indexes(self.model_ps),
+                                                                      IMP.get_indexes(self.model_ps),
+                                                                      self.sigma.get_particle_index(),
                                                                       self.dmap,
                                                                       self.cutoff_dist,
-                                                slope,
-                                                backbone_slope)
+                                                                      slope,
+                                                                      mass_fraction,
+                                                                      backbone_slope)
 
         self.rs = IMP.RestraintSet(self.m, 'GaussianPointRestraint')
         self.rs.add_restraint(self.gaussian_restraint)
@@ -308,3 +319,8 @@ class GaussianPointRestraint(object):
 
     def evaluate(self):
         return self.weight * self.rs.unprotected_evaluate(None)
+
+    def get_mc_sample_objects(self,max_step):
+        """ HACK! Make a SampleObjects class that can be used with PMI::samplers"""
+        ps=[[self.sigma],max_step]
+        return [sampling_tools.SampleObjects('Nuisances',ps)]

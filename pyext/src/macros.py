@@ -1016,7 +1016,7 @@ class AnalysisReplicaExchange0(object):
                                 rmf_file_frame_key="rmf_frame_index",
                                 outputdir="./",
                                 get_every=1,
-                                nframes_trajectory=100):
+                                nframes_trajectory=10000):
         """ Get a trajectory of the modeling run, for generating demonstrative movies
         @param score_key                           The score for ranking models
         @param rmf_file_key                        Key pointing to RMF filename
@@ -1026,7 +1026,8 @@ class AnalysisReplicaExchange0(object):
         @param nframes_trajectory                  Total number of frames of the trajectory
         """
         from operator import itemgetter
-
+        import math
+        
         trajectory_models = IMP.pmi.io.get_trajectory_models(self.stat_files,
                                                  score_key,
                                                  rmf_file_key,
@@ -1040,7 +1041,7 @@ class AnalysisReplicaExchange0(object):
         min_score=min(score_list)
 
 
-        bins=[(max_score-min_score)*1.0/float(i+1)+min_score for i in range(nframes_trajectory)]
+        bins=[(max_score-min_score)*math.exp(-float(i))+min_score for i in range(nframes_trajectory)]
         binned_scores=[None]*nframes_trajectory
         binned_model_indexes=[-1]*nframes_trajectory
 

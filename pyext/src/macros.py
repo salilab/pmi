@@ -451,18 +451,15 @@ class BuildModel(object):
     '''A macro to build a Representation based on a Topology and lists of movers'''
     def __init__(self,
                  model,
-                 component_topologies=None,
+                 component_topologies,
                  list_of_rigid_bodies=[],
                  list_of_super_rigid_bodies=[],
                  chain_of_super_rigid_bodies=[],
                  sequence_connectivity_scale=4.0,
                  add_each_domain_as_rigid_body=False,
-                 force_create_gmm_files=False,
-                 representation=None,
-                 data_structure=None,
-                 gmm_models_directory="."):
+                 force_create_gmm_files=False):
         """ Construct a Representation with topology class + list of movers.
-
+        @param model The IMP model
         @param component_topologies List of IMP.pmi.topology.ComponentTopology items
         @param list_of_rigid_bodies List of lists of domain names from the components.
         @param list_of_super_rigid_bodies List of lists of domain names from the components.
@@ -473,42 +470,26 @@ class BuildModel(object):
         @param force_create_gmm_files If True, will sample and create GMMs no matter what.
                                   If False, will only only sample if the files don't exist.
                                   If number of Gaussians is zero, won't do anything.
-        @param representation For backwards compatibility. Pass an empty representation
-        @param data_structure Legacy format. Data structure is list of these entries:
-             comp_name, hier_name, color, fasta_file, fasta_id, pdb_name, chain_id,
-             res_range, read_em_files, bead_size, rb, super_rb,
-             em_num_components, em_txt_file_name, em_mrc_file_name
         """
         self.m = model
-        if representation is None:
-            self.simo = IMP.pmi.representation.Representation(self.m,
-                                                              upperharmonic=True,
-                                                              disorderedlength=False)
-        else:
-            self.simo = representation
-        if component_topologies is not None:
-            data=component_topologies
-            data_type="topology"
-            if list_of_rigid_bodies==[]:
-                print "WARNING: No list of rigid bodies inputted to build_model()"
-            if list_of_super_rigid_bodies==[]:
-                print "WARNING: No list of super rigid bodies inputted to build_model()"
-            if chain_of_super_rigid_bodies==[]:
-                print "WARNING: No chain of super rigid bodies inputted to build_model()"
-            all_dnames = set([d for sublist in list_of_rigid_bodies+list_of_super_rigid_bodies\
-                          +chain_of_super_rigid_bodies for d in sublist])
-            all_available = set([c.domain_name for c in component_topologies])
-            if not all_dnames <= all_available:
-                raise ValueError("All requested movers must reference domain "
-                                 "names in the component topologies")
+        self.simo = IMP.pmi.representation.Representation(self.m,
+                                                          upperharmonic=True,
+                                                          disorderedlength=False)
 
-        elif data_structure is not None:
-            data=data_structure
-            data_type="dict"
-        else:
-            raise ValueError("No data structure or topology information given to build_model().")
-        print "Data type is",data_type
-        self.gmm_models_directory=gmm_models_directory
+        data=component_topologies
+        if list_of_rigid_bodies==[]:
+            print "WARNING: No list of rigid bodies inputted to build_model()"
+        if list_of_super_rigid_bodies==[]:
+            print "WARNING: No list of super rigid bodies inputted to build_model()"
+        if chain_of_super_rigid_bodies==[]:
+            print "WARNING: No chain of super rigid bodies inputted to build_model()"
+        all_dnames = set([d for sublist in list_of_rigid_bodies+list_of_super_rigid_bodies\
+                      +chain_of_super_rigid_bodies for d in sublist])
+        all_available = set([c.domain_name for c in component_topologies])
+        if not all_dnames <= all_available:
+            raise ValueError("All requested movers must reference domain "
+                             "names in the component topologies")
+
         self.domain_dict={}
         self.resdensities={}
         super_rigid_bodies={}
@@ -516,115 +497,53 @@ class BuildModel(object):
         rigid_bodies={}
 
         for c in data:
-            if data_type=="topology":
-                comp_name         = c.name
-                hier_name         = c.domain_name
-                color             = c.color
-                fasta_file        = c.fasta_file
-                fasta_id          = c.fasta_id
-                pdb_name          = c.pdb_file
-                chain_id          = c.chain
-                res_range         = c.residue_range
-                offset            = c.pdb_offset
-                bead_size         = c.bead_size
-                em_num_components = c.em_residues_per_gaussian
-                em_txt_file_name  = c.gmm_file
-                em_mrc_file_name  = c.mrc_file
-            elif data_type=="dict":
-                comp_name         = c[0]
-                hier_name         = c[1]
-                color             = c[2]
-                fasta_file        = c[3]
-                fasta_id          = c[4]
-                pdb_name          = c[5]
-                chain_id          = c[6]
-                res_range         = c[7][0:2]
-                try:
-                    offset         = c[7][2]
-                except:
-                    offset         = 0
-                read_em_files     = c[8]
-                bead_size         = c[9]
-                rb                = c[10]
-                super_rb          = c[11]
-                em_num_components = c[12]
-                em_txt_file_name  = c[13]
-                em_mrc_file_name  = c[14]
-                chain_of_super_rb = c[15]
+            comp_name         = c.name
+            hier_name         = c.domain_name
+            color             = c.color
+            fasta_file        = c.fasta_file
+            fasta_id          = c.fasta_id
+            pdb_name          = c.pdb_file
+            chain_id          = c.chain
+            res_range         = c.residue_range
+            offset            = c.pdb_offset
+            bead_size         = c.bead_size
+            em_num_components = c.em_residues_per_gaussian
+            em_txt_file_name  = c.gmm_file
+            em_mrc_file_name  = c.mrc_file
 
             if comp_name not in self.simo.get_component_names():
                 self.simo.create_component(comp_name,color=0.0)
                 self.simo.add_component_sequence(comp_name,fasta_file,fasta_id)
 
-            # call autobuild, which sets up the resolutions and adds flexible beads connecting things
-
-            if data_type=="topology":
-                # create hierarchy and optionally add EM data
-                if em_num_components==0:
+            # create hierarchy (adds resolutions, beads) with autobuild and optionally add EM data
+            if em_num_components==0:
+                read_em_files=False
+                include_res0=False
+            else:
+                if (not os.path.isfile(em_txt_file_name)) or force_create_gmm_files:
                     read_em_files=False
+                    include_res0=True
+                else:
+                    read_em_files=True
                     include_res0=False
-                else:
-                    if (not os.path.isfile(em_txt_file_name)) or force_create_gmm_files:
-                        read_em_files=False
-                        include_res0=True
-                    else:
-                        read_em_files=True
-                        include_res0=False
-                outhier=self.autobuild(self.simo,comp_name,pdb_name,chain_id,
-                                       res_range,include_res0,beadsize=bead_size,
-                                       color=color,offset=offset)
-                if em_num_components!=0:
-                    dens_hier,beads=self.create_density(self.simo,comp_name,outhier,em_txt_file_name,
-                                                        em_mrc_file_name,em_num_components,read_em_files)
-                    self.simo.add_all_atom_densities(comp_name, hierarchies=beads)
-                    dens_hier+=beads
-                else:
-                    dens_hier=[]
+            if read_em_files:
+                print "will read GMM files"
+            else:
+                print "will calculate GMMs"
 
-                self.resdensities[hier_name]=dens_hier
-                self.domain_dict[hier_name]=outhier+dens_hier
-            elif data_type=="dict":
-                # legacy setup
-                outhier=self.autobuild(self.simo,comp_name,pdb_name,chain_id,
-                                       res_range,not read_em_files,beadsize=bead_size,
-                                       color=color,offset=offset)
+            outhier=self.autobuild(self.simo,comp_name,pdb_name,chain_id,
+                                   res_range,include_res0,beadsize=bead_size,
+                                   color=color,offset=offset)
+            if em_num_components!=0:
+                dens_hier,beads=self.create_density(self.simo,comp_name,outhier,em_txt_file_name,
+                                                    em_mrc_file_name,em_num_components,read_em_files)
+                self.simo.add_all_atom_densities(comp_name, hierarchies=beads)
+                dens_hier+=beads
+            else:
+                dens_hier=[]
 
-                if read_em_files is not None:
-                    if em_txt_file_name is " " or em_txt_file_name is None :
-                        em_txt_file_name=self.gmm_models_directory+"/"+hier_name+".txt"
-                    if em_mrc_file_name is " " or em_mrc_file_name is None:
-                        em_mrc_file_name=self.gmm_models_directory+"/"+hier_name+".mrc"
-
-                    dens_hier,beads=self.create_density(self.simo,comp_name,outhier,em_txt_file_name,
-                                                        em_mrc_file_name,em_num_components,read_em_files)
-                    self.simo.add_all_atom_densities(comp_name, hierarchies=beads)
-                    dens_hier+=beads
-
-                else:
-                    dens_hier=[]
-
-                self.resdensities[hier_name]=dens_hier
-                self.domain_dict[hier_name]=outhier+dens_hier
-
-                if rb is not None:
-                    if rb not in rigid_bodies:
-                        rigid_bodies[rb]=[h for h in self.domain_dict[hier_name]]
-                    else:
-                        rigid_bodies[rb]+=[h for h in self.domain_dict[hier_name]]
-
-                if super_rb is not None:
-                    for k in super_rb:
-                        if k not in super_rigid_bodies:
-                            super_rigid_bodies[k]=[h for h in self.domain_dict[hier_name]]
-                        else:
-                            super_rigid_bodies[k]+=[h for h in self.domain_dict[hier_name]]
-
-                if chain_of_super_rb is not None:
-                    for k in chain_of_super_rb:
-                        if k not in chain_super_rigid_bodies:
-                            chain_super_rigid_bodies[k]=[h for h in self.domain_dict[hier_name]]
-                        else:
-                            chain_super_rigid_bodies[k]+=[h for h in self.domain_dict[hier_name]]
+            self.resdensities[hier_name]=dens_hier
+            self.domain_dict[hier_name]=outhier+dens_hier
 
         # setup basic restraints
         for c in self.simo.get_component_names():
@@ -632,30 +551,21 @@ class BuildModel(object):
             self.simo.setup_component_geometry(c)
 
         # create movers
-        if data_type=="topology":
-            for rblist in list_of_rigid_bodies:
-                rb=[]
-                for rbmember in rblist:
-                    rb+=[h for h in self.domain_dict[rbmember]]
-                self.simo.set_rigid_body_from_hierarchies(rb)
-            for srblist in list_of_super_rigid_bodies:
-                srb=[]
-                for srbmember in rblist:
-                    srb+=[h for h in self.domain_dict[srbmember]]
-                self.simo.set_super_rigid_body_from_hierarchies(srb)
-            for clist in chain_of_super_rigid_bodies:
-                crb=[]
-                for crbmember in rblist:
-                    crb+=[h for h in self.domain_dict[crbmember]]
-                self.simo.set_chain_of_super_rigid_bodies(crb,2,3)
-
-        elif data_type=="dict":
-            for rb in rigid_bodies:
-                self.simo.set_rigid_body_from_hierarchies(rigid_bodies[rb])
-            for k in super_rigid_bodies:
-                self.simo.set_super_rigid_body_from_hierarchies(super_rigid_bodies[k])
-            for k in chain_super_rigid_bodies:
-                self.simo.set_chain_of_super_rigid_bodies(chain_super_rigid_bodies[k],2,3)
+        for rblist in list_of_rigid_bodies:
+            rb=[]
+            for rbmember in rblist:
+                rb+=[h for h in self.domain_dict[rbmember]]
+            self.simo.set_rigid_body_from_hierarchies(rb)
+        for srblist in list_of_super_rigid_bodies:
+            srb=[]
+            for srbmember in rblist:
+                srb+=[h for h in self.domain_dict[srbmember]]
+            self.simo.set_super_rigid_body_from_hierarchies(srb)
+        for clist in chain_of_super_rigid_bodies:
+            crb=[]
+            for crbmember in rblist:
+                crb+=[h for h in self.domain_dict[crbmember]]
+            self.simo.set_chain_of_super_rigid_bodies(crb,2,3)
 
         self.simo.set_floppy_bodies()
         self.simo.setup_bonds()
@@ -724,6 +634,245 @@ class BuildModel(object):
             if len(pdbbits)!=0:
                 outhier+=simo.add_component_density(compname,
                                          pdbbits,
+                                         num_components=num_components,
+                                         resolution=0,
+                                         inputfile=txtfilename)
+            if len(helixbits)!=0:
+                outhier+=simo.add_component_density(compname,
+                                         helixbits,
+                                         num_components=num_components,
+                                         resolution=1,
+                                         inputfile=txtfilename)
+
+
+        else:
+            if len(pdbbits)!=0:
+                num_components=number_of_residues/abs(num_components)
+                outhier+=simo.add_component_density(compname,
+                                         pdbbits,
+                                         num_components=num_components,
+                                         resolution=0,
+                                         outputfile=txtfilename,
+                                         outputmap=mrcfilename,
+                                         multiply_by_total_mass=True)
+
+            if len(helixbits)!=0:
+                num_components=number_of_residues/abs(num_components)
+                outhier+=simo.add_component_density(compname,
+                                         helixbits,
+                                         num_components=num_components,
+                                         resolution=1,
+                                         outputfile=txtfilename,
+                                         outputmap=mrcfilename,
+                                         multiply_by_total_mass=True)
+
+        return outhier,beadbits
+
+    def autobuild(self,simo,comname,pdbname,chain,resrange,include_res0=False,
+                  beadsize=5,color=0.0,offset=0):
+        if pdbname is not None and pdbname is not "IDEAL_HELIX" and pdbname is not "BEADS" :
+            if resrange[-1]==-1:
+                resrange=(resrange[0],len(simo.sequence_dict[comname]))
+            if include_res0:
+                outhier=simo.autobuild_model(comname,
+                                 pdbname=pdbname,
+                                 chain=chain,
+                                 resrange=resrange,
+                                 resolutions=[0,1,10],
+                                 offset=offset,
+                                 color=color,
+                                 missingbeadsize=beadsize)
+            else:
+                outhier=simo.autobuild_model(comname,
+                                 pdbname=pdbname,
+                                 chain=chain,
+                                 resrange=resrange,
+                                 resolutions=[1,10],
+                                 offset=offset,
+                                 color=color,
+                                 missingbeadsize=beadsize)
+
+
+        elif pdbname is not None and pdbname is "IDEAL_HELIX" and pdbname is not "BEADS" :
+            outhier=simo.add_component_ideal_helix(comname,
+                                                resolutions=[1,10],
+                                                resrange=resrange,
+                                                color=color,
+                                                show=False)
+
+        elif pdbname is not None and pdbname is not "IDEAL_HELIX" and pdbname is "BEADS" :
+            outhier=simo.add_component_necklace(comname,resrange[0],resrange[1],beadsize,color=color)
+
+        else:
+
+            seq_len=len(simo.sequence_dict[comname])
+            outhier=simo.add_component_necklace(comname,
+                                  begin=1,
+                                  end=seq_len,
+                                  length=beadsize)
+
+        return outhier
+
+
+class BuildModel1(object):
+    '''Deprecated macro - use BuildModel()'''
+    def __init__(self, representation):
+        self.simo=representation
+        self.gmm_models_directory="."
+
+    def set_gmm_models_directory(self,directory_name):
+        self.gmm_models_directory=directory_name
+
+    def build_model(self,data_structure,sequence_connectivity_scale=4.0):
+
+        self.domain_dict={}
+        self.resdensities={}
+        super_rigid_bodies={}
+        chain_super_rigid_bodies={}
+        rigid_bodies={}
+
+        for d in data_structure:
+            comp_name         = d[0]
+            hier_name         = d[1]
+            color             = d[2]
+            fasta_file        = d[3]
+            fasta_id          = d[4]
+            pdb_name          = d[5]
+            chain_id          = d[6]
+            res_range         = d[7][0:2]
+            try:
+                offset         = d[7][2]
+            except:
+                offset         = 0
+            read_em_files     = d[8]
+            bead_size         = d[9]
+            rb                = d[10]
+            super_rb          = d[11]
+            em_num_components = d[12]
+            em_txt_file_name  = d[13]
+            em_mrc_file_name  = d[14]
+            chain_of_super_rb = d[15]
+
+            if comp_name not in self.simo.get_component_names():
+                self.simo.create_component(comp_name,color=0.0)
+                self.simo.add_component_sequence(comp_name,fasta_file,fasta_id)
+            outhier=self.autobuild(self.simo,comp_name,pdb_name,chain_id,res_range,read=read_em_files,beadsize=bead_size,color=color,offset=offset)
+
+
+            if not read_em_files is None:
+                if em_txt_file_name is " ": em_txt_file_name=self.gmm_models_directory+"/"+hier_name+".txt"
+                if em_mrc_file_name is " ": em_mrc_file_name=self.gmm_models_directory+"/"+hier_name+".mrc"
+
+
+                dens_hier,beads=self.create_density(self.simo,comp_name,outhier,em_txt_file_name,em_mrc_file_name,em_num_components,read_em_files)
+                self.simo.add_all_atom_densities(comp_name, hierarchies=beads)
+                dens_hier+=beads
+
+            else:
+                dens_hier=[]
+
+            self.resdensities[hier_name]=dens_hier
+            self.domain_dict[hier_name]=outhier+dens_hier
+
+            if rb is not None:
+                if rb not in rigid_bodies:
+                    rigid_bodies[rb]=[h for h in self.domain_dict[hier_name]]
+                else:
+                    rigid_bodies[rb]+=[h for h in self.domain_dict[hier_name]]
+
+
+            if super_rb is not None:
+                for k in super_rb:
+                    if k not in super_rigid_bodies:
+                        super_rigid_bodies[k]=[h for h in self.domain_dict[hier_name]]
+                    else:
+                        super_rigid_bodies[k]+=[h for h in self.domain_dict[hier_name]]
+
+            if  chain_of_super_rb is not None:
+                for k in chain_of_super_rb:
+                    if k not in chain_super_rigid_bodies:
+                        chain_super_rigid_bodies[k]=[h for h in self.domain_dict[hier_name]]
+                    else:
+                        chain_super_rigid_bodies[k]+=[h for h in self.domain_dict[hier_name]]
+
+        self.rigid_bodies=rigid_bodies
+
+
+        for c in self.simo.get_component_names():
+            self.simo.setup_component_sequence_connectivity(c,scale=sequence_connectivity_scale)
+            self.simo.setup_component_geometry(c)
+
+
+        for rb in rigid_bodies:
+            self.simo.set_rigid_body_from_hierarchies(rigid_bodies[rb])
+
+        for k in super_rigid_bodies:
+            self.simo.set_super_rigid_body_from_hierarchies(super_rigid_bodies[k])
+
+        for k in chain_super_rigid_bodies:
+            self.simo.set_chain_of_super_rigid_bodies(chain_super_rigid_bodies[k],2,3)
+
+        self.simo.set_floppy_bodies()
+        self.simo.setup_bonds()
+
+    def get_density_hierarchies(self,hier_name_list):
+        # return a list of density hierarchies
+        # specify the list of hierarchy names
+        dens_hier_list=[]
+        for hn in hier_name_list:
+            print hn
+            dens_hier_list+=self.resdensities[hn]
+        return dens_hier_list
+
+    def get_pdb_bead_bits(self,hierarchy):
+        pdbbits=[]
+        beadbits=[]
+        helixbits=[]
+        for h in hierarchy:
+            if "_pdb" in h.get_name():pdbbits.append(h)
+            if "_bead" in h.get_name():beadbits.append(h)
+            if "_helix" in h.get_name():helixbits.append(h)
+        return (pdbbits,beadbits,helixbits)
+
+    def scale_bead_radii(self,nresidues,scale):
+        scaled_beads=set()
+        for h in self.domain_dict:
+            (pdbbits,beadbits,helixbits)=self.get_pdb_bead_bits(self.domain_dict[h])
+            slope=(1.0-scale)/(1.0-float(nresidues))
+
+            for b in beadbits:
+                # I have to do the following
+                # because otherwise we'll scale more than once
+                if b not in scaled_beads:
+                    scaled_beads.add(b)
+                else:
+                    continue
+                radius=IMP.core.XYZR(b).get_radius()
+                num_residues=len(IMP.pmi.tools.get_residue_indexes(b))
+                scale_factor=slope*float(num_residues)+1.0
+                print scale_factor
+                new_radius=scale_factor*radius
+                IMP.core.XYZR(b).set_radius(new_radius)
+                print b.get_name()
+                print "particle with radius "+str(radius)+" and "+str(num_residues)+" residues scaled to a new radius "+str(new_radius)
+
+
+    def create_density(self,simo,compname,comphier,txtfilename,mrcfilename,num_components,read=True):
+        #density generation for the EM restraint
+        (pdbbits,beadbits,helixbits)=self.get_pdb_bead_bits(comphier)
+
+        #get the number of residues from the pdb bits
+        res_ind=[]
+        for pb in pdbbits+helixbits:
+            for p in IMP.core.get_leaves(pb):
+                res_ind+=IMP.pmi.tools.get_residue_indexes(p)
+
+        number_of_residues=len(set(res_ind))
+        outhier=[]
+        if read:
+            if len(pdbbits)!=0:
+                outhier+=simo.add_component_density(compname,
+                                         pdbbits,
                                          num_components=num_components, # number of gaussian into which the simulated density is approximated
                                          resolution=0,      # resolution that you want to calculate the simulated density
                                          inputfile=txtfilename) # read what it was calculated before
@@ -737,7 +886,9 @@ class BuildModel(object):
 
         else:
             if len(pdbbits)!=0:
-                if num_components < 0:
+                if num_components<0:
+                    #if negative calculate the number of gmm components automatically
+                    # from the number of residues
                     num_components=number_of_residues/abs(num_components)
                 outhier+=simo.add_component_density(compname,
                                          pdbbits,
@@ -748,7 +899,9 @@ class BuildModel(object):
                                          multiply_by_total_mass=True) # do the calculation and output the mrc
 
             if len(helixbits)!=0:
-                if num_components < 0:
+                if num_components<0:
+                    #if negative calculate the number of gmm components automatically
+                    # from the number of residues
                     num_components=number_of_residues/abs(num_components)
                 outhier+=simo.add_component_density(compname,
                                          helixbits,
@@ -760,12 +913,11 @@ class BuildModel(object):
 
         return outhier,beadbits
 
-    def autobuild(self,simo,comname,pdbname,chain,resrange,include_res0=False,
-                  beadsize=5,color=0.0,offset=0):
+    def autobuild(self,simo,comname,pdbname,chain,resrange,read=True,beadsize=5,color=0.0,offset=0):
+
         if pdbname is not None and pdbname is not "IDEAL_HELIX" and pdbname is not "BEADS" :
-            if resrange[-1]==-1:
-                resrange=(resrange[0],len(simo.sequence_dict[comname]))
-            if include_res0:
+            if resrange[-1]==-1: resrange=(resrange[0],len(simo.sequence_dict[comname]))
+            if read==False:
                 outhier=simo.autobuild_model(comname,
                                  pdbname=pdbname,
                                  chain=chain,
@@ -807,27 +959,6 @@ class BuildModel(object):
         return outhier
 
 
-class BuildModel1(object):
-    '''Deprecated macro'''
-
-    def __init__(self, representation):
-        print "Warning: BuildModel1 is deprecated. Use BuildModel (along with the Topology class) for representation setup"
-        self.simo=representation
-        self.gmm_models_directory="."
-
-    def set_gmm_models_directory(self,directory_name):
-        self.gmm_models_directory=directory_name
-
-    def build_model(self,data_structure):
-        self.bm = BuildModel(self.simo.m,
-                        data_structure=data_structure,
-                        representation=self.simo,gmm_models_directory=self.gmm_models_directory)
-
-    def scale_bead_radii(self,nresidues,scale):
-        self.bm.scale_bead_radii(nresidues,scale)
-
-    def get_density_hierarchies(self,hier_name_list):
-        self.bm.get_density_hierarchies(hier_name_list)
 
 # ----------------------------------------------------------------------
 

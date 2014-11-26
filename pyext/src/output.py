@@ -849,7 +849,8 @@ def plot_fields_box_plots(name, values, positions, frequencies=None,
     plt.show()
 
 
-def plot_xy_data(x,y,title=None,display=True,set_plot_yaxis_range=None):
+def plot_xy_data(x,y,title=None,out_fn=None,display=True,set_plot_yaxis_range=None,
+                 xlabel=None,ylabel=None):
     import matplotlib as mpl
     mpl.use('Agg')
     import matplotlib.pyplot as plt
@@ -862,13 +863,19 @@ def plot_xy_data(x,y,title=None,display=True,set_plot_yaxis_range=None):
 
     #plt.rc('axes', color='r')
     ax.plot(x,y,color='r')
-    if not set_plot_yaxis_range is None:
+    if set_plot_yaxis_range is not None:
         x1,x2,y1,y2=plt.axis()
         y1=set_plot_yaxis_range[0]
         y2=set_plot_yaxis_range[1]
         plt.axis((x1,x2,y1,y2))
     if title is not None:
-        plt.savefig(title+".pdf")
+        ax.set_title(title)
+    if xlabel is not None:
+        ax.set_xlabel(xlabel)
+    if ylabel is not None:
+        ax.set_ylabel(ylabel)
+    if out_fn is not None:
+        plt.savefig(out_fn+".pdf")
     if display:
         plt.show()
     plt.close(fig)

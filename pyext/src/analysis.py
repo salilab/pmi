@@ -345,6 +345,7 @@ class Clustering(object):
         ax2.set_ylabel('Model')
 
         pl.savefig(figurename, dpi=300)
+        pl.close(fig)
 
     def get_model_index_from_name(self, name):
         return self.model_indexes_dict[name]

@@ -1294,8 +1294,6 @@ class AnalysisReplicaExchange0(object):
                 if display_plot:
                     if self.rank == 0:
                         Clusters.plot_matrix(figurename=os.path.join(outputdir,'dist_matrix.pdf'))
-                    if self.number_of_processes > 1:
-                        self.comm.Barrier()
                     if exit_after_display:
                         exit()
                 Clusters.save_distance_matrix_file(file_name=distance_matrix_file)
@@ -1315,10 +1313,10 @@ class AnalysisReplicaExchange0(object):
                 if display_plot:
                     if self.rank == 0:
                         Clusters.plot_matrix(figurename=os.path.join(outputdir,'dist_matrix.pdf'))
-                    if self.number_of_processes > 1:
-                        self.comm.Barrier()
                     if exit_after_display:
                         exit()
+        if self.number_of_processes > 1:
+            self.comm.Barrier()
 
 # ------------------------------------------------------------------------
 # now save all informations about the clusters

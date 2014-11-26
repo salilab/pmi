@@ -993,9 +993,9 @@ class AnalysisReplicaExchange0(object):
 
         try:
             from mpi4py import MPI
-            comm = MPI.COMM_WORLD
-            self.rank = comm.Get_rank()
-            self.number_of_processes = comm.size
+            self.comm = MPI.COMM_WORLD
+            self.rank = self.comm.Get_rank()
+            self.number_of_processes = self.comm.size
         except ImportError:
             self.rank = 0
             self.number_of_processes = 1
@@ -1114,6 +1114,12 @@ class AnalysisReplicaExchange0(object):
         @param voxel_size                          Used for the density output
         """
 
+
+        if self.rank==0:
+            try:
+                os.mkdir(outputdir)
+            except:
+                pass
 
 
         if not load_distance_matrix_file:
@@ -1287,9 +1293,9 @@ class AnalysisReplicaExchange0(object):
                 Clusters.do_cluster(number_of_clusters)
                 if display_plot:
                     if self.rank == 0:
-                        Clusters.plot_matrix()
+                        Clusters.plot_matrix(figurename=os.path.join(outputdir,'dist_matrix.pdf'))
                     if self.number_of_processes > 1:
-                        comm.Barrier()
+                        self.comm.Barrier()
                     if exit_after_display:
                         exit()
                 Clusters.save_distance_matrix_file(file_name=distance_matrix_file)
@@ -1308,9 +1314,9 @@ class AnalysisReplicaExchange0(object):
                  rmf_file_name_index_dict] = self.load_objects(".macro.pkl")
                 if display_plot:
                     if self.rank == 0:
-                        Clusters.plot_matrix()
+                        Clusters.plot_matrix(figurename=os.path.join(outputdir,'dist_matrix.pdf'))
                     if self.number_of_processes > 1:
-                        comm.Barrier()
+                        self.comm.Barrier()
                     if exit_after_display:
                         exit()
 
@@ -1334,10 +1340,6 @@ class AnalysisReplicaExchange0(object):
                         voxel=voxel_size)
 
                 dircluster = outputdir + "/cluster." + str(n) + "/"
-                try:
-                    os.mkdir(outputdir)
-                except:
-                    pass
                 try:
                     os.mkdir(dircluster)
                 except:
@@ -1415,7 +1417,7 @@ class AnalysisReplicaExchange0(object):
                     del DensModule
 
         if self.number_of_processes>1:
-            comm.Barrier()
+            self.comm.Barrier()
 
     def save_objects(self, objects, file_name):
         import pickle

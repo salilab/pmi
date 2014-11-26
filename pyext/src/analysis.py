@@ -186,9 +186,9 @@ class Clustering(object):
     def __init__(self,rmsd_weights=None):
         try:
             from mpi4py import MPI
-            comm = MPI.COMM_WORLD
-            self.rank = comm.Get_rank()
-            self.number_of_processes = comm.size
+            self.comm = MPI.COMM_WORLD
+            self.rank = self.comm.Get_rank()
+            self.number_of_processes = self.comm.size
         except ImportError:
             self.number_of_processes = 1
             self.rank = 0
@@ -323,25 +323,28 @@ class Clustering(object):
         import pylab as pl
         from scipy.cluster import hierarchy as hrc
 
-        fig = pl.figure()
-        ax = fig.add_subplot(211)
+        fig = pl.figure(figsize=(10,8))
+        ax = fig.add_subplot(212)
         dendrogram = hrc.dendrogram(
             hrc.linkage(self.raw_distance_matrix),
             color_threshold=7,
             no_labels=True)
         leaves_order = dendrogram['leaves']
+        ax.set_xlabel('Model')
+        ax.set_ylabel('RMSD [Angstroms]')
 
-        ax = fig.add_subplot(212)
-        cax = ax.imshow(
+        ax2 = fig.add_subplot(221)
+        cax = ax2.imshow(
             self.raw_distance_matrix[leaves_order,
                                      :][:,
                                         leaves_order],
             interpolation='nearest')
-        # ax.set_yticks(range(len(self.model_list_names)))
-        #ax.set_yticklabels( [self.model_list_names[i] for i in leaves_order] )
-        fig.colorbar(cax)
+        cb = fig.colorbar(cax)
+        cb.set_label('RMSD [Angstroms]')
+        ax2.set_xlabel('Model')
+        ax2.set_ylabel('Model')
+
         pl.savefig(figurename, dpi=300)
-        #pl.show()
 
     def get_model_index_from_name(self, name):
         return self.model_indexes_dict[name]
@@ -470,9 +473,9 @@ class Precision(object):
                  selection_dictionary={}):
         try:
             from mpi4py import MPI
-            comm = MPI.COMM_WORLD
-            self.rank = comm.Get_rank()
-            self.number_of_processes = comm.size
+            self.comm = MPI.COMM_WORLD
+            self.rank = self.comm.Get_rank()
+            self.number_of_processes = self.comm.size
         except ImportError:
             self.number_of_processes=1
             self.rank=0
@@ -610,16 +613,16 @@ class Precision(object):
         if self.number_of_processes > 1:
             self.rmf_names_frames=IMP.pmi.tools.scatter_and_gather(self.rmf_names_frames)
             if self.rank != 0:
-                comm.send(self.structures_dictionary, dest=0, tag=11)
+                self.comm.send(self.structures_dictionary, dest=0, tag=11)
             elif self.rank == 0:
                 for i in range(1, self.number_of_processes):
-                    data_tmp = comm.recv(source=i, tag=11)
+                    data_tmp = self.comm.recv(source=i, tag=11)
                     for key in self.structures_dictionary:
                         self.structures_dictionary[key].update(data_tmp[key])
                 for i in range(1, self.number_of_processes):
-                    comm.send(self.structures_dictionary, dest=i, tag=11)
+                    self.comm.send(self.structures_dictionary, dest=i, tag=11)
             if self.rank != 0:
-                self.structures_dictionary = comm.recv(source=0, tag=11)
+                self.structures_dictionary = self.comm.recv(source=0, tag=11)
 
     def _get_residue_particle_index_map(self,prot_name,structure,hier):
         residue_particle_index_map=[]
@@ -702,7 +705,7 @@ class Precision(object):
                       selection_keywords=None):
         """ Evaluate the precision of two named structure groups. Supports MPI.
         When the structure_set_name1 is different from the structure_set_name2,
-        this evaluates the cross-precision.
+        this evaluates the cross-precision (average pairwise distances).
         @param outfile Name of the precision output file
         @param structure_set_name1  string name of the first structure set
         @param structure_set_name2  string name of the second structure set
@@ -852,8 +855,10 @@ class Precision(object):
                 rmsfs.append(rmsf)
                 of.write(str(rn)+" "+str(residue_nblock[rn])+" "+str(rmsf)+"\n")
 
-            IMP.pmi.output.plot_xy_data(residues,rmsfs,title=outdir+"/rmsf."+sel_name,display=False,
-                                       set_plot_yaxis_range=set_plot_yaxis_range)
+            IMP.pmi.output.plot_xy_data(residues,rmsfs,title=sel_name,
+                                        out_fn=outdir+"/rmsf."+sel_name,display=False,
+                                        set_plot_yaxis_range=set_plot_yaxis_range,
+                                        xlabel='Residue Number',ylabel='Standard error')
             of.close()
 
 

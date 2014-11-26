@@ -521,15 +521,16 @@ class BuildModel(object):
                 else:
                     read_em_files=True
                     include_res0=False
-            if read_em_files:
-                print "will read GMM files"
-            else:
-                print "will calculate GMMs"
 
             outhier=self.autobuild(self.simo,comp_name,pdb_name,chain_id,
                                    res_range,include_res0,beadsize=bead_size,
                                    color=color,offset=offset)
             if em_num_components!=0:
+                if read_em_files:
+                    print "will read GMM files"
+                else:
+                    print "will calculate GMMs"
+
                 dens_hier,beads=self.create_density(self.simo,comp_name,outhier,em_txt_file_name,
                                                     em_mrc_file_name,em_num_components,read_em_files)
                 self.simo.add_all_atom_densities(comp_name, hierarchies=beads)
@@ -1027,7 +1028,7 @@ class AnalysisReplicaExchange0(object):
         """
         from operator import itemgetter
         import math
-        
+
         trajectory_models = IMP.pmi.io.get_trajectory_models(self.stat_files,
                                                  score_key,
                                                  rmf_file_key,

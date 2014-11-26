@@ -823,44 +823,45 @@ class Precision(object):
             structure_set_name,
             outfile=None,
             skip=skip)
-        for sel_name in self.protein_names:
-            self.selection_dictionary.update({sel_name:[sel_name]})
-            try:
-                number_of_structures=len(self.structures_dictionary[structure_set_name][sel_name])
-            except KeyError:
-                # that protein was not included in the selection
-                continue
-            rpim=self.residue_particle_index_map[sel_name]
-            outfile=outdir+"/rmsf."+sel_name+".dat"
-            of=open(outfile,"w")
-            residue_distances={}
-            residue_nblock={}
-            for index in range(number_of_structures):
-                distances=self._get_particle_distances(structure_set_name,
-                                                      structure_set_name,
-                                                      sel_name,
-                                                      centroid_index,index)
-                for nblock,block in enumerate(rpim):
-                    for residue_number in block:
-                        residue_nblock[residue_number]=nblock
-                        if residue_number not in residue_distances:
-                            residue_distances[residue_number]=[distances[nblock]]
-                        else:
-                            residue_distances[residue_number].append(distances[nblock])
+        if self.rank==0:
+            for sel_name in self.protein_names:
+                self.selection_dictionary.update({sel_name:[sel_name]})
+                try:
+                    number_of_structures=len(self.structures_dictionary[structure_set_name][sel_name])
+                except KeyError:
+                    # that protein was not included in the selection
+                    continue
+                rpim=self.residue_particle_index_map[sel_name]
+                outfile=outdir+"/rmsf."+sel_name+".dat"
+                of=open(outfile,"w")
+                residue_distances={}
+                residue_nblock={}
+                for index in range(number_of_structures):
+                    distances=self._get_particle_distances(structure_set_name,
+                                                          structure_set_name,
+                                                          sel_name,
+                                                          centroid_index,index)
+                    for nblock,block in enumerate(rpim):
+                        for residue_number in block:
+                            residue_nblock[residue_number]=nblock
+                            if residue_number not in residue_distances:
+                                residue_distances[residue_number]=[distances[nblock]]
+                            else:
+                                residue_distances[residue_number].append(distances[nblock])
 
-            residues=[]
-            rmsfs=[]
-            for rn in residue_distances:
-                residues.append(rn)
-                rmsf=np.std(residue_distances[rn])
-                rmsfs.append(rmsf)
-                of.write(str(rn)+" "+str(residue_nblock[rn])+" "+str(rmsf)+"\n")
+                residues=[]
+                rmsfs=[]
+                for rn in residue_distances:
+                    residues.append(rn)
+                    rmsf=np.std(residue_distances[rn])
+                    rmsfs.append(rmsf)
+                    of.write(str(rn)+" "+str(residue_nblock[rn])+" "+str(rmsf)+"\n")
 
-            IMP.pmi.output.plot_xy_data(residues,rmsfs,title=sel_name,
-                                        out_fn=outdir+"/rmsf."+sel_name,display=False,
-                                        set_plot_yaxis_range=set_plot_yaxis_range,
-                                        xlabel='Residue Number',ylabel='Standard error')
-            of.close()
+                IMP.pmi.output.plot_xy_data(residues,rmsfs,title=sel_name,
+                                            out_fn=outdir+"/rmsf."+sel_name,display=False,
+                                            set_plot_yaxis_range=set_plot_yaxis_range,
+                                            xlabel='Residue Number',ylabel='Standard error')
+                of.close()
 
 
     def set_reference_structure(self,rmf_name,rmf_frame_index):

@@ -14,10 +14,9 @@ class SampleObjects(object):
 def enable_md_sampling(mdl, hier=None, particles=None, include_siblings=False,
                        exclude_backbone=False):
     """Add necessary attributes to the selected residues for MD sampling.
-    @param model            The IMP model
+    @param mdl              The IMP model
     @param hier             Hierarchy to sample
     @param particles        Particles to sample
-    @param selection        Single or multiple selections for enabling sampling
     @param include_siblings Get the siblings of the passed particles and sample them too
     @param exclude_backbone Don't sample backbone atoms
     """

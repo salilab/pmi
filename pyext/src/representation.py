@@ -1681,7 +1681,7 @@ class Representation(object):
             resolution=None):
         '''
         selection tuples must be [(r1,r2,"name1"),(r1,r2,"name2"),....]
-        return the particles
+        @return the particles
         '''
         particles = []
         print selection_tuples

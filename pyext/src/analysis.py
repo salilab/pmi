@@ -883,7 +883,7 @@ class Precision(object):
     def get_average_distance_wrt_reference_structure(self,structure_set_name):
         """Compare the structure set to the reference structure.
         @param structure_set_name The structure set to compute this on
-        \note First call set_reference_structure()
+        @note First call set_reference_structure()
         """
         if self.reference_structures_dictionary=={}:
             print "Cannot compute until you set a reference structure"
@@ -1397,9 +1397,10 @@ def get_hiers_from_rmf(model, frame_number, rmf_file):
 
 def get_particles_at_resolution_one(prot):
     """
-    Get particles at res 1, or any beads, based on the name (no Representation needed)
-    It is mainly used when the hierarchy is read from an rmf file
-    Returns a dictionary of component names and their particles
+    Get particles at res 1, or any beads, based on the name.
+    No Representation is needed. This is mainly used when the hierarchy
+    is read from an RMF file.
+    @return a dictionary of component names and their particles
     """
     particle_dict = {}
     allparticles = []
@@ -1420,9 +1421,10 @@ def get_particles_at_resolution_one(prot):
 
 def get_particles_at_resolution_ten(prot):
     """
-    Get particles at res 10, or any beads, based on the name (no Representation needed)
-    It is mainly used when the hierarchy is read from an rmf file
-    Returns a dictionary of component names and their particles
+    Get particles at res 10, or any beads, based on the name.
+    No Representation is needed.
+    This is mainly used when the hierarchy is read from an RMF file.
+    @return a dictionary of component names and their particles
     """
     particle_dict = {}
     allparticles = []

@@ -22,22 +22,39 @@ class ReplicaExchange0(object):
     Produces trajectory RMF files, best PDB structures,
     and output stat files.
     @param model                    The IMP model
-    @param representation           PMI.Representation() (or list of them, for multi-state modeling)
+    @param representation           PMI.representation.Representation object
+           (or list of them, for multi-state modeling)
     @param root_hier                Instead of passing Representation, just pass a hierarchy
-    @param mote_carlo_sample_objcts Objects for MC sampling
+    @param monte_carlo_sample_objcts Objects for MC sampling; a list of
+           structural components (generally the representation) that will be
+           moved and restraints with parameters that need to be sampled
     @param molecular_dynamics_sample_objects Objects for MD sampling
-    @param output_objects           Objects with get_output() for packing into stat files
-    @param crosslink_restraints     Harmonic restraints to go in output RMF files
-    @param monte_carlo_temperature  MC temp
-    @param replica_exchange_minimum_temperature Low temp for REX
+    @param output_objects           A list of structural objects and restraints
+           that will be included in output (statistics files). Any object
+           that provides a get_output() method can be used here.
+    @param crosslink_restraints     List of cross-link restraints that will be
+           included in output RMF files (for visualization).
+    @param monte_carlo_temperature  MC temp (may need to be optimized based
+           on post-sampling analysis)
+    @param simulated_annealing If True, perform simulated annealing
+    @param simulated_annealing_minimum_temperature Should generally be the same
+           as monte_carlo_temperature.
+    @param simulated_annealing_minimum_temperature_frames Number of frames to
+           compute at minimum temperature.
+    @param simulated_annealing_maximum_temperature_frames Number of frames to
+           compute at temps > simulated_annealing_maximum_temperature.
+    @param replica_exchange_minimum_temperature Low temp for REX; should
+           generally be the same as monte_carlo_temperature.
     @param replica_exchange_maximum_temperature High temp for REX
     @param num_sample_rounds        Number of rounds of MC/MD per cycle
-    @param number_of_best_scoring_models Number of top-scoring PDB models to keep around
+    @param number_of_best_scoring_models Number of top-scoring PDB models
+           to keep around for analysis
     @param monte_carlo_steps        Number of MC steps per round
     @param molecular_dynamics_steps  Number of MD steps per round
     @param number_of_frames         Number of REX frames to run
     @param nframes_write_coordinates How often to write the coordinates of a frame
     @param write_initial_rmf        Write the initial configuration
+    @param global_output_directory Folder that will be created to house output.
     """
     def __init__(self, model,
                  representation=None,

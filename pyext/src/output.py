@@ -392,14 +392,12 @@ class Output(object):
         return output
 
     def write_test(self, name, listofobjects):
-        '''
-        write the test:
-        output=output.Output()
-        output.write_test("test_modeling11_models.rmf_45492_11Sep13_veena_imp-020713.dat",outputobjects)
-        run the test:
-        output=output.Output()
-        output.test("test_modeling11_models.rmf_45492_11Sep13_veena_imp-020713.dat",outputobjects)
-        '''
+#       write the test:
+#       output=output.Output()
+#       output.write_test("test_modeling11_models.rmf_45492_11Sep13_veena_imp-020713.dat",outputobjects)
+#       run the test:
+#       output=output.Output()
+#       output.test("test_modeling11_models.rmf_45492_11Sep13_veena_imp-020713.dat",outputobjects)
         flstat = open(name, 'w')
         output = self.initoutput
         for l in listofobjects:
@@ -631,19 +629,15 @@ class ProcessOutput(object):
     def show_keys(self, ncolumns=2, truncate=65):
         IMP.pmi.tools.print_multicolumn(self.get_keys(), ncolumns, truncate)
 
-    def get_fields(
-        self,
-        fields,
-        filtertuple=None,
-        filterout=None,
-            get_every=1):
+    def get_fields(self, fields, filtertuple=None, filterout=None, get_every=1):
         '''
-        this function get the wished field names and return a dictionary
-        you can give the optional argument filterout if you want to "grep" out
-        something from the file, so that it is faster
+        Get the desired field names, and return a dictionary.
 
-        filtertuple  a tuple that contains ("TheKeyToBeFiltered",relationship,value)
-                     relationship = "<", "==", or ">"
+        @param filterout specify if you want to "grep" out something from
+                         the file, so that it is faster
+        @param filtertuple a tuple that contains
+                     ("TheKeyToBeFiltered",relationship,value)
+                     where relationship = "<", "==", or ">"
         '''
 
         outdict = {}
@@ -749,16 +743,16 @@ def plot_field_histogram(
         reference_xline=None, yplotrange=None, xplotrange=None,normalized=True,
         leg_names=None):
 
-    '''This function is plotting a list of histograms from a value list.
+    '''Plot a list of histograms from a value list.
     @param name the name of the plot
     @param value_lists the list of list of values eg: [[...],[...],[...]]
-    @param valuename=None the y-label
-    @param bins=40  the number of bins
-    @param colors=None. If None, will use rainbow. Else will use specific list
-    @param format="png" output format
-    @param reference_xline=None plot a reference line parallel to the y-axis
-    @param yplotrange=None the range for the y-axis
-    @param normalized=True whether the histogram is normalized or not
+    @param valuename the y-label
+    @param bins the number of bins
+    @param colors If None, will use rainbow. Else will use specific list
+    @param format output format
+    @param reference_xline plot a reference line parallel to the y-axis
+    @param yplotrange the range for the y-axis
+    @param normalized whether the histogram is normalized or not
     @param leg_names names for the legend
     '''
 
@@ -812,7 +806,7 @@ def plot_field_histogram(
 def plot_fields_box_plots(name, values, positions, frequencies=None,
                           valuename="None", positionname="None", xlabels=None):
     '''
-    This function plots time series as boxplots
+    Plot time series as boxplots.
     fields is a list of time series, positions are the x-values
     valuename is the y-label, positionname is the x-label
     '''

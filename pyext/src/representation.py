@@ -26,20 +26,22 @@ class Representation(object):
     # Authors: Peter Cimermancic, Riccardo Pellarin, Charles Greenberg
 
     '''
-    This class creates the molecular hierarchies, representation,
+    Set up the representation of all proteins and nucleic acid macromolecules.
+
+    Create the molecular hierarchies, representation,
     sequence connectivity for the various involved proteins and
     nucleic acid macromolecules:
 
     Create a protein, DNA or RNA, represent it as a set of connected balls of appropriate
-    radii and number of residues, pdb at given resolution(s), or ideal helices.
+    radii and number of residues, PDB at given resolution(s), or ideal helices.
 
     To initialize the class:
 
-    m                the model
-    upperharmonic    Bool This flag uses either harmonic (False)
+    @param m                the model
+    @param upperharmonic    Bool This flag uses either harmonic (False)
                      or upperharmonic (True) in the intra-pair
                      connectivity restraint. Default is True.
-    disorderedlength Bool This flag uses either disordered length
+    @param disorderedlength Bool This flag uses either disordered length
                      calculated for random coil peptides (True) or zero
                      surface-to-surface distance between beads (False)
                      as optimal distance for the sequence connectivity
@@ -169,12 +171,15 @@ class Representation(object):
     def get_component_names(self):
         return self.hier_dict.keys()
 
-    def add_component_sequence(self, name, filename, id=None, offs=None, format="FASTA"):
+    def add_component_sequence(self, name, filename, id=None, offs=None,
+                               format="FASTA"):
         '''
-        give the component name, the fasta filename,
-        and the id stored in the fasta file (i.e., the header)
-        If the id is not provided, it will assume the same compoennt
-        name.
+        Add the primary sequence for a single component.
+
+        @param name Human-readable name of the component
+        @param filename Name of the FASTA file
+        @param id Identifier of the sequence in the FASTA file header
+                  (if not provided, use `name` instead)
         '''
         from Bio import SeqIO
         handle = open(filename, "rU")
@@ -295,32 +300,41 @@ class Representation(object):
         r = self.autobuild_model(*args, **kwargs)
         return r
 
-    def add_component_pdb(
-        self, name, pdbname, chain, resolutions, color=None, resrange=None, offset=0,
-        cacenters=True, show=False, isnucleicacid=False, readnonwateratoms=False,
-            read_ca_cb_only=False):
+    def add_component_pdb(self, name, pdbname, chain, resolutions, color=None,
+                          resrange=None, offset=0, cacenters=True, show=False,
+                          isnucleicacid=False, readnonwateratoms=False,
+                          read_ca_cb_only=False):
         '''
-        This method reads a pdb, constructs the fragments corresponding to contiguous senquence stretches,
-        and returns a list of hierarchies.
+        Add a component that has an associated 3D structure in a PDB file.
 
-        name:             (string) the name of the component
-        pdbname:          (string) the name of the pdb
-        chain:            (string or integer) can be either a string (eg, "A")
-                          or an integer (eg, 0 or 1) in case you want
-                          to get the corresponding chain number in the pdb.
-        resolutions:      (integers) a list of integers that corresponds to the resolutions that have to be
-                          generated
-        color:            (float from 0 to 1, optional default=None): the color applied to the hierarchies generated
-                          by this method
-        resrange:         (tuple of integers, optional, default=None): specifies the residue range to extract from the pdb
-                          it is a tuple (beg,end). If not specified, it takes all residues belonging to
-                          the specified chain.
-        offset:           (integer, optional, default=0): specifies the residue index offset to be applied when reading the pdb
-        cacenters:        (boolean, optional, default=True): if True generates resolution=1 beads centered on C-alpha atoms.
-        show:             (boolean, optional, default=False): print out the molecular hierarchy at the end.
-        isnucleicacid:    (boolean, optional, default=False): use True if you're reading a pdb with nucleic acid.
-        readnonwateratoms:(boolean, optional, default=False): if True fixes some pathological pdb.
-        read_ca_cb_only: (boolean, optional, default=False): if True, only reads CA/CB
+        Reads the PDB, and constructs the fragments corresponding to contiguous
+        senquence stretches.
+
+        @return a list of hierarchies.
+
+        @param name (string) the name of the component
+        @param pdbname (string) the name of the PDB file
+        @param chain (string or integer) can be either a string (eg, "A")
+                     or an integer (eg, 0 or 1) in case you want
+                     to get the corresponding chain number in the PDB.
+        @param resolutions (integers) a list of integers that corresponds
+                     to the resolutions that have to be generated
+        @param color (float from 0 to 1) the color applied to the
+                     hierarchies generated
+        @param resrange (tuple of integers): the residue range to extract
+                     from the PDB. It is a tuple (beg,end). If not specified,
+                     all residues belonging to the specified chain are read.
+        @param offset (integer) specifies the residue index offset to be
+                     applied when reading the PDB (the FASTA sequence is
+                     assumed to start from residue 1, so use this parameter
+                     if the PDB file does not start at residue 1)
+        @param cacenters (boolean) if True generates resolution=1 beads
+                     centered on C-alpha atoms.
+        @param show (boolean) print out the molecular hierarchy at the end.
+        @param isnucleicacid (boolean) use True if you're reading a PDB
+                     with nucleic acids.
+        @param readnonwateratoms (boolean) if True fixes some pathological PDB.
+        @param read_ca_cb_only (boolean) if True, only reads CA/CB
         '''
 
         self.representation_is_modified = True
@@ -560,9 +574,10 @@ class Representation(object):
 
         return outhiers
 
-    def add_component_necklace(self, name, begin, end, length, color=None, incoord=None):
+    def add_component_necklace(self, name, begin, end, length, color=None,
+                               incoord=None):
         '''
-        generates a string of beads with given length
+        Generates a string of beads with given length.
         '''
         self.representation_is_modified = True
         outhiers = []
@@ -592,29 +607,28 @@ class Representation(object):
         density_ps_to_copy=None,
         use_precomputed_gaussians=False):
         '''
-        This function sets up a GMM for this component.
+        Sets up a Gaussian Mixture Model for this component.
         Can specify input GMM file or it will be computed.
-        name:                   component name
-        hierarchies:            set up GMM for some hierarchies
-        selection_tuples:       (list of tuples) example (first_residue,last_residue,component_name)
-        particles:              set up GMM for particles directly
-        resolution:             usual PMI resolution for selecting particles from the hierarchies
-        inputfile:              read the GMM from this file
-        outputfile:             fit and write the GMM to this file (text)
-        outputmap:              after fitting, create GMM density file (mrc)
-        kernel_type:            for creating the intermediate density (points are sampled to make GMM)
-                                  options are IMP.em.GAUSSIAN, IMP.em.SPHERE, and IMP.em.BINARIZED_SPHERE
-        covariance_type:        for fitting the GMM. options are 'full', 'diagonal' and 'spherical'
-        voxel_size:             for creating the intermediate density map and output map.
+        @parm name component name
+        @param hierarchies set up GMM for some hierarchies
+        @param selection_tuples (list of tuples) example (first_residue,last_residue,component_name)
+        @param particles set up GMM for particles directly
+        @param resolution usual PMI resolution for selecting particles from the hierarchies
+        @param inputfile read the GMM from this file
+        @param outputfile fit and write the GMM to this file (text)
+        @param outputmap after fitting, create GMM density file (mrc)
+        @param kernel_type for creating the intermediate density (points are sampled to make GMM). Options are IMP.em.GAUSSIAN, IMP.em.SPHERE, and IMP.em.BINARIZED_SPHERE
+        @param covariance_type for fitting the GMM. options are 'full', 'diagonal' and 'spherical'
+        @param voxel_size for creating the intermediate density map and output map.
                                   lower number increases accuracy but also rasterizing time grows
-        out_hier_name:          name of the output density hierarchy
-        sampled_points:         number of points to sample. more will increase accuracy and fitting time
-        num_iter:               num GMM iterations. more will increase accuracy and fitting time
-        multiply_by_total_mass: multiply the weights of the GMM by this value (only works on creation!)
-        transform:              for input file only, apply a transformation (eg for multiple copies same GMM)
-        intermediate_map_fn:    for debugging, this will write the itermediate (simulated) map
-        density_ps_to_copy:     in case you already created the appropriate GMM (eg, for beads)
-        use_precomputed_gaussians: Set this flag and pass fragments - will use roughly spherical gaussian setup
+        @param out_hier_name name of the output density hierarchy
+        @param sampled_points number of points to sample. more will increase accuracy and fitting time
+        @param num_iter num GMM iterations. more will increase accuracy and fitting time
+        @param multiply_by_total_mass multiply the weights of the GMM by this value (only works on creation!)
+        @param transform for input file only, apply a transformation (eg for multiple copies same GMM)
+        @param intermediate_map_fn for debugging, this will write the itermediate (simulated) map
+        @param density_ps_to_copy in case you already created the appropriate GMM (eg, for beads)
+        @param use_precomputed_gaussians Set this flag and pass fragments - will use roughly spherical Gaussian setup
         '''
         import numpy as np
         import sys
@@ -717,13 +731,13 @@ class Representation(object):
                                resolution=0,
                                output_map=None,
                                voxel_size=1.0):
-        '''This function decorates all specified particles as Gaussians directly.
-        name:                   component name
-        hierarchies:            set up GMM for some hierarchies
-        selection_tuples:       (list of tuples) example (first_residue,last_residue,component_name)
-        particles:              set up GMM for particles directly
-        resolution:             usual PMI resolution for selecting particles from the hierarchies
-        intermediate_map_fn:    for debugging, this will write the itermediate (simulated) map
+        '''Decorates all specified particles as Gaussians directly.
+        @param name component name
+        @param hierarchies set up GMM for some hierarchies
+        @param selection_tuples (list of tuples) example (first_residue,last_residue,component_name)
+        @param particles set up GMM for particles directly
+        @param resolution usual PMI resolution for selecting particles from the hierarchies
+        @param intermediate_map_fn for debugging, this will write the itermediate (simulated) map
         '''
 
         import IMP.em
@@ -774,8 +788,7 @@ class Representation(object):
 
     def add_component_hierarchy_clone(self, name, hierarchy):
         '''
-        this function makes a copy of a hierarchy and append it to a
-        component
+        Make a copy of a hierarchy and append it to a component.
         '''
         outhier = []
         self.representation_is_modified = True
@@ -811,16 +824,16 @@ class Representation(object):
 
         return outhier
 
-    def set_coordinates_from_rmf(
-        self,
-        component_name,
-        rmf_file_name,
-        rmf_frame_number,
-            rmf_component_name=None):
-        '''This function read and replace coordinates from an rmf file
-        It looks for the component with the same name, unless the rmf_component_name
-        is defined. Replace the coordinates of particles with the same name
-        It assumes that the rmf and the represdentation have the particles in the same order'''
+    def set_coordinates_from_rmf(self, component_name, rmf_file_name,
+                                 rmf_frame_number, rmf_component_name=None):
+        '''Read and replace coordinates from an RMF file.
+        Replace the coordinates of particles with the same name.
+        It assumes that the RMF and the representation have the particles
+        in the same order.
+        @param component_name Component name
+        @param rmf_component_name Name of the component in the RMF file
+                (if not specified, use `component_name`)
+        '''
 
         import IMP.pmi.analysis
 
@@ -870,8 +883,7 @@ class Representation(object):
 
     def check_root(self, name, protein_h, resolution):
         '''
-        checks whether the root hierarchy exists, and if not
-        suitably constructs it
+        If the root hierarchy does not exist, construct it.
         '''
         if "Res:" + str(int(resolution)) not in self.hier_representation[name]:
             root = IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
@@ -880,24 +892,16 @@ class Representation(object):
                 "Res:" + str(int(resolution))] = root
             protein_h.add_child(root)
 
-    def coarse_hierarchy(
-        self,
-        name,
-        start,
-        end,
-        resolutions,
-        isnucleicacid,
-        input_hierarchy,
-        protein_h,
-        type,
-            color):
+    def coarse_hierarchy(self, name, start, end, resolutions, isnucleicacid,
+                         input_hierarchy, protein_h, type, color):
         '''
-        this function generates all needed coarse grained layers
-        name is the name of the protein
-        resolutions is the list of resolutions
-        protein_h is the root hierarchy
-        input hierarchy is the hierarchy to coarse grain
-        type is a string, typically "pdb" or "helix"
+        Generate all needed coarse grained layers.
+
+        @param name name of the protein
+        @param resolutions list of resolutions
+        @param protein_h root hierarchy
+        @param input_hierarchy hierarchy to coarse grain
+        @param type a string, typically "pdb" or "helix"
         '''
         outhiers = []
 
@@ -1030,10 +1034,11 @@ class Representation(object):
 
     def get_hierarchies_at_given_resolution(self, resolution):
         '''
-        this function caches the map between resolution and hierarchies
-        to accelerate the selection algorithm
-        if the representation was changed by any add_component_xxx, the function recalculates
-        the maps
+        Get the hierarchies at the given resolution.
+
+        The map between resolution and hierarchies is cached to accelerate
+        the selection algorithm. The cache is invalidated when the
+        representation was changed by any add_component_xxx.
         '''
 
         if self.representation_is_modified:
@@ -1056,15 +1061,14 @@ class Representation(object):
         avoidcollision=True, cutoff=10.0, niterations=100,
         bounding_box=None,
         excluded_rigid_bodies=None,
-            hierarchies_excluded_from_collision=None):
+        hierarchies_excluded_from_collision=None):
         '''
-        shuffle configuration, used to restart the optimization
-        it  works correctly if rigid bodies were initialized
-        avoidcollision check if the particle/rigid body was placed close to another particle
-        avoidcollision uses the optional arguments cutoff and niterations
-
-        bounding box is defined by ((x1,y1,z1),(x2,y2,z2))
-
+        Shuffle configuration; used to restart the optimization.
+        It works correctly if rigid bodies were initialized.
+        @param avoidcollision check if the particle/rigid body was
+                  placed close to another particle; uses the optional
+                  arguments cutoff and niterations
+        @param bounding_box defined by ((x1,y1,z1),(x2,y2,z2))
         '''
 
         if excluded_rigid_bodies is None:
@@ -1249,13 +1253,10 @@ class Representation(object):
             self.hier_geometry_pairs[name].append((pbr[n], pbr[n + 1], color))
 
     def setup_component_sequence_connectivity(
-        self,
-        name,
-        resolution=10,
-            scale=1.0):
+        self, name, resolution=10, scale=1.0):
         '''
-        This method generates restraints between contiguous fragments
-        in the hierarchy. The linkers are generated at resolution 10 by default.
+        Generate restraints between contiguous fragments in the hierarchy.
+        The linkers are generated at resolution 10 by default.
 
         '''
 
@@ -1430,10 +1431,9 @@ class Representation(object):
 
     def link_components_to_rmf(self, rmfname, frameindex):
         '''
-        load coordinates in the current representation
-        this should be done only if the hierarchy self.prot is identical to the one
-        i.e. all components were added
-        as stored in the rmf
+        Load coordinates in the current representation.
+        This should be done only if the hierarchy self.prot is identical
+        to the one as stored in the rmf i.e. all components were added.
         '''
         import IMP.rmf
         import RMF
@@ -1467,11 +1467,10 @@ class Representation(object):
 
     def set_rigid_body_from_hierarchies(self, hiers, particles=None):
         '''
-        This method allows the construction of a rigid body given a list
-        of hierarchies and or a list of particles.
+        Construct a rigid body from hierarchies (and optionally particles).
 
-        hiers:         list of hierarchies
-        particles:     (optional, default=None) list of particles to add to the rigid body
+        @param hiers list of hierarchies to make rigid
+        @parm particles list of particles to add to the rigid body
         '''
 
         if particles is None:
@@ -1505,9 +1504,10 @@ class Representation(object):
 
     def set_rigid_bodies(self, subunits):
         '''
-        This method allows the construction of a rigid body given a list
-        of tuples, that identify the residue ranges and the subunit names (the names used
-        to create the component by using create_component.
+        Construct a rigid body from a list of subunits.
+
+        Each subunit is a tuple that identifies the residue ranges and the
+        component name (as used in create_component()).
 
         subunits: [(name_1,(first_residue_1,last_residue_1)),(name_2,(first_residue_2,last_residue_2)),.....]
                   or
@@ -1589,16 +1589,13 @@ class Representation(object):
 
 
     def set_chain_of_super_rigid_bodies(
-        self,
-        hiers,
-        min_length=None,
-        max_length=None,
-            axis=None):
+        self, hiers, min_length=None, max_length=None, axis=None):
         '''
-        this function takes a linear list of hierarchies (they are supposed
-         to be sequence-contiguous) and
-        produces a chain of super rigid bodies with given length range, specified
-        by min_length and max_length
+        Make a chain of super rigid bodies from a list of hierarchies.
+
+        Takes a linear list of hierarchies (they are supposed to be
+        sequence-contiguous) and produces a chain of super rigid bodies
+        with given length range, specified by min_length and max_length.
         '''
         try:
             hiers = IMP.pmi.tools.flatten_list(hiers)
@@ -1641,9 +1638,12 @@ class Representation(object):
 
     def remove_floppy_bodies(self, hierarchies):
         '''
-        give a list of hierarchies, get the leaves and remove the corresponding particles
-        from the floppy bodies list. We need this function because sometimes
-        we want to constraint the floppy bodies in a rigid body. For instance
+        Remove leaves of hierarchies from the floppy bodies list.
+
+        Given a list of hierarchies, get the leaves and remove the
+        corresponding particles from the floppy bodies list. We need this
+        function because sometimes
+        we want to constrain the floppy bodies in a rigid body - for instance
         when you want to associate a bead with a density particle.
         '''
         for h in hierarchies:
@@ -1712,8 +1712,8 @@ class Representation(object):
 
     def set_rigid_bodies_as_fixed(self, rigidbodiesarefixed=True):
         '''
-        this function will fix rigid bodies in their actual
-        position. the get_particles_to_sample function will return
+        Fix rigid bodies in their actual position.
+        The get_particles_to_sample() function will return
         just the floppy bodies.
         '''
         self.rigidbodiesarefixed = rigidbodiesarefixed

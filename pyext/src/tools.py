@@ -315,9 +315,9 @@ def get_random_cross_link_dataset(representation,
                                   ambiguity_probability=0.1,
                                   confidence_score_range=[0,100],
                                   avoid_same_particles=False):
-
-    '''returns a random cross-link dataset into a string were every
-    line is a residue pair, together with UniqueIdentifier and XL score'''
+    '''Return a random cross-link dataset as a string.
+    Every line is a residue pair, together with UniqueIdentifier
+    and XL score.'''
 
     residue_pairs=get_random_residue_pairs(representation, resolution, number_of_cross_links, avoid_same_particles)
 
@@ -520,9 +520,10 @@ def get_closest_residue_position(hier, resindex, terminus="N"):
 
 def get_position_terminal_residue(hier, terminus="C", resolution=1):
     '''
-    this function get the xyz position of the
-    C or N terminal residue of a hierarchy, given the resolution.
-    the argument of terminus can be either N or C
+    Get the xyz position of the terminal residue at the given resolution.
+    @param hier hierarchy containing the terminal residue
+    @param terminus either 'N' or 'C'
+    @param resolution resolution to use.
     '''
     termresidue = None
     termparticle = None
@@ -551,9 +552,14 @@ def get_position_terminal_residue(hier, terminus="C", resolution=1):
 
 def get_residue_gaps_in_hierarchy(hierarchy, start, end):
     '''
-    returns the residue index gaps and contiguous segments as tuples given the hierarchy, the first
-    residue and the last residue indexes. The list is organized as
-    [[1,100,"cont"],[101,120,"gap"],[121,200,"cont"]]
+    Return the residue index gaps and contiguous segments in the hierarchy.
+
+    @param hierarchy hierarchy to examine
+    @param start first residue index
+    @param end last residue index
+
+    @return A list of lists of the form
+            [[1,100,"cont"],[101,120,"gap"],[121,200,"cont"]]
     '''
     gaps = []
     for n, rindex in enumerate(range(start, end + 1)):
@@ -898,7 +904,7 @@ class HierarchyDatabase(object):
 
 
 def get_prot_name_from_particle(p, list_of_names):
-    ''' this function returns the component name provided a particle and a list of names'''
+    '''Return the component name provided a particle and a list of names'''
     root = p
     protname = root.get_name()
     is_a_bead = False
@@ -919,8 +925,9 @@ def get_prot_name_from_particle(p, list_of_names):
 
 def get_residue_indexes(hier):
     '''
-    This "overloaded" function retrieves the residue indexes
-    for each particle which is an instance of Fragment,Residue or Atom
+    Retrieve the residue indexes for the given particle.
+
+    The particle must be an instance of Fragment,Residue or Atom
     '''
     resind = []
     if IMP.atom.Fragment.get_is_setup(hier):
@@ -1014,8 +1021,7 @@ def scatter_and_gather_dict_append(data):
 
 def sublist_iterator(l, lmin=None, lmax=None):
     '''
-    this iterator yields all sublists
-    of length >= lmin and <= lmax
+    Yield all sublists of length >= lmin and <= lmax
     '''
     if lmin is None:
         lmin = 0
@@ -1057,7 +1063,7 @@ def chunk_list_into_segments(seq, num):
 
 def translate_hierarchy(hierarchy, translation_vector):
     '''
-    this will apply a translation to a hierarchy along the input vector
+    Apply a translation to a hierarchy along the input vector.
     '''
     rbs = set()
     xyzs = set()
@@ -1256,7 +1262,9 @@ def print_multicolumn(list_of_strings, ncolumns=2, truncate=40):
 
 
 def parse_dssp(dssp_fn, limit_to_chains=''):
-    ''' read dssp file, get SSEs. values are all PDB residue numbering. returns dict of sel tuples
+    '''Read dssp file and get secondary structure information.
+       Values are all PDB residue numbering.
+       @return dict of sel tuples
 helix : [ [ ['A',5,7] ] , [['B',15,17]] , ...] two helices A:5-7,B:15-17
 beta  : [ [ ['A',1,3] , ['A',100,102] ] , ...] one sheet: A:1-3 & A:100-102
 loop  : same format as helix, it's the contiguous loops
@@ -1362,7 +1370,7 @@ def sse_selections_to_chimera_colors(dssp_dict, chimera_model_num=0):
 
 
 class ColorChange(object):
-    '''a class to change color code to hexadecimal to rgb'''
+    '''Change color code to hexadecimal to rgb'''
     def __init__(self):
         self._NUMERALS = '0123456789abcdefABCDEF'
         self._HEXDEC = dict((v, int(v, 16)) for v in (x+y for x in self._NUMERALS for y in self._NUMERALS))

@@ -1,6 +1,6 @@
 /**
  *  \file IMP/pmi/TransformMover.h
- *  \brief A mover that transform a rigid body
+ *  \brief A mover that transforms a rigid body
  *
  *  Copyright 2007-2014 IMP Inventors. All rights reserved.
  *

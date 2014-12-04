@@ -24,9 +24,10 @@ class Alignment(object):
     @param query {'p1':coords(L,3), 'p2':coords(L,3)}
     @param template {'p1':coords(L,3), 'p2':coords(L,3)}
 
-    The class also takes into accout non-equal stoichiometry of the proteins. If this
-    is the case, the protein names of protein in multiple copies should be delivered
-    in the following form: nameA..1, nameA..2 (note two dots).
+    The class also takes into account non-equal stoichiometry of the proteins.
+    If this is the case, the protein names of proteins in multiple copies
+    should be specified in the following form:
+    nameA..1, nameA..2 (note two dots).
     """
 
     def __init__(self, template, query, weights=None):
@@ -180,7 +181,7 @@ class Violations(object):
 class Clustering(object):
     """A class to cluster structures.
     Uses scipy's cdist function to compute distance matrices
-    And sklearn's kmeans clustering module.
+    and sklearn's kmeans clustering module.
     @param rmsd_weights Flat list of weights for each particle (if they're coarse)
     """
     def __init__(self,rmsd_weights=None):
@@ -202,10 +203,7 @@ class Clustering(object):
         self.tmpl_coords = part_coords
 
     def fill(self, frame, Coords):
-        """
-        fill stores coordinates of a model into a dictionary all_coords,
-        containing coordinates for all models.
-        """
+        """Add coordinates for a single model."""
 
         self.all_coords[frame] = Coords
 
@@ -455,12 +453,13 @@ class Clustering(object):
 
 
 class Precision(object):
-    """ A class to evaluate the precision of an ensemble.
+    """A class to evaluate the precision of an ensemble.
+
     Also can evaluate the cross-precision of multiple ensembles.
     Supports MPI for coordinate reading.
     Recommended procedure:
       -# initialize object and pass the selection for evaluating precision
-      -# call add_structures() to read in the data (specify group name)"
+      -# call add_structures() to read in the data (specify group name)
       -# call get_precision() to evaluate inter/intra precision
       -# call get_rmsf() to evaluate within-group fluctuations
     @param model The IMP Model
@@ -920,7 +919,8 @@ class Precision(object):
 
 
 class GetModelDensity(object):
-    """A class to compute mean density maps from structures
+    """Compute mean density maps from structures.
+
     Keeps a dictionary of density maps,
     keys are in the custom ranges. When you call add_subunits_density, it adds
     particle coordinates to the existing density maps.
@@ -928,9 +928,10 @@ class GetModelDensity(object):
                           values are selection tuples
                           e.g. {'kin28':[['kin28',1,-1]],
                                'density_name_1' :[('ccl1')],
-                               'density_name_2' :[(1,142,'tfb3d1'),(143,700,'tfb3d2')],
+                               'density_name_2' :[(1,142,'tfb3d1'),
+                                                  (143,700,'tfb3d2')],
     @param representation PMI representation, for doing selections.
-                          not needed if you only pass hierarchies
+                          Not needed if you only pass hierarchies
     @param voxel          The voxel size for the output map (lower is slower)
     """
 

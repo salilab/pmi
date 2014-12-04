@@ -18,7 +18,7 @@ import numpy as np
 
 class ReplicaExchange0(object):
     """A macro to help setup and run replica exchange.
-    Supports monte carlo and molecular dynamics.
+    Supports Monte Carlo and molecular dynamics.
     Produces trajectory RMF files, best PDB structures,
     and output stat files.
     @param model                    The IMP model
@@ -368,7 +368,8 @@ def BuildModel0(
     missing_bead_size=20,
         residue_per_gaussian=None):
     '''
-    The macro construct a component for each subunit (no splitting, nothing fancy)
+    Construct a component for each subunit (no splitting, nothing fancy).
+
     You can pass the resolutions and the bead size for the missing residue regions.
     To use this macro, you must provide the following data structure:
 

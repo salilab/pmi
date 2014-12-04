@@ -30,6 +30,7 @@ class _SerialReplicaExchange(object):
 
 
 class MonteCarlo(object):
+    """Sample using Monte Carlo"""
 
     # check that isd is installed
     try:
@@ -39,11 +40,9 @@ class MonteCarlo(object):
         isd_available = False
 
     def __init__(self, m, objects, temp, filterbyname=None):
-        '''
-        check that the objects containts get_particles_to_sample methods
-        and the particle type is supported
-        list of particles to sample self.losp
-        '''
+        # check that the objects containts get_particles_to_sample methods
+        # and the particle type is supported
+        # list of particles to sample self.losp
 
         self.losp = [
             "Rigid_Bodies",
@@ -155,8 +154,9 @@ class MonteCarlo(object):
         self.selfadaptive = isselfadaptive
 
     def get_nuisance_movers_parameters(self):
-        '''returns a dictionary with the mover parameters
-        for nuisance parameters'''
+        '''
+        Return a dictionary with the mover parameters for nuisance parameters
+        '''
         output = {}
         for i in range(self.get_number_of_movers()):
             mv = self.smv.get_mover(i)
@@ -337,6 +337,8 @@ class MonteCarlo(object):
 
 
 class MolecularDynamics(object):
+    """Sample using molecular dynamics"""
+
     def __init__(self,m,objects,kt,gamma=0.01,maximum_time_step=1.0):
         self.m=m
         to_sample=[]
@@ -355,12 +357,8 @@ class MolecularDynamics(object):
         self.ltstate.set_temperature(temp)
         self.md.assign_velocities(temp)
 
-    def set_simulated_annealing(
-        self,
-        min_temp,
-        max_temp,
-        min_temp_time,
-        max_temp_time):
+    def set_simulated_annealing(self, min_temp, max_temp, min_temp_time,
+                                max_temp_time):
         self.simulated_annealing = True
         self.tempmin = min_temp
         self.tempmax = max_temp
@@ -391,6 +389,7 @@ class MolecularDynamics(object):
         return output
 
 class ConjugateGradients(object):
+    """Sample using conjugate gradients"""
 
     def __init__(self, m, objects):
         self.m = m
@@ -422,6 +421,7 @@ class ConjugateGradients(object):
 
 
 class ReplicaExchange(object):
+    """Sample using replica exchange"""
 
     def __init__(
         self,

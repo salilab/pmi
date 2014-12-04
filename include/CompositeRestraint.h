@@ -1,7 +1,7 @@
 /**
  *  \file IMP/pmi/CompositeRestraint.h
- *  \brief A pmf based likelihood function
- *  with prior knowledge on the flase positive rate.
+ *  \brief A restraint for ambiguous cross-linking MS data and multiple
+ *         state approach.
  *
  *  Copyright 2007-2014 IMP Inventors. All rights reserved.
  *
@@ -16,12 +16,11 @@
 //#include <IMP/container/CloseBipartitePairContainer.h>
 
 IMPPMI_BEGIN_NAMESPACE
-/** A restraint for ambiguous cross-linking MS data and multiple state approach.
-    It marginalizes the false positive rate and depends on the expected fpr and
+//! A restraint for ambiguous cross-linking MS data and multiple state approach.
+/** It marginalizes the false positive rate and depends on the expected fpr and
     an uncertainty parameter beta.
  */
-
-class IMPPMIEXPORT  CompositeRestraint : public Restraint
+class IMPPMIEXPORT CompositeRestraint : public Restraint
 {
     //particle indexes in the composite
     base::Vector<kernel::ParticleIndexes> pis_;
@@ -76,10 +75,6 @@ public:
 
 
   //! Create the restraint.
-  /** Restraints should store the particles they are to act on,
-      preferably in a Singleton or PairContainer as appropriate.
-   */
-
   CompositeRestraint(kernel::Model *m,
                      kernel::ParticleIndexesAdaptor handle_particle_indexes,
                      double coffd, double l, bool tabprob, double plateau,
@@ -94,8 +89,6 @@ public:
 
   //double get_probability() const {return 0.0;}
 
-  /** This macro declares the basic needed methods: evaluate and show
-   */
   virtual double
   unprotected_evaluate(kernel::DerivativeAccumulator *accum)
      const IMP_OVERRIDE;

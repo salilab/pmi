@@ -1,6 +1,6 @@
 /**
  *  \file IMP/pmi/SigmoidRestraintSphere.h
- *  \brief Simple Sigmoidal score calculated between sphere surfaces.
+ *  \brief Simple sigmoidal score calculated between sphere surfaces.
  *
  *  Copyright 2007-2014 IMP Inventors. All rights reserved.
  *
@@ -14,9 +14,8 @@
 
 
 IMPPMI_BEGIN_NAMESPACE
-/** Blah blah.
- */
 
+//! Simple sigmoidal score calculated between sphere surfaces.
 class IMPPMIEXPORT  SigmoidRestraintSphere : public Restraint
 {
     IMP::kernel::ParticleIndex p1_;
@@ -32,10 +31,6 @@ public:
 
 
   //! Create the restraint.
-  /** Restraints should store the particles they are to act on,
-      preferably in a Singleton or PairContainer as appropriate.
-   */
-
   SigmoidRestraintSphere(IMP::kernel::Model *m, 
                           IMP::kernel::ParticleIndexAdaptor p1,
                           IMP::kernel::ParticleIndexAdaptor p2,
@@ -47,8 +42,6 @@ public:
   void increment_amplitude(double amplitude){amplitude_=amplitude_+amplitude;}  
   double get_amplitude(){return amplitude_;}
 
-  /** This macro declares the basic needed methods: evaluate and show
-   */
   virtual double
   unprotected_evaluate(IMP::kernel::DerivativeAccumulator *accum)
      const IMP_OVERRIDE;

@@ -1,5 +1,9 @@
+"""@namespace IMP.pmi.dof
+   Handling of degrees of freedom.
+"""
+
 class dof(object):
-    """Degrees of Freedom
+    """Degrees of Freedom.
     Tasks:
     define rigid bodies and super rigid bodies
     define symmetries (see representation.py)

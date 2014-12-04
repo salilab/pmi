@@ -1,22 +1,19 @@
-#!/usr/bin/env python
-"""useful tools for setting up sampling"""
+"""@namespace IMP.pmi.sampling_tools
+   Useful tools for setting up sampling"""
 
 import IMP
 import IMP.atom
 
 class SampleObjects(object):
-    """ hack class to provide things to sample for PMI::samplers """
+    """Hack class to provide things to sample for PMI::samplers """
     def __init__(self,dict_name,pack_in_dict):
         self.d={dict_name:pack_in_dict}
     def get_particles_to_sample(self):
         return self.d
 
-def enable_md_sampling(mdl,
-                       hier=None,
-                       particles=None,
-                       include_siblings=False,
+def enable_md_sampling(mdl, hier=None, particles=None, include_siblings=False,
                        exclude_backbone=False):
-    """ Adds necessary attributes to the selected residues for MD sampling
+    """Add necessary attributes to the selected residues for MD sampling.
     @param model            The IMP model
     @param hier             Hierarchy to sample
     @param particles        Particles to sample

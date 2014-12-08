@@ -1,4 +1,4 @@
-"""@namespace IMP.pmi.topology.topology_tools
+"""@namespace IMP.pmi.topology.system_tools
    Tools to help build structures
 """
 

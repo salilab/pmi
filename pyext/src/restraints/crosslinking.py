@@ -1,4 +1,7 @@
-#!/usr/bin/env python
+"""@namespace IMP.pmi.restraints.crosslinking
+Restraints for handling crosslinking data.
+"""
+
 import IMP
 import IMP.core
 import IMP.base

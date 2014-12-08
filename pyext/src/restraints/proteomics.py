@@ -1,4 +1,7 @@
-#!/usr/bin/env python
+"""@namespace IMP.pmi.restraints.proteomics
+Restraints for handling various kinds of proteomics data.
+"""
+
 import IMP
 import IMP.core
 import IMP.base

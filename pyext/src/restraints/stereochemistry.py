@@ -1,4 +1,7 @@
-#!/usr/bin/env python
+"""@namespace IMP.pmi.restraints.stereochemistry
+Restraints for keeping correct stereochemistry.
+"""
+
 import IMP
 import IMP.core
 import IMP.base

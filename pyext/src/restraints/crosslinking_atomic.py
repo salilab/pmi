@@ -1,4 +1,7 @@
-#!/usr/bin/env python
+"""@namespace IMP.pmi.restraints.crosslinking_atomic
+Restraints for handling crosslinking data at atomic resolution.
+"""
+
 import IMP
 import IMP.core
 import IMP.base

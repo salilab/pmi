@@ -1,4 +1,7 @@
-#!/usr/bin/env python
+"""@namespace IMP.pmi.restraints.basic
+Some miscellaneous simple restraints.
+"""
+
 import IMP
 import IMP.core
 import IMP.base

@@ -1,4 +1,7 @@
-#!/usr/bin/env python
+"""@namespace IMP.pmi.restraints.saxs
+Restraints for handling small angle x-ray (SAXS) data.
+"""
+
 import IMP
 import IMP.core
 import IMP.base

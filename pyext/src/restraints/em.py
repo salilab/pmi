@@ -1,4 +1,7 @@
-#!/usr/bin/env python
+"""@namespace IMP.pmi.restraints.em
+Restraints for handling electron microscopy maps.
+"""
+
 import IMP
 import IMP.core
 import IMP.base

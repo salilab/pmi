@@ -442,8 +442,49 @@ class _Residue(object):
 
 class TopologyReader(object):
     '''
-    This class reads in a standard pipe-delimited PMI topology file
-    and stores the items as a ComponentTopology class for input into IMP.pmi.autobuild_model()
+    Read a pipe-delimited PMI topology file.
+
+    The topology file should be in a simple pipe-delimited format, such as
+    @code{.txt}
+|directories|
+|pdb_dir|./|
+|fasta_dir|./|
+|gmm_dir|./|
+
+|topology_dictionary|
+|component_name|domain_name|fasta_fn|fasta_id|pdb_fn|chain|residue_range|pdb_offset|bead_size|em_residues_per_gaussian|
+|Rpb1 |Rpb1_1|1WCM.fasta|1WCM:A|1WCM.pdb|A|1,1140   |0|10|0 |
+|Rpb1 |Rpb1_2|1WCM.fasta|1WCM:A|1WCM.pdb|A|1141,1274|0|10|0 |
+|Rpb1 |Rpb1_3|1WCM.fasta|1WCM:A|1WCM.pdb|A|1275,-1  |0|10|0 |
+|Rpb2 |Rpb2  |1WCM.fasta|1WCM:B|1WCM.pdb|B|all      |0|10|0 |
+    @endcode
+
+    The `|directories|` section lists paths (relative to the topology file)
+    where various inputs can be found.
+
+    The columns under `|topology_dictionary|`:
+    - `component_name`: Name of the component (chain). Serves as the parent
+      hierarchy for this structure.
+    - `domain_name`: Allows subdivision of chains into individual domains.
+       A model consists of a number of individual units, referred to as
+       domains. Each domain can be an individual chain, or a subset of a
+       chain, and these domains are used to set rigid body movers. A chain
+       may be separated into multiple domains if the user wishes different
+       sections to move independently, and/or analyze the portions separately.
+    - `fasta_fn`: Name of FASTA file containing this component.
+    - `fasta_id`: String found in FASTA sequence header line.
+    - `pdb_fn`: Name of PDB file with coordinates (if available).
+    - `chain`: Chain ID of this domain in the PDB file.
+    - `residue_range`: Comma delimited pair defining range. -1 = last residue.
+      all = [1,-1]
+    - `pdb_offset`: Offset to sync PDB residue numbering with FASTA numbering.
+    - `bead_size`: The size (in residues) of beads used to model areas not
+      covered by PDB coordinates.
+    - `em_residues`: The number of Gaussians used to model the electron
+      density of this domain. Set to zero if no EM fitting will be done.
+
+    The file is read in and each part of the topology is stored as a
+    ComponentTopology object for input into IMP::pmi::macros::BuildModel.
     '''
     def __init__(self, topology_file):
         self.topology_file=topology_file

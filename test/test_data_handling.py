@@ -1,6 +1,6 @@
 import IMP.pmi
-from IMP.pmi.io.data_storage import Subsequence,SubsequenceData
-import IMP.pmi.io.data_parsers as data_parsers
+from IMP.pmi.io import Subsequence,SubsequenceData
+import IMP.pmi.io as io
 import IMP.test
 import os,sys
 
@@ -42,7 +42,7 @@ class DataStorageTests(IMP.test.TestCase):
 
     def test_dssp_parsing(self):
         """Test reading DSSP files"""
-        sses = data_parsers.parse_dssp(self.get_input_file_name('chainA.dssp'),'A')
+        sses = io.parse_dssp(self.get_input_file_name('chainA.dssp'),'A')
         self.assertEqual(sorted(sses.keys()),sorted(['helix','beta','loop']))
         self.assertEqual(len(sses['helix']),20)
         self.assertEqual(len(sses['beta']),3)
@@ -80,10 +80,10 @@ class DataStorageTests(IMP.test.TestCase):
 
     def test_xl_parsing(self):
         """Test the XL davis parser"""
-        data = data_parsers.parse_xlinks_davis(self.mdl,
-                                               self.get_input_file_name('xls_davis.txt'),
-                                               name_map={'His-TEV-Tub4':'ytub'},
-                                               named_offsets={'ytub':-33})
+        data = io.parse_xlinks_davis(self.mdl,
+                                     self.get_input_file_name('xls_davis.txt'),
+                                     name_map={'His-TEV-Tub4':'ytub'},
+                                     named_offsets={'ytub':-33})
         self.assertEqual(len(data),41)
         self.assertEqual(cmp(data[0],
                              [{'r1':SelectionDict(self.mdl,

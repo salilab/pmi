@@ -1,7 +1,7 @@
 import IMP
 import IMP.atom
 import IMP.pmi
-import IMP.pmi.io.data_parsers as data_parsers
+import IMP.pmi.io as io
 import IMP.test
 
 
@@ -29,7 +29,7 @@ class StereochemistryTests(IMP.test.TestCase):
         hier = s.build(merge_type="backbone")
 
         # create elastic network from some SSEs
-        sses = data_parsers.parse_dssp(mdl,self.get_input_file_name('chainA.dssp'),'A')
+        sses = io.parse_dssp(mdl,self.get_input_file_name('chainA.dssp'),'A')
         er = IMP.pmi.restraints_new.stereochemistry.ElasticNetworkRestraint(hier,
                                                 selection_dicts=sses['helix'][0],
                                                 strength=10.0,

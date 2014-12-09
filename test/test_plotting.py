@@ -1,6 +1,5 @@
 import IMP.pmi
 import IMP.pmi.analysis
-import IMP.pmi.io.input
 import IMP.test
 import RMF
 import IMP.rmf

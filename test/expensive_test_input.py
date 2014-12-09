@@ -48,10 +48,10 @@ class InputTest(IMP.test.TestCase):
 
 
     def test_get_best_models(self):
-        results = IMP.pmi.io.input.get_best_models(self.stat_files,
-                                                   self.score_key,
-                                                   self.feature_keys,
-                                                   prefiltervalue=305.0)
+        results = IMP.pmi.io.get_best_models(self.stat_files,
+                                             self.score_key,
+                                             self.feature_keys,
+                                             prefiltervalue=305.0)
 
         rmf_file_list,rmf_file_frame_list,score_list,feature_keyword_list_dict=results
         self.assertEqual(len(rmf_file_list),8)
@@ -61,10 +61,10 @@ class InputTest(IMP.test.TestCase):
             self.assertEqual(len(l),8)
 
     def test_read_coordinates_of_rmfs(self):
-        results = IMP.pmi.io.input.get_best_models(self.stat_files,
-                                                   self.score_key,
-                                                   self.feature_keys,
-                                                   prefiltervalue=305.0)
+        results = IMP.pmi.io.get_best_models(self.stat_files,
+                                             self.score_key,
+                                             self.feature_keys,
+                                             prefiltervalue=305.0)
 
         rmf_file_list,rmf_file_frame_list,score_list,feature_keyword_list_dict=results
         rmf_tuples = zip(score_list,
@@ -73,10 +73,10 @@ class InputTest(IMP.test.TestCase):
                          range(len(score_list)),
                          range(len(score_list)))
         rmsdc={'med2':'med2'}
-        got_coords = IMP.pmi.io.input.read_coordinates_of_rmfs(self.mdl,
-                                                               rmf_tuples,
-                                                               alignment_components=None,
-                                                               rmsd_calculation_components=rmsdc)
+        got_coords = IMP.pmi.io.read_coordinates_of_rmfs(self.mdl,
+                                                         rmf_tuples,
+                                                         alignment_components=None,
+                                                         rmsd_calculation_components=rmsdc)
         all_coordinates=got_coords[0]
         alignment_coordinates=got_coords[1]
         rmsd_coordinates=got_coords[2]

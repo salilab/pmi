@@ -7,7 +7,6 @@ import IMP.pmi.tools
 import IMP.pmi.samplers
 import IMP.pmi.output
 import IMP.pmi.analysis
-import IMP.pmi.io.input
 import IMP.rmf
 import RMF
 import os

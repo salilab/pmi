@@ -35,18 +35,6 @@ class Representation(object):
     Create a protein, DNA or RNA, represent it as a set of connected balls of appropriate
     radii and number of residues, PDB at given resolution(s), or ideal helices.
 
-    To initialize the class:
-
-    @param m                the model
-    @param upperharmonic    Bool This flag uses either harmonic (False)
-                     or upperharmonic (True) in the intra-pair
-                     connectivity restraint. Default is True.
-    @param disorderedlength Bool This flag uses either disordered length
-                     calculated for random coil peptides (True) or zero
-                     surface-to-surface distance between beads (False)
-                     as optimal distance for the sequence connectivity
-                     restraint. Default is False.
-
     How to use the SimplifiedModel class (typical use):
 
     see test/test_hierarchy_contruction.py
@@ -81,6 +69,17 @@ class Representation(object):
     '''
 
     def __init__(self, m, upperharmonic=True, disorderedlength=True):
+        """Constructor.
+           @param m                the model
+           @param upperharmonic    This flag uses either harmonic (False)
+                     or upperharmonic (True) in the intra-pair
+                     connectivity restraint.
+           @param disorderedlength This flag uses either disordered length
+                     calculated for random coil peptides (True) or zero
+                     surface-to-surface distance between beads (False)
+                     as optimal distance for the sequence connectivity
+                     restraint.
+        """
 
         # this flag uses either harmonic (False) or upperharmonic (True)
         # in the intra-pair connectivity restraint. Harmonic is used whe you want to

@@ -21,8 +21,6 @@ import numpy as np
 
 class Alignment(object):
     """Performs alignment and RMSD calculation for two sets of coordinates
-    @param query {'p1':coords(L,3), 'p2':coords(L,3)}
-    @param template {'p1':coords(L,3), 'p2':coords(L,3)}
 
     The class also takes into account non-equal stoichiometry of the proteins.
     If this is the case, the protein names of proteins in multiple copies
@@ -31,7 +29,10 @@ class Alignment(object):
     """
 
     def __init__(self, template, query, weights=None):
-
+        """Constructor.
+           @param query {'p1':coords(L,3), 'p2':coords(L,3)}
+           @param template {'p1':coords(L,3), 'p2':coords(L,3)}
+        """
         self.query = query
         self.template = template
         self.weights=weights
@@ -182,9 +183,12 @@ class Clustering(object):
     """A class to cluster structures.
     Uses scipy's cdist function to compute distance matrices
     and sklearn's kmeans clustering module.
-    @param rmsd_weights Flat list of weights for each particle (if they're coarse)
     """
     def __init__(self,rmsd_weights=None):
+        """Constructor.
+           @param rmsd_weights Flat list of weights for each particle
+                               (if they're coarse)
+        """
         try:
             from mpi4py import MPI
             self.comm = MPI.COMM_WORLD
@@ -462,15 +466,18 @@ class Precision(object):
       -# call add_structures() to read in the data (specify group name)
       -# call get_precision() to evaluate inter/intra precision
       -# call get_rmsf() to evaluate within-group fluctuations
-    @param model The IMP Model
-    @param resolution Use 1 or 10 (kluge: requires that "_Res:X" is part of the hier name)
-    @param selection_dictionary Dictionary where keys are names for selections
-                                    and values are selection tuples for scoring precision.
-                                "All" is automatically made as well
     """
     def __init__(self,model,
                  resolution=1,
                  selection_dictionary={}):
+        """Constructor.
+           @param model The IMP Model
+           @param resolution Use 1 or 10 (kluge: requires that "_Res:X" is
+                  part of the hier name)
+           @param selection_dictionary Dictionary where keys are names for
+                  selections and values are selection tuples for scoring
+                  precision. "All" is automatically made as well
+        """
         try:
             from mpi4py import MPI
             self.comm = MPI.COMM_WORLD
@@ -924,18 +931,20 @@ class GetModelDensity(object):
     Keeps a dictionary of density maps,
     keys are in the custom ranges. When you call add_subunits_density, it adds
     particle coordinates to the existing density maps.
-    @param custom_ranges  Required. It's a dictionary, keys are the density component names,
-                          values are selection tuples
+    """
+
+    def __init__(self, custom_ranges, representation=None, voxel=5.0):
+        """Constructor.
+           @param custom_ranges  Required. It's a dictionary, keys are the
+                  density component names, values are selection tuples
                           e.g. {'kin28':[['kin28',1,-1]],
                                'density_name_1' :[('ccl1')],
                                'density_name_2' :[(1,142,'tfb3d1'),
                                                   (143,700,'tfb3d2')],
-    @param representation PMI representation, for doing selections.
+           @param representation PMI representation, for doing selections.
                           Not needed if you only pass hierarchies
-    @param voxel          The voxel size for the output map (lower is slower)
-    """
-
-    def __init__(self, custom_ranges, representation=None, voxel=5.0):
+           @param voxel The voxel size for the output map (lower is slower)
+        """
 
         self.representation = representation
         self.voxel = voxel

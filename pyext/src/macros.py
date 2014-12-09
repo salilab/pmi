@@ -21,40 +21,6 @@ class ReplicaExchange0(object):
     Supports Monte Carlo and molecular dynamics.
     Produces trajectory RMF files, best PDB structures,
     and output stat files.
-    @param model                    The IMP model
-    @param representation           PMI.representation.Representation object
-           (or list of them, for multi-state modeling)
-    @param root_hier                Instead of passing Representation, just pass a hierarchy
-    @param monte_carlo_sample_objcts Objects for MC sampling; a list of
-           structural components (generally the representation) that will be
-           moved and restraints with parameters that need to be sampled
-    @param molecular_dynamics_sample_objects Objects for MD sampling
-    @param output_objects           A list of structural objects and restraints
-           that will be included in output (statistics files). Any object
-           that provides a get_output() method can be used here.
-    @param crosslink_restraints     List of cross-link restraints that will be
-           included in output RMF files (for visualization).
-    @param monte_carlo_temperature  MC temp (may need to be optimized based
-           on post-sampling analysis)
-    @param simulated_annealing If True, perform simulated annealing
-    @param simulated_annealing_minimum_temperature Should generally be the same
-           as monte_carlo_temperature.
-    @param simulated_annealing_minimum_temperature_frames Number of frames to
-           compute at minimum temperature.
-    @param simulated_annealing_maximum_temperature_frames Number of frames to
-           compute at temps > simulated_annealing_maximum_temperature.
-    @param replica_exchange_minimum_temperature Low temp for REX; should
-           generally be the same as monte_carlo_temperature.
-    @param replica_exchange_maximum_temperature High temp for REX
-    @param num_sample_rounds        Number of rounds of MC/MD per cycle
-    @param number_of_best_scoring_models Number of top-scoring PDB models
-           to keep around for analysis
-    @param monte_carlo_steps        Number of MC steps per round
-    @param molecular_dynamics_steps  Number of MD steps per round
-    @param number_of_frames         Number of REX frames to run
-    @param nframes_write_coordinates How often to write the coordinates of a frame
-    @param write_initial_rmf        Write the initial configuration
-    @param global_output_directory Folder that will be created to house output.
     """
     def __init__(self, model,
                  representation=None,
@@ -91,7 +57,47 @@ class ReplicaExchange0(object):
                  em_object_for_rmf=None,
                  atomistic=False,
                  replica_exchange_object=None):
-
+        """Constructor.
+           @param model                    The IMP model
+           @param representation PMI.representation.Representation object
+                  (or list of them, for multi-state modeling)
+           @param root_hier Instead of passing Representation, just pass
+                  a hierarchy
+           @param monte_carlo_sample_objcts Objects for MC sampling; a list of
+                  structural components (generally the representation) that will
+                  be moved and restraints with parameters that need to
+                  be sampled
+           @param molecular_dynamics_sample_objects Objects for MD sampling
+           @param output_objects A list of structural objects and restraints
+                  that will be included in output (statistics files). Any object
+                  that provides a get_output() method can be used here.
+           @param crosslink_restraints List of cross-link restraints that will
+                  be included in output RMF files (for visualization).
+           @param monte_carlo_temperature  MC temp (may need to be optimized
+                  based on post-sampling analysis)
+           @param simulated_annealing If True, perform simulated annealing
+           @param simulated_annealing_minimum_temperature Should generally be
+                  the same as monte_carlo_temperature.
+           @param simulated_annealing_minimum_temperature_frames Number of
+                  frames to compute at minimum temperature.
+           @param simulated_annealing_maximum_temperature_frames Number of
+                  frames to compute at
+                  temps > simulated_annealing_maximum_temperature.
+           @param replica_exchange_minimum_temperature Low temp for REX; should
+                  generally be the same as monte_carlo_temperature.
+           @param replica_exchange_maximum_temperature High temp for REX
+           @param num_sample_rounds        Number of rounds of MC/MD per cycle
+           @param number_of_best_scoring_models Number of top-scoring PDB models
+                  to keep around for analysis
+           @param monte_carlo_steps        Number of MC steps per round
+           @param molecular_dynamics_steps  Number of MD steps per round
+           @param number_of_frames         Number of REX frames to run
+           @param nframes_write_coordinates How often to write the coordinates
+                  of a frame
+           @param write_initial_rmf        Write the initial configuration
+           @param global_output_directory Folder that will be created to house
+                  output.
+        """
         self.model = model
         self.vars = {}
 
@@ -463,16 +469,6 @@ data = [("Rpb1",     pdbfile,   "A",     0.00000000,  (fastafile,    0)),
 
 class BuildModel(object):
     """A macro to build a Representation based on a Topology and lists of movers
-    @param model The IMP model
-    @param component_topologies List of IMP.pmi.topology.ComponentTopology items
-    @param list_of_rigid_bodies List of lists of domain names that will be moved as rigid bodies.
-    @param list_of_super_rigid_bodies List of lists of domain names that will move together in an additional Monte Carlo move.
-    @param chain_of_super_rigid_bodies List of lists of domain names (choices can only be from the same molecule). Each of these groups will be moved rigidly. This helps to sample more efficiently complex topologies, made of several rigid bodies, connected by flexible linkers.
-    @param sequence_connectivity_scale For scaling the connectivity restraint
-    @param add_each_domain_as_rigid_body That way you don't have to put all of them in the list
-    @param force_create_gmm_files If True, will sample and create GMMs no matter what.
-                              If False, will only only sample if the files don't exist.
-                              If number of Gaussians is zero, won't do anything.
     """
     def __init__(self,
                  model,
@@ -483,6 +479,28 @@ class BuildModel(object):
                  sequence_connectivity_scale=4.0,
                  add_each_domain_as_rigid_body=False,
                  force_create_gmm_files=False):
+        """Constructor.
+           @param model The IMP model
+           @param component_topologies List of
+                  IMP.pmi.topology.ComponentTopology items
+           @param list_of_rigid_bodies List of lists of domain names that will
+                  be moved as rigid bodies.
+           @param list_of_super_rigid_bodies List of lists of domain names
+                  that will move together in an additional Monte Carlo move.
+           @param chain_of_super_rigid_bodies List of lists of domain names
+                  (choices can only be from the same molecule). Each of these
+                  groups will be moved rigidly. This helps to sample more
+                  efficiently complex topologies, made of several rigid bodies,
+                  connected by flexible linkers.
+           @param sequence_connectivity_scale For scaling the connectivity
+                  restraint
+           @param add_each_domain_as_rigid_body That way you don't have to
+                  put all of them in the list
+           @param force_create_gmm_files If True, will sample and create GMMs
+                  no matter what. If False, will only only sample if the
+                  files don't exist. If number of Gaussians is zero, won't
+                  do anything.
+        """
         self.m = model
         self.simo = IMP.pmi.representation.Representation(self.m,
                                                           upperharmonic=True,
@@ -728,10 +746,12 @@ class BuildModel(object):
 
 
 class BuildModel1(object):
-    """Deprecated building macro - use BuildModel()
-    @param representation The PMI representation"""
+    """Deprecated building macro - use BuildModel()"""
 
     def __init__(self, representation):
+        """Constructor.
+           @param representation The PMI representation
+        """
         self.simo=representation
         self.gmm_models_directory="."
 
@@ -987,15 +1007,6 @@ class AnalysisReplicaExchange0(object):
     """A macro for running all the basic operations of analysis.
     Includes clustering, precision analysis, and making ensemble density maps.
     A number of plots are also supported.
-    @param model                           The IMP model
-    @param stat_file_name_suffix
-    @param merge_directories               The directories containing output files
-    @param best_pdb_name_suffix
-    @param do_clean_first
-    @param do_create_directories
-    @param global_output_directory          Where everything is
-    @param replica_stat_file_suffix
-    @param global_analysis_result_directory
     """
     def __init__(self, model,
                  merge_directories=["./"],
@@ -1006,7 +1017,17 @@ class AnalysisReplicaExchange0(object):
                  global_output_directory="output/",
                  replica_stat_file_suffix="stat_replica",
                  global_analysis_result_directory="./analysis/"):
-
+        """Constructor.
+           @param model                           The IMP model
+           @param stat_file_name_suffix
+           @param merge_directories The directories containing output files
+           @param best_pdb_name_suffix
+           @param do_clean_first
+           @param do_create_directories
+           @param global_output_directory          Where everything is
+           @param replica_stat_file_suffix
+           @param global_analysis_result_directory
+        """
 
         try:
             from mpi4py import MPI

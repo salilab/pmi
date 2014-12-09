@@ -1064,7 +1064,12 @@ class Representation(object):
         hierarchies_excluded_from_collision=None):
         '''
         Shuffle configuration; used to restart the optimization.
-        It works correctly if rigid bodies were initialized.
+
+        The configuration of the system is initialized by placing each
+        rigid body and each bead randomly in a box with a side of
+        `max_translation` angstroms, and far enough from each other to
+        prevent any steric clashes. The rigid bodies are also randomly rotated.
+
         @param avoidcollision check if the particle/rigid body was
                   placed close to another particle; uses the optional
                   arguments cutoff and niterations

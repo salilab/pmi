@@ -465,10 +465,9 @@ class BuildModel(object):
     """A macro to build a Representation based on a Topology and lists of movers
     @param model The IMP model
     @param component_topologies List of IMP.pmi.topology.ComponentTopology items
-    @param list_of_rigid_bodies List of lists of domain names from the components.
-    @param list_of_super_rigid_bodies List of lists of domain names from the components.
-    @param chain_of_super_rigid_bodies List of lists of domain names from the components
-                                       Choices can only be from the same molecule
+    @param list_of_rigid_bodies List of lists of domain names that will be moved as rigid bodies.
+    @param list_of_super_rigid_bodies List of lists of domain names that will move together in an additional Monte Carlo move.
+    @param chain_of_super_rigid_bodies List of lists of domain names (choices can only be from the same molecule). Each of these groups will be moved rigidly. This helps to sample more efficiently complex topologies, made of several rigid bodies, connected by flexible linkers.
     @param sequence_connectivity_scale For scaling the connectivity restraint
     @param add_each_domain_as_rigid_body That way you don't have to put all of them in the list
     @param force_create_gmm_files If True, will sample and create GMMs no matter what.

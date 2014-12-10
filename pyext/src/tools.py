@@ -757,6 +757,7 @@ def get_db_from_csv(csvfilename):
 
 
 class HierarchyDatabase(object):
+    """Store the representations for a system."""
 
     def __init__(self):
         self.db = {}

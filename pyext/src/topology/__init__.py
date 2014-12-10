@@ -300,7 +300,8 @@ class _Molecule(SystemBase):
         density, etc.
         @param res_set             set of PMI residues for adding the representation
         @param representation_type currently supports only balls
-        @param resolutions         what resolutions to add to the residues
+        @param resolutions         what resolutions to add to the
+               residues (see @ref pmi_resolution)
         """
         allowed_types=["balls"]
         if representation_type not in allowed_types:

@@ -101,7 +101,8 @@ def build_along_backbone(mdl,root,residues,rep_type,ca_centers=True):
     """Group residues along the backbone, adding beads as needed.
     Currently this first groups into contiguous fragment regions ('folders')
     with identical sets of resolutions. However this behavior may
-    The current resolutions used are 0 for atomic, and N for N residues per ball.
+    The current resolutions used are 0 for atomic, and N for N residues
+    per ball (see @ref pmi_resolution).
     @param mdl        the model
     @param root       the hierarchy to which all the fragments and resolutions will be added
     @param residues   list of PMI Residues, labeled with resolution

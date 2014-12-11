@@ -1273,6 +1273,10 @@ class GetContactMap(object):
                 R.append(R[-1] + cl)
 
         # start plotting
+        if filename:
+            # Don't require a display
+            import matplotlib as mpl
+            mpl.use('Agg')
         import matplotlib.pyplot as plt
         import matplotlib.gridspec as gridspec
         import scipy.sparse as sparse
@@ -2054,9 +2058,8 @@ class CrossLinkTable(object):
 
         if filename:
             plt.savefig(filename + ".pdf", dpi=300, transparent="False")
-
-
-        plt.show()
+        else:
+            plt.show()
 
     def get_frequency_statistics(self, prot_list,
                                  prot_list2=None):

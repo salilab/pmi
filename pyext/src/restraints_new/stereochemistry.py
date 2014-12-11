@@ -115,13 +115,14 @@ class ElasticNetworkRestraint(object):
         self.pairslist = []
         self.label=label
         if subsequence is not None:
-            ps = subsequence.get_selection(root,**kwargs).get_selected_particles()
+            self.ps = subsequence.get_selection(root,**kwargs).get_selected_particles()
         else:
-            ps = IMP.atom.Selection(root,**kwargs).get_selected_particles()
-        if len(ps)==0:
+            self.ps = IMP.atom.Selection(root,**kwargs).get_selected_particles()
+        if len(self.ps)==0:
             print 'ERROR: Did not select any particles!'
             exit()
-        self.rs = IMP.pmi.create_elastic_network(ps,dist_cutoff,strength)
+        self.rs = IMP.pmi.create_elastic_network(self.ps,dist_cutoff,strength)
+        #self.rs = IMP.isd_emxl.create_lognormal_elastic_network(ps,dist_cutoff,strength)
         print 'created elastic network',self.label,'with',self.rs.get_number_of_restraints(),'restraints'
 
     def set_label(self, label):
@@ -129,6 +130,9 @@ class ElasticNetworkRestraint(object):
         self.rs.set_name(label)
         for r in self.rs.get_restraints():
             r.set_name(label)
+
+    def get_ps(self):
+        return self.ps
 
     def add_to_model(self):
         self.mdl.add_restraint(self.rs)

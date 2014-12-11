@@ -87,12 +87,14 @@ class GaussianEMRestraint(object):
                  target_radii_scale=1.0,
                  model_radii_scale=1.0,
                  slope=0.0,
-                 spherical_gaussians=False,
                  pointwise_restraint=False,
                  mm_container=None,
                  backbone_slope=False,
                  use_log_score=False,
                  orig_map_fn=None,
+                 orig_map_res=None,
+                 orig_map_apix=None,
+                 orig_map_origin=None,
                  label=""):
 
         # some parameters
@@ -129,13 +131,17 @@ class GaussianEMRestraint(object):
         self.get_cc=False
         if orig_map_fn is not None:
             self.dmap=IMP.em.read_map(orig_map_fn,IMP.em.MRCReaderWriter())
-            self.dmap.update_voxel_size(1.06)
+            self.dmap.update_voxel_size(orig_map_apix)
             dh = self.dmap.get_header()
-            dh.set_resolution(4.0)
+            dh.set_resolution(orig_map_res)
             self.fr = IMP.em.FitRestraint(self.model_ps,self.dmap,[0.,0.],
                                           IMP.atom.Mass.get_mass_key(),1.0,
                                           False)
             #self.dmap.set_origin(-100/1.06,-100/1.06,-100/1.06)
+            self.dmap.set_origin(-orig_map_origin[0]/orig_map_apix,
+                                 -orig_map_origin[1]/orig_map_apix,
+                                 -orig_map_origin[2]/orig_map_apix)
+
             frscore = self.fr.unprotected_evaluate(None)
             print 'init CC eval!',1.0-frscore
             self.get_cc=True
@@ -150,6 +156,7 @@ class GaussianEMRestraint(object):
                 else:
                     IMP.core.XYZR(p).set_radius(rmax)
 
+
         # sigma particle
         sigmaglobal = tools.SetupNuisance(self.m, sigmainit,
                                                sigmamin, sigmamax,
@@ -163,20 +170,18 @@ class GaussianEMRestraint(object):
             'total weight', sum([IMP.atom.Mass(p).get_mass()
                                 for p in self.model_ps])
 
-        update_model=not spherical_gaussians
         if not pointwise_restraint:
             self.gaussianEM_restraint = \
-               IMP.isd_emxl.GaussianEMRestraint(self.m,
-                                                IMP.get_indexes(self.model_ps),
-                                                IMP.get_indexes(target_ps),
-                                                sigmaglobal.get_particle().get_index(),
-                                                cutoff_dist_model_model,
-                                                cutoff_dist_model_data,
-                                                slope,
-                                                update_model,backbone_slope)
+               IMP.isd.GaussianEMRestraint(self.m,
+                                           IMP.get_indexes(self.model_ps),
+                                           IMP.get_indexes(target_ps),
+                                           sigmaglobal.get_particle().get_index(),
+                                           cutoff_dist_model_model,
+                                           cutoff_dist_model_data,
+                                           slope,
+                                           backbone_slope)
         else:
             print 'USING POINTWISE RESTRAINT'
-            print 'update model?',update_model
             print 'mm_container',mm_container
             self.gaussianEM_restraint = \
                IMP.isd_emxl.PointwiseGaussianEMRestraint(self.m,
@@ -186,7 +191,7 @@ class GaussianEMRestraint(object):
                                                 cutoff_dist_model_model,
                                                 cutoff_dist_model_data,
                                                 slope,
-                                                update_model,use_log_score,
+                                                use_log_score,
                                                 mm_container)
 
         print 'done EM setup'
@@ -227,7 +232,9 @@ class GaussianPointRestraint(object):
     def __init__(self,
                  hier,
                  target_map_fn,
-                 resolution,
+                 map_res,
+                 lmda_init,
+                 sigma_init=None,
                  voxel_size=None,
                  origin=None,
                  cutoff_dist=0.0,
@@ -241,25 +248,35 @@ class GaussianPointRestraint(object):
         self.label = label
         self.weight = 1
         self.cutoff_dist = cutoff_dist
+        sigma_min = 0.01
+        sigma_max = 10.
+        lmda_min = 0.01
+        lmda_max = 100
+        if lmda_init<lmda_min:
+            lmda_init=lmda_min
 
         # setup target GMM
         self.model_ps=IMP.atom.get_leaves(hier)
         self.m = self.model_ps[0].get_model()
         IMP.atom.add_radii(hier)
-        var = [resolution]*3
+
+        if sigma_init is None:
+            radius = IMP.core.XYZR(self.model_ps[0]).get_radius()
+            sigma_init = (0.42466090014400953*map_res)**2 + float(radius**2)/2
+
         for p in self.model_ps:
-            shape = IMP.algebra.Gaussian3D(IMP.algebra.ReferenceFrame3D(
-                IMP.algebra.Transformation3D(IMP.core.XYZ(p).get_coordinates())),var)
+            trans=IMP.algebra.Transformation3D(IMP.algebra.get_identity_rotation_3d(),
+                                               IMP.core.XYZ(p).get_coordinates())
+            shape = IMP.algebra.Gaussian3D(IMP.algebra.ReferenceFrame3D(trans),
+                                           [sigma_init]*3)
             IMP.core.Gaussian.setup_particle(p,shape)
 
-
-        print 'will scale target mass by', target_mass_scale
 
         self.dmap=IMP.em.read_map(target_map_fn,IMP.em.MRCReaderWriter())
         if voxel_size is not None:
             self.dmap.update_voxel_size(voxel_size)
         dh = self.dmap.get_header()
-        dh.set_resolution(resolution)
+        dh.set_resolution(map_res)
         if origin is not None:
             self.dmap.set_origin(-origin[0]/voxel_size,
                                  -origin[1]/voxel_size,
@@ -272,22 +289,24 @@ class GaussianPointRestraint(object):
         print 'init CC eval!',1.0-frscore
         self.get_cc=True
 
-        sigmaissampled=True
-        self.sigma = tools.SetupNuisance(self.m, 1.0,
-                                    0.1, 100,
-                                    sigmaissampled).get_particle()
 
+        self.sigma = tools.SetupNuisance(self.m, sigma_init,
+                                         sigma_min, sigma_max,
+                                         isoptimized=True).get_particle()
+        self.lmda = tools.SetupNuisance(self.m, lmda_init,
+                                         lmda_min,lmda_max,
+                                         isoptimized=True).get_particle()
         self.gaussian_restraint = IMP.isd_emxl.GaussianPointRestraint(self.m,
                                                                       IMP.get_indexes(self.model_ps),
                                                                       self.sigma.get_particle_index(),
+                                                                      self.lmda.get_particle_index(),
                                                                       self.dmap,
-                                                                      self.cutoff_dist,
-                                                                      slope,
-                                                                      mass_fraction,
-                                                                      backbone_slope)
+                                                                      0,0,False,1.0)
 
         self.rs = IMP.RestraintSet(self.m, 'GaussianPointRestraint')
         self.rs.add_restraint(self.gaussian_restraint)
+        self.rs.add_restraint(IMP.isd.JeffreysRestraint(self.m, self.sigma))
+        self.rs.add_restraint(IMP.isd.JeffreysRestraint(self.m, self.lmda))
         print 'done EM setup'
 
     def set_weight(self,weight):
@@ -313,6 +332,8 @@ class GaussianPointRestraint(object):
         if self.get_cc:
             frscore = self.fr.unprotected_evaluate(None)
             output["CrossCorrelation"] = str(1.0-frscore)
+        output["GaussianPointRestraint_lambda"]=self.lmda.get_scale()
+        output["GaussianPointRestraint_sigma"]=self.sigma.get_scale()
         #dd = self.fr.get_model_dens_map()
         #IMP.em.write_map(dd,'test_map.mrc')
         return output
@@ -322,5 +343,5 @@ class GaussianPointRestraint(object):
 
     def get_mc_sample_objects(self,max_step):
         """ HACK! Make a SampleObjects class that can be used with PMI::samplers"""
-        ps=[[self.sigma],max_step]
+        ps=[[self.sigma,self.lmda],max_step]
         return [sampling_tools.SampleObjects('Nuisances',ps)]

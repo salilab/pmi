@@ -41,6 +41,7 @@ class ReplicaExchange0(object):
                  number_of_best_scoring_models=500,
                  monte_carlo_steps=10,
                  molecular_dynamics_steps=10,
+                 molecular_dynamics_max_time_step=1.0,
                  number_of_frames=1000,
                  nframes_write_coordinates=1,
                  write_initial_rmf=True,
@@ -90,6 +91,7 @@ class ReplicaExchange0(object):
                   to keep around for analysis
            @param monte_carlo_steps        Number of MC steps per round
            @param molecular_dynamics_steps  Number of MD steps per round
+           @param molecular_dynamics_max_time_step Max time step for MD
            @param number_of_frames         Number of REX frames to run
            @param nframes_write_coordinates How often to write the coordinates
                   of a frame
@@ -131,6 +133,7 @@ class ReplicaExchange0(object):
         self.molecular_dynamics_sample_objects=molecular_dynamics_sample_objects
         self.output_objects = output_objects
         self.replica_exchange_object = replica_exchange_object
+        self.molecular_dynamics_max_time_step = molecular_dymamics_max_time_step
         self.vars["monte_carlo_temperature"] = monte_carlo_temperature
         self.vars[
             "replica_exchange_minimum_temperature"] = replica_exchange_minimum_temperature
@@ -204,8 +207,9 @@ class ReplicaExchange0(object):
         if self.molecular_dynamics_sample_objects is not None:
             print "Setting up MolecularDynamics"
             sampler_md = IMP.pmi.samplers.MolecularDynamics(self.model,
-                                                       self.molecular_dynamics_sample_objects,
-                                                       self.vars["monte_carlo_temperature"])
+                                                            self.molecular_dynamics_sample_objects,
+                                                            self.vars["monte_carlo_temperature"],
+                                                            maximm_time_step=self.molecular_dynamics_max_time_step)
             if self.vars["simulated_annealing"]:
                 tmin=self.vars["simulated_annealing_minimum_temperature"]
                 tmax=self.vars["simulated_annealing_maximum_temperature"]
@@ -1413,7 +1417,6 @@ class AnalysisReplicaExchange0(object):
                         transformation = Clusters.get_transformation_to_first_member(
                             cl,
                             model_index)
-
                         rbs = set()
                         for p in IMP.atom.get_leaves(prot):
                             if not IMP.core.XYZR.get_is_setup(p):
@@ -1440,7 +1443,6 @@ class AnalysisReplicaExchange0(object):
                     o.write_pdb(dircluster + str(k) + ".pdb")
 
                     o.init_rmf(dircluster + str(k) + ".rmf3", [prot],rs)
-                    # IMP.rmf.add_restraints(o.dictionary_rmfs[dircluster+str(n)+".rmf3"],restraints)
                     o.write_rmf(dircluster + str(k) + ".rmf3")
                     o.close_rmf(dircluster + str(k) + ".rmf3")
 

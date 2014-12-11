@@ -138,9 +138,10 @@ class GaussianEMRestraint(object):
                                           IMP.atom.Mass.get_mass_key(),1.0,
                                           False)
             #self.dmap.set_origin(-100/1.06,-100/1.06,-100/1.06)
-            self.dmap.set_origin(-orig_map_origin[0]/orig_map_apix,
-                                 -orig_map_origin[1]/orig_map_apix,
-                                 -orig_map_origin[2]/orig_map_apix)
+            if orig_map_origin is not None:
+                self.dmap.set_origin(-orig_map_origin[0]/orig_map_apix,
+                                     -orig_map_origin[1]/orig_map_apix,
+                                     -orig_map_origin[2]/orig_map_apix)
 
             frscore = self.fr.unprotected_evaluate(None)
             print 'init CC eval!',1.0-frscore

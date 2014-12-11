@@ -133,7 +133,7 @@ class ReplicaExchange0(object):
         self.molecular_dynamics_sample_objects=molecular_dynamics_sample_objects
         self.output_objects = output_objects
         self.replica_exchange_object = replica_exchange_object
-        self.molecular_dynamics_max_time_step = molecular_dymamics_max_time_step
+        self.molecular_dynamics_max_time_step = molecular_dynamics_max_time_step
         self.vars["monte_carlo_temperature"] = monte_carlo_temperature
         self.vars[
             "replica_exchange_minimum_temperature"] = replica_exchange_minimum_temperature
@@ -209,7 +209,7 @@ class ReplicaExchange0(object):
             sampler_md = IMP.pmi.samplers.MolecularDynamics(self.model,
                                                             self.molecular_dynamics_sample_objects,
                                                             self.vars["monte_carlo_temperature"],
-                                                            maximm_time_step=self.molecular_dynamics_max_time_step)
+                                                            maximum_time_step=self.molecular_dynamics_max_time_step)
             if self.vars["simulated_annealing"]:
                 tmin=self.vars["simulated_annealing_minimum_temperature"]
                 tmax=self.vars["simulated_annealing_maximum_temperature"]

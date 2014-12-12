@@ -2,6 +2,7 @@
    Tools to help build structures
 """
 
+from __future__ import print_function
 import IMP
 import IMP.atom
 import IMP.pmi
@@ -10,7 +11,7 @@ from math import pi
 def list_chunks_iterator(input_list, length):
     """ Yield successive length-sized chunks from a list.
     """
-    for i in xrange(0, len(input_list), length):
+    for i in range(0, len(input_list), length):
         yield input_list[i:i + length]
 
 def get_structure(mdl,pdb_fn,chain_id,res_range=[],offset=0,model_num=None):
@@ -111,7 +112,7 @@ def build_along_backbone(mdl,root,residues,rep_type,ca_centers=True):
     """
     allowed_reps=[IMP.atom.BALLS]
     if rep_type not in allowed_reps:
-        print "Only supported representation types are",allowed_types
+        print("Only supported representation types are",allowed_types)
     prev_rep = None
     prev_atomic = False
     cur_fragment=[]
@@ -211,7 +212,7 @@ def build_along_backbone(mdl,root,residues,rep_type,ca_centers=True):
             this_resolutions=frag_res[0].representations['balls']
             # check that we have only one resolution for now
             if len(this_resolutions) > 1 :
-                print "build_along_backbone Error: residues with missing atomic coordinate should be associated with only one resolution"
+                print("build_along_backbone Error: residues with missing atomic coordinate should be associated with only one resolution")
                 exit()
             this_resolution=this_resolutions.pop()
             # create a root hierarchy node for the beads
@@ -223,12 +224,12 @@ def build_along_backbone(mdl,root,residues,rep_type,ca_centers=True):
                 frag.add_child(h)
 
 def show_representation(node):
-    print node
+    print(node)
     if IMP.atom.Representation.get_is_setup(node):
         repr=IMP.atom.Representation(node)
         resolutions=repr.get_resolutions()
         for r in resolutions:
-            print '---- resolution %i ----' %r
+            print('---- resolution %i ----' %r)
             IMP.atom.show_molecular_hierarchy(repr.get_representation(r))
         return True
     else:

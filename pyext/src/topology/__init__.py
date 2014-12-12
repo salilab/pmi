@@ -7,6 +7,7 @@
    * TopologyWriter for writing PMI topology files
 """
 
+from __future__ import print_function
 import IMP
 import IMP.atom
 import IMP.pmi
@@ -14,7 +15,7 @@ import IMP.base
 import csv
 import os
 from collections import defaultdict
-import system_tools
+from . import system_tools
 from Bio import SeqIO
 
 def get_residue_type_from_one_letter_code(code):
@@ -202,7 +203,7 @@ class _Molecule(SystemBase):
         elif isinstance(val,slice):
             return set(self.residues[val])
         else:
-            print "ERROR: range ends must be int or str. Stride must be int."
+            print("ERROR: range ends must be int or str. Stride must be int.")
 
     def get_hierarchy(self):
         return self.hier
@@ -217,7 +218,7 @@ class _Molecule(SystemBase):
         elif isinstance(a,str) and isinstance(b,str) and isinstance(stride,int):
             return set(self.residues[int(a)-1:int(b)-1:stride])
         else:
-            print "ERROR: range ends must be int or str. Stride must be int."
+            print("ERROR: range ends must be int or str. Stride must be int.")
 
     def get_residues(self):
         """ Return all Residues as a set"""
@@ -279,8 +280,8 @@ class _Molecule(SystemBase):
         # get IMP.atom.Residues from the pdb file
         rhs=system_tools.get_structure(self.mdl,pdb_fn,chain_id,res_range,offset)
         if len(rhs)>len(self.residues):
-            print 'ERROR: You are loading',len(rhs), \
-                'pdb residues for a sequence of length',len(self.residues),'(too many)'
+            print('ERROR: You are loading',len(rhs), \
+                'pdb residues for a sequence of length',len(self.residues),'(too many)')
 
         # load those into the existing pmi Residue objects, and return contiguous regions
         atomic_res=set() # collect integer indexes of atomic residues!
@@ -305,7 +306,7 @@ class _Molecule(SystemBase):
         """
         allowed_types=["balls"]
         if representation_type not in allowed_types:
-            print "ERROR: Allowed representation types:",allowed_types
+            print("ERROR: Allowed representation types:",allowed_types)
             return
         if res_set is None:
             res_set=set(self.residues)
@@ -327,7 +328,7 @@ class _Molecule(SystemBase):
         """
         allowed_types=("backbone")
         if merge_type not in allowed_types:
-            print "ERROR: Allowed merge types:",allowed_types
+            print("ERROR: Allowed merge types:",allowed_types)
             return
         if not self.built:
 
@@ -385,7 +386,7 @@ class Sequences(object):
                 try:
                     self.sequences[name_map[pn]]=str(record_dict[pn].seq).replace("*", "")
                 except:
-                    print "tried to add sequence but: id %s not found in fasta file" % pn
+                    print("tried to add sequence but: id %s not found in fasta file" % pn)
                     exit()
 
 #------------------------
@@ -501,7 +502,7 @@ class TopologyReader(object):
         f=open(outfile, "w")
         f.write("|directories|\n")
         #print self.defaults
-        for key, value in self.defaults.iteritems():
+        for key, value in self.defaults.items():
             output="|"+str(key)+"|"+str(value)+"|\n"
             f.write(output)
         f.write("\n\n")
@@ -527,7 +528,7 @@ class TopologyReader(object):
         if default_dir in self.defaults.keys():
             self.defaults[default_dir]=new_dir
         else:
-            print default_dir, "is not a correct directory key"
+            print(default_dir, "is not a correct directory key")
             exit()
         for c in self.component_list:
             pdb_file=c.pdb_file.split("/")[-1]
@@ -616,8 +617,8 @@ class TopologyReader(object):
         if len(values[fields.index("chain")])==1 and values[fields.index("chain")].isupper()==True:
             c.chain = values[fields.index("chain")]
         else:
-            print "PDB Chain format for component ", c.name, ", line ", linenum, " is not correct"
-            print "Correct syntax is a single uppercase letter. |", values[fields.index("chain")], "| was given."
+            print("PDB Chain format for component ", c.name, ", line ", linenum, " is not correct")
+            print("Correct syntax is a single uppercase letter. |", values[fields.index("chain")], "| was given.")
             no_error=False
 
     ##### Optional fields
@@ -630,9 +631,9 @@ class TopologyReader(object):
             elif len(f.split(','))==2 and self.is_int(f.split(',')[0]) and self.is_int(f.split(',')[1]):
                 c.residue_range=(int(f.split(',')[0]), int(f.split(',')[1]))
             else:
-                print "Residue Range format for component ", c.name, ", line ", linenum, " is not correct"
-                print "Correct syntax is two comma separated integers:  |start_res, end_res|. |", f, "| was given."
-                print "To select all residues, indicate |\"all\"|"
+                print("Residue Range format for component ", c.name, ", line ", linenum, " is not correct")
+                print("Correct syntax is two comma separated integers:  |start_res, end_res|. |", f, "| was given.")
+                print("To select all residues, indicate |\"all\"|")
                 no_error=False
         else:
             c.residue_range=defaults["residue_range"]
@@ -644,8 +645,8 @@ class TopologyReader(object):
             if self.is_int(f):
                 c.pdb_offset=int(f)
             else:
-                print "PDB Offset format for component ", c.name, ", line ", linenum, " is not correct"
-                print "The value must be a single integer. |", f, "| was given."
+                print("PDB Offset format for component ", c.name, ", line ", linenum, " is not correct")
+                print("The value must be a single integer. |", f, "| was given.")
                 no_error=False
         else:
             c.pdb_offset=defaults["pdb_offset"]
@@ -656,8 +657,8 @@ class TopologyReader(object):
             if self.is_int(f):
                 c.bead_size=int(f)
             else:
-                print "Bead Size format for component ", c.name, ", line ", linenum, " is not correct"
-                print "The value must be a single integer. |", f, "| was given."
+                print("Bead Size format for component ", c.name, ", line ", linenum, " is not correct")
+                print("The value must be a single integer. |", f, "| was given.")
                 no_error=False
         else:
             c.bead_size=defaults["bead_size"]
@@ -673,8 +674,8 @@ class TopologyReader(object):
                                            c.domain_name.strip() + ".mrc")
                 c.em_residues_per_gaussian=int(f)
             else:
-                print "em_residues_per_gaussian format for component ", c.name, ", line ", linenum, " is not correct"
-                print "The value must be a single integer. |", f, "| was given."
+                print("em_residues_per_gaussian format for component ", c.name, ", line ", linenum, " is not correct")
+                print("The value must be a single integer. |", f, "| was given.")
                 no_error=False
         else:
             c.em_residues_per_gaussian=defaults["em_residues_per_gaussian"]
@@ -682,7 +683,7 @@ class TopologyReader(object):
         if no_error==True:
             return c
         else:
-            print "Fix Topology File syntax errors and rerun.  Exiting..."
+            print("Fix Topology File syntax errors and rerun.  Exiting...")
             exit()
 
 
@@ -700,9 +701,9 @@ class TopologyReader(object):
 
         f=line.split('|')
         if len(f) != 4:
-            print "Default value syntax not correct for ", line
-            print "Line number", linenum," contains ", len(f)-2, " fields."
-            print "Please reformat to |KEY|VALUE|"
+            print("Default value syntax not correct for ", line)
+            print("Line number", linenum," contains ", len(f)-2, " fields.")
+            print("Please reformat to |KEY|VALUE|")
         self.defaults[f[1]]=f[2]
 
 

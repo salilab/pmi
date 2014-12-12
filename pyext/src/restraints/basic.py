@@ -2,6 +2,7 @@
 Some miscellaneous simple restraints.
 """
 
+from __future__ import print_function
 import IMP
 import IMP.core
 import IMP.base
@@ -87,10 +88,10 @@ class DistanceRestraint(object):
             residue=tuple_selection2[0])
 
         for p in particles1:
-            print p.get_name()
+            print(p.get_name())
 
         for p in particles2:
-            print p.get_name()
+            print(p.get_name())
 
         if len(particles1) > 1 or len(particles2) > 1:
             raise ValueError("more than one particle selected")

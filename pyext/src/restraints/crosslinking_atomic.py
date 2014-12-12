@@ -2,6 +2,7 @@
 Restraints for handling crosslinking data at atomic resolution.
 """
 
+from __future__ import print_function
 import IMP
 import IMP.core
 import IMP.base
@@ -43,7 +44,7 @@ def combine_dicts(a1,a2):
     for k in a2:
         if k in final:
             if type(final[k]) is not list:
-                print "ERROR: you have overlapping keys that aren't lists"
+                print("ERROR: you have overlapping keys that aren't lists")
             else:
                 final[k]+=a2[k]
         else:
@@ -113,7 +114,7 @@ class AtomicCrossLinkMSRestraint(object):
         if nstates is None:
             self.nstates = len(IMP.atom.get_by_type(root,IMP.atom.STATE_TYPE))
         elif nstates!=len(IMP.atom.get_by_type(root,IMP.atom.STATE_TYPE)):
-            print "Warning: nstates is not the same as the number of states in root"
+            print("Warning: nstates is not the same as the number of states in root")
 
         self.rs = IMP.RestraintSet(self.mdl, 'xlrestr')
         self.rs_nuis = IMP.RestraintSet(self.mdl, 'prior_nuis')
@@ -214,7 +215,7 @@ class AtomicCrossLinkMSRestraint(object):
                 #print '\tCur XL score:',r.evaluate(False)
 
 
-        print 'created',len(xlrs),'XL restraints'
+        print('created',len(xlrs),'XL restraints')
         self.rs=IMP.isd.LogWrapper(xlrs,self.weight)
 
     def set_weight(self,weight):
@@ -284,7 +285,7 @@ class AtomicCrossLinkMSRestraint(object):
                 sig1,sig2=xl.get_contribution_sigmas(contr)
                 IMP.isd.Scale(self.mdl,sig1).set_scale(sig1_val)
                 IMP.isd.Scale(self.mdl,sig2).set_scale(sig2_val)
-        print 'loaded nuisances from file'
+        print('loaded nuisances from file')
 
     def plot_violations(self,out_prefix,
                         max_prob_for_violation=0.1,
@@ -356,7 +357,7 @@ class AtomicCrossLinkMSRestraint(object):
                 all_pass=True
             elif len(nviol)==self.nstates:
                 all_viol=True
-            print xl,'prob:',prob_global,'prob per state: ',prob_per_state,'best dists',best_contr_per_state,all_viol
+            print(xl,'prob:',prob_global,'prob per state: ',prob_per_state,'best dists',best_contr_per_state,all_viol)
             # finally, color based on above info
             for nstate in range(self.nstates):
                 if all_pass:

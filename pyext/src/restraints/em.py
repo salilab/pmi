@@ -2,6 +2,7 @@
 Restraints for handling electron microscopy maps.
 """
 
+from __future__ import print_function
 import IMP
 import IMP.core
 import IMP.base
@@ -51,7 +52,7 @@ class GaussianEMRestraint(object):
         self.m = self.densities[0].get_model()
         if scale_target_to_mass:
             target_mass_scale = sum((IMP.atom.Mass(p).get_mass() for h in densities for p in IMP.atom.get_leaves(h)))
-        print 'will scale target mass by', target_mass_scale
+        print('will scale target mass by', target_mass_scale)
         if target_fn != '':
             self.target_ps = []
             IMP.isd.gmm_tools.decorate_gmm_from_text(
@@ -63,7 +64,7 @@ class GaussianEMRestraint(object):
         elif target_ps != []:
             self.target_ps = target_ps
         else:
-            print 'Gaussian EM restraint: must provide target density file or properly set up target densities'
+            print('Gaussian EM restraint: must provide target density file or properly set up target densities')
             return
 
         # setup model GMM
@@ -85,12 +86,12 @@ class GaussianEMRestraint(object):
                                                self.sigmaissampled).get_particle()
 
         # create restraint
-        print 'target num particles', len(self.target_ps), \
+        print('target num particles', len(self.target_ps), \
             'total weight', sum([IMP.atom.Mass(p).get_mass()
-                                for p in self.target_ps])
-        print 'model num particles', len(self.model_ps), \
+                                for p in self.target_ps]))
+        print('model num particles', len(self.model_ps), \
             'total weight', sum([IMP.atom.Mass(p).get_mass()
-                                for p in self.model_ps])
+                                for p in self.model_ps]))
 
         update_model=not spherical_gaussians
         log_score=False
@@ -105,9 +106,9 @@ class GaussianEMRestraint(object):
                                                 slope,
                                                 update_model, backbone_slope)
         else:
-            print 'USING POINTWISE RESTRAINT - requires isd_emxl'
+            print('USING POINTWISE RESTRAINT - requires isd_emxl')
             import IMP.isd_emxl
-            print 'update model?',update_model
+            print('update model?',update_model)
             self.gaussianEM_restraint = \
                IMP.isd_emxl.PointwiseGaussianEMRestraint(self.m,
                                                 IMP.get_indexes(self.model_ps),
@@ -120,7 +121,7 @@ class GaussianEMRestraint(object):
                                                 log_score,
                                                 close_pair_container)
 
-        print 'done EM setup'
+        print('done EM setup')
         self.rs = IMP.RestraintSet(self.m, 'GaussianEMRestraint')
         self.rs.add_restraint(self.gaussianEM_restraint)
         self.set_weight(weight)
@@ -134,7 +135,7 @@ class GaussianEMRestraint(object):
             target_com += pos * mass
             target_mass += mass
         target_com /= target_mass
-        print 'target com', target_com
+        print('target com', target_com)
         model_com = IMP.algebra.Vector3D(0, 0, 0)
         model_mass = 0.0
         for p in self.model_ps:
@@ -143,10 +144,10 @@ class GaussianEMRestraint(object):
             model_com += pos * mass
             model_mass += mass
         model_com /= model_mass
-        print 'model com', model_com
+        print('model com', model_com)
 
         v = target_com - model_com
-        print 'translating with', -v
+        print('translating with', -v)
         transformation = IMP.algebra.Transformation3D(IMP.algebra.Vector3D(-v))
         for p in self.target_ps:
             IMP.core.transform(IMP.core.RigidBody(p), transformation)
@@ -161,7 +162,7 @@ class GaussianEMRestraint(object):
             target_com += pos * mass
             target_mass += mass
         target_com /= target_mass
-        print 'target com', target_com
+        print('target com', target_com)
         model_com = IMP.algebra.Vector3D(0, 0, 0)
         model_mass = 0.0
         for p in self.model_ps:
@@ -170,10 +171,10 @@ class GaussianEMRestraint(object):
             model_com += pos * mass
             model_mass += mass
         model_com /= model_mass
-        print 'model com', model_com
+        print('model com', model_com)
 
         v = target_com - model_com
-        print 'translating with', v
+        print('translating with', v)
         transformation = IMP.algebra.Transformation3D(IMP.algebra.Vector3D(v))
 
         rigid_bodies = set()

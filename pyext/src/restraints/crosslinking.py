@@ -2,6 +2,7 @@
 Restraints for handling crosslinking data.
 """
 
+from __future__ import print_function
 import IMP
 import IMP.core
 import IMP.base
@@ -140,7 +141,7 @@ class ConnectivityCrossLinkMS(object):
                 residue=r1)
             hrc1 = [representation.hier_db.particle_to_name[p] for p in ps1]
             if len(ps1) == 0:
-                print "ConnectivityCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1, c1)
+                print("ConnectivityCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1, c1))
                 continue
 
             ps2 = IMP.pmi.tools.select(
@@ -151,7 +152,7 @@ class ConnectivityCrossLinkMS(object):
                 residue=r2)
             hrc2 = [representation.hier_db.particle_to_name[p] for p in ps2]
             if len(ps2) == 0:
-                print "ConnectivityCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2, c2)
+                print("ConnectivityCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2, c2))
                 continue
 
             s1 = IMP.atom.Selection(ps1)
@@ -349,7 +350,7 @@ class SimplifiedCrossLinkMS(object):
                    "particles are: %s"
                    % (r1, c1, "".join(p.get_name() for p in ps1)))
             elif len(ps1) == 0:
-                print "SimplifiedCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1, c1)
+                print("SimplifiedCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1, c1))
                 continue
 
             if len(ps2) > 1:
@@ -358,7 +359,7 @@ class SimplifiedCrossLinkMS(object):
                    "particles are: %s"
                    % (r2, c2, "".join(p.get_name() for p in ps2)))
             elif len(ps2) == 0:
-                print "SimplifiedCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2, c2)
+                print("SimplifiedCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2, c2))
                 continue
 
             p1 = ps1[0]
@@ -368,7 +369,7 @@ class SimplifiedCrossLinkMS(object):
                 dr = self.already_added_pairs[(p1, p2)]
                 weight = dr.get_weight()
                 dr.set_weight(weight + 1.0)
-                print "SimplifiedCrossLinkMS> crosslink %d %s %d %s was already found, adding 1.0 to the weight, weight is now %d" % (r1, c1, r2, c2, weight + 1.0)
+                print("SimplifiedCrossLinkMS> crosslink %d %s %d %s was already found, adding 1.0 to the weight, weight is now %d" % (r1, c1, r2, c2, weight + 1.0))
                 continue
 
             else:
@@ -592,14 +593,14 @@ class SigmoidalCrossLinkMS(object):
             if len(ps1) > 1:
                 raise ValueError("residue %d of chain %s selects multiple particles %s" % (r1, c1, str(ps1)))
             elif len(ps1) == 0:
-                print "SigmoidalCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1, c1)
+                print("SigmoidalCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1, c1))
                 midb.write(str(entry) + "\n")
                 continue
 
             if len(ps2) > 1:
                 raise ValueError("residue %d of chain %s selects multiple particles %s" % (r2, c2, str(ps2)))
             elif len(ps2) == 0:
-                print "SigmoidalCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2, c2)
+                print("SigmoidalCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2, c2))
                 midb.write(str(entry) + "\n")
                 continue
 
@@ -610,7 +611,7 @@ class SigmoidalCrossLinkMS(object):
                 dr = self.already_added_pairs[(p1, p2)]
                 weight = dr.get_weight()
                 dr.increment_amplitude(amplitude)
-                print "SigmoidalCrossLinkMS> crosslink %d %s %d %s was already found, adding %d to the amplitude, amplitude is now %d" % (r1, c1, r2, c2, amplitude, dr.get_amplitude())
+                print("SigmoidalCrossLinkMS> crosslink %d %s %d %s was already found, adding %d to the amplitude, amplitude is now %d" % (r1, c1, r2, c2, amplitude, dr.get_amplitude()))
                 dr.set_name(c1 + ":" + str(r1) + "-" + c2 + ":" + str(r2)
                             + "-ampl:" + str(dr.get_amplitude()))
                 continue
@@ -897,13 +898,13 @@ class ISDCrossLinkMS(_NuisancesBase):
                     else:
                         xlid = tokens[xluniqueid]
                 except:
-                    print "this line was not accessible " + str(entry)
-                    if residue1 not in entry: print str(residue1)+" keyword not in database"
-                    if residue2 not in entry: print str(residue2)+" keyword not in database"
-                    if protein1 not in entry: print str(protein1)+" keyword not in database"
-                    if protein2 not in entry: print str(protein2)+" keyword not in database"
-                    if idscore not in entry: print str(idscore)+" keyword not in database"
-                    if xluniqueid not in entry: print str(xluniqueid)+" keyword not in database"
+                    print("this line was not accessible " + str(entry))
+                    if residue1 not in entry: print(str(residue1)+" keyword not in database")
+                    if residue2 not in entry: print(str(residue2)+" keyword not in database")
+                    if protein1 not in entry: print(str(protein1)+" keyword not in database")
+                    if protein2 not in entry: print(str(protein2)+" keyword not in database")
+                    if idscore not in entry: print(str(idscore)+" keyword not in database")
+                    if xluniqueid not in entry: print(str(xluniqueid)+" keyword not in database")
                     continue
 
             else:
@@ -939,13 +940,13 @@ class ISDCrossLinkMS(_NuisancesBase):
                         xlid = entry[xluniqueid]
 
                 except:
-                    print "this line was not accessible " + str(entry)
-                    if residue1 not in entry: print str(residue1)+" keyword not in database"
-                    if residue2 not in entry: print str(residue2)+" keyword not in database"
-                    if protein1 not in entry: print str(protein1)+" keyword not in database"
-                    if protein2 not in entry: print str(protein2)+" keyword not in database"
-                    if idscore not in entry: print str(idscore)+" keyword not in database"
-                    if xluniqueid not in entry: print str(xluniqueid)+" keyword not in database"
+                    print("this line was not accessible " + str(entry))
+                    if residue1 not in entry: print(str(residue1)+" keyword not in database")
+                    if residue2 not in entry: print(str(residue2)+" keyword not in database")
+                    if protein1 not in entry: print(str(protein1)+" keyword not in database")
+                    if protein2 not in entry: print(str(protein2)+" keyword not in database")
+                    if idscore not in entry: print(str(idscore)+" keyword not in database")
+                    if xluniqueid not in entry: print(str(xluniqueid)+" keyword not in database")
                     continue
 
             for nstate, r in enumerate(representations):
@@ -966,14 +967,14 @@ class ISDCrossLinkMS(_NuisancesBase):
                 if len(ps1) > 1:
                     raise ValueError("residue %d of chain %s selects multiple particles %s" % (r1, c1, str(ps1)))
                 elif len(ps1) == 0:
-                    print "ISDCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1, c1)
+                    print("ISDCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1, c1))
                     midb.write(str(entry) + "\n")
                     continue
 
                 if len(ps2) > 1:
                     raise ValueError("residue %d of chain %s selects multiple particles %s" % (r2, c2, str(ps2)))
                 elif len(ps2) == 0:
-                    print "ISDCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2, c2)
+                    print("ISDCrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2, c2))
                     midb.write(str(entry) + "\n")
                     continue
 
@@ -985,13 +986,13 @@ class ISDCrossLinkMS(_NuisancesBase):
                     continue
 
                 if xlid in uniqueid_restraints_map:
-                    print "getting a crosslink restraint from id %s" % str(xlid)
+                    print("getting a crosslink restraint from id %s" % str(xlid))
                     dr = uniqueid_restraints_map[xlid]
 
                 else:
                     if not self.marginal:
                         if not self.samplelength:
-                            print "generating a new crosslink restraint"
+                            print("generating a new crosslink restraint")
                             dr = IMP.isd.CrossLinkMSRestraint(
                                 self.m,
                                 length,
@@ -1041,21 +1042,21 @@ class ISDCrossLinkMS(_NuisancesBase):
                 if not self.marginal:
                     psii = psi.get_particle().get_index()
                     dr.add_contribution((p1i, p2i), (s1i, s2i), psii)
-                    print "--------------"
-                    print "ISDCrossLinkMS: generating cross-link restraint between"
-                    print "ISDCrossLinkMS: residue %d of chain %s and residue %d of chain %s" % (r1, c1, r2, c2)
-                    print "ISDCrossLinkMS: with sigma1 %f sigma2 %f psi %s" % (mappedr1, mappedr2, psival)
-                    print "ISDCrossLinkMS: between particles %s and %s" % (p1.get_name(), p2.get_name())
-                    print "==========================================\n"
+                    print("--------------")
+                    print("ISDCrossLinkMS: generating cross-link restraint between")
+                    print("ISDCrossLinkMS: residue %d of chain %s and residue %d of chain %s" % (r1, c1, r2, c2))
+                    print("ISDCrossLinkMS: with sigma1 %f sigma2 %f psi %s" % (mappedr1, mappedr2, psival))
+                    print("ISDCrossLinkMS: between particles %s and %s" % (p1.get_name(), p2.get_name()))
+                    print("==========================================\n")
                 else:
                     psival = None
                     dr.add_contribution((p1i, p2i), (s1i, s2i))
-                    print "--------------"
-                    print "ISDCrossLinkMS: generating marginal cross-link restraint between"
-                    print "ISDCrossLinkMS: residue %d of chain %s and residue %d of chain %s" % (r1, c1, r2, c2)
-                    print "ISDCrossLinkMS: with sigma1 %f sigma2 %f" % (mappedr1, mappedr2)
-                    print "ISDCrossLinkMS: between particles %s and %s" % (p1.get_name(), p2.get_name())
-                    print "==========================================\n"
+                    print("--------------")
+                    print("ISDCrossLinkMS: generating marginal cross-link restraint between")
+                    print("ISDCrossLinkMS: residue %d of chain %s and residue %d of chain %s" % (r1, c1, r2, c2))
+                    print("ISDCrossLinkMS: with sigma1 %f sigma2 %f" % (mappedr1, mappedr2))
+                    print("ISDCrossLinkMS: between particles %s and %s" % (p1.get_name(), p2.get_name()))
+                    print("==========================================\n")
 
                 indb.write(str(entry) + "\n")
 
@@ -1335,8 +1336,8 @@ class CysteineCrossLinkRestraint(object):
         beta_grid = IMP.pmi.tools.get_log_grid(betalower, betaupper, betangrid)
 
         for d in data:
-            print "--------------"
-            print "CysteineCrossLink: attempting to create a restraint " + str(d)
+            print("--------------")
+            print("CysteineCrossLink: attempting to create a restraint " + str(d))
             resid1 = d[0]
             chain1 = d[1]
             resid2 = d[2]
@@ -1394,7 +1395,7 @@ class CysteineCrossLinkRestraint(object):
                             p1 += p
                         else:
                             failed = True
-                            print "\033[93m CysteineCrossLink: missing representation for residue %d of chain %s \033[0m" % (resid1 + t, chain1)
+                            print("\033[93m CysteineCrossLink: missing representation for residue %d of chain %s \033[0m" % (resid1 + t, chain1))
 
                         p = IMP.pmi.tools.select(representation,
                                                  resolution=1, name=chain2,
@@ -1404,7 +1405,7 @@ class CysteineCrossLinkRestraint(object):
                             p2 += p
                         else:
                             failed = True
-                            print "\033[93m CysteineCrossLink: missing representation for residue %d of chain %s \033[0m" % (resid2 + t, chain2)
+                            print("\033[93m CysteineCrossLink: missing representation for residue %d of chain %s \033[0m" % (resid2 + t, chain2))
 
                 if not self.cbeta:
                     if (p1 is not None and p2 is not None):
@@ -1412,7 +1413,7 @@ class CysteineCrossLinkRestraint(object):
                         d1 = IMP.core.XYZ(p1)
                         d2 = IMP.core.XYZ(p2)
 
-                        print "Distance_" + str(resid1) + "_" + chain1 + ":" + str(resid2) + "_" + chain2, IMP.core.get_distance(d1, d2)
+                        print("Distance_" + str(resid1) + "_" + chain1 + ":" + str(resid2) + "_" + chain2, IMP.core.get_distance(d1, d2))
 
                 else:
                     if (len(p1) == 3 and len(p2) == 3):
@@ -1423,9 +1424,9 @@ class CysteineCrossLinkRestraint(object):
                         p22n = p2[1].get_name()
                         p23n = p2[2].get_name()
 
-                        print "CysteineCrossLink: generating CB cysteine cross-link restraint between"
-                        print "CysteineCrossLink: residue %d of chain %s and residue %d of chain %s" % (resid1, chain1, resid2, chain2)
-                        print "CysteineCrossLink: between particles %s %s %s and %s %s %s" % (p11n, p12n, p13n, p21n, p22n, p23n)
+                        print("CysteineCrossLink: generating CB cysteine cross-link restraint between")
+                        print("CysteineCrossLink: residue %d of chain %s and residue %d of chain %s" % (resid1, chain1, resid2, chain2))
+                        print("CysteineCrossLink: between particles %s %s %s and %s %s %s" % (p11n, p12n, p13n, p21n, p22n, p23n))
 
                         ccl.add_contribution(p1, p2)
 

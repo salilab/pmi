@@ -2,6 +2,7 @@
 Restraints for handling small angle x-ray (SAXS) data.
 """
 
+from __future__ import print_function
 import IMP
 import IMP.core
 import IMP.base
@@ -54,10 +55,10 @@ class SAXSISDRestraint(object):
         IMP.isd.Weight(self.w).set_weights_are_optimized(True)
 
         # take identity covariance matrix for the start
-        self.cov = [[1 if i == j else 0 for j in xrange(self.prof.size())]
-                    for i in xrange(self.prof.size())]
+        self.cov = [[1 if i == j else 0 for j in range(self.prof.size())]
+                    for i in range(self.prof.size())]
 
-        print "create saxs restraint"
+        print("create saxs restraint")
         self.saxs = IMP.isd2.SAXSRestraint(self.prof, self.sigma, self.tau,
                                            self.gamma, self.w, self.c1, self.c2)
         self.saxs.add_scatterer(self.atoms, self.cov, ff_type)
@@ -95,7 +96,7 @@ class SAXSISDRestraint(object):
 
     def logspace(self, a, b, num=100):
         """mimick numpy's logspace function"""
-        for i in xrange(num):
+        for i in range(num):
             val = a + float(b - a) / float(num - 1) * i
             yield 10 ** val
 

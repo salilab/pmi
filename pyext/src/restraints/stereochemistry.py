@@ -2,6 +2,7 @@
 Restraints for keeping correct stereochemistry.
 """
 
+from __future__ import print_function
 import IMP
 import IMP.core
 import IMP.base
@@ -149,7 +150,7 @@ class ResidueBondRestraint(object):
                     raise TypeError("not a residue")
                 else:
                     pair.append(p)
-            print "ResidueBondRestraint: adding a restraint between %s %s" % (pair[0].get_name(), pair[1].get_name())
+            print("ResidueBondRestraint: adding a restraint between %s %s" % (pair[0].get_name(), pair[1].get_name()))
             self.rs.add_restraint(
                 IMP.core.DistanceRestraint(ts, pair[0], pair[1]))
             self.pairslist.append(IMP.ParticlePair(pair[0], pair[1]))
@@ -224,7 +225,7 @@ class ResidueAngleRestraint(object):
                     raise TypeError("not a residue")
                 else:
                     triplet.append(p)
-            print "ResidueAngleRestraint: adding a restraint between %s %s %s" % (triplet[0].get_name(), triplet[1].get_name(), triplet[2].get_name())
+            print("ResidueAngleRestraint: adding a restraint between %s %s %s" % (triplet[0].get_name(), triplet[1].get_name(), triplet[2].get_name()))
             self.rs.add_restraint(
                 IMP.core.AngleRestraint(ts,
                                         triplet[0],
@@ -310,8 +311,8 @@ class ResidueDihedralRestraint(object):
                     (self.pi * anglemin / 180.0,
                      self.pi * anglemax / 180.0),
                     strength)
-                print "ResidueDihedralRestraint: adding a CYS restraint between %s %s %s %s" % (quadruplet[0].get_name(), quadruplet[1].get_name(),
-                                                                                                quadruplet[2].get_name(), quadruplet[3].get_name())
+                print("ResidueDihedralRestraint: adding a CYS restraint between %s %s %s %s" % (quadruplet[0].get_name(), quadruplet[1].get_name(),
+                                                                                                quadruplet[2].get_name(), quadruplet[3].get_name()))
             if dihedraltype == "T":
                 anglemin = 180 - 70.0
                 anglemax = 180 + 70.0
@@ -319,8 +320,8 @@ class ResidueDihedralRestraint(object):
                     (self.pi * anglemin / 180.0,
                      self.pi * anglemax / 180.0),
                     strength)
-                print "ResidueDihedralRestraint: adding a TRANS restraint between %s %s %s %s" % (quadruplet[0].get_name(), quadruplet[1].get_name(),
-                                                                                                  quadruplet[2].get_name(), quadruplet[3].get_name())
+                print("ResidueDihedralRestraint: adding a TRANS restraint between %s %s %s %s" % (quadruplet[0].get_name(), quadruplet[1].get_name(),
+                                                                                                  quadruplet[2].get_name(), quadruplet[3].get_name()))
             self.rs.add_restraint(
                 IMP.core.DihedralRestraint(ts,
                                            quadruplet[0],
@@ -400,8 +401,8 @@ class SecondaryStructure(object):
         self.label = "None"
 
         if len(self.particles) != len(ssstring):
-            print len(self.particles), len(ssstring)
-            print "SecondaryStructure: residue range and SS string incompatible"
+            print(len(self.particles), len(ssstring))
+            print("SecondaryStructure: residue range and SS string incompatible")
         self.ssstring = ssstring
 
         (bondrslist, anglrslist, diherslist,
@@ -616,7 +617,7 @@ class ElasticNetworkRestraint(object):
 
         particles = []
         for st in selection_tuples:
-            print 'selecting with',st
+            print('selecting with',st)
             for p in IMP.pmi.tools.select_by_tuple(representation,st,resolution=resolution):
                 if (resolution==0 and ca_only and IMP.atom.Atom(p).get_atom_type()!=IMP.atom.AtomType("CA")):
                     continue
@@ -629,11 +630,11 @@ class ElasticNetworkRestraint(object):
                 if distance>=dist_cutoff:
                     continue
                 ts=IMP.core.HarmonicDistancePairScore(distance,strength)
-                print "ElasticNetworkConstraint: adding a restraint between %s and %s with distance %.3f" % (pair[0].get_name(),pair[1].get_name(),distance)
+                print("ElasticNetworkConstraint: adding a restraint between %s and %s with distance %.3f" % (pair[0].get_name(),pair[1].get_name(),distance))
                 self.rs.add_restraint(IMP.core.PairRestraint(ts,pair))
                 self.pairslist.append(IMP.ParticlePair(pair[0], pair[1]))
                 self.pairslist.append(IMP.ParticlePair(pair[1], pair[0]))
-        print 'created',self.rs.get_number_of_restraints(),'restraints'
+        print('created',self.rs.get_number_of_restraints(),'restraints')
 
     def set_label(self, label):
         self.label = label
@@ -709,7 +710,7 @@ class CharmmForceFieldRestraint(object):
 
         #self.scoring_function = IMP.core.RestraintsScoringFunction([r,pr])
 
-        print 'CHARMM is set up'
+        print('CHARMM is set up')
 
     def set_label(self, label):
         self.label = label

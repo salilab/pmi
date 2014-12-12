@@ -1,3 +1,4 @@
+from __future__ import print_function
 import IMP
 import RMF
 import IMP.atom
@@ -39,7 +40,7 @@ class TopologyPlot(object):
         self.frequency_cutoff=frequency_cutoff
         self.gcpf = IMP.core.GridClosePairsFinder()
         self.gcpf.set_distance(self.cutoff)
-        self.names = self.selections.keys()
+        self.names = list(self.selections.keys())
         self.colors=colors
         self.fixed=fixed
         self.pos=pos
@@ -49,7 +50,7 @@ class TopologyPlot(object):
 
     def add_rmf(self,rmf_fn,nframe):
         """Add selections from an RMF file"""
-        print 'reading from RMF file',rmf_fn
+        print('reading from RMF file',rmf_fn)
         rh = RMF.open_rmf_file_read_only(rmf_fn)
         prots = IMP.rmf.create_hierarchies(rh, self.mdl)
         hier = prots[0]
@@ -134,7 +135,7 @@ class TopologyPlot(object):
                     xoffset+=squaredistance
                     yoffset+=squaredistance
 
-        for edge,count in self.edges.iteritems():
+        for edge,count in self.edges.items():
 
             if quantitative_proteomic_data:
                 #normalize
@@ -146,7 +147,7 @@ class TopologyPlot(object):
                     value=self.quantitative_proteomic_data[(edge[1],edge[0])]
                 else:
                     value=0.0
-                print minqpd,maxqpd
+                print(minqpd,maxqpd)
                 density=(1.0-(value-minqpd)/(maxqpd-minqpd))
             else:
                 density=(1.0-float(count)/self.num_rmf)
@@ -169,11 +170,11 @@ class TopologyPlot(object):
     def make_graph(self,out_fn):
         edges=[]
         weights=[]
-        print 'num edges',len(self.edges)
-        for edge,count in self.edges.iteritems():
+        print('num edges',len(self.edges))
+        for edge,count in self.edges.items():
             # filter if frequency of contacts is greater than frequency_cutoff
             if float(count)/self.num_rmf>self.frequency_cutoff:
-                print count,edge
+                print(count,edge)
                 edges.append(edge)
                 weights.append(count)
         for nw,w in enumerate(weights):

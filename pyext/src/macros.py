@@ -2,6 +2,7 @@
 Protocols for sampling structures and analyzing them.
 """
 
+from __future__ import print_function
 import IMP.pmi.representation
 import IMP.pmi.tools
 import IMP.pmi.samplers
@@ -123,7 +124,7 @@ class ReplicaExchange0(object):
                 self.root_hier = root_hier
                 self.is_multi_state = False
         else:
-            print "ERROR: Must provide representation or root_hier"
+            print("ERROR: Must provide representation or root_hier")
             return
 
         self.crosslink_restraints = crosslink_restraints
@@ -172,14 +173,14 @@ class ReplicaExchange0(object):
         self.vars["replica_stat_file_suffix"] = replica_stat_file_suffix
 
     def show_info(self):
-        print "ReplicaExchange0: it generates initial.*.rmf3, stat.*.out, rmfs/*.rmf3 for each replica "
-        print "--- it stores the best scoring pdb models in pdbs/"
-        print "--- the stat.*.out and rmfs/*.rmf3 are saved only at the lowest temperature"
-        print "--- variables:"
-        keys = self.vars.keys()
+        print("ReplicaExchange0: it generates initial.*.rmf3, stat.*.out, rmfs/*.rmf3 for each replica ")
+        print("--- it stores the best scoring pdb models in pdbs/")
+        print("--- the stat.*.out and rmfs/*.rmf3 are saved only at the lowest temperature")
+        print("--- variables:")
+        keys = list(self.vars.keys())
         keys.sort()
         for v in keys:
-            print "------", v.ljust(30), self.vars[v]
+            print("------", v.ljust(30), self.vars[v])
 
     def get_replica_exchange_object(self):
         return self.replica_exchange_object
@@ -191,7 +192,7 @@ class ReplicaExchange0(object):
         sampler_mc=None
         sampler_md=None
         if self.monte_carlo_sample_objects is not None:
-            print "Setting up MonteCarlo"
+            print("Setting up MonteCarlo")
             sampler_mc = IMP.pmi.samplers.MonteCarlo(self.model,
                                                  self.monte_carlo_sample_objects,
                                                  self.vars["monte_carlo_temperature"])
@@ -206,7 +207,7 @@ class ReplicaExchange0(object):
 
 
         if self.molecular_dynamics_sample_objects is not None:
-            print "Setting up MolecularDynamics"
+            print("Setting up MolecularDynamics")
             sampler_md = IMP.pmi.samplers.MolecularDynamics(self.model,
                                                             self.molecular_dynamics_sample_objects,
                                                             self.vars["monte_carlo_temperature"],
@@ -221,7 +222,7 @@ class ReplicaExchange0(object):
             samplers.append(sampler_md)
 # -------------------------------------------------------------------------
 
-        print "Setting up ReplicaExchange"
+        print("Setting up ReplicaExchange")
         rex = IMP.pmi.samplers.ReplicaExchange(self.model,
                                                self.vars[
                                                    "replica_exchange_minimum_temperature"],
@@ -276,7 +277,7 @@ class ReplicaExchange0(object):
         sw = IMP.pmi.tools.Stopwatch()
         self.output_objects.append(sw)
 
-        print "Setting up stat file"
+        print("Setting up stat file")
         output = IMP.pmi.output.Output(atomistic=self.vars["atomistic"])
         low_temp_stat_file = globaldir + \
             self.vars["stat_file_name_suffix"] + "." + str(myindex) + ".out"
@@ -284,12 +285,12 @@ class ReplicaExchange0(object):
                           self.output_objects,
                           extralabels=["rmf_file", "rmf_frame_index"])
 
-        print "Setting up replica stat file"
+        print("Setting up replica stat file")
         replica_stat_file = globaldir + \
             self.vars["replica_stat_file_suffix"] + "." + str(myindex) + ".out"
         output.init_stat2(replica_stat_file, [rex], extralabels=["score"])
 
-        print "Setting up best pdb files"
+        print("Setting up best pdb files")
         if not self.is_multi_state:
             if self.vars["number_of_best_scoring_models"] > 0:
                 output.init_pdb_best_scoring(pdb_dir + "/" +
@@ -327,7 +328,7 @@ class ReplicaExchange0(object):
                 output_hierarchies = self.root_hiers
 
 #----------------------------------------------
-        print "Setting up and writing initial rmf coordinate file"
+        print("Setting up and writing initial rmf coordinate file")
         init_suffix = globaldir + self.vars["initial_rmf_name_suffix"]
         output.init_rmf(init_suffix + "." + str(myindex) + ".rmf3",
                         output_hierarchies)
@@ -340,7 +341,7 @@ class ReplicaExchange0(object):
 
 #----------------------------------------------
 
-        print "Setting up production rmf files"
+        print("Setting up production rmf files")
 
         rmfname = rmf_dir + "/" + str(myindex) + ".rmf3"
         output.init_rmf(rmfname, output_hierarchies)
@@ -365,10 +366,10 @@ class ReplicaExchange0(object):
             my_temp_index = int(rex.get_my_temp() * temp_index_factor)
 
             if min_temp_index == my_temp_index:
-                print "--- frame %s score %s " % (str(i), str(score))
+                print("--- frame %s score %s " % (str(i), str(score)))
 
                 if i % self.vars["nframes_write_coordinates"]==0:
-                    print '--- writing coordinates'
+                    print('--- writing coordinates')
                     if self.vars["number_of_best_scoring_models"] > 0:
                         output.write_pdb_best_scoring(score)
                     output.write_rmf(rmfname)
@@ -512,11 +513,11 @@ class BuildModel(object):
 
         data=component_topologies
         if list_of_rigid_bodies==[]:
-            print "WARNING: No list of rigid bodies inputted to build_model()"
+            print("WARNING: No list of rigid bodies inputted to build_model()")
         if list_of_super_rigid_bodies==[]:
-            print "WARNING: No list of super rigid bodies inputted to build_model()"
+            print("WARNING: No list of super rigid bodies inputted to build_model()")
         if chain_of_super_rigid_bodies==[]:
-            print "WARNING: No chain of super rigid bodies inputted to build_model()"
+            print("WARNING: No chain of super rigid bodies inputted to build_model()")
         all_dnames = set([d for sublist in list_of_rigid_bodies+list_of_super_rigid_bodies\
                       +chain_of_super_rigid_bodies for d in sublist])
         all_available = set([c.domain_name for c in component_topologies])
@@ -566,9 +567,9 @@ class BuildModel(object):
                                    color=color,offset=offset)
             if em_num_components!=0:
                 if read_em_files:
-                    print "will read GMM files"
+                    print("will read GMM files")
                 else:
-                    print "will calculate GMMs"
+                    print("will calculate GMMs")
 
                 dens_hier,beads=self.create_density(self.simo,comp_name,outhier,em_txt_file_name,
                                                     em_mrc_file_name,em_num_components,read_em_files)
@@ -614,7 +615,7 @@ class BuildModel(object):
         # specify the list of hierarchy names
         dens_hier_list=[]
         for hn in hier_name_list:
-            print hn
+            print(hn)
             dens_hier_list+=self.resdensities[hn]
         return dens_hier_list
 
@@ -647,11 +648,11 @@ class BuildModel(object):
                 radius=IMP.core.XYZR(b).get_radius()
                 num_residues=len(IMP.pmi.tools.get_residue_indexes(b))
                 scale_factor=slope*float(num_residues)+1.0
-                print scale_factor
+                print(scale_factor)
                 new_radius=scale_factor*radius
                 IMP.core.XYZR(b).set_radius(new_radius)
-                print b.get_name()
-                print "particle with radius "+str(radius)+" and "+str(num_residues)+" residues scaled to a new radius "+str(new_radius)
+                print(b.get_name())
+                print("particle with radius "+str(radius)+" and "+str(num_residues)+" residues scaled to a new radius "+str(new_radius))
 
 
     def create_density(self,simo,compname,comphier,txtfilename,mrcfilename,num_components,read=True):
@@ -865,7 +866,7 @@ class BuildModel1(object):
         # specify the list of hierarchy names
         dens_hier_list=[]
         for hn in hier_name_list:
-            print hn
+            print(hn)
             dens_hier_list+=self.resdensities[hn]
         return dens_hier_list
 
@@ -895,11 +896,11 @@ class BuildModel1(object):
                 radius=IMP.core.XYZR(b).get_radius()
                 num_residues=len(IMP.pmi.tools.get_residue_indexes(b))
                 scale_factor=slope*float(num_residues)+1.0
-                print scale_factor
+                print(scale_factor)
                 new_radius=scale_factor*radius
                 IMP.core.XYZR(b).set_radius(new_radius)
-                print b.get_name()
-                print "particle with radius "+str(radius)+" and "+str(num_residues)+" residues scaled to a new radius "+str(new_radius)
+                print(b.get_name())
+                print("particle with radius "+str(radius)+" and "+str(num_residues)+" residues scaled to a new radius "+str(new_radius))
 
 
     def create_density(self,simo,compname,comphier,txtfilename,mrcfilename,num_components,read=True):
@@ -1049,7 +1050,7 @@ class AnalysisReplicaExchange0(object):
         for rd in merge_directories:
             stat_files = glob.glob(rd + "/" + stat_dir + "/stat.*.out")
             if len(stat_files)==0:
-                print "WARNING: no stat files found in",rd + "/" + stat_dir + "/stat.*.out"
+                print("WARNING: no stat files found in",rd + "/" + stat_dir + "/stat.*.out")
             self.stat_files += stat_files
 
 
@@ -1078,7 +1079,7 @@ class AnalysisReplicaExchange0(object):
                                                  get_every)
         rmf_file_list=trajectory_models[0]
         rmf_file_frame_list=trajectory_models[1]
-        score_list=map(float, trajectory_models[2])
+        score_list=list(map(float, trajectory_models[2]))
 
         max_score=max(score_list)
         min_score=min(score_list)
@@ -1101,8 +1102,8 @@ class AnalysisReplicaExchange0(object):
                     binned_scores[bin_index]=s
                     binned_model_indexes[bin_index]=model_index
 
-        print binned_scores
-        print binned_model_indexes
+        print(binned_scores)
+        print(binned_model_indexes)
 
 
 
@@ -1165,7 +1166,7 @@ class AnalysisReplicaExchange0(object):
 
 
         if not load_distance_matrix_file:
-            if len(self.stat_files)==0: print "ERROR: no stat file found in the given path"; return
+            if len(self.stat_files)==0: print("ERROR: no stat file found in the given path"); return
             my_stat_files=IMP.pmi.tools.chunk_list_into_segments(
                 self.stat_files,self.number_of_processes)[self.rank]
             best_models = IMP.pmi.io.get_best_models(my_stat_files,
@@ -1194,10 +1195,10 @@ class AnalysisReplicaExchange0(object):
                         feature_keyword_list_dict[k])
 
             # sort by score and get the best scoring ones
-            score_rmf_tuples = zip(score_list,
+            score_rmf_tuples = list(zip(score_list,
                                    rmf_file_list,
                                    rmf_file_frame_list,
-                                   range(len(score_list)))
+                                   list(range(len(score_list)))))
 
             # keep subset of frames if requested
             if first_and_last_frames is not None:
@@ -1314,7 +1315,7 @@ class AnalysisReplicaExchange0(object):
 # ------------------------------------------------------------------------
 # Calculate distance matrix and cluster
 # ------------------------------------------------------------------------
-            print "setup clustering class"
+            print("setup clustering class")
             Clusters = IMP.pmi.analysis.Clustering(rmsd_weights)
 
             for n, model_coordinate_dict in enumerate(all_coordinates):
@@ -1325,7 +1326,7 @@ class AnalysisReplicaExchange0(object):
                     Clusters.set_template(alignment_coordinates[n])
                 Clusters.fill(all_rmf_file_names[n], rmsd_coordinates[n])
 
-            print "Global calculating the distance matrix"
+            print("Global calculating the distance matrix")
 
             # calculate distance matrix, all against all
             Clusters.dist_matrix()
@@ -1345,10 +1346,10 @@ class AnalysisReplicaExchange0(object):
 # ------------------------------------------------------------------------
         else:
             if self.rank==0:
-                print "setup clustering class"
+                print("setup clustering class")
                 Clusters = IMP.pmi.analysis.Clustering()
                 Clusters.load_distance_matrix_file(file_name=distance_matrix_file)
-                print "clustering with %s clusters" % str(number_of_clusters)
+                print("clustering with %s clusters" % str(number_of_clusters))
                 Clusters.do_cluster(number_of_clusters)
                 [best_score_feature_keyword_list_dict,
                  rmf_file_name_index_dict] = self.load_objects(".macro.pkl")
@@ -1365,12 +1366,12 @@ class AnalysisReplicaExchange0(object):
 # ------------------------------------------------------------------------
 
         if self.rank == 0:
-            print Clusters.get_cluster_labels()
+            print(Clusters.get_cluster_labels())
             for n, cl in enumerate(Clusters.get_cluster_labels()):
-                print "rank %s " % str(self.rank)
-                print "cluster %s " % str(n)
-                print "cluster label %s " % str(cl)
-                print Clusters.get_cluster_label_names(cl)
+                print("rank %s " % str(self.rank))
+                print("cluster %s " % str(n))
+                print("cluster label %s " % str(cl))
+                print(Clusters.get_cluster_label_names(cl))
 
                 # first initialize the Density class if requested
 

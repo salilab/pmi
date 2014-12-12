@@ -3,6 +3,7 @@
 """@namespace IMP.pmi.analysis
    Tools for clustering and cluster analysis
 """
+from __future__ import print_function
 import IMP
 import IMP.algebra
 import IMP.em
@@ -213,17 +214,17 @@ class Clustering(object):
 
     def dist_matrix(self):
 
-        self.model_list_names = self.all_coords.keys()
-        self.model_indexes = range(len(self.model_list_names))
+        self.model_list_names = list(self.all_coords.keys())
+        self.model_indexes = list(range(len(self.model_list_names)))
         self.model_indexes_dict = dict(
-            zip(self.model_list_names, self.model_indexes))
+            list(zip(self.model_list_names, self.model_indexes)))
         model_indexes_unique_pairs = list(itertools.combinations(self.model_indexes, 2))
 
         my_model_indexes_unique_pairs = IMP.pmi.tools.chunk_list_into_segments(
             model_indexes_unique_pairs,
             self.number_of_processes)[self.rank]
 
-        print "process %s assigned with %s pairs" % (str(self.rank), str(len(my_model_indexes_unique_pairs)))
+        print("process %s assigned with %s pairs" % (str(self.rank), str(len(my_model_indexes_unique_pairs))))
 
         (raw_distance_dict, self.transformation_distance_dict) = self.matrix_calculation(self.all_coords,
                                                                                          self.tmpl_coords,
@@ -317,9 +318,9 @@ class Clustering(object):
 
         self.set_transformation_distance_dict_from_pickable(
             pickable_transformations)
-        self.model_indexes = range(len(self.model_list_names))
+        self.model_indexes = list(range(len(self.model_list_names)))
         self.model_indexes_dict = dict(
-            zip(self.model_list_names, self.model_indexes))
+            list(zip(self.model_list_names, self.model_indexes)))
 
     def plot_matrix(self, figurename="clustermatrix.pdf"):
         import pylab as pl
@@ -396,15 +397,15 @@ class Clustering(object):
 
     def matrix_calculation(self, all_coords, template_coords, list_of_pairs):
 
-        model_list_names = all_coords.keys()
-        rmsd_protein_names = all_coords[model_list_names[0]].keys()
+        model_list_names = list(all_coords.keys())
+        rmsd_protein_names = list(all_coords[model_list_names[0]].keys())
         raw_distance_dict = {}
         transformation_distance_dict = {}
         if template_coords is None:
             do_alignment = False
         else:
             do_alignment = True
-            alignment_template_protein_names = template_coords.keys()
+            alignment_template_protein_names = list(template_coords.keys())
 
         for (f1, f2) in list_of_pairs:
 
@@ -513,7 +514,7 @@ class Precision(object):
         rh= RMF.open_rmf_file_read_only(rmf_name)
         prots=IMP.rmf.create_hierarchies(rh, self.model)
         IMP.rmf.load_frame(rh, rmf_frame_index)
-        print "getting coordinates for frame %i rmf file %s" % (rmf_frame_index, rmf_name)
+        print("getting coordinates for frame %i rmf file %s" % (rmf_frame_index, rmf_name))
         del rh
 
         if self.resolution==1:
@@ -521,7 +522,7 @@ class Precision(object):
         elif self.resolution==10:
             particle_dict = get_particles_at_resolution_ten(prots[0])
 
-        protein_names=particle_dict.keys()
+        protein_names=list(particle_dict.keys())
         particles_resolution_one=[]
         for k in particle_dict:
             particles_resolution_one+=(particle_dict[k])
@@ -530,7 +531,7 @@ class Precision(object):
             self.protein_names=protein_names
         else:
             if self.protein_names!=protein_names:
-                print "Error: the protein names of the new coordinate set is not compatible with the previous one"
+                print("Error: the protein names of the new coordinate set is not compatible with the previous one")
 
         if self.len_particles_resolution_one==None:
             self.len_particles_resolution_one=len(particles_resolution_one)
@@ -566,7 +567,7 @@ class Precision(object):
         try:
             (particles_resolution_one, prots)=self._get_structure(rmf_frame_index,rmf_name)
         except:
-            print "something wrong with the rmf"
+            print("something wrong with the rmf")
             return 0
 
         self.selection_dictionary.update({"All":self.protein_names})
@@ -650,7 +651,7 @@ class Precision(object):
                 all_selected_particles=s.get_selected_particles()
                 intersection=list(set(all_selected_particles) & set(structure))
                 sorted_intersection=IMP.pmi.tools.sort_by_residues(intersection)
-                cc=map(lambda p: tuple(IMP.core.XYZ(p).get_coordinates()), sorted_intersection)
+                cc=[tuple(IMP.core.XYZ(p).get_coordinates()) for p in sorted_intersection]
                 selected_coordinates+=cc
 
             elif type(t)==str:
@@ -658,7 +659,7 @@ class Precision(object):
                 all_selected_particles=s.get_selected_particles()
                 intersection=list(set(all_selected_particles) & set(structure))
                 sorted_intersection=IMP.pmi.tools.sort_by_residues(intersection)
-                cc=map(lambda p: tuple(IMP.core.XYZ(p).get_coordinates()), sorted_intersection)
+                cc=[tuple(IMP.core.XYZ(p).get_coordinates()) for p in sorted_intersection]
                 selected_coordinates+=cc
             else:
                 raise ValueError("Selection error")
@@ -677,8 +678,8 @@ class Precision(object):
         c1=self.structures_dictionary[structure_set_name1][selection_name][index1]
         c2=self.structures_dictionary[structure_set_name2][selection_name][index2]
 
-        coordinates1=map(lambda c: IMP.algebra.Vector3D(c), c1)
-        coordinates2=map(lambda c: IMP.algebra.Vector3D(c), c2)
+        coordinates1=[IMP.algebra.Vector3D(c) for c in c1]
+        coordinates2=[IMP.algebra.Vector3D(c) for c in c2]
 
         if self.style=='pairwise_drmsd_k':
             distance=IMP.atom.get_drmsd(coordinates1,coordinates2)
@@ -697,8 +698,8 @@ class Precision(object):
         c1=self.structures_dictionary[structure_set_name1][selection_name][index1]
         c2=self.structures_dictionary[structure_set_name2][selection_name][index2]
 
-        coordinates1=map(lambda c: IMP.algebra.Vector3D(c), c1)
-        coordinates2=map(lambda c: IMP.algebra.Vector3D(c), c2)
+        coordinates1=[IMP.algebra.Vector3D(c) for c in c1]
+        coordinates2=[IMP.algebra.Vector3D(c) for c in c2]
 
         distances=[np.linalg.norm(a-b) for (a,b) in zip(coordinates1,coordinates2)]
 
@@ -722,7 +723,7 @@ class Precision(object):
                plus all the subunits together.
         """
         if selection_keywords is None:
-            sel_keys=self.selection_dictionary.keys()
+            sel_keys=list(self.selection_dictionary.keys())
         else:
             for k in selection_keywords:
                 if k not in self.selection_dictionary:
@@ -738,8 +739,8 @@ class Precision(object):
             number_of_structures_2=len(self.structures_dictionary[structure_set_name2][selection_name])
 
             distances={}
-            structure_pointers_1=range(0,number_of_structures_1,skip)
-            structure_pointers_2=range(0,number_of_structures_2,skip)
+            structure_pointers_1=list(range(0,number_of_structures_1,skip))
+            structure_pointers_2=list(range(0,number_of_structures_2,skip))
 
             pair_combination_list=list(itertools.product(structure_pointers_1,structure_pointers_2))
 
@@ -784,7 +785,7 @@ class Precision(object):
                         distances_to_structure[n]=distances_to_structure[n]/distances_to_structure_normalization[n]
 
                     min_distance=min([distances_to_structure[n] for n in distances_to_structure])
-                    centroid_index=[k for k, v in distances_to_structure.iteritems() if v == min_distance][0]
+                    centroid_index=[k for k, v in distances_to_structure.items() if v == min_distance][0]
                     centroid_rmf_name=self.rmf_names_frames[structure_set_name1][centroid_index]
 
                     centroid_distance=0.0
@@ -803,7 +804,7 @@ class Precision(object):
                         of.write(str(selection_name)+" "+structure_set_name1+
                                         " centroid rmf name "+str(centroid_rmf_name)+"\n")
 
-                average_pairwise_distances=sum(distances.values())/len(distances.values())
+                average_pairwise_distances=sum(distances.values())/len(list(distances.values()))
                 if outfile is not None:
                     of.write(str(selection_name)+" "+structure_set_name1+" "+structure_set_name2+
                              " average pairwise distance "+str(average_pairwise_distances)+"\n")
@@ -893,15 +894,15 @@ class Precision(object):
         @note First call set_reference_structure()
         """
         if self.reference_structures_dictionary=={}:
-            print "Cannot compute until you set a reference structure"
+            print("Cannot compute until you set a reference structure")
             return
         for selection_name in self.selection_dictionary:
             reference_coordinates=self.reference_structures_dictionary[selection_name]
-            coordinates2=map(lambda c: IMP.algebra.Vector3D(c), reference_coordinates)
+            coordinates2=[IMP.algebra.Vector3D(c) for c in reference_coordinates]
             distances=[]
 
             for sc in self.structures_dictionary[structure_set_name][selection_name]:
-                coordinates1=map(lambda c: IMP.algebra.Vector3D(c), sc)
+                coordinates1=[IMP.algebra.Vector3D(c) for c in sc]
                 if self.style=='pairwise_drmsd_k':
                     distance=IMP.atom.get_drmsd(coordinates1,coordinates2)
                 if self.style=='pairwise_drms_k':
@@ -913,7 +914,7 @@ class Precision(object):
                                                IMP.algebra.get_identity_transformation_3d())
                 distances.append(distance)
 
-            print selection_name,"average distance",sum(distances)/len(distances),"minimum distance",min(distances)
+            print(selection_name,"average distance",sum(distances)/len(distances),"minimum distance",min(distances))
 
     def get_coordinates(self):
         pass
@@ -1020,7 +1021,7 @@ class GetModelDensity(object):
             self.densities[name] = dmap3
 
     def get_density_keys(self):
-        return self.densities.keys()
+        return list(self.densities.keys())
 
     def get_density(self,name):
         """Get the current density for some component name"""
@@ -1062,7 +1063,7 @@ class GetContactMap(object):
         for name in particles_dictionary:
             residue_indexes = []
             for p in particles_dictionary[name]:
-                print p.get_name()
+                print(p.get_name())
                 residue_indexes += IMP.pmi.tools.get_residue_indexes(p)
                 #residue_indexes.add( )
 
@@ -1094,9 +1095,9 @@ class GetContactMap(object):
         distances = (distances - radii).T - radii
         distances = distances <= self.distance
 
-        print coords
-        print radii
-        print distances
+        print(coords)
+        print(radii)
+        print(distances)
 
         self.contactmap += distances
 
@@ -1108,7 +1109,7 @@ class GetContactMap(object):
         test, testr = [], []
         for part in self.prot.get_children():
             SortedSegments = []
-            print part
+            print(part)
             for chl in part.get_children():
                 start = IMP.atom.get_leaves(chl)[0]
                 end = IMP.atom.get_leaves(chl)[-1]
@@ -1186,15 +1187,15 @@ class GetContactMap(object):
             Matrices = {}
             proteins = [p.get_name() for p in self.prot.get_children()]
             missing = []
-            for p1 in xrange(len(proteins)):
-                for p2 in xrange(p1, len(proteins)):
+            for p1 in range(len(proteins)):
+                for p2 in range(p1, len(proteins)):
                     pl1, pl2 = max(
                         self.resmap[proteins[p1]].keys()), max(self.resmap[proteins[p2]].keys())
                     pn1, pn2 = proteins[p1], proteins[p2]
                     mtr = np.zeros((pl1 + 1, pl2 + 1))
-                    print 'Creating matrix for: ', p1, p2, pn1, pn2, mtr.shape, pl1, pl2
-                    for i1 in xrange(1, pl1 + 1):
-                        for i2 in xrange(1, pl2 + 1):
+                    print('Creating matrix for: ', p1, p2, pn1, pn2, mtr.shape, pl1, pl2)
+                    for i1 in range(1, pl1 + 1):
+                        for i2 in range(1, pl2 + 1):
                             try:
                                 r1 = K.index(self.resmap[pn1][i1])
                                 r2 = K.index(self.resmap[pn2][i2])
@@ -1211,8 +1212,8 @@ class GetContactMap(object):
                 raise ValueError("cross-links were not provided, use add_xlinks function!")
             Matrices_xl = {}
             missing_xl = []
-            for p1 in xrange(len(proteins)):
-                for p2 in xrange(p1, len(proteins)):
+            for p1 in range(len(proteins)):
+                for p2 in range(p1, len(proteins)):
                     pl1, pl2 = max(
                         self.resmap[proteins[p1]].keys()), max(self.resmap[proteins[p2]].keys())
                     pn1, pn2 = proteins[p1], proteins[p2]
@@ -1227,23 +1228,23 @@ class GetContactMap(object):
                         except KeyError:
                             flg = 2
                     if flg == 0:
-                        print 'Creating matrix for: ', p1, p2, pn1, pn2, mtr.shape, pl1, pl2
+                        print('Creating matrix for: ', p1, p2, pn1, pn2, mtr.shape, pl1, pl2)
                         for xl1, xl2 in xls:
                             if xl1 > pl1:
-                                print 'X' * 10, xl1, xl2
+                                print('X' * 10, xl1, xl2)
                                 xl1 = pl1
                             if xl2 > pl2:
-                                print 'X' * 10, xl1, xl2
+                                print('X' * 10, xl1, xl2)
                                 xl2 = pl2
                             mtr[xl1 - 1, xl2 - 1] = 100
                     elif flg == 1:
-                        print 'Creating matrix for: ', p1, p2, pn1, pn2, mtr.shape, pl1, pl2
+                        print('Creating matrix for: ', p1, p2, pn1, pn2, mtr.shape, pl1, pl2)
                         for xl1, xl2 in xls:
                             if xl1 > pl1:
-                                print 'X' * 10, xl1, xl2
+                                print('X' * 10, xl1, xl2)
                                 xl1 = pl1
                             if xl2 > pl2:
-                                print 'X' * 10, xl1, xl2
+                                print('X' * 10, xl1, xl2)
                                 xl2 = pl2
                             mtr[xl2 - 1, xl1 - 1] = 100
                     else:
@@ -1337,7 +1338,7 @@ class GetContactMap(object):
 
 def get_hier_from_rmf(model, frame_number, rmf_file):
     # I have to deprecate this function
-    print "getting coordinates for frame %i rmf file %s" % (frame_number, rmf_file)
+    print("getting coordinates for frame %i rmf file %s" % (frame_number, rmf_file))
 
     # load the frame
     rh = RMF.open_rmf_file_read_only(rmf_file)
@@ -1345,7 +1346,7 @@ def get_hier_from_rmf(model, frame_number, rmf_file):
     try:
         prots = IMP.rmf.create_hierarchies(rh, model)
     except:
-        print "Unable to open rmf file %s" % (rmf_file)
+        print("Unable to open rmf file %s" % (rmf_file))
         prot = None
         return prot
     #IMP.rmf.link_hierarchies(rh, prots)
@@ -1353,7 +1354,7 @@ def get_hier_from_rmf(model, frame_number, rmf_file):
     try:
         IMP.rmf.load_frame(rh, frame_number)
     except:
-        print "Unable to open frame %i of file %s" % (frame_number, rmf_file)
+        print("Unable to open frame %i of file %s" % (frame_number, rmf_file))
         prot = None
     model.update()
     del rh
@@ -1361,7 +1362,7 @@ def get_hier_from_rmf(model, frame_number, rmf_file):
 
 def get_hier_and_restraints_from_rmf(model, frame_number, rmf_file):
     # I have to deprecate this function
-    print "getting coordinates for frame %i rmf file %s" % (frame_number, rmf_file)
+    print("getting coordinates for frame %i rmf file %s" % (frame_number, rmf_file))
 
     # load the frame
     rh = RMF.open_rmf_file_read_only(rmf_file)
@@ -1370,7 +1371,7 @@ def get_hier_and_restraints_from_rmf(model, frame_number, rmf_file):
         prots = IMP.rmf.create_hierarchies(rh, model)
         rs = IMP.rmf.create_restraints(rh, model)
     except:
-        print "Unable to open rmf file %s" % (rmf_file)
+        print("Unable to open rmf file %s" % (rmf_file))
         prot = None
         rs = None
         return prot,rs
@@ -1379,14 +1380,14 @@ def get_hier_and_restraints_from_rmf(model, frame_number, rmf_file):
     try:
         IMP.rmf.load_frame(rh, frame_number)
     except:
-        print "Unable to open frame %i of file %s" % (frame_number, rmf_file)
+        print("Unable to open frame %i of file %s" % (frame_number, rmf_file))
         prot = None
     model.update()
     del rh
     return prot,rs
 
 def get_hiers_from_rmf(model, frame_number, rmf_file):
-    print "getting coordinates for frame %i rmf file %s" % (frame_number, rmf_file)
+    print("getting coordinates for frame %i rmf file %s" % (frame_number, rmf_file))
 
     # load the frame
     rh = RMF.open_rmf_file_read_only(rmf_file)
@@ -1394,14 +1395,14 @@ def get_hiers_from_rmf(model, frame_number, rmf_file):
     try:
         prots = IMP.rmf.create_hierarchies(rh, model)
     except:
-        print "Unable to open rmf file %s" % (rmf_file)
+        print("Unable to open rmf file %s" % (rmf_file))
         prot = None
         return prot
     #IMP.rmf.link_hierarchies(rh, prots)
     try:
         IMP.rmf.load_frame(rh, frame_number)
     except:
-        print "Unable to open frame %i of file %s" % (frame_number, rmf_file)
+        print("Unable to open frame %i of file %s" % (frame_number, rmf_file))
         prots = None
     model.update()
     del rh
@@ -1491,7 +1492,7 @@ class CrossLinkTable(object):
         rh= RMF.open_rmf_file_read_only(rmf_name)
         prots=IMP.rmf.create_hierarchies(rh, self.model)
         IMP.rmf.load_frame(rh, rmf_frame_index)
-        print "getting coordinates for frame %i rmf file %s" % (rmf_frame_index, rmf_name)
+        print("getting coordinates for frame %i rmf file %s" % (rmf_frame_index, rmf_name))
         del rh
 
 
@@ -1507,7 +1508,7 @@ class CrossLinkTable(object):
         for name in particles_dictionary:
             residue_indexes = []
             for p in particles_dictionary[name]:
-                print p.get_name()
+                print(p.get_name())
                 residue_indexes = IMP.pmi.tools.get_residue_indexes(p)
                 #residue_indexes.add( )
 
@@ -1592,7 +1593,7 @@ class CrossLinkTable(object):
         self.unique_cross_link_list = []
 
         for key in xl_keys:
-            print key
+            print(key)
             keysplit = key.replace(
                 "_",
                 " ").replace(
@@ -1745,7 +1746,7 @@ class CrossLinkTable(object):
     def median(self, mylist):
         sorts = sorted(mylist)
         length = len(sorts)
-        print length
+        print(length)
         if length == 1:
             return mylist[0]
         if not length % 2:
@@ -1774,8 +1775,8 @@ class CrossLinkTable(object):
             "Median Distance", "Standard Deviation", "Confidence", "Frequency", "Arrangement"]
 
         if not self.external_csv_data is None:
-            keys = self.external_csv_data.keys()
-            innerkeys = self.external_csv_data[keys[0]].keys()
+            keys = list(self.external_csv_data.keys())
+            innerkeys = list(self.external_csv_data[keys[0]].keys())
             innerkeys.sort()
             fieldnames += innerkeys
 
@@ -1842,7 +1843,7 @@ class CrossLinkTable(object):
             if crosslinkedonly:
                 prot_listx = list(self.crosslinkedprots)
             else:
-                prot_listx = self.prot_length_dict.keys()
+                prot_listx = list(self.prot_length_dict.keys())
             prot_listx.sort()
 
         nresx = gap_between_components + \
@@ -1855,7 +1856,7 @@ class CrossLinkTable(object):
             if crosslinkedonly:
                 prot_listy = list(self.crosslinkedprots)
             else:
-                prot_listy = self.prot_length_dict.keys()
+                prot_listy = list(self.prot_length_dict.keys())
             prot_listy.sort()
 
         nresy = gap_between_components + \
@@ -1923,16 +1924,16 @@ class CrossLinkTable(object):
             ylabels.append(prot)
 
         # plot the contact map
-        print prot_listx, prot_listy
+        print(prot_listx, prot_listy)
 
         if not self.contactmap is None:
             import matplotlib.cm as cm
             tmp_array = np.zeros((nresx, nresy))
 
             for px in prot_listx:
-                print px
+                print(px)
                 for py in prot_listy:
-                    print py
+                    print(py)
                     resx = resoffsety[px]
                     lengx = resendx[px] - 1
                     resy = resoffsety[py]
@@ -1944,7 +1945,7 @@ class CrossLinkTable(object):
                     miny = min(indexes_y)
                     maxy = max(indexes_y)
 
-                    print px, py, minx, maxx, miny, maxy
+                    print(px, py, minx, maxx, miny, maxy)
 
                     try:
                         tmp_array[
@@ -2052,7 +2053,7 @@ class CrossLinkTable(object):
 
         fig.set_size_inches(0.004 * nresx, 0.004 * nresy)
 
-        [i.set_linewidth(2.0) for i in ax.spines.itervalues()]
+        [i.set_linewidth(2.0) for i in ax.spines.values()]
 
         #plt.tight_layout()
 
@@ -2101,7 +2102,7 @@ class CrossLinkTable(object):
                 unique_cross_links.append((r1, c1, r2, c2))
                 unique_cross_links.append((r2, c2, r1, c1))
 
-        print "# satisfied"
+        print("# satisfied")
 
         total_number_of_crosslinks=0
 
@@ -2110,18 +2111,18 @@ class CrossLinkTable(object):
             #   print i, satisfied_histogram[i]+violated_histogram[i]
             # else:
             if i in violated_histogram:
-                print i, violated_histogram[i]+satisfied_histogram[i]
+                print(i, violated_histogram[i]+satisfied_histogram[i])
             else:
-                print i, satisfied_histogram[i]
+                print(i, satisfied_histogram[i])
             total_number_of_crosslinks+=i*satisfied_histogram[i]
 
-        print "# violated"
+        print("# violated")
 
         for i in violated_histogram:
-            print i, violated_histogram[i]
+            print(i, violated_histogram[i])
             total_number_of_crosslinks+=i*violated_histogram[i]
 
-        print total_number_of_crosslinks
+        print(total_number_of_crosslinks)
 
 
 # ------------
@@ -2160,7 +2161,7 @@ class CrossLinkTable(object):
                     tmp_dist_binary.append(0)
             tmp_matrix.append(tmp_dist_binary)
 
-        matrix = zip(*tmp_matrix)
+        matrix = list(zip(*tmp_matrix))
 
         satisfied_high_sum = 0
         satisfied_mid_sum = 0
@@ -2195,20 +2196,20 @@ class CrossLinkTable(object):
                     total_satisfied += 1
                     total_satisfied_sum += 1
                 total += 1
-            print k, satisfied_high, total_high
-            print k, satisfied_mid, total_mid
-            print k, satisfied_low, total_low
-            print k, total_satisfied, total
-        print float(satisfied_high_sum) / len(matrix)
-        print float(satisfied_mid_sum) / len(matrix)
-        print float(satisfied_low_sum) / len(matrix)
+            print(k, satisfied_high, total_high)
+            print(k, satisfied_mid, total_mid)
+            print(k, satisfied_low, total_low)
+            print(k, total_satisfied, total)
+        print(float(satisfied_high_sum) / len(matrix))
+        print(float(satisfied_mid_sum) / len(matrix))
+        print(float(satisfied_low_sum) / len(matrix))
 # ------------
 
     def get_unique_crosslinks_statistics(self, prot_list,
                                          prot_list2=None):
 
-        print prot_list
-        print prot_list2
+        print(prot_list)
+        print(prot_list2)
         satisfied_high = 0
         total_high = 0
         satisfied_mid = 0
@@ -2265,12 +2266,12 @@ class CrossLinkTable(object):
                     tmp_dist_binary.append(0)
             tmp_matrix.append(tmp_dist_binary)
 
-        print "unique satisfied_high/total_high", satisfied_high, "/", total_high
-        print "unique satisfied_mid/total_mid", satisfied_mid, "/", total_mid
-        print "unique satisfied_low/total_low", satisfied_low, "/", total_low
-        print "total", total
+        print("unique satisfied_high/total_high", satisfied_high, "/", total_high)
+        print("unique satisfied_mid/total_mid", satisfied_mid, "/", total_mid)
+        print("unique satisfied_low/total_low", satisfied_low, "/", total_low)
+        print("total", total)
 
-        matrix = zip(*tmp_matrix)
+        matrix = list(zip(*tmp_matrix))
         satisfied_models = 0
         satstr = ""
         for b in satisfied_string:
@@ -2297,9 +2298,9 @@ class CrossLinkTable(object):
                     all_satisfied = False
             if all_satisfied:
                 satisfied_models += 1
-            print string
-            print satstr, all_satisfied
-        print "models that satisfies the median satisfied crosslinks/total models", satisfied_models, len(matrix)
+            print(string)
+            print(satstr, all_satisfied)
+        print("models that satisfies the median satisfied crosslinks/total models", satisfied_models, len(matrix))
 
     def plot_matrix_cross_link_distances_unique(self, figurename, prot_list,
                                                 prot_list2=None):
@@ -2336,7 +2337,7 @@ class CrossLinkTable(object):
             for k in range(len(tmp_matrix[i]) - 1):
                 matrix[i][k] = tmp_matrix[i][k]
 
-        print matrix
+        print(matrix)
 
         fig = pl.figure()
         ax = fig.add_subplot(211)
@@ -2373,11 +2374,11 @@ class CrossLinkTable(object):
                     data.append((label, values, mdist, frequency))
 
         sort_by_dist = sorted(data, key=lambda tup: tup[2])
-        sort_by_dist = zip(*sort_by_dist)
+        sort_by_dist = list(zip(*sort_by_dist))
         values = sort_by_dist[1]
-        positions = range(len(values))
+        positions = list(range(len(values)))
         labels = sort_by_dist[0]
-        frequencies = map(float, sort_by_dist[3])
+        frequencies = list(map(float, sort_by_dist[3]))
         frequencies = [f * 10.0 for f in frequencies]
 
         nchunks = int(float(len(values)) / nxl_per_row)
@@ -2408,7 +2409,7 @@ class CrossLinkTable(object):
                                      format="png",
                                      normalized=False):
         if prot_list is None:
-            prot_list = self.prot_length_dict.keys()
+            prot_list = list(self.prot_length_dict.keys())
 
         distances = []
         for xl in self.crosslinks:

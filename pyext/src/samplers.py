@@ -2,6 +2,7 @@
    Sampling of the system.
 """
 
+from __future__ import print_function
 import IMP
 import IMP.core
 
@@ -64,7 +65,7 @@ class MonteCarlo(object):
             try:
                 ob.get_particles_to_sample()
             except:
-                print "MonteCarlo: object ", ob, " doesn't have get_particles_to_sample() method"
+                print("MonteCarlo: object ", ob, " doesn't have get_particles_to_sample() method")
 
             pts = ob.get_particles_to_sample()
             for k in pts.keys():
@@ -79,7 +80,7 @@ class MonteCarlo(object):
                     self.mvs += mvs
 
                 if "SR_Bodies" in k:
-                    print len(pts[k])
+                    print(len(pts[k]))
                     mvs = self.get_super_rigid_body_movers(
                         pts[k][0],
                         pts[k][1],
@@ -228,7 +229,7 @@ class MonteCarlo(object):
     def get_nuisance_movers(self, nuisances, maxstep):
         mvs = []
         for nuisance in nuisances:
-            print nuisance, maxstep
+            print(nuisance, maxstep)
             mvs.append(
                 IMP.core.NormalMover([nuisance],
                                      IMP.FloatKeys([IMP.FloatKey("nuisance")]),
@@ -452,14 +453,14 @@ class ReplicaExchange(object):
 
         else:
             # get the replica exchange class instance from elsewhere
-            print 'got existing rex object'
+            print('got existing rex object')
             self.rem = replica_exchange_object
 
         # get number of replicas
         nproc = self.rem.get_number_of_replicas()
 
         if nproc % 2 != 0 and test == False:
-            raise Exception, "number of replicas has to be even. set test=True to run with odd number of replicas."
+            raise Exception("number of replicas has to be even. set test=True to run with odd number of replicas.")
         # create array of temperatures, in geometric progression
         temp = self.rem.create_temperatures(
             self.TEMPMIN_,
@@ -607,9 +608,9 @@ class PyMC(object):
 
     def metropolis(self, old, new):
         deltaE = new - old
-        print ": old %f new %f deltaE %f new_epot: %f" % (old, new, deltaE,
+        print(": old %f new %f deltaE %f new_epot: %f" % (old, new, deltaE,
                                                           self.m.evaluate(
-                                                              False)),
+                                                              False)), end=' ')
         kT = self.kT
         if deltaE < 0:
             return True
@@ -619,13 +620,13 @@ class PyMC(object):
     def optimize(self, nsteps):
         self.naccept = 0
         self.nframe += 1
-        print "=== new MC call"
+        print("=== new MC call")
         # store initial coordinates
         if self.first_call:
             self.mv.store_move()
             self.first_call = False
-        for i in xrange(nsteps):
-            print "MC step %d " % i,
+        for i in range(nsteps):
+            print("MC step %d " % i, end=' ')
             # get total energy
             old = self.get_energy()
             # make a MD move
@@ -636,11 +637,11 @@ class PyMC(object):
                 # move was accepted: store new conformation
                 self.mv.store_move()
                 self.naccept += 1
-                print "accepted "
+                print("accepted ")
             else:
                 # move rejected: restore old conformation
                 self.mv.reset_move()
-                print " "
+                print(" ")
 
     def get_number_of_forward_steps(self):
         return self.naccept

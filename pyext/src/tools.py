@@ -4,6 +4,7 @@
    Miscellaneous utilities.
 """
 
+from __future__ import print_function
 import IMP
 import IMP.algebra
 import collections
@@ -168,7 +169,7 @@ class Variance(object):
         model_profile = self.model_profile
         p = model_profile.calculate_profile(self.particles, IMP.saxs.CA_ATOMS)
         return array([model_profile.get_intensity(i) for i in
-                      xrange(model_profile.size())])
+                      range(model_profile.size())])
 
     def init_variances(self):
         # create placeholders
@@ -239,9 +240,9 @@ class Variance(object):
         # Sigma matrix
         fl = open('data/Sigma.dat', 'w')
         model_profile = self.model_profile
-        for i in xrange(model_profile.size()):
+        for i in range(model_profile.size()):
             qi = model_profile.get_q(i)
-            for j in xrange(model_profile.size()):
+            for j in range(model_profile.size()):
                 qj = model_profile.get_q(j)
                 vij = self.Sigma[i, j]
                 fl.write('%s %s %s\n' % (qi, qj, vij))
@@ -255,9 +256,9 @@ class Variance(object):
         # Sigmarel matrix
         fl = open('data/Sigmarel.dat', 'w')
         model_profile = self.model_profile
-        for i in xrange(model_profile.size()):
+        for i in range(model_profile.size()):
             qi = model_profile.get_q(i)
-            for j in xrange(model_profile.size()):
+            for j in range(model_profile.size()):
                 qj = model_profile.get_q(j)
                 vij = self.Sigmarel[i, j]
                 fl.write('%s %s %s\n' % (qi, qj, vij))
@@ -268,7 +269,7 @@ class Variance(object):
             fl.write('%s\n' % i)
         # mean profile
         fl = open('data/mean.dat', 'w')
-        for i in xrange(len(self.directm)):
+        for i in range(len(self.directm)):
             qi = self.model_profile.get_q(i)
             fl.write('%s ' % qi)
             fl.write('%s ' % self.directm[i])
@@ -280,14 +281,14 @@ class Variance(object):
         try:
             linalg.cholesky(Sigma + matrix(eye(len(Sigma))) * jitter)
         except linalg.LinAlgError:
-            print "Decomposition failed with jitter =", jitter
+            print("Decomposition failed with jitter =", jitter)
             return
-        print "Successful decomposition with jitter =", jitter
+        print("Successful decomposition with jitter =", jitter)
 
     def run(self):
         self.profiles = [self.get_profile()]
         # self.init_variances()
-        for n in xrange(self.niter):
+        for n in range(self.niter):
             self.perturb_particles()
             self.profiles.append(self.get_profile())
             # self.update_variances()
@@ -339,11 +340,12 @@ def get_random_cross_link_dataset(representation,
 
     #-------------------------------
 
-def get_cross_link_data(directory, filename, (distmin, distmax, ndist),
-                        (omegamin, omegamax, nomega),
-                        (sigmamin, sigmamax, nsigma),
+def get_cross_link_data(directory, filename, dist, omega, sigma,
                         don=None, doff=None, prior=0, type_of_profile="gofr"):
 
+    (distmin, distmax, ndist) = dist
+    (omegamin, omegamax, nomega) = omega
+    (sigmamin, sigmamax, nsigma) = sigma
     import IMP.isd
 
     filen = IMP.isd.get_data_path("CrossLinkPMFs.dict")
@@ -382,9 +384,10 @@ def get_cross_link_data(directory, filename, (distmin, distmax, ndist),
     #-------------------------------
 
 
-def get_cross_link_data_from_length(length, (distmin, distmax, ndist),
-                                    (omegamin, omegamax, nomega),
-                                    (sigmamin, sigmamax, nsigma)):
+def get_cross_link_data_from_length(length, xxx_todo_changeme3, xxx_todo_changeme4, xxx_todo_changeme5):
+    (distmin, distmax, ndist) = xxx_todo_changeme3
+    (omegamin, omegamax, nomega) = xxx_todo_changeme4
+    (sigmamin, sigmamax, nsigma) = xxx_todo_changeme5
     import IMP.isd
 
     dist_grid = get_grid(distmin, distmax, ndist, False)
@@ -505,16 +508,16 @@ def get_closest_residue_position(hier, resindex, terminus="N"):
             resindex -= 1
 
         if niter >= 10000:
-            print "get_closest_residue_position: exiting while loop without result"
+            print("get_closest_residue_position: exiting while loop without result")
             break
         p = sel.get_selected_particles()
 
     if len(p) == 1:
         return IMP.core.XYZ(p[0]).get_coordinates()
     elif len(p) == 0:
-        print "get_closest_residue_position: got NO residues for hierarchy %s and residue %i" % (hier, resindex)
-        raise Exception, "get_closest_residue_position: got NO residues for hierarchy %s and residue %i" % (
-            hier, resindex)
+        print("get_closest_residue_position: got NO residues for hierarchy %s and residue %i" % (hier, resindex))
+        raise Exception("get_closest_residue_position: got NO residues for hierarchy %s and residue %i" % (
+            hier, resindex))
     else:
         raise ValueError("got multiple residues for hierarchy %s and residue %i; the list of particles is %s" % (hier, resindex, str([pp.get_name() for pp in p])))
 
@@ -673,7 +676,7 @@ def select(representation,
         elif name in representation.hier_dict:
             names_particles += IMP.atom.get_leaves(representation.hier_dict[name])
         else:
-            print "select: component %s is not there" % name
+            print("select: component %s is not there" % name)
 
     if not first_residue is None and not last_residue is None:
         sel = IMP.atom.Selection(representation.prot,
@@ -804,7 +807,7 @@ class HierarchyDatabase(object):
         return self.model
 
     def get_names(self):
-        names = self.db.keys()
+        names = list(self.db.keys())
         names.sort()
         return names
 
@@ -822,19 +825,19 @@ class HierarchyDatabase(object):
 
     def get_residue_resolutions(self, name, resn):
         resn = int(resn)
-        resolutions = self.db[name][resn].keys()
+        resolutions = list(self.db[name][resn].keys())
         resolutions.sort()
         return resolutions
 
     def get_molecule_resolutions(self, name):
         resolutions = set()
         for resn in self.db[name]:
-            resolutions.update(self.db[name][resn].keys())
+            resolutions.update(list(self.db[name][resn].keys()))
         resolutions.sort()
         return resolutions
 
     def get_residue_numbers(self, name):
-        residue_numbers = self.db[name].keys()
+        residue_numbers = list(self.db[name].keys())
         residue_numbers.sort()
         return residue_numbers
 
@@ -895,13 +898,13 @@ class HierarchyDatabase(object):
         return fragments
 
     def show(self, name):
-        print name
+        print(name)
         for resn in self.get_residue_numbers(name):
-            print resn
+            print(resn)
             for resolution in self.get_residue_resolutions(name, resn):
-                print "----", resolution
+                print("----", resolution)
                 for p in self.get_particles(name, resn, resolution):
-                    print "--------", p.get_name()
+                    print("--------", p.get_name())
 
 
 def get_prot_name_from_particle(p, list_of_names):
@@ -939,7 +942,7 @@ def get_residue_indexes(hier):
         a = IMP.atom.Atom(hier)
         resind = [IMP.atom.Residue(a.get_parent()).get_index()]
     else:
-        print "get_residue_indexes> input is not Fragment, Residue or Atom"
+        print("get_residue_indexes> input is not Fragment, Residue or Atom")
         resind = []
     return resind
 
@@ -1029,8 +1032,8 @@ def sublist_iterator(l, lmin=None, lmax=None):
     if lmax is None:
         lmax = len(l)
     n = len(l) + 1
-    for i in xrange(n):
-        for j in xrange(i + 1, n):
+    for i in range(n):
+        for j in range(i + 1, n):
             if len(l[i:j]) <= lmax and len(l[i:j]) >= lmin:
                 yield l[i:j]
 
@@ -1042,7 +1045,7 @@ def flatten_list(l):
 def list_chunks_iterator(list, length):
     """ Yield successive length-sized chunks from a list.
     """
-    for i in xrange(0, len(list), length):
+    for i in range(0, len(list), length):
         yield list[i:i + length]
 
 
@@ -1136,7 +1139,7 @@ def get_random_residue_pairs(representation, resolution,
     from random import choice
     particles = []
     if names is None:
-        names=representation.hier_dict.keys()
+        names=list(representation.hier_dict.keys())
 
     for name in names:
         prot = representation.hier_dict[name]
@@ -1217,7 +1220,7 @@ def get_random_data_point(
         if random.random() < outlierprob:
             a = random.uniform(begin, end)
             random_points[i] = int(a / sensitivity) * sensitivity
-    print random_points
+    print(random_points)
     '''
     for i in range(ntrials):
       if random.random() > OUTLIERPROB_:
@@ -1244,7 +1247,7 @@ is_already_printed = {}
 
 def print_deprecation_warning(old_name, new_name):
     if old_name not in is_already_printed:
-        print "WARNING: " + old_name + " is deprecated, use " + new_name + " instead"
+        print("WARNING: " + old_name + " is deprecated, use " + new_name + " instead")
         is_already_printed[old_name] = True
 
 
@@ -1259,7 +1262,7 @@ def print_multicolumn(list_of_strings, ncolumns=2, truncate=40):
 
     split = [l[i:i + len(l) / cols] for i in range(0, len(l), len(l) / cols)]
     for row in zip(*split):
-        print "".join(str.ljust(i, truncate) for i in row)
+        print("".join(str.ljust(i, truncate) for i in row))
 
 
 def parse_dssp(dssp_fn, limit_to_chains=''):
@@ -1365,7 +1368,7 @@ def sse_selections_to_chimera_colors(dssp_dict, chimera_model_num=0):
                 chain = chain.strip('chain')
                 cmds[
                     skey] += '#%i:%s-%s.%s ' % (chimera_model_num, start, stop, chain)
-    print '; '.join([cmds[k] for k in cmds])
+    print('; '.join([cmds[k] for k in cmds]))
 
 
 

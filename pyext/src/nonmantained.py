@@ -2,6 +2,7 @@
    Nonmaintained code.
 """
 
+from __future__ import print_function
 
 class Rods(object):
 
@@ -14,7 +15,8 @@ class Rods(object):
         self.maxtrans_fb = 2.0
         self.maxrot_rb = 0.15
 
-    def add_protein(self, name, (firstres, lastres)):
+    def add_protein(self, name, res):
+        (firstres, lastres) = res
         from math import pi, cos, sin
         h = IMP.atom.Molecule.setup_particle(IMP.Particle(self.m))
         h.set_name(name)
@@ -36,14 +38,15 @@ class Rods(object):
     def get_hierarchy(self):
         return self.hier
 
-    def set_rod(self, chainname, (firstres, lastres)):
+    def set_rod(self, chainname, res):
+        (firstres, lastres) = res
         prb = IMP.Particle(self.m)
         sel = IMP.atom.Selection(
             self.hier,
             molecule=chainname,
-            residue_indexes=range(
+            residue_indexes=list(range(
                 firstres,
-                lastres + 1))
+                lastres + 1)))
         ps = sel.get_selected_particles()
         rb = IMP.core.RigidBody.setup_particle(prb, ps)
         self.rigid_bodies.append(rb)
@@ -189,11 +192,11 @@ class MultipleStates(object):
                     s = IMP.atom.Selection(
                         prot,
                         chains=segment[2],
-                        residue_indexes=range(segment[0],
-                                              segment[1] + 1))
+                        residue_indexes=list(range(segment[0],
+                                              segment[1] + 1)))
                 for p in s.get_selected_particles():
                     if IMP.core.RigidMember.get_is_setup(p):
-                        print "MultipleStates: one particle was not destroied because it was a RigidMember."
+                        print("MultipleStates: one particle was not destroied because it was a RigidMember.")
                     else:
                         # destroy the residue and the associated atom
                         a = IMP.atom.Atom(p)
@@ -218,10 +221,10 @@ class MultipleStates(object):
                 residue_index=rc[0],
                 atom_type=IMP.atom.AT_CA)
 
-            print s.get_selected_particles()
+            print(s.get_selected_particles())
             if len(s.get_selected_particles()) == 0:
                 for prot in self.prot:
-                    print "adding " + str(rc)
+                    print("adding " + str(rc))
                     p = IMP.Particle(self.m)
                     # set default coordinates 0,0,0
                     d = IMP.core.XYZ.setup_particle(p)
@@ -235,12 +238,12 @@ class MultipleStates(object):
                     c = IMP.atom.Chain.setup_particle(p, rc[1])
                     c.add_child(r)
                     prot.add_child(c)
-                    print tools.get_residue_index_and_chain_from_particle(a)
+                    print(tools.get_residue_index_and_chain_from_particle(a))
 
             else:
                 p = s.get_selected_particles()[0]
                 # , tools.get_residue_index_and_chain_from_particle(s.get_selected_particles()[0])
-                print rc, s.get_selected_particles()[0]
+                print(rc, s.get_selected_particles()[0])
 
             # test that that was indeed added:
             s = IMP.atom.Selection(
@@ -249,7 +252,7 @@ class MultipleStates(object):
                 residue_index=rc[0],
                 atom_type=IMP.atom.AT_CA)
 
-            print s.get_selected_particles()
+            print(s.get_selected_particles())
 
     def add_beads(self, segments, xyzs=None, radii=None, colors=None):
         '''
@@ -280,7 +283,7 @@ class MultipleStates(object):
                         if chain.get_id() == chainid:
                             p = IMP.Particle(self.m)
                             f = IMP.atom.Fragment.setup_particle(p)
-                            rindexes = range(firstres, lasteres + 1)
+                            rindexes = list(range(firstres, lasteres + 1))
                             f.set_residue_indexes(rindexes)
                             f.set_name(
                                 "Fragment_" + '%i-%i' %
@@ -338,14 +341,14 @@ class MultipleStates(object):
                     s = IMP.atom.Selection(
                         prot,
                         chains=segment[2],
-                        residue_indexes=range(segment[0],
-                                              segment[1] + 1))
+                        residue_indexes=list(range(segment[0],
+                                              segment[1] + 1)))
                 pstokeep += s.get_selected_particles()
 
             for p in IMP.atom.get_leaves(prot):
                 if p not in pstokeep:
                     if IMP.core.RigidMember.get_is_setup(p):
-                        print "MultipleStates: one particle was not destroied because it was a RigidMember."
+                        print("MultipleStates: one particle was not destroied because it was a RigidMember.")
                     else:
                         # destroy the residue and the associated atom
                         a = IMP.atom.Atom(p).get_parent()
@@ -371,8 +374,8 @@ class MultipleStates(object):
                 s = IMP.atom.Selection(
                     prot,
                     chains=segment[2],
-                    residue_indexes=range(segment[0],
-                                          segment[1] + 1))
+                    residue_indexes=list(range(segment[0],
+                                          segment[1] + 1)))
             residue_indexes = []
             for p in s.get_selected_particles():
 
@@ -426,7 +429,7 @@ class MultipleStates(object):
                     linkdomaindef.append((r0[0], r[0], r[2]))
                     r0 = r
 
-            print " creating linker between atoms defined by: " + str(linkdomaindef)
+            print(" creating linker between atoms defined by: " + str(linkdomaindef))
 
             ld = restraints.LinkDomains(prot, linkdomaindef, 1.0, 3.0)
             ld.set_label(str(ncopy))
@@ -458,7 +461,7 @@ class MultipleStates(object):
 
     def set_rigid_bodies(self, rigid_body_list):
         if len(self.prot) == 0:
-            print "MultipleStates.set_rigid_bodies: hierarchy was not initialized"
+            print("MultipleStates.set_rigid_bodies: hierarchy was not initialized")
             exit()
         for ncopy, prot in enumerate(self.prot):
             rbl = []
@@ -474,8 +477,8 @@ class MultipleStates(object):
                         s = IMP.atom.Selection(
                             prot,
                             chains=interval[2],
-                            residue_indexes=range(interval[0],
-                                                  interval[1] + 1))
+                            residue_indexes=list(range(interval[0],
+                                                  interval[1] + 1)))
                     for p in s.get_selected_particles():
                         atoms.append(IMP.core.XYZR(p))
 
@@ -489,7 +492,7 @@ class MultipleStates(object):
                             s = IMP.atom.Selection(
                                 self.prot_lowres[key][
                                     ncopy], chains=interval[2],
-                                residue_indexes=range(interval[0], interval[1] + 1))
+                                residue_indexes=list(range(interval[0], interval[1] + 1)))
                         for p in s.get_selected_particles():
                             atoms.append(IMP.core.XYZR(p))
 
@@ -499,14 +502,14 @@ class MultipleStates(object):
                     rb.set_name(str(element))
                     rbl.append(rb)
                 else:
-                    print "MultipleStates.set_rigid_bodies: selection " + str(interval) + "  has zero elements"
+                    print("MultipleStates.set_rigid_bodies: selection " + str(interval) + "  has zero elements")
             self.rigid_bodies[ncopy] += rbl
 
     def set_floppy_bodies(self, floppy_body_list):
         # define flexible regions within rigid bodies
 
         if len(self.prot) == 0:
-            print "MultipleStates: hierarchy was not initialized"
+            print("MultipleStates: hierarchy was not initialized")
             exit()
 
         for ncopy, prot in enumerate(self.prot):
@@ -523,8 +526,8 @@ class MultipleStates(object):
                         s = IMP.atom.Selection(
                             prot,
                             chains=interval[2],
-                            residue_indexes=range(interval[0],
-                                                  interval[1] + 1))
+                            residue_indexes=list(range(interval[0],
+                                                  interval[1] + 1)))
                     for p in s.get_selected_particles():
                         (r, c) = tools.get_residue_index_and_chain_from_particle(
                             p)
@@ -664,7 +667,7 @@ class MultipleStates(object):
         "shuffle configuration, used to restart the optimization"
         "it only works if rigid bodies were initialized"
         if len(self.rigid_bodies) == 0:
-            print "MultipleStates: rigid bodies were not intialized"
+            print("MultipleStates: rigid bodies were not intialized")
         hbbl = bounding_box_length / 2
         for rbl in self.rigid_bodies:
             for rb in rbl:
@@ -684,7 +687,7 @@ class MultipleStates(object):
         self.prot_lowres[nres] = []
         for prot in self.prot:
             sh = IMP.atom.create_simplified_along_backbone(prot, nres, False)
-            print IMP.atom.get_leaves(sh)
+            print(IMP.atom.get_leaves(sh))
             # for p in IMP.atom.get_leaves(sh):
             #    IMP.atom.Atom.setup_particle(p,IMP.atom.AT_CA)
             # s=IMP.atom.Selection(sh, chains="A",
@@ -699,10 +702,10 @@ class MultipleStates(object):
         # calculate DRMSD matrix
 
         if len(self.xyzmodellist) == 0:
-            print "MultipleStates: hierarchies were not intialized"
+            print("MultipleStates: hierarchies were not intialized")
 
         if len(self.xyzreflist) == 0:
-            print "MultipleStates: reference hierarchies were not intialized"
+            print("MultipleStates: reference hierarchies were not intialized")
 
         drmsd = {}
         for i in range(len(self.xyzreflist)):
@@ -720,7 +723,7 @@ class MultipleStates(object):
 
         # calculate model-template assignment that gives minimum total drmsd
         min_drmsd = []
-        for assign in itertools.permutations(range(len(self.xyzreflist))):
+        for assign in itertools.permutations(list(range(len(self.xyzreflist)))):
             s = 0.
             for i, j in enumerate(assign):
                 s += drmsd["MultipleStates_DRMSD_" +
@@ -1315,8 +1318,8 @@ class CrossLinkMS(object):
                 # skip the rest
                 continue
 
-            print '''CrossLinkMS: attempting to add restraint between
-                     residue %d of chain %s and residue %d of chain %s''' % (r1, c1, r2, c2)
+            print('''CrossLinkMS: attempting to add restraint between
+                     residue %d of chain %s and residue %d of chain %s''' % (r1, c1, r2, c2))
 
             p1s = []
             p2s = []
@@ -1329,7 +1332,7 @@ class CrossLinkMS(object):
                     atom_type=IMP.atom.AT_CA)
                 p1 = (s1.get_selected_particles()[0])
             except:
-                print "CrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1, c1)
+                print("CrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1, c1))
                 continue
             try:
                 s2 = IMP.atom.Selection(
@@ -1339,7 +1342,7 @@ class CrossLinkMS(object):
                     atom_type=IMP.atom.AT_CA)
                 p2 = (s2.get_selected_particles()[0])
             except:
-                print "CrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2, c2)
+                print("CrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2, c2))
                 continue
 
             for copy in self.prots:
@@ -1361,20 +1364,20 @@ class CrossLinkMS(object):
                IMP.core.RigidMember.get_is_setup(p2s[0]) and
                IMP.core.RigidMember(p1s[0]).get_rigid_body() ==
                IMP.core.RigidMember(p2s[0]).get_rigid_body() and not force_restraint):
-                print '''CrossLinkMS: WARNING> residue %d of chain %s and
-                       residue %d of chain %s belong to the same rigid body''' % (r1, c1, r2, c2)
+                print('''CrossLinkMS: WARNING> residue %d of chain %s and
+                       residue %d of chain %s belong to the same rigid body''' % (r1, c1, r2, c2))
                 continue
 
             # this list contains the list of symmetric pairs to avoid
             # duplicates
             if (p1s[0], p2s[0], crosslinker) in self.added_pairs_list:
-                print "CrossLinkMS: WARNING> pair %d %s %d %s already there" % (r1, c1, r2, c2)
+                print("CrossLinkMS: WARNING> pair %d %s %d %s already there" % (r1, c1, r2, c2))
                 continue
             if (p2s[0], p1s[0], crosslinker) in self.added_pairs_list:
-                print "CrossLinkMS: WARNING> pair %d %s %d %s already there" % (r1, c1, r2, c2)
+                print("CrossLinkMS: WARNING> pair %d %s %d %s already there" % (r1, c1, r2, c2))
                 continue
 
-            print "CrossLinkMS: added pair %d %s %d %s" % (r1, c1, r2, c2)
+            print("CrossLinkMS: added pair %d %s %d %s" % (r1, c1, r2, c2))
             self.added_pairs_list.append((p1s[0], p2s[0], crosslinker))
 
             rs_name = 'restraint_' + str(index)
@@ -1399,9 +1402,9 @@ class CrossLinkMS(object):
                                  1000.0,
                                  self.sigmaglobal.get_upper() - 1.0,
                                  self.sigmaglobal.get_lower() + 0.1))
-        print "CrossLinkMS: missing residues"
+        print("CrossLinkMS: missing residues")
         for ms in self.missing_residues:
-            print "CrossLinkMS:missing " + str(ms)
+            print("CrossLinkMS:missing " + str(ms))
 
 #---------------------------------
     def add_crosslink_according_to_new_file(self, totallist):
@@ -1436,8 +1439,8 @@ class CrossLinkMS(object):
             r1 = int(pair[0][1])
             r2 = int(pair[1][1])
 
-            print '''CrossLinkMS: attempting to add restraint between
-                     residue %d of chain %s and residue %d of chain %s''' % (r1, c1, r2, c2)
+            print('''CrossLinkMS: attempting to add restraint between
+                     residue %d of chain %s and residue %d of chain %s''' % (r1, c1, r2, c2))
 
             try:
                 s1 = IMP.atom.Selection(
@@ -1447,7 +1450,7 @@ class CrossLinkMS(object):
                     atom_type=IMP.atom.AT_CA)
                 p1 = (s1.get_selected_particles()[0])
             except:
-                print "CrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1, c1)
+                print("CrossLinkMS: WARNING> residue %d of chain %s is not there" % (r1, c1))
                 error = True
                 self.missing_residues.append((r1, c1))
             try:
@@ -1458,7 +1461,7 @@ class CrossLinkMS(object):
                     atom_type=IMP.atom.AT_CA)
                 p2 = (s2.get_selected_particles()[0])
             except:
-                print "CrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2, c2)
+                print("CrossLinkMS: WARNING> residue %d of chain %s is not there" % (r2, c2))
                 error = True
                 self.missing_residues.append((r2, c2))
             if error:
@@ -1479,10 +1482,10 @@ class CrossLinkMS(object):
             # this list contains the list of symmetric pairs to avoid
             # duplicates
             if (p1, p2, crosslinker) in self.added_pairs_list:
-                print "CrossLinkMS: WARNING> pair %d %s %d %s already there" % (r1, c1, r2, c2)
+                print("CrossLinkMS: WARNING> pair %d %s %d %s already there" % (r1, c1, r2, c2))
                 continue
             if (p2, p1, crosslinker) in self.added_pairs_list:
-                print "CrossLinkMS: WARNING> pair %d %s %d %s already there" % (r1, c1, r2, c2)
+                print("CrossLinkMS: WARNING> pair %d %s %d %s already there" % (r1, c1, r2, c2))
                 continue
 
             # check whether the atom pair belongs to the same rigid body
@@ -1490,8 +1493,8 @@ class CrossLinkMS(object):
                IMP.core.RigidMember.get_is_setup(p2) and
                IMP.core.RigidMember(p1).get_rigid_body() ==
                IMP.core.RigidMember(p2).get_rigid_body() and not force_restraint):
-                print '''CrossLinkMS: WARNING> residue %d of chain %s and
-                       residue %d of chain %s belong to the same rigid body''' % (r1, c1, r2, c2)
+                print('''CrossLinkMS: WARNING> residue %d of chain %s and
+                       residue %d of chain %s belong to the same rigid body''' % (r1, c1, r2, c2))
                 continue
 
             p1s.append(p1)
@@ -1501,7 +1504,7 @@ class CrossLinkMS(object):
             c1s.append(c1)
             c2s.append(c2)
 
-            print "CrossLinkMS: added pair %d %s %d %s" % (r1, c1, r2, c2)
+            print("CrossLinkMS: added pair %d %s %d %s" % (r1, c1, r2, c2))
 
             self.added_pairs_list.append((p1, p2, crosslinker))
 
@@ -1512,7 +1515,7 @@ class CrossLinkMS(object):
                 self.sigmaglobal,
                 self.crosslinker_dict[crosslinker])
             for i in range(len(p1s)):
-                print rs_name, i
+                print(rs_name, i)
                 ln.add_contribution(p1s[i], p2s[i])
                 self.pairs.append((p1s[i], p2s[i], crosslinker, rs_name,
                                    100, 100, (r1s[i], c1s[i], i), (r2s[i], c2s[i], i), crosslinker, i, ln))
@@ -1690,17 +1693,17 @@ class CrossLinkMS(object):
                     printbool = True
 
                 if printbool:
-                    print "Residue1: %6s, chainid1: %6s, copy1: %6d" % el["Resid1_Chainid1_Copy1"]
-                    print "Residue2: %6s, chainid2: %6s, copy2: %6d" % el["Resid2_Chainid2_Copy2"]
-                    keylist = el.keys()
+                    print("Residue1: %6s, chainid1: %6s, copy1: %6d" % el["Resid1_Chainid1_Copy1"])
+                    print("Residue2: %6s, chainid2: %6s, copy2: %6d" % el["Resid2_Chainid2_Copy2"])
+                    keylist = list(el.keys())
                     keylist.sort()
                     for k in keylist:
-                        print "----", k, el[k]
-            print "r1 c1 r2 c2 FP XL Inter"
+                        print("----", k, el[k])
+            print("r1 c1 r2 c2 FP XL Inter")
             for d in detectedlist:
-                print d[0][0], d[0][1], d[1][0], d[1][1], d[2], d[3], d[4]
+                print(d[0][0], d[0][1], d[1][0], d[1][1], d[2], d[3], d[4])
         else:
-            print "CrossLinkMS: Simulated data not initialized"
+            print("CrossLinkMS: Simulated data not initialized")
             exit()
 
     def dump_simulated_data(self, filename="simulated_cross_link.dat"):
@@ -1867,10 +1870,10 @@ class BinomialXLMSRestraint(object):
         self.betamax = 4.0
         if self.setup == 1:
             self.betaissampled = True
-            print "BinomialXLMSRestraint: beta is sampled"
+            print("BinomialXLMSRestraint: beta is sampled")
         if self.setup == 0:
             self.betaissampled = False
-            print "BinomialXLMSRestraint: beta is NOT sampled"
+            print("BinomialXLMSRestraint: beta is NOT sampled")
         self.betamaxtrans = 0.01
 
         '''
@@ -1927,11 +1930,11 @@ class BinomialXLMSRestraint(object):
         if value is None:
             self.psiinit = 0.01
             self.psiissampled = True
-            print "BinomialXLMSRestraint: psi " + str(index) + " is sampled"
+            print("BinomialXLMSRestraint: psi " + str(index) + " is sampled")
         else:
             self.psiinit = value
             self.psiissampled = False
-            print "BinomialXLMSRestraint: psi " + str(index) + " is NOT sampled"
+            print("BinomialXLMSRestraint: psi " + str(index) + " is NOT sampled")
         self.psiminnuis = 0.0000001
         self.psimaxnuis = 0.4999999
         self.psimin = 0.01
@@ -2009,7 +2012,7 @@ class BinomialXLMSRestraint(object):
                 psip = self.psi_dictionary[psiindex][0]
 
                 if self.setup == 0:
-                    print "BinomialXLMSRestraint: setup 0, adding BinomialJeffreysPrior to psi particle " + str(psiindex)
+                    print("BinomialXLMSRestraint: setup 0, adding BinomialJeffreysPrior to psi particle " + str(psiindex))
                     self.rs2.add_restraint(impisd2.BinomialJeffreysPrior(psip))
                     # self.rs2.add_restraint(impisd2.JeffreysRestraint(psip))
 
@@ -2045,12 +2048,12 @@ class BinomialXLMSRestraint(object):
             try:
                 c1 = self.mbpnc[pair[0][0]]
             except:
-                print "BinomialXLMSRestraint: WARNING> protein name " + pair[0][0] + " was not defined"
+                print("BinomialXLMSRestraint: WARNING> protein name " + pair[0][0] + " was not defined")
                 continue
             try:
                 c2 = self.mbpnc[pair[1][0]]
             except:
-                print "BinomialXLMSRestraint: WARNING> protein name " + pair[1][0] + " was not defined"
+                print("BinomialXLMSRestraint: WARNING> protein name " + pair[1][0] + " was not defined")
                 continue
 
             r1 = int(pair[0][1])
@@ -2061,8 +2064,8 @@ class BinomialXLMSRestraint(object):
             except:
                 psivalue = None
 
-            print '''CrossLinkMS: attempting to add restraint between
-                     residue %d of chain %s and residue %d of chain %s''' % (r1, c1, r2, c2)
+            print('''CrossLinkMS: attempting to add restraint between
+                     residue %d of chain %s and residue %d of chain %s''' % (r1, c1, r2, c2))
 
             try:
                 s1 = IMP.atom.Selection(
@@ -2072,7 +2075,7 @@ class BinomialXLMSRestraint(object):
                     atom_type=IMP.atom.AT_CA)
                 p1 = (s1.get_selected_particles()[0])
             except:
-                print "BinomialXLMSRestraint: WARNING> residue %d of chain %s is not there" % (r1, c1)
+                print("BinomialXLMSRestraint: WARNING> residue %d of chain %s is not there" % (r1, c1))
                 error = True
                 self.missing_residues.append((r1, c1))
             try:
@@ -2083,7 +2086,7 @@ class BinomialXLMSRestraint(object):
                     atom_type=IMP.atom.AT_CA)
                 p2 = (s2.get_selected_particles()[0])
             except:
-                print "BinomialXLMSRestraint: WARNING> residue %d of chain %s is not there" % (r2, c2)
+                print("BinomialXLMSRestraint: WARNING> residue %d of chain %s is not there" % (r2, c2))
                 error = True
                 self.missing_residues.append((r2, c2))
             if error:
@@ -2104,10 +2107,10 @@ class BinomialXLMSRestraint(object):
             # this list contains the list of symmetric pairs to avoid
             # duplicates
             if (p1, p2, crosslinker) in self.added_pairs_list:
-                print "BinomialXLMSRestraint: WARNING> pair %d %s %d %s already there" % (r1, c1, r2, c2)
+                print("BinomialXLMSRestraint: WARNING> pair %d %s %d %s already there" % (r1, c1, r2, c2))
                 continue
             if (p2, p1, crosslinker) in self.added_pairs_list:
-                print "BinomialXLMSRestraint: WARNING> pair %d %s %d %s already there" % (r1, c1, r2, c2)
+                print("BinomialXLMSRestraint: WARNING> pair %d %s %d %s already there" % (r1, c1, r2, c2))
                 continue
 
             # check whether the atom pair belongs to the same rigid body
@@ -2115,8 +2118,8 @@ class BinomialXLMSRestraint(object):
                IMP.core.RigidMember.get_is_setup(p2) and
                IMP.core.RigidMember(p1).get_rigid_body() ==
                IMP.core.RigidMember(p2).get_rigid_body() and not force_restraint):
-                print '''BinomialXLMSRestraint: WARNING> residue %d of chain %s and
-                       residue %d of chain %s belong to the same rigid body''' % (r1, c1, r2, c2)
+                print('''BinomialXLMSRestraint: WARNING> residue %d of chain %s and
+                       residue %d of chain %s belong to the same rigid body''' % (r1, c1, r2, c2))
                 continue
 
             p1s.append(p1)
@@ -2128,7 +2131,7 @@ class BinomialXLMSRestraint(object):
             psis.append(psi)
             psivalues.append(psivalue)
 
-            print "BinomialXLMSRestraint: added pair %d %s %d %s" % (r1, c1, r2, c2)
+            print("BinomialXLMSRestraint: added pair %d %s %d %s" % (r1, c1, r2, c2))
 
             self.added_pairs_list.append((p1, p2, crosslinker))
 
@@ -2136,7 +2139,7 @@ class BinomialXLMSRestraint(object):
             rs_name = '{:05}'.format(self.index % 100000)
 
             if self.setup == 0:
-                print "BinomialXLMSRestraint: constructor 0"
+                print("BinomialXLMSRestraint: constructor 0")
                 ln = impisd2.BinomialCrossLinkMSRestraint(
                     self.m,
                     self.sigma,
@@ -2144,7 +2147,7 @@ class BinomialXLMSRestraint(object):
                     self.crosslinker_dict[crosslinker])
 
             if self.setup == 1:
-                print "BinomialXLMSRestraint: constructor 1"
+                print("BinomialXLMSRestraint: constructor 1")
                 ln = impisd2.BinomialCrossLinkMSRestraint(
                     self.m,
                     self.sigma,
@@ -2173,9 +2176,9 @@ class BinomialXLMSRestraint(object):
 
             self.rs.add_restraint(ln)
 
-        print "BinomialXLMSRestraint: missing residues"
+        print("BinomialXLMSRestraint: missing residues")
         for ms in self.missing_residues:
-            print "BinomialXLMSRestraint:missing " + str(ms)
+            print("BinomialXLMSRestraint:missing " + str(ms))
 
         # self.rs2.add_restraint(impisd2.IntensityThresholdRestraint(self.delta))
         # self.rs2.add_restraint(impisd2.UniformPrior(self.delta,1000000000.0,self.delta.get_upper(),self.delta.get_lower()))
@@ -2369,7 +2372,7 @@ class CrossLinkMSSimple(object):
             if (tokens[len(tokens) - 1] == "F"):
                 force_restraint = True
 
-            print "attempting to add restraint between residue %d of chain %s and residue %d of chain %s" % (r1, c1, r2, c2)
+            print("attempting to add restraint between residue %d of chain %s and residue %d of chain %s" % (r1, c1, r2, c2))
 
             p1s = []
             p2s = []
@@ -2383,7 +2386,7 @@ class CrossLinkMSSimple(object):
                     atom_type=IMP.atom.AT_CA)
                 p1 = (s1.get_selected_particles()[0])
             except:
-                print "WARNING> residue %d of chain %s is not there" % (r1, c1)
+                print("WARNING> residue %d of chain %s is not there" % (r1, c1))
                 continue
             try:
                 s2 = IMP.atom.Selection(
@@ -2393,7 +2396,7 @@ class CrossLinkMSSimple(object):
                     atom_type=IMP.atom.AT_CA)
                 p2 = (s2.get_selected_particles()[0])
             except:
-                print "WARNING> residue %d of chain %s is not there" % (r2, c2)
+                print("WARNING> residue %d of chain %s is not there" % (r2, c2))
                 continue
 
             # part1=[]
@@ -2405,24 +2408,24 @@ class CrossLinkMSSimple(object):
             # might be more than one restraint per particle pair if you have
             # more than one cross-link type
 
-            print "attempting to add restraint between residue %d of chain %s and residue %d of chain %s" % (r1, c1, r2, c2)
+            print("attempting to add restraint between residue %d of chain %s and residue %d of chain %s" % (r1, c1, r2, c2))
 
             # check whether the atom pair belongs to the same rigid body
             if(IMP.core.RigidMember.get_is_setup(p1) and IMP.core.RigidMember.get_is_setup(p2) and
                IMP.core.RigidMember(p1).get_rigid_body() == IMP.core.RigidMember(p2).get_rigid_body() and not force_restraint):
-                print "WARNING> residue %d of chain %s and residue %d of chain %s belong to the same rigid body" % (r1, c1, r2, c2)
+                print("WARNING> residue %d of chain %s and residue %d of chain %s belong to the same rigid body" % (r1, c1, r2, c2))
                 continue
 
                 # this list contain the list of simmetric pairs to avoid
                 # duplications
             if (p1, p2, crosslinker) in addedd_pairs_list:
-                print "WARNING> pair %d %s %d %s already there" % (r1, c1, r2, c2)
+                print("WARNING> pair %d %s %d %s already there" % (r1, c1, r2, c2))
                 continue
             if (p2, p1, crosslinker) in addedd_pairs_list:
-                print "WARNING> pair %d %s %d %s already there" % (r1, c1, r2, c2)
+                print("WARNING> pair %d %s %d %s already there" % (r1, c1, r2, c2))
                 continue
 
-            print "added pair %d %s %d %s" % (r1, c1, r2, c2)
+            print("added pair %d %s %d %s" % (r1, c1, r2, c2))
             index += 1
             addedd_pairs_list.append((p1, p2, crosslinker))
 
@@ -2531,7 +2534,7 @@ def select_calpha_or_residue(
         if len(ps) == 1:
             p = ps[0]
         else:
-            print ObjectName + " multiple residues selected for selection residue %s chain %s " % (resid, chain)
+            print(ObjectName + " multiple residues selected for selection residue %s chain %s " % (resid, chain))
     else:
         # use the residue, in case of simplified representation
         s = IMP.atom.Selection(prot, chains=chain,
@@ -2542,8 +2545,8 @@ def select_calpha_or_residue(
             if len(ps) == 1:
                 p = ps[0]
             else:
-                print ObjectName + " multiple residues selected for selection residue %s chain %s " % (resid, chain)
+                print(ObjectName + " multiple residues selected for selection residue %s chain %s " % (resid, chain))
 
         else:
-            print ObjectName + " residue %s chain %s does not exist" % (resid, chain)
+            print(ObjectName + " residue %s chain %s does not exist" % (resid, chain))
     return p

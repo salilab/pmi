@@ -2,6 +2,8 @@
    Handling of degrees of freedom.
 """
 
+from __future__ import print_function
+
 class dof(object):
     """Degrees of Freedom.
     Tasks:
@@ -41,17 +43,17 @@ class dof(object):
             rigid_parts = set(particles)
 
         name = ""
-        print "set_rigid_body_from_hierarchies> setting up a new rigid body"
+        print("set_rigid_body_from_hierarchies> setting up a new rigid body")
         for hier in hiers:
             ps = IMP.atom.get_leaves(hier)
             for p in ps:
                 if IMP.core.RigidMember.get_is_setup(p):
                     rb = IMP.core.RigidMember(p).get_rigid_body()
-                    print "set_rigid_body_from_hierarchies> WARNING particle %s already belongs to rigid body %s" % (p.get_name(), rb.get_name())
+                    print("set_rigid_body_from_hierarchies> WARNING particle %s already belongs to rigid body %s" % (p.get_name(), rb.get_name()))
                 else:
                     rigid_parts.add(p)
             name += hier.get_name() + "-"
-            print "set_rigid_body_from_hierarchies> adding %s to the rigid body" % hier.get_name()
+            print("set_rigid_body_from_hierarchies> adding %s to the rigid body" % hier.get_name())
         rb = IMP.atom.create_rigid_body(list(rigid_parts))
         rb.set_coordinates_are_optimized(True)
         rb.set_name(name + "rigid_body")
@@ -80,27 +82,27 @@ class dof(object):
                 sel = IMP.atom.Selection(
                     self.prot,
                     molecule=s[0],
-                    residue_indexes=range(s[1][0],
-                                          s[1][1] + 1))
+                    residue_indexes=list(range(s[1][0],
+                                          s[1][1] + 1)))
                 if len(sel.get_selected_particles()) == 0:
-                    print "set_rigid_bodies: selected particle does not exists"
+                    print("set_rigid_bodies: selected particle does not exists")
                 for p in sel.get_selected_particles():
                     # if not p in self.floppy_bodies:
                     if IMP.core.RigidMember.get_is_setup(p):
                         rb = IMP.core.RigidMember(p).get_rigid_body()
-                        print "set_rigid_body_from_hierarchies> WARNING particle %s already belongs to rigid body %s" % (p.get_name(), rb.get_name())
+                        print("set_rigid_body_from_hierarchies> WARNING particle %s already belongs to rigid body %s" % (p.get_name(), rb.get_name()))
                     else:
                         rigid_parts.add(p)
 
             elif type(s) == type(str()):
                 sel = IMP.atom.Selection(self.prot, molecule=s)
                 if len(sel.get_selected_particles()) == 0:
-                    print "set_rigid_bodies: selected particle does not exists"
+                    print("set_rigid_bodies: selected particle does not exists")
                 for p in sel.get_selected_particles():
                     # if not p in self.floppy_bodies:
                     if IMP.core.RigidMember.get_is_setup(p):
                         rb = IMP.core.RigidMember(p).get_rigid_body()
-                        print "set_rigid_body_from_hierarchies> WARNING particle %s already belongs to rigid body %s" % (p.get_name(), rb.get_name())
+                        print("set_rigid_body_from_hierarchies> WARNING particle %s already belongs to rigid body %s" % (p.get_name(), rb.get_name()))
                     else:
                         rigid_parts.add(p)
 
@@ -119,7 +121,7 @@ class dof(object):
         super_rigid_xyzs = set()
         super_rigid_rbs = set()
         name = ""
-        print "set_super_rigid_body_from_hierarchies> setting up a new SUPER rigid body"
+        print("set_super_rigid_body_from_hierarchies> setting up a new SUPER rigid body")
 
         for hier in hiers:
             ps = IMP.atom.get_leaves(hier)
@@ -129,7 +131,7 @@ class dof(object):
                     super_rigid_rbs.add(rb)
                 else:
                     super_rigid_xyzs.add(p)
-            print "set_rigid_body_from_hierarchies> adding %s to the rigid body" % hier.get_name()
+            print("set_rigid_body_from_hierarchies> adding %s to the rigid body" % hier.get_name())
         if len(super_rigid_rbs) < min_size:
             return
         if axis is None:
@@ -170,10 +172,10 @@ class dof(object):
                 sel = IMP.atom.Selection(
                     self.prot,
                     molecule=s[2],
-                    residue_indexes=range(s[0],
-                                          s[1] + 1))
+                    residue_indexes=list(range(s[0],
+                                          s[1] + 1)))
                 if len(sel.get_selected_particles()) == 0:
-                    print "set_rigid_bodies: selected particle does not exists"
+                    print("set_rigid_bodies: selected particle does not exists")
                 for p in sel.get_selected_particles():
                     if IMP.core.RigidMember.get_is_setup(p):
                         rb = IMP.core.RigidMember(p).get_rigid_body()
@@ -183,7 +185,7 @@ class dof(object):
             elif type(s) == type(str()):
                 sel = IMP.atom.Selection(self.prot, molecule=s)
                 if len(sel.get_selected_particles()) == 0:
-                    print "set_rigid_bodies: selected particle does not exists"
+                    print("set_rigid_bodies: selected particle does not exists")
                 for p in sel.get_selected_particles():
                     # if not p in self.floppy_bodies:
                     if IMP.core.RigidMember.get_is_setup(p):
@@ -204,7 +206,7 @@ class dof(object):
             ps = IMP.atom.get_leaves(h)
             for p in ps:
                 if p in self.floppy_bodies:
-                    print "remove_floppy_bodies: removing %s from floppy body list" % p.get_name()
+                    print("remove_floppy_bodies: removing %s from floppy body list" % p.get_name())
                     self.floppy_bodies.remove(p)
 
     def set_floppy_bodies(self):
@@ -212,7 +214,7 @@ class dof(object):
             name = p.get_name()
             p.set_name(name + "_floppy_body")
             if IMP.core.RigidMember.get_is_setup(p):
-                print "I'm trying to make this particle flexible although it was assigned to a rigid body", p.get_name()
+                print("I'm trying to make this particle flexible although it was assigned to a rigid body", p.get_name())
                 rb = IMP.core.RigidMember(p).get_rigid_body()
                 try:
                     rb.set_is_rigid_member(p.get_index(), False)

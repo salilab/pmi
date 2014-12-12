@@ -4,6 +4,7 @@
    Representation of the system.
 """
 
+from __future__ import print_function
 import IMP
 import IMP.core
 import IMP.base
@@ -142,7 +143,7 @@ class Representation(object):
                            'MET': 'M', 'PHE': 'F', 'PRO': 'P', 'SER': 'S',
                            'THR': 'T', 'TRP': 'W', 'TYR': 'Y', 'VAL': 'V', 'UNK': 'X'}
 
-        self.onetothree = dict((v, k) for k, v in self.threetoone.iteritems())
+        self.onetothree = dict((v, k) for k, v in self.threetoone.items())
 
         self.residuenamekey = IMP.kernel.StringKey("ResidueName")
 
@@ -168,7 +169,7 @@ class Representation(object):
         self.create_component(*args, **kwargs)
 
     def get_component_names(self):
-        return self.hier_dict.keys()
+        return list(self.hier_dict.keys())
 
     def add_component_sequence(self, name, filename, id=None, offs=None,
                                format="FASTA"):
@@ -221,7 +222,7 @@ class Representation(object):
 
         if resolutions is None:
             resolutions = [1]
-        print "autobuild_model: constructing %s from pdb %s and chain %s" % (name, pdbname, str(chain))
+        print("autobuild_model: constructing %s from pdb %s and chain %s" % (name, pdbname, str(chain)))
 
         # get the initial and end residues of the pdb
         t = IMP.atom.read_pdb(pdbname, self.m,
@@ -265,14 +266,14 @@ class Representation(object):
             first = g[0]
             last = g[1]
             if g[2] == "cont":
-                print "autobuild_model: constructing fragment %s from pdb" % (str((first, last)))
+                print("autobuild_model: constructing fragment %s from pdb" % (str((first, last))))
                 outhiers += self.add_component_pdb(name, pdbname,
                                                    chain, resolutions=resolutions,
                                                    color=color, cacenters=True,
                                                    resrange=(first, last),
                                                    offset=offset, isnucleicacid=isnucleicacid)
             elif g[2] == "gap" and n > 0:
-                print "autobuild_model: constructing fragment %s as a bead" % (str((first, last)))
+                print("autobuild_model: constructing fragment %s as a bead" % (str((first, last))))
                 parts = self.hier_db.get_particles_at_closest_resolution(
                     name,
                     first -
@@ -284,7 +285,7 @@ class Representation(object):
 
             elif g[2] == "gap" and n == 0:
                 # add pre-beads
-                print "autobuild_model: constructing fragment %s as a bead" % (str((first, last)))
+                print("autobuild_model: constructing fragment %s as a bead" % (str((first, last))))
                 outhiers += self.add_component_necklace(name,
                                                         first+offset, last+offset, missingbeadsize, incoord=xyznter)
 
@@ -382,18 +383,18 @@ class Representation(object):
             # do what you have to do for proteins
             sel = IMP.atom.Selection(
                 c,
-                residue_indexes=range(
+                residue_indexes=list(range(
                     start,
-                    end + 1),
+                    end + 1)),
                 atom_type=IMP.atom.AT_CA)
 
         else:
             # do what you have to do for nucleic-acids
             sel = IMP.atom.Selection(
                 c,
-                residue_indexes=range(
+                residue_indexes=list(range(
                     start,
-                    end + 1),
+                    end + 1)),
                 atom_type=IMP.atom.AT_P)
 
         ps = sel.get_selected_particles()
@@ -521,7 +522,7 @@ class Representation(object):
                 h = IMP.atom.Fragment.setup_particle(prt)
                 h.set_name(name + '_%i-%i_bead' % (ds_frag[0], ds_frag[1]))
                 prt.set_name(name + '_%i-%i_bead' % (ds_frag[0], ds_frag[1]))
-                h.set_residue_indexes(range(ds_frag[0], ds_frag[1] + 1))
+                h.set_residue_indexes(list(range(ds_frag[0], ds_frag[1] + 1)))
                 resolution = len(h.get_residue_indexes())
             if "Beads" not in self.hier_representation[name]:
                 root = IMP.atom.Hierarchy.setup_particle(IMP.Particle(self.m))
@@ -584,7 +585,7 @@ class Representation(object):
             colors=None
         else:
             colors=[color]
-        for chunk in list(IMP.pmi.tools.list_chunks_iterator(range(begin, end + 1), length)):
+        for chunk in list(IMP.pmi.tools.list_chunks_iterator(range(begin, end + 1)), length):
             outhiers += self.add_component_beads(name,
                                                  [(chunk[0], chunk[-1])], colors=colors,incoord=incoord)
         return outhiers
@@ -675,7 +676,7 @@ class Representation(object):
                 density_particles.append(p)
         elif use_precomputed_gaussians:
             if len(fragment_particles) == 0:
-                print "add_component_density: no particle was selected"
+                print("add_component_density: no particle was selected")
                 return out_hier
             for p in fragment_particles:
                 if not (IMP.atom.Fragment.get_is_setup(self.m,p.get_particle_index()) and
@@ -695,7 +696,7 @@ class Representation(object):
         else:
             #compute the gaussians here
             if len(fragment_particles) == 0:
-                print "add_component_density: no particle was selected"
+                print("add_component_density: no particle was selected")
                 return out_hier
 
             density_particles = IMP.isd.gmm_tools.sample_and_fit_to_particles(
@@ -763,11 +764,11 @@ class Representation(object):
                     name_is_ambiguous=False)
 
         if len(fragment_particles) == 0:
-            print "add all atom densities: no particle was selected"
+            print("add all atom densities: no particle was selected")
             return
 
         # create a spherical gaussian for each particle based on atom type
-        print 'setting up all atom gaussians num_particles',len(fragment_particles)
+        print('setting up all atom gaussians num_particles',len(fragment_particles))
         for n,p in enumerate(fragment_particles):
             center=IMP.core.XYZ(p).get_coordinates()
             rad=IMP.core.XYZR(p).get_radius()
@@ -776,10 +777,10 @@ class Representation(object):
                                                                                                                           center)
             shape=IMP.algebra.Gaussian3D(IMP.algebra.ReferenceFrame3D(trans),[rad]*3)
             IMP.core.Gaussian.setup_particle(p,shape)
-            print 'setting up particle',p.get_name(), " as individual gaussian particle"
+            print('setting up particle',p.get_name(), " as individual gaussian particle")
 
         if not output_map is None:
-            print 'writing map to', output_map
+            print('writing map to', output_map)
             IMP.isd.gmm_tools.write_gmm_to_map(
                 fragment_particles,
                 output_map,
@@ -873,12 +874,12 @@ class Representation(object):
                 raise ValueError("component %s cannot proceed if rigid bodies were initialized. Use the function before defining the rigid bodies" % component_name)
 
             if prmfname != preprname:
-                print "set_coordinates_from_rmf: WARNING rmf particle and representation particles have not the same name %s %s " % (prmfname, preprname)
+                print("set_coordinates_from_rmf: WARNING rmf particle and representation particles have not the same name %s %s " % (prmfname, preprname))
             if IMP.core.XYZ.get_is_setup(prmf) and IMP.core.XYZ.get_is_setup(psrepr[n]):
                 xyz = IMP.core.XYZ(prmf).get_coordinates()
                 IMP.core.XYZ(psrepr[n]).set_coordinates(xyz)
             else:
-                print "set_coordinates_from_rmf: WARNING particles are not XYZ decorated %s %s " % (str(IMP.core.XYZ.get_is_setup(prmf)), str(IMP.core.XYZ.get_is_setup(psrepr[n])))
+                print("set_coordinates_from_rmf: WARNING particles are not XYZ decorated %s %s " % (str(IMP.core.XYZ.get_is_setup(prmf)), str(IMP.core.XYZ.get_is_setup(psrepr[n]))))
 
     def check_root(self, name, protein_h, resolution):
         '''
@@ -1081,7 +1082,7 @@ class Representation(object):
             hierarchies_excluded_from_collision = []
 
         if len(self.rigid_bodies) == 0:
-            print "shuffle_configuration: rigid bodies were not intialized"
+            print("shuffle_configuration: rigid bodies were not intialized")
 
         gcpf = IMP.core.GridClosePairsFinder()
         gcpf.set_distance(cutoff)
@@ -1108,8 +1109,8 @@ class Representation(object):
         allparticleindexes = list(
             set(allparticleindexes) - set(hierarchies_excluded_from_collision_indexes))
 
-        print hierarchies_excluded_from_collision
-        print len(allparticleindexes),len(hierarchies_excluded_from_collision_indexes)
+        print(hierarchies_excluded_from_collision)
+        print(len(allparticleindexes),len(hierarchies_excluded_from_collision_indexes))
 
         for rb in self.rigid_bodies:
             if rb not in excluded_rigid_bodies:
@@ -1155,14 +1156,14 @@ class Representation(object):
                             niter = niterations
                         else:
                             niter += 1
-                            print "shuffle_configuration: rigid body placed close to other %d particles, trying again..." % npairs
-                            print "shuffle_configuration: rigid body name: " + rb.get_name()
+                            print("shuffle_configuration: rigid body placed close to other %d particles, trying again..." % npairs)
+                            print("shuffle_configuration: rigid body name: " + rb.get_name())
                             if niter == niterations:
                                 raise ValueError("tried the maximum number of iterations to avoid collisions, increase the distance cutoff")
                     else:
                         break
 
-        print 'shuffling', len(self.floppy_bodies), 'floppy bodies'
+        print('shuffling', len(self.floppy_bodies), 'floppy bodies')
         for fb in self.floppy_bodies:
             if avoidcollision:
                 rm = not IMP.core.RigidMember.get_is_setup(fb)
@@ -1202,7 +1203,7 @@ class Representation(object):
                         niter = niterations
                     else:
                         niter += 1
-                        print "shuffle_configuration: floppy body placed close to other %d particles, trying again..." % npairs
+                        print("shuffle_configuration: floppy body placed close to other %d particles, trying again..." % npairs)
                         if niter == niterations:
                             raise ValueError("tried the maximum number of iterations to avoid collisions, increase the distance cutoff")
                 else:
@@ -1225,7 +1226,7 @@ class Representation(object):
                                    for p in self.reference_structures[label][1]]
             reference_coordinates = self.reference_structures[label][0]
             if len(reference_coordinates) != len(current_coordinates):
-                print "calculate_all_rmsds: reference and actual coordinates are not the same"
+                print("calculate_all_rmsds: reference and actual coordinates are not the same")
                 continue
             transformation = IMP.algebra.get_transformation_aligning_first_to_second(
                 current_coordinates,
@@ -1290,7 +1291,7 @@ class Representation(object):
         SortedSegments = sorted(SortedSegments, key=itemgetter(2))
 
         # connect the particles
-        for x in xrange(len(SortedSegments) - 1):
+        for x in range(len(SortedSegments) - 1):
             last = SortedSegments[x][1]
             first = SortedSegments[x + 1][0]
 
@@ -1323,7 +1324,7 @@ class Representation(object):
             pt1 = first.get_particle()
             r = IMP.core.PairRestraint(dps, IMP.ParticlePair(pt0, pt1))
 
-            print "Adding sequence connectivity restraint between", pt0.get_name(), " and ", pt1.get_name(), 'of distance', optdist
+            print("Adding sequence connectivity restraint between", pt0.get_name(), " and ", pt1.get_name(), 'of distance', optdist)
             sortedsegments_cr.add_restraint(r)
             self.linker_restraints_dict[
                 "LinkerRestraint-" + pt0.get_name() + "-" + pt1.get_name()] = r
@@ -1344,10 +1345,10 @@ class Representation(object):
             pts.add_particle(fb, "Floppy_Bodies", 1.0, "Floppy_Body_" + str(n))
         if len(pts.get_particles_to_sample()) > 0:
             mc = IMP.pmi.samplers.MonteCarlo(self.m, [pts], temperature)
-            print "optimize_floppy_bodies: optimizing %i floppy bodies" % len(self.floppy_bodies)
+            print("optimize_floppy_bodies: optimizing %i floppy bodies" % len(self.floppy_bodies))
             mc.optimize(nsteps)
         else:
-            print "optimize_floppy_bodies: no particle to optimize"
+            print("optimize_floppy_bodies: no particle to optimize")
 
     def create_rotational_symmetry(self, maincopy, copies):
         from math import pi
@@ -1381,7 +1382,7 @@ class Representation(object):
             for n, p in enumerate(mainpurged):
 
                 pc = copypurged[n]
-                print "setting " + p.get_name() + " as reference for " + pc.get_name()
+                print("setting " + p.get_name() + " as reference for " + pc.get_name())
 
                 IMP.core.Reference.setup_particle(pc, p)
                 lc.add_particle(pc)
@@ -1415,7 +1416,7 @@ class Representation(object):
                     2 * pi / axial_copies * (float(iac)))
                 translation_vector = tuple(
                     [translation_value * float(ilc) * x for x in axis])
-                print translation_vector
+                print(translation_vector)
                 translation = IMP.algebra.Vector3D(translation_vector)
                 sm = IMP.core.TransformationSymmetry(
                     IMP.algebra.Transformation3D(rotation3D, translation))
@@ -1483,18 +1484,18 @@ class Representation(object):
             rigid_parts = set(particles)
 
         name = ""
-        print "set_rigid_body_from_hierarchies> setting up a new rigid body"
+        print("set_rigid_body_from_hierarchies> setting up a new rigid body")
         for hier in hiers:
             ps = IMP.atom.get_leaves(hier)
 
             for p in ps:
                 if IMP.core.RigidMember.get_is_setup(p):
                     rb = IMP.core.RigidMember(p).get_rigid_body()
-                    print "set_rigid_body_from_hierarchies> WARNING particle %s already belongs to rigid body %s" % (p.get_name(), rb.get_name())
+                    print("set_rigid_body_from_hierarchies> WARNING particle %s already belongs to rigid body %s" % (p.get_name(), rb.get_name()))
                 else:
                     rigid_parts.add(p)
             name += hier.get_name() + "-"
-            print "set_rigid_body_from_hierarchies> adding %s to the rigid body" % hier.get_name()
+            print("set_rigid_body_from_hierarchies> adding %s to the rigid body" % hier.get_name())
 
         if len(list(rigid_parts)) != 0:
             rb = IMP.atom.create_rigid_body(list(rigid_parts))
@@ -1504,7 +1505,7 @@ class Representation(object):
             return rb
 
         else:
-            print "set_rigid_body_from_hierarchies> rigid body could not be setup"
+            print("set_rigid_body_from_hierarchies> rigid body could not be setup")
 
     def set_rigid_bodies(self, subunits):
         '''
@@ -1529,27 +1530,27 @@ class Representation(object):
                 sel = IMP.atom.Selection(
                     self.prot,
                     molecule=s[0],
-                    residue_indexes=range(s[1][0],
-                                          s[1][1] + 1))
+                    residue_indexes=list(range(s[1][0],
+                                          s[1][1] + 1)))
                 if len(sel.get_selected_particles()) == 0:
-                    print "set_rigid_bodies: selected particle does not exists"
+                    print("set_rigid_bodies: selected particle does not exists")
                 for p in sel.get_selected_particles():
                     # if not p in self.floppy_bodies:
                     if IMP.core.RigidMember.get_is_setup(p):
                         rb = IMP.core.RigidMember(p).get_rigid_body()
-                        print "set_rigid_body_from_hierarchies> WARNING particle %s already belongs to rigid body %s" % (p.get_name(), rb.get_name())
+                        print("set_rigid_body_from_hierarchies> WARNING particle %s already belongs to rigid body %s" % (p.get_name(), rb.get_name()))
                     else:
                         rigid_parts.add(p)
 
             elif type(s) == type(str()):
                 sel = IMP.atom.Selection(self.prot, molecule=s)
                 if len(sel.get_selected_particles()) == 0:
-                    print "set_rigid_bodies: selected particle does not exists"
+                    print("set_rigid_bodies: selected particle does not exists")
                 for p in sel.get_selected_particles():
                     # if not p in self.floppy_bodies:
                     if IMP.core.RigidMember.get_is_setup(p):
                         rb = IMP.core.RigidMember(p).get_rigid_body()
-                        print "set_rigid_body_from_hierarchies> WARNING particle %s already belongs to rigid body %s" % (p.get_name(), rb.get_name())
+                        print("set_rigid_body_from_hierarchies> WARNING particle %s already belongs to rigid body %s" % (p.get_name(), rb.get_name()))
                     else:
                         rigid_parts.add(p)
 
@@ -1568,7 +1569,7 @@ class Representation(object):
         super_rigid_xyzs = set()
         super_rigid_rbs = set()
         name = ""
-        print "set_super_rigid_body_from_hierarchies> setting up a new SUPER rigid body"
+        print("set_super_rigid_body_from_hierarchies> setting up a new SUPER rigid body")
 
         for hier in hiers:
             ps = IMP.atom.get_leaves(hier)
@@ -1578,7 +1579,7 @@ class Representation(object):
                     super_rigid_rbs.add(rb)
                 else:
                     super_rigid_xyzs.add(p)
-            print "set_rigid_body_from_hierarchies> adding %s to the rigid body" % hier.get_name()
+            print("set_rigid_body_from_hierarchies> adding %s to the rigid body" % hier.get_name())
         if len(super_rigid_rbs) < min_size:
             return
         if axis is None:
@@ -1617,10 +1618,10 @@ class Representation(object):
                 sel = IMP.atom.Selection(
                     self.prot,
                     molecule=s[2],
-                    residue_indexes=range(s[0],
-                                          s[1] + 1))
+                    residue_indexes=list(range(s[0],
+                                          s[1] + 1)))
                 if len(sel.get_selected_particles()) == 0:
-                    print "set_rigid_bodies: selected particle does not exists"
+                    print("set_rigid_bodies: selected particle does not exists")
                 for p in sel.get_selected_particles():
                     if IMP.core.RigidMember.get_is_setup(p):
                         rb = IMP.core.RigidMember(p).get_rigid_body()
@@ -1630,7 +1631,7 @@ class Representation(object):
             elif type(s) == type(str()):
                 sel = IMP.atom.Selection(self.prot, molecule=s)
                 if len(sel.get_selected_particles()) == 0:
-                    print "set_rigid_bodies: selected particle does not exists"
+                    print("set_rigid_bodies: selected particle does not exists")
                 for p in sel.get_selected_particles():
                     # if not p in self.floppy_bodies:
                     if IMP.core.RigidMember.get_is_setup(p):
@@ -1654,7 +1655,7 @@ class Representation(object):
             ps = IMP.atom.get_leaves(h)
             for p in ps:
                 if p in self.floppy_bodies:
-                    print "remove_floppy_bodies: removing %s from floppy body list" % p.get_name()
+                    print("remove_floppy_bodies: removing %s from floppy body list" % p.get_name())
                     self.floppy_bodies.remove(p)
 
 
@@ -1663,7 +1664,7 @@ class Representation(object):
             name = p.get_name()
             p.set_name(name + "_floppy_body")
             if IMP.core.RigidMember.get_is_setup(p):
-                print "I'm trying to make this particle flexible although it was assigned to a rigid body", p.get_name()
+                print("I'm trying to make this particle flexible although it was assigned to a rigid body", p.get_name())
                 rb = IMP.core.RigidMember(p).get_rigid_body()
                 try:
                     rb.set_is_rigid_member(p.get_index(), False)
@@ -1688,7 +1689,7 @@ class Representation(object):
         @return the particles
         '''
         particles = []
-        print selection_tuples
+        print(selection_tuples)
         for s in selection_tuples:
             ps = IMP.pmi.tools.select_by_tuple(
                 representation=self, tupleselection=tuple(s),
@@ -1724,7 +1725,7 @@ class Representation(object):
 
     def draw_hierarchy_graph(self):
         for c in IMP.atom.Hierarchy(self.prot).get_children():
-            print "Drawing hierarchy graph for " + c.get_name()
+            print("Drawing hierarchy graph for " + c.get_name())
             IMP.pmi.output.get_graph_from_hierarchy(c)
 
     def get_geometries(self):
@@ -1778,14 +1779,14 @@ class Representation(object):
                 ps = []
                 for r in resolutions:
                     ps += self.hier_db.get_particles(name, nres, r)
-                print "%20s %7s" % (name, nres), " ".join(["%20s %7s" % (str(p.get_name()),
-                                                                         str(IMP.pmi.Resolution(p).get_resolution())) for p in ps])
+                print("%20s %7s" % (name, nres), " ".join(["%20s %7s" % (str(p.get_name()),
+                                                                         str(IMP.pmi.Resolution(p).get_resolution())) for p in ps]))
             except:
-                print "%20s %20s" % (name, nres), "**** not represented ****"
+                print("%20s %20s" % (name, nres), "**** not represented ****")
 
     def draw_hierarchy_composition(self):
 
-        ks = self.elements.keys()
+        ks = list(self.elements.keys())
         ks.sort()
 
         max = 0
@@ -1805,7 +1806,7 @@ class Representation(object):
         try:
             endres = tmplist[-1][1]
         except:
-            print "draw_component_composition: missing information for component %s" % name
+            print("draw_component_composition: missing information for component %s" % name)
             return
         fig = pyplot.figure(figsize=(26.0 * float(endres) / max + 2, 2))
         ax = fig.add_axes([0.05, 0.475, 0.9, 0.15])
@@ -2082,7 +2083,7 @@ class Representation(object):
         for n, p in enumerate(self.get_particles_to_sample()):
             output["Particle_to_sample_" + str(n)] = str(p)
         output["Number_of_particles"] = len(IMP.atom.get_leaves(self.prot))
-        output["Hierarchy_Dictionary"] = self.hier_dict.keys()
+        output["Hierarchy_Dictionary"] = list(self.hier_dict.keys())
         output["Number_of_floppy_bodies"] = len(self.floppy_bodies)
         output["Number_of_rigid_bodies"] = len(self.rigid_bodies)
         output["Number_of_super_bodies"] = len(self.super_rigid_bodies)

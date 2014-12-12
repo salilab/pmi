@@ -2,6 +2,7 @@
    Classes for writing output files and processing them.
 """
 
+from __future__ import print_function
 import IMP
 import IMP.atom
 import IMP.core
@@ -36,13 +37,13 @@ class Output(object):
         self.atomistic=atomistic
 
     def get_pdb_names(self):
-        return self.dictionary_pdbs.keys()
+        return list(self.dictionary_pdbs.keys())
 
     def get_rmf_names(self):
-        return self.dictionary_rmfs.keys()
+        return list(self.dictionary_rmfs.keys())
 
     def get_stat_names(self):
-        return self.dictionary_stats.keys()
+        return list(self.dictionary_stats.keys())
 
     def init_pdb(self, name, prot):
         flpdb = open(name, 'w')
@@ -254,7 +255,7 @@ class Output(object):
 
     def write_pdb_best_scoring(self, score):
         if self.nbestscoring is None:
-            print "Output.write_pdb_best_scoring: init_pdb_best_scoring not run"
+            print("Output.write_pdb_best_scoring: init_pdb_best_scoring not run")
 
         # update the score list
         if self.replica_exchange:
@@ -364,7 +365,7 @@ class Output(object):
         for obj in self.dictionary_stats[name]:
             d = obj.get_output()
             # remove all entries that begin with _ (private entries)
-            dfiltered = dict((k, v) for k, v in d.iteritems() if k[0] != "_")
+            dfiltered = dict((k, v) for k, v in d.items() if k[0] != "_")
             output.update(dfiltered)
 
         if appendmode:
@@ -411,7 +412,7 @@ class Output(object):
             except:
                 d = obj.get_output()
             # remove all entries that begin with _ (private entries)
-            dfiltered = dict((k, v) for k, v in d.iteritems() if k[0] != "_")
+            dfiltered = dict((k, v) for k, v in d.items() if k[0] != "_")
             output.update(dfiltered)
         #output.update({"ENVIRONMENT": str(self.get_environment_variables())})
         #output.update(
@@ -446,14 +447,14 @@ class Output(object):
 
                 if test_dict[k] != output[k]:
                     if len(old_value) < 50 and len(new_value) < 50:
-                        print str(k) + ": test failed, old value: " + old_value + " new value " + new_value
+                        print(str(k) + ": test failed, old value: " + old_value + " new value " + new_value)
                         passed=False
                     else:
-                        print str(k) + ": test failed, omitting results (too long)"
+                        print(str(k) + ": test failed, omitting results (too long)")
                         passed=False
 
             else:
-                print str(k) + " from old objects (file " + str(name) + ") not in new objects"
+                print(str(k) + " from old objects (file " + str(name) + ") not in new objects")
         return passed
 
     def get_environment_variables(self):
@@ -513,7 +514,7 @@ class Output(object):
                 d = l.get_output()
                 # remove all entries that begin with _ (private entries)
                 dfiltered = dict((k, v)
-                                 for k, v in d.iteritems() if k[0] != "_")
+                                 for k, v in d.items() if k[0] != "_")
                 output.update(dfiltered)
 
         # check for customizable entries
@@ -550,7 +551,7 @@ class Output(object):
         # writing objects
         for obj in listofobjects:
             od = obj.get_output()
-            dfiltered = dict((k, v) for k, v in od.iteritems() if k[0] != "_")
+            dfiltered = dict((k, v) for k, v in od.items() if k[0] != "_")
             for k in dfiltered:
                 output.update({stat2_inverse[k]: od[k]})
 
@@ -599,7 +600,7 @@ class ProcessOutput(object):
         # get the keys from the first line
         for line in f.readlines():
             d = eval(line)
-            self.klist = d.keys()
+            self.klist = list(d.keys())
             # check if it is a stat2 file
             if "STAT2HEADER" in self.klist:
                 self.isstat2 = True
@@ -610,9 +611,9 @@ class ProcessOutput(object):
                 stat2_dict = d
                 # get the list of keys sorted by value
                 kkeys = [k[0]
-                         for k in sorted(stat2_dict.iteritems(), key=operator.itemgetter(1))]
+                         for k in sorted(stat2_dict.items(), key=operator.itemgetter(1))]
                 self.klist = [k[1]
-                              for k in sorted(stat2_dict.iteritems(), key=operator.itemgetter(1))]
+                              for k in sorted(stat2_dict.items(), key=operator.itemgetter(1))]
                 self.invstat2_dict = {}
                 for k in kkeys:
                     self.invstat2_dict.update({stat2_dict[k]: k})
@@ -661,7 +662,7 @@ class ProcessOutput(object):
             try:
                 d = eval(line)
             except:
-                print "# Warning: skipped line number " + str(line_number) + " not a valid line"
+                print("# Warning: skipped line number " + str(line_number) + " not a valid line")
                 continue
 
             if self.isstat1:
@@ -721,7 +722,7 @@ def plot_fields(fields, framemin=None, framemax=None):
             framemin = 0
         if framemax is None:
             framemax = len(fields[key])
-        x = range(framemin, framemax)
+        x = list(range(framemin, framemax))
         y = [float(y) for y in fields[key][framemin:framemax]]
         if len(fields) > 1:
             axs[n].plot(x, y)
@@ -1021,22 +1022,22 @@ def draw_graph(graph, labels_dict=None, graph_layout='spring',
         nx.set_edge_attributes(G, "graphics", {edge : {'width': 1,'fill': '#000000'}})
 
     for ve in validation_edges:
-        print ve
+        print(ve)
         if (ve[0],ve[1]) in G.edges():
-            print "found forward"
+            print("found forward")
             nx.set_edge_attributes(G, "graphics", {ve : {'width': 1,'fill': '#00FF00'}})
         elif (ve[1],ve[0]) in G.edges():
-            print "found backward"
+            print("found backward")
             nx.set_edge_attributes(G, "graphics", {(ve[1],ve[0]) : {'width': 1,'fill': '#00FF00'}})
         else:
             G.add_edge(ve[0], ve[1])
-            print "not found"
+            print("not found")
             nx.set_edge_attributes(G, "graphics", {ve : {'width': 1,'fill': '#FF0000'}})
 
     # these are different layouts for the network you may try
     # shell seems to work best
     if graph_layout == 'spring':
-        print fixed, pos
+        print(fixed, pos)
         graph_pos = nx.spring_layout(G,k=1.0/8.0,fixed=fixed,pos=pos)
     elif graph_layout == 'spectral':
         graph_pos = nx.spectral_layout(G)
@@ -1174,7 +1175,7 @@ def draw_table():
               'October',
               'November',
               'Deecember']]
-    sColumns = [['Prod {0}'.format(i) for i in xrange(1, 9)],
+    sColumns = [['Prod {0}'.format(i) for i in range(1, 9)],
                 [None, '', None, None, 'Group 1', None, None, 'Group 2']]
     d3.addSimpleTable(data,
                       fontSizeCells=[12, ],

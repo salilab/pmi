@@ -1685,10 +1685,10 @@ class CrossLinkMS(object):
                     printbool = True
                 if el["Is_Detected"] and what == "Intra" and \
                         (el["Identified_Pair1"][1] == el["Identified_Pair2"][1]):
-                        printbool = True
+                    printbool = True
                 if el["Is_Detected"] and what == "Inter" and \
                         (el["Identified_Pair1"][1] != el["Identified_Pair2"][1]):
-                        printbool = True
+                    printbool = True
                 if what == "All":
                     printbool = True
 

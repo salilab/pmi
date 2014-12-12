@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 import IMP
 import IMP.atom
 import IMP.em
@@ -20,12 +21,12 @@ class EMRestraint(object):
                  selection_dict=None):
         """ create a FitRestraint. can provide rigid bodies instead of individual particles """
 
-        print 'FitRestraint: setup'
-        print '\tmap_fn',map_fn
-        print '\tresolution',resolution
-        print '\tvoxel_size',voxel_size
-        print '\torigin',origin
-        print '\tweight',weight
+        print('FitRestraint: setup')
+        print('\tmap_fn',map_fn)
+        print('\tresolution',resolution)
+        print('\tvoxel_size',voxel_size)
+        print('\torigin',origin)
+        print('\tweight',weight)
 
         # some parameters
         self.mdl = root.get_model()
@@ -40,7 +41,7 @@ class EMRestraint(object):
         elif type(origin)==list:
             self.dmap.set_origin(*origin)
         else:
-            print 'FitRestraint did not recognize format of origin'
+            print('FitRestraint did not recognize format of origin')
             exit()
         if selection_dict:
             ps=IMP.atom.Selection(root,**selection_dict).get_selected_particles()
@@ -115,7 +116,7 @@ class GaussianEMRestraint(object):
         if len(self.model_ps)==0:
             raise Exception("GaussianEM: must provide hier or model_ps")
         self.m = self.model_ps[0].get_model()
-        print 'will scale target mass by', target_mass_scale
+        print('will scale target mass by', target_mass_scale)
         target_ps=[]
         if target_fn != '':
             IMP.isd_emxl.gmm_tools.decorate_gmm_from_text(
@@ -125,7 +126,7 @@ class GaussianEMRestraint(object):
                 radius_scale=target_radii_scale,
                 mass_scale=target_mass_scale)
         else:
-            print 'Gaussian EM restraint: must provide target density file'
+            print('Gaussian EM restraint: must provide target density file')
             return
 
         self.get_cc=False
@@ -144,7 +145,7 @@ class GaussianEMRestraint(object):
                                      -orig_map_origin[2]/orig_map_apix)
 
             frscore = self.fr.unprotected_evaluate(None)
-            print 'init CC eval!',1.0-frscore
+            print('init CC eval!',1.0-frscore)
             self.get_cc=True
 
         # setup model GMM
@@ -164,12 +165,12 @@ class GaussianEMRestraint(object):
                                                sigmaissampled).get_particle()
 
         # create restraint
-        print 'target num particles', len(target_ps), \
+        print('target num particles', len(target_ps), \
             'total weight', sum([IMP.atom.Mass(p).get_mass()
-                                for p in target_ps])
-        print 'model num particles', len(self.model_ps), \
+                                for p in target_ps]))
+        print('model num particles', len(self.model_ps), \
             'total weight', sum([IMP.atom.Mass(p).get_mass()
-                                for p in self.model_ps])
+                                for p in self.model_ps]))
 
         if not pointwise_restraint:
             self.gaussianEM_restraint = \
@@ -182,8 +183,8 @@ class GaussianEMRestraint(object):
                                            slope,
                                            backbone_slope)
         else:
-            print 'USING POINTWISE RESTRAINT'
-            print 'mm_container',mm_container
+            print('USING POINTWISE RESTRAINT')
+            print('mm_container',mm_container)
             self.gaussianEM_restraint = \
                IMP.isd_emxl.PointwiseGaussianEMRestraint(self.m,
                                                 IMP.get_indexes(self.model_ps),
@@ -195,7 +196,7 @@ class GaussianEMRestraint(object):
                                                 use_log_score,
                                                 mm_container)
 
-        print 'done EM setup'
+        print('done EM setup')
         self.rs = IMP.RestraintSet(self.m, 'GaussianEMRestraint')
         self.rs.add_restraint(self.gaussianEM_restraint)
 
@@ -287,7 +288,7 @@ class GaussianPointRestraint(object):
                                       IMP.atom.Mass.get_mass_key(),1.0,
                                       False)
         frscore = self.fr.unprotected_evaluate(None)
-        print 'init CC eval!',1.0-frscore
+        print('init CC eval!',1.0-frscore)
         self.get_cc=True
 
 
@@ -308,7 +309,7 @@ class GaussianPointRestraint(object):
         self.rs.add_restraint(self.gaussian_restraint)
         self.rs.add_restraint(IMP.isd.JeffreysRestraint(self.m, self.sigma))
         self.rs.add_restraint(IMP.isd.JeffreysRestraint(self.m, self.lmda))
-        print 'done EM setup'
+        print('done EM setup')
 
     def set_weight(self,weight):
         self.weight = weight

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 import IMP
 import IMP.core
 import IMP.atom
@@ -57,7 +58,7 @@ class CharmmForceFieldRestraint(object):
             self.nonbonded_rs.add_restraint(pr)
         #self.scoring_function = IMP.core.RestraintsScoringFunction([r,pr])
 
-        print 'CHARMM is set up'
+        print('CHARMM is set up')
 
     def set_label(self, label):
         self.label = label
@@ -81,7 +82,7 @@ class CharmmForceFieldRestraint(object):
         self.weight = weight
         self.bonds_rs.set_weight(weight)
         self.nonbonded_rs.set_weight(weight)
-        print 'CHARMM: weight is',self.weight
+        print('CHARMM: weight is',self.weight)
 
     def get_output(self):
         self.mdl.update()
@@ -119,11 +120,11 @@ class ElasticNetworkRestraint(object):
         else:
             self.ps = IMP.atom.Selection(root,**kwargs).get_selected_particles()
         if len(self.ps)==0:
-            print 'ERROR: Did not select any particles!'
+            print('ERROR: Did not select any particles!')
             exit()
         self.rs = IMP.pmi.create_elastic_network(self.ps,dist_cutoff,strength)
         #self.rs = IMP.isd_emxl.create_lognormal_elastic_network(ps,dist_cutoff,strength)
-        print 'created elastic network',self.label,'with',self.rs.get_number_of_restraints(),'restraints'
+        print('created elastic network',self.label,'with',self.rs.get_number_of_restraints(),'restraints')
 
     def set_label(self, label):
         self.label = label
@@ -178,26 +179,26 @@ class SymmetryRestraint(object):
         self.label=label
 
         if len(selection_dicts)!=len(symmetry_transforms)+1:
-            print 'Error: There should be one more symmetry transform than selection dict'
+            print('Error: There should be one more symmetry transform than selection dict')
             exit()
         harmonic = IMP.core.Harmonic(0.,strength)
         sel0 = hierarchy_tools.combine_dicts(selection_dicts[0],extra_sel)
         ps0 = IMP.atom.Selection(root,**sel0).get_selected_particles()
         if len(ps0)==0:
-            print "Error: did not select any particles!"
+            print("Error: did not select any particles!")
             exit()
         for sdict,trans in zip(selection_dicts[1:],symmetry_transforms):
             sel = hierarchy_tools.combine_dicts(sdict,extra_sel)
             ps=IMP.atom.Selection(root,**sel).get_selected_particles()
             if len(ps0)!=len(ps):
-                print "Error: did not select the same number of particles!"
+                print("Error: did not select the same number of particles!")
                 exit()
             pair_score = IMP.core.TransformedDistancePairScore(harmonic,trans)
             for p0,p1 in zip(ps0,ps):
                 r = IMP.core.PairRestraint(pair_score,(p0,p1))
                 self.rs.add_restraint(r)
 
-        print 'created symmetry network with',self.rs.get_number_of_restraints(),'restraints'
+        print('created symmetry network with',self.rs.get_number_of_restraints(),'restraints')
 
     def set_label(self, label):
         self.label = label

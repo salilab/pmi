@@ -2,7 +2,7 @@
    Utility classes and functions for reading and storing PMI files
 """
 
-
+from __future__ import print_function
 import IMP
 import IMP.algebra
 import IMP.atom
@@ -154,7 +154,7 @@ def parse_xlinks_davis(model,
                 r2+=named_offsets[n2]
             key=tuple(sorted(['%s.%i'%(n1,r1),'%s.%i'%(n2,r2)]))
             if key in found:
-                print 'skipping duplicated xl',key
+                print('skipping duplicated xl',key)
                 continue
             found.add(key)
             data.add_cross_link(nl,
@@ -198,8 +198,8 @@ class Subsequence(object):
             if seq['molecule']:
                 args['molecule']=seq['molecule']
             if seq['residue_tuple']:
-                args['residue_indexes']=range(seq['residue_tuple'][0],
-                                              seq['residue_tuple'][1]+1)
+                args['residue_indexes']=list(range(seq['residue_tuple'][0],
+                                              seq['residue_tuple'][1]+1))
             sel = IMP.atom.Selection(hier,**args)
             if nseq==0:
                 ret=sel
@@ -297,7 +297,7 @@ def save_best_models(mdl,
 
         # get list of keywords
         root_directory_of_stat_file = os.path.dirname(os.path.dirname(sf))
-        print "getting data from file %s" % sf
+        print("getting data from file %s" % sf)
         po = IMP.pmi.output.ProcessOutput(sf)
         all_keys = [score_key,
                     rmf_file_key,
@@ -315,7 +315,7 @@ def save_best_models(mdl,
         # if some of the fields are missing, truncate
         # the feature files to the shortest one
         if len(length_set) > 1:
-            print "get_best_models: the statfile is not synchronous"
+            print("get_best_models: the statfile is not synchronous")
             minlen = min(length_set)
             for f in fields:
                 fields[f] = fields[f][0:minlen]
@@ -367,8 +367,8 @@ def save_best_models(mdl,
             del rh
             stat.write(str(dline)+'\n')
         stat.close()
-        print 'wrote stats to',out_stat_fn
-        print 'wrote rmfs to',out_rmf_fn
+        print('wrote stats to',out_stat_fn)
+        print('wrote rmfs to',out_rmf_fn)
 
 
 
@@ -389,7 +389,7 @@ def get_best_models(stat_files,
     feature_keyword_list_dict=defaultdict(list)  # best values of the feature keys
     for sf in stat_files:
         root_directory_of_stat_file = os.path.dirname(os.path.dirname(sf))
-        print "getting data from file %s" % sf
+        print("getting data from file %s" % sf)
         po = IMP.pmi.output.ProcessOutput(sf)
         keywords = po.get_keys()
 
@@ -418,7 +418,7 @@ def get_best_models(stat_files,
         # if some of the fields are missing, truncate
         # the feature files to the shortest one
         if len(length_set) > 1:
-            print "get_best_models: the statfile is not synchronous"
+            print("get_best_models: the statfile is not synchronous")
             minlen = min(length_set)
             for f in fields:
                 fields[f] = fields[f][0:minlen]
@@ -449,7 +449,7 @@ def get_trajectory_models(stat_files,
     score_list=[]                 # best scores
     for sf in stat_files:
         root_directory_of_stat_file = os.path.dirname(os.path.dirname(sf))
-        print "getting data from file %s" % sf
+        print("getting data from file %s" % sf)
         po = IMP.pmi.output.ProcessOutput(sf)
         keywords = po.get_keys()
 
@@ -468,7 +468,7 @@ def get_trajectory_models(stat_files,
         # if some of the fields are missing, truncate
         # the feature files to the shortest one
         if len(length_set) > 1:
-            print "get_best_models: the statfile is not synchronous"
+            print("get_best_models: the statfile is not synchronous")
             minlen = min(length_set)
             for f in fields:
                 fields[f] = fields[f][0:minlen]
@@ -536,7 +536,7 @@ def read_coordinates_of_rmfs(model,
                 ps=s.get_selected_particles()
                 filtered_particles=[p for p in ps if p in all_ps_set]
                 template_coordinate_dict[pr] = \
-                    [map(float,IMP.core.XYZ(i).get_coordinates()) for i in filtered_particles]
+                    [list(map(float,IMP.core.XYZ(i).get_coordinates())) for i in filtered_particles]
 
         if rmsd_calculation_components is not None:
             for pr in rmsd_calculation_components:
@@ -551,7 +551,7 @@ def read_coordinates_of_rmfs(model,
                 ps=s.get_selected_particles()
                 filtered_particles=[p for p in ps if p in all_ps_set]
                 rmsd_coordinate_dict[pr] = \
-                    [map(float,IMP.core.XYZ(i).get_coordinates()) for i in filtered_particles]
+                    [list(map(float,IMP.core.XYZ(i).get_coordinates())) for i in filtered_particles]
 
         all_coordinates.append(model_coordinate_dict)
         alignment_coordinates.append(template_coordinate_dict)

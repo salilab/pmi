@@ -585,7 +585,7 @@ class Representation(object):
             colors=None
         else:
             colors=[color]
-        for chunk in list(IMP.pmi.tools.list_chunks_iterator(range(begin, end + 1)), length):
+        for chunk in IMP.pmi.tools.list_chunks_iterator(range(begin, end + 1), length):
             outhiers += self.add_component_beads(name,
                                                  [(chunk[0], chunk[-1])], colors=colors,incoord=incoord)
         return outhiers

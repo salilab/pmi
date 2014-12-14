@@ -17,7 +17,7 @@ class DataStorageTests(IMP.test.TestCase):
         sel = sd.get_selection(hier=mh,atom_type=IMP.atom.AtomType('CA'))
         idxs = sorted([IMP.atom.get_residue(IMP.atom.Atom(h)).get_index()
                 for h in sel.get_selected_particles()])
-        self.assertEqual(idxs,range(100,126)+range(325,356))
+        self.assertEqual(idxs,list(range(100,126))+list(range(325,356)))
         self.assertEqual(sd.__repr__(),'100-125.A_325-355.A')
 
     def test_subsequence_data(self):

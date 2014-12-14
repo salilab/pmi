@@ -1,3 +1,4 @@
+from __future__ import print_function
 import IMP
 import IMP.core
 import IMP.base
@@ -41,4 +42,4 @@ m.add_restraint(rs)
 mc = samplers.MonteCarlo(m, [pts], 1.0)
 for i in range(100):
     mc.run(1)
-    print sigma.get_scale()
+    print(sigma.get_scale())

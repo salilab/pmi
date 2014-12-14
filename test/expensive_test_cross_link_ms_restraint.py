@@ -1,3 +1,4 @@
+from __future__ import print_function
 import IMP
 import os
 import IMP.test
@@ -226,7 +227,7 @@ class ISDCrossMSTest(IMP.test.TestCase):
         rbeads=init_representation_beads(m)
         xlb,restraints_beads=setup_crosslinks_beads(rbeads,"single_category")
 
-        print restraints_beads
+        print(restraints_beads)
 
         # check internal data structure
         ds=xlb.pairs
@@ -242,13 +243,13 @@ class ISDCrossMSTest(IMP.test.TestCase):
             res2 =  int(t[3])
             ids =   float(t[4])
             xlid =  int(t[5])
-            print nxl,chain1,chain2,res1,res2,ids,xlid
+            print(nxl,chain1,chain2,res1,res2,ids,xlid)
             dsres1 = ds[nxl][3]
             dschain1 = ds[nxl][4]
             dsres2 = ds[nxl][5]
             dschain2 = ds[nxl][6]
             dsxlid=    int(ds[nxl][11])
-            print nxl,len(ds),dschain1, dschain2, dsres1, dsres2, dsxlid
+            print(nxl,len(ds),dschain1, dschain2, dsres1, dsres2, dsxlid)
             '''
             self.assertEqual(chain1,dschain1)
             self.assertEqual(chain2,dschain2)

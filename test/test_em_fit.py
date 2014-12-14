@@ -1,3 +1,4 @@
+from __future__ import print_function
 import IMP
 import IMP.test
 import IMP.core
@@ -50,22 +51,22 @@ class TestEMRestraint(IMP.test.TestCase):
                                                         model_radii_scale=10.0)
         gem.add_to_model()
         self.m.update()
-        print 'eval 0'
+        print('eval 0')
         s0 = self.m.evaluate(False)
-        print '>s0', s0, '\n'
+        print('>s0', s0, '\n')
 
         trans = IMP.algebra.Transformation3D(
             IMP.algebra.Vector3D(np.random.random_sample(3,) * 10))
-        print 'random trans', trans
+        print('random trans', trans)
         IMP.core.transform(IMP.core.RigidBody(self.p0), trans)
         self.m.update()
         s1 = self.m.evaluate(False)
-        print '>s1', s1, '\n'
+        print('>s1', s1, '\n')
 
         gem.center_model_on_target_density()
         self.m.update()
         s2 = self.m.evaluate(False)
-        print '>s2', s2
+        print('>s2', s2)
         self.assertAlmostEqual(s0, s2)
 
 if __name__ == '__main__':

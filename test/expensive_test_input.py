@@ -1,3 +1,4 @@
+from __future__ import print_function
 import IMP.pmi
 import IMP.pmi.io
 import IMP.pmi.analysis
@@ -40,7 +41,7 @@ class InputTest(IMP.test.TestCase):
             IMP.rmf.load_frame(rh,i)
             psdict = IMP.pmi.analysis.get_particles_at_resolution_one(prots[0])
             coord = IMP.core.XYZ(psdict['med2'][0]).get_coordinates()
-            print coord
+            print(coord)
             self.assertAlmostEqual(IMP.algebra.get_distance(coord,
                                                             IMP.algebra.Vector3D(check_coords[i])),0.0)
         os.unlink('top_3.rmf3')

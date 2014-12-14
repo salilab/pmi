@@ -3,6 +3,7 @@
 
 # <codecell>
 
+from __future__ import print_function
 import IMP
 import os
 import IMP.pmi.representation
@@ -56,8 +57,8 @@ representations[0].floppy_bodies.pop(0)
 representations[1].floppy_bodies.pop(0)
 representations[1].floppy_bodies.pop(0)
 
-print representations[0].floppy_bodies
-print representations[1].floppy_bodies
+print(representations[0].floppy_bodies)
+print(representations[1].floppy_bodies)
 
 # <codecell>
 
@@ -70,7 +71,7 @@ xyz11 = IMP.core.XYZ(pp1.get_particle())
 xyz21 = IMP.core.XYZ(pp2.get_particle())
 xyz31 = IMP.core.XYZ(pp3.get_particle())
 xyz11.set_coordinates((0, 0, 0))
-print xyz11.get_coordinates()
+print(xyz11.get_coordinates())
 xyz21.set_coordinates((inputx, 0, 0))
 xyz31.set_coordinates((0, 0, 0))
 
@@ -124,12 +125,12 @@ xl.set_sigma_is_sampled(False)
 out_dict = xl.get_output()
 sorted_keys = sorted(out_dict.keys())
 for entry in sorted_keys:
-    print entry, out_dict[entry]
+    print(entry, out_dict[entry])
 
-print xyz11.get_coordinates()
+print(xyz11.get_coordinates())
 
 xl.add_to_model()
-print m.evaluate(False)
+print(m.evaluate(False))
 
 # <codecell>
 
@@ -143,7 +144,7 @@ o.init_rmf(
     [representations[0].prot,
      representations[1].prot])
 
-print o.dictionary_rmfs
+print(o.dictionary_rmfs)
 
 mc = IMP.pmi.samplers.MonteCarlo(m, representations, 1.0)
 mc.set_simulated_annealing(min_temp=1.0,
@@ -160,7 +161,7 @@ for i in range(1,20):
     xyz31.set_coordinates((float(i), 0, 0))
     for j in range(1,20):
         xyz32.set_coordinates((float(j), 0, 0))
-        print i,j,m.evaluate(False)
+        print(i,j,m.evaluate(False))
         o.write_stats2()
 
 
@@ -185,7 +186,7 @@ fs = po.get_fields(
      'ISDCrossLinkMS_Linear_Score_None',
      'ISDCrossLinkMS_Psi_0.05_None'])
 
-print fs.keys()
+print(fs.keys())
 o.close_rmf("trajectory.rmf3")
 
 # <codecell>

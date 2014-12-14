@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import IMP
 import IMP.test
@@ -16,9 +17,9 @@ def check_time(stop_watch_object, threshold):
     elapsed_time = float(stop_watch_object.get_output()
                          ["Stopwatch_None_delta_seconds"])
     if (elapsed_time > threshold):
-        print "WARNING: the calculation time of " + str(elapsed_time) + " is above the " + str(threshold) + " threshold"
+        print("WARNING: the calculation time of " + str(elapsed_time) + " is above the " + str(threshold) + " threshold")
     else:
-        print "the calculation time of " + str(elapsed_time) + " is below the threshold"
+        print("the calculation time of " + str(elapsed_time) + " is below the threshold")
 
 class Tests(IMP.test.TestCase):
     def test_loop_reconstruction(self):
@@ -113,7 +114,7 @@ class Tests(IMP.test.TestCase):
 
         o = output.Output()
 
-        print "Starting test"
+        print("Starting test")
         o.write_test("test.current.dict", log_objects)
         o.test(self.get_input_file_name(
                      "loop_reconstruction/test.IMP-ee1763c6.PMI-4669cfca.dict"),

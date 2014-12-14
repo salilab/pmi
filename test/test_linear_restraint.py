@@ -1,4 +1,4 @@
-
+from __future__ import print_function
 import IMP
 import IMP.core
 import IMP.algebra
@@ -31,4 +31,4 @@ for i in range(npoints):
         IMP.algebra.Vector3D(maxdist / npoints * float(i), 0.0, 0.0))
     dist = IMP.core.get_distance(xyz1, xyz2)
     score = lr.unprotected_evaluate(None)
-    print dist, score
+    print(dist, score)

@@ -3,6 +3,7 @@
 
 # <codecell>
 
+from __future__ import print_function
 import IMP
 import os
 import IMP.pmi.representation
@@ -30,7 +31,7 @@ r = IMP.pmi.representation.Representation(m)
 representations[0].floppy_bodies.pop(0)
 representations[0].floppy_bodies.pop(0)
 
-print representations[0].floppy_bodies
+print(representations[0].floppy_bodies)
 
 # <codecell>
 
@@ -43,7 +44,7 @@ xyz11 = IMP.core.XYZ(pp1.get_particle())
 xyz21 = IMP.core.XYZ(pp2.get_particle())
 xyz31 = IMP.core.XYZ(pp3.get_particle())
 xyz11.set_coordinates((0, 0, 0))
-print xyz11.get_coordinates()
+print(xyz11.get_coordinates())
 xyz21.set_coordinates((40, 0, 0))
 xyz31.set_coordinates((0, 0, 0))
 
@@ -79,18 +80,18 @@ sigma[0].set_scale(5.0)
 out_dict = xl.get_output()
 sorted_keys = sorted(out_dict.keys())
 for entry in sorted_keys:
-    print entry, out_dict[entry]
+    print(entry, out_dict[entry])
 
-print xyz11.get_coordinates()
+print(xyz11.get_coordinates())
 
 xl.add_to_model()
-print m.evaluate(False)
+print(m.evaluate(False))
 
 # <codecell>
 
 import IMP.pmi.samplers
 
-print xyz11.get_coordinates()
+print(xyz11.get_coordinates())
 
 mc = IMP.pmi.samplers.MonteCarlo(m, representations, 1.0)
 mc.set_simulated_annealing(min_temp=1.0,
@@ -110,7 +111,7 @@ for i in range(0, 100):
     mc.optimize(10)
     o.write_stats2()
     if i % 100 == 0:
-        print i
+        print(i)
 
 # <codecell>
 
@@ -120,7 +121,7 @@ po = IMP.pmi.output.ProcessOutput("modeling.stat")
 
 # <codecell>
 
-print po.get_keys()
+print(po.get_keys())
 
 # <codecell>
 

@@ -208,7 +208,7 @@ class AnalysisTest(IMP.test.TestCase):
         prots = IMP.rmf.create_hierarchies(rh,self.model)
         IMP.rmf.load_frame(rh,0)
         mdens.add_subunits_density(prots[0])
-        self.assertEqual(mdens.get_density_keys(),['med2','med16'])
+        self.assertEqual(sorted(mdens.get_density_keys()),['med16','med2'])
         med2_coords=[]
         med16_coords=[]
         for i in range(4):

@@ -2,6 +2,7 @@
 
 """This script creates input files for pmi/bin/run_clustering.py
 """
+from __future__ import print_function
 import sys,os
 import glob
 
@@ -74,7 +75,7 @@ for nj,(subunits,feature_keys) in enumerate(jobs):
     if not os.path.isdir(output_prefix+str(nj+1)):
         continue
     out_fn = os.path.join(output_prefix+str(nj+1),'analysis.txt')
-    print 'writing',out_fn
+    print('writing',out_fn)
     d = os.path.dirname(out_fn)
     outf=open(out_fn,'w')
     dirs=[]

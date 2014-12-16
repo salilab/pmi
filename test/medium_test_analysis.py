@@ -341,8 +341,8 @@ class PrecisionTest(IMP.test.TestCase):
         pr.add_structures([[fn,0],[fn,1]],'set0')
         pr.add_structures([[fn,2],[fn,3]],'set1')
         pr.get_precision('set0','set1',outfile=ofn)
-        inf = open(ofn,'r')
-        pdist = float(inf.readline().strip().split()[-1])
+        with open(ofn,'r') as inf:
+            pdist = float(inf.readline().strip().split()[-1])
         self.assertAlmostEqual(dist,pdist,places=2)
 
 

@@ -2,7 +2,7 @@
    Classes for writing output files and processing them.
 """
 
-from __future__ import print_function
+from __future__ import print_function, division
 import IMP
 import IMP.atom
 import IMP.core
@@ -154,7 +154,7 @@ class Output(object):
 
             elif IMP.atom.Fragment.get_is_setup(p) and not is_a_bead:
                 resindexes = IMP.pmi.tools.get_residue_indexes(p)
-                resind = resindexes[len(resindexes) / 2]
+                resind = resindexes[len(resindexes) // 2]
                 if resind in resindexes_dict[protname]:
                     continue
                 else:
@@ -175,7 +175,7 @@ class Output(object):
                     atom_index += 1
                     rt = IMP.atom.ResidueType('BEA')
                     resindexes = IMP.pmi.tools.get_residue_indexes(p)
-                    resind = resindexes[len(resindexes) / 2]
+                    resind = resindexes[len(resindexes) // 2]
                     xyz = IMP.core.XYZ(p).get_coordinates()
                     radius = IMP.core.XYZR(p).get_radius()
                     geometric_center[0] += xyz[0]

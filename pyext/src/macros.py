@@ -1460,13 +1460,13 @@ class AnalysisReplicaExchange0(object):
 
     def save_objects(self, objects, file_name):
         import pickle
-        outf = open(file_name, 'w')
+        outf = open(file_name, 'wb')
         pickle.dump(objects, outf)
         outf.close()
 
     def load_objects(self, file_name):
         import pickle
-        inputf = open(file_name, 'r')
+        inputf = open(file_name, 'rb')
         objects = pickle.load(inputf)
         inputf.close()
         return objects

@@ -290,7 +290,7 @@ class Clustering(object):
 
     def save_distance_matrix_file(self, file_name='cluster.rawmatrix.pkl'):
         import pickle
-        outf = open(file_name + ".data", 'w')
+        outf = open(file_name + ".data", 'wb')
 
         # to pickle the transformation dictionary
         # you have to save the arrays correposnding to
@@ -309,7 +309,7 @@ class Clustering(object):
     def load_distance_matrix_file(self, file_name='cluster.rawmatrix.pkl'):
         import pickle
 
-        inputf = open(file_name + ".data", 'r')
+        inputf = open(file_name + ".data", 'rb')
         (self.structure_cluster_ids, self.model_list_names,
          pickable_transformations) = pickle.load(inputf)
         inputf.close()

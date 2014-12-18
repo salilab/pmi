@@ -1050,6 +1050,7 @@ def list_chunks_iterator(list, length):
 
 
 def chunk_list_into_segments(seq, num):
+    seq = list(seq)
     avg = len(seq) / float(num)
     out = []
     last = 0.0

@@ -243,27 +243,38 @@ class _Molecule(SystemBase):
                 non_atomic_res.add(res)
         return non_atomic_res
 
-    def add_copy(self,pdb_fn,chain_id,res_range=[],offset=0,new_chain_id=None):
+    def add_copy(self,pdb_fn=None,chain_id='',res_range=[],offset=0,new_chain_id=None,
+                 transformation=None):
         """Create a new Molecule storing the new coordinates.
         Ensures that representations are identical to original molecule
         Will verify that the sequence is the same as that of the first structure.
-        @param pdb_fn       The file to read
-        @param chain_id     Chain ID to read
+        @param pdb_fn       The file to read. If None, will just clone
+                            coordinates from original
+        @param chain_id     Chain ID for reading. Or, if copying, this will be the new chain id.
         @param res_range    Add only a specific set of residues
         @param offset       Apply an offset to the residue indexes of the PDB file
         @param new_chain_id If you want to set the chain ID of the copy to something
                             (defaults to what you extract from the PDB file)
+        @param transformation Apply transformation after reading/cloning structure
         """
         if new_chain_id is None:
             new_chain_id=chain_id
         mol=_Molecule(self.state,self.get_hierarchy().get_name(),
                       self.sequence,new_chain_id,copy_num=len(self.copies)+1)
         self.copies.append(mol)
-        new_atomic_res = mol.add_structure(pdb_fn,chain_id,res_range,offset)
-        new_idxs = set([r.get_index() for r in new_atomic_res])
-        orig_idxs = set([r.get_index() for r in self.get_atomic_residues()])
-        if new_idxs!=orig_idxs:
-            raise MoleculeCopyError("You added a structure for the copy with different residues")
+        if pdb_fn is None:
+            for nr,r in enumerate(self.residues):
+                mol.residues[nr].set_structure(IMP.atom.Residue(IMP.atom.create_clone(r.hier)))
+        else:
+            new_atomic_res = mol.add_structure(pdb_fn,chain_id,res_range,offset)
+            new_idxs = set([r.get_index() for r in new_atomic_res])
+            orig_idxs = set([r.get_index() for r in self.get_atomic_residues()])
+            if new_idxs!=orig_idxs:
+                raise Exception("You added a structure for the copy with different residues")
+
+        if transformation is not None:
+            for r in mol.residues:
+                IMP.atom.transform(r.hier,transformation)
         for orig,new in zip(self.residues,mol.residues):
             new.representations=orig.representations
 

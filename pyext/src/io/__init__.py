@@ -16,7 +16,7 @@ import sys,os
 import numpy as np
 import re
 from collections import defaultdict
-
+import itertools
 def parse_dssp(dssp_fn, limit_to_chains=''):
     """read dssp file, get SSEs. values are all PDB residue numbering.
     Returns a SubsequenceData object containing labels helix, beta, loop.
@@ -104,8 +104,7 @@ def parse_dssp(dssp_fn, limit_to_chains=''):
         sses.add_subsequence('beta',seq)
     return sses
 
-def parse_xlinks_davis(model,
-                       data_fn,
+def parse_xlinks_davis(data_fn,
                        max_num=-1,
                        name_map={},
                        named_offsets={},
@@ -131,7 +130,7 @@ def parse_xlinks_davis(model,
     inf=open(data_fn,'r')
     data=defaultdict(list)
     found=set()
-    data = CrossLinkData(model)
+    data = CrossLinkData()
     for nl,l in enumerate(inf):
         if max_num==-1 or nl<max_num:
             ig1,ig2,seq1,seq2,s1,s2,score=l.split()
@@ -160,7 +159,7 @@ def parse_xlinks_davis(model,
             data.add_cross_link(nl,
                                 {'molecule':n1,'residue_index':r1},
                                 {'molecule':n2,'residue_index':r2},
-                                score=score)
+                                score)
     inf.close()
     return data
 
@@ -250,6 +249,95 @@ class SubsequenceData(object):
     def keys(self):
         return self.data.keys()
 
+class CrossLink(object):
+    """A class to store the selection commands for a single crosslink.
+    """
+    def __init__(self,unique_id,r1,r2,score):
+        """Add a crosslink.
+        @param unique_id The id is used to group crosslinks that are alternatives
+        @param r1 A dictionary of selection keywords for the first residue
+        @param r2 A dictionary of selection keywards for the second residue
+        @param score A score that might be used later for filtering
+        @Note The dictionaries can contain any Selection argument like
+              molecule or residue_index
+        """
+        self.unique_id = unique_id
+        self.r1 = r1
+        self.r2 = r2
+        self.score = score
+
+    def get_selection(self,mh,**kwargs):
+        """Return a list of atom pairs (particle indexes) for this crosslink.
+        Found by selecting everything with r1 and r2 then returning the
+         cartesian product.
+        @Note you may want to provide some atom specifiers like
+         atom_type=IMP.atom.AtomType("CA")
+        @param mh The hierarchy to select from
+        @param kwargs Any additional selection arguments
+        """
+        rsel1=self.r1.copy()
+        rsel1.update(kwargs)
+        rsel2=self.r2.copy()
+        rsel2.update(kwargs)
+        sel1 = IMP.atom.Selection(mh,**rsel1).get_selected_particles()
+        sel2 = IMP.atom.Selection(mh,**rsel2).get_selected_particles()
+        if len(sel1)==0:
+            raise Exception("this selection is empty",rsel1)
+        if len(sel2)==0:
+            raise Exception("this selection is empty",rsel2)
+
+        '''
+        # Check no repeating copy numbers....not sure if this is general
+        for s in (sel1,sel2):
+            idxs=[IMP.atom.get_copy_index(p) for p in s]
+            if len(idxs)!=len(set(idxs)):
+                raise Exception("this XL is selecting more than one particle per copy")
+        '''
+        ret = []
+        for p1,p2 in itertools.product(sel1,sel2):
+            ret.append((p1,p2))
+        return ret
+
+class CrossLinkData(object):
+    """A class for storing groups of crosslinks.
+    Acts like a dictionary where keys are unique IDs and values are CrossLinks
+    Equivalent (using objects instead of dicts) to a data structure like so:
+         data[1030] =
+              [ { 'r1': {'molecule':'A','residue_index':5},
+                  'r2': {'molecule':'B','residue_index':100},
+                   'Score': 123 },
+                { 'r1': {'molecule':'C','residue_index':63},
+                  'r2': {'molecule':'D','residue_index':94},
+                  'Score': 600 }
+              ]
+    """
+    def __init__(self):
+        """Setup a CrossLinkData object"""
+        self.data = defaultdict(list)
+    def add_cross_link(self,unique_id,kws1,kws2,score):
+        """Add a crosslink. They are organized by their unique_ids.
+        @param unique_id The id is used to group crosslinks that are alternatives
+        @param r1 A dictionary of selection keywords for the first residue
+        @param r2 A dictionary of selection keywards for the second residue
+        @param score A score that might be used later for filtering
+        @Note The dictionaries can contain any Selection argument like
+              molecule or residue_index
+        """
+        self.data[unique_id].append(CrossLink(unique_id,kws1,kws2,score))
+    def __getitem__(self, key):
+        return self.data[key]
+    def __repr__(self):
+        return repr(self.data)
+    def keys(self):
+        return self.data.keys()
+    def values(self):
+        return self.data.values()
+    def __contains__(self, item):
+        return item in self.data
+    def __iter__(self):
+        return iter(self.data)
+    def __len__(self):
+        return len(self.data)
 
 def save_best_models(mdl,
                      out_dir,

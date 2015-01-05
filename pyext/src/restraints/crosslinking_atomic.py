@@ -79,17 +79,8 @@ class AtomicCrossLinkMSRestraint(object):
         Other nuisance options are available.
         \note Will return an error if the data+extra_sel don't specify two particles per XL pair.
         @param root      The root hierarchy on which you'll do selection
-        @param data      Data dict. each key is a unique XL ID,
-                         entries are lists of residue pairs and score. Example:
+        @param data      CrossLinkData object
 
-           data[1030] =
-              [ { 'r1': {'molecule':'A','residue_index':5},
-                  'r2': {'molecule':'B','residue_index':100},
-                   'Score': 123 },
-                { 'r1': {'molecule':'C','residue_index':63},
-                  'r2': {'molecule':'D','residue_index':94},
-                  'Score': 600 }
-              ]
         since the molecule may have multiple copies, these selection arguments could return
           multiple possible contributions. will have to check that there is only ONE per copy.
         each contribution will be assigned a PSI based on the score
@@ -120,7 +111,7 @@ class AtomicCrossLinkMSRestraint(object):
         self.rs_nuis = IMP.RestraintSet(self.mdl, 'prior_nuis')
         self.particles=[]
 
-        #### FIX THIS NUISANCE STUFF ###
+        #### Setup two sigmas based on promiscuity of the residue ###
         psi_min=0.0
         psi_max=0.5
         sig_threshold=4
@@ -137,71 +128,38 @@ class AtomicCrossLinkMSRestraint(object):
         for unique_id in data:
             for nstate in range(self.nstates):
                 for xl in data[unique_id]:
-                    num_xls_per_res[str(xl['r1'])]+=1
-                    num_xls_per_res[str(xl['r2'])]+=1
-        #print 'counting number of restraints per xl:'
-        #for key in num_xls_per_res:
-        #    print key,num_xls_per_res[key]
+                    num_xls_per_res[str(xl.r1)]+=1
+                    num_xls_per_res[str(xl.r2)]+=1
 
         ### now create all the XL's, using the number of restraints to guide sigmas
         xlrs=[]
         for unique_id in data:
 
             # create restraint for this data point
-            #print 'creating xl with unique id',unique_id
             r = IMP.isd.AtomicCrossLinkMSRestraint(self.mdl,self.length,slope,True)
             xlrs.append(r)
             num_contributions=0
 
             # add a contribution for each XL ambiguity option within each state
             for nstate in range(self.nstates):
-                #print '\tstate',nstate
-                # select the state
-                esel = extra_sel.copy()
-                esel['state_index'] = nstate
-
                 for xl in data[unique_id]:
-                    # select the particles (should grab all copies)
-                    #print '\t',xl
-                    sel1 = IMP.atom.Selection(root,**combine_dicts(
-                        xl['r1'],esel)).get_selected_particles()
-                    #print '\tsel1:',xl['r1']
-
-                    sel2 = IMP.atom.Selection(root,**combine_dicts(
-                        xl['r2'],esel)).get_selected_particles()
-                    #print '\tsel2:',xl['r2']
-                    self.particles+=sel1+sel2
-
-                    # check to make sure all particles in selections are from different copies
-                    if len(sel1)==0:
-                        raise RestraintSetupError("this selection is empty",xl['r1'])
-                    if len(sel2)==0:
-                        raise RestraintSetupError("this selection is empty",xl['r2'])
-
-                    for s in (sel1,sel2):
-                        idxs=[IMP.atom.get_copy_index(p) for p in s]
-                        if len(idxs)!=len(set(idxs)):
-                            raise RestraintSetupError("this XL is selecting more than one particle per copy")
+                    xl_pairs = xl.get_selection(root,state_index=nstate,
+                                                 **extra_sel)
 
                     # figure out sig1 and sig2 based on num XLs
-                    num1=num_xls_per_res[str(xl['r1'])]
-                    num2=num_xls_per_res[str(xl['r2'])]
-                    #print '\t num restraints per sel',num1,num2
+                    num1=num_xls_per_res[str(xl.r1)]
+                    num2=num_xls_per_res[str(xl.r2)]
                     if num1<sig_threshold:
                         sig1=self.sig_low
-                        #print "\tsig1 is low"
                     else:
                         sig1=self.sig_high
-                        #print "\tsig1 is high"
                     if num2<sig_threshold:
                         sig2=self.sig_low
-                        #print "\tsig2 is low"
                     else:
                         sig2=self.sig_high
-                        #print "\tsig2 is high"
 
                     # add each copy contribution to restraint
-                    for p1,p2 in itertools.product(sel1,sel2):
+                    for p1,p2 in xl_pairs:
                         if max_dist is not None:
                             dist=IMP.core.get_distance(IMP.core.XYZ(p1),IMP.core.XYZ(p2))
                             if dist>max_dist:
@@ -212,8 +170,6 @@ class AtomicCrossLinkMSRestraint(object):
                         num_contributions+=1
                 if num_contributions==0:
                     raise RestraintSetupError("No contributions!")
-                #print '\tCur XL score:',r.evaluate(False)
-
 
         print('created',len(xlrs),'XL restraints')
         self.rs=IMP.isd.LogWrapper(xlrs,self.weight)

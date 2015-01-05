@@ -266,6 +266,9 @@ class CrossLink(object):
         self.r2 = r2
         self.score = score
 
+    def __repr__(self):
+        return "CrossLink id: "+str(self.unique_id)+" r1: "+repr(self.r1)+", r2: "+repr(self.r2)
+
     def get_selection(self,mh,**kwargs):
         """Return a list of atom pairs (particle indexes) for this crosslink.
         Found by selecting everything with r1 and r2 then returning the
@@ -327,7 +330,11 @@ class CrossLinkData(object):
     def __getitem__(self, key):
         return self.data[key]
     def __repr__(self):
-        return repr(self.data)
+        ret="CrossLinkData with these entries:\n"
+        for d in self.data:
+            for xl in self.data[d]:
+                ret+=repr(xl)+'\n'
+        return ret
     def keys(self):
         return self.data.keys()
     def values(self):

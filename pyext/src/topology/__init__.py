@@ -10,6 +10,7 @@
 from __future__ import print_function
 import IMP
 import IMP.atom
+import IMP.algebra
 import IMP.pmi
 import IMP.base
 import csv
@@ -28,6 +29,39 @@ def get_residue_type_from_one_letter_code(code):
     for k in threetoone:
         one_to_three[threetoone[k]] = k
     return IMP.atom.ResidueType(one_to_three[code])
+
+def get_particles_within_zone(hier,
+                              target_ps,
+                              sel_zone,
+                              entire_residues,
+                              exclude_backbone):
+    """Utility to retrieve particles from a hierarchy within a
+    zone around a set of ps.
+    @param hier The hierarchy in which to look for neighbors
+    @param target_ps The particles for zoning
+    @param sel_zone The maximum distance
+    @param entire_residues If True, will grab entire residues
+    @param exclude_backbone If True, will only return sidechain particles
+    """
+
+    test_sel = IMP.atom.Selection(hier)
+    backbone_types=['C','N','CB','O']
+    if exclude_backbone:
+        test_sel -= IMP.atom.Selection(hier,atom_types=[IMP.atom.AtomType(n)
+                                                        for n in backbone_types])
+    test_ps = test_sel.get_selected_particles()
+    nn = IMP.algebra.NearestNeighbor3D([IMP.core.XYZ(p).get_coordinates()
+                                         for p in test_ps])
+    zone = set()
+    for target in target_ps:
+        zone|=set(nn.get_in_ball(IMP.core.XYZ(target).get_coordinates(),sel_zone))
+    zone_ps = [test_ps[z] for z in zone]
+    if entire_residues:
+        final_ps = set()
+        for z in zone_ps:
+            final_ps|=set(IMP.atom.Hierarchy(z).get_parent().get_children())
+        zone_ps = [h.get_particle() for h in final_ps]
+    return zone_ps
 
 class StructureError(Exception):
     pass

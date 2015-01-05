@@ -35,11 +35,11 @@ def enable_md_sampling(mdl, hier=None, particles=None, include_siblings=False,
         else:
             ps=[p]
         for pp in ps:
-            if exclude_backbone and IMP.atom.Atom(mdl,pp.get_particle_index()).get_atom_type() in backbone:
+            if exclude_backbone and IMP.atom.Atom(mdl,pp.get_index()).get_atom_type() in backbone:
                 continue
-            IMP.core.XYZ(mdl,pp.get_particle_index()).set_coordinates_are_optimized(True)
-            mdl.add_attribute(vxkey,pp.get_particle_index(),0.0)
-            mdl.add_attribute(vykey,pp.get_particle_index(),0.0)
-            mdl.add_attribute(vzkey,pp.get_particle_index(),0.0)
+            IMP.core.XYZ(mdl,pp.get_index()).set_coordinates_are_optimized(True)
+            mdl.add_attribute(vxkey,pp.get_index(),0.0)
+            mdl.add_attribute(vykey,pp.get_index(),0.0)
+            mdl.add_attribute(vzkey,pp.get_index(),0.0)
             all_ps.append(pp)
     return [SampleObjects('Floppy_Bodies_SimplifiedModel',[all_ps])]

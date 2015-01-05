@@ -11,7 +11,6 @@ import IMP.atom
 import IMP.container
 import IMP.isd
 import IMP.pmi.sampling_tools as sampling_tools
-import itertools
 from collections import defaultdict
 import os.path
 
@@ -160,6 +159,8 @@ class AtomicCrossLinkMSRestraint(object):
 
                     # add each copy contribution to restraint
                     for p1,p2 in xl_pairs:
+                        self.particles.append(p1)
+                        self.particles.append(p2)
                         if max_dist is not None:
                             dist=IMP.core.get_distance(IMP.core.XYZ(p1),IMP.core.XYZ(p2))
                             if dist>max_dist:
@@ -199,7 +200,7 @@ class AtomicCrossLinkMSRestraint(object):
         hps = IMP.core.HarmonicDistancePairScore(self.length,1.0)
         dummy_rs=[]
         for nxl in range(self.rs.get_number_of_restraints()):
-            xl=IMP.isd.AtomicCrossLinkMSRestraint.cast(self.rs.get_restraint(nxl))
+            xl=IMP.isd.AtomicCrossLinkMSRestraint.get_from(self.rs.get_restraint(nxl))
             rs = IMP.RestraintSet(dummy_mdl, 'atomic_xl_'+str(nxl))
             for ncontr in range(xl.get_number_of_contributions()):
                 ps=xl.get_contribution(ncontr)
@@ -231,7 +232,7 @@ class AtomicCrossLinkMSRestraint(object):
         """
         import subprocess
         for nxl in range(self.rs.get_number_of_restraints()):
-            xl=IMP.isd.AtomicCrossLinkMSRestraint.cast(self.rs.get_restraint(nxl))
+            xl=IMP.isd.AtomicCrossLinkMSRestraint.get_from(self.rs.get_restraint(nxl))
             sig1_val = float(subprocess.check_output(["process_output.py","-f",in_fn,
                                     "-s","AtomicXLRestraint_%i_Sig1"%nxl]).split('\n>')[1+nframe])
             sig2_val = float(subprocess.check_output(["process_output.py","-f",in_fn,
@@ -272,7 +273,7 @@ class AtomicCrossLinkMSRestraint(object):
 
         # for each crosslink, evaluate probability and lowest distance for each state
         for nxl in range(self.rs.get_number_of_restraints()):
-            xl=IMP.isd.AtomicCrossLinkMSRestraint.cast(self.rs.get_restraint(nxl))
+            xl=IMP.isd.AtomicCrossLinkMSRestraint.get_from(self.rs.get_restraint(nxl))
             best_contr_per_state=[[1e6,None] for i in range(self.nstates)] # [low dist, idx low contr]
             ncontr_per_state=[[] for i in range(self.nstates)]     # [list of the ncontr in each state]
 
@@ -375,7 +376,7 @@ class AtomicCrossLinkMSRestraint(object):
         # count distances above length
         bad_count=0
         for nxl in range(self.rs.get_number_of_restraints()):
-            xl=IMP.isd.AtomicCrossLinkMSRestraint.cast(self.rs.get_restraint(nxl))
+            xl=IMP.isd.AtomicCrossLinkMSRestraint.get_from(self.rs.get_restraint(nxl))
             prob = xl.unprotected_evaluate(None)
             if prob<0.1:
                 bad_count+=1

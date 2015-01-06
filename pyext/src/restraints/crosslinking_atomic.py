@@ -108,7 +108,7 @@ class AtomicCrossLinkMSRestraint(object):
 
         self.rs = IMP.RestraintSet(self.mdl, 'xlrestr')
         self.rs_nuis = IMP.RestraintSet(self.mdl, 'prior_nuis')
-        self.particles=[]
+        self.particles=defaultdict(list)
 
         #### Setup two sigmas based on promiscuity of the residue ###
         psi_min=0.0
@@ -159,8 +159,7 @@ class AtomicCrossLinkMSRestraint(object):
 
                     # add each copy contribution to restraint
                     for p1,p2 in xl_pairs:
-                        self.particles.append(p1)
-                        self.particles.append(p2)
+                        self.particles[nstate]+=[p1,p2]
                         if max_dist is not None:
                             dist=IMP.core.get_distance(IMP.core.XYZ(p1),IMP.core.XYZ(p2))
                             if dist>max_dist:
@@ -211,9 +210,9 @@ class AtomicCrossLinkMSRestraint(object):
         return dummy_rs
 
 
-    def get_particles(self):
+    def get_particles(self,state_num=0):
         """ Get particles involved in the restraint """
-        return self.particles
+        return self.particles[state_num]
 
     def get_mc_sample_objects(self,max_step):
         """ HACK! Make a SampleObjects class that can be used with PMI::samplers"""

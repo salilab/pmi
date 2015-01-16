@@ -25,32 +25,6 @@ def setup_nuisance(m,rs,init_val,min_val,max_val,is_opt=True):
                                           max_val,min_val))
     return nuisance
 
-def combine_dicts(a1,a2):
-    """ Combine Selection dictionaries. The first one has higher priority.
-    Keeps unique keys from each dictionary.
-    If keys overlap, but both point to lists, the lists are combined.
-    If keys overlap but they don't point to lists, only the first is kept.
-    """
-    final={}
-    if a1 is None:
-        return a2
-    elif a2 is None:
-        return a1
-    elif a1 is None and a2 is None:
-        return None
-    for k in a1:
-        final[k]=a1[k]
-    for k in a2:
-        if k in final:
-            if type(final[k]) is not list:
-                print("ERROR: you have overlapping keys that aren't lists")
-            else:
-                final[k]+=a2[k]
-        else:
-            final[k]=a2[k]
-    return final
-
-
 class RestraintSetupError(Exception):
     pass
 
@@ -113,11 +87,15 @@ class AtomicCrossLinkMSRestraint(object):
         #### Setup two sigmas based on promiscuity of the residue ###
         psi_min=0.0
         psi_max=0.5
+        '''
         sig_threshold=4
         self.sig_low = setup_nuisance(self.mdl,self.rs_nuis,init_val=sigma_init,min_val=1.0,
                                       max_val=100.0,is_opt=self.nuis_opt)
         self.sig_high = setup_nuisance(self.mdl,self.rs_nuis,init_val=sigma_init,min_val=1.0,
                                        max_val=100.0,is_opt=self.nuis_opt)
+        '''
+        self.sigma = setup_nuisance(self.mdl,self.rs_nuis,init_val=sigma_init,min_val=1.0,
+                                      max_val=100.0,is_opt=self.nuis_opt)
         self.psi = setup_nuisance(self.mdl,self.rs_nuis,psi_init,psi_min,psi_max,
                                   self.nuis_opt)
 
@@ -146,6 +124,7 @@ class AtomicCrossLinkMSRestraint(object):
                                                  **extra_sel)
 
                     # figure out sig1 and sig2 based on num XLs
+                    '''
                     num1=num_xls_per_res[str(xl.r1)]
                     num2=num_xls_per_res[str(xl.r2)]
                     if num1<sig_threshold:
@@ -156,6 +135,9 @@ class AtomicCrossLinkMSRestraint(object):
                         sig2=self.sig_low
                     else:
                         sig2=self.sig_high
+                    '''
+                    sig1 = self.sigma
+                    sig2 = self.sigma
 
                     # add each copy contribution to restraint
                     for p1,p2 in xl_pairs:
@@ -216,7 +198,8 @@ class AtomicCrossLinkMSRestraint(object):
 
     def get_mc_sample_objects(self,max_step):
         """ HACK! Make a SampleObjects class that can be used with PMI::samplers"""
-        ps=[[self.sig_low,self.sig_high],max_step]
+        #ps=[[self.sig_low,self.sig_high,self.psi],max_step]
+        ps=[[self.sigma,self.psi],max_step]
         return [sampling_tools.SampleObjects('Nuisances',ps)]
 
     def __repr__(self):
@@ -360,6 +343,26 @@ class AtomicCrossLinkMSRestraint(object):
                                         IMP.core.XYZ(self.mdl,idx2).get_coordinates())
         return idx1,idx2,dist
 
+    def print_stats(self):
+        print("XL restraint statistics\n<num> <prob> <bestdist> <sig1> <sig2> <is_viol>")
+        for nxl in range(self.rs.get_number_of_restraints()):
+            xl=IMP.isd.AtomicCrossLinkMSRestraint.get_from(self.rs.get_restraint(nxl))
+            prob = xl.unprotected_evaluate(None)
+            if prob<0.05:
+                is_viol=1
+            else:
+                is_viol=0
+            low_dist=1e6
+            low_contr=None
+            for contr in range(xl.get_number_of_contributions()):
+                dist,sig1,sig2,psi = xl.get_contribution_scores(contr)
+                if dist<low_dist:
+                    low_dist=dist
+                    low_contr=contr
+            dist,sig1,sig2,psi = xl.get_contribution_scores(low_contr)
+            print('%i %.4f %.4f %.4f %.4f %i'%(nxl,prob,low_dist,sig1,sig2,is_viol))
+
+
     def get_output(self):
         self.mdl.update()
         output = {}
@@ -368,8 +371,10 @@ class AtomicCrossLinkMSRestraint(object):
         output["AtomicXLRestraint" + self.label] = str(score)
 
         ### HACK to make it easier to see the few sigmas
-        output["AtomicXLRestraint_sig_low"] = self.sig_low.get_scale()
-        output["AtomicXLRestraint_sig_high"] = self.sig_high.get_scale()
+        #output["AtomicXLRestraint_sig_low"] = self.sig_low.get_scale()
+        #output["AtomicXLRestraint_sig_high"] = self.sig_high.get_scale()
+        output["AtomicXLRestraint_sigma"] = self.sigma.get_scale()
+        output["AtomicXLRestraint_psi"] = self.psi.get_scale()
         ######
 
         # count distances above length

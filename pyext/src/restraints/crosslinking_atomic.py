@@ -23,6 +23,7 @@ def setup_nuisance(m,rs,init_val,min_val,max_val,is_opt=True):
     nuisance.set_is_optimized(nuisance.get_nuisance_key(),is_opt)
     rs.add_restraint(IMP.isd.UniformPrior(m,nuisance,1000000000.0,
                                           max_val,min_val))
+    rs.add_restraint(IMP.isd.JeffreysRestraint(m,nuisance))
     return nuisance
 
 class RestraintSetupError(Exception):
@@ -199,7 +200,7 @@ class AtomicCrossLinkMSRestraint(object):
     def get_mc_sample_objects(self,max_step):
         """ HACK! Make a SampleObjects class that can be used with PMI::samplers"""
         #ps=[[self.sig_low,self.sig_high,self.psi],max_step]
-        ps=[[self.sigma,self.psi],max_step]
+        psig=[[self.sigma,self.psi],max_step]
         return [sampling_tools.SampleObjects('Nuisances',ps)]
 
     def __repr__(self):

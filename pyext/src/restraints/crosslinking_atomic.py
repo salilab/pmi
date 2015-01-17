@@ -200,7 +200,7 @@ class AtomicCrossLinkMSRestraint(object):
     def get_mc_sample_objects(self,max_step):
         """ HACK! Make a SampleObjects class that can be used with PMI::samplers"""
         #ps=[[self.sig_low,self.sig_high,self.psi],max_step]
-        psig=[[self.sigma,self.psi],max_step]
+        ps=[[self.sigma,self.psi],max_step]
         return [sampling_tools.SampleObjects('Nuisances',ps)]
 
     def __repr__(self):

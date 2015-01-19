@@ -14,7 +14,7 @@ import IMP.pmi.sampling_tools as sampling_tools
 from collections import defaultdict
 import os.path
 
-def setup_nuisance(m,rs,init_val,min_val,max_val,is_opt=True):
+def setup_nuisance(m,rs,init_val,min_val,max_val,is_opt=True,add_jeff=True):
     nuisance=IMP.isd.Scale.setup_particle(IMP.Particle(m),init_val)
     if min_val:
         nuisance.set_lower(min_val)
@@ -23,8 +23,8 @@ def setup_nuisance(m,rs,init_val,min_val,max_val,is_opt=True):
     nuisance.set_is_optimized(nuisance.get_nuisance_key(),is_opt)
     rs.add_restraint(IMP.isd.UniformPrior(m,nuisance,1000000000.0,
                                           max_val,min_val))
-
-    rs.add_restraint(IMP.isd.JeffreysRestraint(m,nuisance))
+    if add_jeff:
+        rs.add_restraint(IMP.isd.JeffreysRestraint(m,nuisance.get_particle()))
     return nuisance
 
 class RestraintSetupError(Exception):
@@ -89,6 +89,8 @@ class AtomicCrossLinkMSRestraint(object):
         #### Setup two sigmas based on promiscuity of the residue ###
         psi_min = 1e-8
         psi_max = 0.4999999
+        sigma_min = 1.0
+        sigma_max = 100.0
 
         '''
         sig_threshold=4
@@ -97,10 +99,18 @@ class AtomicCrossLinkMSRestraint(object):
         self.sig_high = setup_nuisance(self.mdl,self.rs_nuis,init_val=sigma_init,min_val=1.0,
                                        max_val=100.0,is_opt=self.nuis_opt)
         '''
-        self.sigma = setup_nuisance(self.mdl,self.rs_nuis,init_val=sigma_init,min_val=1.0,
-                                      max_val=100.0,is_opt=self.nuis_opt)
-        self.psi = setup_nuisance(self.mdl,self.rs_nuis,psi_init,psi_min,psi_max,
-                                  self.nuis_opt)
+        self.sigma = setup_nuisance(self.mdl,self.rs_nuis,
+                                    init_val=sigma_init,
+                                    min_val=sigma_min,
+                                    max_val=sigma_max,
+                                    is_opt=self.nuis_opt,
+                                    add_jeff=False)
+        self.psi = setup_nuisance(self.mdl,self.rs_nuis,
+                                  init_val=psi_init,
+                                  min_val=psi_min,
+                                  max_val=psi_max,
+                                  is_opt=self.nuis_opt,
+                                  add_jeff=True)
 
 
         ### first read ahead to get the number of XL's per residue
@@ -378,6 +388,7 @@ class AtomicCrossLinkMSRestraint(object):
         #output["AtomicXLRestraint_sig_high"] = self.sig_high.get_scale()
         output["AtomicXLRestraint_sigma"] = self.sigma.get_scale()
         output["AtomicXLRestraint_psi"] = self.psi.get_scale()
+        output["AtomicXLRestraint_priors"] = self.rs_nuis.unprotected_evaluate(None)
         ######
 
         # count distances above length

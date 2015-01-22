@@ -3,27 +3,23 @@
 import IMP
 import IMP.atom
 import IMP.pmi
-import IMP.pmi.representation_new
-import IMP.pmi.sequence_tools
+import IMP.pmi.topology
 import IMP.pmi.restraints_new.stereochemistry
-import IMP.pmi.restraints_new.atomic_xl
-import IMP.pmi.hierarchy_tools as hierarchy_tools
+import IMP.pmi.restraints.crosslinking_atomic
 import IMP.pmi.sampling_tools as sampling_tools
-import IMP.pmi.data_tools as data_tools
 import IMP.pmi.macros
-import IMP.isd_emxl
 
 ### parameters ###
 
 # scoring params
 xl_length = 5.0
 slope = 0.01
-charmm_weight = 0.1
+charmm_weight = 1.0
 psi_init = 1e-8
 sigma_init = 2.0
 
 # sampling params
-num_md = 40
+num_md = 50
 num_mc = 0
 num_rounds = 1
 out_dir = "."
@@ -31,12 +27,13 @@ nframes = 10000
 nmodels = 10
 min_temp = 1.0
 max_temp = 1.0
-mc_max_step = 0.1
+psi_max_step = 0.01
+sigma_max_step = 0.25
 
 ### create system ###
 mdl = IMP.Model()
-system = IMP.pmi.representation_new.System(mdl)
-seqs = IMP.pmi.representation_new.Sequences(fasta_fn="data/example.fasta",
+system = IMP.pmi.topology.System(mdl)
+seqs = IMP.pmi.topology.Sequences(fasta_fn="data/example.fasta",
                                             name_map={'example_protein':'prot'})
 state = system.create_state()
 prot = state.create_molecule("prot", sequence=seqs["prot"], chain_id='A')
@@ -69,22 +66,18 @@ print 'EVAL - CHARMM 2',mdl.evaluate(False)
 output_objects.append(charmm2)
 
 # crosslinks
-xls={}
-xls[0]=[{'r1': {'residue_index':48},
-         'r2': {'residue_index':51},
-         'Score': 1.0}]
-xls[1]=[{'r1': {'residue_index':48},
-         'r2': {'residue_index':43},
-         'Score': 1.0}]
-'''
-xls[0]=[{'r1': {'residue_index':88},
-         'r2': {'residue_index':146},
-         'Score': 1.0}]
-xls[1]=[{'r1': {'residue_index':141},
-         'r2': {'residue_index':146},
-         'Score': 1.0}]
-'''
-xlrs = IMP.pmi.restraints_new.atomic_xl.AtomicCrossLinkMSRestraint(hier,
+xls = IMP.pmi.io.CrossLinkData()
+xls.add_cross_link(0,
+                   {'residue_index':48},
+                   {'residue_index':51},
+                   1.0)
+xls.add_cross_link(1,
+                   {'residue_index':48},
+                   {'residue_index':43},
+                   1.0)
+print xls
+# also try 88,146 and 141,146
+xlrs = IMP.pmi.restraints.crosslinking_atomic.AtomicCrossLinkMSRestraint(hier,
                                                                    xls,
                                                                    length=xl_length,
                                                                    slope=slope,
@@ -95,7 +88,6 @@ xlrs.add_to_model()
 output_objects.append(xlrs)
 print 'EVAL - XLINKS',mdl.evaluate(False)
 
-### sample ###
 
 ### OUTPUT HACK ###
 class mini_output:
@@ -112,8 +104,9 @@ output_objects.append(mini_output(mdl))
 for p in IMP.core.get_leaves(hier):
     IMP.core.XYZ(p).set_coordinates_are_optimized(False)
 
+all_ps = xlrs.get_particles(0)+xlrs.get_particles(1)
 md_objs=sampling_tools.enable_md_sampling(mdl,
-                                          particles=xlrs.get_particles(),
+                                          particles=all_ps,
                                           include_siblings=True,
                                           exclude_backbone=True)
 

@@ -54,7 +54,8 @@ class AtomicCrossLinkMSRestraint(object):
                  max_dist=None,
                  nuisances_are_optimized=True,
                  sigma_init=5.0,
-                 psi_init = 0.01):
+                 psi_init = 0.01,
+                 one_psi=True):
         """Experimental ATOMIC XL restraint. Provide selections for the particles to restrain.
         Automatically creates one "sigma" per crosslinked residue and one "psis" per pair.
         Other nuisance options are available.
@@ -86,6 +87,12 @@ class AtomicCrossLinkMSRestraint(object):
         self.rs = IMP.RestraintSet(self.mdl, 'xlrestr')
         self.rs_nuis = IMP.RestraintSet(self.mdl, 'prior_nuis')
         self.particles=defaultdict(list)
+        self.one_psi = one_psi
+
+        if one_psi:
+            print('creating a single psi for all XLs')
+        else:
+            print('creating one psi for each XL')
 
         #### Setup two sigmas based on promiscuity of the residue ###
         psi_min_nuis = 1e-7
@@ -112,32 +119,47 @@ class AtomicCrossLinkMSRestraint(object):
                                     max_val_prior=sigma_max_prior,
                                     is_opt=self.nuis_opt,
                                     add_jeff=False)
-        self.psi = setup_nuisance(self.mdl,self.rs_nuis,
-                                  init_val=psi_init,
-                                  min_val_nuis=psi_min_nuis,
-                                  max_val_nuis=psi_max_nuis,
-                                  min_val_prior=psi_min_prior,
-                                  max_val_prior=psi_max_prior,
-                                  is_opt=self.nuis_opt,
-                                  add_jeff=True)
-
+        if one_psi:
+            self.psi = setup_nuisance(self.mdl,self.rs_nuis,
+                                      init_val=psi_init,
+                                      min_val_nuis=psi_min_nuis,
+                                      max_val_nuis=psi_max_nuis,
+                                      min_val_prior=psi_min_prior,
+                                      max_val_prior=psi_max_prior,
+                                      is_opt=self.nuis_opt,
+                                      add_jeff=True)
+        else:
+            self.psis={}
+            for unique_id in data:
+                self.psis[unique_id]=setup_nuisance(self.mdl,self.rs_nuis,
+                                                    init_val=psi_init,
+                                                    min_val_nuis=psi_min_nuis,
+                                                    max_val_nuis=psi_max_nuis,
+                                                    min_val_prior=psi_min_prior,
+                                                    max_val_prior=psi_max_prior,
+                                                    is_opt=self.nuis_opt,
+                                                    add_jeff=True)
 
         ### first read ahead to get the number of XL's per residue
-        num_xls_per_res=defaultdict(int)
-        for unique_id in data:
-            for nstate in range(self.nstates):
-                for xl in data[unique_id]:
-                    num_xls_per_res[str(xl.r1)]+=1
-                    num_xls_per_res[str(xl.r2)]+=1
+        #num_xls_per_res=defaultdict(int)
+        #for unique_id in data:
+        #    for nstate in range(self.nstates):
+        #        for xl in data[unique_id]:
+        #            num_xls_per_res[str(xl.r1)]+=1
+        #            num_xls_per_res[str(xl.r2)]+=1
 
         ### now create all the XL's, using the number of restraints to guide sigmas
         xlrs=[]
         for unique_id in data:
-
             # create restraint for this data point
+            if one_psi:
+                psip = self.psi.get_particle_index()
+            else:
+                psip = self.psis[unique_id].get_particle_index()
+
             r = IMP.isd.AtomicCrossLinkMSRestraint(self.mdl,
                                                    self.length,
-                                                   self.psi.get_particle_index(),
+                                                   psip,
                                                    slope,
                                                    True)
             xlrs.append(r)
@@ -225,7 +247,10 @@ class AtomicCrossLinkMSRestraint(object):
         """ HACK! Make a SampleObjects class that can be used with PMI::samplers"""
         #ps=[[self.sig_low,self.sig_high,self.psi],max_step]
         psigma=[[self.sigma],max_step_sigma]
-        ppsi=[[self.psi],max_step_psi]
+        if self.one_psi:
+            ppsi=[[self.psi],max_step_psi]
+        else:
+            ppsi=[[self.psis[p] for p in self.psis],max_step_psi]
         ret = [sampling_tools.SampleObjects('Nuisances',psigma),
                sampling_tools.SampleObjects('Nuisances',ppsi)]
         return ret
@@ -269,7 +294,7 @@ class AtomicCrossLinkMSRestraint(object):
         @param min_dist_for_violation It's a violation if the min dist is above this
         @param coarsen                Use CA positions
         """
-
+        print('going to calculate violations and plot CMM files')
         all_dists=[]
 
         # prepare one output file per state
@@ -283,6 +308,7 @@ class AtomicCrossLinkMSRestraint(object):
 
         # for each crosslink, evaluate probability and lowest distance for each state
         for nxl in range(self.rs.get_number_of_restraints()):
+            print(nxl)
             xl=IMP.isd.AtomicCrossLinkMSRestraint.get_from(self.rs.get_restraint(nxl))
             best_contr_per_state=[[1e6,None] for i in range(self.nstates)] # [low dist, idx low contr]
             ncontr_per_state=[[] for i in range(self.nstates)]     # [list of the ncontr in each state]
@@ -405,8 +431,9 @@ class AtomicCrossLinkMSRestraint(object):
         #output["AtomicXLRestraint_sig_low"] = self.sig_low.get_scale()
         #output["AtomicXLRestraint_sig_high"] = self.sig_high.get_scale()
         output["AtomicXLRestraint_sigma"] = self.sigma.get_scale()
-        output["AtomicXLRestraint_psi"] = self.psi.get_scale()
         output["AtomicXLRestraint_priors"] = self.rs_nuis.unprotected_evaluate(None)
+        if self.one_psi:
+            output["AtomicXLRestraint_psi"] = self.psi.get_scale()
         ######
 
         # count distances above length
@@ -428,7 +455,9 @@ class AtomicCrossLinkMSRestraint(object):
 
             output["AtomicXLRestraint_%i_%s"%(nxl,"Prob")]=str(prob)
             output["AtomicXLRestraint_%i_%s"%(nxl,"BestDist")]=str(low_dist)
-
+            if not self.one_psi:
+                pval = IMP.isd.Scale(self.mdl,xl.get_psi()).get_scale()
+                output["AtomicXLRestraint_%i_%s"%(nxl,"psi")]=str(pval)
             #dist,sig1,sig2,psi = xl.get_contribution_scores(low_contr)
             #output["AtomicXLRestraint_%i_%s"%(nxl,"Sig1")]=str(sig1)
             #output["AtomicXLRestraint_%i_%s"%(nxl,"Sig2")]=str(sig2)

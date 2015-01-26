@@ -10,14 +10,17 @@ import IMP.pmi
 class CharmmForceFieldRestraint(object):
     """ Enable CHARMM force field """
     def __init__(self,root,
-                 limit_to_ps=None,
                  ff_temp=300.0,
+                 zone_ps=None,
+                 zone_size=10.0,
                  enable_nonbonded=True,
                  enable_bonded=True):
         """Setup the charmm restraint on a selection. Expecting atoms.
         @param root             The node at which to apply the restraint
-        @param limit_to_ps      Limit the BONDED restraint to these particles
         @param ff_temp          The temperature of the force field
+        @param zone_ps          Create a zone around this set of particles
+                                Automatically includes the entire residue (incl. backbone)
+        @param zone_size        The size for looking for neighbor residues
         @param enable_nonbonded Allow the repulsive restraint
         @param enable_bonded    Allow the repulsive restraint
         """
@@ -36,10 +39,20 @@ class CharmmForceFieldRestraint(object):
             topology = ff.create_topology(root)
             topology.apply_default_patches()
             topology.setup_hierarchy(root)
-            if limit_to_ps is not None:
-                r = IMP.atom.CHARMMStereochemistryRestraint(root, topology, limit_to_ps)
+            if zone_ps is not None:
+                limit_to_ps=IMP.pmi.topology.get_particles_within_zone(
+                    root,
+                    zone_ps,
+                    zone_size,
+                    entire_residues=True,
+                    exclude_backbone=False)
+                r = IMP.atom.CHARMMStereochemistryRestraint(root,
+                                                            topology,
+                                                            limit_to_ps)
+                self.ps = limit_to_ps
             else:
                 r = IMP.atom.CHARMMStereochemistryRestraint(root, topology)
+                self.ps = IMP.core.get_leaves(root)
             self.bonds_rs.add_restraint(r)
             ff.add_radii(root)
             ff.add_well_depths(root)
@@ -77,6 +90,9 @@ class CharmmForceFieldRestraint(object):
 
     def get_close_pair_container(self):
         return self.nbl
+
+    def get_ps(self):
+        return self.ps
 
     def set_weight(self, weight):
         self.weight = weight

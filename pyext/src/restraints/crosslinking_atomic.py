@@ -306,6 +306,7 @@ class AtomicCrossLinkMSRestraint(object):
         out_fns=[]
         out_nvs=[]
         state_info=[]
+        cmds = defaultdict(set)
         for nstate in range(self.nstates):
             outf=open(out_prefix+str(nstate)+'.cmm','w')
             outf.write('<marker_set name="xlinks_state%i"> \n' % nstate)
@@ -343,16 +344,28 @@ class AtomicCrossLinkMSRestraint(object):
             for nstate in range(self.nstates):
                 if all_pass:
                     r=0.365; g=0.933; b=0.365;
+                    continue
                 elif all_viol:
                     r=0.980; g=0.302; b=0.247;
+                    continue
                 else:
                     if nstate in nviol:
                         continue
                     else:
-                        r=0.9; g=0.34; b=0.9;
+                        #r=0.9; g=0.34; b=0.9;
+                        r=0.365; g=0.933; b=0.365;
+                # now only showing if UNIQUELY PASSING in this state
                 pp = state_info[nstate][nxl]["low_pp"]
                 c1=IMP.core.XYZ(self.mdl,pp[0]).get_coordinates()
                 c2=IMP.core.XYZ(self.mdl,pp[1]).get_coordinates()
+
+                r1 = IMP.atom.get_residue(IMP.atom.Atom(self.mdl,pp[0])).get_index()
+                ch1 = IMP.atom.get_chain_id(IMP.atom.Atom(self.mdl,pp[0]))
+                r2 = IMP.atom.get_residue(IMP.atom.Atom(self.mdl,pp[0])).get_index()
+                ch2 = IMP.atom.get_chain_id(IMP.atom.Atom(self.mdl,pp[0]))
+
+                cmds[nstate].add((ch1,r1))
+                cmds[nstate].add((ch2,r2))
 
                 outf = out_fns[nstate]
                 nv = out_nvs[nstate]
@@ -367,6 +380,10 @@ class AtomicCrossLinkMSRestraint(object):
         for nstate in range(self.nstates):
             out_fns[nstate].write('</marker_set>\n')
             out_fns[nstate].close()
+            cmd = ''
+            for ch,r in cmds[nstate]:
+                cmd+='#%i:%i.%s '%(nstate,r,ch)
+            print(cmd)
 
         return all_dists
     def _get_contribution_info(self,xl,ncontr,use_CA=False):
@@ -414,7 +431,6 @@ class AtomicCrossLinkMSRestraint(object):
                     if (c1 in limit_to_chains or c2 in limit_to_chains) and (
                             c1 not in exclude_chains and c2 not in exclude_chains):
                         if dist<low_dist_lim:
-                            print('may store',nxl,c1,c2)
                             low_dist_lim = dist
                             low_pp_lim = pp
                 if dist<low_dist:
@@ -439,7 +455,7 @@ class AtomicCrossLinkMSRestraint(object):
 
     def print_stats(self):
         #print("XL restraint statistics\n<num> <prob> <bestdist> <sig1> <sig2> <is_viol>")
-        stats = get_best_stats()
+        stats = self.get_best_stats()
         for nxl,s in enumerate(stats):
             #print('%i %.4f %.4f %.4f %.4f %i'%(nxl,prob,low_dist,sig1,sig2,is_viol))
             print(s["low_dist"])
@@ -461,7 +477,7 @@ class AtomicCrossLinkMSRestraint(object):
 
         # count distances above length
         bad_count=0
-        stats = get_best_stats()
+        stats = self.get_best_stats()
         for nxl,s in enumerate(stats):
             if s['low_dist']<20.0:
                 bad_count+=1

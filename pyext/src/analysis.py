@@ -1336,7 +1336,7 @@ class GetContactMap(object):
 # ------------------------------------------------------------------
 # a few random tools
 
-def get_hier_from_rmf(model, frame_number, rmf_file):
+def get_hier_from_rmf(model, frame_number, rmf_file,state_number=0):
     # I have to deprecate this function
     print("getting coordinates for frame %i rmf file %s" % (frame_number, rmf_file))
 
@@ -1350,7 +1350,7 @@ def get_hier_from_rmf(model, frame_number, rmf_file):
         prot = None
         return prot
     #IMP.rmf.link_hierarchies(rh, prots)
-    prot = prots[0]
+    prot = prots[state_number]
     try:
         IMP.rmf.load_frame(rh, frame_number)
     except:
@@ -1360,7 +1360,7 @@ def get_hier_from_rmf(model, frame_number, rmf_file):
     del rh
     return prot
 
-def get_hier_and_restraints_from_rmf(model, frame_number, rmf_file):
+def get_hier_and_restraints_from_rmf(model, frame_number, rmf_file, state_number=0):
     # I have to deprecate this function
     print("getting coordinates for frame %i rmf file %s" % (frame_number, rmf_file))
 
@@ -1376,7 +1376,7 @@ def get_hier_and_restraints_from_rmf(model, frame_number, rmf_file):
         rs = None
         return prot,rs
     #IMP.rmf.link_hierarchies(rh, prots)
-    prot = prots[0]
+    prot = prots[state_number]
     try:
         IMP.rmf.load_frame(rh, frame_number)
     except:

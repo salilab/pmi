@@ -299,6 +299,8 @@ class ReplicaExchange0(object):
                                              self.vars[
                                                  "number_of_best_scoring_models"],
                                              replica_exchange=True)
+                output.write_psf(pdb_dir + "/" +"model.psf",pdb_dir + "/" +
+                                             self.vars["best_pdb_name_suffix"]+".0.pdb")
         else:
             if self.vars["number_of_best_scoring_models"] > 0:
                 for n in range(self.vars["number_of_states"]):
@@ -308,7 +310,8 @@ class ReplicaExchange0(object):
                                                self.vars[
                                                    "number_of_best_scoring_models"],
                                                replica_exchange=True)
-
+                    output.write_psf(pdb_dir + "/" + str(n) + "/" +"model.psf",pdb_dir + "/" + str(n) + "/" +
+                                             self.vars["best_pdb_name_suffix"]+".0.pdb")
 # ---------------------------------------------
 
         if not self.em_object_for_rmf is None:
@@ -1111,6 +1114,7 @@ class AnalysisReplicaExchange0(object):
                    score_key="SimplifiedModel_Total_Score_None",
                    rmf_file_key="rmf_file",
                    rmf_file_frame_key="rmf_frame_index",
+                   state_number=0,
                    prefiltervalue=None,
                    feature_keys=[],
                    outputdir="./",
@@ -1132,6 +1136,7 @@ class AnalysisReplicaExchange0(object):
         @param score_key                           The score for ranking models
         @param rmf_file_key                        Key pointing to RMF filename
         @param rmf_file_frame_key                  Key pointing to RMF frame number
+        @param state_number 			   State number to analyse
         @param prefiltervalue                      Only include frames where the score key is below this value
         @param feature_keys                        Keywords for which you want to calculate average,
                                                     medians, etc,
@@ -1230,6 +1235,11 @@ class AnalysisReplicaExchange0(object):
 # optionally don't compute distance matrix or cluster, just write top files
 # ------------------------------------------------------------------------
             if skip_clustering:
+                if density_custom_ranges:
+                    DensModule = IMP.pmi.analysis.GetModelDensity(
+                        density_custom_ranges,
+                        voxel=voxel_size)
+
                 dircluster=os.path.join(outputdir,"all_models."+str(n))
                 try:
                     os.mkdir(outputdir)
@@ -1248,7 +1258,7 @@ class AnalysisReplicaExchange0(object):
                     for key in best_score_feature_keyword_list_dict:
                         tmp_dict[key]=best_score_feature_keyword_list_dict[key][index]
 
-                    prot=IMP.pmi.analysis.get_hier_from_rmf(self.model,rmf_frame_number,rmf_name)
+                    prot=IMP.pmi.analysis.get_hier_from_rmf(self.model,rmf_frame_number,rmf_name,state_number=state_number)
                     if not prot:
                         continue
 
@@ -1268,6 +1278,13 @@ class AnalysisReplicaExchange0(object):
                     o.init_rmf(out_rmf_fn,[prot])
                     o.write_rmf(out_rmf_fn)
                     o.close_rmf(out_rmf_fn)
+                    # add the density
+                    if density_custom_ranges:
+                        DensModule.add_subunits_density(prot)
+
+                if density_custom_ranges:
+                    DensModule.write_mrc(path=dircluster)
+                    del DensModule                
                 return
 
 
@@ -1409,7 +1426,8 @@ class AnalysisReplicaExchange0(object):
                     prot,rs = IMP.pmi.analysis.get_hier_and_restraints_from_rmf(
                         self.model,
                         rmf_frame_number,
-                        rmf_name)
+                        rmf_name,
+                        state_number)
                     if not prot:
                         continue
 

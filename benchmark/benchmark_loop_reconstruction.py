@@ -17,6 +17,7 @@ import IMP.pmi.samplers as samplers
 import IMP.pmi.output as output
 
 IMP.base.set_log_level(IMP.base.SILENT)
+# this benchmark should take 5 sec to initialize and 3 sec per MC loop, for a total of 35 sec.
 
 # Redirect chatty PMI output so we can see benchmark output
 old_stdout = sys.stdout
@@ -127,18 +128,17 @@ o.write_rmf("conformations.rmf3")
 o.init_pdb("conformations.pdb", r.prot)
 
 start_time = time.clock()
-for i in range(0, 2):
+for i in range(0, 10):
     #print "Running job, frame number ", i
 
     mc.optimize(10)
-
     o.write_rmf("conformations.rmf3")
     o.write_pdbs()
     o.write_stats2()
 o.close_rmf("conformations.rmf3")
 
 sys.stdout = old_stdout
-IMP.benchmark.report("pmi loop", time.clock() - start_time, 0)
+IMP.benchmark.report("pmi loop", time.clock() - start_time, 3*10+5)
 
 for output in ["conformations.pdb", "conformations.rmf3", "modeling.stat"]:
     os.unlink(output)

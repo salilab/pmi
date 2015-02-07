@@ -69,6 +69,7 @@ class DistanceRestraint(object):
             kappa=1.0):
         self.m = representation.prot.get_model()
         self.rs = IMP.RestraintSet(self.m, 'distance')
+        self.weight=1.0
 
         #ts = IMP.core.Harmonic(distance,kappa)
 
@@ -105,6 +106,10 @@ class DistanceRestraint(object):
                                        particles1[0],
                                        particles2[0]))
 
+    def set_weight(self,weight):
+        self.weight = weight
+        self.rs.set_weight(weight)
+
     def set_label(self, label):
         self.label = label
 
@@ -117,7 +122,10 @@ class DistanceRestraint(object):
     def get_output(self):
         self.m.update()
         output = {}
-        score = self.rs.unprotected_evaluate(None)
+        score = self.weight * self.rs.unprotected_evaluate(None)
         output["_TotalScore"] = str(score)
         output["DistanceRestraint_" + self.label] = str(score)
         return output
+
+    def evaluate(self):
+        return self.weight * self.rs.unprotected_evaluate(None)

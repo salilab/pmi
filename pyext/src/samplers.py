@@ -447,8 +447,10 @@ class ReplicaExchange(object):
             # initialize Replica Exchange class
             try:
                 import IMP.mpi
+                print('ReplicaExchange: MPI was found. Using Parallel Replica Exchange')
                 self.rem = IMP.mpi.ReplicaExchange()
             except ImportError:
+                print('ReplicaExchange: Could not find MPI. Using Serial Replica Exchange')
                 self.rem = _SerialReplicaExchange()
 
         else:

@@ -150,7 +150,7 @@ class Representation(object):
     def set_label(self, label):
         self.label = label
 
-    def create_component(self, name, color=None):
+    def create_component(self, name, color=0.0):
         protein_h = IMP.atom.Molecule.setup_particle(IMP.Particle(self.m))
         protein_h.set_name(name)
         self.hier_dict[name] = protein_h
@@ -490,6 +490,12 @@ class Representation(object):
         return outhiers
 
     def add_component_beads(self, name, ds, colors=None, incoord=None):
+        """ add beads to the representation
+        @name the component name
+        @ds a list of tuples corresponding to the residue ranges of the beads
+        @colors a list of colors associated to the beads
+        @incoord the coordinate tuple correspoding to the position of the beads
+        """
 
         from math import pi
         self.representation_is_modified = True
@@ -498,6 +504,7 @@ class Representation(object):
         outhiers = []
         if colors is None:
             colors = [self.color_dict[name]]
+
 
         for n, dss in enumerate(ds):
             ds_frag = (dss[0], dss[1])
@@ -825,7 +832,7 @@ class Representation(object):
         return outhier
 
     def set_coordinates_from_rmf(self, component_name, rmf_file_name,
-                                 rmf_frame_number, rmf_component_name=None):
+                                 rmf_frame_number, rmf_component_name=None,check_number_particles=True):
         '''Read and replace coordinates from an RMF file.
         Replace the coordinates of particles with the same name.
         It assumes that the RMF and the representation have the particles
@@ -861,9 +868,10 @@ class Representation(object):
 
         psrepr = IMP.atom.get_leaves(self.hier_dict[component_name])
 
-        if len(psrmf) != len(psrepr):
-            raise ValueError("cannot proceed the rmf and the representation don't have the same number of particles; "
-                           "particles in rmf: %s particles in the representation: %s" % (str(len(psrmf)), str(len(psrepr))))
+        if check_number_particles:
+            if len(psrmf) != len(psrepr):
+                raise ValueError("%s cannot proceed the rmf and the representation don't have the same number of particles; "
+                           "particles in rmf: %s particles in the representation: %s" % (str(component_name), str(len(psrmf)), str(len(psrepr))))
 
         for n, prmf in enumerate(psrmf):
             prmfname = prmf.get_name()

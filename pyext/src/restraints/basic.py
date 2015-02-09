@@ -70,6 +70,7 @@ class DistanceRestraint(object):
         self.m = representation.prot.get_model()
         self.rs = IMP.RestraintSet(self.m, 'distance')
         self.weight=1.0
+        self.label="None"
 
         #ts = IMP.core.Harmonic(distance,kappa)
 

@@ -67,7 +67,7 @@ class Output(object):
             residue_type=p[3]
             chain=p[4]
             resid=p[5]
-            flpsf.write('{:8d}{:1s}{:4s}{:1s}{:4s}{:1s}{:4s}{:1s}{:4s}{:1s}{:4s}{:14.6f}{:14.6f}{:8d}{:14.6f}{:14.6f}'.format(atom_index," ",chain," ",str(resid)," ",residue_type," ","C"," ","C",1.0,0.0,0,0.0,0.0))
+            flpsf.write('{0:8d}{1:1s}{2:4s}{3:1s}{4:4s}{5:1s}{6:4s}{7:1s}{8:4s}{9:1s}{10:4s}{11:14.6f}{12:14.6f}{13:8d}{14:14.6f}{15:14.6f}'.format(atom_index," ",chain," ",str(resid)," ",residue_type," ","C"," ","C",1.0,0.0,0,0.0,0.0))
             flpsf.write('\n')
             #flpsf.write(str(atom_index)+" "+str(chain)+" "+str(resid)+" "+str(residue_type).replace('"','')+" C C "+"1.0 0.0 0 0.0 0.0\n")
             if chain not in index_residue_pair_list:
@@ -95,15 +95,15 @@ class Output(object):
         # save bonds in fized column format
         for ip in sublists:
             if len(ip)==4:
-                flpsf.write('{:8d}{:8d}{:8d}{:8d}{:8d}{:8d}{:8d}{:8d}'.format(ip[0][0],ip[0][1],
+                flpsf.write('{0:8d}{1:8d}{2:8d}{3:8d}{4:8d}{5:8d}{6:8d}{7:8d}'.format(ip[0][0],ip[0][1],
                              ip[1][0],ip[1][1],ip[2][0],ip[2][1],ip[3][0],ip[3][1]))
             elif len(ip)==3:
-                flpsf.write('{:8d}{:8d}{:8d}{:8d}{:8d}{:8d}'.format(ip[0][0],ip[0][1],ip[1][0],
+                flpsf.write('{0:8d}{1:8d}{2:8d}{3:8d}{4:8d}{5:8d}'.format(ip[0][0],ip[0][1],ip[1][0],
                              ip[1][1],ip[2][0],ip[2][1]))
             elif len(ip)==2:
-                flpsf.write('{:8d}{:8d}{:8d}{:8d}'.format(ip[0][0],ip[0][1],ip[1][0],ip[1][1]))
+                flpsf.write('{0:8d}{1:8d}{2:8d}{3:8d}'.format(ip[0][0],ip[0][1],ip[1][0],ip[1][1]))
             elif len(ip)==1:
-                flpsf.write('{:8d}{:8d}'.format(ip[0][0],ip[0][1]))
+                flpsf.write('{0:8d}{1:8d}'.format(ip[0][0],ip[0][1]))
             flpsf.write('\n')
 
         del particle_infos_for_pdb
@@ -263,7 +263,7 @@ class Output(object):
 
            for ip in indexes_pairs:
                if abs(ip[1]-ip[0])>1:
-                  flpdb.write('{:6s}{:5d}{:5d}'.format('CONECT',ip[0],ip[1]))
+                  flpdb.write('{0:6s}{1:5d}{2:5d}'.format('CONECT',ip[0],ip[1]))
                   flpdb.write("\n")
         '''
 

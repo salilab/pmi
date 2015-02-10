@@ -63,7 +63,7 @@ class Output(object):
         flpsf.write(str(nparticles)+" !NATOM"+"\n")
         for n,p in enumerate(particle_infos_for_pdb):
             atom_index=p[1]
-            atomtype=p[2]         
+            atomtype=p[2]
             residue_type=p[3]
             chain=p[4]
             resid=p[5]
@@ -80,33 +80,33 @@ class Output(object):
         indexes_pairs=[]
         for chain in index_residue_pair_list:
 
-           ls=index_residue_pair_list[chain]
-           #sort by residue
-           ls=sorted(ls, key=lambda tup: tup[1])
-           #get the index list
-           indexes=map(list, zip(*ls))[0]
-           # get the contiguous pairs
-           indexes_pairs+=list(IMP.pmi.tools.sublist_iterator(indexes,lmin=2,lmax=2))
+            ls=index_residue_pair_list[chain]
+            #sort by residue
+            ls=sorted(ls, key=lambda tup: tup[1])
+            #get the index list
+            indexes=map(list, zip(*ls))[0]
+            # get the contiguous pairs
+            indexes_pairs+=list(IMP.pmi.tools.sublist_iterator(indexes,lmin=2,lmax=2))
         nbonds=len(indexes_pairs)
-        flpsf.write(str(nbonds)+" !NBOND: bonds"+"\n") 
+        flpsf.write(str(nbonds)+" !NBOND: bonds"+"\n")
 
         sublists=[indexes_pairs[i:i+4] for i in range(0,len(indexes_pairs),4)]
-               
+
         # save bonds in fized column format
         for ip in sublists:
             if len(ip)==4:
-               flpsf.write('{:8d}{:8d}{:8d}{:8d}{:8d}{:8d}{:8d}{:8d}'.format(ip[0][0],ip[0][1],
-                            ip[1][0],ip[1][1],ip[2][0],ip[2][1],ip[3][0],ip[3][1])) 
+                flpsf.write('{:8d}{:8d}{:8d}{:8d}{:8d}{:8d}{:8d}{:8d}'.format(ip[0][0],ip[0][1],
+                             ip[1][0],ip[1][1],ip[2][0],ip[2][1],ip[3][0],ip[3][1]))
             elif len(ip)==3:
-               flpsf.write('{:8d}{:8d}{:8d}{:8d}{:8d}{:8d}'.format(ip[0][0],ip[0][1],ip[1][0],
-                            ip[1][1],ip[2][0],ip[2][1])) 
+                flpsf.write('{:8d}{:8d}{:8d}{:8d}{:8d}{:8d}'.format(ip[0][0],ip[0][1],ip[1][0],
+                             ip[1][1],ip[2][0],ip[2][1]))
             elif len(ip)==2:
-               flpsf.write('{:8d}{:8d}{:8d}{:8d}'.format(ip[0][0],ip[0][1],ip[1][0],ip[1][1])) 
+                flpsf.write('{:8d}{:8d}{:8d}{:8d}'.format(ip[0][0],ip[0][1],ip[1][0],ip[1][1]))
             elif len(ip)==1:
-               flpsf.write('{:8d}{:8d}'.format(ip[0][0],ip[0][1])) 
+                flpsf.write('{:8d}{:8d}'.format(ip[0][0],ip[0][1]))
             flpsf.write('\n')
-    
-        del particle_infos_for_pdb       
+
+        del particle_infos_for_pdb
 
     def write_pdb(self,name,appendmode=True,
                   translate_to_geometric_center=False):

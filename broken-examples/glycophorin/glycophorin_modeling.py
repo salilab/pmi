@@ -27,7 +27,7 @@ m = IMP.Model()
 r = IMP.pmi.representation.Representation(m)
 
 r.create_component("chainA",color=0.25)
-r.add_component_sequence("chainA", get_data("seq.fasta"), id="chainA",offs=61)
+r.add_component_sequence("chainA", "./data/seq.fasta", id="chainA",offs=61)
 a1=[]
 for i in range(62,72+1):
     a1+=r.add_component_beads("chainA",[(i,i)])
@@ -40,7 +40,7 @@ r.setup_component_geometry("chainA")
 r.show_component_table("chainA")
 
 r.create_component("chainB",color=0.5)
-r.add_component_sequence("chainB",get_data("seq.fasta"), id="chainB",offs=61)
+r.add_component_sequence("chainB","./data/seq.fasta", id="chainB",offs=61)
 
 b1=[]
 for i in range(62,72+1):
@@ -96,7 +96,7 @@ eb.add_to_model()
 log_objects.append(eb)
 
 xl = IMP.pmi.restraints.crosslinking.CysteineCrossLinkRestraint([r],
-                    filename=get_data("expdata.txt"), cbeta=True)
+                    filename="./data/expdata.txt", cbeta=True)
 xl.add_to_model()
 log_objects.append(xl)
 sample_objects.append(xl)

@@ -603,8 +603,8 @@ class ElasticNetworkRestraint(object):
     def __init__(self,representation,
                  selection_tuples,
                  resolution=1,
-                 strength=10.0,
-                 dist_cutoff=10.0,
+                 strength=0.1,
+                 dist_cutoff=5.0,
                  ca_only=True):
         '''
         ca_only: only applies for resolution 0
@@ -624,16 +624,35 @@ class ElasticNetworkRestraint(object):
                 else:
                     particles.append(p.get_particle())
 
-            for pair in itertools.combinations(particles,2):
-                distance=IMP.algebra.get_distance(IMP.core.XYZ(pair[0]).get_coordinates(),
-                                                  IMP.core.XYZ(pair[1]).get_coordinates())
-                if distance>=dist_cutoff:
-                    continue
-                ts=IMP.core.HarmonicDistancePairScore(distance,strength)
-                print("ElasticNetworkConstraint: adding a restraint between %s and %s with distance %.3f" % (pair[0].get_name(),pair[1].get_name(),distance))
-                self.rs.add_restraint(IMP.core.PairRestraint(ts,pair))
-                self.pairslist.append(IMP.ParticlePair(pair[0], pair[1]))
-                self.pairslist.append(IMP.ParticlePair(pair[1], pair[0]))
+
+        gcpf = IMP.core.GridClosePairsFinder()
+        gcpf.set_distance(dist_cutoff)
+        particleindexes=IMP.get_indexes(particles)
+        pairs=gcpf.get_close_pairs(   self.m,
+                                particleindexes,
+                                particleindexes)
+
+        for pair in pairs:
+            p1=self.m.get_particle(pair[0])
+            p2=self.m.get_particle(pair[1])
+            if p1==p2:
+                print("%s and %s are the same particle" % (p1.get_name(),p2.get_name()))
+                continue
+            if(IMP.core.RigidMember.get_is_setup(p1) and
+                   IMP.core.RigidMember.get_is_setup(p2) and
+                   IMP.core.RigidMember(p1).get_rigid_body() ==
+                   IMP.core.RigidMember(p2).get_rigid_body()):
+                print("%s and %s are in the same rigid body" % (p1.get_name(),p2.get_name()))
+                continue
+
+            distance=IMP.algebra.get_distance(IMP.core.XYZ(p1).get_coordinates(),
+                                                IMP.core.XYZ(p2).get_coordinates())
+
+            ts=IMP.core.HarmonicDistancePairScore(distance,strength)
+            print("ElasticNetworkConstraint: adding a restraint between %s and %s with distance %.3f" % (p1.get_name(),p2.get_name(),distance))
+            self.rs.add_restraint(IMP.core.PairRestraint(ts,IMP.ParticlePair(p1, p2)))
+            self.pairslist.append(IMP.ParticlePair(p1, p2))
+            self.pairslist.append(IMP.ParticlePair(p1, p2))
         print('created',self.rs.get_number_of_restraints(),'restraints')
 
     def set_label(self, label):

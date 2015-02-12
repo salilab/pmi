@@ -762,11 +762,13 @@ class BuildModel1(object):
         """
         self.simo=representation
         self.gmm_models_directory="."
+        self.rmf_file={}
+        self.rmf_frame_number={}
 
     def set_gmm_models_directory(self,directory_name):
         self.gmm_models_directory=directory_name
 
-    def build_model(self,data_structure,sequence_connectivity_scale=4.0):
+    def build_model(self,data_structure,sequence_connectivity_scale=4.0,rmf_file=None,rmf_frame_number=0):
         """Create model.
         @param data_structure List of lists containing these entries:
              comp_name, hier_name, color, fasta_file, fasta_id, pdb_name, chain_id,
@@ -844,13 +846,22 @@ class BuildModel1(object):
                     else:
                         chain_super_rigid_bodies[k]+=[h for h in self.domain_dict[hier_name]]
 
+
+
         self.rigid_bodies=rigid_bodies
 
-
         for c in self.simo.get_component_names():
+            if rmf_file is not None:
+                rf=rmf_file
+                rfn=rmf_frame_number
+                self.simo.set_coordinates_from_rmf(c, rf,rfn)
+            else:
+                if c in self.rmf_file:
+                    rf=self.rmf_file[c]
+                    rfn=self.rmf_frame_number[c]
+                    self.simo.set_coordinates_from_rmf(c, rf,rfn)
             self.simo.setup_component_sequence_connectivity(c,scale=sequence_connectivity_scale)
             self.simo.setup_component_geometry(c)
-
 
         for rb in rigid_bodies:
             self.simo.set_rigid_body_from_hierarchies(rigid_bodies[rb])
@@ -863,6 +874,12 @@ class BuildModel1(object):
 
         self.simo.set_floppy_bodies()
         self.simo.setup_bonds()
+
+
+
+    def set_rmf_file(self,component_name,rmf_file,rmf_frame_number):
+        self.rmf_file[component_name]=rmf_file
+        self.rmf_frame_number[component_name]=rmf_frame_number
 
     def get_density_hierarchies(self,hier_name_list):
         # return a list of density hierarchies
@@ -1136,7 +1153,7 @@ class AnalysisReplicaExchange0(object):
         @param score_key                           The score for ranking models
         @param rmf_file_key                        Key pointing to RMF filename
         @param rmf_file_frame_key                  Key pointing to RMF frame number
-        @param state_number 			   State number to analyse
+        @param state_number                        State number to analyse
         @param prefiltervalue                      Only include frames where the score key is below this value
         @param feature_keys                        Keywords for which you want to calculate average,
                                                     medians, etc,
@@ -1284,7 +1301,7 @@ class AnalysisReplicaExchange0(object):
 
                 if density_custom_ranges:
                     DensModule.write_mrc(path=dircluster)
-                    del DensModule                
+                    del DensModule
                 return
 
 

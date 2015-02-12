@@ -499,11 +499,11 @@ class TopologyReader(object):
 |gmm_dir|./|
 
 |topology_dictionary|
-|component_name|domain_name|fasta_fn|fasta_id|pdb_fn|chain|residue_range|pdb_offset|bead_size|em_residues_per_gaussian|
-|Rpb1 |Rpb1_1|1WCM.fasta|1WCM:A|1WCM.pdb|A|1,1140   |0|10|0 |
-|Rpb1 |Rpb1_2|1WCM.fasta|1WCM:A|1WCM.pdb|A|1141,1274|0|10|0 |
-|Rpb1 |Rpb1_3|1WCM.fasta|1WCM:A|1WCM.pdb|A|1275,-1  |0|10|0 |
-|Rpb2 |Rpb2  |1WCM.fasta|1WCM:B|1WCM.pdb|B|all      |0|10|0 |
+|component_name|domain_name|fasta_fn|fasta_id|pdb_fn|chain|residue_range|pdb_offset|bead_size|em_residues_per_gaussian|rmf_file|rmf_frame_number|
+|Rpb1 |Rpb1_1|1WCM.fasta|1WCM:A|1WCM.pdb|A|1,1140   |0|10|0 |None   | None|
+|Rpb1 |Rpb1_2|1WCM.fasta|1WCM:A|1WCM.pdb|A|1141,1274|0|10|0 |0.rmf3 | 0   |
+|Rpb1 |Rpb1_3|1WCM.fasta|1WCM:A|1WCM.pdb|A|1275,-1  |0|10|0 |None   | None|
+|Rpb2 |Rpb2  |1WCM.fasta|1WCM:B|1WCM.pdb|B|all      |0|10|0 |None   | None|
     @endcode
 
     The `|directories|` section lists paths (relative to the topology file)
@@ -529,6 +529,8 @@ class TopologyReader(object):
       covered by PDB coordinates.
     - `em_residues`: The number of Gaussians used to model the electron
       density of this domain. Set to zero if no EM fitting will be done.
+    - `rmf_file`: File path of rmf file with coordinates (if available).
+    - `rmf_frame_number`: File path of rmf file.
 
     The file is read in and each part of the topology is stored as a
     ComponentTopology object for input into IMP::pmi::macros::BuildModel.
@@ -539,7 +541,9 @@ class TopologyReader(object):
         self.defaults={'bead_size'                : 10,
                        'residue_range'            : 'all',
                        'pdb_offset'               : 0,
-                       'em_residues_per_gaussian' : 0};
+                       'em_residues_per_gaussian' : 0,
+                       'rmf_file'                 : None,
+		       'rmf_frame_number'          : None};
         self.component_list=self.import_topology_file(topology_file)
 
 
@@ -552,9 +556,9 @@ class TopologyReader(object):
             f.write(output)
         f.write("\n\n")
         f.write("|topology_dictionary|\n")
-        f.write("|component_name|domain_name|fasta_fn|fasta_id|pdb_fn|chain|residue_range|pdb_offset|bead_size|em_residues_per_gaussian|\n")
+        f.write("|component_name|domain_name|fasta_fn|fasta_id|pdb_fn|chain|residue_range|pdb_offset|bead_size|em_residues_per_gaussian|rmf_file|rmf_frame_number|\n")
         for c in self.component_list:
-            output="|"+str(c.name)+"|"+str(c.domain_name)+"|"+str(c.fasta_file)+"|"+str(c.fasta_id)+"|"+str(c.pdb_file)+"|"+str(c.chain)+"|"+str(c.residue_range).strip("(").strip(")")+"|"+str(c.pdb_offset)+"|"+str(c.bead_size)+"|"+str(c.em_residues_per_gaussian)+"|\n"
+            output="|"+str(c.name)+"|"+str(c.domain_name)+"|"+str(c.fasta_file)+"|"+str(c.fasta_id)+"|"+str(c.pdb_file)+"|"+str(c.chain)+"|"+str(c.residue_range).strip("(").strip(")")+"|"+str(c.pdb_offset)+"|"+str(c.bead_size)+"|"+str(c.em_residues_per_gaussian)+"|"+str(c.rmf_file)+"|"+str(c.rmf_frame_number)+"|\n"
             f.write(output)
         return outfile
 
@@ -725,6 +729,33 @@ class TopologyReader(object):
         else:
             c.em_residues_per_gaussian=defaults["em_residues_per_gaussian"]
 
+        if "rmf_file" in fields:
+            f=values[fields.index("rmf_file")]
+            if f is None: 
+               c.rmf_file=f
+            else: 
+                if not os.path.isfile(f):
+                    print("rmf_file ", c.name, "must be an existing file or None")  
+                    no_error=False
+                else:
+                    c.rmf_file=f
+        else:
+            c.rmf_file=defaults["rmf_file"]
+
+        if "rmf_frame_number" in fields:
+            f=values[fields.index("rmf_frame_number")]
+            if f is None: 
+               c.rmf_frame_number=f
+            else: 
+                if not self.is_int(f):
+                    print("rmf_frame_number ", c.name, "must be an integer or None")  
+                    no_error=False
+                else:
+                    c.rmf_file=f
+        else:
+            c.rmf_frame_number=defaults["rmf_frame_number"]
+
+                                
         if no_error==True:
             return c
         else:
@@ -772,7 +803,10 @@ class ComponentTopology(object):
         self.gmm_file=None
         self.mrc_file=None
         self.color=None
+	self.rmf_file_name=None
+	self.rmf_frame_number=None
 
     def recompute_default_dirs(self, topology):
         pdb_filename=self.pdb_file.split("/")[-1]
         self.pdb_filename=IMP.base.get_relative_path(topology.topology_file, topology.defaults)
+

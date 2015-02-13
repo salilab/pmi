@@ -603,7 +603,7 @@ class ElasticNetworkRestraint(object):
     def __init__(self,representation,
                  selection_tuples,
                  resolution=1,
-                 strength=0.1,
+                 strength=0.0001,
                  dist_cutoff=5.0,
                  ca_only=True):
         '''

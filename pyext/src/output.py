@@ -62,11 +62,11 @@ class Output(object):
         nparticles=len(particle_infos_for_pdb)
         flpsf.write(str(nparticles)+" !NATOM"+"\n")
         for n,p in enumerate(particle_infos_for_pdb):
-            atom_index=p[1]
-            atomtype=p[2]
-            residue_type=p[3]
-            chain=p[4]
-            resid=p[5]
+            atom_index=n+1
+            atomtype=p[1]
+            residue_type=p[2]
+            chain=p[3]
+            resid=p[4]
             flpsf.write('{0:8d}{1:1s}{2:4s}{3:1s}{4:4s}{5:1s}{6:4s}{7:1s}{8:4s}{9:1s}{10:4s}{11:14.6f}{12:14.6f}{13:8d}{14:14.6f}{15:14.6f}'.format(atom_index," ",chain," ",str(resid)," ",residue_type," ","C"," ","C",1.0,0.0,0,0.0,0.0))
             flpsf.write('\n')
             #flpsf.write(str(atom_index)+" "+str(chain)+" "+str(resid)+" "+str(residue_type).replace('"','')+" C C "+"1.0 0.0 0 0.0 0.0\n")
@@ -121,15 +121,15 @@ class Output(object):
         if not translate_to_geometric_center:
             geometric_center = (0, 0, 0)
 
-        for tupl in particle_infos_for_pdb:
+        for n,tupl in enumerate(particle_infos_for_pdb):
 
-            (xyz, atom_index, atom_type, residue_type,
+            (xyz, atom_type, residue_type,
              chain_id, residue_index,radius) = tupl
 
             flpdb.write(IMP.atom.get_pdb_string((xyz[0] - geometric_center[0],
                                                 xyz[1] - geometric_center[1],
                                                 xyz[2] - geometric_center[2]),
-                                               atom_index, atom_type, residue_type,
+                                               n+1, atom_type, residue_type,
                                                chain_id, residue_index,' ',1.00,radius))
 
         flpdb.write("ENDMDL\n")
@@ -165,7 +165,6 @@ class Output(object):
                 resindexes_dict[protname] = []
 
             if IMP.atom.Atom.get_is_setup(p) and self.atomistic:
-                atom_index += 1
                 residue = IMP.atom.Residue(IMP.atom.Atom(p).get_parent())
                 rt = residue.get_residue_type()
                 resind = residue.get_index()
@@ -176,7 +175,7 @@ class Output(object):
                 geometric_center[1] += xyz[1]
                 geometric_center[2] += xyz[2]
                 atom_count += 1
-                particle_infos_for_pdb.append((xyz, atom_index,
+                particle_infos_for_pdb.append((xyz,
                                                atomtype, rt, self.dictchain[name][protname], resind,radius))
                 resindexes_dict[protname].append(resind)
 
@@ -190,7 +189,6 @@ class Output(object):
                     continue
                 else:
                     resindexes_dict[protname].append(resind)
-                atom_index += 1
                 rt = residue.get_residue_type()
                 xyz = IMP.core.XYZ(p).get_coordinates()
                 radius = IMP.core.XYZR(p).get_radius()
@@ -198,13 +196,8 @@ class Output(object):
                 geometric_center[1] += xyz[1]
                 geometric_center[2] += xyz[2]
                 atom_count += 1
-                particle_infos_for_pdb.append((xyz, atom_index,
+                particle_infos_for_pdb.append((xyz,
                                                IMP.atom.AT_CA, rt, self.dictchain[name][protname], resind,radius))
-
-                # if protname not in index_residue_pair_list:
-                #   index_residue_pair_list[protname]=[(atom_index,resind)]
-                # else:
-                # index_residue_pair_list[protname].append((atom_index,resind))
 
             elif IMP.atom.Fragment.get_is_setup(p) and not is_a_bead:
                 resindexes = IMP.pmi.tools.get_residue_indexes(p)
@@ -213,7 +206,6 @@ class Output(object):
                     continue
                 else:
                     resindexes_dict[protname].append(resind)
-                atom_index += 1
                 rt = IMP.atom.ResidueType('BEA')
                 xyz = IMP.core.XYZ(p).get_coordinates()
                 radius = IMP.core.XYZR(p).get_radius()
@@ -221,12 +213,11 @@ class Output(object):
                 geometric_center[1] += xyz[1]
                 geometric_center[2] += xyz[2]
                 atom_count += 1
-                particle_infos_for_pdb.append((xyz, atom_index,
+                particle_infos_for_pdb.append((xyz,
                                                IMP.atom.AT_CA, rt, self.dictchain[name][protname], resind,radius))
 
             else:
                 if is_a_bead:
-                    atom_index += 1
                     rt = IMP.atom.ResidueType('BEA')
                     resindexes = IMP.pmi.tools.get_residue_indexes(p)
                     resind = resindexes[len(resindexes) // 2]
@@ -236,36 +227,17 @@ class Output(object):
                     geometric_center[1] += xyz[1]
                     geometric_center[2] += xyz[2]
                     atom_count += 1
-                    particle_infos_for_pdb.append((xyz, atom_index,
+                    particle_infos_for_pdb.append((xyz,
                                                    IMP.atom.AT_CA, rt, self.dictchain[name][protname], resind,radius))
-                # if protname not in index_residue_pair_list:
-                #   index_residue_pair_list[protname]=[(atom_index,resind)]
-                # else:
-                # index_residue_pair_list[protname].append((atom_index,resind))
 
         geometric_center = (geometric_center[0] / atom_count,
                             geometric_center[1] / atom_count,
                             geometric_center[2] / atom_count)
 
+        particle_infos_for_pdb = sorted(particle_infos_for_pdb, key=operator.itemgetter(3, 4))
+
         return (particle_infos_for_pdb, geometric_center)
-        '''
-        #now write the connectivity
-        for protname in index_residue_pair_list:
 
-           ls=index_residue_pair_list[protname]
-           #sort by residue
-           ls=sorted(ls, key=lambda tup: tup[1])
-           #get the index list
-           indexes=map(list, zip(*ls))[0]
-           # get the contiguous pairs
-           indexes_pairs=list(IMP.pmi.tools.sublist_iterator(indexes,lmin=2,lmax=2))
-           #write the connection record only if the residue gap is larger than 1
-
-           for ip in indexes_pairs:
-               if abs(ip[1]-ip[0])>1:
-                  flpdb.write('{0:6s}{1:5d}{2:5d}'.format('CONECT',ip[0],ip[1]))
-                  flpdb.write("\n")
-        '''
 
     def write_pdbs(self, appendmode=True):
         for pdb in self.dictionary_pdbs.keys():

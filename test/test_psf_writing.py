@@ -48,6 +48,38 @@ class Tests(IMP.test.TestCase):
         output.write_psf("test_psf_writing.psf","test_psf_writing.pdb")
         self.assertTrue(os.path.exists('test_psf_writing.psf'))
 
+    def test_psf_content(self):
+
+        psf_content='''PSF CMAP CHEQ
+17 !NATOM
+       1 A    1    "MET" C    C         1.000000      0.000000       0      0.000000      0.000000
+       2 A    2    "VAL" C    C         1.000000      0.000000       0      0.000000      0.000000
+       3 A    3    "GLY" C    C         1.000000      0.000000       0      0.000000      0.000000
+       4 A    4    "GLN" C    C         1.000000      0.000000       0      0.000000      0.000000
+       5 A    5    "GLN" C    C         1.000000      0.000000       0      0.000000      0.000000
+       6 A    6    "TYR" C    C         1.000000      0.000000       0      0.000000      0.000000
+       7 A    7    "SER" C    C         1.000000      0.000000       0      0.000000      0.000000
+       8 A    8    "SER" C    C         1.000000      0.000000       0      0.000000      0.000000
+       9 B    1    "ALA" C    C         1.000000      0.000000       0      0.000000      0.000000
+      10 B    2    "ALA" C    C         1.000000      0.000000       0      0.000000      0.000000
+      11 B    3    "ASP" C    C         1.000000      0.000000       0      0.000000      0.000000
+      12 B    4    "GLU" C    C         1.000000      0.000000       0      0.000000      0.000000
+      13 B    5    "SER" C    C         1.000000      0.000000       0      0.000000      0.000000
+      14 B    6    "ALA" C    C         1.000000      0.000000       0      0.000000      0.000000
+      15 B    7    "PRO" C    C         1.000000      0.000000       0      0.000000      0.000000
+      16 B    8    "ILE" C    C         1.000000      0.000000       0      0.000000      0.000000
+      17 B    9    "THR" C    C         1.000000      0.000000       0      0.000000      0.000000
+15 !NBOND: bonds
+       1       2       2       3       3       4       4       5
+       5       6       6       7       7       8       9      10
+      10      11      11      12      12      13      13      14
+      14      15      15      16      16      17'''.split("\n")
+
+        f=open("test_psf_writing.psf","r")
+        nl=0
+        for l in f:
+            self.assertEqual(psf_content[nl],l.replace('\n',''))
+            nl+=1
 
 if __name__ == '__main__':
     IMP.test.main()

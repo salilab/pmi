@@ -359,10 +359,10 @@ class ReplicaExchange0(object):
 
         for i in range(self.vars["number_of_frames"]):
             for nr in range(self.vars["num_sample_rounds"]):
-                if sampler_mc is not None:
-                    sampler_mc.optimize(self.vars["monte_carlo_steps"])
                 if sampler_md is not None:
                     sampler_md.optimize(self.vars["molecular_dynamics_steps"])
+                if sampler_mc is not None:
+                    sampler_mc.optimize(self.vars["monte_carlo_steps"])
             score = self.model.evaluate(False)
             output.set_output_entry("score", score)
 
@@ -428,7 +428,7 @@ data = [("Rpb1",     pdbfile,   "A",     0.00000000,  (fastafile,    0)),
     hierarchies = {}
 
     for d in data:
-                # retrieve the information from the data structure
+        # retrieve the information from the data structure
         component_name = d[0]
         pdb_file = d[1]
         chain_id = d[2]

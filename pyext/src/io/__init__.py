@@ -185,6 +185,10 @@ class Subsequence(object):
         @param residue_tuple PDB-style inclusive residue range
         """
         self.seqs.append({'chain':chain,'molecule':molecule,'residue_tuple':residue_tuple})
+    def join(self,new_subsequence):
+        for s in new_subsequence:
+            self.seqs.append(s)
+
     def get_selection(self,hier,**kwargs):
         """Create an IMP Selection from this subsequence
         @param hier An IMP hierarchy or list of them
@@ -219,6 +223,16 @@ class Subsequence(object):
             if nseq < len(self.seqs)-1:
                 rep+='_'
         return rep
+
+    def __getitem__(self,key):
+        return self.data[key]
+
+    def __iter__(self):
+        return self.seqs.__iter__()
+
+    def __add__(self,other):
+        self.join(other)
+        return self
 
 class SubsequenceData(object):
     """ Group a bunch of subsequences with certain labels
@@ -270,7 +284,7 @@ class CrossLink(object):
         return "CrossLink id: "+str(self.unique_id)+" r1: "+repr(self.r1)+", r2: "+repr(self.r2)
 
     def get_selection(self,mh,**kwargs):
-        """Return a list of atom pairs (particle indexes) for this crosslink.
+        """Return a list of atom pairs (particles) for this crosslink.
         Found by selecting everything with r1 and r2 then returning the
          cartesian product.
         @Note you may want to provide some atom specifiers like

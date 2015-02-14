@@ -352,7 +352,7 @@ class MolecularDynamics(object):
         self.md.set_maximum_time_step(maximum_time_step)
         self.md.add_optimizer_state(self.ltstate)
         self.simulated_annealing = False
-
+        self.nframe = -1
     def set_kt(self,kt):
         temp=kt/0.0019872041
         self.ltstate.set_temperature(temp)
@@ -379,6 +379,7 @@ class MolecularDynamics(object):
 
     def optimize(self,nsteps):
         # apply simulated annealing protocol
+        self.nframe+=1
         if self.simulated_annealing:
             self.temp = self.temp_simulated_annealing()
             self.set_kt(self.temp)

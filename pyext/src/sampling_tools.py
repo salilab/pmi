@@ -11,7 +11,16 @@ class SampleObjects(object):
     def get_particles_to_sample(self):
         return self.d
 
-def enable_md_sampling(mdl, hier=None, particles=None, include_siblings=False,
+def create_floppy_bodies(particles,max_step):
+    for p in particles:
+        IMP.core.XYZ(p).set_coordinates_are_optimized(True)
+    return [SampleObjects('Floppy_Bodies_SimplifiedModel',[particles,max_step])]
+
+def enable_md_sampling(mdl,
+                       hier=None,
+                       particles=None,
+                       hierarchies=None,
+                       include_siblings=False,
                        exclude_backbone=False):
     """Add necessary attributes to the selected residues for MD sampling.
     @param mdl              The IMP model
@@ -28,6 +37,8 @@ def enable_md_sampling(mdl, hier=None, particles=None, include_siblings=False,
         particles=[]
     if hier is not None:
         particles+=IMP.atom.get_leaves(hier)
+    if hierarchies is not None:
+        particles+=[h.get_particle() for h in hierarchies]
     all_ps=[]
     for p in particles:
         if include_siblings:

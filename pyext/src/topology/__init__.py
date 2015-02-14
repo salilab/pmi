@@ -278,7 +278,7 @@ class _Molecule(SystemBase):
         return non_atomic_res
 
     def add_copy(self,pdb_fn=None,chain_id='',res_range=[],offset=0,new_chain_id=None,
-                 transformation=None):
+                 transformation=None,ca_only=False):
         """Create a new Molecule storing the new coordinates.
         Ensures that representations are identical to original molecule
         Will verify that the sequence is the same as that of the first structure.
@@ -300,7 +300,7 @@ class _Molecule(SystemBase):
             for nr,r in enumerate(self.residues):
                 mol.residues[nr].set_structure(IMP.atom.Residue(IMP.atom.create_clone(r.hier)))
         else:
-            new_atomic_res = mol.add_structure(pdb_fn,chain_id,res_range,offset)
+            new_atomic_res = mol.add_structure(pdb_fn,chain_id,res_range,offset,ca_only=ca_only)
             new_idxs = set([r.get_index() for r in new_atomic_res])
             orig_idxs = set([r.get_index() for r in self.get_atomic_residues()])
             if new_idxs!=orig_idxs:
@@ -312,7 +312,7 @@ class _Molecule(SystemBase):
         for orig,new in zip(self.residues,mol.residues):
             new.representations=orig.representations
 
-    def add_structure(self,pdb_fn,chain_id,res_range=[],offset=0,model_num=None):
+    def add_structure(self,pdb_fn,chain_id,res_range=[],offset=0,model_num=None,ca_only=False):
         """Read a structure and store the coordinates.
         Returns the atomic residues (as a set)
         @param pdb_fn    The file to read
@@ -323,7 +323,7 @@ class _Molecule(SystemBase):
         \note After offset, we expect the PDB residue numbering to match the FASTA file
         """
         # get IMP.atom.Residues from the pdb file
-        rhs=system_tools.get_structure(self.mdl,pdb_fn,chain_id,res_range,offset)
+        rhs=system_tools.get_structure(self.mdl,pdb_fn,chain_id,res_range,offset,ca_only=ca_only)
         if len(rhs)>len(self.residues):
             print('ERROR: You are loading',len(rhs), \
                 'pdb residues for a sequence of length',len(self.residues),'(too many)')

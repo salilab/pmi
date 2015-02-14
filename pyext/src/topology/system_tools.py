@@ -14,7 +14,7 @@ def list_chunks_iterator(input_list, length):
     for i in range(0, len(input_list), length):
         yield input_list[i:i + length]
 
-def get_structure(mdl,pdb_fn,chain_id,res_range=[],offset=0,model_num=None):
+def get_structure(mdl,pdb_fn,chain_id,res_range=[],offset=0,model_num=None,ca_only=False):
     """read a structure from a PDB file and return a list of residues
     @param mdl The IMP model
     @param pdb_fn    The file to read
@@ -23,13 +23,16 @@ def get_structure(mdl,pdb_fn,chain_id,res_range=[],offset=0,model_num=None):
     @param offset    Apply an offset to the residue indexes of the PDB file
     @param model_num Read multi-model PDB and return that model
     """
+    sel = IMP.atom.get_default_pdb_selector()
+    if ca_only:
+        sel = IMP.atom.CAlphaPDBSelector()
     if model_num is None:
-        mh=IMP.atom.read_pdb(pdb_fn,mdl,IMP.atom.NonWaterNonHydrogenPDBSelector())
+        mh=IMP.atom.read_pdb(pdb_fn,mdl,sel)
     else:
-        mhs=IMP.atom.read_multimodel_pdb(pdb_fn,mdl,IMP.atom.NonWaterNonHydrogenPDBSelector())
+        mhs=IMP.atom.read_multimodel_pdb(pdb_fn,mdl,sel)
         if model_num>=len(mhs):
-            raise StructureError("you requested model num "+str(model_num)+\
-                                 " but the PDB file only contains "+str(len(mhs))+" models")
+            raise Exception("you requested model num "+str(model_num)+\
+                            " but the PDB file only contains "+str(len(mhs))+" models")
         mh=mhs[model_num]
 
     # first update using offset:

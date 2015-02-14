@@ -184,7 +184,7 @@ class AtomicCrossLinkMSRestraint(object):
                 res.add_child(a)
 
                 # bond restraint
-                h=IMP.core.Harmonic(6.0,kappa)
+                h=IMP.core.HarmonicUpperBound(6.0,kappa)
                 dps=IMP.core.DistancePairScore(h)
                 pr=IMP.core.PairRestraint(dps,IMP.ParticlePair(ca,nz))
                 self.bonded_pairs.append([ca,nz])

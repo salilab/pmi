@@ -14,6 +14,7 @@ import IMP.pmi.sampling_tools as sampling_tools
 from collections import defaultdict
 import os.path
 import string
+
 def setup_nuisance(m,rs,
                    init_val,
                    min_val_nuis,
@@ -55,7 +56,8 @@ class AtomicCrossLinkMSRestraint(object):
                  nuisances_are_optimized=True,
                  sigma_init=5.0,
                  psi_init = 0.01,
-                 one_psi=True):
+                 one_psi=True,
+                 create_nz=False):
         """Experimental ATOMIC XL restraint. Provide selections for the particles to restrain.
         Automatically creates one "sigma" per crosslinked residue and one "psis" per pair.
         Other nuisance options are available.
@@ -70,6 +72,8 @@ class AtomicCrossLinkMSRestraint(object):
         @param nuisances_are_optimized Whether to optimize nuisances
         @param sigma_init The initial value for all the sigmas
         @param psi_init   The initial value for all the psis
+        @param one_psi    Use a single psi for all restraints (if False, creates one per XL)
+        @param create_nz  Coarse-graining hack - add 'NZ' atoms to every XL'd lysine
         """
 
         self.mdl = root.get_model()
@@ -86,9 +90,9 @@ class AtomicCrossLinkMSRestraint(object):
 
         self.rs = IMP.RestraintSet(self.mdl, 'xlrestr')
         self.rs_nuis = IMP.RestraintSet(self.mdl, 'prior_nuis')
-        self.particles=defaultdict(list)
+        self.particles=defaultdict(set)
         self.one_psi = one_psi
-
+        self.create_nz = create_nz
         if one_psi:
             print('creating a single psi for all XLs')
         else:
@@ -148,7 +152,82 @@ class AtomicCrossLinkMSRestraint(object):
         #            num_xls_per_res[str(xl.r1)]+=1
         #            num_xls_per_res[str(xl.r2)]+=1
 
-        ### now create all the XL's, using the number of restraints to guide sigmas
+
+        ### optionally create NZs, add to hierarchy, and create bond/angle restraints
+        # consider moving this elsewhere (but it has to be done before setting up XL restraint!)
+        self.bonded_pairs = []
+        if self.create_nz:
+            to_add=set()
+            kappa = 1.0
+            self.rset_bonds=IMP.RestraintSet(self.mdl,'Lysine_Sidechain_bonds')
+            self.rset_angles=IMP.RestraintSet(self.mdl,'Lysine_Sidechain_angles')
+            for nstate in range(self.nstates):
+                for unique_id in data:
+                    for xl in data[unique_id]:
+                        xl_pairs = xl.get_selection(root,state_index=nstate)
+                        for pp in xl_pairs:
+                            to_add.add(pp[0])
+                            to_add.add(pp[1])
+
+            for ca in to_add:
+                x0 = IMP.core.XYZ(ca).get_coordinates()
+                res = IMP.atom.get_residue(IMP.atom.Atom(ca))
+                frag = res.get_parent()
+                #print('ca',ca)
+                #print('res',res)
+                #print('frag',frag)
+                #IMP.atom.show_molecular_hierarchy(frag)
+
+                nz = IMP.Particle(self.mdl)
+                a = IMP.atom.Atom.setup_particle(nz,IMP.atom.AtomType('NZ'))
+                IMP.core.XYZR.setup_particle(nz,IMP.algebra.Sphere3D(x0,1.85))
+                res.add_child(a)
+
+                # bond restraint
+                h=IMP.core.Harmonic(6.0,kappa)
+                dps=IMP.core.DistancePairScore(h)
+                pr=IMP.core.PairRestraint(dps,IMP.ParticlePair(ca,nz))
+                self.bonded_pairs.append([ca,nz])
+                self.rset_bonds.add_restraint(pr)
+
+                # angle restraints
+                hus=IMP.core.Harmonic(2.09,kappa)
+                sel_pre = IMP.atom.Selection(frag,residue_index=res.get_index()-1).get_selected_particles()
+                sel_post = IMP.atom.Selection(frag,residue_index=res.get_index()+1).get_selected_particles()
+                if len(sel_pre)>1 or len(sel_post)>1:
+                    print("SOMETHING WRONG WITH THIS FRAG")
+                    print('ca',ca)
+                    print('res',res)
+                    print('frag',frag)
+                    IMP.atom.show_molecular_hierarchy(frag)
+                    exit()
+                if len(sel_pre)==0:
+                    nter = True
+                else:
+                    nter = False
+                    ca_pre = sel_pre[0]
+                if len(sel_post)==0:
+                    cter = True
+                else:
+                    cter = False
+                    ca_post = sel_post[0]
+                #print('nter?',nter,'cter?',cter)
+
+                if nter and not cter:
+                    ar_post = IMP.core.AngleRestraint(hus,ca_post,ca,nz)
+                    self.rset_angles.add_restraint(ar_post)
+                elif cter and not nter:
+                    ar_pre = IMP.core.AngleRestraint(hus,ca_pre,ca,nz)
+                    self.rset_angles.add_restraint(ar_pre)
+                elif nter and cter:
+                    continue
+                else:
+                    hus2 = IMP.core.Harmonic(0,kappa)
+                    idr = IMP.core.DihedralRestraint(hus2,ca,ca_pre,ca_post,nz)
+                    self.rset_angles.add_restraint(idr)
+
+
+        ### create all the XLs
         xlrs=[]
         for unique_id in data:
             # create restraint for this data point
@@ -169,7 +248,8 @@ class AtomicCrossLinkMSRestraint(object):
             for nstate in range(self.nstates):
                 for xl in data[unique_id]:
                     xl_pairs = xl.get_selection(root,state_index=nstate,
-                                                 **extra_sel)
+                                                **extra_sel)
+
 
                     # figure out sig1 and sig2 based on num XLs
                     '''
@@ -189,7 +269,7 @@ class AtomicCrossLinkMSRestraint(object):
 
                     # add each copy contribution to restraint
                     for p1,p2 in xl_pairs:
-                        self.particles[nstate]+=[p1,p2]
+                        self.particles[nstate]|=set([p1,p2])
                         if max_dist is not None:
                             dist=IMP.core.get_distance(IMP.core.XYZ(p1),IMP.core.XYZ(p2))
                             if dist>max_dist:
@@ -213,7 +293,9 @@ class AtomicCrossLinkMSRestraint(object):
     def add_to_model(self):
         self.mdl.add_restraint(self.rs)
         self.mdl.add_restraint(self.rs_nuis)
-
+        if self.create_nz:
+            self.mdl.add_restraint(self.rset_bonds)
+            self.mdl.add_restraint(self.rset_angles)
     def get_hierarchy(self):
         return self.prot
 
@@ -239,9 +321,16 @@ class AtomicCrossLinkMSRestraint(object):
         return dummy_rs
 
 
-    def get_particles(self,state_num=0):
+    def get_particles(self,state_num=None):
         """ Get particles involved in the restraint """
-        return self.particles[state_num]
+        if state_num is None:
+            return list(reduce(lambda x,y: self.particles[x]|self.particles[y],self.particles))
+        else:
+            return list(self.particles[state_num])
+
+
+    def get_bonded_pairs(self):
+        return self.bonded_pairs
 
     def get_mc_sample_objects(self,max_step_sigma,max_step_psi):
         """ HACK! Make a SampleObjects class that can be used with PMI::samplers"""
@@ -263,20 +352,21 @@ class AtomicCrossLinkMSRestraint(object):
         """Read a stat file and load all the sigmas.
         This is potentially quite stupid.
         It's also a hack since the sigmas should be stored in the RMF file.
-        Also, requires same sigma for each contribution.
+        Also, requires one sigma and one psi for ALL XLs.
         """
         import subprocess
+        sig_val = float(subprocess.check_output(["process_output.py","-f",in_fn,
+                                                 "-s","AtomicXLRestraint_sigma"]).split('\n>')[1+nframe])
+        psi_val = float(subprocess.check_output(["process_output.py","-f",in_fn,
+                                                 "-s","AtomicXLRestraint_psi"]).split('\n>')[1+nframe])
         for nxl in range(self.rs.get_number_of_restraints()):
             xl=IMP.isd.AtomicCrossLinkMSRestraint.get_from(self.rs.get_restraint(nxl))
-            sig1_val = float(subprocess.check_output(["process_output.py","-f",in_fn,
-                                    "-s","AtomicXLRestraint_%i_Sig1"%nxl]).split('\n>')[1+nframe])
-            sig2_val = float(subprocess.check_output(["process_output.py","-f",in_fn,
-                                    "-s","AtomicXLRestraint_%i_Sig2"%nxl]).split('\n>')[1+nframe])
-
+            psip = xl.get_psi()
+            IMP.isd.Scale(self.mdl,psip).set_scale(psi_val)
             for contr in range(xl.get_number_of_contributions()):
                 sig1,sig2=xl.get_contribution_sigmas(contr)
-                IMP.isd.Scale(self.mdl,sig1).set_scale(sig1_val)
-                IMP.isd.Scale(self.mdl,sig2).set_scale(sig2_val)
+                IMP.isd.Scale(self.mdl,sig1).set_scale(sig_val)
+
         print('loaded nuisances from file')
 
     def plot_violations(self,out_prefix,
@@ -399,7 +489,7 @@ class AtomicCrossLinkMSRestraint(object):
                                         IMP.core.XYZ(self.mdl,idx2).get_coordinates())
         return idx1,idx2,dist
 
-    def get_best_stats(self,limit_to_state=None,limit_to_chains=None,exclude_chains=''):
+    def get_best_stats(self,limit_to_state=None,limit_to_chains=None,exclude_chains='',use_CA=False):
         ''' return the probability, best distance, two coords, and possibly the psi for each xl
         @param limit_to_state Only examine contributions from one state
         @param limit_to_chains Returns the particles for certain "easy to visualize" chains
@@ -418,6 +508,12 @@ class AtomicCrossLinkMSRestraint(object):
             low_dist_lim = 1e6
             for contr in range(xl.get_number_of_contributions()):
                 pp = xl.get_contribution(contr)
+                if use_CA:
+                    idx1 = IMP.atom.Selection(IMP.atom.get_residue(IMP.atom.Atom(self.mdl,pp[0])),
+                                              atom_type=IMP.atom.AtomType("CA")).get_selected_particle_indexes()[0]
+                    idx2 = IMP.atom.Selection(IMP.atom.get_residue(IMP.atom.Atom(self.mdl,pp[1])),
+                                              atom_type=IMP.atom.AtomType("CA")).get_selected_particle_indexes()[0]
+                    pp = [idx1,idx2]
                 if limit_to_state is not None:
                     nstate = IMP.atom.get_state_index(IMP.atom.Atom(self.mdl,pp[0]))
                     if nstate!=limit_to_state:
@@ -475,11 +571,15 @@ class AtomicCrossLinkMSRestraint(object):
             output["AtomicXLRestraint_psi"] = self.psi.get_scale()
         ######
 
+        if self.create_nz:
+            output["AtomicXLRestraint_NZBonds"] = self.rset_bonds.evaluate(False)
+            output["AtomicXLRestraint_NZAngles"] = self.rset_angles.evaluate(False)
+
         # count distances above length
         bad_count=0
         stats = self.get_best_stats()
         for nxl,s in enumerate(stats):
-            if s['low_dist']<20.0:
+            if s['low_dist']>20.0:
                 bad_count+=1
             output["AtomicXLRestraint_%i_%s"%(nxl,"Prob")]=str(s['prob'])
             output["AtomicXLRestraint_%i_%s"%(nxl,"BestDist")]=str(s['low_dist'])

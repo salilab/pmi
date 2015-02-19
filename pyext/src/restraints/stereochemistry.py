@@ -603,8 +603,8 @@ class ElasticNetworkRestraint(object):
     def __init__(self,representation,
                  selection_tuples,
                  resolution=1,
-                 strength=0.0001,
-                 dist_cutoff=5.0,
+                 strength=0.01,
+                 dist_cutoff=10.0,
                  ca_only=True):
         '''
         ca_only: only applies for resolution 0

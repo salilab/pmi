@@ -1248,6 +1248,27 @@ class AnalysisReplicaExchange0(object):
                 best_score_rmf_tuples,
                 self.number_of_processes)[self.rank]
 
+
+#-------------------------------------------------------------
+# read the coordinates
+# ------------------------------------------------------------
+            rmsd_weights = IMP.pmi.io.get_bead_sizes(self.model,
+                                                     my_best_score_rmf_tuples[0],
+                                                     rmsd_calculation_components)
+            got_coords = IMP.pmi.io.read_coordinates_of_rmfs(self.model,
+                                                             my_best_score_rmf_tuples,
+                                                             alignment_components,
+                                                             rmsd_calculation_components)
+
+            # note! the coordinates are simple float tuples, NOT decorators, NOT Vector3D,
+            # NOR particles, because these object cannot be serialized. We need serialization
+            # for the parallel computation based on mpi.
+            all_coordinates=got_coords[0]          # dict:key=component name,val=coords per hit
+            alignment_coordinates=got_coords[1]    # same as above, limited to alignment bits
+            rmsd_coordinates=got_coords[2]         # same as above, limited to RMSD bits
+            rmf_file_name_index_dict=got_coords[3] # dictionary with key=RMF, value=score rank
+            all_rmf_file_names=got_coords[4]       # RMF file per hit
+
 # ------------------------------------------------------------------------
 # optionally don't compute distance matrix or cluster, just write top files
 # ------------------------------------------------------------------------
@@ -1279,6 +1300,28 @@ class AnalysisReplicaExchange0(object):
                     if not prot:
                         continue
 
+                    if cnt==0:
+                        coords_f1=alignment_coordinates[cnt]
+                    if cnt > 0:
+                        coords_f2=alignment_coordinates[cnt]
+                        Ali = IMP.pmi.analysis.Alignment(coords_f1, coords_f2)
+                        transformation = Ali.align()[1]
+                        rbs = set()
+                        for p in IMP.atom.get_leaves(prot):
+                            if not IMP.core.XYZR.get_is_setup(p):
+                                IMP.core.XYZR.setup_particle(p)
+                                IMP.core.XYZR(p).set_radius(0.0001)
+                                IMP.core.XYZR(p).set_coordinates((0, 0, 0))
+
+                            if IMP.core.RigidBodyMember.get_is_setup(p):
+                                rb = IMP.core.RigidBodyMember(p).get_rigid_body()
+                                rbs.add(rb)
+                            else:
+                                IMP.core.transform(IMP.core.XYZ(p),
+                                                   transformation)
+                        for rb in rbs:
+                            IMP.core.transform(rb,transformation)
+
                     o=IMP.pmi.output.Output()
                     out_pdb_fn=os.path.join(dircluster,str(cnt)+"."+str(self.rank)+".pdb")
                     out_rmf_fn=os.path.join(dircluster,str(cnt)+"."+str(self.rank)+".rmf")
@@ -1304,26 +1347,6 @@ class AnalysisReplicaExchange0(object):
                     del DensModule
                 return
 
-
-#-------------------------------------------------------------
-# read the coordinates
-# ------------------------------------------------------------
-            rmsd_weights = IMP.pmi.io.get_bead_sizes(self.model,
-                                                     my_best_score_rmf_tuples[0],
-                                                     rmsd_calculation_components)
-            got_coords = IMP.pmi.io.read_coordinates_of_rmfs(self.model,
-                                                             my_best_score_rmf_tuples,
-                                                             alignment_components,
-                                                             rmsd_calculation_components)
-
-            # note! the coordinates are simple float tuples, NOT decorators, NOT Vector3D,
-            # NOR particles, because these object cannot be serialized. We need serialization
-            # for the parallel computation based on mpi.
-            all_coordinates=got_coords[0]          # dict:key=component name,val=coords per hit
-            alignment_coordinates=got_coords[1]    # same as above, limited to alignment bits
-            rmsd_coordinates=got_coords[2]         # same as above, limited to RMSD bits
-            rmf_file_name_index_dict=got_coords[3] # dictionary with key=RMF, value=score rank
-            all_rmf_file_names=got_coords[4]       # RMF file per hit
 
 
             # broadcast the coordinates

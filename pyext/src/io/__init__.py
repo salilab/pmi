@@ -283,6 +283,12 @@ class CrossLink(object):
     def __repr__(self):
         return "CrossLink id: "+str(self.unique_id)+" r1: "+repr(self.r1)+", r2: "+repr(self.r2)
 
+    def intersects(self,other):
+        if self.r1==other.r1 or self.r1==other.r2 or self.r2==other.r1 or self.r2==other.r2:
+            return True
+        else:
+            return False
+
     def get_selection(self,mh,**kwargs):
         """Return a list of atom pairs (particles) for this crosslink.
         Found by selecting everything with r1 and r2 then returning the
@@ -341,6 +347,10 @@ class CrossLinkData(object):
               molecule or residue_index
         """
         self.data[unique_id].append(CrossLink(unique_id,kws1,kws2,score))
+    def copy_cross_link(self,xl):
+        if type(xl) is not CrossLink:
+            raise Exception("CrossLinkData::copy_cross_link() requires a Crosslink object")
+        self.data[xl.unique_id].append(xl)
     def __getitem__(self, key):
         return self.data[key]
     def __repr__(self):

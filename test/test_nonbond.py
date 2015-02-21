@@ -6,9 +6,7 @@ import IMP.pmi.representation
 import IMP.pmi.tools
 
 class Tests(IMP.test.TestCase):
-    def test_nonbond_check(self):
-        """Test nonbond score.
-           This test causes an internal check failure (see issue #853)"""
+    def make_representation(self):
         pdbfile = self.get_input_file_name("nonbond.pdb")
         fastafile = self.get_input_file_name("nonbond.fasta")
         fastids = IMP.pmi.tools.get_ids_from_fasta_file(fastafile)
@@ -20,6 +18,12 @@ class Tests(IMP.test.TestCase):
         r.add_component_sequence("A", fastafile, id=fastids[0])
         r.autobuild_model("A", pdbfile, "A",
                           resolutions=[1, 10], missingbeadsize=1)
+        return m, r
+
+    def test_nonbond_check(self):
+        """Test nonbond score.
+           This test causes an internal check failure (see issue #853)"""
+        m, r = self.make_representation()
 
         r.set_floppy_bodies()
 
@@ -33,6 +37,18 @@ class Tests(IMP.test.TestCase):
         ev = IMP.pmi.restraints.stereochemistry.ExcludedVolumeSphere(r,
                                                     resolution=10.0)
         ev.add_excluded_particle_pairs(listofexcludedpairs)
+        ev.add_to_model()
+        m.evaluate(False)
+
+    def test_is_rigid(self):
+        """Test violation of is_rigid flag.
+           This test causes an internal check failure (see issue #853)"""
+        m, r = self.make_representation()
+
+        r.set_rigid_bodies(["A"])
+
+        ev = IMP.pmi.restraints.stereochemistry.ExcludedVolumeSphere(
+                                  r, resolution=10.0)
         ev.add_to_model()
         m.evaluate(False)
 

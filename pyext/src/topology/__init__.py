@@ -543,7 +543,7 @@ class TopologyReader(object):
                        'pdb_offset'               : 0,
                        'em_residues_per_gaussian' : 0,
                        'rmf_file'                 : None,
-		       'rmf_frame_number'          : None};
+                       'rmf_frame_number'          : None};
         self.component_list=self.import_topology_file(topology_file)
 
 
@@ -731,11 +731,11 @@ class TopologyReader(object):
 
         if "rmf_file" in fields:
             f=values[fields.index("rmf_file")]
-            if f is None: 
-               c.rmf_file=f
-            else: 
+            if f is None:
+                c.rmf_file=f
+            else:
                 if not os.path.isfile(f):
-                    print("rmf_file ", c.name, "must be an existing file or None")  
+                    print("rmf_file ", c.name, "must be an existing file or None")
                     no_error=False
                 else:
                     c.rmf_file=f
@@ -744,18 +744,18 @@ class TopologyReader(object):
 
         if "rmf_frame_number" in fields:
             f=values[fields.index("rmf_frame_number")]
-            if f is None: 
-               c.rmf_frame_number=f
-            else: 
+            if f is None:
+                c.rmf_frame_number=f
+            else:
                 if not self.is_int(f):
-                    print("rmf_frame_number ", c.name, "must be an integer or None")  
+                    print("rmf_frame_number ", c.name, "must be an integer or None")
                     no_error=False
                 else:
                     c.rmf_file=f
         else:
             c.rmf_frame_number=defaults["rmf_frame_number"]
 
-                                
+
         if no_error==True:
             return c
         else:
@@ -803,10 +803,9 @@ class ComponentTopology(object):
         self.gmm_file=None
         self.mrc_file=None
         self.color=None
-	self.rmf_file_name=None
-	self.rmf_frame_number=None
+        self.rmf_file_name=None
+        self.rmf_frame_number=None
 
     def recompute_default_dirs(self, topology):
         pdb_filename=self.pdb_file.split("/")[-1]
         self.pdb_filename=IMP.base.get_relative_path(topology.topology_file, topology.defaults)
-

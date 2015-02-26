@@ -76,11 +76,9 @@ ATOM     16  CA  BEA C   8      68.584  58.274  48.425  1.00  3.50           C
 ATOM     17  CA  THR C   9      68.584  58.274  48.425  1.00  2.80           C
 ENDMDL'''.split("\n")
 
-        f=open("test_pdb_writing.pdb","r")
-        nl=0
-        for l in f:
-            self.assertEqual(pdb_content[nl],l.rstrip('\r\n '))
-            nl+=1
+        with open("test_pdb_writing.pdb") as f:
+            for nl, l in enumerate(f):
+                self.assertEqual(pdb_content[nl],l.rstrip('\r\n '))
         os.unlink('test_pdb_writing.pdb')
 
 if __name__ == '__main__':

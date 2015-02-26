@@ -71,11 +71,9 @@ class Tests(IMP.test.TestCase):
       10      11      11      12      12      13      13      14
       14      15      15      16      16      17'''.split("\n")
 
-        f=open("test_psf_writing.psf","r")
-        nl=0
-        for l in f:
-            self.assertEqual(psf_content[nl],l.replace('\n',''))
-            nl+=1
+        with open("test_psf_writing.psf") as f:
+            for nl, l in enumerate(f):
+                self.assertEqual(psf_content[nl],l.replace('\n',''))
         os.unlink('test_psf_writing.psf')
         os.unlink('test_psf_writing.pdb')
 

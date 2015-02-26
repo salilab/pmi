@@ -483,10 +483,10 @@ def get_drmsd(prot0, prot1):
 
 def get_ids_from_fasta_file(fastafile):
     ids = []
-    ff = open(fastafile, "r")
-    for l in ff:
-        if l[0] == ">":
-            ids.append(l[1:-1])
+    with open(fastafile) as ff:
+        for l in ff:
+            if l[0] == ">":
+                ids.append(l[1:-1])
     return ids
 
 

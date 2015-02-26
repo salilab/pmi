@@ -84,7 +84,7 @@ class Output(object):
             #sort by residue
             ls=sorted(ls, key=lambda tup: tup[1])
             #get the index list
-            indexes=map(list, zip(*ls))[0]
+            indexes=[x[0] for x in ls]
             # get the contiguous pairs
             indexes_pairs+=list(IMP.pmi.tools.sublist_iterator(indexes,lmin=2,lmax=2))
         nbonds=len(indexes_pairs)

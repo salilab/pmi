@@ -650,7 +650,7 @@ class TopologyReader(object):
         fields=topology_fields.split('|')
         values=component_line.split('|')
         c=ComponentTopology()
-        no_error=True
+        errors=[]
     ##### Required fields
         c.name          = values[fields.index("component_name")].strip()
         c.domain_name   = values[fields.index("domain_name")].strip()
@@ -666,9 +666,8 @@ class TopologyReader(object):
         if len(values[fields.index("chain")])==1 and values[fields.index("chain")].isupper()==True:
             c.chain = values[fields.index("chain")]
         else:
-            print("PDB Chain format for component ", c.name, ", line ", linenum, " is not correct")
-            print("Correct syntax is a single uppercase letter. |", values[fields.index("chain")], "| was given.")
-            no_error=False
+            errors.append("PDB Chain format for component %s line %d is not correct" % (c.name, linenum))
+            errors.append("Correct syntax is a single uppercase letter. |%s| was given." % values[fields.index("chain")])
 
     ##### Optional fields
         # Residue Range
@@ -680,10 +679,9 @@ class TopologyReader(object):
             elif len(f.split(','))==2 and self.is_int(f.split(',')[0]) and self.is_int(f.split(',')[1]):
                 c.residue_range=(int(f.split(',')[0]), int(f.split(',')[1]))
             else:
-                print("Residue Range format for component ", c.name, ", line ", linenum, " is not correct")
-                print("Correct syntax is two comma separated integers:  |start_res, end_res|. |", f, "| was given.")
-                print("To select all residues, indicate |\"all\"|")
-                no_error=False
+                errors.append("Residue Range format for component %s line %d is not correct" % (c.name, linenum))
+                errors.append("Correct syntax is two comma separated integers:  |start_res, end_res|. |%s| was given." % f)
+                errors.append("To select all residues, indicate |\"all\"|")
         else:
             c.residue_range=defaults["residue_range"]
 
@@ -694,9 +692,8 @@ class TopologyReader(object):
             if self.is_int(f):
                 c.pdb_offset=int(f)
             else:
-                print("PDB Offset format for component ", c.name, ", line ", linenum, " is not correct")
-                print("The value must be a single integer. |", f, "| was given.")
-                no_error=False
+                errors.append("PDB Offset format for component %s line %d is not correct" % (c.name, linenum))
+                errors.append("The value must be a single integer. |%s| was given." % f)
         else:
             c.pdb_offset=defaults["pdb_offset"]
 
@@ -706,9 +703,8 @@ class TopologyReader(object):
             if self.is_int(f):
                 c.bead_size=int(f)
             else:
-                print("Bead Size format for component ", c.name, ", line ", linenum, " is not correct")
-                print("The value must be a single integer. |", f, "| was given.")
-                no_error=False
+                errors.append("Bead Size format for component %s line %d is not correct" % (c.name, linenum))
+                errors.append("The value must be a single integer. |%s| was given." % f)
         else:
             c.bead_size=defaults["bead_size"]
 
@@ -723,9 +719,8 @@ class TopologyReader(object):
                                            c.domain_name.strip() + ".mrc")
                 c.em_residues_per_gaussian=int(f)
             else:
-                print("em_residues_per_gaussian format for component ", c.name, ", line ", linenum, " is not correct")
-                print("The value must be a single integer. |", f, "| was given.")
-                no_error=False
+                errors.append("em_residues_per_gaussian format for component %s line %d is not correct" % (c.name, linenum))
+                errors.append("The value must be a single integer. |%s| was given." % f)
         else:
             c.em_residues_per_gaussian=defaults["em_residues_per_gaussian"]
 
@@ -735,8 +730,7 @@ class TopologyReader(object):
                 c.rmf_file=f
             else:
                 if not os.path.isfile(f):
-                    print("rmf_file ", c.name, "must be an existing file or None")
-                    no_error=False
+                    errors.append("rmf_file %s must be an existing file or None" % c.name)
                 else:
                     c.rmf_file=f
         else:
@@ -748,20 +742,18 @@ class TopologyReader(object):
                 c.rmf_frame_number=f
             else:
                 if not self.is_int(f):
-                    print("rmf_frame_number ", c.name, "must be an integer or None")
-                    no_error=False
+                    errors.append("rmf_frame_number %s must be an integer or None" % c.name)
                 else:
                     c.rmf_file=f
         else:
             c.rmf_frame_number=defaults["rmf_frame_number"]
 
 
-        if no_error==True:
-            return c
+        if errors:
+            raise ValueError("Fix Topology File syntax errors and rerun: " \
+                             + "\n".join(errors))
         else:
-            print("Fix Topology File syntax errors and rerun.  Exiting...")
-            exit()
-
+            return c
 
     def is_int(self, s):
        # is this string an integer?

@@ -46,10 +46,6 @@ class Tests(IMP.test.TestCase):
         output.init_pdb("test_psf_writing.pdb", simo.prot)
         output.write_pdb("test_psf_writing.pdb")
         output.write_psf("test_psf_writing.psf","test_psf_writing.pdb")
-        self.assertTrue(os.path.exists('test_psf_writing.psf'))
-
-    def test_psf_content(self):
-
         psf_content='''PSF CMAP CHEQ
 17 !NATOM
        1 A    1    "MET" C    C         1.000000      0.000000       0      0.000000      0.000000
@@ -80,6 +76,7 @@ class Tests(IMP.test.TestCase):
         for l in f:
             self.assertEqual(psf_content[nl],l.replace('\n',''))
             nl+=1
+        os.unlink('test_psf_writing.psf')
 
 if __name__ == '__main__':
     IMP.test.main()

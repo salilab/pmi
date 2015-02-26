@@ -78,7 +78,7 @@ class Output(object):
 
         #now write the connectivity
         indexes_pairs=[]
-        for chain in index_residue_pair_list:
+        for chain in sorted(index_residue_pair_list.keys()):
 
             ls=index_residue_pair_list[chain]
             #sort by residue

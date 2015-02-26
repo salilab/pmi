@@ -121,21 +121,23 @@ mc = samplers.MonteCarlo(m, [r], 1.0)
 log_objects.append(mc)
 
 
-o = output.Output()
-rmf = o.init_rmf("conformations.rmf3", [r.prot])
-o.init_stat2("modeling.stat", log_objects)
-o.write_rmf("conformations.rmf3")
-o.init_pdb("conformations.pdb", r.prot)
-
 start_time = time.clock()
-for i in range(0, 10):
-    #print "Running job, frame number ", i
-
-    mc.optimize(10)
+# In debug mode things are way too slow to actually run MC
+if IMP.base.get_check_level() < IMP.base.USAGE_AND_INTERNAL:
+    o = output.Output()
+    rmf = o.init_rmf("conformations.rmf3", [r.prot])
+    o.init_stat2("modeling.stat", log_objects)
     o.write_rmf("conformations.rmf3")
-    o.write_pdbs()
-    o.write_stats2()
-o.close_rmf("conformations.rmf3")
+    o.init_pdb("conformations.pdb", r.prot)
+
+    for i in range(0, 10):
+#       print("Running job, frame number ", i)
+
+        mc.optimize(10)
+        o.write_rmf("conformations.rmf3")
+        o.write_pdbs()
+        o.write_stats2()
+    o.close_rmf("conformations.rmf3")
 
 sys.stdout = old_stdout
 IMP.benchmark.report("pmi loop", time.clock() - start_time, 3*10+5)

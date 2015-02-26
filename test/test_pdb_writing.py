@@ -58,9 +58,6 @@ class Tests(IMP.test.TestCase):
         for i in range(10):
             self.assertTrue(os.path.exists('test_pdb_writing.'+str(i)+'.pdb'))
 
-
-    def test_pdb_content(self):
-
         pdb_content='''ATOM      1  CA  MET A   1     114.370  27.980 -26.088  1.00  3.07           C
 ATOM      2  CA  VAL A   2     114.370  27.980 -26.088  1.00  2.89           C
 ATOM      3  CA  GLY A   3     111.506  26.368 -28.075  1.00  2.27           C
@@ -83,7 +80,7 @@ ENDMDL'''.split("\n")
         f=open("test_pdb_writing.pdb","r")
         nl=0
         for l in f:
-            self.assertEqual(pdb_content[nl],l.replace('\n',''))
+            self.assertEqual(pdb_content[nl],l.rstrip('\r\n '))
             nl+=1
 
 if __name__ == '__main__':

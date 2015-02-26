@@ -142,5 +142,6 @@ if IMP.base.get_check_level() < IMP.base.USAGE_AND_INTERNAL:
 sys.stdout = old_stdout
 IMP.benchmark.report("pmi loop", time.clock() - start_time, 3*10+5)
 
-for output in ["conformations.pdb", "conformations.rmf3", "modeling.stat"]:
-    os.unlink(output)
+if IMP.base.get_check_level() < IMP.base.USAGE_AND_INTERNAL:
+    for output in ["conformations.pdb", "conformations.rmf3", "modeling.stat"]:
+        os.unlink(output)

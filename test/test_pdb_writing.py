@@ -54,9 +54,8 @@ class Tests(IMP.test.TestCase):
             score = -float(i)
             output.write_pdb_best_scoring(score)
 
-        self.assertTrue(os.path.exists('test_pdb_writing.pdb'))
         for i in range(10):
-            self.assertTrue(os.path.exists('test_pdb_writing.'+str(i)+'.pdb'))
+            os.unlink('test_pdb_writing.'+str(i)+'.pdb')
 
         pdb_content='''ATOM      1  CA  MET A   1     114.370  27.980 -26.088  1.00  3.07           C
 ATOM      2  CA  VAL A   2     114.370  27.980 -26.088  1.00  2.89           C
@@ -82,6 +81,7 @@ ENDMDL'''.split("\n")
         for l in f:
             self.assertEqual(pdb_content[nl],l.rstrip('\r\n '))
             nl+=1
+        os.unlink('test_pdb_writing.pdb')
 
 if __name__ == '__main__':
     IMP.test.main()

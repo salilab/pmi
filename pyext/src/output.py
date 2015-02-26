@@ -107,6 +107,7 @@ class Output(object):
             flpsf.write('\n')
 
         del particle_infos_for_pdb
+        flpsf.close()
 
     def write_pdb(self,name,appendmode=True,
                   translate_to_geometric_center=False):

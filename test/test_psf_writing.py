@@ -77,6 +77,7 @@ class Tests(IMP.test.TestCase):
             self.assertEqual(psf_content[nl],l.replace('\n',''))
             nl+=1
         os.unlink('test_psf_writing.psf')
+        os.unlink('test_psf_writing.pdb')
 
 if __name__ == '__main__':
     IMP.test.main()

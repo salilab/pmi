@@ -664,7 +664,7 @@ class TopologyReader(object):
 
         # PDB Chain
         if len(values[fields.index("chain")])==1 and values[fields.index("chain")].isupper()==True:
-            c.chain = values[fields.index("chain")]
+            c.chain = values[fields.index("chain")].strip()
         else:
             errors.append("PDB Chain format for component %s line %d is not correct" % (c.name, linenum))
             errors.append("Correct syntax is a single uppercase letter. |%s| was given." % values[fields.index("chain")])
@@ -672,7 +672,7 @@ class TopologyReader(object):
     ##### Optional fields
         # Residue Range
         if "residue_range" in fields:
-            f=values[fields.index("residue_range")]
+            f=values[fields.index("residue_range")].strip()
             if f.strip()=='all' or str(f)=="":
                 c.residue_range=(1,-1)
             # Make sure that is residue range is given, there are only two values and they are integers
@@ -688,7 +688,7 @@ class TopologyReader(object):
 
         # PDB Offset
         if "pdb_offset" in fields:
-            f=values[fields.index("pdb_offset")]
+            f=values[fields.index("pdb_offset")].strip()
             if self.is_int(f):
                 c.pdb_offset=int(f)
             else:
@@ -699,7 +699,7 @@ class TopologyReader(object):
 
         # Bead Size
         if "bead_size" in fields:
-            f=values[fields.index("bead_size")]
+            f=values[fields.index("bead_size")].strip()
             if self.is_int(f):
                 c.bead_size=int(f)
             else:
@@ -710,7 +710,7 @@ class TopologyReader(object):
 
         # EM Residues Per Gaussian
         if "em_residues_per_gaussian" in fields:
-            f=values[fields.index("em_residues_per_gaussian")]
+            f=values[fields.index("em_residues_per_gaussian")].strip()
             if self.is_int(f):
                 if int(f) > 0:
                     c.gmm_file=self._make_path(defaults['gmm_dir'],
@@ -725,8 +725,8 @@ class TopologyReader(object):
             c.em_residues_per_gaussian=defaults["em_residues_per_gaussian"]
 
         if "rmf_file" in fields:
-            f=values[fields.index("rmf_file")]
-            if f is None:
+            f=values[fields.index("rmf_file")].strip()
+            if f == "None":
                 c.rmf_file=f
             else:
                 if not os.path.isfile(f):
@@ -737,8 +737,8 @@ class TopologyReader(object):
             c.rmf_file=defaults["rmf_file"]
 
         if "rmf_frame_number" in fields:
-            f=values[fields.index("rmf_frame_number")]
-            if f is None:
+            f=values[fields.index("rmf_frame_number")].strip()
+            if f == "None":
                 c.rmf_frame_number=f
             else:
                 if not self.is_int(f):

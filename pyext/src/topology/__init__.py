@@ -662,12 +662,14 @@ class TopologyReader(object):
         # Need to find a way to define color
         c.color         = 0.1
 
+        t_chain = fields.index("chain")].strip()
         # PDB Chain
-        if len(values[fields.index("chain")])==1 and values[fields.index("chain")].isupper()==True:
-            c.chain = values[fields.index("chain")].strip()
+        # Must be one or two characters
+        if len(t_chain)==1 or len(t_chain)==2:
+            c.chain = t_chain
         else:
-            errors.append("PDB Chain format for component %s line %d is not correct" % (c.name, linenum))
-            errors.append("Correct syntax is a single uppercase letter. |%s| was given." % values[fields.index("chain")])
+            errors.append("PDB Chain identifier must be one or two characters.")
+            errors.append("For component %s line %d is not correct |%s| was given." % (c.name,linenum,t_chain])
 
     ##### Optional fields
         # Residue Range

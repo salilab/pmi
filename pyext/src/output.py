@@ -231,9 +231,10 @@ class Output(object):
                     particle_infos_for_pdb.append((xyz,
                                                    IMP.atom.AT_CA, rt, self.dictchain[name][protname], resind,radius))
 
-        geometric_center = (geometric_center[0] / atom_count,
-                            geometric_center[1] / atom_count,
-                            geometric_center[2] / atom_count)
+        if atom_count > 0:
+            geometric_center = (geometric_center[0] / atom_count,
+                                geometric_center[1] / atom_count,
+                                geometric_center[2] / atom_count)
 
         particle_infos_for_pdb = sorted(particle_infos_for_pdb, key=operator.itemgetter(3, 4))
 

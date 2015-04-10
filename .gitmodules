@@ -1,3 +1,0 @@
-[submodule "tools/dev_tools"]
-	path = tools/dev_tools
-	url = ../developer_tools.git

@@ -669,7 +669,7 @@ class TopologyReader(object):
             c.chain = t_chain
         else:
             errors.append("PDB Chain identifier must be one or two characters.")
-            errors.append("For component %s line %d is not correct |%s| was given." % (c.name,linenum,t_chain])
+            errors.append("For component %s line %d is not correct |%s| was given." % (c.name,linenum,t_chain))
 
     ##### Optional fields
         # Residue Range

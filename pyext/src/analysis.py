@@ -1345,7 +1345,7 @@ def get_hier_from_rmf(model, frame_number, rmf_file,state_number=0):
 
     try:
         prots = IMP.rmf.create_hierarchies(rh, model)
-    except:
+    except IOError:
         print("Unable to open rmf file %s" % (rmf_file))
         prot = None
         return prot
@@ -1353,7 +1353,7 @@ def get_hier_from_rmf(model, frame_number, rmf_file,state_number=0):
     prot = prots[state_number]
     try:
         IMP.rmf.load_frame(rh, frame_number)
-    except:
+    except IOError:
         print("Unable to open frame %i of file %s" % (frame_number, rmf_file))
         prot = None
     model.update()

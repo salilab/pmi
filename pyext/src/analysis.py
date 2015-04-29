@@ -566,7 +566,7 @@ class Precision(object):
         # read the particles
         try:
             (particles_resolution_one, prots)=self._get_structure(rmf_frame_index,rmf_name)
-        except:
+        except ValueError:
             print("something wrong with the rmf")
             return 0
 

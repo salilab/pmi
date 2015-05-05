@@ -78,7 +78,7 @@ class ExcludedVolumeSphere(object):
     def add_excluded_particle_pairs(self, excluded_particle_pairs):
         # add pairs to be filtered when calculating  the score
         lpc = IMP.container.ListPairContainer(self.m)
-        lpc.add_particle_pairs(excluded_particle_pairs)
+        lpc.add(IMP.get_indexes(excluded_particle_pairs))
         icpf = IMP.container.InContainerPairFilter(lpc)
         self.cpc.add_pair_filter(icpf)
 

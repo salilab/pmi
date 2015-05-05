@@ -9,6 +9,14 @@ import IMP
 import IMP.algebra
 import collections
 
+def add_restraint_to_model(model, restraint):
+    """Add a PMI restraint to the model.
+       Since Model.add_restraint() no longer exists (in modern IMP restraints
+       should be added to a ScoringFunction instead) store them instead in
+       a RestraintSet, and keep a reference to it in the Model."""
+    if not hasattr(model, '_pmi_restraint_set'):
+        model._pmi_restraint_set = IMP.RestraintSet(model, "All PMI restraints")
+    model._pmi_restraint_set.add_restraint(restraint)
 
 class Stopwatch(object):
 

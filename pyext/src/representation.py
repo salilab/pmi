@@ -2027,12 +2027,17 @@ class Representation(object):
     def set_output_level(self, level):
         self.output_level = level
 
+    def _evaluate(self, deriv):
+        """Evaluate the total score of all added restraints"""
+        r = IMP.pmi.tools.get_restraint_set(self.m)
+        return r.evaluate(deriv)
+
     def get_output(self):
         output = {}
         score = 0.0
 
         output["SimplifiedModel_Total_Score_" +
-               self.label] = str(self.m.evaluate(False))
+               self.label] = str(self._evaluate(False))
         output["SimplifiedModel_Linker_Score_" +
                self.label] = str(self.linker_restraints.unprotected_evaluate(None))
         for name in self.sortedsegments_cr_dict:

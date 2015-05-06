@@ -449,7 +449,6 @@ class Output(object):
         flstat.close()
 
     def test(self, name, listofobjects):
-        from numpy.testing import assert_approx_equal as aae
         output = self.initoutput
         for l in listofobjects:
             if not "get_test_output" in dir(l) and not "get_output" in dir(l):
@@ -472,8 +471,20 @@ class Output(object):
             if k in output:
                 old_value = str(test_dict[k])
                 new_value = str(output[k])
+                try:
+                    float(old_value)
+                    is_float = True
+                except ValueError:
+                    is_float = False
 
-                if test_dict[k] != output[k]:
+                if is_float:
+                    fold = float(old_value)
+                    fnew = float(new_value)
+                    diff = abs(fold - fnew)
+                    if diff > 1e-6:
+                        print(str(k) + ": test failed, old value: " + old_value + " new value " + new_value)
+                        passed=False
+                elif test_dict[k] != output[k]:
                     if len(old_value) < 50 and len(new_value) < 50:
                         print(str(k) + ": test failed, old value: " + old_value + " new value " + new_value)
                         passed=False

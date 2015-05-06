@@ -662,11 +662,13 @@ class ProcessOutput(object):
         '''
         Get the desired field names, and return a dictionary.
 
+        @param fields desired field names
         @param filterout specify if you want to "grep" out something from
                          the file, so that it is faster
         @param filtertuple a tuple that contains
                      ("TheKeyToBeFiltered",relationship,value)
                      where relationship = "<", "==", or ">"
+        @param get_every only read every Nth line from the file
         '''
 
         outdict = {}

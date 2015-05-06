@@ -65,7 +65,7 @@ class ReplicaExchange0(object):
                   (or list of them, for multi-state modeling)
            @param root_hier Instead of passing Representation, just pass
                   a hierarchy
-           @param monte_carlo_sample_objcts Objects for MC sampling; a list of
+           @param monte_carlo_sample_objects Objects for MC sampling; a list of
                   structural components (generally the representation) that will
                   be moved and restraints with parameters that need to
                   be sampled
@@ -80,9 +80,9 @@ class ReplicaExchange0(object):
            @param simulated_annealing If True, perform simulated annealing
            @param simulated_annealing_minimum_temperature Should generally be
                   the same as monte_carlo_temperature.
-           @param simulated_annealing_minimum_temperature_frames Number of
+           @param simulated_annealing_minimum_temperature_nframes Number of
                   frames to compute at minimum temperature.
-           @param simulated_annealing_maximum_temperature_frames Number of
+           @param simulated_annealing_maximum_temperature_nframes Number of
                   frames to compute at
                   temps > simulated_annealing_maximum_temperature.
            @param replica_exchange_minimum_temperature Low temp for REX; should
@@ -776,6 +776,8 @@ class BuildModel1(object):
              res_range, read_em_files, bead_size, rb, super_rb,
              em_num_components, em_txt_file_name, em_mrc_file_name
         @param sequence_connectivity_scale
+        @param rmf_file
+        @param rmf_frame_number
         """
         self.domain_dict={}
         self.resdensities={}

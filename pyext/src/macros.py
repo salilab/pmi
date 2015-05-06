@@ -982,7 +982,7 @@ class BuildModel1(object):
 
     def autobuild(self,simo,comname,pdbname,chain,resrange,read=True,beadsize=5,color=0.0,offset=0):
 
-        if pdbname is not None and pdbname is not "IDEAL_HELIX" and pdbname is not "BEADS" :
+        if pdbname is not None and pdbname is not "IDEAL_HELIX" and pdbname is not "BEADS" and pdbname is not "DENSITY" :
             if resrange[-1]==-1: resrange=(resrange[0],len(simo.sequence_dict[comname]))
             if read==False:
                 outhier=simo.autobuild_model(comname,
@@ -1004,7 +1004,7 @@ class BuildModel1(object):
                                  missingbeadsize=beadsize)
 
 
-        elif pdbname is not None and pdbname is "IDEAL_HELIX" and pdbname is not "BEADS" :
+        elif pdbname is not None and pdbname is "IDEAL_HELIX" and pdbname is not "BEADS" and pdbname is not "DENSITY" :
 
             outhier=simo.add_component_ideal_helix(comname,
                                                 resolutions=[1,10],
@@ -1012,8 +1012,11 @@ class BuildModel1(object):
                                                 color=color,
                                                 show=False)
 
-        elif pdbname is not None and pdbname is not "IDEAL_HELIX" and pdbname is "BEADS" :
+        elif pdbname is not None and pdbname is not "IDEAL_HELIX" and pdbname is "BEADS" and pdbname is not "DENSITY" :
             outhier=simo.add_component_necklace(comname,resrange[0],resrange[1],beadsize,color=color)
+
+        elif pdbname is not None and pdbname is not "IDEAL_HELIX" and pdbname is not "BEADS" and pdbname is "DENSITY" :
+            outhier=[]
 
         else:
 
@@ -1025,7 +1028,12 @@ class BuildModel1(object):
 
         return outhier
 
+    def save_rmf(self,rmfname):
 
+        o=IMP.pmi.output.Output()
+        o.init_rmf(rmfname,[self.simo.prot])
+        o.write_rmf(rmfname)
+        o.close_rmf(rmfname)
 
 # ----------------------------------------------------------------------
 
@@ -1297,7 +1305,13 @@ class AnalysisReplicaExchange0(object):
                     for key in best_score_feature_keyword_list_dict:
                         tmp_dict[key]=best_score_feature_keyword_list_dict[key][index]
 
-                    prot=IMP.pmi.analysis.get_hier_from_rmf(self.model,rmf_frame_number,rmf_name,state_number=state_number)
+
+                    prot,rs = IMP.pmi.analysis.get_hier_and_restraints_from_rmf(
+                        self.model,
+                        rmf_frame_number,
+                        rmf_name,
+                        state_number)
+
                     if not prot:
                         continue
 
@@ -1325,7 +1339,7 @@ class AnalysisReplicaExchange0(object):
 
                     o=IMP.pmi.output.Output()
                     out_pdb_fn=os.path.join(dircluster,str(cnt)+"."+str(self.rank)+".pdb")
-                    out_rmf_fn=os.path.join(dircluster,str(cnt)+"."+str(self.rank)+".rmf")
+                    out_rmf_fn=os.path.join(dircluster,str(cnt)+"."+str(self.rank)+".rmf3")
                     o.init_pdb(out_pdb_fn,prot)
                     o.write_pdb(out_pdb_fn,
                                 translate_to_geometric_center=write_pdb_with_centered_coordinates)
@@ -1336,7 +1350,7 @@ class AnalysisReplicaExchange0(object):
                     tmp_dict["local_rmf_frame_number"]=0
 
                     clusstat.write(str(tmp_dict)+"\n")
-                    o.init_rmf(out_rmf_fn,[prot])
+                    o.init_rmf(out_rmf_fn,[prot],rs)
                     o.write_rmf(out_rmf_fn)
                     o.close_rmf(out_rmf_fn)
                     # add the density

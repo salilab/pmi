@@ -311,6 +311,27 @@ class _Molecule(SystemBase):
         for orig,new in zip(self.residues,mol.residues):
             new.representations=orig.representations
 
+    def add_clone(self,new_chain_id,transformation=None):
+        """Create a Molecule clone (same structure and representation of the original)
+        setting the new coordinates optionally.
+        @param new_chain_id If you want to set the chain ID of the copy to something
+                            (defaults to what you extract from the PDB file)
+        @param transformation Apply transformation after reading/cloning structure
+        """
+        if new_chain_id is None:
+            new_chain_id=chain_id
+        mol=_Molecule(self.state,self.get_hierarchy().get_name(),
+                      self.sequence,new_chain_id,copy_num=len(self.copies)+1)
+        self.copies.append(mol)
+        for nr,r in enumerate(self.residues):
+            mol.residues[nr].set_structure(IMP.atom.Residue(IMP.atom.create_clone(r.hier)))
+        if transformation is not None:
+            for r in mol.residues:
+                IMP.atom.transform(r.hier,transformation)
+        for orig,new in zip(self.residues,mol.residues):
+            new.representations=orig.representations
+
+
     def add_structure(self,pdb_fn,chain_id,res_range=[],offset=0,model_num=None,ca_only=False,soft_check=False):
         """Read a structure and store the coordinates.
         Returns the atomic residues (as a set)

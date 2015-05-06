@@ -579,7 +579,7 @@ class ConnectivityNetworkRestraint(object):
             r.set_name(label)
 
     def add_to_model(self):
-        self.m.add_restraint(self.rs)
+        IMP.pmi.tools.add_restraint_to_model(self.m, self.rs)
 
     def get_restraint(self):
         return self.rs

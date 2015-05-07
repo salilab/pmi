@@ -611,9 +611,6 @@ class ConnectivityNetworkRestraint(IMP.kernel.Restraint):
     Authors: G. Bouvier, R. Pellarin. Pasteur Institute.
     '''
 
-    import networkx
-    import sklearn
-    import scipy.spatial
     import numpy
     import math
 
@@ -644,19 +641,22 @@ class ConnectivityNetworkRestraint(IMP.kernel.Restraint):
         '''
         get the full graph of distances between every particle pair
         '''
+        import networkx
+        import scipy.spatial
 
         pdist_array = self.numpy.array(IMP.pmi.get_list_of_bipartite_minimum_sphere_distance(self.particles_blocks))
-        pdist_mat=self.scipy.spatial.distance.squareform(pdist_array)
+        pdist_mat=scipy.spatial.distance.squareform(pdist_array)
         pdist_mat[pdist_mat < 0] = 0
-        graph = self.networkx.Graph(pdist_mat)
+        graph = networkx.Graph(pdist_mat)
         return graph
 
     def get_minimum_spanning_tree(self):
         """
         return the minimum spanning tree
         """
+        import networkx
         graph = self.get_full_graph()
-        graph = self.networkx.minimum_spanning_tree(graph)
+        graph = networkx.minimum_spanning_tree(graph)
         return graph
 
     def sigmoid(self,x):

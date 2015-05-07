@@ -605,7 +605,7 @@ class ConnectivityNetworkRestraint(object):
 
 
 
-class ConnectivityNetworkRestraint(IMP.kernel.Restraint):
+class ConnectivityNetworkRestraint(IMP.Restraint):
     '''
     a python restraint that computes the score for a composite of proteins
     Authors: G. Bouvier, R. Pellarin. Pasteur Institute.
@@ -619,7 +619,7 @@ class ConnectivityNetworkRestraint(IMP.kernel.Restraint):
         input a list of particles, the slope and theta of the sigmoid potential
         theta is the cutoff distance for a protein-protein contact
         '''
-        IMP.kernel.Restraint.__init__(self, m, "ConnectivityNetworkRestraint %1%")
+        IMP.Restraint.__init__(self, m, "ConnectivityNetworkRestraint %1%")
         self.slope=slope
         self.theta=theta
         self.linear_slope=linear_slope

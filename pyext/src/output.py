@@ -448,7 +448,7 @@ class Output(object):
         flstat.write("%s \n" % output)
         flstat.close()
 
-    def test(self, name, listofobjects):
+    def test(self, name, listofobjects, tolerance=1e-5):
         output = self.initoutput
         for l in listofobjects:
             if not "get_test_output" in dir(l) and not "get_output" in dir(l):

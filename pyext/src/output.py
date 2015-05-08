@@ -481,8 +481,11 @@ class Output(object):
                     fold = float(old_value)
                     fnew = float(new_value)
                     diff = abs(fold - fnew)
-                    if diff > 1e-6:
-                        print(str(k) + ": test failed, old value: " + old_value + " new value " + new_value)
+                    if diff > tolerance:
+                        print("%s: test failed, old value: %s new value %s; "
+                              "diff %f > %f" % (str(k), str(old_value),
+                                                str(new_value), diff,
+                                                tolerance))
                         passed=False
                 elif test_dict[k] != output[k]:
                     if len(old_value) < 50 and len(new_value) < 50:

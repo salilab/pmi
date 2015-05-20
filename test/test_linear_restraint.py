@@ -20,7 +20,7 @@ class Tests(IMP.test.TestCase):
         linear = IMP.core.Linear(0, 0.0)
         linear.set_slope(0.01)
         dps2 = IMP.core.DistancePairScore(linear)
-        lr = IMP.core.PairRestraint(dps2, IMP.ParticlePair(p1, p2))
+        lr = IMP.core.PairRestraint(m, dps2, (p1, p2))
 
         maxdist = 40.0
         npoints = 100

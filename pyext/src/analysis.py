@@ -1361,7 +1361,7 @@ def get_hier_from_rmf(model, frame_number, rmf_file,state_number=0):
     del rh
     return prot
 
-def get_hier_and_restraints_from_rmf(model, frame_number, rmf_file, state_number=0):
+def get_hiers_and_restraints_from_rmf(model, frame_number, rmf_file):
     # I have to deprecate this function
     print("getting coordinates for frame %i rmf file %s" % (frame_number, rmf_file))
 
@@ -1375,17 +1375,26 @@ def get_hier_and_restraints_from_rmf(model, frame_number, rmf_file, state_number
         print("Unable to open rmf file %s" % (rmf_file))
         prot = None
         rs = None
-        return prot,rs
-    #IMP.rmf.link_hierarchies(rh, prots)
-    prot = prots[state_number]
+        return prots,rs
     try:
         IMP.rmf.load_frame(rh, RMF.FrameID(frame_number))
     except:
         print("Unable to open frame %i of file %s" % (frame_number, rmf_file))
-        prot = None
+        prots = None
+        rs = None
+        return prots,rs
     model.update()
     del rh
-    return prot,rs
+    return prots,rs
+
+def link_hiers_and_restraints_to_rmf(model,hiers,rs, frame_number, rmf_file):
+    print("linking hierarchies for frame %i rmf file %s" % (frame_number, rmf_file))
+    rh = RMF.open_rmf_file_read_only(rmf_file)
+    IMP.rmf.link_hierarchies(rh, hiers)
+    IMP.rmf.link_restraints(rh, rs)
+    IMP.rmf.load_frame(rh, RMF.FrameID(frame_number))
+    model.update()
+    del rh
 
 def get_hiers_from_rmf(model, frame_number, rmf_file):
     print("getting coordinates for frame %i rmf file %s" % (frame_number, rmf_file))

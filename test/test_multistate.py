@@ -117,7 +117,8 @@ class Tests(IMP.test.TestCase):
         print(xyz11.get_coordinates())
 
         xl.add_to_model()
-        print(m.evaluate(False))
+        rset = IMP.pmi.tools.get_restraint_set(m)
+        self.assertAlmostEqual(rset.evaluate(False), -1.45816, delta=1e-2)
 
         o = IMP.pmi.output.Output()
         o.init_rmf(
@@ -140,7 +141,7 @@ class Tests(IMP.test.TestCase):
             xyz31.set_coordinates((float(i), 0, 0))
             for j in range(1,20):
                 xyz32.set_coordinates((float(j), 0, 0))
-                print(i,j,m.evaluate(False))
+                print(i,j,rset.evaluate(False))
                 o.write_stats2()
 
 

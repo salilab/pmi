@@ -41,5 +41,5 @@ IMP.pmi.tools.add_restraint_to_model(m, rs)
 
 mc = samplers.MonteCarlo(m, [pts], 1.0)
 for i in range(100):
-    mc.run(1)
+    mc.optimize(1)
     print(sigma.get_scale())

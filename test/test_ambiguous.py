@@ -69,7 +69,8 @@ class Tests(IMP.test.TestCase):
         print(xyz11.get_coordinates())
 
         xl.add_to_model()
-        print(m.evaluate(False))
+        rset = IMP.pmi.tools.get_restraint_set(m)
+        print(rset.evaluate(False))
 
         print(xyz11.get_coordinates())
 

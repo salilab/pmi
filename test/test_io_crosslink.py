@@ -101,7 +101,7 @@ class TestIOCrosslink(IMP.test.TestCase):
         cldb.create_set_from_file(self.get_input_file_name(input_data_set))
         return cldb
 
-    def utest_setup_cldbkc(self):
+    def test_setup_cldb(self):
         cldb=self.setup_cldb("xl_dataset_test.dat")
 
 

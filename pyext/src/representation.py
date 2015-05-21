@@ -486,10 +486,12 @@ class Representation(object):
 
     def add_component_beads(self, name, ds, colors=None, incoord=None):
         """ add beads to the representation
-        @name the component name
-        @ds a list of tuples corresponding to the residue ranges of the beads
-        @colors a list of colors associated to the beads
-        @incoord the coordinate tuple correspoding to the position of the beads
+        @param name the component name
+        @param ds a list of tuples corresponding to the residue ranges
+                  of the beads
+        @param colors a list of colors associated to the beads
+        @param incoord the coordinate tuple correspoding to the position
+                  of the beads
         """
 
         from math import pi
@@ -611,7 +613,7 @@ class Representation(object):
         '''
         Sets up a Gaussian Mixture Model for this component.
         Can specify input GMM file or it will be computed.
-        @parm name component name
+        @param name component name
         @param hierarchies set up GMM for some hierarchies
         @param selection_tuples (list of tuples) example (first_residue,last_residue,component_name)
         @param particles set up GMM for particles directly
@@ -1477,7 +1479,7 @@ class Representation(object):
         Construct a rigid body from hierarchies (and optionally particles).
 
         @param hiers list of hierarchies to make rigid
-        @parm particles list of particles to add to the rigid body
+        @param particles list of particles to add to the rigid body
         '''
 
         if particles is None:

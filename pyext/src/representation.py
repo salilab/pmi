@@ -838,7 +838,7 @@ class Representation(object):
 
         import IMP.pmi.analysis
 
-        prot = IMP.pmi.analysis.get_hier_from_rmf(
+        prot = IMP.pmi.analysis.get_hiers_from_rmf(
             self.m,
             rmf_frame_number,
             rmf_file_name)

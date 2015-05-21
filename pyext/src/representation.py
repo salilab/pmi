@@ -828,7 +828,10 @@ class Representation(object):
         return outhier
 
     def set_coordinates_from_rmf(self, component_name, rmf_file_name,
-                                 rmf_frame_number, rmf_component_name=None,check_number_particles=True):
+                                 rmf_frame_number,
+                                 rmf_component_name=None,
+                                 check_number_particles=True,
+                                 state_number=0):
         '''Read and replace coordinates from an RMF file.
         Replace the coordinates of particles with the same name.
         It assumes that the RMF and the representation have the particles
@@ -836,17 +839,21 @@ class Representation(object):
         @param component_name Component name
         @param rmf_component_name Name of the component in the RMF file
                 (if not specified, use `component_name`)
+
         '''
 
         import IMP.pmi.analysis
 
-        prot = IMP.pmi.analysis.get_hiers_from_rmf(
+        prots = IMP.pmi.analysis.get_hiers_from_rmf(
             self.m,
             rmf_frame_number,
             rmf_file_name)
 
-        if not prot:
+        if not prots:
             raise ValueError("cannot read hiearchy from rmf")
+
+        prot=prots[0]
+
         # if len(self.rigid_bodies)!=0:
         #   print "set_coordinates_from_rmf: cannot proceed if rigid bodies were initialized. Use the function before defining the rigid bodies"
         #   exit()

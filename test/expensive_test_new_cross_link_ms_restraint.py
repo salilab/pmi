@@ -115,11 +115,11 @@ class CrossLinkingMassSpectrometryRestraint(IMP.test.TestCase):
                                    resolution=1.0,
                                    label="XL")
         xl.add_to_model()
-        psi=xl.get_psi("PSI")[0]
+        psi=xl.psi_dictionary["PSI"][0]
         psi.set_scale(0.05)
-        sigma=xl.get_sigma("SIGMA")[0]
+        sigma=xl.sigma_dictionary["SIGMA"][0]
         sigma.set_scale(10.0)
-        return xl
+        return xl,cldb
 
     def setup_crosslinks_beads(self,representation,mode):
 
@@ -167,11 +167,11 @@ class CrossLinkingMassSpectrometryRestraint(IMP.test.TestCase):
     def test_restraint_probability_complex(self):
         m = IMP.Model()
         rcomplex=self.init_representation_complex(m)
-        xlc=self.setup_crosslinks_complex(rcomplex,"single_category")
+        xlc,cldb=self.setup_crosslinks_complex(rcomplex,"single_category")
 
         # check all internals didn't change since last time
         o=IMP.pmi.output.Output()
-        o.write_test("expensive_test_cross_link_ms_restraint.dat", [xlc])
+        o.write_test("expensive_test_new_cross_link_ms_restraint.dat", [xlc])
 
         passed=o.test(self.get_input_file_name("expensive_test_new_cross_link_ms_restraint.dat"), [xlc])
         self.assertEqual(passed, True)
@@ -179,24 +179,25 @@ class CrossLinkingMassSpectrometryRestraint(IMP.test.TestCase):
 
         # check the probability of cross-links
         restraints=[]
-        for p in xlc.pairs:
-            p0 = p[0]
-            p1 = p[1]
-            prob = p[2].get_probability()
-            resid1 = p[3]
-            chain1 = p[4]
-            resid2 = p[5]
-            chain2 = p[6]
-            attribute = p[7]
+        for xl in xlc.xl_list:
+            p0 = xl["Particle1"]
+            p1 = xl["Particle2"]
+            prob = xl["Restraint"].get_probability()
+            resid1 = xl[cldb.residue1_key]
+            chain1 = xl[cldb.protein1_key]
+            resid2 = xl[cldb.residue2_key]
+            chain2 = xl[cldb.protein2_key]
+            d0 = IMP.core.XYZ(p0)
+            d1 = IMP.core.XYZ(p1)
+            sig1 = xl["Particle_sigma1"]
+            sig2 = xl["Particle_sigma2"]
+            psi =  xl["Particle_psi"]
             d0 = IMP.core.XYZ(p0)
             d1 = IMP.core.XYZ(p1)
             dist=IMP.core.get_distance(d0, d1)
 
-            sig1 = xlc.get_sigma(p[8])[0]
-            sig2 = xlc.get_sigma(p[9])[0]
-            psi = xlc.get_psi(p[10])[0]
             test_prob=get_probability([d0],[d1],[sig1],[sig2],[psi],21.0,0.0)
-            restraints.append(p[2])
+            restraints.append(xl["Restraint"])
 
 
             # check that the probability is the same for
@@ -208,7 +209,7 @@ class CrossLinkingMassSpectrometryRestraint(IMP.test.TestCase):
         test_log_wrapper_score=log_evaluate(restraints)
         self.assertAlmostEqual(log_wrapper_score, test_log_wrapper_score, delta=0.00001)
         for output in ['excluded.None.xl.db',
-                       'expensive_test_cross_link_ms_restraint.dat',
+                       'expensive_test_new_cross_link_ms_restraint.dat',
                        'included.None.xl.db', 'missing.None.xl.db']:
             os.unlink(output)
 

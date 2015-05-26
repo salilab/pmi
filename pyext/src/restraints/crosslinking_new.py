@@ -11,7 +11,7 @@ import IMP.container
 import IMP.pmi.tools
 import pdb
 
-class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints._NuisancesBase):
+class CrossLinkingMassSpectrometryRestraint(object):
     import IMP.isd
     import IMP.pmi.tools
     from math import log
@@ -51,9 +51,10 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints._NuisancesBase):
         dps2 = IMP.core.DistancePairScore(self.linear)
 
         self.label = label
-        self.pairs = []
         self.psi_is_sampled = True
         self.sigma_is_sampled = True
+        self.psi_dictionary={}
+        self.sigma_dictionary={}
         self.xl_list=[]
         self.outputlevel = "low"
 
@@ -62,7 +63,7 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints._NuisancesBase):
         for xlid in self.CrossLinkDataBase.xlid_iterator():
             new_contribution=True
             for xl in self.CrossLinkDataBase[xlid]:
-                print("A")
+
                 r1 = xl[self.CrossLinkDataBase.residue1_key]
                 c1 = xl[self.CrossLinkDataBase.protein1_key]
                 r2 = xl[self.CrossLinkDataBase.residue2_key]
@@ -116,30 +117,28 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints._NuisancesBase):
                             slope)
                         restraints.append(dr)
 
+
                     if self.CrossLinkDataBase.sigma1_key not in xl.keys():
                         sigma1name="SIGMA"
                         xl[self.CrossLinkDataBase.sigma1_key]=sigma1name
                     else:
                         sigma1name=xl[self.CrossLinkDataBase.sigma1_key]
-                    sigma1 = self.get_sigma(sigma1name)[0]
+                    sigma1=self.create_sigma(sigma1name)
 
                     if self.CrossLinkDataBase.sigma2_key not in xl.keys():
                         sigma2name="SIGMA"
                         xl[self.CrossLinkDataBase.sigma2_key]=sigma2name
                     else:
                         sigma2name=xl[self.CrossLinkDataBase.sigma2_key]
-                    sigma2 = self.get_sigma(sigma2name)[0]
+                    sigma2=self.create_sigma(sigma2name)
 
                     if self.CrossLinkDataBase.psi_key not in xl.keys():
                         psiname="PSI"
                         xl[self.CrossLinkDataBase.psi_key]=psiname
                     else:
                         psiname=xl[self.CrossLinkDataBase.psi_key]
-                    psi = self.get_psi(psiname)[0]
+                    psi=self.create_psi(psiname)
 
-                    print(type(psiname),psiname,type(psi),psi)
-                    print(type(sigma1name),sigma1name,type(sigma1),sigma1)
-                    print(type(sigma2name),sigma2name,type(sigma2),sigma2)
 
                     p1i = p1.get_particle_index()
                     xl["Particle1"]=p1
@@ -164,7 +163,6 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints._NuisancesBase):
                     print("CrossLinkingMassSpectrometryRestraint: between particles %s and %s" % (p1.get_name(), p2.get_name()))
                     print("==========================================\n")
 
-                    print("C")
                     # check if the two residues belong to the same rigid body
                     if(IMP.core.RigidMember.get_is_setup(p1) and
                         IMP.core.RigidMember.get_is_setup(p2) and
@@ -178,15 +176,15 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints._NuisancesBase):
                     xl["ShortLabel"]=xl_label
                     dr.set_name(xl_label)
 
-                    pr = IMP.core.PairRestraint(self.m, dps2, (p1i, p2i))
-                    pr.set_name(xl_label)
-                    self.rslin.add_restraint(pr)
-                    print("F")
+                    if p1i != p2i:
+                        pr = IMP.core.PairRestraint(self.m, dps2, (p1i, p2i))
+                        pr.set_name(xl_label)
+                        self.rslin.add_restraint(pr)
 
                     self.xl_list.append(xl)
-                    '''
-                    #indb.write(str(xl) + "\n")
-                    '''
+
+                    indb.write(str(xl) + "\n")
+
         if len(self.xl_list) == 0:
             raise SystemError("CrossLinkingMassSpectrometryRestraint: no crosslink was constructed")
 
@@ -235,8 +233,66 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints._NuisancesBase):
     def set_sigma_is_sampled(self, is_sampled=True):
         self.sigma_is_sampled = is_sampled
 
-    def get_output(self):
 
+    def create_sigma(self, name):
+        ''' a nuisance on the structural uncertainty '''
+        if name in self.sigma_dictionary:
+            return self.sigma_dictionary[name][0]
+
+        sigmainit = 2.0
+        sigmaminnuis = 0.0000001
+        sigmamaxnuis = 1000.0
+        sigmamin = 0.01
+        sigmamax = 100.0
+        sigmatrans = 0.5
+        sigma = IMP.pmi.tools.SetupNuisance(self.m, sigmainit,
+                                                 sigmaminnuis, sigmamaxnuis, self.sigma_is_sampled).get_particle()
+        self.sigma_dictionary[name] = (
+            sigma,
+            sigmatrans,
+            self.sigma_is_sampled)
+        self.rssig.add_restraint(
+            IMP.isd.UniformPrior(
+                self.m,
+                sigma,
+                1000000000.0,
+                sigmamax,
+                sigmamin))
+        return sigma
+
+    def create_psi(self, name):
+        ''' a nuisance on the inconsistency '''
+        if name in self.psi_dictionary:
+            return self.psi_dictionary[name][0]
+
+        psiinit=0.25
+        psiminnuis = 0.0000001
+        psimaxnuis = 0.4999999
+        psimin = 0.01
+        psimax = 0.49
+        psitrans = 0.1
+        psi = IMP.pmi.tools.SetupNuisance(self.m, psiinit,
+                                               psiminnuis, psimaxnuis,
+                                               self.psi_is_sampled).get_particle()
+        self.psi_dictionary[name] = (
+            psi,
+            psitrans,
+            self.psi_is_sampled)
+
+        self.rspsi.add_restraint(
+            IMP.isd.UniformPrior(
+                self.m,
+                psi,
+                1000000000.0,
+                psimax,
+                psimin))
+
+        self.rspsi.add_restraint(IMP.isd.JeffreysRestraint(self.m, psi))
+
+        return psi
+
+
+    def get_output(self):
         self.m.update()
 
         output = {}

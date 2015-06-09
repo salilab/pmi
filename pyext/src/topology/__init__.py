@@ -159,16 +159,11 @@ class _State(SystemBase):
     def create_molecule(self,name,sequence=None,chain_id='',molecule_to_copy=None):
         """Create a new Molecule within this State
         @param name                the name of the molecule (string) it must not
-                                   contain underscores characters "_" and must not
                                    be already used
         @param sequence            sequence (string)
         @param chain_id            Chain id to assign to this molecule
         @param molecule_to_copy    Copy everything from an existing molecule. NOT IMPLEMENTED
         """
-        # check the presence of underscores
-        if "_" in name:
-            raise WrongMoleculeName('A molecule name should not contain underscores characters')
-
         # check whether the molecule name is already assigned
         if name in [mol.get_name() for mol in self.molecules]:
             raise WrongMoleculeName('Cannot use a molecule name already used')

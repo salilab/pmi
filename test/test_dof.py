@@ -32,22 +32,15 @@ class TestDOF(IMP.test.TestCase):
         structured_handle,unstructures_handle=dof.create_compound_body(s)
 
     def test_mc_rigid_body(self):
-        hierarchy=self.init_topology()
-        dof=IMP.pmi.dof.DegreesOfFreedom()
-        selections=[]
-        s=IMP.atom.Selection(hierarchy,molecule=?,resid=range(1,10))
-        selection
-        for s in selections:
-            # rigid_body is a subclass of dof
-            rigid_body=dof.create_rigid_body(s)
-            # IMP mover
-            rigid_body.get_mover()
-            # IMP rigid_body
-            rb=rigid_body.get_rigid_body()
-            # setting non-rigid-members (use)
-            # rb.set_is_rigid_member(p.get_index(), False)
-            non_rigid_members=rigid_body.create_non_rigid_members(selection/handle/particles)
-            nrmmv=non_rigid_members[0].get_mover()
+        hierarchy = self.init_topology()
+        dof = IMP.pmi.dof.DegreesOfFreedom()
+        sRigid    = IMP.atom.Selection(hierarchy,molecule='ABC',resid=range(1,100))
+        sNonRigid = IMP.atom.Selection(hierarchy,molecule='ABC',resid=range(10,20))
+
+        rigid_body = dof.create_rigid_body(sRigid)        # rigid_body is a class in dof
+        rb = rigid_body.get_rigid_body()                  # IMP rigid_body
+        rigid_body.create_non_rigid_members(sNonRigid)    # setting some particles as nonrigid
+        mvs = rigid_body.get_movers()                     # IMP movers (rigid+nonrigid)
 
     def test_mc_super_rigid_body(self):
         hierarchy=self.init_topology()

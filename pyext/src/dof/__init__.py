@@ -38,7 +38,8 @@ def get_all_leaves(list_of_hs):
     return lvs
 
 class DegreesOfFreedom(object):
-    """A class to create constraints and movers for an IMP Hierarchy"""
+    """A class to simplify create of constraints and movers for an IMP Hierarchy.
+    Call the various create() functions to get started."""
     def __init__(self,mdl):
         self.mdl = mdl
         self.movers = []
@@ -52,7 +53,7 @@ class DegreesOfFreedom(object):
                               IMP Selection, Hierarchy,
                               PMI Molecule, Residue, or a list/set
         @param max_trans     Maximum rigid body translation
-        @param max_rot     Maximum rigid body rotation
+        @param max_rot       Maximum rigid body rotation
         """
         hs = get_hierarchies(hspec)
         setup_rb = SetupRigidBody(hs,max_trans,max_rot)
@@ -136,10 +137,7 @@ class SetupRigidBody(object):
         return self.rb
 
 class SetupDiscreteRigidBody(SetupRigidBody):
-    def __init__(self,hiers,transformations):
-        if not IMP.atom.RigidBody.get_is_setup(ps):
-            self.rb = IMP.atom.create_rigid_body(ps)
-        self.rb_mover = DiscreteRigidBodyMover(self.rb,max_trans,max_rot) ### not implemented
+    pass
 
 class SetupSuperRigidBody(object):
     def __init__(self,hiers,max_trans,max_rot,chain_min_length,chain_max_length):
@@ -147,12 +145,10 @@ class SetupSuperRigidBody(object):
         if chain_min_length is None and chain_max_length is None:
             self._setup_srb(hiers,max_trans,max_rot)
         elif chain_min_length is not None and chain_max_length is not None:
-            print('will create chain')
-            print(list(IMP.pmi.tools.sublist_iterator(hiers, chain_min_length, chain_max_length)))
             for hs in IMP.pmi.tools.sublist_iterator(hiers, chain_min_length, chain_max_length):
                 self._setup_srb(hs,max_trans,max_rot)
         else:
-            raise Exception("DegreesOfFreedom: SetupSuperRigidBody if you want chain, specify min AND max")
+            raise Exception("DegreesOfFreedom: SetupSuperRigidBody: if you want chain, specify min AND max")
 
     def _setup_srb(self,hiers,max_trans,max_rot):
         srbm = IMP.pmi.TransformMover(hiers[0].get_model(), max_trans, max_rot)
@@ -169,7 +165,9 @@ class SetupSuperRigidBody(object):
 class SetupFlexibleBeads(object):
     def __init__(self,hiers,max_trans):
         self.movers = []
-        for h in hiers:
-            self.movers.append(IMP.core.BallMover([h],maxtrans))
+        for p in get_all_leaves(hiers):
+            if IMP.core.RigidMember.get_is_setup(p) or IMP.core.NonRigidMember.get_is_setup(p):
+                raise Exception("Cannot create flexible beads from members of rigid body")
+            self.movers.append(IMP.core.BallMover([p],max_trans))
     def get_movers(self):
         return self.movers

@@ -174,7 +174,7 @@ class State(SystemBase):
     def get_hierarchy(self):
         return self.hier
 
-    def get_num_copies(self,molname):
+    def get_number_of_copies(self,molname):
         return len(self.molecules[molname])
 
     def _register_copy(self,molecule):
@@ -230,7 +230,7 @@ class Molecule(SystemBase):
             self.residues.append(r)
 
     def __repr__(self):
-        return self.state.__repr__()+'.'+self.hier.get_name()+'.'+ \
+        return self.state.__repr__()+'.'+self.get_name()+'.'+ \
             str(IMP.atom.Copy(self.hier).get_copy_index())
 
 
@@ -287,9 +287,8 @@ class Molecule(SystemBase):
         Returns the Molecule. No structure or representation will be copied!
         @param chain_id  Chain ID of the new molecule
         """
-        my_name = self.get_hierarchy().get_name()
-        mol = Molecule(self.state,myname,self.sequence,chain_id,
-                       copy_num=self.state.get_num_copies(myname))
+        mol = Molecule(self.state,self.get_name(),self.sequence,chain_id,
+                       copy_num=self.state.get_number_of_copies(self.get_name()))
         self.state._register_copy(mol)
         return mol
 
@@ -298,9 +297,8 @@ class Molecule(SystemBase):
         @param chain_id If you want to set the chain ID of the copy to something
         @param transformation Apply transformation after building (at the end)
         """
-        my_name = self.get_hierarchy().get_name()
-        mol = Molecule(self.state,myname,self.sequence,chain_id,
-                       copy_num=self.state.get_num_copies(myname),
+        mol = Molecule(self.state,self.get_name(),self.sequence,chain_id,
+                       copy_num=self.state.get_number_of_copies(self.get_name()),
                        mol_to_clone=self,transformation=transformation)
         self.state._register_copy(mol)
 

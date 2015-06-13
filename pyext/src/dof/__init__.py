@@ -118,13 +118,11 @@ class SetupRigidBody(object):
         idxs = set(self.rb.get_member_indexes())
         for h in hiers:
             p = h.get_particle()
-            # check that p is a RigidBodyMember of self.rb
             if not p.get_index() in idxs:
                 raise Exception("You tried to create nonrigid members from "
                                  "particles that aren't in the RigidBody!")
 
-            self.rb.add_non_rigid_member(p)
-            # rb.set_is_rigid_member(p.get_index(), False) #And/Or do this?
+            self.rb.set_is_rigid_member(p.get_index(),False)
             for fk in floatkeys:
                 p.set_is_optimized(fk,True)
             self.flexible_movers.append(IMP.core.BallMover([p],

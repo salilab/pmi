@@ -270,7 +270,7 @@ class Molecule(SystemBase):
         """ Return a set of Residues that have associated structure coordinates """
         atomic_res=set()
         for res in self.residues:
-            if len(res.hier.get_children())>0:
+            if res.get_has_coordinates():
                 atomic_res.add(res)
         return atomic_res
 
@@ -278,7 +278,7 @@ class Molecule(SystemBase):
         """ Return a set of Residues that don't have associated structure coordinates """
         non_atomic_res=set()
         for res in self.residues:
-            if len(res.hier.get_children())==0:
+            if not res.get_has_coordinates():
                 non_atomic_res.add(res)
         return non_atomic_res
 

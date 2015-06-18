@@ -109,6 +109,7 @@ class SetupRigidBody(object):
     """Sets up and stores RigidBodyMover and BallMovers for NonRigidMembers"""
     def __init__(self,hiers,max_trans,max_rot):
         self.rb = IMP.atom.create_rigid_body(hiers) #should we check first?
+        self.rb.set_coordinates_are_optimized(True)
         self.rb_mover = IMP.core.RigidBodyMover(self.rb,max_trans,max_rot)
         self.flexible_movers = []
 

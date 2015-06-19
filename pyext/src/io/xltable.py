@@ -1,7 +1,6 @@
-'''
-This module works jointly with IMP.pmi.io.crosslink
-and it is used to plot a contact map overlaid with the cross-links
-'''
+"""@namespace IMP.pmi.io.xltable
+   Tools to plot a contact map overlaid with cross-links.
+"""
 
 from __future__ import print_function
 from math import sqrt

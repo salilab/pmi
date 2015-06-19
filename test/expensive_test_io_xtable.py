@@ -60,8 +60,8 @@ class ISDCrossMSTest(IMP.test.TestCase):
 
     def test_init_table(self):
         cldb=self.init_crosslink_db()
-        self.init_representation_complex()
-        xlt=IMP.pmi.io.xltable.XLTable(5)
+        #self.init_representation_complex()
+        xlt=IMP.pmi.io.xltable.XLTable(35)
         prots = ["Rpb1","Rpb2","Rpb3","Rpb4"]
         chains = "ABCD"
         for n,prot in enumerate(prots):

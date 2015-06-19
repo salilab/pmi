@@ -452,10 +452,8 @@ class XLTable():
         # set the crosslinks
         already_added_xls = []
         for xl in self.cross_link_db:
-            r1=xl[self.cross_link_db.residue1_key]
-            c1=xl[self.cross_link_db.protein1_key]
-            r2=xl[self.cross_link_db.residue2_key]
-            c2=xl[self.cross_link_db.protein1_key]
+
+            (c1,c2,r1,r2)=IMP.pmi.io.crosslink._ProteinsResiduesArray(xl)
 
             if color_crosslinks_by_distance:
 

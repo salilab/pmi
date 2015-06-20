@@ -45,11 +45,11 @@ class _CrossLinkDataBaseStandardKeys(object):
         self.state_key="State"
         self.type[self.state_key]=int
         self.sigma1_key="Sigma1"
-        self.type[self.sigma1_key]=float
+        self.type[self.sigma1_key]=str
         self.sigma2_key="Sigma2"
-        self.type[self.sigma2_key]=float
+        self.type[self.sigma2_key]=str
         self.psi_key="Psi"
-        self.type[self.psi_key]=float
+        self.type[self.psi_key]=str
 
         self.ordered_key_list =[self.data_set_name_key,
                         self.unique_id_key,
@@ -228,9 +228,13 @@ class CrossLinkDataBaseKeywordsConverter(_CrossLinkDataBaseStandardKeys):
         self.converter[origin_key]=self.id_score_key
         self.backward_converter[self.id_score_key]=origin_key
 
-    def set_quantification_key(self,origin_key):
+    def set_quantitation_key(self,origin_key):
         self.converter[origin_key]=self.quantitation_key
         self.backward_converter[self.quantitation_key]=origin_key
+
+    def set_psi_key(self,origin_key):
+        self.converter[origin_key]=self.psi_key
+        self.backward_converter[self.psi_key]=origin_key
 
     def get_converter(self):
         '''

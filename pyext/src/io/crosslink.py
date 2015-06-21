@@ -419,8 +419,38 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
         self.data_base=new_data_base
         self.__update__()
 
-    def change_value(self,key,old_value,new_value):
-        pass
+    def set_value(self,key,new_value,FilterOperator):
+        '''
+        This function changes the value for a given key in the database
+        For instance one can change the name of a protein
+        @param key: the key in the database that must be changed
+        @param new_value: the new value of the key
+        @param FilterOperator: optional FilterOperator to change the value to
+                               a subset of the database
+
+        example: `cldb1.set_value(cldb1.protein1_key,'FFF',FO(cldb.protein1_key,operator.eq,"AAA"))`
+        '''
+
+        for xl in self:
+            if FilterOperator.evaluate(xl):
+                xl[key]=new_value
+        self.__update__
+
+    def offset_residue_index(self,protein_name,offset):
+        '''
+        This function offset the residue indexes of a given protein by a specified value
+        @param protein_name: the protein name that need to be changed
+        @param offset: the offset value
+        '''
+
+        for xl in self:
+            if xl[self.protein1_key] == protein_name:
+                xl[self.residue1_key]=xl[self.residue1_key]+offset
+            if xl[self.protein2_key] == protein_name:
+                xl[self.residue2_key]=xl[self.residue2_key]+offset
+        self.__update__
+
+
 
     def clone_protein(self,protein_name,new_protein_name):
         new_xl_dict={}

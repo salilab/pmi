@@ -154,7 +154,7 @@ def build_along_backbone(mdl,root,residues,rep_type,ca_centers=True):
             root.add_child(frag)
 
             primary_rep_num=min(this_rep['balls'])
-            frep = IMP.atom.Representation.setup_particle(frag,primary_rep_num)
+            frep = IMP.atom.Representation.setup_particle(fp,primary_rep_num)
             if 'balls' in this_rep:
                 # if atomic, add the residues as child (inside another fragment - check RMF)
                 if 0 in this_rep['balls']:

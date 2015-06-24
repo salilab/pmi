@@ -1478,3 +1478,31 @@ class OrderedSet(collections.MutableSet):
         if isinstance(other, OrderedSet):
             return len(self) == len(other) and list(self) == list(other)
         return set(self) == set(other)
+
+# -------------- PMI2 Tools --------------- #
+
+def get_hierarchies_from_spec(spec):
+    """ Given PMI Molecule/Residue or IMP object or a list of them, return IMP hierarchies """
+    def get_h(s):
+        if type(s) is IMP.atom.Selection:
+            hs = [IMP.atom.Hierarchy(p) for p in s.get_selected_particles()]
+        elif type(s) is IMP.atom.Hierarchy:
+            hs = [s]
+        elif type(s) is IMP.pmi.topology.Molecule:
+            hs = [s.get_hierarchy()]
+        elif type(s) is IMP.pmi.topology._Residue:
+            hs = [s.get_hierarchy()]
+        else:
+            raise Exception("Cannot process type "+str(type(s)))
+        return hs
+
+    if hasattr(spec,'__iter__'):
+        hhs = list(itertools.chain.from_iterable(get_h(item) for item in spec))
+    else:
+        hhs = get_h(spec)
+    return hhs
+
+def get_all_leaves(list_of_hs):
+    """ Just get the leaves from a list of hierarchies """
+    lvs = list(itertools.chain.from_iterable(IMP.atom.get_leaves(item) for item in list_of_hs))
+    return lvs

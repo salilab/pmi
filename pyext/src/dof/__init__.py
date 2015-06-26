@@ -51,7 +51,7 @@ class DegreesOfFreedom(object):
         @param max_rot           Maximum super rigid body rotation
         @param chain_min_length  Create a CHAIN of super rigid bodies - must provide list
                                  This parameter is the minimum chain length.
-        @param chain_max_length  max chain lengt
+        @param chain_max_length  max chain length
         """
         hiers = IMP.pmi.tools.get_hierarchies_from_spec(hspec)
         setup_srb = SetupSuperRigidBody(hiers,max_trans,max_rot,chain_min_length,chain_max_length)

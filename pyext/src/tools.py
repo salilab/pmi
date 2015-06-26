@@ -8,6 +8,7 @@ from __future__ import print_function
 import IMP
 import IMP.algebra
 import collections
+import itertools
 
 def _get_restraint_set_key():
     if not hasattr(_get_restraint_set_key, 'pmi_rs_key'):
@@ -1506,3 +1507,41 @@ def get_all_leaves(list_of_hs):
     """ Just get the leaves from a list of hierarchies """
     lvs = list(itertools.chain.from_iterable(IMP.atom.get_leaves(item) for item in list_of_hs))
     return lvs
+
+def select_at_all_resolutions(hier,
+                              **kwargs):
+    """Perform selection using the usual keywords but return ALL resolutions (BEADS and GAUSSIANS).
+    Returns dictionary with "BEADS" and "GAUSSIANS"
+    Each of those is a dictionary where keys are resolutions and values are lists of particles
+    """
+    if 'resolution' in kwargs or 'representation_type' in kwargs:
+        raise Exception("don't pass resolution or representation_type to this function")
+
+    def get_resolutions(h): #move to C++
+        while h:
+            if IMP.atom.Representation.get_is_setup(h):
+                ret = [IMP.atom.Representation(h).get_resolutions(IMP.atom.BALLS),
+                       IMP.atom.Representation(h).get_resolutions(IMP.atom.DENSITIES)]
+                return ret
+            h = h.get_parent()
+        return [[],[]]
+
+    # gather resolutions
+    init_sel = IMP.atom.Selection(hier,**kwargs)
+    init_ps = init_sel.get_selected_particles(False) # gets highest nodes
+    all_bead_res = set()
+    all_density_res = set()
+    for p in init_ps:
+        b,d = get_resolutions(IMP.atom.Hierarchy(p))
+        all_bead_res |= set(b)
+        all_density_res |= set(d)
+
+    # final selection
+    ret = {"BEADS":{},"DENSITIES":{}}
+    for res in all_bead_res:
+        sel = IMP.atom.Selection(hier,resolution=res,representation_type=IMP.atom.BALLS,**kwargs)
+        ret["BEADS"][res] = sel.get_selected_particles()
+    for res in all_density_res:
+        sel = IMP.atom.Selection(hier,resolution=res,representation_type=IMP.atom.DENSITIES,**kwargs)
+        ret["DENSITIES"][res] = sel.get_selected_particles()
+    return ret

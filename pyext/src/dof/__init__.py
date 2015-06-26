@@ -85,7 +85,7 @@ class DegreesOfFreedom(object):
 class SetupRigidBody(object):
     """Sets up and stores RigidBodyMover and BallMovers for NonRigidMembers"""
     def __init__(self,hiers,max_trans,max_rot,name):
-        self.rb = IMP.atom.create_rigid_body(hiers) #should we check first?
+        self.rb = IMP.atom.create_rigid_body(hiers)
         self.rb.set_coordinates_are_optimized(True)
         self.rb_mover = IMP.core.RigidBodyMover(self.rb,max_trans,max_rot)
         self.flexible_movers = []
@@ -130,7 +130,7 @@ class SetupSuperRigidBody(object):
 
     def _setup_srb(self,hiers,max_trans,max_rot):
         srbm = IMP.pmi.TransformMover(hiers[0].get_model(), max_trans, max_rot)
-        for p in get_all_leaves(hiers):
+        for p in IMP.pmi.tools.get_all_leaves(hiers):
             if IMP.core.RigidMember.get_is_setup(p) or IMP.core.NonRigidMember.get_is_setup(p):
                 srbm.add_rigid_body_particle(p)
             else:
@@ -143,7 +143,7 @@ class SetupSuperRigidBody(object):
 class SetupFlexibleBeads(object):
     def __init__(self,hiers,max_trans):
         self.movers = []
-        for p in get_all_leaves(hiers):
+        for p in IMP.pmi.tools.get_all_leaves(hiers):
             if IMP.core.RigidMember.get_is_setup(p) or IMP.core.NonRigidMember.get_is_setup(p):
                 raise Exception("Cannot create flexible beads from members of rigid body")
             self.movers.append(IMP.core.BallMover([p],max_trans))

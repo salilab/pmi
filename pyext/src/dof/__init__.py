@@ -91,6 +91,7 @@ class DegreesOfFreedom(object):
         all_movers = []
         for m in self.movers:
             all_movers+=m.get_movers()
+        return all_movers
 
 class SetupRigidBody(object):
     """Sets up and stores RigidBodyMover and BallMovers for NonRigidMembers"""
@@ -141,11 +142,21 @@ class SetupSuperRigidBody(object):
 
     def _setup_srb(self,hiers,max_trans,max_rot):
         srbm = IMP.pmi.TransformMover(hiers[0][0].get_model(), max_trans, max_rot)
+        super_rigid_xyzs = set()
+        super_rigid_rbs = set()
+
         for p in IMP.pmi.tools.get_all_leaves(hiers):
-            if IMP.core.RigidMember.get_is_setup(p) or IMP.core.NonRigidMember.get_is_setup(p):
-                srbm.add_rigid_body_particle(p)
+            if IMP.core.RigidMember.get_is_setup(p):
+                super_rigid_rbs.add(IMP.core.RigidMember(p).get_rigid_body())
+            elif IMP.core.NonRigidMember.get_is_setup(p):
+                super_rigid_rbs.add(IMP.core.NonRigidMember(p).get_rigid_body())
             else:
-                srbm.add_xyz_particle(p)
+                super_rigid_xyzs.add(p)
+
+        for xyz in super_rigid_xyzs:
+            srbm.add_xyz_particle(xyz)
+        for rb in super_rigid_rbs:
+            srbm.add_rigid_body_particle(rb)
         self.movers.append(srbm)
 
     def get_movers(self):

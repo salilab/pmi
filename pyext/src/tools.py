@@ -1547,23 +1547,24 @@ def select_at_all_resolutions(hier,
     # gather resolutions
     init_sel = IMP.atom.Selection(hier,**kwargs)
     init_ps = init_sel.get_selected_particles()
-    all_bead_res = set()
-    all_density_res = set()
+    all_bead_res = OrderedSet()
+    all_density_res = OrderedSet()
+
     for p in init_ps:
         b,d = get_resolutions(IMP.atom.Hierarchy(p))
-        all_bead_res |= set(b)
-        all_density_res |= set(d)
+        all_bead_res |= OrderedSet(b)
+        all_density_res |= OrderedSet(d)
 
     # final selection
-    ret = set() #{"BEADS":{},"DENSITIES":{}}
+    ret = OrderedSet()
     for res in all_bead_res:
-        sel = IMP.atom.Selection(hier,resolution=res,representation_type=IMP.atom.BALLS,**kwargs)
-        #ret["BEADS"][res] = sel.get_selected_particles()
-        ret|=set(sel.get_selected_particles())
+        sel = IMP.atom.Selection(hier,resolution=res,
+                                 representation_type=IMP.atom.BALLS,**kwargs)
+        ret|=OrderedSet(sel.get_selected_particles())
     for res in all_density_res:
-        sel = IMP.atom.Selection(hier,resolution=res,representation_type=IMP.atom.DENSITIES,**kwargs)
-        #ret["DENSITIES"][res] = sel.get_selected_particles()
-        ret|=set(sel.get_selected_particles())
+        sel = IMP.atom.Selection(hier,resolution=res,
+                                 representation_type=IMP.atom.DENSITIES,**kwargs)
+        ret|=OrderedSet(sel.get_selected_particles())
     return list(ret)
 
 
@@ -1583,6 +1584,7 @@ def get_rbs_and_beads(hiers):
             if rb not in rbs:
                 rbs.add(rb)
                 rbs_ordered.append(rb)
+            beads.append(p)
         else:
             beads.append(p)
     return rbs_ordered,beads

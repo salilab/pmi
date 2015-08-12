@@ -1485,7 +1485,7 @@ def get_hierarchies_from_spec(spec):
     @param spec Can be one of the following inputs:
                               IMP Selection, Hierarchy,
                               PMI Molecule, Residue, or a list/set
-    /note if passed PMI objects like Molecules or Residues, will return ALL resolutions!
+    \note if passed PMI objects like Molecules or Residues, will return ALL resolutions!
     """
 
     # check for consistent type, make into list
@@ -1565,3 +1565,24 @@ def select_at_all_resolutions(hier,
         #ret["DENSITIES"][res] = sel.get_selected_particles()
         ret|=set(sel.get_selected_particles())
     return list(ret)
+
+
+def get_rbs_and_beads(hiers):
+    """Returns unique objects in original order"""
+    rbs = set()
+    beads = []
+    rbs_ordered = []
+    for p in get_all_leaves(hiers):
+        if IMP.core.RigidMember.get_is_setup(p):
+            rb = IMP.core.RigidMember(p).get_rigid_body()
+            if rb not in rbs:
+                rbs.add(rb)
+                rbs_ordered.append(rb)
+        elif IMP.core.NonRigidMember.get_is_setup(p):
+            rb = IMP.core.NonRigidMember(p).get_rigid_body()
+            if rb not in rbs:
+                rbs.add(rb)
+                rbs_ordered.append(rb)
+        else:
+            beads.append(p)
+    return rbs_ordered,beads

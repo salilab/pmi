@@ -16,7 +16,7 @@ def get_atomic_residue_list(residues):
             r1.append(IMP.atom.get_one_letter_code(r.get_residue_type()))
     return ''.join(r1)
 
-class RepresentationNewTest(IMP.test.TestCase):
+class TopologyTest(IMP.test.TestCase):
 
     def test_read_sequences(self):
         '''Test if the sequence reader returns correct strings'''
@@ -179,16 +179,12 @@ class RepresentationNewTest(IMP.test.TestCase):
     def test_build_system(self):
         s=topology.System()
         st1=s.create_state()
-        seqs=topology.Sequences(self.get_input_file_name('seqs.fasta'),
-                         name_map={'Protein_1':'Prot1',
-                                   'Protein_2':'Prot2',
-                                   'Protein_3':'Prot3'})
-        m1=st1.create_molecule("Prot1",sequence=seqs["Prot1"])
+        seqs=topology.Sequences(self.get_input_file_name('seqs.fasta'))
+        m1=st1.create_molecule("Prot1",sequence=seqs["Protein_1"])
         atomic_res=m1.add_structure(self.get_input_file_name('prot.pdb'),chain_id='A',
                                     res_range=(1,10),offset=-54)
         non_atomic_res=m1.get_residues()-atomic_res
 
-        #m1.add_representation(m1[:]-atomic_res,resolutions=[1])
         m1.add_representation(atomic_res,resolutions=[0,1,10])
         m1.add_representation(non_atomic_res,resolutions=[10])
         hier = m1.build(merge_type="backbone")
@@ -202,6 +198,7 @@ class RepresentationNewTest(IMP.test.TestCase):
         for rnum,rname,anums in zip((1,2,5,6,7,8,9),'QEVVKDL',(9,9,7,7,9,8,8)):
             res = IMP.atom.Selection(hier,residue_index=rnum,
                                      resolution=0).get_selected_particles()
+
             self.assertEquals(len(res),anums)
             self.assertEquals(IMP.atom.Residue(IMP.atom.Atom(res[0]).get_parent()).get_residue_type(),
                               topology.get_residue_type_from_one_letter_code(rname))
@@ -321,6 +318,9 @@ class RepresentationNewTest(IMP.test.TestCase):
         coordsB1 = [list(map(float,IMP.core.XYZ(p).get_coordinates()))
                     for p in selB1]
         self.assertEqual(coordsA1,coordsB1)
+
+    def test_setup_densities(self):
+        pass
 
 if __name__ == '__main__':
     IMP.test.main()

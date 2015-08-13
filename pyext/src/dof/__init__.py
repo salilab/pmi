@@ -182,22 +182,21 @@ class DegreesOfFreedom(object):
         # symmetry RBs
         for ref,clone in zip(ref_rbs+ref_beads,clones_rbs+clones_beads):
             IMP.core.Reference.setup_particle(clone,ref)
-            sm = IMP.core.TransformationSymmetry(transform)
-            c = IMP.core.SingletonConstraint(sm, None, self.mdl, clone)
-            self.mdl.add_score_state(c)
+        sm = IMP.core.TransformationSymmetry(transform)
+        lsc = IMP.container.ListSingletonContainer(self.mdl,[p.get_particle_index() for p in clones_rbs+clones_beads])
+        c = IMP.container.SingletonsConstraint(sm, None, lsc)
+        self.mdl.add_score_state(c)
         print('Created symmetry restraint for',len(ref_rbs),'rigid bodies and',
               len(ref_beads),'flexible beads')
 
     def __repr__(self):
+        # would like something fancy like this:
         #- super-rigid "SRB1"
         #  - rigid "Mol1" (8 rigid, 3 nonrigid)
         #  - rigid "Mol2" (8 rigid, 3 nonrigid)
         #  - rigid "Mol3" (8 rigid, 3 nonrigid)
-
-        ret = 'DegreesOfFreedom'
-        for m in self.movers:
-            ret+=m.__repr__()+'\n'
-        return ret
+        return 'DegreesOfFreedom: ' + \
+          "\n".join(repr(m) for m in self.movers)
 
     def get_movers(self):
         """Should only return Enabled movers?"""

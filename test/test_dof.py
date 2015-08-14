@@ -71,14 +71,23 @@ class TestDOF(IMP.test.TestCase):
 
 
     def test_mc_flexible_beads(self):
+        """Test setup of flexible beads"""
         mdl = IMP.Model()
         mol = self.init_topology1(mdl)
         dof = IMP.pmi.dof.DegreesOfFreedom(mdl)
         fb_movers = dof.create_flexible_beads(mol.get_non_atomic_residues(),max_trans=1.0)
         self.assertEqual(len(fb_movers),3)
 
-    def test_constraint_symmetry(self):
+    def test_mc_flexible_beads(self):
+        """Test flex beads don't work if nothing passed"""
+        mdl = IMP.Model()
+        mols = self.init_topology3(mdl)
+        dof = IMP.pmi.dof.DegreesOfFreedom(mdl)
+        fb_movers = dof.create_flexible_beads(mols[1].get_non_atomic_residues(),max_trans=1.0)
+        self.assertEqual(len(fb_movers),0)
 
+    def test_constraint_symmetry(self):
+        """Test setup and activity of symmetry constraint"""
         ### create representation
         mdl = IMP.Model()
         s = IMP.pmi.topology.System(mdl)

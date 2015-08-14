@@ -50,6 +50,9 @@ class DegreesOfFreedom(object):
 
         ### setup RB
         hiers = IMP.pmi.tools.get_hierarchies_from_spec(body)
+        if not hiers:
+            print("WARNING: No hierarchies were passed to create_rigid_body()")
+            return []
         rb = IMP.atom.create_rigid_body(hiers)
         rb.set_coordinates_are_optimized(True)
         rb_mover = IMP.core.RigidBodyMover(rb,max_trans,max_rot)
@@ -60,20 +63,21 @@ class DegreesOfFreedom(object):
         ### setup nonrigid parts
         if nonrigid_parts:
             nr_hiers = IMP.pmi.tools.get_hierarchies_from_spec(nonrigid_parts)
-            floatkeys = [IMP.FloatKey(4), IMP.FloatKey(5), IMP.FloatKey(6)]
-            rb_idxs = set(rb.get_member_indexes())
-            for h in nr_hiers:
-                p = h.get_particle()
-                if not p.get_index() in rb_idxs:
-                    raise Exception("You tried to create nonrigid members from "
-                                     "particles that aren't in the RigidBody!")
+            if nr_hiers:
+                floatkeys = [IMP.FloatKey(4), IMP.FloatKey(5), IMP.FloatKey(6)]
+                rb_idxs = set(rb.get_member_indexes())
+                for h in nr_hiers:
+                    p = h.get_particle()
+                    if not p.get_index() in rb_idxs:
+                        raise Exception("You tried to create nonrigid members from "
+                                         "particles that aren't in the RigidBody!")
 
-                rb.set_is_rigid_member(p.get_index(),False)
-                for fk in floatkeys:
-                    p.set_is_optimized(fk,True)
-                rb_movers.append(IMP.core.BallMover([p],
-                                                    IMP.FloatKeys(floatkeys),
-                                                    nonrigid_max_trans))
+                    rb.set_is_rigid_member(p.get_index(),False)
+                    for fk in floatkeys:
+                        p.set_is_optimized(fk,True)
+                    rb_movers.append(IMP.core.BallMover([p],
+                                                        IMP.FloatKeys(floatkeys),
+                                                        nonrigid_max_trans))
         self.movers += rb_movers # probably need to store more info
         return rb_movers
 
@@ -100,7 +104,12 @@ class DegreesOfFreedom(object):
 
         ## organize hierarchies based on chains
         if chain_min_length is None and chain_max_length is None:
-            hiers = [IMP.pmi.tools.get_hierarchies_from_spec(hspec)]
+            # the "chain" is just everything together
+            h = IMP.pmi.tools.get_hierarchies_from_spec(hspec)
+            if len(h)==0:
+                print('WARNING: No hierarchies were passed to create_super_rigid_body()')
+                return srb_movers
+            hiers = [h]
         else:
             if not hasattr(hspec,'__iter__'):
                 raise Exception("You tried to make a chain without a list!")
@@ -139,11 +148,13 @@ class DegreesOfFreedom(object):
 
         fb_movers = []
         hiers = IMP.pmi.tools.get_hierarchies_from_spec(hspec)
+        if not hiers:
+            print('WARNING: No hierarchies were passed to create_flexible_beads()')
+            return fb_movers
         for p in IMP.pmi.tools.get_all_leaves(hiers):
             if IMP.core.RigidMember.get_is_setup(p) or IMP.core.NonRigidMember.get_is_setup(p):
                 raise Exception("Cannot create flexible beads from members of rigid body")
             fb_movers.append(IMP.core.BallMover([p],max_trans))
-
         self.movers += fb_movers
         return fb_movers
 
@@ -183,7 +194,8 @@ class DegreesOfFreedom(object):
         for ref,clone in zip(ref_rbs+ref_beads,clones_rbs+clones_beads):
             IMP.core.Reference.setup_particle(clone,ref)
         sm = IMP.core.TransformationSymmetry(transform)
-        lsc = IMP.container.ListSingletonContainer(self.mdl,[p.get_particle_index() for p in clones_rbs+clones_beads])
+        lsc = IMP.container.ListSingletonContainer(
+            self.mdl,[p.get_particle_index() for p in clones_rbs+clones_beads])
         c = IMP.container.SingletonsConstraint(sm, None, lsc)
         self.mdl.add_score_state(c)
         print('Created symmetry restraint for',len(ref_rbs),'rigid bodies and',

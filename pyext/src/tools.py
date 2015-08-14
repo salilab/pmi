@@ -1488,8 +1488,12 @@ def get_hierarchies_from_spec(spec):
     \note if passed PMI objects like Molecules or Residues, will return ALL resolutions!
     """
 
+    ret = []
+
     # check for consistent type, make into list
     if hasattr(spec,'__iter__'):
+        if len(spec)==0:
+            return ret
         type_set = set(type(a) for a in spec)
         if len(type_set)!=1:
             raise Exception('get_hierarchies_from_spec: can only pass one type of object at a time')
@@ -1498,8 +1502,6 @@ def get_hierarchies_from_spec(spec):
     else:
         tp = type(spec)
         spec = [spec]
-
-    ret = []
 
     # if PMI object, get all resolutions. otherwise just return the hiers
     if tp==IMP.pmi.topology.Residue:

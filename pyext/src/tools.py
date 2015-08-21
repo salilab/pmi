@@ -1534,6 +1534,9 @@ def select_at_all_resolutions(hier,
     """Perform selection using the usual keywords but return ALL resolutions (BEADS and GAUSSIANS).
     Returns in flat list!
     """
+
+    if type(hier) is not IMP.atom.Hierarchy:
+        raise Exception('select_at_all_resolutions: you have to pass an IMP Hierarchy')
     if 'resolution' in kwargs or 'representation_type' in kwargs:
         raise Exception("don't pass resolution or representation_type to this function")
 

@@ -14,7 +14,7 @@ class TestDOF(IMP.test.TestCase):
         m1 = st1.create_molecule("Prot1",sequence=seqs["Protein_1"])
         atomic_res = m1.add_structure(self.get_input_file_name('prot.pdb'),
                                       chain_id='A',res_range=(1,10),offset=-54)
-        m1.add_representation(atomic_res,resolutions=[0])
+        m1.add_representation(atomic_res,resolutions=[0,10])
         m1.add_representation(resolutions=[1])
         hier = m1.build()
         return m1

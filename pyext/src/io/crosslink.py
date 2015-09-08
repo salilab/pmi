@@ -81,8 +81,9 @@ class _ProteinsResiduesArray(tuple):
         '''
         @input_data can be a dict or a tuple
         '''
+        self.cldbsk=_CrossLinkDataBaseStandardKeys()
         if type(input_data) is dict:
-            self.cldbsk=_CrossLinkDataBaseStandardKeys()
+
             p1=input_data[self.cldbsk.protein1_key]
             p2=input_data[self.cldbsk.protein2_key]
             r1=input_data[self.cldbsk.residue1_key]
@@ -391,6 +392,7 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
                         new_xl_dict[id].append(xl)
         return CrossLinkDataBase(self.cldbkc,new_xl_dict)
 
+
     def merge(self,CrossLinkDataBase1,CrossLinkDataBase2):
         '''
         This function merges two cross-link datasets so that if two conflicting crosslinks have the same
@@ -399,7 +401,7 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
         '''
         pass
 
-    def append(self,CrossLinkDataBase2):
+    def append_database(self,CrossLinkDataBase2):
         '''
         This function append one cross-link dataset to another. Unique ids will be renamed to avoid
         conflicts.
@@ -419,7 +421,7 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
         self.data_base=new_data_base
         self.__update__()
 
-    def set_value(self,key,new_value,FilterOperator):
+    def set_value(self,key,new_value,FilterOperator=None):
         '''
         This function changes the value for a given key in the database
         For instance one can change the name of a protein
@@ -432,7 +434,10 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
         '''
 
         for xl in self:
-            if FilterOperator.evaluate(xl):
+            if FilterOperator is not None:
+                if FilterOperator.evaluate(xl):
+                    xl[key]=new_value
+            else:
                 xl[key]=new_value
         self.__update__
 
@@ -450,7 +455,19 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
                 xl[self.residue2_key]=xl[self.residue2_key]+offset
         self.__update__
 
-
+    def create_new_keyword(self,keyword,values_from_keyword=None):
+        '''
+        This function creates a new keyword for the whole database and set the values from
+        and existing keyword (optional), otherwise the values are set to None
+        @param keyword the new keyword name:
+        @param values_from_keyword the keyword from which we are copying the values:
+        '''
+        for xl in self:
+            if values_from_keyword is not None:
+                xl[keyword] = xl[values_from_keyword]
+            else:
+                xl[keyword] = None
+        self.__update__
 
     def clone_protein(self,protein_name,new_protein_name):
         new_xl_dict={}
@@ -517,3 +534,240 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
                         outstr+="--- "+str(k)+" "+str(xl[k])+"\n"
                 outstr+="-------------\n"
         return outstr
+
+    def dump(self,json_filename):
+        import json
+        with open(json_filename, 'w') as fp:
+            json.dump(self.data_base, fp, sort_keys=True, indent=2)
+
+    def load(self,json_filename):
+        import json
+        with open(json_filename, 'r') as fp:
+            self.data_base = json.load(fp)
+        self.__update__()
+
+class CrossLinkDataBaseFromStructure(object):
+    '''
+    This class generates a CrossLinkDataBase from a given structure
+    '''
+    def __init__(self,representation,
+                      residue_types_1=["K"],
+                      residue_types_2=["K"],
+                      reactivity_range=[0,3],
+                      kt=1.0):
+
+        cldbkc=CrossLinkDataBaseKeywordsConverter()
+        cldbkc.set_protein1_key("Protein1")
+        cldbkc.set_protein2_key("Protein2")
+        cldbkc.set_residue1_key("Residue1")
+        cldbkc.set_residue2_key("Residue2")
+        self.cldb=CrossLinkDataBase(cldbkc)
+        self.representation=representation
+        self.residue_types_1=residue_types_1
+        self.residue_types_2=residue_types_2
+        self.kt=kt
+        self.indexes_dict1={}
+        self.indexes_dict2={}
+        self.protein_residue_dict={}
+        self.reactivity_dictionary={}
+        self.euclidean_interacting_pairs=None
+        self.xwalk_interacting_pairs=None
+        import random
+
+        for protein in self.representation.sequence_dict.keys():
+            # we are saving a dictionary with protein name, residue number and random reactivity of the residue
+            seq=self.representation.sequence_dict[protein]
+            residues=[i for i in range(1,len(seq)+1) if ((seq[i-1] in self.residue_types_1) or (seq[i-1] in self.residue_types_2))]
+            for i in range(1,len(seq)+1):
+                if ((seq[i-1] in self.residue_types_1) or (seq[i-1] in self.residue_types_2)):
+                    print i, protein, seq[i-1]
+
+            for r in residues:
+                self.reactivity_dictionary[(protein,r)]=random.uniform(reactivity_range[0],reactivity_range[1])
+
+            residues1=[i for i in range(1,len(seq)+1) if seq[i-1] in self.residue_types_1]
+            residues2=[i for i in range(1,len(seq)+1) if seq[i-1] in self.residue_types_2]
+            for r in residues1:
+                h=IMP.pmi.tools.select_by_tuple(self.representation,(r,r,protein),resolution=1)[0]
+                p=h.get_particle()
+                index=p.get_index()
+                self.indexes_dict1[index]=(protein,r)
+                self.protein_residue_dict[(protein,r)]=index
+            for r in residues2:
+                h=IMP.pmi.tools.select_by_tuple(self.representation,(r,r,protein),resolution=1)[0]
+                p=h.get_particle()
+                index=p.get_index()
+                self.indexes_dict2[index]=(protein,r)
+                self.protein_residue_dict[(protein,r)]=index
+
+
+    def get_data_base(self,total_number_of_spectra,
+                                  ambiguity_probability=0.1,
+                                  noise=0.01,
+                                  distance=21,
+                                  xwalk_bin_path=None):
+
+        from random import random
+        number_of_spectra=1
+
+        self.cldb.data_base[str(number_of_spectra)]=[]
+        while number_of_spectra<total_number_of_spectra:
+            if random() > ambiguity_probability and len(self.cldb.data_base[str(number_of_spectra)]) != 0:
+                    # new spectrum
+                number_of_spectra+=1
+                self.cldb.data_base[str(number_of_spectra)]=[]
+            noisy="F"
+            if random() > noise:
+                # not noisy crosslink
+                pra,dist=self.get_random_residue_pair(distance,xwalk_bin_path)
+
+            else:
+                # noisy crosslink
+                pra,dist=self.get_random_residue_pair(None,None)
+                noisy="T"
+
+            new_xl={}
+            new_xl[self.cldb.protein1_key]=pra[0]
+            new_xl[self.cldb.protein2_key]=pra[1]
+            new_xl[self.cldb.residue1_key]=pra[2]
+            new_xl[self.cldb.residue2_key]=pra[3]
+            new_xl["Noisy"]=noisy
+            new_xl["Reactivity_Residue1"]=self.reactivity_dictionary[(pra[0],pra[2])]
+            new_xl["Reactivity_Residue2"]=self.reactivity_dictionary[(pra[1],pra[3])]
+            new_xl["TargetDistance"]=dist
+            new_xl["NoiseProbability"]=noise
+            new_xl["AmbiguityProbability"]=ambiguity_probability
+            new_xl["TargetDistance"]=dist
+            # getting if it is intra or inter rigid body
+            (p1,p2)=IMP.kernel.get_particles(self.representation.m,[self.protein_residue_dict[(pra[0],pra[2])],
+                                                                    self.protein_residue_dict[(pra[1],pra[3])]])
+            if(IMP.core.RigidMember.get_is_setup(p1) and
+               IMP.core.RigidMember.get_is_setup(p2) and
+               IMP.core.RigidMember(p1).get_rigid_body() ==
+               IMP.core.RigidMember(p2).get_rigid_body()):
+                new_xl["InterRigidBody"] = False
+            elif (IMP.core.RigidMember.get_is_setup(p1) and
+               IMP.core.RigidMember.get_is_setup(p2) and
+               IMP.core.RigidMember(p1).get_rigid_body() !=
+               IMP.core.RigidMember(p2).get_rigid_body()):
+                new_xl["InterRigidBody"] = True
+            else:
+                new_xl["InterRigidBody"] = None
+
+            self.cldb.data_base[str(number_of_spectra)].append(new_xl)
+        self.cldb.__update__()
+        return self.cldb
+
+
+    def get_random_residue_pair(self,distance=None,xwalk_bin_path=None):
+        import IMP.pmi.tools
+        import math
+        from random import choice
+        if distance is None:
+        # get a random pair
+            while True:
+                protein1=choice(self.representation.sequence_dict.keys())
+                protein2=choice(self.representation.sequence_dict.keys())
+                seq1=self.representation.sequence_dict[protein1]
+                seq2=self.representation.sequence_dict[protein2]
+                residue1=choice([i for i in range(1,len(seq1)+1) if seq1[i-1] in self.residue_types_1])
+                residue2=choice([i for i in range(1,len(seq2)+1) if seq2[i-1] in self.residue_types_2])
+                h1=IMP.pmi.tools.select_by_tuple(self.representation,(residue1,residue1,protein1),resolution=1)[0]
+                h2=IMP.pmi.tools.select_by_tuple(self.representation,(residue2,residue2,protein2),resolution=1)[0]
+                particle_distance=IMP.core.get_distance(IMP.core.XYZ(h1.get_particle()),IMP.core.XYZ(h2.get_particle()))
+                if (protein1,residue1) != (protein2,residue2):
+                    break
+        else:
+            # get a pair of residues whose distance is below the threshold
+            if not xwalk_bin_path:
+                gcpf = IMP.core.GridClosePairsFinder()
+                gcpf.set_distance(distance)
+                if not self.euclidean_interacting_pairs:
+                    self.euclidean_interacting_pairs=gcpf.get_close_pairs(self.representation.m,
+                                self.indexes_dict1.keys(),
+                                self.indexes_dict2.keys())
+                interacting_pairs_weighted=[]
+                for pair in self.euclidean_interacting_pairs:
+                    weight1=math.exp(-self.reactivity_dictionary[self.indexes_dict1[pair[0]]]/self.kt)
+                    weight2=math.exp(-self.reactivity_dictionary[self.indexes_dict2[pair[1]]]/self.kt)
+                    interacting_pairs_weighted.append((pair,weight1*weight2))
+
+                while True:
+                    pair=self.weighted_choice(interacting_pairs_weighted)
+                    protein1,residue1=self.indexes_dict1[pair[0]]
+                    protein2,residue2=self.indexes_dict2[pair[1]]
+                    particle_pair=IMP.kernel.get_particles(self.representation.m,pair)
+                    particle_distance=IMP.core.get_distance(IMP.core.XYZ(particle_pair[0]),IMP.core.XYZ(particle_pair[1]))
+                    if particle_distance<distance and (protein1,residue1) != (protein2,residue2):
+                        break
+
+            else:
+                if not self.xwalk_interacting_pairs:
+                    self.xwalk_interacting_pairs=self.get_xwalk_distances(xwalk_bin_path,distance)
+                interacting_pairs_weighted=[]
+
+                print(self.reactivity_dictionary)
+
+                for pair in self.xwalk_interacting_pairs:
+                    protein1=pair[0]
+                    protein2=pair[1]
+                    residue1=pair[2]
+                    residue2=pair[3]
+                    weight1=math.exp(-self.reactivity_dictionary[(protein1,residue1)]/self.kt)
+                    weight2=math.exp(-self.reactivity_dictionary[(protein2,residue2)]/self.kt)
+                    interacting_pairs_weighted.append((pair,weight1*weight2))
+
+                pair=self.weighted_choice(interacting_pairs_weighted)
+                protein1=pair[0]
+                protein2=pair[1]
+                residue1=pair[2]
+                residue2=pair[3]
+                particle_distance=float(pair[4])
+
+
+
+        return _ProteinsResiduesArray((protein1,protein2,residue1,residue2)),particle_distance
+
+    def get_xwalk_distances(self,xwalk_bin_path,distance):
+        import IMP.pmi.output
+        import os
+        o=IMP.pmi.output.Output(atomistic=True)
+        o.init_pdb("xwalk.pdb",self.representation.prot)
+        o.write_pdb("xwalk.pdb")
+        namechainiddict=o.dictchain["xwalk.pdb"]
+        chainiddict={}
+
+        for key in namechainiddict: chainiddict[namechainiddict[key]]=key
+        xwalkout=os.popen('java -Xmx256m -cp ' + xwalk_bin_path +' Xwalk -infile xwalk.pdb -aa1 lys -aa2 lys -a1 cb -a2 cb -max '+str(distance)+' -bb').read()
+
+        output_list_of_distance=[]
+        for line in xwalkout.split("\n")[0:-2]:
+            tockens=line.split()
+            first=tockens[2]
+            second=tockens[3]
+            distance=float(tockens[6])
+            fs=first.split("-")
+            ss=second.split("-")
+            chainid1=fs[2]
+            chainid2=ss[2]
+            protein1=chainiddict[chainid1]
+            protein2=chainiddict[chainid2]
+            residue1=int(fs[1])
+            residue2=int(ss[1])
+            print(protein1,protein2,residue1,residue2,distance)
+            output_list_of_distance.append((protein1,protein2,residue1,residue2,distance))
+        return output_list_of_distance
+
+
+    def weighted_choice(self,choices):
+
+        import random
+        # from http://stackoverflow.com/questions/3679694/a-weighted-version-of-random-choice
+        total = sum(w for c, w in choices)
+        r = random.uniform(0, total)
+        upto = 0
+        for c, w in choices:
+            if upto + w > r:
+                return c
+            upto += w
+        assert False, "Shouldn't get here"

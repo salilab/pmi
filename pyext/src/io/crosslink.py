@@ -24,6 +24,8 @@ class _CrossLinkDataBaseStandardKeys(object):
         self.type[self.residue1_key]=int
         self.residue2_key="Residue2"
         self.type[self.residue2_key]=int
+        self.site_pairs_key="SitePairs"
+        self.type[self.site_pairs_key]=str
         self.unique_id_key="XLUniqueID"
         self.type[self.unique_id_key]=str
         self.unique_sub_index_key="XLUniqueSubIndex"
@@ -185,10 +187,15 @@ class CrossLinkDataBaseKeywordsConverter(_CrossLinkDataBaseStandardKeys):
         self.converter={}
         self.backward_converter={}
         _CrossLinkDataBaseStandardKeys.__init__(self)
-        self.compulsory_keys=set([self.protein1_key,
+        # either you have protein1, protein2, residue1, residue2
+        self.compulsory_keys_1=set([self.protein1_key,
                                   self.protein2_key,
                                   self.residue1_key,
                                   self.residue2_key])
+        # or protein1, protein2, list_of_residue_pairs
+        self.compulsory_keys_2=set([self.protein1_key,
+                                  self.protein2_key,
+                                  self.site_pairs_key])
         self.setup_keys=set()
 
     def check_keys(self):
@@ -196,7 +203,8 @@ class CrossLinkDataBaseKeywordsConverter(_CrossLinkDataBaseStandardKeys):
         Is a function that check whether necessary keys are setup
         '''
         setup_keys=set(self.get_setup_keys())
-        if self.compulsory_keys & setup_keys != self.compulsory_keys:
+        if  self.compulsory_keys_1 & setup_keys != self.compulsory_keys_1 and \
+            self.compulsory_keys_2 & setup_keys != self.compulsory_keys_2:
             raise KeyError("CrossLinkDataBaseKeywordsConverter: must setup all necessary keys")
 
     def get_setup_keys(self):
@@ -225,6 +233,10 @@ class CrossLinkDataBaseKeywordsConverter(_CrossLinkDataBaseStandardKeys):
         self.converter[origin_key]=self.residue2_key
         self.backward_converter[self.residue2_key]=origin_key
 
+    def set_site_pairs_key(self,origin_key):
+        self.converter[origin_key]=self.site_pairs_key
+        self.backward_converter[self.site_pairs_key]=origin_key
+
     def set_idscore_key(self,origin_key):
         self.converter[origin_key]=self.id_score_key
         self.backward_converter[self.id_score_key]=origin_key
@@ -251,6 +263,38 @@ class CrossLinkDataBaseKeywordsConverter(_CrossLinkDataBaseStandardKeys):
         self.check_keys()
         return self.backward_converter
 
+class ResiduePairListParser():
+    '''
+    A class to handle different styles of site pairs parsers.
+    Implemented styles:
+    CHAMOT-ROOKE: [Y3-S756;Y3-K759;K4-S756;K4-K759] for crosslinks
+                  [Y3-;K4-] for dead-ends
+    '''
+    import re
+    def __init__(self,style):
+        if style in ["CHAMOT-ROOKE"]:
+            self.style=style
+        else:
+            raise Error("ResiduePairListParser: unknown list parser style")
+
+    def get_list(self,input_string):
+        if self.style == "CHAMOT-ROOKE":
+            input_string=input_string.replace("[","")
+            input_string=input_string.replace("]","")
+            input_string_pairs=input_string.split(";")
+            residue_pair_indexes=[]
+            for s in input_string_pairs:
+                m1=self.re.search(r'^(A|C|D|E|F|G|H|I|K|L|M|N|O|P|Q|R|S|T|Y|X|W)(\d+)-(A|C|D|E|F|G|H|I|K|L|M|N|O|P|Q|R|S|T|Y|X|W)(\d+)$',s)
+                m2=self.re.search(r'^(A|C|D|E|F|G|H|I|K|L|M|N|O|P|Q|R|S|T|Y|X|W)(\d+)-$',s)
+                if m1:
+                    # cross link
+                    residue_type_1,residue_index_1,residue_type_2,residue_index_2=m1.group(1,2,3,4)
+                    residue_pair_indexes.append((residue_index_1,residue_index_2))
+                elif m2:
+                    # dead end
+                    residue_type_1,residue_index_1=m2.group(1,2)
+            return  residue_pair_indexes
+
 class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
     import operator
     '''
@@ -258,10 +302,12 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
     operations, adding cross-links, merge datasets...
     '''
 
-    def __init__(self,CrossLinkDataBaseKeywordsConverter,data_base=None):
+    def __init__(self,CrossLinkDataBaseKeywordsConverter,data_base=None,list_parser=None):
         '''
         To be constructed it needs a CrossLinkDataBaseKeywordsConverter instance first
-
+        @param CrossLinkDataBaseKeywordsConverter an instance of converter
+        @param data_base an instance of CrossLinkDataBase to build the new database on
+        @param list_parser an instance of ResiduePairListParser
         '''
         if data_base is None:
             self.data_base = {}
@@ -270,6 +316,7 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
         self.cldbkc=CrossLinkDataBaseKeywordsConverter
         _CrossLinkDataBaseStandardKeys.__init__(self)
         self.converter=CrossLinkDataBaseKeywordsConverter.get_converter()
+        self.list_parser=list_parser
         self.__update__()
 
     def __update__(self):
@@ -280,12 +327,14 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
         self.update_cross_link_redundancy()
 
     def __iter__(self):
-        for k in self.data_base:
+        sorted_ids=sorted(self.data_base.keys())
+        for k in sorted_ids:
             for xl in self.data_base[k]:
                 yield xl
 
     def xlid_iterator(self):
-        for xlid in self.data_base.keys():
+        sorted_ids=sorted(self.data_base.keys())
+        for xlid in sorted_ids:
             yield xlid
 
     def __getitem__(self,xlid):
@@ -306,21 +355,60 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
 
     def create_set_from_file(self,csv_file_name):
         xl_list=IMP.pmi.tools.get_db_from_csv(csv_file_name)
-        new_xl_dict={}
-        for nxl,xl in enumerate(xl_list):
-            new_xl={}
-            for k in xl:
-                if k in self.converter:
-                    new_xl[self.converter[k]]=self.type[self.converter[k]](xl[k])
+
+        if not self.list_parser:
+            # normal procedure without a list_parser
+            # each line is a cross-link
+            new_xl_dict={}
+            for nxl,xl in enumerate(xl_list):
+                new_xl={}
+                for k in xl:
+                    if k in self.converter:
+                        new_xl[self.converter[k]]=self.type[self.converter[k]](xl[k])
+                    else:
+                        new_xl[k]=xl[k]
+                if self.unique_id_key in self.cldbkc.get_setup_keys():
+                    if new_xl[self.unique_id_key] not in new_xl_dict:
+                        new_xl_dict[new_xl[self.unique_id_key]]=[new_xl]
+                    else:
+                        new_xl_dict[new_xl[self.unique_id_key]].append(new_xl)
                 else:
-                    new_xl[k]=xl[k]
-            if self.unique_id_key in self.cldbkc.get_setup_keys():
-                if new_xl[self.unique_id_key] not in new_xl_dict:
-                    new_xl_dict[new_xl[self.unique_id_key]]=[new_xl]
-                else:
-                    new_xl_dict[new_xl[self.unique_id_key]].append(new_xl)
-            else:
-                new_xl_dict[str(nxl)]=[new_xl]
+                    new_xl_dict[str(nxl)]=[new_xl]
+
+
+        else:
+            # with a list_parser, a line can be a list of ambiguous crosslinks
+            new_xl_dict={}
+            for nxl,entry in enumerate(xl_list):
+
+                # first get the translated keywords
+                new_dict={}
+                if self.site_pairs_key not in self.cldbkc.get_setup_keys():
+                    raise Error("CrossLinkDataBase: expecting a site_pairs_key for the site pair list parser")
+                for k in entry:
+                    if k in self.converter:
+                        new_dict[self.converter[k]]=self.type[self.converter[k]](entry[k])
+                    else:
+                        new_dict[k]=entry[k]
+
+                residue_pair_list=self.list_parser.get_list(new_dict[self.site_pairs_key])
+
+                # then create the crosslinks
+                for p in residue_pair_list:
+                    new_xl={}
+                    for k in new_dict:
+                        new_xl[k]=new_dict[k]
+                    new_xl[self.residue1_key]=self.type[self.residue1_key](p[0])
+                    new_xl[self.residue2_key]=self.type[self.residue2_key](p[1])
+
+                    if self.unique_id_key in self.cldbkc.get_setup_keys():
+                        if new_xl[self.unique_id_key] not in new_xl_dict:
+                            new_xl_dict[new_xl[self.unique_id_key]]=[new_xl]
+                        else:
+                            new_xl_dict[new_xl[self.unique_id_key]].append(new_xl)
+                    else:
+                        new_xl_dict[str(nxl)]=[new_xl]
+
 
         self.data_base=new_xl_dict
         self.name=csv_file_name

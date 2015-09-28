@@ -1277,15 +1277,6 @@ def get_random_data_point(
     stddev = math.sqrt(max(rmean2 - rmean * rmean, 0.))
     return rmean, stddev
 
-is_already_printed = {}
-
-
-def print_deprecation_warning(old_name, new_name):
-    if old_name not in is_already_printed:
-        print("WARNING: " + old_name + " is deprecated, use " + new_name + " instead")
-        is_already_printed[old_name] = True
-
-
 def print_multicolumn(list_of_strings, ncolumns=2, truncate=40):
 
     l = list_of_strings

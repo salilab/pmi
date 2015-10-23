@@ -37,7 +37,7 @@ class ElectronMicroscopy2D():
             resolution=resolution)
         #print particles
 
-        # read PGM FORMAT images (format conversion should be done through EM2EM)
+        # read PGM FORMAT images
         # format conversion recommendataion - first run "e2proc2d.py $FILE ${NEW_FILE}.pgm"
         # then, run "convert ${NEW_FILE}.pgm -compress none ${NEW_FILE2}.pgm"
         em2d = IMP.em2d.PCAFitRestraint(

@@ -24,7 +24,8 @@ class ElectronMicroscopy2D():
         pixel_size,
         image_resolution,
         projection_number,
-        resolution=None):
+        resolution=None,
+        n_components = 1):
 
         self.weight=1.0
         self.m = representation.prot.get_model()
@@ -40,8 +41,12 @@ class ElectronMicroscopy2D():
         # read PGM FORMAT images
         # format conversion recommendataion - first run "e2proc2d.py $FILE ${NEW_FILE}.pgm"
         # then, run "convert ${NEW_FILE}.pgm -compress none ${NEW_FILE2}.pgm"
-        em2d = IMP.em2d.PCAFitRestraint(
-            particles, images, pixel_size, image_resolution, projection_number, True)
+        if (n_components >= 2) :    # Number of the largest components to be considered for the EM image
+            em2d = IMP.em2d.PCAFitRestraint(
+                particles, images, pixel_size, image_resolution, projection_number, True, n_components)
+        else :
+            em2d = IMP.em2d.PCAFitRestraint(
+                particles, images, pixel_size, image_resolution, projection_number, True)
         self.rs.add_restraint(em2d)
 
     def set_label(self, label):
@@ -130,7 +135,6 @@ class ElectronMicroscopy2D_FFT():
             print IMP.core.XYZR(p).get_radius()
             print IMP.atom.Mass(p).get_mass()
         """
-
         container = IMP.container.ListSingletonContainer(self.m, particles)
         em2d_restraint.set_particles(container)
 

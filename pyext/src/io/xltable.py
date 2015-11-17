@@ -8,6 +8,8 @@ from Bio import SeqIO
 from Bio.PDB.PDBParser import PDBParser
 import numpy as np
 from scipy.spatial.distance import cdist
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 

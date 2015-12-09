@@ -266,18 +266,18 @@ class ResiduePairListParser():
     '''
     A class to handle different styles of site pairs parsers.
     Implemented styles:
-    CHAMOT-ROOKE: [Y3-S756;Y3-K759;K4-S756;K4-K759] for crosslinks
+    MSSTUDIO: [Y3-S756;Y3-K759;K4-S756;K4-K759] for crosslinks
                   [Y3-;K4-] for dead-ends
     '''
     import re
     def __init__(self,style):
-        if style in ["CHAMOT-ROOKE"]:
+        if style in ["MSSTUDIO"]:
             self.style=style
         else:
             raise Error("ResiduePairListParser: unknown list parser style")
 
     def get_list(self,input_string):
-        if self.style == "CHAMOT-ROOKE":
+        if self.style == "MSSTUDIO":
             input_string=input_string.replace("[","")
             input_string=input_string.replace("]","")
             input_string_pairs=input_string.split(";")
@@ -415,8 +415,10 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
                             new_xl_dict[new_xl[self.unique_id_key]].append(new_xl)
                     else:
                         if str(nxl) not in new_xl_dict:
+                            new_xl[self.unique_id_key]=str(nxl+1)
                             new_xl_dict[str(nxl)]=[new_xl]
                         else:
+                            new_xl[self.unique_id_key]=str(nxl+1)
                             new_xl_dict[str(nxl)].append(new_xl)
 
         self.data_base=new_xl_dict

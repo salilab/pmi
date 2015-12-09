@@ -50,7 +50,10 @@ class GaussianEMRestraint(object):
         # setup target GMM
         self.m = self.densities[0].get_model()
         if scale_target_to_mass:
-            target_mass_scale = sum((IMP.atom.Mass(p).get_mass() for h in densities for p in IMP.atom.get_leaves(h)))
+            def hierarchy_mass(h):
+                leaves = IMP.atom.get_leaves(h)
+                return sum(IMP.atom.Mass(p).get_mass() for p in leaves)
+            target_mass_scale = sum(hierarchy_mass(h) for h in densities)
         print('will scale target mass by', target_mass_scale)
         if target_fn != '':
             self.target_ps = []

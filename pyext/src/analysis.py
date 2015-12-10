@@ -1054,6 +1054,7 @@ class GetModelDensity(object):
 
         dmap = IMP.em.SampledDensityMap(ps, resolution, self.voxel)
         dmap.calcRMS()
+        dmap.set_was_used(True)
         if name not in self.densities:
             self.densities[name] = dmap
         else:
@@ -1061,6 +1062,7 @@ class GetModelDensity(object):
             bbox2 = IMP.em.get_bounding_box(dmap)
             bbox1 += bbox2
             dmap3 = IMP.em.create_density_map(bbox1,self.voxel)
+            dmap3.set_was_used(True)
             dmap3.add(dmap)
             dmap3.add(self.densities[name])
             self.densities[name] = dmap3

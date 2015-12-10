@@ -1236,7 +1236,7 @@ class Representation(object):
 
                 if IMP.core.RigidBodyMember.get_is_setup(fb):
                     d=IMP.core.RigidBodyMember(fb).get_rigid_body()
-                elif MP.core.XYZ.get_is_setup(fb):
+                elif IMP.core.XYZ.get_is_setup(fb):
                     d=IMP.core.XYZ(fb)
 
                 IMP.core.transform(d, transformation)

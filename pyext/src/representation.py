@@ -1634,7 +1634,7 @@ class Representation(object):
                     residue_indexes=list(range(s[1][0],
                                           s[1][1] + 1)))
                 if len(sel.get_selected_particles()) == 0:
-                    print("set_rigid_bodies: selected particle does not exists")
+                    print("set_rigid_bodies: selected particle does not exist")
                 for p in sel.get_selected_particles():
                     # if not p in self.floppy_bodies:
                     if IMP.core.RigidMember.get_is_setup(p):
@@ -1646,7 +1646,7 @@ class Representation(object):
             elif type(s) == type(str()):
                 sel = IMP.atom.Selection(self.prot, molecule=s)
                 if len(sel.get_selected_particles()) == 0:
-                    print("set_rigid_bodies: selected particle does not exists")
+                    print("set_rigid_bodies: selected particle does not exist")
                 for p in sel.get_selected_particles():
                     # if not p in self.floppy_bodies:
                     if IMP.core.RigidMember.get_is_setup(p):
@@ -1722,7 +1722,7 @@ class Representation(object):
                     residue_indexes=list(range(s[0],
                                           s[1] + 1)))
                 if len(sel.get_selected_particles()) == 0:
-                    print("set_rigid_bodies: selected particle does not exists")
+                    print("set_rigid_bodies: selected particle does not exist")
                 for p in sel.get_selected_particles():
                     if IMP.core.RigidMember.get_is_setup(p):
                         rb = IMP.core.RigidMember(p).get_rigid_body()
@@ -1732,7 +1732,7 @@ class Representation(object):
             elif type(s) == type(str()):
                 sel = IMP.atom.Selection(self.prot, molecule=s)
                 if len(sel.get_selected_particles()) == 0:
-                    print("set_rigid_bodies: selected particle does not exists")
+                    print("set_rigid_bodies: selected particle does not exist")
                 for p in sel.get_selected_particles():
                     # if not p in self.floppy_bodies:
                     if IMP.core.RigidMember.get_is_setup(p):

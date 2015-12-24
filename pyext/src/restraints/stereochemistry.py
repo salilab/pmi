@@ -38,7 +38,7 @@ class ExcludedVolumeSphere(object):
                  other_hierarchies=None,
                  resolution=1000, kappa=1.0):
         """
-        @param included_objects -   Can be a PMI object or list of objects (residues, molecules and/or systems), 
+        @param included_objects -   Can be a single PMI object or list/set of PMI objects (residues, molecules and/or systems), 
                                         OR a Representation object (DEPRECATED)
         @param other_pmi_objects -  A PMI object or list of PMI objects.  Initializes a bipartite restraint 
                                         between included_objects and other_pmi_objects
@@ -57,15 +57,18 @@ class ExcludedVolumeSphere(object):
         # See if included_objects is a PMI2 object or list of them.  I am so sorry for this horrible if statement
         if (  isinstance(included_objects, IMP.pmi.topology.SystemBase) 
              or isinstance(included_objects, IMP.pmi.topology.Residue) 
-             or ( type(included_objects) is list and ( isinstance(included_objects[0], IMP.pmi.topology.SystemBase) or isinstance(included_objects[0], IMP.pmi.topology.Residue)) )  ):
+             or ( type(included_objects) is list and ( isinstance(included_objects[0], IMP.pmi.topology.SystemBase) or isinstance(included_objects[0], IMP.pmi.topology.Residue)) )  
+             or ( type(included_objects) is set) ):
 
-            if type(included_objects) is not list:
-                included_objects=[included_objects]
 
-            self.m = included_objects[0].get_hierarchy().get_model()
+            # Ensure that we convert singular input into a list
+            if isinstance(included_objects, IMP.pmi.topology.SystemBase):
+                included_objects = [included_objects]
+
             particles=[]
 
             for obj in included_objects:
+                self.m = obj.get_hierarchy().get_model()
                 particles += IMP.atom.Selection(obj.get_hierarchy(), resolution=resolution).get_selected_particles()
 
             if other_pmi_objects is not None:
@@ -76,7 +79,7 @@ class ExcludedVolumeSphere(object):
                     other_particles += IMP.atom.Selection(obj.get_hierarchy, resolution=resolution).get_selected_particles()
                 bipartite = True
 
-        elif type(included_objects) is IMP.pmi.representation.Representation:
+        elif isinstance(included_objects, IMP.pmi.representation.Representation):
             self.m = included_objects.prot.get_model()
             particles = IMP.pmi.tools.select(
                     included_objects,

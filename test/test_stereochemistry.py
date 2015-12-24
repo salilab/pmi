@@ -50,7 +50,7 @@ class StereochemistryTests(IMP.test.TestCase):
         mol.add_representation(mol.get_atomic_residues(), resolutions=[1,10])
         mol.add_representation(mol.get_non_atomic_residues(), resolutions=[10])
         s.build()
-        
+
         # Test that the correct number of particles are included
         ev = IMP.pmi.restraints.stereochemistry.ExcludedVolumeSphere(mol, resolution=1)
         self.assertEqual(len(ev.cpc.get_all_possible_indexes()), 748)
@@ -62,6 +62,10 @@ class StereochemistryTests(IMP.test.TestCase):
         ev = IMP.pmi.restraints.stereochemistry.ExcludedVolumeSphere(mol)
         self.assertEqual(len(ev.cpc.get_all_possible_indexes()), 92)
 
+        resis = mol.residue_range(15,20)
+
+        ev = IMP.pmi.restraints.stereochemistry.ExcludedVolumeSphere(resis, resolution=1)
+        self.assertEqual(len(ev.cpc.get_all_possible_indexes()), 5)
 
 if __name__ == '__main__':
     IMP.test.main()

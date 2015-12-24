@@ -38,13 +38,13 @@ class ExcludedVolumeSphere(object):
                  other_hierarchies=None,
                  resolution=1000, kappa=1.0):
         """
-        @param included_objects -   Can be a single PMI object or list/set of PMI objects (residues, molecules and/or systems), 
+        @param included_objects -   Can be a single PMI object or list/set of PMI objects (residues, molecules and/or systems),
                                         OR a Representation object (DEPRECATED)
-        @param other_pmi_objects -  A PMI object or list of PMI objects.  Initializes a bipartite restraint 
+        @param other_pmi_objects -  A PMI object or list of PMI objects.  Initializes a bipartite restraint
                                         between included_objects and other_pmi_objects
         @param hierarchies -        (DEPRECATED) the hierarchy included in the restraint. Only used with a Representation
-                                        object as included_objects                          
-        @param other_hierarchies -  (DEPRECATED) Initilizes a bipartite restraint between hierarchies 
+                                        object as included_objects
+        @param other_hierarchies -  (DEPRECATED) Initilizes a bipartite restraint between hierarchies
                                         and other_hierarchies
         @param resolution -         The resolution particles at which to impose the restraint.  By default, the coarsest
                                         particles will be chosen. If a number is chosen, for each particle, the closest
@@ -55,9 +55,9 @@ class ExcludedVolumeSphere(object):
         bipartite=False
 
         # See if included_objects is a PMI2 object or list of them.  I am so sorry for this horrible if statement
-        if (  isinstance(included_objects, IMP.pmi.topology.SystemBase) 
-             or isinstance(included_objects, IMP.pmi.topology.Residue) 
-             or ( type(included_objects) is list and ( isinstance(included_objects[0], IMP.pmi.topology.SystemBase) or isinstance(included_objects[0], IMP.pmi.topology.Residue)) )  
+        if (  isinstance(included_objects, IMP.pmi.topology.SystemBase)
+             or isinstance(included_objects, IMP.pmi.topology.Residue)
+             or ( type(included_objects) is list and ( isinstance(included_objects[0], IMP.pmi.topology.SystemBase) or isinstance(included_objects[0], IMP.pmi.topology.Residue)) )
              or ( type(included_objects) is set) ):
 
 

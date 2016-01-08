@@ -28,8 +28,8 @@ class ElectronMicroscopy2D(object):
            @param projection_number Number of projections of the model
                   to generate and fit to images. The lower the number, the
                   faster the evaluation, but the lower the accuracy
-           @param resolution Which level of model representation to use
-                  in the fit
+           @param resolution Which level of
+                  [model representation](@ref pmi_resolution) to use in the fit
            @param n_components Number of the largest components to be
                   considered for the EM image
         """

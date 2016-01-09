@@ -39,25 +39,33 @@ class GaussianEMRestraint(object):
                          (alternatively, pass the ps)
         @param target_ps List of Gaussians of the target map
                          (alternatively, pass the filename)
-        @param cutoff_dist_model_model Distance in model-model close pair containe
-        @param cutoff_dist_model_data  Distance in model-data close pair container
-                                       Usually can set to zero because we multiply the target radii
-        @param target_mass_scale       Scale up the target densities so that the mass is accurate.
-                                       Needed if the GMM you generated was not already scaled.
-                                       To make it the same as model mass, set scale_to_target_mass=True
-        @param target_radii_scale      Scale the target density radii, only used for the close pair container
-                                       If you keep this at 3.0 or so you don't have to use cutoff dist
-        @param model_radii_scale       Scale the model density radii, only used for the close pair container
-        @param slope                   Linear term added to help bring model into the density
-        @param spherical_gaussians     Set to True for a speed bonus when the model densities are spheres
-                                       This means you don't have to do a matrix multiplication if they rotate
+        @param cutoff_dist_model_model Distance in model-model close
+               pair container
+        @param cutoff_dist_model_data  Distance in model-data close pair
+               container. Usually can set to zero because we multiply the
+               target radii
+        @param target_mass_scale Scale up the target densities so that
+               the mass is accurate.
+               Needed if the GMM you generated was not already scaled.
+               To make it the same as model mass, set scale_to_target_mass=True
+        @param target_radii_scale Scale the target density radii -
+               only used for the close pair container.
+               If you keep this at 3.0 or so you don't have to use cutoff dist.
+        @param model_radii_scale Scale the model density radii - only used
+               for the close pair container
+        @param slope Linear term added to help bring model into the density
+        @param spherical_gaussians     Set to True for a speed bonus when
+               the model densities are spheres. (This means you don't have
+               to do a matrix multiplication if they rotate.)
         @param pointwise_restraint     EXPERIMENTAL, requires isd_emxl
         @param local_mm                EXPERIMENTAL, requires isd_emxl
-        @param close_pair_container    Pass a close pair container for the model if you already have one
-                                       (e.g. for an excluded volume restraint.)
-                                       May give a speed bonus.
-        @param backbone_slope          Only apply slope to backbone particles, only matters for atomic
-        @param scale_to_target_mass    Set True if you would need to scale target to EXACTLY the model mass
+        @param close_pair_container    Pass a close pair container for
+               the model if you already have one (e.g. for an excluded
+               volume restraint.) May give a speed bonus.
+        @param backbone_slope Only apply slope to backbone particles -
+               only matters for atomic
+        @param scale_to_target_mass    Set True if you would need to scale
+               target to EXACTLY the model mass
         @param weight                  The restraint weight
         """
 

@@ -185,7 +185,7 @@ class TopologyTest(IMP.test.TestCase):
                                     res_range=(1,10),offset=-54)
         non_atomic_res = m1.get_residues()-atomic_res
 
-        m1.add_representation(atomic_res,resolutions=[1,10])
+        m1.add_representation(atomic_res,resolutions=[0,1,10])
         m1.add_representation(non_atomic_res,resolutions=[10])
         hier = m1.build(merge_type="backbone")
         frags = hier.get_children()

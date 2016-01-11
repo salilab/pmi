@@ -2,6 +2,7 @@ import IMP
 import IMP.atom
 import IMP.pmi
 import IMP.pmi.topology as topology
+import IMP.pmi.tools as tools
 import IMP.test
 import RMF
 import IMP.rmf
@@ -201,12 +202,12 @@ class TopologyTest(IMP.test.TestCase):
 
             self.assertEquals(len(res),anums)
             self.assertEquals(IMP.atom.Residue(IMP.atom.Atom(res[0]).get_parent()).get_residue_type(),
-                              topology.get_residue_type_from_one_letter_code(rname))
+                              tools.get_residue_type_from_one_letter_code(rname))
             res1 = IMP.atom.Selection(hier,residue_index=rnum,
                                       resolution=1).get_selected_particles()
             self.assertEquals(len(res1),1)
             self.assertEquals(IMP.atom.Residue(res1[0]).get_residue_type(),
-                              topology.get_residue_type_from_one_letter_code(rname))
+                              tools.get_residue_type_from_one_letter_code(rname))
 
         # check if res10 created correctly
         sel = IMP.atom.Selection(hier,residue_indexes=[1,2],resolution=10)

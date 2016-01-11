@@ -214,10 +214,10 @@ class Molecule(SystemBase):
         IMP.atom.Copy.setup_particle(self.hier,copy_num)
         IMP.atom.Chain.setup_particle(self.hier,chain_id)
 
-        # create Residues from the sequence
+        # create TempResidues from the sequence
         self.residues=[]
         for ns,s in enumerate(sequence):
-            r=Residue(self,s,ns+1)
+            r=TempResidue(self,s,ns+1)
             self.residues.append(r)
 
     def __repr__(self):
@@ -251,14 +251,14 @@ class Molecule(SystemBase):
             print("ERROR: range ends must be int or str. Stride must be int.")
 
     def get_residues(self):
-        """ Return all Residues as a set"""
+        """ Return all TempResidues as a set"""
         all_res=set()
         for res in self.residues:
             all_res.add(res)
         return all_res
 
     def get_atomic_residues(self):
-        """ Return a set of Residues that have associated structure coordinates """
+        """ Return a set of TempResidues that have associated structure coordinates """
         atomic_res=set()
         for res in self.residues:
             if res.get_has_structure_source():
@@ -266,7 +266,7 @@ class Molecule(SystemBase):
         return atomic_res
 
     def get_non_atomic_residues(self):
-        """ Return a set of Residues that don't have associated structure coordinates """
+        """ Return a set of TempResidues that don't have associated structure coordinates """
         non_atomic_res=set()
         for res in self.residues:
             if not res.get_has_structure_source():
@@ -320,7 +320,7 @@ class Molecule(SystemBase):
             print('ERROR: You are loading',len(rhs), \
                 'pdb residues for a sequence of length',len(self.residues),'(too many)')
 
-        # load those into the existing pmi Residue objects, and return contiguous regions
+        # load those into the existing pmi TempResidue objects, and return contiguous regions
         atomic_res=set() # collect integer indexes of atomic residues!
         for nrh,rh in enumerate(rhs):
             idx = rh.get_index()
@@ -458,11 +458,11 @@ class Sequences(object):
 #------------------------
 
 
-class Residue(object):
+class TempResidue(object):
     """Temporarily stores residue information, even without structure available."""
     # Consider implementing __hash__ so you can select.
     def __init__(self,molecule,code,index):
-        """setup a Residue
+        """setup a TempResidue
         @param molecule PMI Molecule to which this residue belongs
         @param code     one-letter residue type code
         @param index    PDB index

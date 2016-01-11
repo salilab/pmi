@@ -1482,10 +1482,10 @@ class OrderedSet(collections.MutableSet):
 # -------------- PMI2 Tools --------------- #
 
 def get_hierarchies_from_spec(spec):
-    """ Given PMI Molecule/Residue or IMP object or a list of (one type) of them, return IMP hierarchies.
+    """ Given PMI Molecule/TempResidue or IMP object or a list of (one type) of them, return IMP hierarchies.
     @param spec Can be one of the following inputs:
                               IMP Selection, Hierarchy,
-                              PMI Molecule, Residue, or a list/set
+                              PMI Molecule, TempResidue, or a list/set
     \note if passed PMI objects like Molecules or Residues, will return ALL resolutions!
     """
 
@@ -1505,7 +1505,7 @@ def get_hierarchies_from_spec(spec):
         spec = [spec]
 
     # if PMI object, get all resolutions. otherwise just return the hiers
-    if tp==IMP.pmi.topology.Residue:
+    if tp==IMP.pmi.topology.TempResidue:
         mol_map = collections.defaultdict(list)
         for res in spec:
             mol = res.get_molecule()

@@ -192,13 +192,12 @@ class Molecule(SystemBase):
     Resolutions and copies can be registered, but are only created when build() is called
     """
 
-    def __init__(self,state,name,sequence,chain_id,copy_num,mol_to_clone=None,transformation=None):
+    def __init__(self,state,name,sequence,chain_id,copy_num,mol_to_clone=None):
         """The user should not call this direclty, instead call State::create_molecule()
         @param state           The parent PMI State
         @param name            The name of the molecule (string)
         @param sequence        Sequence (string)
         @param mol_to_clone    The original molecule (for cloning ONLY)
-        @param transformation  A transform to apply during building (primarily for cloning)
         """
         # internal data storage
         self.mdl = state.get_hierarchy().get_model()
@@ -206,7 +205,6 @@ class Molecule(SystemBase):
         self.sequence = sequence
         self.built = False
         self.mol_to_clone = mol_to_clone
-        self.transformation = transformation
 
         # create root node and set it as child to passed parent hierarchy
         self.hier = self._create_child(self.state.get_hierarchy())
@@ -283,15 +281,14 @@ class Molecule(SystemBase):
         self.state._register_copy(mol)
         return mol
 
-    def create_clone(self,chain_id,transformation=None):
+    def create_clone(self,chain_id):
         """Create a Molecule clone (automatically builds same structure and representation)
         @param chain_id If you want to set the chain ID of the copy to something
-        @param transformation Apply transformation after building (at the end)
         \note You cannot add structure or representations to a clone!
         """
         mol = Molecule(self.state,self.get_name(),self.sequence,chain_id,
                        copy_num=self.state.get_number_of_copies(self.get_name()),
-                       mol_to_clone=self,transformation=transformation)
+                       mol_to_clone=self)
         self.state._register_copy(mol)
         return mol
 
@@ -386,12 +383,8 @@ class Molecule(SystemBase):
                     self.residues[nr].set_structure(IMP.atom.Residue(IMP.atom.create_clone(r.get_hierarchy())),soft_check=True)
                     if r.get_structure_source() is not None:
                         self.residues[nr].set_structure_source(*r.get_structure_source())
-                if self.transformation is not None:
-                    for r in self.residues:
-                        IMP.atom.transform(r.hier,self.transformation)
                 for orig,new in zip(self.mol_to_clone.residues,self.residues):
                     new.representations=orig.representations
-
 
             # group into Fragments along backbone
             if merge_type=="backbone":

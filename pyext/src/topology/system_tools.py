@@ -5,10 +5,12 @@
 from __future__ import print_function
 import IMP
 import IMP.atom
+import IMP.isd.gmm_tools
 import IMP.pmi
 import IMP.pmi.tools
 from collections import defaultdict
 from math import pi
+import os
 
 def get_structure(mdl,pdb_fn,chain_id,res_range=[],offset=0,model_num=None,ca_only=False):
     """read a structure from a PDB file and return a list of residues
@@ -141,7 +143,7 @@ def build_representation(mdl,rep):
     If any volume-based representations (e.g.,densities) are requested,
     will instead create a single Representation node.
     @param mdl The IMP Model
-    @param rep List of requested representations. Includes any structure.
+    @param rep What to build. An instance of pmi::topology::_Representation
     """
     ret = []
     atomic_res = 0
@@ -152,13 +154,37 @@ def build_representation(mdl,rep):
     primary_resolution = min(rep.bead_resolutions)
 
     # if collective densities, will return single node with everything
+    # below we sample or read the GMMs and add them as representation
     single_node = False
     if rep.density_residues_per_component!=None:
         single_node = True
-        gs = get_gaussians() #<-- fill this in
         rep_dict = defaultdict(list)
         root_representation = IMP.atom.Representation.setup_particle(IMP.Particle(mdl),
                                                                      primary_resolution)
+        res_nums = [r.get_index() for r in rep.residues]
+        density_frag = IMP.atom.Fragment.setup_particle(IMP.Particle(mdl),res_nums)
+        density_frag.get_particle().set_name("Densities %i"%rep.density_residues_per_component)
+        density_ps = []
+        if not os.path.exists(rep.density_prefix+'.txt') or rep.density_force_compute:
+            fit_coords = []
+            for r in rep.residues:
+                fit_coords += [IMP.core.XYZ(p).get_coordinates() for p in IMP.core.get_leaves(r.hier)]
+            IMP.isd.gmm_tools.fit_gmm_to_points(fit_coords,
+                                                rep.density_residues_per_component,
+                                                mdl,
+                                                density_ps)
+            IMP.isd.gmm_tools.write_gmm_to_text(density_ps,rep.density_prefix+'.txt')
+            IMP.isd.gmm_tools.write_gmm_to_map(density_ps,rep.density_prefix+'.mrc',1.0)
+        else:
+            IMP.isd.gmm_tools.decorate_gmm_from_text(rep.density_prefix+'.txt',
+                                                     density_ps,
+                                                     mdl)
+        for d in density_ps:
+            density_frag.add_child(d)
+        root_representation.add_representation(density_frag,
+                                               IMP.atom.DENSITIES,
+                                               rep.density_residues_per_component)
+
 
     # get continuous segments from residues
     segments = []
@@ -178,10 +204,13 @@ def build_representation(mdl,rep):
         segments.append(cur_seg)
 
     # for each segment, merge into beads
+    name_all = 'frags:'
     for frag_res in segments:
         res_nums = [r.get_index() for r in frag_res]
-        name = "frag_%i-%i"%(res_nums[0],res_nums[-1])
-        segp = IMP.Particle(mdl)
+        rrange = "%i-%i"%(res_nums[0],res_nums[-1])
+        name = "frag_"+rrange
+        name_all +=rrange+','
+        segp = IMP.Particle(mdl,name)
         this_segment = IMP.atom.Fragment.setup_particle(segp,res_nums)
         if not single_node:
             this_representation = IMP.atom.Representation.setup_particle(segp,primary_resolution)
@@ -189,7 +218,7 @@ def build_representation(mdl,rep):
         for resolution in rep.bead_resolutions:
             fp = IMP.Particle(mdl)
             this_resolution = IMP.atom.Fragment.setup_particle(fp,res_nums)
-
+            this_resolution.set_name("Res %i"%resolution)
             if frag_res[0].get_has_structure():
                 # if structured, merge particles as needed
                 if resolution==atomic_res:
@@ -226,10 +255,12 @@ def build_representation(mdl,rep):
                                                            resolution)
     if single_node:
         ret = [root_representation]
+        root_representation.set_name(name_all.strip(','))
         for resolution in rep.bead_resolutions:
             this_resolution = IMP.atom.Fragment.setup_particle(
                 IMP.Particle(mdl),
                 [r.get_index() for r in rep.residues])
+            this_resolution.set_name("Res %i"%resolution)
             for hier in rep_dict[resolution]:
                 this_resolution.add_child(hier)
             if resolution==primary_resolution:
@@ -238,8 +269,4 @@ def build_representation(mdl,rep):
                 root_representation.add_representation(this_resolution,
                                                        IMP.atom.BALLS,
                                                        resolution)
-    # add density.
-    #  for parts to fit, either read or fit/write
-    #  for all density parts, just decorate. but still add representation!
-
     return ret

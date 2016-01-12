@@ -270,7 +270,7 @@ class TopologyTest(IMP.test.TestCase):
         self.assertEquals([r.get_code() for r in m1.residues],
                           [r.get_code() for r in m2.residues])
 
-    """
+    @IMP.test.skip("Have to re-impliment clones")
     def test_create_clone(self):
         '''Test creation and building of alone'''
         s = topology.System()
@@ -304,7 +304,7 @@ class TopologyTest(IMP.test.TestCase):
         sel31 = IMP.atom.Selection(hier,molecule='Prot1',resolution=10).get_selected_particles()
         self.assertEquals(len(sel11),len(sel21))
         self.assertEquals(set(sel11+sel21),set(sel31))
-    """
+
     def test_round_trip(self):
         base_res = 0
         bead_res = 1
@@ -313,15 +313,16 @@ class TopologyTest(IMP.test.TestCase):
         st1 = s.create_state()
         seqs = IMP.pmi.topology.Sequences(self.get_input_file_name('seqs.fasta'))
         m1 = st1.create_molecule("Prot1",sequence=seqs["Protein_1"])
-        a1 = m1.add_structure(self.get_input_file_name('prot.pdb'),
-                              chain_id='A',res_range=(1,10),offset=-54)
-        m1.add_representation(a1,resolutions=[base_res])
-        m1.add_representation(resolutions=[bead_res])
+        atomic_res = m1.add_structure(self.get_input_file_name('prot.pdb'),
+                                      chain_id='A',res_range=(1,10),offset=-54)
+        non_atomic_res = m1.get_non_atomic_residues()
+        m1.add_representation(atomic_res,resolutions=[base_res,bead_res])
+        m1.add_representation(non_atomic_res,resolutions=[bead_res])
         s.build()
         orig_hier = s.get_hierarchy()
 
-        #fname = self.get_tmp_file_name('test_round_trip.rmf3')
-        fname = 'test_round_trip.rmf3'
+        fname = self.get_tmp_file_name('test_round_trip.rmf3')
+        #fname = 'test_round_trip.rmf3'
         rh = RMF.create_rmf_file(fname)
         IMP.rmf.add_hierarchy(rh, orig_hier)
         IMP.rmf.save_frame(rh)
@@ -352,7 +353,24 @@ class TopologyTest(IMP.test.TestCase):
         self.assertEqual(coordsA1,coordsB1)
 
     def test_setup_densities(self):
-        pass
+        mdl = IMP.Model()
+        s = IMP.pmi.topology.System(mdl)
+        st1 = s.create_state()
+        seqs = IMP.pmi.topology.Sequences(self.get_input_file_name('seqs.fasta'))
+        m1 = st1.create_molecule("Prot1",sequence=seqs["Protein_1"])
+        atomic_res = m1.add_structure(self.get_input_file_name('prot.pdb'),
+                                      chain_id='A',res_range=(1,10),offset=-54)
+        non_atomic_res = m1.get_non_atomic_residues()
+
+        fname = self.get_tmp_file_name('test_gmm')
+        m1.add_representation(atomic_res,resolutions=[0,1],
+                              density_residues_per_component=4,
+                              density_prefix=fname)
+        m1.add_representation(non_atomic_res,resolutions=[1])
+        hier = s.build()
+
+        selD = IMP.atom.Selection(hier,representation_type=IMP.atom.DENSITIES)
+        self.assertEqual(len(selD.get_selected_particles()),4)
 
 if __name__ == '__main__':
     IMP.test.main()

@@ -299,7 +299,7 @@ class Molecule(SystemBase):
                            bead_extra_breaks=[],
                            bead_ca_centers=True,
                            density_residues_per_component=None,
-                           density_file=None,
+                           density_prefix=None,
                            density_force_compute=False,
                            setup_particles_as_densities=False,
                            ideal_helix=False):
@@ -318,9 +318,10 @@ class Molecule(SystemBase):
         @param bead_ca_centers Set to True if you want the resolution=1 beads to be at CA centers
                (otherwise will average atoms to get center). Defaults to True.
         @param density_residues_per_component Create density (Gaussian Mixture Model)
-               for these residues. Must also supply density_file
-        @param density_file File to read components from or write to.
+               for these residues. Must also supply density_prefix
+        @param density_prefix Prefix (assuming '.txt') to read components from or write to.
                If exists, will read unless you set density_force_compute=True.
+               Will also write map (prefix+'.mrc').
                Must also supply density_residues_per_component.
         @param density_force_compute Set true to force overwrite density file.
         @param setup_particles_as_densities Set to True if you want each particle to be its own density.
@@ -347,7 +348,7 @@ class Molecule(SystemBase):
                                                     bead_extra_breaks,
                                                     bead_ca_centers,
                                                     density_residues_per_component,
-                                                    density_file,
+                                                    density_prefix,
                                                     density_force_compute,
                                                     setup_particles_as_densities))
 
@@ -408,7 +409,7 @@ class _Representation(object):
                  bead_extra_breaks,
                  bead_ca_centers,
                  density_residues_per_component,
-                 density_file,
+                 density_prefix,
                  density_force_compute,
                  setup_particles_as_densities):
         self.residues = residues
@@ -416,7 +417,7 @@ class _Representation(object):
         self.bead_extra_breaks = bead_extra_breaks
         self.bead_ca_centers = bead_ca_centers
         self.density_residues_per_component = density_residues_per_component
-        self.density_file = density_file
+        self.density_prefix = density_prefix
         self.density_force_compute = density_force_compute
         self.setup_particles_as_densities = setup_particles_as_densities
 

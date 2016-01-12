@@ -180,7 +180,7 @@ class Molecule(SystemBase):
         # create TempResidues from the sequence
         self.residues=[]
         for ns,s in enumerate(sequence):
-            r=TempResidue(self,s,ns+1)
+            r = TempResidue(self,s,ns+1,ns)
             self.residues.append(r)
 
     def __repr__(self):
@@ -368,23 +368,30 @@ class Molecule(SystemBase):
         # make sure unstructured segments only have one bead resolution, not 0!
 
         if not self.built:
-            # if this is a clone, the original should already be built so just call hierarchy.create_clone()
-            '''
+            # if requested, clone structure and representations
             if self.mol_to_clone is not None:
                 for nr,r in enumerate(self.mol_to_clone.residues):
-                    self.residues[nr].set_structure(IMP.atom.Residue(IMP.atom.create_clone(r.get_hierarchy())),soft_check=True)
-                    if r.get_structure_source() is not None:
-                        self.residues[nr].set_structure_source(*r.get_structure_source())
-                for orig,new in zip(self.mol_to_clone.residues,self.residues):
-                    new.representations=orig.representations
-            '''
+                    self.residues[nr].set_structure(
+                        IMP.atom.Residue(IMP.atom.create_clone(r.get_hierarchy())),soft_check=True)
+                for old_rep in self.mol_to_clone.representations:
+                    new_res = set()
+                    for r in old_rep.residues:
+                        new_res.add(self.residues[r.get_internal_index()])
+                    new_rep = _Representation(new_res,
+                                              old_rep.bead_resolutions,
+                                              old_rep.bead_extra_breaks,
+                                              old_rep.bead_ca_centers,
+                                              old_rep.density_residues_per_component,
+                                              old_rep.density_prefix,
+                                              False,
+                                              old_rep.setup_particles_as_densities)
+                    self.representations.append(new_rep)
+
             for rep in self.representations:
                 hiers = system_tools.build_representation(self.mdl,rep)
                 for h in hiers:
                     self.hier.add_child(h)
-
             self.built=True
-
         return self.hier
 
     def get_particles_at_all_resolutions(self,residue_indexes=None):
@@ -463,16 +470,18 @@ class Sequences(object):
 class TempResidue(object):
     """Temporarily stores residue information, even without structure available."""
     # Consider implementing __hash__ so you can select.
-    def __init__(self,molecule,code,index):
+    def __init__(self,molecule,code,index,internal_index):
         """setup a TempResidue
         @param molecule PMI Molecule to which this residue belongs
         @param code     one-letter residue type code
         @param index    PDB index
+        @param internal_index The number in the sequence
         """
         self.molecule = molecule
         self.hier = IMP.atom.Residue.setup_particle(IMP.Particle(molecule.mdl),
                                 IMP.pmi.tools.get_residue_type_from_one_letter_code(code),
                                 index)
+        self.internal_index = internal_index
     def __str__(self):
         return self.get_code()+str(self.get_index())
     def __repr__(self):
@@ -485,6 +494,8 @@ class TempResidue(object):
         return hash(self.__key())
     def get_index(self):
         return self.hier.get_index()
+    def get_internal_index(self):
+        return self.internal_index
     def get_code(self):
         return IMP.atom.get_one_letter_code(self.hier.get_residue_type())
     def get_residue_type(self):

@@ -270,7 +270,6 @@ class TopologyTest(IMP.test.TestCase):
         self.assertEquals([r.get_code() for r in m1.residues],
                           [r.get_code() for r in m2.residues])
 
-    @IMP.test.skip("Have to re-impliment clones")
     def test_create_clone(self):
         '''Test creation and building of alone'''
         s = topology.System()

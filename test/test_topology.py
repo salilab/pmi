@@ -159,24 +159,6 @@ class TopologyTest(IMP.test.TestCase):
         inv = m1[:]-m1[1:5]
         self.assertEqual(inv,set([m1.residues[0]]+m1.residues[5:10]))
 
-    def test_add_representation(self):
-        '''test if add_representations propulates the correct Residues'''
-        s = topology.System()
-        st1 = s.create_state()
-        seqs = topology.Sequences(self.get_input_file_name('seqs.fasta'),
-                         name_map={'Protein_1':'Prot1',
-                                   'Protein_2':'Prot2',
-                                   'Protein_3':'Prot3'})
-        m1 = st1.create_molecule("Prot1",sequence=seqs["Prot1"])
-        atomic_res = m1.add_structure(self.get_input_file_name('prot.pdb'),
-                                    chain_id='A',res_range=(1,10),offset=-54)
-        m1.add_representation(resolutions=[1])
-        m1.add_representation(atomic_res,resolutions=[0])
-        for na in (0,1,4,5,6,7,8):
-            self.assertEqual(m1[na].representations['balls'],set([0,1]))
-        for nna in (2,3,9):
-            self.assertEqual(m1[nna].representations['balls'],set([1]))
-
     def test_build_system(self):
         s = topology.System()
         st1 = s.create_state()
@@ -188,7 +170,7 @@ class TopologyTest(IMP.test.TestCase):
 
         m1.add_representation(atomic_res,resolutions=[0,1,10])
         m1.add_representation(non_atomic_res,resolutions=[10])
-        hier = m1.build(merge_type="backbone")
+        hier = m1.build()
         frags = hier.get_children()
 
         # check names
@@ -288,6 +270,7 @@ class TopologyTest(IMP.test.TestCase):
         self.assertEquals([r.get_code() for r in m1.residues],
                           [r.get_code() for r in m2.residues])
 
+    """
     def test_create_clone(self):
         '''Test creation and building of alone'''
         s = topology.System()
@@ -307,7 +290,7 @@ class TopologyTest(IMP.test.TestCase):
                                       chain_id='A',res_range=(1,10),offset=-54)
         m1.add_representation(atomic_res,resolutions=[1,10])
         m1.add_representation(m1.get_non_atomic_residues(),resolutions=[10])
-        hier = s.build(merge_type="backbone")
+        hier = s.build()
 
         # check that all resolutions created correctly for both copies
         sel1 = IMP.atom.Selection(hier,molecule='Prot1',resolution=1,copy_index=0).get_selected_particles()
@@ -321,7 +304,7 @@ class TopologyTest(IMP.test.TestCase):
         sel31 = IMP.atom.Selection(hier,molecule='Prot1',resolution=10).get_selected_particles()
         self.assertEquals(len(sel11),len(sel21))
         self.assertEquals(set(sel11+sel21),set(sel31))
-
+    """
     def test_round_trip(self):
         base_res = 0
         bead_res = 1

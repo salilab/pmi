@@ -3,6 +3,7 @@ Protocols for sampling structures and analyzing them.
 """
 
 from __future__ import print_function
+import IMP
 import IMP.pmi.representation
 import IMP.pmi.tools
 import IMP.pmi.samplers
@@ -858,7 +859,7 @@ class BuildModel1(object):
                     else:
                         super_rigid_bodies[k]+=[h for h in self.domain_dict[hier_name]]
 
-            if  chain_of_super_rb is not None:
+            if chain_of_super_rb is not None:
                 for k in chain_of_super_rb:
                     if k not in chain_super_rigid_bodies:
                         chain_super_rigid_bodies[k]=[h for h in self.domain_dict[hier_name]]

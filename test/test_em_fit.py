@@ -69,6 +69,7 @@ class TestEMRestraint(IMP.test.TestCase):
         print('>s2', s2)
         self.assertAlmostEqual(s0, s2)
 
+class TestPMI(IMP.test.TestCase):
     def test_em_pmi(self):
         outputobjects = []
         sampleobjects = []
@@ -83,10 +84,7 @@ class TestEMRestraint(IMP.test.TestCase):
         gmmdirectory=self.get_input_file_name("mediator/")
         midpdb="cr_mid_fullmed10.pdb"
 
-
-
-               # compname  hier_name    color         fastafile              fastaid          pdbname      chain    resrange      read    "BEADS"ize rigid_body super_rigid_body emnum_components emtxtfilename  emmrcfilename chain of super rigid bodies
-
+        # compname  hier_name    color         fastafile              fastaid          pdbname      chain    resrange      read    "BEADS"ize rigid_body super_rigid_body emnum_components emtxtfilename  emmrcfilename chain of super rigid bodies
 
         domains_middle= [("med4",  "med4_1",    0.10,  fastadirectory+"med4.fasta",  "med4",   pdbdirectory+midpdb,   "D",    (1,131,0),    True,       20,      1,         [19,1,2],     2,   gmmdirectory+"med4_1.txt",  gmmdirectory+"med4_1.mrc",   [0]),
                          ("med4",  "med4_2",    0.10,  fastadirectory+"med4.fasta",  "med4",   "BEADS",               None,   (132,284,0),  True,       20,      2,         [19,1,2],     0,   None,  None,   [0])]
@@ -100,15 +98,12 @@ class TestEMRestraint(IMP.test.TestCase):
         resdensities_middle=bm.get_density_hierarchies([t[1] for t in domains_middle])
 
         # randomize the initial configuration
-
         simo.shuffle_configuration(100)
 
         # defines the movers
-
-        simo.set_rigid_bodies_max_rot(rbmaxrot)
-        simo.set_floppy_bodies_max_trans(fbmaxtrans)
-        simo.set_rigid_bodies_max_trans(rbmaxtrans)
-
+        simo.set_rigid_bodies_max_rot(1.0)
+        simo.set_floppy_bodies_max_trans(0.1)
+        simo.set_rigid_bodies_max_trans(0.1)
         outputobjects.append(simo)
         sampleobjects.append(simo)
 
@@ -116,13 +111,13 @@ class TestEMRestraint(IMP.test.TestCase):
         #simo.optimize_floppy_bodies(200)
 
         # middle module em density
-
         middle_mass=sum((IMP.atom.Mass(p).get_mass() for h in resdensities_middle for p in IMP.atom.get_leaves(h)))
-        gemh = IMP.pmi.restraints.em.GaussianEMRestraint(resdensities_middle,'../em_map_files/asturias_middle_module_translated_resampled.mrc.gmm.29.txt',
-                                                       target_mass_scale=middle_mass,
-                                                        slope=0.000001,
-                                                        target_radii_scale=3.0)
-
+        gemh = IMP.pmi.restraints.em.GaussianEMRestraint(
+            resdensities_middle,
+            gmmdirectory+'target_gmm.txt',
+            target_mass_scale=middle_mass,
+            slope=0.000001,
+            target_radii_scale=3.0)
 
 if __name__ == '__main__':
     IMP.test.main()

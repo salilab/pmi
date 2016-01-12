@@ -6,13 +6,9 @@ from __future__ import print_function
 import IMP
 import IMP.atom
 import IMP.pmi
+import IMP.pmi.tools
+from collections import defaultdict
 from math import pi
-
-def list_chunks_iterator(input_list, length):
-    """ Yield successive length-sized chunks from a list.
-    """
-    for i in range(0, len(input_list), length):
-        yield input_list[i:i + length]
 
 def get_structure(mdl,pdb_fn,chain_id,res_range=[],offset=0,model_num=None,ca_only=False):
     """read a structure from a PDB file and return a list of residues
@@ -93,11 +89,36 @@ def build_bead(model,residues,input_coord=None):
 def build_necklace(model,residues, resolution, input_coord=None):
     """Generates a string of beads with given length"""
     out_hiers = []
-    for chunk in list(list_chunks_iterator(residues, resolution)):
+    for chunk in list(IMP.pmi.tools.list_chunks_iterator(residues, resolution)):
         out_hiers.append(build_bead(model,chunk, input_coord=input_coord))
     return out_hiers
 
-
+def build_ca_centers(model,residues):
+    """Create a bead on the CA position with coarsened size and mass"""
+    out_hiers = []
+    for tempres in residues:
+        residue = tempres.get_hierarchy()
+        rp1 = IMP.Particle(model)
+        rp1.set_name("Residue_%i"%residue.get_index())
+        rt = residue.get_residue_type()
+        this_res = IMP.atom.Residue.setup_particle(rp1,residue)
+        try:
+            vol = IMP.atom.get_volume_from_residue_type(rt)
+        except IMP.ValueException:
+            vol = IMP.atom.get_volume_from_residue_type(
+                IMP.atom.ResidueType("ALA"))
+        try:
+            mass = IMP.atom.get_mass(rt)
+        except:
+            mass = IMP.atom.get_mass(IMP.atom.ResidueType("ALA"))
+        calpha = IMP.atom.Selection(residue,atom_type=IMP.atom.AT_CA). \
+                 get_selected_particles()[0]
+        radius = IMP.algebra.get_ball_radius_from_volume_3d(vol)
+        shape = IMP.algebra.Sphere3D(IMP.core.XYZ(calpha).get_coordinates(),radius)
+        IMP.core.XYZR.setup_particle(rp1,shape)
+        IMP.atom.Mass.setup_particle(rp1,mass)
+        out_hiers.append(this_res)
+    return out_hiers
 
 def build_along_backbone(mdl,root,residues,rep_type,ca_centers=True):
     """Group residues along the backbone, adding beads as needed.
@@ -254,3 +275,126 @@ def show_representation(node):
 
 def recursive_show_representations(root):
     pass
+
+def build_representation(mdl,rep):
+    """Create requested representation. Always returns a list of hierarchies.
+    For beads, identifies continuous segments and sets up as Representation.
+    If any volume-based representations (e.g.,densities) are requested,
+    will instead create a single Representation node.
+    @param mdl The IMP Model
+    @param rep List of requested representations. Includes any structure.
+
+
+    single node: root is Representation. each resolution is all beads of each segment together
+    otherwise: each SEGMENT is a representation containing just its own beads
+    together means adding them all as children of that rep node
+
+    residues
+    bead_resolutions,
+    bead_extra_breaks,
+    bead_ca_centers,
+    density_residues_per_component,
+    density_file,
+    density_force_compute,
+    setup_particles_as_densities
+    """
+    ret = []
+    atomic_res = 0
+    ca_res = 1
+
+    # first get the primary representation (currently, the smallest bead size)
+    #  eventually we won't require beads to be present at all
+    primary_resolution = min(rep.bead_resolutions)
+
+    # if collective densities, will return single node with everything
+    single_node = False
+    if rep.density_residues_per_component!=None:
+        single_node = True
+        gs = get_gaussians() #<-- fill this in
+        rep_dict = defaultdict(list)
+        root_representation = IMP.atom.Representation.setup_particle(IMP.Particle(mdl),
+                                                                     primary_resolution)
+
+    # get continuous segments from residues
+    segments = []
+    rsort = sorted(list(rep.residues),key=lambda r:r.get_index())
+    prev_idx = rsort[0].get_index()-1
+    prev_structure = rsort[0].get_has_structure()
+    cur_seg = []
+    for nr,r in enumerate(rsort):
+        if r.get_index()!=prev_idx+1 or r.get_has_structure()!=prev_structure or \
+           r.get_index() in rep.bead_extra_breaks:
+            segments.append(cur_seg)
+            cur_seg = []
+        cur_seg.append(r)
+        prev_idx = r.get_index()
+        prev_structure = r.get_has_structure()
+    if cur_seg!=[]:
+        segments.append(cur_seg)
+
+    # for each segment, merge into beads
+    for frag_res in segments:
+        res_nums = [r.get_index() for r in frag_res]
+        name = "frag_%i-%i"%(res_nums[0],res_nums[-1])
+        segp = IMP.Particle(mdl)
+        this_segment = IMP.atom.Fragment.setup_particle(segp,res_nums)
+        if not single_node:
+            this_representation = IMP.atom.Representation.setup_particle(segp,primary_resolution)
+            ret.append(this_representation)
+        for resolution in rep.bead_resolutions:
+            fp = IMP.Particle(mdl)
+            this_resolution = IMP.atom.Fragment.setup_particle(fp,res_nums)
+
+            if frag_res[0].get_has_structure():
+                # if structured, merge particles as needed
+                if resolution==atomic_res:
+                    for residue in frag_res:
+                        this_resolution.add_child(residue.get_hierarchy())
+                elif resolution==ca_res and rep.bead_ca_centers:
+                    beads = build_ca_centers(mdl,frag_res)
+                    for bead in beads:
+                        this_resolution.add_child(bead)
+                else:
+                    tempc = IMP.atom.Chain.setup_particle(IMP.Particle(mdl),"X")
+                    for residue in frag_res:
+                        tempc.add_child(residue.hier)
+                    beads = IMP.atom.create_simplified_along_backbone(tempc,resolution)
+                    for bead in beads.get_children():
+                        this_resolution.add_child(bead)
+                    del tempc
+                    del beads
+            else:
+                # if unstructured, create necklace
+                beads = build_necklace(mdl,frag_res,resolution)
+                for bead in beads:
+                    this_resolution.add_child(bead)
+
+            # finally decide where to put this resolution
+            if single_node:
+                rep_dict[resolution]+=this_resolution.get_children()
+            else:
+                if resolution==primary_resolution:
+                    this_representation.add_child(this_resolution)
+                else:
+                    this_representation.add_representation(this_resolution,
+                                                           IMP.atom.BALLS,
+                                                           resolution)
+    if single_node:
+        ret = [root_representation]
+        for resolution in rep.bead_resolutions:
+            this_resolution = IMP.atom.Fragment.setup_particle(
+                IMP.Particle(mdl),
+                [r.get_index() for r in rep.residues])
+            for hier in rep_dict[resolution]:
+                this_resolution.add_child(hier)
+            if resolution==primary_resolution:
+                root_representation.add_child(this_resolution)
+            else:
+                root_representation.add_representation(this_resolution,
+                                                       IMP.atom.BALLS,
+                                                       resolution)
+    # add density.
+    #  for parts to fit, either read or fit/write
+    #  for all density parts, just decorate. but still add representation!
+
+    return ret

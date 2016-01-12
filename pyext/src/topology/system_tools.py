@@ -122,6 +122,17 @@ def build_ca_centers(model,residues):
         out_hiers.append(this_res)
     return out_hiers
 
+def setup_bead_as_gaussian(mh):
+    """Setup bead as spherical gaussian, using radius as variance"""
+    p = mh.get_particle()
+    center = IMP.core.XYZ(p).get_coordinates()
+    rad = IMP.core.XYZR(p).get_radius()
+    mass = IMP.atom.Mass(p).get_mass()
+    trans = IMP.algebra.Transformation3D(IMP.algebra.get_identity_rotation_3d(),center)
+    shape = IMP.algebra.Gaussian3D(IMP.algebra.ReferenceFrame3D(trans),[rad]*3)
+    IMP.core.Gaussian.setup_particle(p,shape)
+
+
 def show_representation(node):
     print(node)
     if IMP.atom.Representation.get_is_setup(node):
@@ -244,6 +255,7 @@ def build_representation(mdl,rep):
                     this_resolution.add_child(bead)
 
             # finally decide where to put this resolution
+            #  if volumetric, collect resolutions from different segments together
             if single_node:
                 rep_dict[resolution]+=this_resolution.get_children()
             else:
@@ -253,6 +265,14 @@ def build_representation(mdl,rep):
                     this_representation.add_representation(this_resolution,
                                                            IMP.atom.BALLS,
                                                            resolution)
+            # if individual beads to be setup as Gaussians:
+            if rep.setup_particles_as_densities:
+                for p in IMP.core.get_leaves(this_resolution):
+                    setup_bead_as_gaussian(p)
+                this_representation.add_representation(this_resolution,
+                                                       IMP.atom.DENSITIES,
+                                                       resolution)
+
     if single_node:
         ret = [root_representation]
         root_representation.set_name(name_all.strip(','))

@@ -372,5 +372,28 @@ class TopologyTest(IMP.test.TestCase):
         selD = IMP.atom.Selection(hier,representation_type=IMP.atom.DENSITIES)
         self.assertEqual(len(selD.get_selected_particles()),4)
 
+    def test_setup_beads_as_densities(self):
+        mdl = IMP.Model()
+        s = IMP.pmi.topology.System(mdl)
+        st1 = s.create_state()
+        seqs = IMP.pmi.topology.Sequences(self.get_input_file_name('seqs.fasta'))
+        m1 = st1.create_molecule("Prot1",sequence=seqs["Protein_1"])
+        atomic_res = m1.add_structure(self.get_input_file_name('prot.pdb'),
+                                      chain_id='A',res_range=(1,10),offset=-54)
+        non_atomic_res = m1.get_non_atomic_residues()
+
+        fname = self.get_tmp_file_name('test_gmm')
+        m1.add_representation(atomic_res,
+                              resolutions=[1],
+                              setup_particles_as_densities=True)
+        m1.add_representation(non_atomic_res,
+                              resolutions=[1],
+                              setup_particles_as_densities=True)
+        hier = s.build()
+
+        selD = IMP.atom.Selection(hier,representation_type=IMP.atom.DENSITIES)
+        self.assertEqual(selD.get_selected_particles(),
+                          IMP.core.get_leaves(hier))
+
 if __name__ == '__main__':
     IMP.test.main()

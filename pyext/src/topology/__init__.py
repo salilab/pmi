@@ -169,7 +169,8 @@ class Molecule(SystemBase):
         self.sequence = sequence
         self.built = False
         self.mol_to_clone = mol_to_clone
-        self.representations = []
+        self.representations = []  # list of stuff to build
+        self.represented = set()   # residues with representation
 
         # create root node and set it as child to passed parent hierarchy
         self.hier = self._create_child(self.state.get_hierarchy())
@@ -328,19 +329,46 @@ class Molecule(SystemBase):
                Useful for all-atom models or flexible beads.
                Mutually exclusive with density_ options
         @param ideal_helix Create idealized helix structures for these residues.
+               NOT CURRENLTY IMPLEMENTED
         \note You cannot call add_representation multiple times for the same residues.
         """
 
+        # can't customize clones
         if self.mol_to_clone is not None:
-            raise Exception('You cannot call add_representation() for a clone')
-
+            raise Exception('You cannot call add_representation() for a clone.'
+                            'Maybe use a copy instead')
         if residues is None:
             res = set(self.residues)
         else:
             res = residues
-        # check that each residue has not been represented yet
 
-        # check stated consistency rules
+        # check that each residue has not been represented yet
+        ov = res&self.represented
+        if ov:
+            raise Exception('You have already added representation for'+ov.__repr__())
+        self.represented|=res
+
+        # check you aren't creating multiple resolutions without structure
+        if len(resolutions)>1:
+            for r in res:
+                if not r.get_has_structure():
+                    raise Exception('You are creating multiple resolutions for '
+                                    'unstructured regions. This will have unexpected results.')
+
+        # check density info is consistent
+        if density_residues_per_component or density_prefix:
+            if not density_residues_per_component and density_prefix:
+                raise Exception('If requesting density, must provide '
+                                'density_residues_per_component AND density_prefix')
+        if density_residues_per_component and setup_particles_as_densities:
+            raise Exception('Cannot create both volumetric density '
+                            '(density_residues_per_component) AND '
+                            'individual densities (setup_particles_as_densities) '
+                            'in the same representation')
+        if len(resolutions)>1 and setup_particles_as_densities:
+            raise Exception('You have multiple bead resolutions but are attempting to '
+                            'set them all up as individual Densities. '
+                            'This could have unexpected results.')
 
         # store the representation group
         self.representations.append(_Representation(res,
@@ -352,8 +380,6 @@ class Molecule(SystemBase):
                                                     density_force_compute,
                                                     setup_particles_as_densities))
 
-        # store residues in the molecule's "represented" dictionary
-
     def build(self):
         '''Create all parts of the IMP hierarchy
         including Atoms, Residues, and Fragments/Representations and, finally, Copies
@@ -363,9 +389,16 @@ class Molecule(SystemBase):
               from the PDB file
         '''
 
-        # do some final checks:
-        # give a warning for all residues that don't have representation!
-        # make sure unstructured segments only have one bead resolution, not 0!
+        # give a warning for all residues that don't have representation
+        first = True
+        for r in self.residues:
+            if r not in self.represented:
+                if first:
+                    print('WARNING: Residues without representation!',end="")
+                    first = False
+                print(r,'',end='')
+        if not first:
+            print()
 
         if not self.built:
             # if requested, clone structure and representations
@@ -387,6 +420,7 @@ class Molecule(SystemBase):
                                               old_rep.setup_particles_as_densities)
                     self.representations.append(new_rep)
 
+            # build all the representations
             for rep in self.representations:
                 hiers = system_tools.build_representation(self.mdl,rep)
                 for h in hiers:

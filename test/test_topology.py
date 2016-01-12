@@ -362,14 +362,15 @@ class TopologyTest(IMP.test.TestCase):
         non_atomic_res = m1.get_non_atomic_residues()
 
         fname = self.get_tmp_file_name('test_gmm')
+        dres = 2
         m1.add_representation(atomic_res,resolutions=[0,1],
-                              density_residues_per_component=4,
+                              density_residues_per_component=dres,
                               density_prefix=fname)
         m1.add_representation(non_atomic_res,resolutions=[1])
         hier = s.build()
 
         selD = IMP.atom.Selection(hier,representation_type=IMP.atom.DENSITIES)
-        self.assertEqual(len(selD.get_selected_particles()),4)
+        self.assertEqual(len(selD.get_selected_particles()),len(atomic_res)/dres)
 
     def test_setup_beads_as_densities(self):
         mdl = IMP.Model()

@@ -333,6 +333,10 @@ class Molecule(SystemBase):
         \note You cannot call add_representation multiple times for the same residues.
         """
 
+        if len(residues)==0:
+            print ("WARNING: No residues passed to add_representation")
+            return
+
         # can't customize clones
         if self.mol_to_clone is not None:
             raise Exception('You cannot call add_representation() for a clone.'
@@ -345,7 +349,7 @@ class Molecule(SystemBase):
         # check that each residue has not been represented yet
         ov = res&self.represented
         if ov:
-            raise Exception('You have already added representation for'+ov.__repr__())
+            raise Exception('You have already added representation for '+ov.__repr__())
         self.represented|=res
 
         # check you aren't creating multiple resolutions without structure
@@ -389,18 +393,8 @@ class Molecule(SystemBase):
               from the PDB file
         '''
 
-        # give a warning for all residues that don't have representation
-        first = True
-        for r in self.residues:
-            if r not in self.represented:
-                if first:
-                    print('WARNING: Residues without representation!',end="")
-                    first = False
-                print(r,'',end='')
-        if not first:
-            print()
-
         if not self.built:
+
             # if requested, clone structure and representations
             if self.mol_to_clone is not None:
                 for nr,r in enumerate(self.mol_to_clone.residues):
@@ -410,6 +404,7 @@ class Molecule(SystemBase):
                     new_res = set()
                     for r in old_rep.residues:
                         new_res.add(self.residues[r.get_internal_index()])
+                        self.represented.add(self.residues[r.get_internal_index()])
                     new_rep = _Representation(new_res,
                                               old_rep.bead_resolutions,
                                               old_rep.bead_extra_breaks,
@@ -419,6 +414,17 @@ class Molecule(SystemBase):
                                               False,
                                               old_rep.setup_particles_as_densities)
                     self.representations.append(new_rep)
+
+            # give a warning for all residues that don't have representation
+            first = True
+            for r in self.residues:
+                if r not in self.represented:
+                    if first:
+                        print('WARNING: Residues without representation!',end="")
+                        first = False
+                    print(r,'',end='')
+            if not first:
+                print()
 
             # build all the representations
             for rep in self.representations:

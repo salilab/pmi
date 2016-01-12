@@ -14,8 +14,8 @@ class TestDOF(IMP.test.TestCase):
         m1 = st1.create_molecule("Prot1",sequence=seqs["Protein_1"])
         atomic_res = m1.add_structure(self.get_input_file_name('prot.pdb'),
                                       chain_id='A',res_range=(1,10),offset=-54)
-        m1.add_representation(atomic_res,resolutions=[0,10])
-        m1.add_representation(resolutions=[1])
+        m1.add_representation(atomic_res,resolutions=[0,1,10])
+        m1.add_representation(m1.get_non_atomic_residues(),resolutions=[1])
         hier = m1.build()
         return m1
     def init_topology3(self,mdl):
@@ -32,12 +32,12 @@ class TestDOF(IMP.test.TestCase):
                               chain_id='B',res_range=(1,13),offset=-179)
         a3 = m3.add_structure(self.get_input_file_name('prot.pdb'),
                               chain_id='G',res_range=(1,10),offset=-54)
-        m1.add_representation(a1,resolutions=[0])
-        m1.add_representation(resolutions=[1])
-        m2.add_representation(a2,resolutions=[0])
-        m2.add_representation(resolutions=[1])
-        m3.add_representation(a3,resolutions=[0])
-        m3.add_representation(resolutions=[1])
+        m1.add_representation(a1,resolutions=[0,1])
+        m1.add_representation(m1.get_non_atomic_residues(),resolutions=[1])
+        m2.add_representation(a2,resolutions=[0,1])
+        m2.add_representation(m2.get_non_atomic_residues(),resolutions=[1])
+        m3.add_representation(a3,resolutions=[0,1])
+        m3.add_representation(m3.get_non_atomic_residues(),resolutions=[1])
         hier = s.build()
         return m1,m2,m3
 
@@ -97,15 +97,15 @@ class TestDOF(IMP.test.TestCase):
         m1 = st1.create_molecule("Prot1",sequence=seqs["Protein_1"])
         a1 = m1.add_structure(self.get_input_file_name('prot.pdb'),
                               chain_id='A',res_range=(1,10),offset=-54)
-        m1.add_representation(a1,resolutions=[0])
-        m1.add_representation(resolutions=[1])
+        m1.add_representation(a1,resolutions=[0,1])
+        m1.add_representation(m1.get_non_atomic_residues(),resolutions=[1])
         m3 = m1.create_clone(chain_id='C')
 
         m2 = st1.create_molecule("Prot2",sequence=seqs["Protein_2"])
         a2 = m2.add_structure(self.get_input_file_name('prot.pdb'),
                               chain_id='B',res_range=(1,13),offset=-179)
-        m2.add_representation(a2,resolutions=[0])
-        m2.add_representation(resolutions=[1])
+        m2.add_representation(a2,resolutions=[0,1])
+        m2.add_representation(m2.get_non_atomic_residues(),resolutions=[1])
         m4 = m2.create_clone(chain_id='D')
         root = s.build()
 

@@ -186,7 +186,7 @@ def build_representation(mdl,rep):
                                                 mdl,
                                                 density_ps)
             IMP.isd.gmm_tools.write_gmm_to_text(density_ps,rep.density_prefix+'.txt')
-            IMP.isd.gmm_tools.write_gmm_to_map(density_ps,rep.density_prefix+'.mrc',1.0)
+            IMP.isd.gmm_tools.write_gmm_to_map(density_ps,rep.density_prefix+'.mrc',rep.density_voxel_size)
         else:
             IMP.isd.gmm_tools.decorate_gmm_from_text(rep.density_prefix+'.txt',
                                                      density_ps,

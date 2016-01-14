@@ -302,6 +302,7 @@ class Molecule(SystemBase):
                            density_residues_per_component=None,
                            density_prefix=None,
                            density_force_compute=False,
+                           density_voxel_size=1.0,
                            setup_particles_as_densities=False,
                            ideal_helix=False):
         """Set the representation for some residues. Some options (beads, ideal helix)
@@ -325,6 +326,7 @@ class Molecule(SystemBase):
                Will also write map (prefix+'.mrc').
                Must also supply density_residues_per_component.
         @param density_force_compute Set true to force overwrite density file.
+        @param density_voxel_size Advanced feature. Set larger if densities taking too long to rasterize.
         @param setup_particles_as_densities Set to True if you want each particle to be its own density.
                Useful for all-atom models or flexible beads.
                Mutually exclusive with density_ options
@@ -382,6 +384,7 @@ class Molecule(SystemBase):
                                                     density_residues_per_component,
                                                     density_prefix,
                                                     density_force_compute,
+                                                    density_voxel_size,
                                                     setup_particles_as_densities))
 
     def build(self):
@@ -411,6 +414,7 @@ class Molecule(SystemBase):
                                               old_rep.bead_ca_centers,
                                               old_rep.density_residues_per_component,
                                               old_rep.density_prefix,
+                                              old_rep.density_voxel_size,
                                               False,
                                               old_rep.setup_particles_as_densities)
                     self.representations.append(new_rep)
@@ -458,6 +462,7 @@ class _Representation(object):
                  density_residues_per_component,
                  density_prefix,
                  density_force_compute,
+                 density_voxel_size,
                  setup_particles_as_densities):
         self.residues = residues
         self.bead_resolutions = bead_resolutions
@@ -466,6 +471,7 @@ class _Representation(object):
         self.density_residues_per_component = density_residues_per_component
         self.density_prefix = density_prefix
         self.density_force_compute = density_force_compute
+        self.density_voxel_size = density_voxel_size
         self.setup_particles_as_densities = setup_particles_as_densities
 
 

@@ -1481,48 +1481,37 @@ class OrderedSet(collections.MutableSet):
 
 # -------------- PMI2 Tools --------------- #
 
-def get_hierarchies_from_spec(spec):
+def get_hierarchies(stuff):
     """ Given PMI Molecule/TempResidue or IMP object or a list of (one type) of them, return IMP hierarchies.
-    @param spec Can be one of the following inputs:
-                              IMP Selection, Hierarchy,
-                              PMI Molecule, TempResidue, or a list/set
-    \note if passed PMI objects like Molecules or Residues, will return ALL resolutions!
+    @param stuff Can be one of the following inputs:
+           IMP Hierarchy, PMI System/State/Molecule/TempResidue, or a list/set of them
     """
-
-    ret = []
-
-    # check for consistent type, make into list
-    if hasattr(spec,'__iter__'):
-        if len(spec)==0:
+    if stuff is None:
+        return None
+    if hasattr(stuff,'__iter__'):
+        if len(stuff)==0:
             return ret
-        type_set = set(type(a) for a in spec)
+        type_set = set(type(a) for a in stuff)
         if len(type_set)!=1:
-            raise Exception('get_hierarchies_from_spec: can only pass one type of object at a time')
+            raise Exception('get_hierarchies: can only pass one type of object at a time')
         tp = type_set.pop()
-        spec = list(spec)
+        stuff = list(stuff)
     else:
-        tp = type(spec)
-        spec = [spec]
+        tp = type(stuff)
+        stuff = [stuff]
 
-    # if PMI object, get all resolutions. otherwise just return the hiers
-    if tp==IMP.pmi.topology.TempResidue:
-        mol_map = collections.defaultdict(list)
-        for res in spec:
-            mol = res.get_molecule()
-            mol_map[mol].append(res.get_index())
-        for mol in mol_map:
-            ret += [IMP.atom.Hierarchy(p) for p in mol.get_particles_at_all_resolutions(mol_map[mol])]
-    elif tp==IMP.pmi.topology.Molecule:
-        for mol in spec:
-            ret += [IMP.atom.Hierarchy(p) for p in mol.get_particles_at_all_resolutions()]
-    elif tp==IMP.atom.Selection:
-        for sel in spec:
-            ret += [IMP.atom.Hierarchy(p) for p in sel.get_selected_particles()]
-    elif tp==IMP.atom.Hierarchy:
-        ret = spec
+    if tp in (IMP.pmi.topology.System, IMP.pmi.topology.State, IMP.pmi.topology.Molecule,IMP.pmi.topology.TempResidue):
+        return [item.get_hierarchy() for item in stuff]
     else:
-        raise Exception('get_hierarchies_from_spec: passed an unknown object')
+        try:
+            if IMP.atom.Hierarchy.get_is_setup(stuff[0]):
+                return stuff
+            else:
+                raise Exception('get_hierarchies: you passed something of type',tp)
+        except:
+            raise Exception('get_hierarchies: you passed something of type',tp)
     return ret
+
 
 def get_residue_type_from_one_letter_code(code):
     threetoone = {'ALA': 'A', 'ARG': 'R', 'ASN': 'N', 'ASP': 'D',
@@ -1553,7 +1542,7 @@ def select_at_all_resolutions(hier,
     if 'resolution' in kwargs or 'representation_type' in kwargs:
         raise Exception("don't pass resolution or representation_type to this function")
 
-    def get_resolutions(h): #move to C++
+    def get_resolutions(h):
         while h:
             if IMP.atom.Representation.get_is_setup(h):
                 ret = [IMP.atom.Representation(h).get_resolutions(IMP.atom.BALLS),

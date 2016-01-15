@@ -14,6 +14,7 @@ class StereochemistryTests(IMP.test.TestCase):
         sses = IMP.pmi.io.parse_dssp(self.get_input_file_name('chainA.dssp'),'A')
         self.assertEqual(sorted(sses.keys()),sorted(['helix','beta','loop']))
         self.assertEqual(sses['helix'][1][0],['A',100,126])
+        self.assertEqual(sses['beta'][0],[['A',76,78],['A',91,93]])
         self.assertEqual(len(sses['helix']),20)
         self.assertEqual(len(sses['beta']),3)
         self.assertEqual(len(sses['loop']),32)

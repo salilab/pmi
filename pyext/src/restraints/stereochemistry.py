@@ -626,7 +626,6 @@ class ElasticNetworkRestraint(object):
         if representation is None and hierarchy is not None:
             self.m = hierarchy.get_model()
             for st in selection_tuples:
-                print(st)
                 if not ca_only:
                     sel = IMP.atom.Selection(hierarchy,chain=st[0],residue_indexes=range(st[1],st[2]+1))
                 else:

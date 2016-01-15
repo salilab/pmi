@@ -140,7 +140,7 @@ class State(SystemBase):
         """call build on all molecules (automatically makes clones)"""
         if not self.built:
             for molname in self.molecules:
-                for mol in self.molecules[molname]:
+                for mol in reversed(self.molecules[molname]):
                     mol.build(**kwargs)
             self.built=True
         return self.hier
@@ -203,6 +203,9 @@ class Molecule(SystemBase):
 
     def get_name(self):
         return self.hier.get_name()
+
+    def get_state(self):
+        return self.state
 
     def residue_range(self,a,b,stride=1):
         """get residue range. Use integers to get 0-indexing, or strings to get PDB-indexing"""
@@ -398,7 +401,7 @@ class Molecule(SystemBase):
 
         if not self.built:
 
-            # if requested, clone structure and representations
+            # if requested, clone structure and representations BEFORE building original
             if self.mol_to_clone is not None:
                 for nr,r in enumerate(self.mol_to_clone.residues):
                     self.residues[nr].set_structure(
@@ -436,6 +439,25 @@ class Molecule(SystemBase):
                 for h in hiers:
                     self.hier.add_child(h)
             self.built=True
+
+            # have to store SOMETHING in each residue slot.
+            #  so just select highest resolution.
+            #  alternative is store all resolutions?
+            for res in self.residues:
+                idx = res.get_index()
+                new_ps = IMP.atom.Selection(
+                    self.hier,
+                    residue_index=res.get_index(),
+                    resolution=1).get_selected_particles()
+                if len(new_ps)>0:
+                    new_p = new_ps[0]
+                    if IMP.atom.Atom.get_is_setup(new_p):
+                        new_hier = IMP.atom.get_residue(IMP.atom.Atom(new_p))
+                    else:
+                        new_hier = IMP.atom.Hierarchy(new_p)
+                    res.hier = new_hier
+                else:
+                    res.hier = None
         return self.hier
 
     def get_particles_at_all_resolutions(self,residue_indexes=None):
@@ -527,6 +549,7 @@ class TempResidue(object):
         self.hier = IMP.atom.Residue.setup_particle(IMP.Particle(molecule.mdl),
                                 IMP.pmi.tools.get_residue_type_from_one_letter_code(code),
                                 index)
+        self.pdb_index = index
         self.internal_index = internal_index
     def __str__(self):
         return self.get_code()+str(self.get_index())
@@ -539,7 +562,7 @@ class TempResidue(object):
     def __hash__(self):
         return hash(self.__key())
     def get_index(self):
-        return self.hier.get_index()
+        return self.pdb_index
     def get_internal_index(self):
         return self.internal_index
     def get_code(self):

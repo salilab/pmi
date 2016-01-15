@@ -28,6 +28,7 @@ a1 = gcp2.add_structure('data/gcp2.pdb',
 
 # Add structured part representation and then build
 gcp2.add_representation(a1,resolutions=[0])
+print('building molecule')
 hier = s.build()
 
 # add charmm restraints
@@ -38,7 +39,6 @@ charmm.add_to_model()
 sses = IMP.pmi.io.parse_dssp('data/gcp2.dssp','A')
 all_rs = []
 for sse in sses['helix']+sses['beta']:
-    print('sse',sse)
     er = IMP.pmi.restraints.stereochemistry.ElasticNetworkRestraint(
         selection_tuples=sse,
         strength=10.0,
@@ -46,6 +46,7 @@ for sse in sses['helix']+sses['beta']:
         ca_only=True,
         hierarchy=hier)
     all_rs.append(er)
+    er.add_to_model()
 
 # seutp MD and run
 dof = IMP.pmi.dof.DegreesOfFreedom(mdl)

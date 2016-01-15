@@ -20,14 +20,14 @@ st1 = s.create_state()
 
 # Read sequences and create Molecules
 seqs = IMP.pmi.topology.Sequences('data/gcp2.fasta')
-rpb1 = st1.create_molecule("GCP2",sequence=seqs["GCP2_YEAST"],chain_id='A')
+gcp2 = st1.create_molecule("GCP2",sequence=seqs["GCP2_YEAST"],chain_id='A')
 
 # Add structure. This function returns a list of the residues that now have structure
-a1 = rpb1.add_structure('data/gcp2.pdb',
+a1 = gcp2.add_structure('data/gcp2.pdb',
                         chain_id='A')
 
 # Add structured part representation and then build
-rpb1.add_representation(a1,resolutions=[0])
+gcp2.add_representation(a1,resolutions=[0])
 hier = s.build()
 
 # add charmm restraints
@@ -49,7 +49,7 @@ for sse in sses['helix']+sses['beta']:
 
 # seutp MD and run
 dof = IMP.pmi.dof.DegreesOfFreedom(mdl)
-md_ps = dof.setup_md(rpb1)
+md_ps = dof.setup_md(gcp2)
 rex = IMP.pmi.macros.ReplicaExchange0(mdl,
                                       root_hier=hier,
                                       crosslink_restraints = all_rs, #for visualizing SSEs in RMF

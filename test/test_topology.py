@@ -370,7 +370,7 @@ class TopologyTest(IMP.test.TestCase):
         hier = s.build()
 
         selD = IMP.atom.Selection(hier,representation_type=IMP.atom.DENSITIES)
-        self.assertEqual(len(selD.get_selected_particles()),len(atomic_res)/dres)
+        self.assertEqual(len(selD.get_selected_particles()),len(atomic_res)/dres+1)
 
     def test_setup_beads_as_densities(self):
         mdl = IMP.Model()

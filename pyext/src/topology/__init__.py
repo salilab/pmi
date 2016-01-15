@@ -109,7 +109,7 @@ class State(SystemBase):
     def __repr__(self):
         return self.system.__repr__()+'.'+self.hier.get_name()
 
-    def create_molecule(self,name,sequence=None,chain_id=''):
+    def create_molecule(self,name,sequence='',chain_id=''):
         """Create a new Molecule within this State
         @param name                the name of the molecule (string) it must not
                                    be already used
@@ -178,7 +178,7 @@ class Molecule(SystemBase):
         IMP.atom.Copy.setup_particle(self.hier,copy_num)
         IMP.atom.Chain.setup_particle(self.hier,chain_id)
 
-        # create TempResidues from the sequence
+        # create TempResidues from the sequence (if passed)
         self.residues=[]
         for ns,s in enumerate(sequence):
             r = TempResidue(self,s,ns+1,ns)
@@ -260,7 +260,7 @@ class Molecule(SystemBase):
         self.state._register_copy(mol)
         return mol
 
-    def add_structure(self,pdb_fn,chain_id,res_range=[],offset=0,model_num=None,ca_only=False,soft_check=False,pdb_code=None):
+    def add_structure(self,pdb_fn,chain_id,res_range=[],offset=0,model_num=None,ca_only=False,soft_check=False):
         """Read a structure and store the coordinates.
         Returns the atomic residues (as a set)
         @param pdb_fn    The file to read
@@ -270,30 +270,33 @@ class Molecule(SystemBase):
         @param model_num Read multi-model PDB and return that model
         @param soft_check If True, it only warns if there are sequence mismatches between the pdb and the Molecules sequence
                           If False (Default), it raises and exit when there are sequence mismatches.
-        @param pdb_code  Use if you want to store the PDB code (otherwise will extract from filename)
-        \note After offset, we expect the PDB residue numbering to match the FASTA file
+        \note If you are adding structure without a FASTA file, set soft_check to True
         """
 
         if self.mol_to_clone is not None:
             raise Exception('You cannot call add_structure() for a clone')
 
-        self.pdb_fn=pdb_fn
+        self.pdb_fn = pdb_fn
 
         # get IMP.atom.Residues from the pdb file
         rhs = system_tools.get_structure(self.mdl,pdb_fn,chain_id,res_range,offset,ca_only=ca_only)
-        if len(rhs)>len(self.residues):
-            print('ERROR: You are loading',len(rhs), \
-                'pdb residues for a sequence of length',len(self.residues),'(too many)')
 
-        # load those into the existing pmi TempResidue objects, and return contiguous regions
-        atomic_res=set() # collect integer indexes of atomic residues!
+        if len(self.residues)==0:
+            print("WARNING: Extracting sequence from structure. Potentially dangerous.")
+
+        # load those into TempResidue object
+        atomic_res = set() # collect integer indexes of atomic residues to return
         for nrh,rh in enumerate(rhs):
-            idx = rh.get_index()
-            internal_res = self.residues[idx-1]
-            if pdb_code is None:
-                pdb_code = os.path.splitext(os.path.basename(pdb_fn))[0]
+            pdb_idx = rh.get_index()
+            raw_idx = pdb_idx - 1
+
+            # add ALA to fill in gaps
+            while len(self.residues)<pdb_idx:
+                r = TempResidue(self,'A',len(self.residues)+1,len(self.residues))
+                self.residues.append(r)
+
+            internal_res = self.residues[raw_idx]
             internal_res.set_structure(rh,soft_check)
-            #internal_res.set_structure_source(pdb_code,chain_id)
             atomic_res.add(internal_res)
         return atomic_res
 
@@ -338,18 +341,22 @@ class Molecule(SystemBase):
         \note You cannot call add_representation multiple times for the same residues.
         """
 
-        if len(residues)==0:
-            print ("WARNING: No residues passed to add_representation")
-            return
-
         # can't customize clones
         if self.mol_to_clone is not None:
             raise Exception('You cannot call add_representation() for a clone.'
                             'Maybe use a copy instead')
+
+        # format input
         if residues is None:
             res = set(self.residues)
-        else:
+        elif residues==self:
+            res = set(self.residues)
+        elif type(residues) is set and type(next(iter(residues))) is TempResidue:
             res = residues
+        elif type(residues) is list and type(residues[0]) is TempResidue:
+            res = set(residues)
+        else:
+            raise Exception("add_representation: you must pass a set of residues or nothing(=all residues)")
 
         # check that each residue has not been represented yet
         ov = res&self.represented
@@ -578,10 +585,9 @@ class TempResidue(object):
     def set_structure(self,res,soft_check=False):
         if res.get_residue_type()!=self.hier.get_residue_type():
             if soft_check:
+                print('WARNING: Replacing sequence residue',self.get_index(),self.hier.get_residue_type(),
+                      'with PDB type',res.get_residue_type())
                 self.hier.set_residue_type((res.get_residue_type()))
-                print('WARNING: PDB residue index',self.get_index(),'is',
-                      IMP.atom.get_one_letter_code(res.get_residue_type()),
-                      'and sequence residue is',self.get_code())
             else:
                 raise Exception('ERROR: PDB residue index',self.get_index(),'is',
                                 IMP.atom.get_one_letter_code(res.get_residue_type()),

@@ -125,7 +125,7 @@ class ExcludedVolumeSphere(object):
         self.rs.set_weight(weight)
 
     def get_output(self):
-        self.m.update()
+        self.mdl.update()
         output = {}
         score = self.weight * self.rs.unprotected_evaluate(None)
         output["_TotalScore"] = str(score)

@@ -274,7 +274,7 @@ class ResiduePairListParser():
     def __init__(self,style):
         if style in ["MSSTUDIO"]:
             self.style=style
-        if style in ["QUANTITATION"]:
+        elif style in ["QUANTITATION"]:
             self.style=style
         else:
             raise Error("ResiduePairListParser: unknown list parser style")

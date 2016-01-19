@@ -627,6 +627,22 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
             self.data_base[id]=new_data_base
         self.__update__()
 
+    def filter_out_same_residues(self):
+        '''
+        This function remove cross-links applied to the same residue
+        (ie, same chain name and residue number)
+        '''
+        new_xl_dict={}
+        for id in self.data_base.keys():
+            new_data_base=[]
+            for xl in self.data_base[id]:
+                if xl[self.protein1_key]==xl[self.protein2_key] and xl[self.residue1_key]==xl[self.residue2_key]:
+                    continue
+                else:
+                    new_data_base.append(xl)
+            self.data_base[id]=new_data_base
+        self.__update__()
+
 
     def jackknife(self,percentage):
         '''

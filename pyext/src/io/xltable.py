@@ -617,8 +617,11 @@ class XLTable():
                 (c1,c2,r1,r2)=IMP.pmi.io.crosslink._ProteinsResiduesArray(xl)
                 (mdist,p1,p2)=self._get_distance_and_particle_pair(r1,c1,r2,c2)
                 group_dists_particles.append((mdist,p1,p2,xllabel))
-            (minmdist,minp1,minp2,minxllabel)=min(group_dists_particles, key = lambda t: t[0])
-            list_of_pairs.append((minp1,minp2,xllabel))
+            if group_dists_particles:
+                (minmdist,minp1,minp2,minxllabel)=min(group_dists_particles, key = lambda t: t[0])
+                list_of_pairs.append((minp1,minp2,xllabel))
+            else:
+                continue
 
         m=self.prots[0].get_model()
         linear = IMP.core.Linear(0, 0.0)

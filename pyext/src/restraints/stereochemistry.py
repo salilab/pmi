@@ -12,8 +12,121 @@ import IMP.isd
 import itertools
 import IMP.pmi.tools
 import IMP.pmi.representation
+from operator import itemgetter
 from math import pi,log
 import sys
+
+
+class ConnectivityRestraint(object):
+    """ This class creates a restraint between adjacent particles in a
+    list of hierarchies. DOF is required for now to allow for testing
+    for particles in the same rigid body."""
+
+    def __init__(self, dof, hiers, scale=1.0,
+        disorderedlength=10, upperharmonic=True):
+        """
+        @param dof - pmi.dof.DegreesofFreedom object
+        @param hiers - a list of hierarchies that will be joined
+        @param scale - Riccardo knows what this is
+        @param disorderedlength - This flag uses either disordered length
+                     calculated for random coil peptides (True) or zero
+                     surface-to-surface distance between beads (False)
+                     as optimal distance for the sequence connectivity
+                     restraint.
+        @param upperharmonic - This flag uses either harmonic (False)
+                     or upperharmonic (True) in the intra-pair
+                     connectivity restraint.
+        """
+
+        self.kappa = 10  # No idea what this is
+        self.m = hiers[0].get_model()
+        SortedSegments = []
+        self.rs = IMP.RestraintSet(self.m, "connectivity_restraint")
+        for h in hiers:
+            try:
+                start = IMP.atom.Hierarchy(h).get_children()[0]
+            except:
+                start = IMP.atom.Hierarchy(h)
+
+            try:
+                end = IMP.atom.Hierarchy(h).get_children()[-1]
+            except:
+                end = IMP.atom.Hierarchy(h)
+
+            startres = IMP.pmi.tools.get_residue_indexes(start)[0]
+            endres = IMP.pmi.tools.get_residue_indexes(end)[-1]
+            SortedSegments.append((start, end, startres))
+        SortedSegments = sorted(SortedSegments, key=itemgetter(2))
+
+        # connect the particles
+        #
+        # Add test if adjacent particles are in same RB,
+        # and not non-rigid members
+        #
+        for x in range(len(SortedSegments) - 1):
+            last = SortedSegments[x][1]
+            first = SortedSegments[x + 1][0]
+
+            nreslast = len(IMP.pmi.tools.get_residue_indexes(last))
+            lastresn = IMP.pmi.tools.get_residue_indexes(last)[-1]
+            nresfirst = len(IMP.pmi.tools.get_residue_indexes(first))
+            firstresn = IMP.pmi.tools.get_residue_indexes(first)[0]
+
+            residuegap = firstresn - lastresn - 1
+            if disorderedlength and (nreslast / 2 + nresfirst / 2 + residuegap) > 20.0:
+                # calculate the distance between the sphere centers using Kohn
+                # PNAS 2004
+                optdist = sqrt(5 / 3) * 1.93 * \
+                    (nreslast / 2 + nresfirst / 2 + residuegap) ** 0.6
+                # optdist2=sqrt(5/3)*1.93*((nreslast)**0.6+(nresfirst)**0.6)/2
+                if upperharmonic:
+                    hu = IMP.core.HarmonicUpperBound(optdist, self.kappa)
+                else:
+                    hu = IMP.core.Harmonic(optdist, self.kappa)
+                dps = IMP.core.DistancePairScore(hu)
+            else:  # default
+                optdist = (0.0 + (float(residuegap) + 1.0) * 3.6) * scale
+                if upperharmonic:  # default
+                    hu = IMP.core.HarmonicUpperBound(optdist, self.kappa)
+                else:
+                    hu = IMP.core.Harmonic(optdist, self.kappa)
+                dps = IMP.core.SphereDistancePairScore(hu)
+
+            pt0 = last.get_particle()
+            pt1 = first.get_particle()
+            r = IMP.core.PairRestraint(self.m, dps, (pt0.get_index(), pt1.get_index()))
+
+            print("Adding sequence connectivity restraint between", pt0.get_name(), " and ", pt1.get_name(), 'of distance', optdist)
+            self.rs.add_restraint(r)
+
+
+    def set_label(self, label):
+        self.label = label
+
+
+    def get_weight(self):
+        return self.weight
+
+    def add_to_model(self):
+        IMP.pmi.tools.add_restraint_to_model(self.m, self.rs)
+
+    def get_restraint(self):
+        return self.rs
+
+    def set_weight(self, weight):
+        self.weight = weight
+        self.rs.set_weight(weight)
+
+    def get_output(self):
+        self.mdl.update()
+        output = {}
+        score = self.weight * self.rs.unprotected_evaluate(None)
+        output["_TotalScore"] = str(score)
+        output["ConnectivityRestraint_" + self.label] = str(score)
+        return output
+
+
+
 
 class ExcludedVolumeSphere(object):
     """A class to create an excluded volume restraint for a set of particles at a given resolution.

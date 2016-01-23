@@ -556,9 +556,10 @@ class TempResidue(object):
         @param internal_index The number in the sequence
         """
         self.molecule = molecule
+        self.rtype = IMP.pmi.tools.get_residue_type_from_one_letter_code(code)
         self.hier = IMP.atom.Residue.setup_particle(IMP.Particle(molecule.mdl),
-                                IMP.pmi.tools.get_residue_type_from_one_letter_code(code),
-                                index)
+                                                    self.rtype,
+                                                    index)
         self.pdb_index = index
         self.internal_index = internal_index
     def __str__(self):
@@ -576,9 +577,9 @@ class TempResidue(object):
     def get_internal_index(self):
         return self.internal_index
     def get_code(self):
-        return IMP.atom.get_one_letter_code(self.hier.get_residue_type())
+        return IMP.atom.get_one_letter_code(self.get_residue_type())
     def get_residue_type(self):
-        return self.hier.get_residue_type()
+        return self.rtype
     def get_hierarchy(self):
         return self.hier
     def get_molecule(self):
@@ -586,11 +587,12 @@ class TempResidue(object):
     def get_has_structure(self):
         return (self.hier.get_children()!=[])
     def set_structure(self,res,soft_check=False):
-        if res.get_residue_type()!=self.hier.get_residue_type():
+        if res.get_residue_type()!=self.get_residue_type():
             if soft_check:
                 print('WARNING: Replacing sequence residue',self.get_index(),self.hier.get_residue_type(),
                       'with PDB type',res.get_residue_type())
                 self.hier.set_residue_type((res.get_residue_type()))
+                self.rtype = res.get_residue_type()
             else:
                 raise Exception('ERROR: PDB residue index',self.get_index(),'is',
                                 IMP.atom.get_one_letter_code(res.get_residue_type()),

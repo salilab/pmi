@@ -562,6 +562,7 @@ class TempResidue(object):
                                                     index)
         self.pdb_index = index
         self.internal_index = internal_index
+        self._structured = False
     def __str__(self):
         return self.get_code()+str(self.get_index())
     def __repr__(self):
@@ -585,7 +586,7 @@ class TempResidue(object):
     def get_molecule(self):
         return self.molecule
     def get_has_structure(self):
-        return (self.hier.get_children()!=[])
+        return self._structured
     def set_structure(self,res,soft_check=False):
         if res.get_residue_type()!=self.get_residue_type():
             if soft_check:
@@ -603,7 +604,7 @@ class TempResidue(object):
             atype=IMP.atom.Atom(a).get_atom_type()
             a.get_particle().set_name('Atom %s of residue %i'%(atype.__str__().strip('"'),
                                                                self.hier.get_index()))
-
+        self._structured = True
 class TopologyReader(object):
     '''
     Read a pipe-delimited PMI topology file.

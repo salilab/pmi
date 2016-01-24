@@ -3,11 +3,55 @@ import IMP.atom
 import IMP.test
 import IMP.pmi
 import IMP.pmi.io
+import IMP.pmi.dof
 import IMP.pmi.topology
 import IMP.pmi.restraints.stereochemistry
 
 
 class StereochemistryTests(IMP.test.TestCase):
+
+
+    def test_stereochemistry_basic(self):
+        """ test PMI2 connectivity restraint on basic system 
+        Currently failing """   
+        mdl = IMP.Model()
+        s = IMP.pmi.topology.System(mdl)    
+        st1 = s.create_state()
+        mol = st1.create_molecule("test", sequence="CHARLES", chain_id="A")
+        mol.add_representation(mol.get_residues(),resolutions=[1])
+        hier = s.build()
+
+        reshiers = [r.hier for r in mol.get_residues()]
+
+        cr = IMP.pmi.restraints.stereochemistry.ConnectivityRestraint(reshiers)
+
+        self.assertEqual(len(reshiers) - 1, cr.get_num_restraints() )
+
+        # Add rigid body
+        dof = IMP.pmi.dof.DegreesOfFreedom(mdl)
+        rbres = mol.get_residues()[0:4]
+        nrparts = mol.get_residues()[0:1]
+        dof.create_rigid_body(rbres, non_rigid_parts=nrparts)
+
+        cr1 = IMP.pmi.restraints.stereochemistry.ConnectivityRestraint(reshiers)
+        # will fail until RB parsing set up
+        self.assertEqual( 4, cr1.get_num_restraints() )
+
+
+    def test_stereochemistry_system(self):
+        """ test PMI2 connectivity restraint with coarse-grained real system"""
+        mdl = IMP.Model()
+        s = IMP.pmi.topology.System(mdl)
+        seqs = IMP.pmi.topology.Sequences(self.get_input_file_name('chainA.fasta'))
+        st1 = s.create_state()
+        mol = st1.create_molecule("GCP2_YEAST",sequence=seqs["GCP2_YEAST"],chain_id='A')
+        atomic_res = mol.add_structure(self.get_input_file_name('chainA.pdb'),
+                                    chain_id='A')
+        mol.add_representation(atomic_res,resolutions=[10])
+        hier = s.build()
+
+        dof.create_rigid_body(mol, non_rigid_parts=mol.get_non_atomic_residues(True)]
+
 
     def test_parse_dssp(self):
         """Test reading DSSP files"""
@@ -84,6 +128,8 @@ class StereochemistryTests(IMP.test.TestCase):
 
         # create elastic network from some SSEs
         charmm = IMP.pmi.restraints.stereochemistry.CharmmForceFieldRestraint(hier)
+
+        cr = IMP.pmi.restraints.stereochemistry.ConnectivityRestraint(reshiers)
 
 if __name__ == '__main__':
     IMP.test.main()

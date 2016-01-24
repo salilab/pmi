@@ -1,4 +1,4 @@
-## \example pmi/multiscale.py
+### \example pmi/multiscale.py
 
 """This script shows how to represent a system
 At multiple scales, including electron densities.
@@ -50,19 +50,21 @@ class MultiscaleTopologyTest(IMP.test.TestCase):
         return a1, hier, mol
 
     def test_num_residues(self):
+        """ Test different ways of accessing residues"""
         mdl = IMP.Model()
         (a1, hier, mol)=self.initialize_system(mdl)
 
-        num_res_get_res = len(mol.get_residues())
-        num_res = len(mol.residues)
-        len_struct_list = len(a1)
-        len_struct_list_mol = len(mol.get_atomic_residues())
-
-        self.assertEqual(len(a1), len(mol.get_atomic_residues()))
-        self.assertEqual(len(mol.get_residues()), len(mol.residues))
         self.assertEqual(823, len(mol.residues))
         self.assertEqual(581, len(a1))
-        self.assertEqual(581, len(mol.get_atomic_residues()))
+        self.assertEqual(62, len(mol.get_atomic_residues(only_modeled=True)))
+        self.assertEqual(len(a1), len(mol.get_atomic_residues(only_modeled=False)))
+        self.assertEqual( len(mol.get_residues(only_modeled=True)), 
+                len(mol.get_atomic_residues(only_modeled=True)) + len(mol.get_non_atomic_residues(only_modeled=True)) )
+        self.assertEqual(len(mol.get_residues(only_modeled=False)), 
+                len(mol.get_atomic_residues(only_modeled=False)) + len(mol.get_non_atomic_residues(only_modeled=False)) )
+        self.assertEqual(len(mol.get_residues(only_modeled=False)), 823)
+        self.assertEqual(len(mol.get_residues(only_modeled=True)), 90)
+
 
     def test_num_unstruct_res(self):
         mdl = IMP.Model()
@@ -76,7 +78,7 @@ class MultiscaleTopologyTest(IMP.test.TestCase):
             else:
                 unstruct_res+=1
 
-        self.assertEqual(242, unstruct_res) # Should be 843 - 581 residues
+        self.assertEqual(242, unstruct_res)
         self.assertEqual(581, struct_res)
         self.assertEqual(len(mol.residues), unstruct_res + struct_res)
 
@@ -94,15 +96,6 @@ class MultiscaleTopologyTest(IMP.test.TestCase):
 
         self.assertEqual(581, struct_res)
         self.assertEqual(len(mol.residues), unstruct_res + struct_res)
-
-    def test_residue_type(self):
-        # The self.hier object in TempResidue is an IMP.atom.Hierarchy
-        mdl = IMP.Model()
-        (a1, hier, mol)=self.initialize_system(mdl)
-
-        res = mol.residues[0]
-
-        self.assertEqual(IMP.atom.Residue, type(res.hier))
 
     def test_residue_print(self):
         """PMI Residues cannot print their name
@@ -141,7 +134,7 @@ class MultiscaleTopologyTest(IMP.test.TestCase):
                 self.fail("Particle not a RigidMember or a NonRigidMember")
         self.assertNotEqual(0,rms)
 
-    def test_molecule_rigid_members(self):
+    def test_molecule_rigid_members1(self):
         """None of the leaves of the selection (Resolution=10) are RigidMembers"""
 
         mdl = IMP.Model()

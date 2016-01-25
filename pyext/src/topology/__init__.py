@@ -216,47 +216,30 @@ class Molecule(SystemBase):
         else:
             print("ERROR: range ends must be int or str. Stride must be int.")
 
-    def get_residues(self, only_modeled=False):
+    def get_residues(self):
         """ Return all modeled TempResidues as a set"""
-        if only_modeled:
-            all_res=set()
-            for res in self.residues:
-                all_res.add(res)
-            return all_res
-        else:
-            return self.residues
+        all_res=set()
+        for res in self.residues:
+            all_res.add(res)
+        return all_res
 
 
-    def get_atomic_residues(self, only_modeled=False):
+    def get_atomic_residues(self):
         """ Return a set of TempResidues that have associated structure coordinates """
-        if only_modeled:
-            atomic_res=set()
-            for res in self.residues:
-                if res.get_has_structure():
-                    atomic_res.add(res)
-            return atomic_res
-        else:
-            atomic_res=[]
-            for res in self.residues:
-                if res.get_has_structure():
-                    atomic_res.append(res)
-            return atomic_res
+        atomic_res=set()
+        for res in self.residues:
+            if res.get_has_structure():
+                atomic_res.add(res)
+        return atomic_res
 
-    def get_non_atomic_residues(self, only_modeled=False):
+
+    def get_non_atomic_residues(self):
         """ Return a set of TempResidues that don't have associated structure coordinates """
-        if only_modeled:
-            non_atomic_res=set()
-            for res in self.residues:
-                if not res.get_has_structure():
-                    non_atomic_res.add(res)
-            return non_atomic_res
-        else:
-            non_atomic_res=[]
-            for res in self.residues:
-                if not res.get_has_structure():
-                    non_atomic_res.append(res)
-            return non_atomic_res
-
+        non_atomic_res=set()
+        for res in self.residues:
+            if not res.get_has_structure():
+                non_atomic_res.add(res)
+        return non_atomic_res
 
 
     def create_copy(self,chain_id):
@@ -496,7 +479,7 @@ class Molecule(SystemBase):
         if not self.built:
             raise Exception("Cannot get all resolutions until you build the Molecule")
         if residue_indexes is None:
-            residue_indexes = [r.get_index() for r in self.get_residues(True)]
+            residue_indexes = [r.get_index() for r in self.get_residues()]
         ps = IMP.pmi.tools.select_at_all_resolutions(self.get_hierarchy(),
                                                       residue_indexes=residue_indexes)
         return ps

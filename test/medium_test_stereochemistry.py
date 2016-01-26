@@ -10,10 +10,9 @@ import IMP.pmi.restraints.stereochemistry
 
 class StereochemistryTests(IMP.test.TestCase):
 
-
     def test_stereochemistry_basic(self):
         """ test PMI2 connectivity restraint on basic system 
-        Currently failing """   
+        Currently failing"""   
         mdl = IMP.Model()
         s = IMP.pmi.topology.System(mdl)    
         st1 = s.create_state()
@@ -21,22 +20,47 @@ class StereochemistryTests(IMP.test.TestCase):
         mol.add_representation(mol.get_residues(),resolutions=[1])
         hier = s.build()
 
-        reshiers = [r.hier for r in mol.get_residues()]
+        cr = IMP.pmi.restraints.stereochemistry.ConnectivityRestraint(mol)
 
-        cr = IMP.pmi.restraints.stereochemistry.ConnectivityRestraint(reshiers)
+        self.assertEqual(len(mol.get_residues()) - 1, cr.get_num_restraints() )
 
-        self.assertEqual(len(reshiers) - 1, cr.get_num_restraints() )
+    def test_stereochemistry_basic_rb(self):
+        """ test PMI2 connectivity restraint on basic system with rigid body"""   
+        mdl = IMP.Model()
+        s = IMP.pmi.topology.System(mdl)    
+        st1 = s.create_state()
+        mol = st1.create_molecule("test", sequence="CHARLES", chain_id="A")
+        mol.add_representation(mol.get_residues(),resolutions=[1])
+        hier = s.build()
 
         # Add rigid body
         dof = IMP.pmi.dof.DegreesOfFreedom(mdl)
-        rbres = mol.get_residues()[0:4]
-        nrparts = mol.get_residues()[0:1]
-        dof.create_rigid_body(rbres, non_rigid_parts=nrparts)
+        rbres = mol[0:4]
+        nrparts = mol[0:1]
+        dof.create_rigid_body(rbres, nonrigid_parts=nrparts)
 
-        cr1 = IMP.pmi.restraints.stereochemistry.ConnectivityRestraint(reshiers)
-        # will fail until RB parsing set up
+        cr1 = IMP.pmi.restraints.stereochemistry.ConnectivityRestraint(mol)
         self.assertEqual( 4, cr1.get_num_restraints() )
 
+
+    def test_stereochemistry_basic_two_rbs(self):
+        """ test PMI2 connectivity restraint on basic system with two rigid bodies"""   
+        mdl = IMP.Model()
+        s = IMP.pmi.topology.System(mdl)    
+        st1 = s.create_state()
+        mol = st1.create_molecule("test", sequence="CHARLES", chain_id="A")
+        mol.add_representation(mol.get_residues(),resolutions=[1])
+        hier = s.build()
+
+        # Add rigid body
+        dof = IMP.pmi.dof.DegreesOfFreedom(mdl)
+        rbres1 = mol[0:4]
+        rbres2 = mol[4:7]
+        dof.create_rigid_body(rbres1)
+        dof.create_rigid_body(rbres2)
+
+        cr1 = IMP.pmi.restraints.stereochemistry.ConnectivityRestraint(mol)
+        self.assertEqual( 1, cr1.get_num_restraints() )
 
     def test_stereochemistry_system(self):
         """ test PMI2 connectivity restraint with coarse-grained real system"""
@@ -47,10 +71,16 @@ class StereochemistryTests(IMP.test.TestCase):
         mol = st1.create_molecule("GCP2_YEAST",sequence=seqs["GCP2_YEAST"],chain_id='A')
         atomic_res = mol.add_structure(self.get_input_file_name('chainA.pdb'),
                                     chain_id='A')
-        mol.add_representation(atomic_res,resolutions=[10])
+        mol.add_representation(mol.get_atomic_residues(),resolutions=[1,10])
+        mol.add_representation(mol.get_non_atomic_residues(), resolutions=[10])
         hier = s.build()
 
-        dof.create_rigid_body(mol, non_rigid_parts=mol.get_non_atomic_residues(True)]
+        dof = IMP.pmi.dof.DegreesOfFreedom(mdl)
+        dof.create_rigid_body(mol, nonrigid_parts=mol.get_non_atomic_residues())
+
+        cr = IMP.pmi.restraints.stereochemistry.ConnectivityRestraint(mol)
+
+        self.assertEqual(cr.get_num_restraints(), 34)
 
 
     def test_parse_dssp(self):
@@ -85,6 +115,7 @@ class StereochemistryTests(IMP.test.TestCase):
             hierarchy=hier)
         self.assertEqual(er.get_restraint().get_number_of_restraints(),12)
 
+
     def test_excluded_volume_sphere_pmi2(self):
         """ Tests excluded volume restraint in PMI2 """
 
@@ -113,6 +144,7 @@ class StereochemistryTests(IMP.test.TestCase):
 
         ev = IMP.pmi.restraints.stereochemistry.ExcludedVolumeSphere(included_objects=resis, resolution=1)
         self.assertEqual(len(ev.cpc.get_all_possible_indexes()), 5)
+
 
     def test_charmm(self):
         """ test PMI setup of CHARMM"""

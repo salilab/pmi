@@ -87,17 +87,13 @@ class ConnectivityRestraint(object):
             #   - first and last are part of the same RigidBody object
 
             # Check for both in a rigid body
-            print("----------------", first, last)
             if  IMP.core.RigidBodyMember.get_is_setup(first) and IMP.core.RigidBodyMember.get_is_setup(last) and \
                 IMP.core.RigidMember.get_is_setup(first) and IMP.core.RigidMember.get_is_setup(last):
 
-                print("All are rigid members of rigid bodies")
-                print("Rigid Bodies:", IMP.core.RigidBodyMember(first).get_rigid_body(), IMP.core.RigidBodyMember(last).get_rigid_body())
-
                 #Check if the rigid body objects for each particle are the same object
                 if IMP.core.RigidBodyMember(first).get_rigid_body() == IMP.core.RigidBodyMember(last).get_rigid_body():
+
                     # if so, skip connectivity restraint
-                    print("Also in same Rigid Body", IMP.core.RigidBodyMember(first).get_rigid_body(), IMP.core.RigidBodyMember(last).get_rigid_body())
                     apply_restraint = False
 
             if apply_restraint:

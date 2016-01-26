@@ -440,7 +440,7 @@ class Molecule(SystemBase):
             for r in self.residues:
                 if r not in self.represented:
                     if first:
-                        print('WARNING: Residues without representation!',end="")
+                        print('WARNING: Residues without representation: ',end="")
                         first = False
                     print(r,'',end='')
             if not first:

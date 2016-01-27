@@ -13,6 +13,7 @@ import IMP.pmi.tools
 import IMP.pmi.output
 from math import log
 from collections import defaultdict
+import itertools
 
 class CrossLinkingMassSpectrometryRestraint(object):
     """Setup cross-link distance restraints from mass spectrometry data.
@@ -391,26 +392,25 @@ class AtomicCrossLinkMSRestraint(object):
     \note Wraps an IMP::isd::AtomicCrossLinkMSRestraint
     """
     def __init__(self,
-                 root,
-                 data,
-                 extra_sel={'atom_type':IMP.atom.AtomType('NZ')},
+                 root_hier,
+                 xldb,
+                 atom_type="NZ",
                  length=10.0,
                  slope=0.01,
                  nstates=None,
                  label='',
-                 max_dist=None,
                  nuisances_are_optimized=True,
                  sigma_init=5.0,
                  psi_init = 0.01,
-                 one_psi=True):
-        """ATOMIC XL restraint. Provide selections for the particles to restrain.
+                 one_psi=True,
+                 filelabel=None):
+        """Constructor.
         Automatically creates one "sigma" per crosslinked residue and one "psis" per pair.
         Other nuisance options are available.
         \note Will return an error if the data+extra_sel don't specify two particles per XL pair.
-        @param root      The root hierarchy on which you'll do selection
-        @param data      CrossLinkData object
-        @param extra_sel  Additional selections to add to each data point. Defaults to:
-                          {'atom_type':IMP.atom.AtomType('NZ')}
+        @param root_hier  The root hierarchy on which you'll do selection
+        @param xldb       CrossLinkDataBase object
+        @param atom_type  Can either be "NZ" or "CA"
         @param length     The XL linker length
         @param nstates    The number of states to model. Defaults to the number of states in root.
         @param label      The output label for the restraint
@@ -418,21 +418,27 @@ class AtomicCrossLinkMSRestraint(object):
         @param sigma_init The initial value for all the sigmas
         @param psi_init   The initial value for all the psis
         @param one_psi    Use a single psi for all restraints (if False, creates one per XL)
+        @param filelabel automaticlly generated file containing missing/included/excluded
+                cross-links will be labeled using this text
         """
 
         # basic params
-        self.mdl = root.get_model()
-        self.root = root
+        self.root = root_hier
+        self.mdl = self.root.get_model()
+        self.CrossLinkDataBase = xldb
         self.weight = 1.0
         self.label = label
         self.length = length
         self.sigma_is_sampled = nuisances_are_optimized
         self.psi_is_sampled = nuisances_are_optimized
 
+        if atom_type not in("NZ","CA"):
+            raise Exception("AtomicXLRestraint: atom_type must be NZ or CA")
+        self.atom_type = atom_type
         self.nstates = nstates
         if nstates is None:
-            self.nstates = len(IMP.atom.get_by_type(root,IMP.atom.STATE_TYPE))
-        elif nstates!=len(IMP.atom.get_by_type(root,IMP.atom.STATE_TYPE)):
+            self.nstates = len(IMP.atom.get_by_type(self.root,IMP.atom.STATE_TYPE))
+        elif nstates!=len(IMP.atom.get_by_type(self.root,IMP.atom.STATE_TYPE)):
             print("Warning: nstates is not the same as the number of states in root")
 
         self.rs = IMP.RestraintSet(self.mdl, 'likelihood')
@@ -440,10 +446,6 @@ class AtomicCrossLinkMSRestraint(object):
         self.rs_sig = IMP.RestraintSet(self.mdl, 'prior_sigmas')
         self.rs_lin = IMP.RestraintSet(self.mdl, 'linear_dummy_restraints')
 
-        # dummy linear restraint used for Chimera display
-        self.linear = IMP.core.Linear(0, 0.0)
-        self.linear.set_slope(0.0)
-        dps2 = IMP.core.DistancePairScore(self.linear)
 
         self.psi_dictionary = {}
         self.sigma_dictionary = {}
@@ -455,6 +457,14 @@ class AtomicCrossLinkMSRestraint(object):
             print('creating a single psi for all XLs')
         else:
             print('creating one psi for each XL')
+
+        # output logging file
+        if filelabel is not None:
+            indb = open("included." + filelabel + ".xl.db", "w")
+            exdb = open("excluded." + filelabel + ".xl.db", "w")
+            midb = open("missing." + filelabel + ".xl.db", "w")
+
+
 
         ### Setup nuisances
         '''
@@ -473,22 +483,21 @@ class AtomicCrossLinkMSRestraint(object):
         self.sig_high = setup_nuisance(self.mdl,self.rs_nuis,init_val=sigma_init,min_val=1.0,
                                        max_val=100.0,is_opt=self.nuis_opt)
         '''
-        self.sigma = self._create_sigma("sigma",sigma_init)
+        self._create_sigma('sigma',sigma_init)
         if one_psi:
-            self.psi = self._create_psi("psi",psi_init)
+            self._create_psi('psi',psi_init)
         else:
-            for unique_id in data:
-                self._create_psi("psi_"+str(unique_id),psi_init)
+            for xlid in self.CrossLinkDataBase.xlid_iterator():
+                self._create_psi(xlid,psi_init)
 
         ### create all the XLs
         xlrs=[]
-        for unique_id in data:
+        for xlid in self.CrossLinkDataBase.xlid_iterator():
             # create restraint for this data point
             if one_psi:
-                psip = self.psi.get_particle_index()
+                psip = self.psi_dictionary['psi'][0].get_particle_index()
             else:
-                psip = self.psis[unique_id].get_particle_index()
-
+                psip = self.psi_dictionary[unique_id][0].get_particle_index()
             r = IMP.isd.AtomicCrossLinkMSRestraint(self.mdl,
                                                    self.length,
                                                    psip,
@@ -498,12 +507,36 @@ class AtomicCrossLinkMSRestraint(object):
 
             # add a contribution for each XL ambiguity option within each state
             for nstate in self.nstates:
-                for xl in data[unique_id]:
-                    xl_pairs = xl.get_selection(root,state_index=nstate,
-                                                **extra_sel)
+                for xl in self.CrossLinkDataBase[xlid]:
+                    r1 = xl[self.CrossLinkDataBase.residue1_key]
+                    c1 = xl[self.CrossLinkDataBase.protein1_key].strip()
+                    r2 = xl[self.CrossLinkDataBase.residue2_key]
+                    c2 = xl[self.CrossLinkDataBase.protein2_key].strip()
 
-                    if len(xl_pairs)==0:
+                    # perform selection. these may contain multiples if Copies are used
+                    ps1 = IMP.atom.Selection(self.root,
+                                             state_index=nstate,
+                                             atom_type = IMP.atom.AtomType(self.atom_type),
+                                             molecule=c1,
+                                             residue_index=r1).get_selected_particles()
+                    ps2 = IMP.atom.Selection(self.root,
+                                             state_index=nstate,
+                                             atom_type = IMP.atom.AtomType(self.atom_type),
+                                             molecule=c2,
+                                             residue_index=r2).get_selected_particles()
+                    if len(ps1) == 0:
+                        print("AtomicXLRestraint: WARNING> residue %d of chain %s is not there" % (r1, c1))
+                        if filelabel is not None:
+                            midb.write(str(xl) + "\n")
                         continue
+
+                    if len(ps2) == 0:
+                        print("AtomicXLRestraint: WARNING> residue %d of chain %s is not there" % (r2, c2))
+                        if filelabel is not None:
+                            midb.write(str(xl) + "\n")
+                        continue
+
+
                     # figure out sig1 and sig2 based on num XLs
                     '''
                     num1=num_xls_per_res[str(xl.r1)]
@@ -517,25 +550,23 @@ class AtomicCrossLinkMSRestraint(object):
                     else:
                         sig2=self.sig_high
                     '''
-                    sig1 = self.sigma
-                    sig2 = self.sigma
+                    sig1 = self.sigma_dictionary['sigma'][0]
+                    sig2 = self.sigma_dictionary['sigma'][0]
 
                     # add each copy contribution to restraint
-                    for p1,p2 in xl_pairs:
+                    for p1,p2 in itertools.product(ps1,ps2):
                         if p1==p2:
                             continue
-                        self.particles[nstate]|=set([p1,p2])
-                        if max_dist is not None:
-                            dist=IMP.core.get_distance(IMP.core.XYZ(p1),IMP.core.XYZ(p2))
-                            if dist>max_dist:
-                                continue
+                        self.particles[nstate]|=set((p1,p2))
                         r.add_contribution([p1.get_index(),p2.get_index()],
                                            [sig1.get_particle_index(),sig2.get_particle_index()])
                         num_contributions+=1
-                #if num_contributions==0:
-                #    raise RestraintSetupError("No contributions!")
+
             if num_contributions>0:
+                print('XL:',xlid,'num contributions:',num_contributions)
                 xlrs.append(r)
+        if len(xlrs)==0:
+            raise Exception("You didn't create any XL restraints")
         print('created',len(xlrs),'XL restraints')
         self.rs=IMP.isd.LogWrapper(xlrs,self.weight)
 

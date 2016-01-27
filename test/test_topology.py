@@ -24,20 +24,20 @@ class MultiscaleTopologyTest(IMP.test.TestCase):
         st1 = s.create_state()
 
         # Read sequences and create Molecules
-        seqs = IMP.pmi.topology.Sequences('../examples/data/gcp2.fasta')
+        seqs = IMP.pmi.topology.Sequences(IMP.pmi.get_example_path('data/gcp2.fasta'))
         mol = st1.create_molecule("GCP2",sequence=seqs["GCP2_YEAST"],chain_id='A')
 
         # Add structure. This function returns a list of the residues that now have structure
-        a1 = mol.add_structure('../examples/data/gcp2.pdb',
+        a1 = mol.add_structure(IMP.pmi.get_example_path('data/gcp2.pdb'),
                                 chain_id='A')
 
         # Add representations. For structured regions, created a few beads as well as densities
         #  For unstructured regions, create a single bead level and set those up as densities
         mol.add_representation(a1,
-                                resolutions=[10,100],
-                                density_prefix='../examples/data/gcp2_gmm',
-                                density_residues_per_component=20,
-                                density_voxel_size=3.0)
+                               resolutions=[10,100],
+                               density_prefix='gcp2_gmm',
+                               density_residues_per_component=20,
+                               density_voxel_size=3.0)
         mol.add_representation(mol.get_non_atomic_residues(),
                                 resolutions=[10],
                                 setup_particles_as_densities=True)
@@ -531,6 +531,7 @@ class TopologyTest(IMP.test.TestCase):
         dres = 2
         m1.add_representation(atomic_res,resolutions=[0,1],
                               density_residues_per_component=dres,
+                              density_voxel_size=3.0,
                               density_prefix=fname)
         m1.add_representation(non_atomic_res,resolutions=[1])
         hier = s.build()

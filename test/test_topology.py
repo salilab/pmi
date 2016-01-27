@@ -541,6 +541,7 @@ class TopologyTest(IMP.test.TestCase):
         selD = IMP.atom.Selection(hier,representation_type=IMP.atom.DENSITIES)
         self.assertEqual(len(selD.get_selected_particles()),len(atomic_res)/dres+1)
 
+    @IMP.test.skip("This test wont pass until we fix self-densities in RMF")
     def test_setup_beads_as_densities(self):
         """Test setup of individual density particles.
         This is mainly for flexible beads or all-atom simulations

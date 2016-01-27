@@ -1,8 +1,12 @@
 """@namespace IMP.pmi.topology
 Set of python classes to create a multi-state, multi-resolution IMP hierarchy.
-* Start by creating a System and then call System.create_state().
-* For each State, add Molecules with State.create_molecule().
-* For each Molecule, you can add_structure() (from PDB) and add_representation() (beads, densities, etc).
+* Start by creating a System and then call System.create_state(). You can easily create a multistate system by calling this function multiples times.
+* For each State, add a Molecule (a uniquely named polymer) with State.create_molecule(). This function returns the Molecule object which can be passed to various PMI functions.
+* Some useful functions to help you set up your Molecules:
+ * Access the sequence residues with slicing (Molecule[a:b]) or functions like Molecule.get_atomic_residues() and Molecule.get_non_atomic_residues(). These functions all return python sets for easy set arithmetic using & (and), | (or), - (difference)
+ * Molecule.add_structure() to add structural information from a PDB file.
+ * Molecule.add_representation() to create a representation unit - here you can choose bead resolutions as well as alternate representations like densities or ideal helices.
+ * Molecule.create_clone() lets you set up a molecule with identical representations, just a different chain ID. Use Molecule.create_copy() if you want a molecule with the same sequence but that allows custom representations.
 * Once data has been added and representations chosen, call System.build() to create a canonical IMP hierarchy.
 This namespace also contains the TopologyReader for setting up a System from a formatted text file."""
 
@@ -148,7 +152,8 @@ class State(SystemBase):
 #------------------------
 
 class Molecule(SystemBase):
-    """This class is constructed from within the State class.
+    """Stores a named protein chain.
+    This class is constructed from within the State class.
     It wraps an IMP.atom.Molecule and IMP.atom.Copy
     Structure is read using this class
     Resolutions and copies can be registered, but are only created when build() is called
@@ -325,7 +330,7 @@ class Molecule(SystemBase):
                If structured, will average along backbone, breaking at sequence breaks.
                If unstructured, will just create beads
         @param bead_extra_breaks Additional breakpoints for splitting beads.
-               The number is the first index of the break.
+               The number is the first PDB-style index that belongs in the second bead
         @param bead_ca_centers Set to True if you want the resolution=1 beads to be at CA centers
                (otherwise will average atoms to get center). Defaults to True.
         @param density_residues_per_component Create density (Gaussian Mixture Model)

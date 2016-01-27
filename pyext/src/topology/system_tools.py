@@ -1,7 +1,3 @@
-"""@namespace IMP.pmi.topology.system_tools
-   Tools to help build structures
-"""
-
 from __future__ import print_function
 import IMP
 import IMP.atom

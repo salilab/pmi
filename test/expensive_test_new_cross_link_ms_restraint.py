@@ -9,7 +9,7 @@ import IMP.pmi.io
 import IMP.pmi.io.crosslink
 import IMP.pmi.representation
 import IMP.pmi.restraints
-import IMP.pmi.restraints.crosslinking_new
+import IMP.pmi.restraints.crosslinking
 from math import *
 
 def sphere_cap(r1, r2, d):
@@ -108,7 +108,7 @@ class CrossLinkingMassSpectrometryRestraint(IMP.test.TestCase):
         cldb.create_set_from_file(IMP.pmi.get_data_path("polii_xlinks.csv"))
 
 
-        xl = IMP.pmi.restraints.crosslinking_new.CrossLinkingMassSpectrometryRestraint(representation,
+        xl = IMP.pmi.restraints.crosslinking.CrossLinkingMassSpectrometryRestraint(representation,
                                    cldb,
                                    length=21.0,
                                    slope=0.0,
@@ -133,7 +133,7 @@ class CrossLinkingMassSpectrometryRestraint(IMP.test.TestCase):
         cldb=IMP.pmi.io.crosslink.CrossLinkDataBase(cldbkc)
         cldb.create_set_from_file(self.get_input_file_name("expensive_test_new_cross_link_ms_restraint.csv"))
 
-        xl = IMP.pmi.restraints.crosslinking_new.CrossLinkingMassSpectrometryRestraint(
+        xl = IMP.pmi.restraints.crosslinking.CrossLinkingMassSpectrometryRestraint(
             representation,
             cldb,
             21,

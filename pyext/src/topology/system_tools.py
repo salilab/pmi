@@ -272,11 +272,16 @@ def build_representation(mdl,rep):
 
     # for each segment, merge into beads
     name_all = 'frags:'
+    name_count = 0
     for frag_res in segments:
         res_nums = [r.get_index() for r in frag_res]
         rrange = "%i-%i"%(res_nums[0],res_nums[-1])
-        name = "frag_"+rrange
-        name_all +=rrange+','
+        name = "Frag_"+rrange
+        if name_count<3:
+            name_all +=rrange+','
+        elif name_count==3:
+            name_all +='...'
+        name_count+=1
         segp = IMP.Particle(mdl,name)
         this_segment = IMP.atom.Fragment.setup_particle(segp,res_nums)
         if not single_node:
@@ -285,7 +290,7 @@ def build_representation(mdl,rep):
         for resolution in rep.bead_resolutions:
             fp = IMP.Particle(mdl)
             this_resolution = IMP.atom.Fragment.setup_particle(fp,res_nums)
-            this_resolution.set_name("Res %i"%resolution)
+            this_resolution.set_name("%s: Res %i"%(name,resolution))
             if frag_res[0].get_has_structure():
                 # if structured, merge particles as needed
                 if resolution==atomic_res:
@@ -333,12 +338,14 @@ def build_representation(mdl,rep):
 
     if single_node:
         ret = [root_representation]
-        root_representation.set_name(name_all.strip(','))
+        root_representation.set_name(name_all.strip(',')+": Base")
+        d = root_representation.get_representations(IMP.atom.DENSITIES)
+        d[0].set_name('%s: '%name_all + d[0].get_name())
         for resolution in rep.bead_resolutions:
             this_resolution = IMP.atom.Fragment.setup_particle(
                 IMP.Particle(mdl),
                 [r.get_index() for r in rep.residues])
-            this_resolution.set_name("Res %i"%resolution)
+            this_resolution.set_name("%s: Res %i"%(name_all,resolution))
             for hier in rep_dict[resolution]:
                 this_resolution.add_child(hier)
             if resolution==primary_resolution:

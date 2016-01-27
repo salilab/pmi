@@ -3,7 +3,7 @@ import IMP.atom
 import IMP.pmi
 import IMP.test
 import IMP.pmi.topology as topology
-import IMP.pmi.restraints.crosslinking_atomic
+import IMP.pmi.restraints.crosslinking
 import IMP.pmi.io
 
 class AtomicXLTest(IMP.test.TestCase):
@@ -42,7 +42,7 @@ class AtomicXLTest(IMP.test.TestCase):
                            {'molecule':'Prot1','residue_index':7},
                            {'molecule':'Prot1','residue_index':39},
                            1)
-        xl = IMP.pmi.restraints.crosslinking_atomic.AtomicCrossLinkMSRestraint(hier,xls,nstates=[0,1])
+        xl = IMP.pmi.restraints.crosslinking.AtomicCrossLinkMSRestraint(hier,xls,nstates=[0,1])
 
         # check that you created 8 restraints (2 copies => 4 restraints. x2 states)
         rs=xl.get_restraint_set()

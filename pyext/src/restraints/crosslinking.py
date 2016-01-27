@@ -7,16 +7,13 @@ import IMP
 import IMP.core
 import IMP.algebra
 import IMP.atom
+import IMP.isd
 import IMP.container
 import IMP.pmi.tools
-
-
-
+import IMP.pmi.output
+from math import log
 
 class CrossLinkingMassSpectrometryRestraint(object):
-    import IMP.isd
-    import IMP.pmi.tools
-    from math import log
 
     """Setup cross-link distance restraints from mass spectrometry data.
     The noise in the data and the structural uncertainty of cross-linked amino-acids
@@ -350,7 +347,7 @@ class CrossLinkingMassSpectrometryRestraint(object):
             p0 = xl["Particle1"]
             p1 = xl["Particle2"]
             output["CrossLinkingMassSpectrometryRestraint_Score_" +
-                   xl_label] = str(-self.log(ln.unprotected_evaluate(None)))
+                   xl_label] = str(-log(ln.unprotected_evaluate(None)))
 
             d0 = IMP.core.XYZ(p0)
             d1 = IMP.core.XYZ(p1)
@@ -484,7 +481,6 @@ class ConnectivityCrossLinkMS(object):
         uncertainty2,
         maxdist=50,
             npoints=10):
-        import IMP.pmi.output as output
 
         p1 = IMP.Particle(self.m)
         p2 = IMP.Particle(self.m)
@@ -507,7 +503,7 @@ class ConnectivityCrossLinkMS(object):
                 IMP.algebra.Vector3D(maxdist / npoints * float(i), 0, 0))
             dists.append(IMP.core.get_distance(d1, d2))
             scores.append(cr.unprotected_evaluate(None))
-        output.plot_xy_data(dists, scores)
+        IMP.pmi.output.plot_xy_data(dists, scores)
 
     def set_label(self, label):
         self.label = label
@@ -729,7 +725,6 @@ class SimplifiedCrossLinkMS(object):
         self.rs.set_weight(weight)
 
     def plot_restraint(self, radius1, radius2, maxdist=50, npoints=10):
-        import IMP.pmi.output as output
 
         p1 = IMP.Particle(self.m)
         p2 = IMP.Particle(self.m)
@@ -758,7 +753,7 @@ class SimplifiedCrossLinkMS(object):
                 IMP.algebra.Vector3D(maxdist / npoints * float(i), 0, 0))
             dists.append(IMP.core.get_distance(d1, d2))
             scores.append(dr.unprotected_evaluate(None))
-        output.plot_xy_data(dists, scores)
+        IMP.pmi.output.plot_xy_data(dists, scores)
 
     def get_output(self):
         # content of the crosslink database pairs
@@ -809,7 +804,6 @@ class SigmoidalCrossLinkMS(object):
         # by default column 0 = protein1; column 1 = protein2; column 2 = residue1; column 3 = residue2
         # the filters applies to the csvfile, the format is
         # filters=[("Field1",">|<|=|>=|<=",value),("Field2","is","String"),("Field2","in","String")]
-        import IMP.pmi.tools as tools
 
         if columnmapping is None:
             columnmapping = {}
@@ -966,8 +960,6 @@ class SigmoidalCrossLinkMS(object):
         self.rs.set_weight(weight)
 
     def plot_restraint(self, radius1, radius2, maxdist=50, npoints=10):
-        import IMP.pmi.output as output
-
         p1 = IMP.Particle(self.m)
         p2 = IMP.Particle(self.m)
         d1 = IMP.core.XYZR.setup_particle(p1)
@@ -989,7 +981,7 @@ class SigmoidalCrossLinkMS(object):
                 IMP.algebra.Vector3D(maxdist / npoints * float(i), 0, 0))
             dists.append(IMP.core.get_distance(d1, d2))
             scores.append(dr.unprotected_evaluate(None))
-        output.plot_xy_data(dists, scores)
+        IMP.pmi.output.plot_xy_data(dists, scores)
 
     def get_output(self):
         # content of the crosslink database pairs
@@ -1024,15 +1016,6 @@ class SigmoidalCrossLinkMS(object):
 
 @IMP.deprecated_object("2.5", "Use IMP.pmi.restraints.crosslinking.CrossLinkingMassSpectrometryRestraint instead.")
 class ISDCrossLinkMS(IMP.pmi.restraints._NuisancesBase):
-    import IMP.isd
-    try:
-        import IMP.isd_emxl
-        no_isd_emxl = False
-    except:
-        no_isd_emxl = True
-    import IMP.pmi.tools
-    from math import log
-
     def __init__(self, representation,
                  restraints_file,
                  length,
@@ -1428,7 +1411,6 @@ class ISDCrossLinkMS(IMP.pmi.restraints._NuisancesBase):
         return label
 
     def write_db(self,filename):
-        import IMP.pmi.output
         cldb=IMP.pmi.output.CrossLinkIdentifierDatabase()
 
         for pairs_index in range(len(self.pairs)):
@@ -1481,7 +1463,7 @@ class ISDCrossLinkMS(IMP.pmi.restraints._NuisancesBase):
             p0 = self.pairs[i][0]
             p1 = self.pairs[i][1]
             output["ISDCrossLinkMS_Score_" +
-                   label + "_" + self.label] = str(-self.log(ln.unprotected_evaluate(None)))
+                   label + "_" + self.label] = str(-log(ln.unprotected_evaluate(None)))
 
             d0 = IMP.core.XYZ(p0)
             d1 = IMP.core.XYZ(p1)
@@ -1519,10 +1501,6 @@ class ISDCrossLinkMS(IMP.pmi.restraints._NuisancesBase):
 
 #
 class CysteineCrossLinkRestraint(object):
-
-    import IMP.isd
-    import IMP.pmi.tools
-
     def __init__(self, representations, filename, cbeta=False,
                  betatuple=(0.03, 0.1),
                  disttuple=(0.0, 25.0, 1000),

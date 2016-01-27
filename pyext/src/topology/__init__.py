@@ -409,21 +409,23 @@ class Molecule(SystemBase):
                                                     setup_particles_as_densities))
 
     def build(self):
-        '''Create all parts of the IMP hierarchy
+        """Create all parts of the IMP hierarchy
         including Atoms, Residues, and Fragments/Representations and, finally, Copies
         Will only build requested representations.
         /note Any residues assigned a resolution must have an IMP.atom.Residue hierarchy
               containing at least a CAlpha. For missing residues, these can be constructed
               from the PDB file
-        '''
+        """
 
         if not self.built:
 
             # if requested, clone structure and representations BEFORE building original
             if self.mol_to_clone is not None:
                 for nr,r in enumerate(self.mol_to_clone.residues):
-                    self.residues[nr].set_structure(
-                        IMP.atom.Residue(IMP.atom.create_clone(r.get_hierarchy())),soft_check=True)
+                    if r.get_has_structure():
+                        clone = IMP.atom.create_clone(r.get_hierarchy())
+                        self.residues[nr].set_structure(
+                            IMP.atom.Residue(clone),soft_check=True)
                 for old_rep in self.mol_to_clone.representations:
                     new_res = set()
                     for r in old_rep.residues:

@@ -18,7 +18,6 @@ def get_atomic_residue_list(residues):
             r1.append(IMP.atom.get_one_letter_code(r.get_residue_type()))
     return ''.join(r1)
 
-
 class MultiscaleTopologyTest(IMP.test.TestCase):
     def initialize_system(self, mdl):
         s = IMP.pmi.topology.System(mdl)
@@ -181,8 +180,6 @@ class MultiscaleTopologyTest(IMP.test.TestCase):
             else:
                 self.fail("Particle not a RigidMember or a NonRigidMember")
         self.assertEqual(0,nrms)
-
-
 
 class TopologyTest(IMP.test.TestCase):
 
@@ -438,7 +435,7 @@ class TopologyTest(IMP.test.TestCase):
                           [r.get_code() for r in m2.residues])
 
     def test_create_clone(self):
-        """Test creation and building of alone"""
+        """Test creation and building of clone"""
         s = IMP.pmi.topology.System()
         seqs = IMP.pmi.topology.Sequences(self.get_input_file_name('seqs.fasta'),
                          name_map={'Protein_1':'Prot1',

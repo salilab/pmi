@@ -173,7 +173,7 @@ class DisulfideCrossLinkRestraint(object):
         raise NotImplementedError(" ")
 
 
-@IMP.deprecated_object("2.5", "Use IMP.pmi.restraints.CrossLinkingMassSpectrometryRestraint instead.")
+@IMP.deprecated_object("2.5", "Use IMP.pmi.restraints.crosslinking.CrossLinkingMassSpectrometryRestraint instead.")
 class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.crosslinking.CrossLinkingMassSpectrometryRestraint):
 
     def __init__(self, *args, **kwargs):

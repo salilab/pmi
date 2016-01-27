@@ -1022,7 +1022,7 @@ class SigmoidalCrossLinkMS(object):
 
         return output
 
-@IMP.deprecated_object("2.5", "Use IMP.pmi.crosslinking.restraints.CrossLinkingMassSpectrometryRestraint instead.")
+@IMP.deprecated_object("2.5", "Use IMP.pmi.restraints.crosslinking.CrossLinkingMassSpectrometryRestraint instead.")
 class ISDCrossLinkMS(IMP.pmi.restraints._NuisancesBase):
     import IMP.isd
     try:

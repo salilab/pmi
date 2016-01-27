@@ -228,7 +228,13 @@ def build_representation(mdl,rep):
         density_frag = IMP.atom.Fragment.setup_particle(IMP.Particle(mdl),res_nums)
         density_frag.get_particle().set_name("Densities %i"%rep.density_residues_per_component)
         density_ps = []
-        if not os.path.exists(rep.density_prefix+'.txt') or rep.density_force_compute:
+
+        if os.path.exists(rep.density_prefix+'.txt') and not rep.density_force_compute:
+            IMP.isd.gmm_tools.decorate_gmm_from_text(rep.density_prefix+'.txt',
+                                                     density_ps,
+                                                     mdl)
+        if len(density_ps)!=num_components or not os.path.exists(rep.density_prefix+'.txt') or rep.density_force_compute:
+            density_ps = []
             fit_coords = []
             for r in rep.residues:
                 fit_coords += [IMP.core.XYZ(p).get_coordinates() for p in IMP.core.get_leaves(r.hier)]
@@ -238,10 +244,7 @@ def build_representation(mdl,rep):
                                                 density_ps)
             IMP.isd.gmm_tools.write_gmm_to_text(density_ps,rep.density_prefix+'.txt')
             IMP.isd.gmm_tools.write_gmm_to_map(density_ps,rep.density_prefix+'.mrc',rep.density_voxel_size)
-        else:
-            IMP.isd.gmm_tools.decorate_gmm_from_text(rep.density_prefix+'.txt',
-                                                     density_ps,
-                                                     mdl)
+
         for d in density_ps:
             density_frag.add_child(d)
         root_representation.add_representation(density_frag,

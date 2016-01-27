@@ -390,7 +390,7 @@ class CrossLinkingMassSpectrometryRestraint(object):
 
 
 
-@IMP.deprecated_method("2.5", "Use IMP.pmi.restraints.CrossLinkingMassSpectrometryRestraint instead.")
+@IMP.deprecated_object("2.5", "Use IMP.pmi.restraints.crosslinking.CrossLinkingMassSpectrometryRestraint instead.")
 class ConnectivityCrossLinkMS(object):
 
     '''
@@ -569,7 +569,7 @@ class ConnectivityCrossLinkMS(object):
 
         return output
 
-@IMP.deprecated_method("2.5", "Use IMP.pmi.restraints.CrossLinkingMassSpectrometryRestraint instead.")
+@IMP.deprecated_object("2.5", "Use IMP.pmi.restraints.crosslinking.CrossLinkingMassSpectrometryRestraint instead.")
 class SimplifiedCrossLinkMS(object):
 
     def __init__(
@@ -798,7 +798,7 @@ class SimplifiedCrossLinkMS(object):
 
 #
 
-@IMP.deprecated_method("2.5", "Use IMP.pmi.restraints.CrossLinkingMassSpectrometryRestraint instead.")
+@IMP.deprecated_object("2.5", "Use IMP.pmi.restraints.crosslinking.CrossLinkingMassSpectrometryRestraint instead.")
 class SigmoidalCrossLinkMS(object):
 
     def __init__(
@@ -1022,7 +1022,7 @@ class SigmoidalCrossLinkMS(object):
 
         return output
 
-@IMP.deprecated_method("2.5", "Use IMP.pmi.restraints.CrossLinkingMassSpectrometryRestraint instead.")
+@IMP.deprecated_object("2.5", "Use IMP.pmi.crosslinking.restraints.CrossLinkingMassSpectrometryRestraint instead.")
 class ISDCrossLinkMS(IMP.pmi.restraints._NuisancesBase):
     import IMP.isd
     try:

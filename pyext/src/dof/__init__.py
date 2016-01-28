@@ -40,6 +40,7 @@ class DegreesOfFreedom(object):
                               Must be a subset of rigid_parts particles.
         @param max_trans      Maximum rigid body translation
         @param max_rot        Maximum rigid body rotation
+        @param nonrigid_max_trans Maximum step for the nonrigid (bead) particles
         @param get_all_resolutions If True, will search the hierarchies for all resolutions
         @param name           Rigid body name (if None, use IMP default)
         """

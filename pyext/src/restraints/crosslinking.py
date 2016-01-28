@@ -579,10 +579,8 @@ class AtomicCrossLinkMSRestraint(object):
 
     def add_to_model(self):
         IMP.pmi.tools.add_restraint_to_model(self.mdl, self.rs)
-        IMP.pmi.tools.add_restraint_to_model(self.mdl, self.rs_nuis)
-        if self.create_nz:
-            IMP.pmi.tools.add_restraint_to_model(self.mdl, self.rset_bonds)
-            IMP.pmi.tools.add_restraint_to_model(self.mdl, self.rset_angles)
+        IMP.pmi.tools.add_restraint_to_model(self.mdl, self.rs_sig)
+        IMP.pmi.tools.add_restraint_to_model(self.mdl, self.rs_psi)
 
     def get_hierarchy(self):
         return self.prot
@@ -912,10 +910,11 @@ class AtomicCrossLinkMSRestraint(object):
         output["AtomicXLRestraint" + self.label] = str(score)
 
         ### HACK to make it easier to see the few sigmas
-        output["AtomicXLRestraint_sigma"] = self.sigma.get_scale()
-        output["AtomicXLRestraint_priors"] = self.rs_nuis.unprotected_evaluate(None)
-        if self.one_psi:
-            output["AtomicXLRestraint_psi"] = self.psi.get_scale()
+        #output["AtomicXLRestraint_sigma"] = self.sigma.get_scale()
+        output["AtomicXLRestraint_sigma"] = self.rs_sig.unprotected_evaluate(None)
+        output["AtomicXLRestraint_psi"] = self.rs_psi.unprotected_evaluate(None)
+        #if self.one_psi:
+        #    output["AtomicXLRestraint_psi"] = self.psi.get_scale()
         ######
 
         # count distances above length

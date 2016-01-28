@@ -21,17 +21,19 @@ class CrossLinkingMassSpectrometryRestraint(object):
     is inferred using Bayes theory of probabilty
     \note Wraps an IMP::isd::CrossLinkMSRestraint
     """
-    def __init__(self, representation,
-                 CrossLinkDataBase,
-                 length,
+    def __init__(self, representation=None,
+                 root_hier=None,
+                 CrossLinkDataBase=None,
+                 length=10.0,
                  resolution=None,
                  slope=0.02,
                  label="None",
                  filelabel="None",
                  attributes_for_label=None):
         """Constructor.
-        @param representation The IMP.pmi.representation.Representation
+        @param representation DEPRECATED The IMP.pmi.representation.Representation
                 object that contain the molecular system
+        @param root_hier The canonical hierarchy containing all the states
         @param CrossLinkDataBase The IMP.pmi.io.crosslink.CrossLinkDataBase
                 object that contains the cross-link dataset
         @param length maximal cross-linker lenght (including the residue sidechains)
@@ -47,21 +49,30 @@ class CrossLinkingMassSpectrometryRestraint(object):
         @param attributes_for_label
         """
 
-        if type(representation) != list:
-            representations = [representation]
+        use_pmi2 = True
+        if representation is not None:
+            use_pmi2 = False
+            if type(representation) != list:
+                representations = [representation]
+            else:
+                representations = representation
+            self.m = representations[0].prot.get_model()
+        elif root_hier is not None:
+            self.m = root_hier.get_model()
         else:
-            representations = representation
+            raise Exception("You must pass either representation or root_hier")
 
+        if CrossLinkDataBase is None:
+            raise Exception("You must pass a CrossLinkDataBase")
         if not isinstance(CrossLinkDataBase,IMP.pmi.io.crosslink.CrossLinkDataBase):
             raise TypeError("CrossLinkingMassSpectrometryRestraint: CrossLinkDataBase should be an IMP.pmi.io.crosslink.CrossLinkDataBase object")
-
-        self.CrossLinkDataBase=CrossLinkDataBase
+        self.CrossLinkDataBase = CrossLinkDataBase
 
         indb = open("included." + filelabel + ".xl.db", "w")
         exdb = open("excluded." + filelabel + ".xl.db", "w")
         midb = open("missing." + filelabel + ".xl.db", "w")
 
-        self.m = representations[0].prot.get_model()
+
         self.rs = IMP.RestraintSet(self.m, 'likelihood')
         self.rspsi = IMP.RestraintSet(self.m, 'prior_psi')
         self.rssig = IMP.RestraintSet(self.m, 'prior_sigmas')
@@ -91,23 +102,41 @@ class CrossLinkingMassSpectrometryRestraint(object):
                 r2 = xl[self.CrossLinkDataBase.residue2_key]
                 c2 = xl[self.CrossLinkDataBase.protein2_key]
 
-                for nstate, r in enumerate(representations):
+                if use_pmi2:
+                    iterlist = range(len(IMP.atom.get_by_type(root_hier,IMP.atom.STATE_TYPE)))
+                else:
+                    iterlist = representations
+                for nstate, r in enumerate(iterlist):
                     # loop over every state
                     xl[self.CrossLinkDataBase.state_key]=nstate
                     xl[self.CrossLinkDataBase.data_set_name_key]=self.label
 
-                    ps1 = IMP.pmi.tools.select(
-                         r,
-                         resolution=resolution,
-                         name=c1,
-                         name_is_ambiguous=False,
-                         residue=r1)
-                    ps2 = IMP.pmi.tools.select(
-                         r,
-                         resolution=resolution,
-                         name=c2,
-                         name_is_ambiguous=False,
-                         residue=r2)
+                    if not use_pmi2:
+                        ps1 = IMP.pmi.tools.select(
+                             r,
+                             resolution=resolution,
+                             name=c1,
+                             name_is_ambiguous=False,
+                             residue=r1)
+                        ps2 = IMP.pmi.tools.select(
+                             r,
+                             resolution=resolution,
+                             name=c2,
+                             name_is_ambiguous=False,
+                             residue=r2)
+                    else:
+                        ps1 = IMP.atom.Selection(root_hier,
+                                                 state_index=nstate,
+                                                 molecule=c1,
+                                                 residue_index=r1,
+                                                 resolution=resolution).get_selected_particles()
+                        ps1 = [IMP.atom.Hierarchy(p) for p in ps1] #to make it work below
+                        ps2 = IMP.atom.Selection(root_hier,
+                                                 state_index=nstate,
+                                                 molecule=c2,
+                                                 residue_index=r2,
+                                                 resolution=resolution).get_selected_particles()
+                        ps2 = [IMP.atom.Hierarchy(p) for p in ps2]
 
                     if len(ps1) > 1:
                         raise ValueError("residue %d of chain %s selects multiple particles %s" % (r1, c1, str(ps1)))

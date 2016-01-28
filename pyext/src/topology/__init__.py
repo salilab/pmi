@@ -451,6 +451,7 @@ class Molecule(_SystemBase):
                                               False,
                                               old_rep.setup_particles_as_densities)
                     self.representations.append(new_rep)
+                self.coord_finder = self.mol_to_clone.coord_finder
 
             # give a warning for all residues that don't have representation
             first = True

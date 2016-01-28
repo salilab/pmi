@@ -35,7 +35,8 @@ class ConnectivityRestraint(object):
                      or upperharmonic (True) in the intra-pair
                      connectivity restraint.
         """
-
+        self.label = "None"
+        self.weight = 1.0
         # If iterable, make sure that the list is non-zero and has only TempResidue objects
         if hasattr(objects,'__iter__'):
             if len(objects)==0:
@@ -149,7 +150,7 @@ class ConnectivityRestraint(object):
         self.rs.set_weight(weight)
 
     def get_output(self):
-        self.mdl.update()
+        self.m.update()
         output = {}
         score = self.weight * self.rs.unprotected_evaluate(None)
         output["_TotalScore"] = str(score)

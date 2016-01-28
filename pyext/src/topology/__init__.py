@@ -21,6 +21,7 @@ import os
 from collections import defaultdict
 from . import system_tools
 from Bio import SeqIO
+from bisect import bisect_left
 
 class SystemBase(object):
     """The base class for System, State and Molecule
@@ -176,6 +177,7 @@ class Molecule(SystemBase):
         self.mol_to_clone = mol_to_clone
         self.representations = []  # list of stuff to build
         self.represented = set()   # residues with representation
+        self.coord_finder = _FindCloseStructure() # helps you place beads by storing structure
 
         # create root node and set it as child to passed parent hierarchy
         self.hier = self._create_child(self.state.get_hierarchy())
@@ -288,6 +290,7 @@ class Molecule(SystemBase):
 
         # get IMP.atom.Residues from the pdb file
         rhs = system_tools.get_structure(self.mdl,pdb_fn,chain_id,res_range,offset,ca_only=ca_only)
+        self.coord_finder.add_residues(rhs)
 
         if len(self.residues)==0:
             print("WARNING: Extracting sequence from structure. Potentially dangerous.")
@@ -454,8 +457,11 @@ class Molecule(SystemBase):
                 print()
 
             # build all the representations
+            # get the first available struture position
+            # pass the nearest structure position as you go.
+
             for rep in self.representations:
-                hiers = system_tools.build_representation(self.mdl,rep)
+                hiers = system_tools.build_representation(self.mdl,rep,self.coord_finder)
                 for h in hiers:
                     self.hier.add_child(h)
             self.built=True
@@ -516,6 +522,34 @@ class _Representation(object):
         self.density_voxel_size = density_voxel_size
         self.setup_particles_as_densities = setup_particles_as_densities
 
+class _FindCloseStructure(object):
+    """Utility to get the nearest observed coordinate"""
+    def __init__(self):
+        self.coords=[]
+    def add_residues(self,residues):
+        for r in residues:
+            idx = IMP.atom.Residue(r).get_index()
+            ca = IMP.atom.Selection(r,atom_type=IMP.atom.AtomType("CA")).get_selected_particles()[0]
+            xyz = IMP.core.XYZ(ca).get_coordinates()
+            self.coords.append([idx,xyz])
+        self.coords.sort()
+    def find_nearest_coord(self,query):
+        if self.coords==[]:
+            return None
+        keys = [r[0] for r in self.coords]
+        pos = bisect_left(keys,query)
+        if pos == 0:
+            ret = self.coords[0]
+        elif pos == len(self.coords):
+            ret = self.coords[-1]
+        else:
+            before = self.coords[pos - 1]
+            after = self.coords[pos]
+            if after[0] - query < query - before[0]:
+                ret = after
+            else:
+                ret = before
+        return ret[1]
 
 class Sequences(object):
     """A dictionary-like wrapper for reading and storing sequence data"""

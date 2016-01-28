@@ -199,13 +199,14 @@ def build_ideal_helix(model, residues, resolution):
 def recursive_show_representations(root):
     pass
 
-def build_representation(mdl,rep):
+def build_representation(mdl,rep,coord_finder):
     """Create requested representation. Always returns a list of hierarchies.
     For beads, identifies continuous segments and sets up as Representation.
     If any volume-based representations (e.g.,densities) are requested,
     will instead create a single Representation node.
     @param mdl The IMP Model
     @param rep What to build. An instance of pmi::topology::_Representation
+    @param coord_finder A _FindCloseStructure object to help localize beads
     """
     ret = []
     atomic_res = 0
@@ -310,9 +311,11 @@ def build_representation(mdl,rep):
                     del beads
             else:
                 # if unstructured, create necklace
+                input_coord = coord_finder.find_nearest_coord(min(frag_res).get_index())
                 beads = build_necklace(mdl,
                                        frag_res,
-                                       resolution)
+                                       resolution,
+                                       input_coord)
                 for bead in beads:
                     this_resolution.add_child(bead)
 

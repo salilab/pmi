@@ -1382,9 +1382,9 @@ class SigmoidalCrossLinkMS(object):
             columnmapping["Residue2"] = 3
 
         if csvfile:
-            # in case the file is a cvs file
+            # in case the file is a csv file
             # columnmapping will contain the field names
-            # that compare in the first line of the cvs file
+            # that compare in the first line of the csv file
             db = tools.get_db_from_csv(restraints_file)
         else:
             db = IMP.pmi.tools.open_file_or_inline_text(restraints_file)
@@ -1631,9 +1631,9 @@ class ISDCrossLinkMS(IMP.pmi.restraints._NuisancesBase):
             columnmapping["XLUniqueID"] = 5
 
         if csvfile:
-            # in case the file is a cvs file
+            # in case the file is a csv file
             # columnmapping will contain the field names
-            # that compare in the first line of the cvs file
+            # that compare in the first line of the csv file
             db = IMP.pmi.tools.get_db_from_csv(restraints_file)
         else:
             db = IMP.pmi.tools.open_file_or_inline_text(restraints_file)

@@ -323,7 +323,7 @@ class Molecule(_SystemBase):
                            resolutions=[],
                            bead_extra_breaks=[],
                            bead_ca_centers=True,
-                           bead_default_cord=[0,0,0],
+                           bead_default_coord=[0,0,0],
                            density_residues_per_component=None,
                            density_prefix=None,
                            density_force_compute=False,
@@ -344,7 +344,7 @@ class Molecule(_SystemBase):
                The number is the first PDB-style index that belongs in the second bead
         @param bead_ca_centers Set to True if you want the resolution=1 beads to be at CA centers
                (otherwise will average atoms to get center). Defaults to True.
-        @param bead_default_cord Advanced feature. Normally beads are placed at the nearest structure.
+        @param bead_default_coord Advanced feature. Normally beads are placed at the nearest structure.
                If no structure provided (like an all bead molecule), the beads go here.
         @param density_residues_per_component Create density (Gaussian Mixture Model)
                for these residues. Must also supply density_prefix
@@ -415,7 +415,7 @@ class Molecule(_SystemBase):
                                                     resolutions,
                                                     bead_extra_breaks,
                                                     bead_ca_centers,
-                                                    bead_default_cord,
+                                                    bead_default_coord,
                                                     density_residues_per_component,
                                                     density_prefix,
                                                     density_force_compute,
@@ -449,7 +449,7 @@ class Molecule(_SystemBase):
                                               old_rep.bead_resolutions,
                                               old_rep.bead_extra_breaks,
                                               old_rep.bead_ca_centers,
-                                              old_rep.bead_default_cord,
+                                              old_rep.bead_default_coord,
                                               old_rep.density_residues_per_component,
                                               old_rep.density_prefix,
                                               old_rep.density_voxel_size,
@@ -520,7 +520,7 @@ class _Representation(object):
                  bead_resolutions,
                  bead_extra_breaks,
                  bead_ca_centers,
-                 bead_default_cord,
+                 bead_default_coord,
                  density_residues_per_component,
                  density_prefix,
                  density_force_compute,
@@ -530,7 +530,7 @@ class _Representation(object):
         self.bead_resolutions = bead_resolutions
         self.bead_extra_breaks = bead_extra_breaks
         self.bead_ca_centers = bead_ca_centers
-        self.bead_default_cord = bead_default_cord
+        self.bead_default_coord = bead_default_coord
         self.density_residues_per_component = density_residues_per_component
         self.density_prefix = density_prefix
         self.density_force_compute = density_force_compute

@@ -459,15 +459,9 @@ class Molecule(_SystemBase):
                 self.coord_finder = self.mol_to_clone.coord_finder
 
             # give a warning for all residues that don't have representation
-            first = True
-            for r in self.residues:
-                if r not in self.represented:
-                    if first:
-                        print('WARNING: Residues without representation: ',end="")
-                        first = False
-                    print(r,'',end='')
-            if not first:
-                print()
+            no_rep = [r for r in self.residues if r not in self.represented]
+            if len(no_rep)>0:
+                print('WARNING: Residues without representation: ',system_tools.resnums2str(no_rep))
 
             # build all the representations
             # get the first available struture position

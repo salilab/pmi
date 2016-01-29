@@ -1636,38 +1636,36 @@ def get_rbs_and_beads(hiers):
             beads.append(p)
     return rbs_ordered,beads
 
-def shuffle_configuration(root_hier=None,rigid_bodies=None,flexible_beads=None,
+def shuffle_configuration(root_hier=None,
                           max_translation=300., max_rotation=2.0 * pi,
-                          avoidcollision=True, cutoff=10.0, niterations=100,
+                          avoidcollision_rb=True, avoidcollision_fb=False,
+                          cutoff=10.0, niterations=100,
                           bounding_box=None,
                           excluded_rigid_bodies=None,
-                          hierarchies_excluded_from_collision=None):
+                          hierarchies_excluded_from_collision=None,
+                          verbose=False):
     """Shuffle particles. Used to restart the optimization.
     The configuration of the system is initialized by placing each
     rigid body and each bead randomly in a box with a side of
     max_translation angstroms, and far enough from each other to
     prevent any steric clashes. The rigid bodies are also randomly rotated.
     @param root_hier Will find rigid bodies and flexible beads. Or just provide them
-    @param rigid_bodies Provide if you already have them split
-    @param flexible_beads Provide if you already have them split
     @param max_translation Max translation (rbs and flexible beads)
     @param max_rotation Max rotation (rbs only)
-    @param avoidcollision check if the particle/rigid body was
+    @param avoidcollision_rigid check if the particle/rigid body was
            placed close to another particle; uses the optional
            arguments cutoff and niterations
+    @param avoidcollision_flexible Be careful only set to True if they don't start out overlapping!
     @param cutoff Distance less than this is a collision
     @param niterations How many times to try avoiding collision
     @param bounding_box defined by ((x1,y1,z1),(x2,y2,z2))
     @param excluded_rigid_bodies Don't shuffle these
     @param hierarchies_excluded_from_collision Don't shuffle these
+    @param verbose Give more output
     \note If you already have the hier split into rigid and flexible, that's faster
     """
 
     ### checking input
-    if (root_hier is None and rigid_bodies is None and flexible_beads is None) or \
-       (root_hier is not None and (rigid_bodies is not None or flexible_beads is not None)):
-        raise Exception('for shuffle_configuration, provide either root_hier or rigid/flexible')
-
     if root_hier is not None:
         rigid_bodies,flexible_beads = get_rbs_and_beads(root_hier)
 
@@ -1682,42 +1680,33 @@ def shuffle_configuration(root_hier=None,rigid_bodies=None,flexible_beads=None,
         excluded_rigid_bodies = []
     if hierarchies_excluded_from_collision is None:
         hierarchies_excluded_from_collision = []
-
     if len(rigid_bodies) == 0:
         print("shuffle_configuration: rigid bodies were not intialized")
 
-
+    ### gather all particles
     gcpf = IMP.core.GridClosePairsFinder()
     gcpf.set_distance(cutoff)
-    ps = []
+    allparticleindexes = []
     hierarchies_excluded_from_collision_indexes = []
-    for p in get_all_leaves(rigid_bodies+flexible_beads):
+    for p in IMP.core.get_leaves(root_hier):
         if IMP.core.XYZ.get_is_setup(p):
-            ps.append(p)
+            allparticleindexes.append(p.get_particle_index())
+        # remove the fixed densities particles out of the calculation
         if IMP.core.RigidMember.get_is_setup(p) and IMP.core.Gaussian.get_is_setup(p):
-            # remove the fixed densities particles out of the calculation
-            hierarchies_excluded_from_collision_indexes += p.get_particle_index()
-    allparticleindexes = IMP.get_indexes(ps)
-
+            hierarchies_excluded_from_collision_indexes.append(p.get_particle_index())
     if not bounding_box is None:
         ((x1, y1, z1), (x2, y2, z2)) = bounding_box
         ub = IMP.algebra.Vector3D(x1, y1, z1)
         lb = IMP.algebra.Vector3D(x2, y2, z2)
         bb = IMP.algebra.BoundingBox3D(ub, lb)
 
-    for h in hierarchies_excluded_from_collision:
-        hierarchies_excluded_from_collision_indexes += IMP.get_indexes(IMP.atom.get_leaves(h))
-
-
     allparticleindexes = list(
         set(allparticleindexes) - set(hierarchies_excluded_from_collision_indexes))
 
-    print(hierarchies_excluded_from_collision)
-    print(len(allparticleindexes),len(hierarchies_excluded_from_collision_indexes))
-
+    print('shuffling', len(rigid_bodies), 'rigid bodies')
     for rb in rigid_bodies:
         if rb not in excluded_rigid_bodies:
-            if avoidcollision:
+            if avoidcollision_rb:
 
                 rbindexes = rb.get_member_particle_indexes()
 
@@ -1749,7 +1738,7 @@ def shuffle_configuration(root_hier=None,rigid_bodies=None,flexible_beads=None,
 
                 IMP.core.transform(rb, transformation)
 
-                if avoidcollision:
+                if avoidcollision_rb:
                     mdl.update()
                     npairs = len(
                         gcpf.get_close_pairs(
@@ -1760,8 +1749,9 @@ def shuffle_configuration(root_hier=None,rigid_bodies=None,flexible_beads=None,
                         niter = niterations
                     else:
                         niter += 1
-                        print("shuffle_configuration: rigid body placed close to other %d particles, trying again..." % npairs)
-                        print("shuffle_configuration: rigid body name: " + rb.get_name())
+                        if verbose:
+                            print("shuffle_configuration: rigid body placed close to other %d particles, trying again..." % npairs)
+                            print("shuffle_configuration: rigid body name: " + rb.get_name())
                         if niter == niterations:
                             raise ValueError("tried the maximum number of iterations to avoid collisions, increase the distance cutoff")
                 else:
@@ -1769,18 +1759,12 @@ def shuffle_configuration(root_hier=None,rigid_bodies=None,flexible_beads=None,
 
     print('shuffling', len(flexible_beads), 'flexible beads')
     for fb in flexible_beads:
-        if avoidcollision:
-            rm = not IMP.core.RigidMember.get_is_setup(fb)
-            nrm = not IMP.core.NonRigidMember.get_is_setup(fb)
-            if rm and nrm:
-                fbindexes = IMP.get_indexes([fb])
-                otherparticleindexes = list(
+        if avoidcollision_fb:
+            fbindexes = IMP.get_indexes([fb])
+            otherparticleindexes = list(
                     set(allparticleindexes) - set(fbindexes))
-                if len(otherparticleindexes) is None:
-                    continue
-            else:
+            if len(otherparticleindexes) is None:
                 continue
-
         niter = 0
         while niter < niterations:
             fbxyz = IMP.core.XYZ(fb).get_coordinates()
@@ -1794,16 +1778,14 @@ def shuffle_configuration(root_hier=None,rigid_bodies=None,flexible_beads=None,
                     max_translation,
                     max_rotation)
 
-            if IMP.core.RigidBodyMember.get_is_setup(fb):
-                d=IMP.core.RigidBodyMember(fb).get_rigid_body()
-            elif IMP.core.RigidBody.get_is_setup(fb):
+            if IMP.core.RigidBody.get_is_setup(fb): #for gaussians
                 d=IMP.core.RigidBody(fb)
-            elif IMP.core.XYZ.get_is_setup(fb):
+            else:
                 d=IMP.core.XYZ(fb)
 
             IMP.core.transform(d, transformation)
 
-            if avoidcollision:
+            if avoidcollision_fb:
                 mdl.update()
                 npairs = len(
                     gcpf.get_close_pairs(

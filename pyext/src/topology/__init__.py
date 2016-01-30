@@ -1,6 +1,6 @@
 """@namespace IMP.pmi.topology
 Set of python classes to create a multi-state, multi-resolution IMP hierarchy.
-* Start by creating a System and then call System.create_state(). You can easily create a multistate system by calling this function multiples times.
+* Start by creating a System with `s = IMP.pmi.topology.System(mdl)` and then call System.create_state(). You can easily create a multistate system by calling this function multiples times.
 * For each State, add a Molecule (a uniquely named polymer) with State.create_molecule(). This function returns the Molecule object which can be passed to various PMI functions.
 * Some useful functions to help you set up your Molecules:
  * Access the sequence residues with slicing (Molecule[a:b]) or functions like Molecule.get_atomic_residues() and Molecule.get_non_atomic_residues(). These functions all return python sets for easy set arithmetic using & (and), | (or), - (difference)
@@ -9,7 +9,10 @@ Set of python classes to create a multi-state, multi-resolution IMP hierarchy.
  * Molecule.create_clone() lets you set up a molecule with identical representations, just a different chain ID. Use Molecule.create_copy() if you want a molecule with the same sequence but that allows custom representations.
 * Once data has been added and representations chosen, call System.build() to create a canonical IMP hierarchy.
 * Following hierarchy construction, setup rigid bodies, flexible beads, etc in IMP::pmi::dof.
-Alternatively one can construct the entire topology and degrees of freedom via formatted text file with TopologyReader and IMP::pmi::macros::BuildModel()
+
+See a [comprehensive example](@ref examples/multiscale.py) for using these classes.
+
+Alternatively one can construct the entire topology and degrees of freedom via formatted text file with TopologyReader and IMP::pmi::macros::BuildModel(). This is used in the [PMI tutorial](@ref rnapolii_stalk).
 """
 
 from __future__ import print_function
@@ -491,6 +494,7 @@ class Molecule(_SystemBase):
                     res.hier = new_hier
                 else:
                     res.hier = None
+        print('done building system')
         return self.hier
 
     def get_particles_at_all_resolutions(self,residue_indexes=None):

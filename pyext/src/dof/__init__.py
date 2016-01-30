@@ -1,6 +1,6 @@
 """@namespace IMP.pmi.dof
    Create movers and setup constraints for PMI objects.
-* Start by creating the DegreesOfFreedom class with @code{.python} dof = IMP::pmi::dof::DegreesOfFreedom(model) @endcode
+* Start by creating the DegreesOfFreedom class with `dof = IMP::pmi::dof::DegreesOfFreedom(model)`
 * The various "create X" functions make movers for system components as well as setup necessary constraints.
 For each of these functions, you can generally pass PMI objects like IMP::pmi::Topology::Molecule or slices thereof.
  * DegreesOfFreedom.create_rigid_body() lets you rigidify a molecule (but allows you to also pass "nonrigid" components which move with the body and also independently)
@@ -9,8 +9,8 @@ rigidly but is not always constrained to be rigid (so you can later move the par
  * DegreesOfFreedom.create_flexible_beads() sets up particles to move individually
  * DegreesOfFreedom.setup_md() sets up particles to move with molecular dynamics. Note that this is not (yet) compatible with rigid bodies, and only some restraints.
  * DegreesOfFreedom.constrain_symmetry() makes a symmetry constraint so that clones automatically move with their references. If instead you want a softer restraint, check out IMP.pmi.restraints.stereochemistry.SymmetryRestraint.
-* When you are done you can access all movers with DegreesOfFreedom.get_movers(). If you have set up rigid, super rigid, or flexible beads, pass the movers to the @code{.text} monte_carlo_sample_objects @endcode argument of IMP.pmi.macros.ReplicaExchange0.
-* If you are running MD, you have to seperately pass the particles (also returned from DegreesOfFreedom.setup_md()) to the @code{.text} molecular_dynamics_sample_objects @endcode argument of IMP.pmi.macros.ReplicaExchange0.
+* When you are done you can access all movers with DegreesOfFreedom.get_movers(). If you have set up rigid, super rigid, or flexible beads, pass the movers to the `monte_carlo_sample_objects` argument of IMP.pmi.macros.ReplicaExchange0.
+* If you are running MD, you have to seperately pass the particles (also returned from DegreesOfFreedom.setup_md()) to the `molecular_dynamics_sample_objects` argument of [ReplicaExchange0](@ref IMP::pmi::macros::ReplicaExchange0).
 """
 
 from __future__ import print_function

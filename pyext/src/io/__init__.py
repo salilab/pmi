@@ -584,3 +584,18 @@ def get_bead_sizes(model,rmf_tuple,rmsd_calculation_components=None,state_number
 
 
     return rmsd_bead_size_dict
+
+class RMSDOutput(object):
+    """A helper output based on dist to initial coordinates"""
+    def __init__(self,ps,label):
+        self.mdl = ps[0].get_model()
+        self.ps = ps
+        self.init_coords = [IMP.core.XYZ(p).get_coordinates() for p in self.ps]
+        self.label = label
+    def get_output(self):
+        self.mdl.update()
+        output = {}
+        coords = [IMP.core.XYZ(p).get_coordinates() for p in self.ps]
+        rmsd = IMP.algebra.get_rmsd(coords,self.init_coords)
+        output["RMSD_"+self.label] = str(rmsd)
+        return output

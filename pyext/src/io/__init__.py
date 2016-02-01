@@ -587,10 +587,13 @@ def get_bead_sizes(model,rmf_tuple,rmsd_calculation_components=None,state_number
 
 class RMSDOutput(object):
     """A helper output based on dist to initial coordinates"""
-    def __init__(self,ps,label):
+    def __init__(self,ps,label,init_coords=None):
         self.mdl = ps[0].get_model()
         self.ps = ps
-        self.init_coords = [IMP.core.XYZ(p).get_coordinates() for p in self.ps]
+        if init_coords is None:
+            self.init_coords = [IMP.core.XYZ(p).get_coordinates() for p in self.ps]
+        else:
+            self.init_coords = init_coords
         self.label = label
     def get_output(self):
         self.mdl.update()
@@ -598,4 +601,16 @@ class RMSDOutput(object):
         coords = [IMP.core.XYZ(p).get_coordinates() for p in self.ps]
         rmsd = IMP.algebra.get_rmsd(coords,self.init_coords)
         output["RMSD_"+self.label] = str(rmsd)
+        return output
+
+class TotalScoreOutput(object):
+    """A helper output for model evaluation"""
+    def __init__(self,mdl):
+        self.mdl = mdl
+        self.rs = IMP.pmi.tools.get_restraint_set(self.mdl)
+    def get_output(self):
+        self.mdl.update()
+        score = self.rs.evaluate(None)
+        output = {}
+        output["Total_Score"] = str(score)
         return output

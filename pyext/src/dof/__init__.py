@@ -78,6 +78,7 @@ class DegreesOfFreedom(object):
         rb_mover = IMP.core.RigidBodyMover(rb,max_trans,max_rot)
         if name is not None:
             rb.set_name(name)
+            rb_mover.set_name(name)
         rb_movers.append(rb_mover)
 
         ### setup nonrigid parts

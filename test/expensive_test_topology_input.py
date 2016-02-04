@@ -14,9 +14,8 @@ def children_as_dict(h):
     return cdict
 
 class TopologyReaderTests(IMP.test.TestCase):
-
     def test_reading(self):
-        '''Test basic reading'''
+        """Test basic reading"""
         topology_file=self.get_input_file_name("topology.txt")
         t=IMP.pmi.topology.TopologyReader(topology_file)
         self.assertEqual(len(t.component_list),3)
@@ -26,12 +25,13 @@ class TopologyReaderTests(IMP.test.TestCase):
         self.assertEqual(t.component_list[2].name,"Rpb4")
 
     def test_change_dir(self):
-        '''Test changing default pdb directory'''
+        """Test changing default pdb directory"""
         newdir="../../"
-        topology_file=self.get_input_file_name("topology.txt")
-        t=IMP.pmi.topology.TopologyReader(topology_file)
+        topology_file = self.get_input_file_name("topology.txt")
+        t = IMP.pmi.topology.TopologyReader(topology_file)
         t.set_dir("pdb_dir", newdir)
-        self.assertEqual(t.defaults["pdb_dir"], newdir)
+        self.assertEqual(os.path.abspath(t.pdb_dir),
+                         os.path.abspath(os.path.join('input',newdir)))
         self.assertEqual(t.component_list[0].pdb_file,
                          os.path.dirname(topology_file) \
                          + '/../../1WCM_map_fitted.pdb')
@@ -44,7 +44,7 @@ class TopologyReaderTests(IMP.test.TestCase):
         self.assertEqual(components[1].domain_name, "Rpb1_1")
 
     def test_round_trip(self):
-        '''Test reading and writing'''
+        """Test reading and writing"""
         topology_file=self.get_input_file_name("topology.txt")
         outfile = self.get_tmp_file_name("ttest.txt")
         t=IMP.pmi.topology.TopologyReader(topology_file)
@@ -58,12 +58,13 @@ class TopologyReaderTests(IMP.test.TestCase):
         self.assertEqual(t.component_list[2].name,"Rpb4")
 
     def test_build_read_gmms(self):
-        '''Test building with macro BuildModel using a topology file'''
+        """Test building with macro BuildModel using a topology file"""
         mdl = IMP.Model()
 
         topology_file=self.get_input_file_name("topology.txt")
         t=IMP.pmi.topology.TopologyReader(topology_file)
-        self.assertEqual(t.defaults['gmm_dir'],'./')
+        self.assertEqual(os.path.abspath(t.gmm_dir),
+                         os.path.abspath('input/'))
 
         bm = IMP.pmi.macros.BuildModel(mdl,
                                        component_topologies=t.component_list,
@@ -90,7 +91,7 @@ class TopologyReaderTests(IMP.test.TestCase):
         self.assertEqual(len(r4dict["Densities"].get_children()[0].get_children()),3)
 
     def test_build_create_gmms(self):
-        '''Test building with macro using sklearn to create stuff'''
+        """Test building with macro using sklearn to create stuff"""
         try:
             import sklearn
         except ImportError:
@@ -127,12 +128,32 @@ class TopologyReaderTests(IMP.test.TestCase):
         for output in ['../Rpb4.mrc', '../Rpb4.txt']:
             os.unlink(self.get_input_file_name(output))
 
-    def test_build_with_movers(self):
-        '''Check if rigid bodies etc are set up as requested'''
-        pass
+    def test_set_movers(self):
+        """Check if rigid bodies etc are set up as requested"""
+        try:
+            import sklearn
+        except ImportError:
+            self.skipTest("no sklearn package")
+        mdl = IMP.Model()
+        tfile = self.get_input_file_name('topology_new.txt')
+        input_dir = os.path.dirname(tfile)
+        t = IMP.pmi.topology.TopologyReader(tfile,
+                                            pdb_dir=input_dir,
+                                            fasta_dir=input_dir,
+                                            gmm_dir=input_dir)
+        self.assertEqual(t.component_list[0].pdb_file,
+                        os.path.join(input_dir,'1WCM_map_fitted.pdb'))
+        rbs = t.get_rigid_bodies()
+        srbs = t.get_super_rigid_bodies()
+        csrbs = t.get_chains_of_super_rigid_bodies()
+        self.assertEqual(rbs,[['Rpb1_1','Rpb1_2'],['Rpb4']])
+        self.assertEqual(srbs,[['Rpb1_1','Rpb1_2'],
+                               ['Rpb1_1','Rpb1_2','Rpb3','Rpb4'],
+                               ['Rpb3','Rpb4']])
+        self.assertEqual(csrbs,[['Rpb1_1','Rpb1_2'],['Rpb3']])
 
     def test_beads_only(self):
-        '''Test setting up BEADS-only'''
+        """Test setting up BEADS-only"""
         mdl = IMP.Model()
         topology_file = self.get_input_file_name("topology_beads.txt")
         t = IMP.pmi.topology.TopologyReader(topology_file)

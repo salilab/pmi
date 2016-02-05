@@ -6,7 +6,7 @@ import os
 import IMP.test
 import IMP.rmf
 import RMF
-
+import math
 def children_as_dict(h):
     cdict={}
     for c in h.get_children():
@@ -14,7 +14,6 @@ def children_as_dict(h):
     return cdict
 
 class TopologyReaderTests(IMP.test.TestCase):
-    '''
     def test_reading(self):
         """Test basic reading"""
         topology_file=self.get_input_file_name("topology.txt")
@@ -89,7 +88,7 @@ class TopologyReaderTests(IMP.test.TestCase):
         r1dict=children_as_dict(cdict["Rpb1"])
         self.assertEqual(len(r1dict["Rpb1_Res:1"].get_children()),6)
         r4dict=children_as_dict(cdict["Rpb4"])
-        self.assertEqual(len(r4dict["Densities"].get_children()[0].get_children()),3)
+        self.assertEqual(len(r4dict["Densities"].get_children()[0].get_children()),5)
 
     def test_build_create_gmms(self):
         """Test building with macro using sklearn to create stuff"""
@@ -165,7 +164,7 @@ class TopologyReaderTests(IMP.test.TestCase):
         p2 = IMP.pmi.tools.select(rep,name='pom152')
         self.assertTrue(IMP.core.Gaussian.get_is_setup(p1[0]))
         self.assertTrue(IMP.core.Gaussian.get_is_setup(p2[0]))
-    '''
+
     def test_build_system(self):
         """Test the new BuildSystem macro"""
         try:
@@ -182,5 +181,23 @@ class TopologyReaderTests(IMP.test.TestCase):
         bs = IMP.pmi.macros.BuildSystem(mdl)
         bs.add_state(t)
         root_hier, dof = bs.execute_macro()
+
+        # check a few selections
+        sel1 = IMP.atom.Selection(root_hier,molecule="Rpb1",resolution=1).get_selected_particles()
+        r1m = [1,8,10,10,10] #missing region lengths
+        self.assertEqual(len(sel1),(1274-sum(r1m)+sum([int(math.ceil(float(r)/5)) for r in r1m])))
+
+        sel3 = IMP.atom.Selection(root_hier,molecule="Rpb3",resolution=10).get_selected_particles()
+        self.assertEqual(len(sel3),int(math.ceil(318.0/10)))
+
+        sel4 = IMP.atom.Selection(root_hier,molecule="Rpb4",
+                                  representation_type=IMP.atom.DENSITIES).get_selected_particles()
+        self.assertEqual(len(sel4),5)
+
+        # check rigid bodies
+        rbs = dof.get_rigid_bodies()
+        fbs = dof.get_flexible_beads()
+        self.assertEqual(len(rbs),2)
+
 if __name__=="__main__":
     IMP.test.main()

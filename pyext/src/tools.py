@@ -1443,9 +1443,9 @@ def input_adaptor(stuff,
             if IMP.atom.Hierarchy.get_is_setup(stuff[0]):
                 hier_list = stuff
             else:
-                raise Exception('get_hierarchies: you passed something of type',tp)
+                raise Exception('input_adaptor: you passed something of type',tp)
         except:
-            raise Exception('get_hierarchies: you passed something of type',tp)
+            raise Exception('input_adaptor: you passed something of type',tp)
 
     if flatten:
         return [h for sublist in hier_list for h in sublist]

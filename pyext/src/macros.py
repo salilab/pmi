@@ -477,7 +477,6 @@ class BuildSystem(object):
                                            setup_particles_as_densities=(domain.em_residues_per_gaussian!=0))
                     these_domains[domain.domain_name] = (set(),domain_res)
                 else:
-                    print(domain.domain_name,domain.residue_range)
                     domain_atomic = mol.add_structure(domain.pdb_file,
                                                       domain.chain,
                                                       domain.residue_range,
@@ -519,6 +518,7 @@ class BuildSystem(object):
             rbs = reader.get_rigid_bodies()
             srbs = reader.get_super_rigid_bodies()
             csrbs = reader.get_chains_of_super_rigid_bodies()
+
             for rblist in rbs:
                 all_res = set()
                 bead_res = set()
@@ -538,7 +538,8 @@ class BuildSystem(object):
                 all_res = set()
                 for domain in csrblist:
                     all_res|=self._domains[nstate][domain][0]
-                # may need to sort?
+                all_res = list(all_res)
+                all_res.sort(key=lambda r:r.get_index())
                 self.dof.create_super_rigid_body(all_res,chain_min_length=2,chain_max_length=3)
         return self.root_hier,self.dof
 

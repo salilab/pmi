@@ -1380,6 +1380,8 @@ def input_adaptor(stuff,
     @param pmi_resolution For selecting, only does it if you pass PMI objects. Set it to "all"
           if you want all resolutions!
     @param flatten Set to True if you just want all hierarchies in one list.
+    \note since this relies on IMP::atom::Selection, this will not return any objects if they weren't built!
+    But there should be no problem if you request unbuilt residues, they should be ignored.
     """
 
     # if iterable (of iterable), make sure uniform type

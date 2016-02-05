@@ -273,7 +273,6 @@ def build_representation(mdl,rep,coord_finder):
                                                IMP.atom.DENSITIES,
                                                rep.density_residues_per_component)
 
-
     # get continuous segments from residues
     segments = []
     rsort = sorted(list(rep.residues),key=lambda r:r.get_index())
@@ -324,7 +323,7 @@ def build_representation(mdl,rep,coord_finder):
                 else:
                     tempc = IMP.atom.Chain.setup_particle(IMP.Particle(mdl),"X")
                     for residue in frag_res:
-                        tempc.add_child(residue.hier)
+                        tempc.add_child(IMP.atom.create_clone(residue.hier))
                     beads = IMP.atom.create_simplified_along_backbone(tempc,resolution)
                     for bead in beads.get_children():
                         this_resolution.add_child(bead)

@@ -1437,7 +1437,7 @@ def input_adaptor(stuff,
                                          resolution=pmi_resolution,
                                          residue_indexes=indexes_per_mol[mol])
                 ps = sel.get_selected_particles()
-            hier_list.append(ps)
+            hier_list.append([IMP.atom.Hierarchy(p) for p in ps])
     else:
         try:
             if IMP.atom.Hierarchy.get_is_setup(stuff[0]):
@@ -1484,7 +1484,7 @@ def select_at_all_resolutions(hier=None,
     if len(hiers)==0:
         print("WARNING: You passed nothing to select_at_all_resolutions()")
         return []
-    ret = set()
+    ret = OrderedSet()
     for hsel in hiers:
         try:
             htest = IMP.atom.Hierarchy.get_is_setup(hsel)
@@ -1505,24 +1505,24 @@ def select_at_all_resolutions(hier=None,
         # this only works if the base resolution is the highest one...
         init_sel = IMP.atom.Selection(hsel,resolution=0,**kwargs)
         init_ps = init_sel.get_selected_particles()
-        all_bead_res = set()
-        all_density_res = set()
+        all_bead_res = OrderedSet()
+        all_density_res = OrderedSet()
 
         for p in init_ps:
             h = IMP.atom.Hierarchy(p)
             b,d = get_resolutions(IMP.atom.Hierarchy(p))
-            all_bead_res |= set(b)
-            all_density_res |= set(d)
+            all_bead_res |= OrderedSet(b)
+            all_density_res |= OrderedSet(d)
 
         # final selection
         for res in all_bead_res:
             sel = IMP.atom.Selection(hsel,resolution=res,
                                      representation_type=IMP.atom.BALLS,**kwargs)
-            ret |= set(sel.get_selected_particles())
+            ret |= OrderedSet(sel.get_selected_particles())
         for res in all_density_res:
             sel = IMP.atom.Selection(hsel,resolution=res,
                                      representation_type=IMP.atom.DENSITIES,**kwargs)
-            ret |= set(sel.get_selected_particles())
+            ret |= OrderedSet(sel.get_selected_particles())
     return list(ret)
 
 

@@ -72,6 +72,9 @@ class System(_SystemBase):
         self.hier=self._create_hierarchy()
         self.hier.set_name(name)
 
+    def get_states(self):
+        return self.states
+
     def create_state(self):
         """returns a new IMP.pmi.representation_new.State(), increment the state index"""
         self._number_of_states+=1
@@ -120,6 +123,9 @@ class State(_SystemBase):
 
     def __repr__(self):
         return self.system.__repr__()+'.'+self.hier.get_name()
+
+    def get_molecules(self):
+        return self.molecules
 
     def create_molecule(self,name,sequence='',chain_id=''):
         """Create a new Molecule within this State
@@ -239,7 +245,6 @@ class Molecule(_SystemBase):
             all_res.add(res)
         return all_res
 
-
     def get_atomic_residues(self):
         """ Return a set of TempResidues that have associated structure coordinates """
         atomic_res=set()
@@ -248,7 +253,6 @@ class Molecule(_SystemBase):
                 atomic_res.add(res)
         return atomic_res
 
-
     def get_non_atomic_residues(self):
         """ Return a set of TempResidues that don't have associated structure coordinates """
         non_atomic_res=set()
@@ -256,7 +260,6 @@ class Molecule(_SystemBase):
             if not res.get_has_structure():
                 non_atomic_res.add(res)
         return non_atomic_res
-
 
     def create_copy(self,chain_id):
         """Create a new Molecule with the same name and sequence but a higher copy number.
@@ -294,7 +297,6 @@ class Molecule(_SystemBase):
                           If False (Default), it raises and exit when there are sequence mismatches.
         \note If you are adding structure without a FASTA file, set soft_check to True
         """
-
         if self.mol_to_clone is not None:
             raise Exception('You cannot call add_structure() for a clone')
 
@@ -435,9 +437,7 @@ class Molecule(_SystemBase):
               containing at least a CAlpha. For missing residues, these can be constructed
               from the PDB file
         """
-
         if not self.built:
-
             # if requested, clone structure and representations BEFORE building original
             if self.mol_to_clone is not None:
                 for nr,r in enumerate(self.mol_to_clone.residues):
@@ -466,23 +466,20 @@ class Molecule(_SystemBase):
             # give a warning for all residues that don't have representation
             no_rep = [r for r in self.residues if r not in self.represented]
             if len(no_rep)>0:
-                print('WARNING: Residues without representation: ',system_tools.resnums2str(no_rep))
+                print('WARNING: Residues without representation in molecule',
+                      self.get_name(),':',system_tools.resnums2str(no_rep))
 
             # build all the representations
-            # get the first available struture position
-            # pass the nearest structure position as you go.
-
             for rep in self.representations:
                 hiers = system_tools.build_representation(self.mdl,rep,self.coord_finder)
                 for h in hiers:
                     self.hier.add_child(h)
             self.built=True
 
-            # have to store SOMETHING in each residue slot.
-            #  so just select highest resolution.
-            #  alternative is store all resolutions?
             for res in self.residues:
                 idx = res.get_index()
+
+                # first off, store the highest resolution available in residue.hier
                 new_ps = IMP.atom.Selection(
                     self.hier,
                     residue_index=res.get_index(),
@@ -490,12 +487,15 @@ class Molecule(_SystemBase):
                 if len(new_ps)>0:
                     new_p = new_ps[0]
                     if IMP.atom.Atom.get_is_setup(new_p):
+                        # if only found atomic, store the residue
                         new_hier = IMP.atom.get_residue(IMP.atom.Atom(new_p))
                     else:
+                        # otherwise just store what you found
                         new_hier = IMP.atom.Hierarchy(new_p)
                     res.hier = new_hier
                 else:
                     res.hier = None
+
         print('done building',self.get_hierarchy())
         return self.hier
 
@@ -509,7 +509,6 @@ class Molecule(_SystemBase):
         ps = IMP.pmi.tools.select_at_all_resolutions(self.get_hierarchy(),
                                                       residue_indexes=residue_indexes)
         return ps
-
 
 #------------------------
 
@@ -723,6 +722,7 @@ class TopologyReader(object):
         """
         self.topology_file = topology_file
         self.component_list = []
+        self.unique_molecules = {}
         self.resolutions = resolutions
         self.pdb_dir = pdb_dir
         self.fasta_dir = fasta_dir
@@ -747,6 +747,9 @@ class TopologyReader(object):
             for i in topology_list:
                 topologies.append(self.component_list[i])
         return topologies
+
+    def get_unique_molecules(self):
+        return self.unique_molecules
 
     def import_topology_file(self, topology_file, append=False):
         """Read system components from topology file. append=False will erase
@@ -803,7 +806,7 @@ class TopologyReader(object):
         c._orig_pdb_input = values[5]
         pdb_input       = values[5]
         if pdb_input=="None" or pdb_input=="":
-            c.pdb_file      = None
+            c.pdb_file      = "BEADS"
         elif pdb_input=="IDEAL_HELIX":
             c.pdb_file = "IDEAL_HELIX"
         elif pdb_input=="BEADS":
@@ -818,6 +821,16 @@ class TopologyReader(object):
         else:
             errors.append("PDB Chain identifier must be one or two characters.")
             errors.append("For component %s line %d is not correct |%s| was given." % (c.name,linenum,t_chain))
+
+        # Multiple domains must all use the same fasta file!
+        if c.name not in self.unique_molecules:
+            self.unique_molecules[c.name] = [c]
+        else:
+            if (c.fasta_file!=self.unique_molecules[c.name][0].fasta_file or \
+                c.fasta_id!=self.unique_molecules[c.name][0].fasta_id or \
+                c.chain!=self.unique_molecules[c.name][0].chain):
+                errors.append("All domains with the same component name must have the same sequence")
+            self.unique_molecules[c.name].append(c)
 
         ### Optional fields
         # Residue Range
@@ -856,9 +869,13 @@ class TopologyReader(object):
         f = values[10]
         if self._is_int(f):
             if int(f) > 0:
-                c.gmm_file = os.path.join(self.gmm_dir,c.domain_name+".txt")
-                c.mrc_file = os.path.join(self.gmm_dir,c.domain_name+".mrc")
-            c.em_residues_per_gaussian=int(f)
+                c.density_prefix = os.path.join(self.gmm_dir,c.domain_name)
+                c.gmm_file = c.density_prefix+'.txt'
+                c.mrc_file = c.density_prefix+'.gmm'
+
+                c.em_residues_per_gaussian=int(f)
+            else:
+                c.em_residues_per_gaussian = 0
         elif len(f)==0:
             c.em_residues_per_gaussian = 0
         else:
@@ -866,6 +883,7 @@ class TopologyReader(object):
                           "%s line %d is not correct" % (c.name, linenum))
             errors.append("The value must be a single integer. |%s| was given." % f)
 
+        # DOF fields are for new-style topology files
         if len(values)>12:
             # rigid bodies
             f = values[11]
@@ -989,8 +1007,9 @@ class ComponentTopology(object):
         self.pdb_offset = 0
         self.bead_size = 10
         self.em_residues_per_gaussian = 0
-        self.gmm_file = None
-        self.mrc_file = None
+        self.gmm_file = ''
+        self.mrc_file = ''
+        self.density_prefix = ''
         self.color = 0.1
         self.rigid_bodies = []
         self.super_rigid_bodies = []

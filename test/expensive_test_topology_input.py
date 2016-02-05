@@ -14,6 +14,7 @@ def children_as_dict(h):
     return cdict
 
 class TopologyReaderTests(IMP.test.TestCase):
+    '''
     def test_reading(self):
         """Test basic reading"""
         topology_file=self.get_input_file_name("topology.txt")
@@ -164,6 +165,22 @@ class TopologyReaderTests(IMP.test.TestCase):
         p2 = IMP.pmi.tools.select(rep,name='pom152')
         self.assertTrue(IMP.core.Gaussian.get_is_setup(p1[0]))
         self.assertTrue(IMP.core.Gaussian.get_is_setup(p2[0]))
-
+    '''
+    def test_build_system(self):
+        """Test the new BuildSystem macro"""
+        try:
+            import sklearn
+        except ImportError:
+            self.skipTest("no sklearn package")
+        mdl = IMP.Model()
+        tfile = self.get_input_file_name('topology_new.txt')
+        input_dir = os.path.dirname(tfile)
+        t = IMP.pmi.topology.TopologyReader(tfile,
+                                            pdb_dir=input_dir,
+                                            fasta_dir=input_dir,
+                                            gmm_dir=input_dir)
+        bs = IMP.pmi.macros.BuildSystem(mdl)
+        bs.add_state(t)
+        root_hier, dof = bs.execute_macro()
 if __name__=="__main__":
     IMP.test.main()

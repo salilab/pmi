@@ -66,9 +66,10 @@ class TopologyReaderTests(IMP.test.TestCase):
         self.assertEqual(os.path.abspath(t.gmm_dir),
                          os.path.abspath('input/'))
 
-        bm = IMP.pmi.macros.BuildModel(mdl,
-                                       component_topologies=t.component_list,
-                                       force_create_gmm_files=False)
+        with IMP.allow_deprecated():
+            bm = IMP.pmi.macros.BuildModel(mdl,
+                                           component_topologies=t.component_list,
+                                           force_create_gmm_files=False)
         rep = bm.get_representation()
 
         o = IMP.pmi.output.Output()
@@ -102,9 +103,10 @@ class TopologyReaderTests(IMP.test.TestCase):
         t=IMP.pmi.topology.TopologyReader(topology_file)
         t.set_dir("gmm_dir","../")
 
-        bm = IMP.pmi.macros.BuildModel(mdl,
-                                       component_topologies=t.component_list,
-                                       force_create_gmm_files=True)
+        with IMP.allow_deprecated():
+            bm = IMP.pmi.macros.BuildModel(mdl,
+                                           component_topologies=t.component_list,
+                                           force_create_gmm_files=True)
         rep = bm.get_representation()
 
         o = IMP.pmi.output.Output()
@@ -157,8 +159,9 @@ class TopologyReaderTests(IMP.test.TestCase):
         mdl = IMP.Model()
         topology_file = self.get_input_file_name("topology_beads.txt")
         t = IMP.pmi.topology.TopologyReader(topology_file)
-        bm = IMP.pmi.macros.BuildModel(mdl,
-                                       component_topologies=t.component_list)
+        with IMP.allow_deprecated():
+            bm = IMP.pmi.macros.BuildModel(mdl,
+                                           component_topologies=t.component_list)
         rep = bm.get_representation()
         p1 = IMP.pmi.tools.select(rep,name='detgnt')
         p2 = IMP.pmi.tools.select(rep,name='pom152')

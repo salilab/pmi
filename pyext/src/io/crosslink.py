@@ -182,19 +182,22 @@ class CrossLinkDataBaseKeywordsConverter(_CrossLinkDataBaseStandardKeys):
     to the standard ones
     '''
 
-    def __init__(self):
+    def __init__(self,ResiduePairListParser=None):
+        '''
+        @param list_parser an instance of ResiduePairListParser, if any is needed
+        '''
         self.converter={}
         self.backward_converter={}
         _CrossLinkDataBaseStandardKeys.__init__(self)
-        # either you have protein1, protein2, residue1, residue2
-        self.compulsory_keys_1=set([self.protein1_key,
+        self.rplp=ResiduePairListParser
+        if self.rplp is None:
+            # either you have protein1, protein2, residue1, residue2
+            self.compulsory_keys=set([self.protein1_key,
                                   self.protein2_key,
                                   self.residue1_key,
                                   self.residue2_key])
-        # or protein1, protein2, list_of_residue_pairs
-        self.compulsory_keys_2=set([self.protein1_key,
-                                  self.protein2_key,
-                                  self.site_pairs_key])
+        else:
+            self.compulsory_keys=self.rplp.get_compulsory_keys()
         self.setup_keys=set()
 
     def check_keys(self):
@@ -202,8 +205,7 @@ class CrossLinkDataBaseKeywordsConverter(_CrossLinkDataBaseStandardKeys):
         Is a function that check whether necessary keys are setup
         '''
         setup_keys=set(self.get_setup_keys())
-        if  self.compulsory_keys_1 & setup_keys != self.compulsory_keys_1 and \
-            self.compulsory_keys_2 & setup_keys != self.compulsory_keys_2:
+        if  self.compulsory_keys & setup_keys != self.compulsory_keys:
             raise KeyError("CrossLinkDataBaseKeywordsConverter: must setup all necessary keys")
 
     def get_setup_keys(self):
@@ -262,7 +264,7 @@ class CrossLinkDataBaseKeywordsConverter(_CrossLinkDataBaseStandardKeys):
         self.check_keys()
         return self.backward_converter
 
-class ResiduePairListParser():
+class ResiduePairListParser(_CrossLinkDataBaseStandardKeys):
     '''
     A class to handle different styles of site pairs parsers.
     Implemented styles:
@@ -270,14 +272,25 @@ class ResiduePairListParser():
                   [Y3-;K4-] for dead-ends
     QUANTITATION: sp|P33298|PRS6B_YEAST:280:x:sp|P33298|PRS6B_YEAST:337
     '''
+
     import re
+
     def __init__(self,style):
-        if style in ["MSSTUDIO"]:
+
+        _CrossLinkDataBaseStandardKeys.__init__(self)
+        if style is "MSSTUDIO":
             self.style=style
-        elif style in ["QUANTITATION"]:
+            self.compulsory_keys= set([self.protein1_key,
+                                  self.protein2_key,
+                                  self.site_pairs_key])
+        elif style is "QUANTITATION":
             self.style=style
+            self.compulsory_keys= set([self.site_pairs_key])
         else:
             raise Error("ResiduePairListParser: unknown list parser style")
+
+    def get_compulsory_keys(self):
+        return self.compulsory_keys
 
     def get_list(self,input_string):
         '''
@@ -318,12 +331,11 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
     operations, adding cross-links, merge datasets...
     '''
 
-    def __init__(self,CrossLinkDataBaseKeywordsConverter,data_base=None,list_parser=None):
+    def __init__(self,CrossLinkDataBaseKeywordsConverter,data_base=None):
         '''
         To be constructed it needs a CrossLinkDataBaseKeywordsConverter instance first
         @param CrossLinkDataBaseKeywordsConverter an instance of converter
         @param data_base an instance of CrossLinkDataBase to build the new database on
-        @param list_parser an instance of ResiduePairListParser
         '''
         if data_base is None:
             self.data_base = {}
@@ -331,8 +343,8 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
             self.data_base=data_base
         self.cldbkc=CrossLinkDataBaseKeywordsConverter
         _CrossLinkDataBaseStandardKeys.__init__(self)
+        self.list_parser=self.cldbkc.rplp
         self.converter=CrossLinkDataBaseKeywordsConverter.get_converter()
-        self.list_parser=list_parser
         self.__update__()
 
     def __update__(self):

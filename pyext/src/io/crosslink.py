@@ -345,9 +345,9 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
         _CrossLinkDataBaseStandardKeys.__init__(self)
         self.list_parser=self.cldbkc.rplp
         self.converter = converter.get_converter()
-        self.__update__()
+        self.__update()
 
-    def __update__(self):
+    def __update(self):
         '''
         Update the whole dataset after changes
         '''
@@ -380,7 +380,7 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
             new_data_base[k+"."+name]=self.data_base[k]
         self.data_base=new_data_base
         self.name=name
-        self.__update__()
+        self.__update()
 
     def get_number_of_xlid(self):
         return len(self.data_base)
@@ -456,7 +456,7 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
 
         self.data_base=new_xl_dict
         self.name=csv_file_name
-        self.__update__()
+        self.__update()
 
     def update_cross_link_unique_sub_index(self):
         for k in self.data_base:
@@ -551,7 +551,7 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
         for k in CrossLinkDataBase2.data_base:
             new_data_base[k]=CrossLinkDataBase2.data_base[k]
         self.data_base=new_data_base
-        self.__update__()
+        self.__update()
 
     def set_value(self,key,new_value,FilterOperator=None):
         '''
@@ -571,7 +571,7 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
                     xl[key]=new_value
             else:
                 xl[key]=new_value
-        self.__update__
+        self.__update()
 
     def get_values(self,key):
         '''
@@ -595,7 +595,7 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
                 xl[self.residue1_key]=xl[self.residue1_key]+offset
             if xl[self.protein2_key] == protein_name:
                 xl[self.residue2_key]=xl[self.residue2_key]+offset
-        self.__update__
+        self.__update()
 
     def create_new_keyword(self,keyword,values_from_keyword=None):
         '''
@@ -609,7 +609,7 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
                 xl[keyword] = xl[values_from_keyword]
             else:
                 xl[keyword] = None
-        self.__update__
+        self.__update()
 
     def clone_protein(self,protein_name,new_protein_name):
         new_xl_dict={}
@@ -637,7 +637,7 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
                     new_xl[self.protein2_key]=new_protein_name
                     new_data_base.append(new_xl)
             self.data_base[id]=new_data_base
-        self.__update__()
+        self.__update()
 
     def filter_out_same_residues(self):
         '''
@@ -653,7 +653,7 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
                 else:
                     new_data_base.append(xl)
             self.data_base[id]=new_data_base
-        self.__update__()
+        self.__update()
 
 
     def jackknife(self,percentage):
@@ -702,7 +702,7 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
         import json
         with open(json_filename, 'r') as fp:
             self.data_base = json.load(fp)
-        self.__update__()
+        self.__update()
 
     def save_csv(self,filename):
 
@@ -833,7 +833,7 @@ class CrossLinkDataBaseFromStructure(object):
                 new_xl["InterRigidBody"] = None
 
             self.cldb.data_base[str(number_of_spectra)].append(new_xl)
-        self.cldb.__update__()
+        self.cldb.__update()
         return self.cldb
 
 

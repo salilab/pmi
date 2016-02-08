@@ -182,14 +182,14 @@ class CrossLinkDataBaseKeywordsConverter(_CrossLinkDataBaseStandardKeys):
     to the standard ones
     '''
 
-    def __init__(self,ResiduePairListParser=None):
+    def __init__(self, list_parser=None):
         '''
         @param list_parser an instance of ResiduePairListParser, if any is needed
         '''
         self.converter={}
         self.backward_converter={}
         _CrossLinkDataBaseStandardKeys.__init__(self)
-        self.rplp=ResiduePairListParser
+        self.rplp = list_parser
         if self.rplp is None:
             # either you have protein1, protein2, residue1, residue2
             self.compulsory_keys=set([self.protein1_key,

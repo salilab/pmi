@@ -331,20 +331,20 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
     operations, adding cross-links, merge datasets...
     '''
 
-    def __init__(self,CrossLinkDataBaseKeywordsConverter,data_base=None):
+    def __init__(self, converter, data_base=None):
         '''
-        To be constructed it needs a CrossLinkDataBaseKeywordsConverter instance first
-        @param CrossLinkDataBaseKeywordsConverter an instance of converter
+        Constructor.
+        @param converter an instance of CrossLinkDataBaseKeywordsConverter
         @param data_base an instance of CrossLinkDataBase to build the new database on
         '''
         if data_base is None:
             self.data_base = {}
         else:
             self.data_base=data_base
-        self.cldbkc=CrossLinkDataBaseKeywordsConverter
+        self.cldbkc = converter
         _CrossLinkDataBaseStandardKeys.__init__(self)
         self.list_parser=self.cldbkc.rplp
-        self.converter=CrossLinkDataBaseKeywordsConverter.get_converter()
+        self.converter = converter.get_converter()
         self.__update__()
 
     def __update__(self):

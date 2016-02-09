@@ -1413,9 +1413,11 @@ def input_adaptor(stuff,
 
     # now that things are ok, do selection if requested
     hier_list = []
+    pmi_input = False
     if tp in (IMP.pmi.topology.System,IMP.pmi.topology.State,
               IMP.pmi.topology.Molecule,IMP.pmi.topology.TempResidue):
         # if PMI, perform selection using gathered indexes
+        pmi_input = True
         indexes_per_mol = defaultdict(list)
         if tp==IMP.pmi.topology.System:
             for system in stuff:
@@ -1453,7 +1455,7 @@ def input_adaptor(stuff,
         except:
             raise Exception('input_adaptor: you passed something of type',tp)
 
-    if flatten:
+    if flatten and pmi_input:
         return [h for sublist in hier_list for h in sublist]
     else:
         return hier_list

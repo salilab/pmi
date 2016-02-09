@@ -33,6 +33,7 @@ class DegreesOfFreedom(object):
         self.movers = []
         self.rigid_bodies = [] #stores rigid body objects
         self.flexible_beads = [] # stores all beads including nonrigid members of rigid bodies
+        self.nuisances = []
 
         #self.particle_map = {} # map from particles/rb objects to relevant movers+constraints
         # internal mover  = [mover obj, list of particles, enabled?] ?
@@ -190,9 +191,19 @@ class DegreesOfFreedom(object):
         return fb_movers
 
     def create_nuisance_mover(self,
-                              ps = None,
-                              pmi_restraint = None):
-        """either create nuisance or pass ISD restraint with fixed interface"""
+                              nuisance_p,
+                              step_size):
+        """Create MC normal mover for nuisance particles.
+        We will add an easier interface to add all of them from a PMI restraint
+        @param nuisance_p The Nuisance particle (an ISD::Scale)
+        @param step_size The maximum step size for Monte Carlo
+        """
+        mv = IMP.core.NormalMover([nuisance_p],
+                                  IMP.FloatKeys([IMP.FloatKey("nuisance")]),
+                                  step_size)
+        self.nuisances.append(nuisance_p)
+        self.movers.append(mv)
+        return [mv]
 
     def setup_md(self,
                  hspec):

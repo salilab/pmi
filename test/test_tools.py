@@ -108,5 +108,17 @@ class TestTools(IMP.test.TestCase):
         testH = IMP.pmi.tools.input_adaptor(tH)
         self.assertEqual(testH,tH)
 
+        # check passing system,state
+        testSystem = IMP.pmi.tools.input_adaptor(s,pmi_resolution=0)
+        testState = IMP.pmi.tools.input_adaptor(st1,pmi_resolution=0)
+        compareAll = [IMP.atom.Selection(m.get_hierarchy(),
+                                         resolution=0).get_selected_particles() for m in [m1,m2,m3]]
+
+        self.assertEqual(sorted(testSystem,key=lambda a:len(a)),
+                         sorted(compareAll,key=lambda a:len(a)))
+
+        self.assertEqual(sorted(testState,key=lambda a:len(a)),
+                         sorted(compareAll,key=lambda a:len(a)))
+
 if __name__ == '__main__':
     IMP.test.main()

@@ -1418,16 +1418,20 @@ def input_adaptor(stuff,
               IMP.pmi.topology.Molecule,IMP.pmi.topology.TempResidue):
         # if PMI, perform selection using gathered indexes
         pmi_input = True
-        indexes_per_mol = defaultdict(list)
+        indexes_per_mol = defaultdict(list) #key is Molecule object, value are residues
         if tp==IMP.pmi.topology.System:
             for system in stuff:
                 for state in system.get_states():
-                    for molecule in state.get_molecules():
-                        indexes_per_mol[molecule] += [r.get_index() for r in molecule.get_residues()]
+                    mdict = state.get_molecules()
+                    for molname in mdict:
+                        for copy in mdict[molname]:
+                            indexes_per_mol[copy] += [r.get_index() for r in copy.get_residues()]
         elif tp==IMP.pmi.topology.State:
             for state in stuff:
-                for molecule in state.get_molecules():
-                    indexes_per_mol[molecule] += [r.get_index() for r in molecule.get_residues()]
+                mdict = state.get_molecules()
+                for molname in mdict:
+                    for copy in mdict[molname]:
+                        indexes_per_mol[copy] += [r.get_index() for r in copy.get_residues()]
         elif tp==IMP.pmi.topology.Molecule:
             for molecule in stuff:
                 indexes_per_mol[molecule] += [r.get_index() for r in molecule.get_residues()]

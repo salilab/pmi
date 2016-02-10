@@ -234,7 +234,7 @@ class DegreesOfFreedom(object):
                            references,
                            clones,
                            transform,
-                           resolution='all'):
+                           resolution=1):
         """Create a symmetry constraint. Checks:
         same number of particles
         disable ANY movers involving symmetry copies
@@ -245,12 +245,14 @@ class DegreesOfFreedom(object):
         @param clones Same format as references
         @param transform The transform that moves a clone onto a reference
                IMP.algebra.Transformation3D
-        @param resolution Only used if you pass PMI objects. Probably you want 'all'.
+        @param resolution Only used if you pass PMI objects.
+               If you have a multires system, assuming each are rigid
+               bodies you probably only need one resolution.
         """
 
         # get all RBs and particles
         href    = IMP.pmi.tools.input_adaptor(references,resolution,flatten=True)
-        hclones = IMP.pmi.tools.input_adaptor(clones,flatten=True)
+        hclones = IMP.pmi.tools.input_adaptor(clones,resolution,flatten=True)
 
         ref_rbs,ref_beads = IMP.pmi.tools.get_rbs_and_beads(href)
         clones_rbs,clones_beads = IMP.pmi.tools.get_rbs_and_beads(hclones)

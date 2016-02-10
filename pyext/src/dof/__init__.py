@@ -183,10 +183,12 @@ class DegreesOfFreedom(object):
             print('WARNING: No hierarchies were passed to create_flexible_beads()')
             return fb_movers
         for h in hiers:
-            self.flexible_beads.append(h)
+            p = h.get_particle()
+            IMP.core.XYZ(p).set_coordinates_are_optimized(True)
             if IMP.core.RigidMember.get_is_setup(h) or IMP.core.NonRigidMember.get_is_setup(h):
                 raise Exception("Cannot create flexible beads from members of rigid body")
-            fb_movers.append(IMP.core.BallMover([h.get_particle()],max_trans))
+            self.flexible_beads.append(h)
+            fb_movers.append(IMP.core.BallMover([p],max_trans))
         self.movers += fb_movers
         return fb_movers
 

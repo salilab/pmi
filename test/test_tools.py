@@ -100,8 +100,7 @@ class TestTools(IMP.test.TestCase):
                     IMP.atom.Selection(m3.get_hierarchy(),
                                        residue_index=1,
                                        resolution=1).get_selected_particles()]
-        self.assertEqual(sorted(test3,key=lambda a: len(a)),
-                         sorted(compare3,key=lambda a: len(a)))
+        self.assertEqual(test3,compare3)
 
         # nothing changes to hierarchy
         tH = [IMP.atom.Hierarchy(IMP.Particle(mdl))]
@@ -114,11 +113,8 @@ class TestTools(IMP.test.TestCase):
         compareAll = [IMP.atom.Selection(m.get_hierarchy(),
                                          resolution=0).get_selected_particles() for m in [m1,m2,m3]]
 
-        self.assertEqual(sorted(testSystem,key=lambda a:len(a)),
-                         sorted(compareAll,key=lambda a:len(a)))
-
-        self.assertEqual(sorted(testState,key=lambda a:len(a)),
-                         sorted(compareAll,key=lambda a:len(a)))
+        self.assertEqual(testSystem,compareAll)
+        self.assertEqual(testState,compareAll)
 
 if __name__ == '__main__':
     IMP.test.main()

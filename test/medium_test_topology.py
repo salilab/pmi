@@ -8,6 +8,7 @@ import IMP.test
 import RMF
 import IMP.rmf
 import IMP.pmi.dof
+import os
 
 def get_atomic_residue_list(residues):
     r1=[]
@@ -35,9 +36,10 @@ class MultiscaleTopologyTest(IMP.test.TestCase):
 
         # Add representations. For structured regions, created a few beads as well as densities
         #  For unstructured regions, create a single bead level and set those up as densities
+        gmm_prefix = ''.join(self.get_input_file_name('gcp2_gmm.txt').split('.')[:-1])
         mol.add_representation(a1,
                                resolutions=[10,100],
-                               density_prefix='gcp2_gmm',
+                               density_prefix=gmm_prefix,
                                density_residues_per_component=20,
                                density_voxel_size=3.0)
         mol.add_representation(mol.get_non_atomic_residues(),
@@ -47,7 +49,6 @@ class MultiscaleTopologyTest(IMP.test.TestCase):
         # When you call build, this actually makes the beads and fits the GMMs
         #  This returns a canonical IMP hierarchy
         hier = s.build()
-        #IMP.atom.show_molecular_hierarchy(hier)
 
         return a1, hier, mol
 
@@ -66,7 +67,6 @@ class MultiscaleTopologyTest(IMP.test.TestCase):
         self.assertEqual(len(mol.get_residues()),
                 len(mol.get_atomic_residues()) + len(mol.get_non_atomic_residues()) )
         self.assertEqual(len(mol.get_residues()), 12)  # now contains only beads that are built
-
 
     def test_num_unstruct_res(self):
         try:

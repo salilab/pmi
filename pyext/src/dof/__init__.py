@@ -191,6 +191,19 @@ class DegreesOfFreedom(object):
             fb_movers.append(IMP.core.BallMover([p],max_trans))
         self.movers += fb_movers
         return fb_movers
+        
+    def add_rigid_body(self, rb, max_trans=4.0, max_rot=0.4, optimize=True):
+        """ Adds a rigid body it to the rigid_body and movers lists
+        Initially meant as a way to pass GMM rigid bodies from density restraints,
+        but may be useful in other cases.
+        @param rb - the rigid body
+        @param max_trans - Maximum translation of the rb
+        @param max_rot - Maximum rotation of the rb
+        @param optimize - True if you want to sample the position of the rigid body
+        """
+        self.rigid_bodies.append(rb)
+        if optimize:
+            self.movers.append(IMP.core.RigidBodyMover(rb,max_trans,max_rot))
 
     def create_nuisance_mover(self,
                               nuisance_p,

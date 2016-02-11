@@ -199,7 +199,6 @@ class Molecule(_SystemBase):
         self.hier.set_name(name)
         IMP.atom.Copy.setup_particle(self.hier,copy_num)
         IMP.atom.Chain.setup_particle(self.hier,chain_id)
-
         # create TempResidues from the sequence (if passed)
         self.residues=[]
         for ns,s in enumerate(sequence):
@@ -477,9 +476,7 @@ class Molecule(_SystemBase):
 
             # build all the representations
             for rep in self.representations:
-                hiers = system_tools.build_representation(self.mdl,rep,self.coord_finder)
-                for h in hiers:
-                    self.hier.add_child(h)
+                system_tools.build_representation(self.hier,rep,self.coord_finder)
             self.built=True
 
             for res in self.residues:

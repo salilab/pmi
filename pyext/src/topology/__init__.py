@@ -25,7 +25,7 @@ import IMP.pmi
 import IMP.pmi.tools
 import csv
 import os
-from collections import defaultdict,OrderedDict
+from collections import defaultdict
 from . import system_tools
 from Bio import SeqIO
 from bisect import bisect_left

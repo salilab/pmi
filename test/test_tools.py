@@ -17,7 +17,6 @@ import IMP.pmi.macros
 from math import *
 
 class TestTools(IMP.test.TestCase):
-
     def test_shuffle(self):
         """Test moving rbs, fbs"""
         mdl = IMP.Model()
@@ -53,6 +52,24 @@ class TestTools(IMP.test.TestCase):
 
         ps = IMP.pmi.tools.select_at_all_resolutions(mol.get_hierarchy(),residue_index=93)
         self.assertEqual(len(ps),10) #should get res0 and res10
+
+    def test_get_name(self):
+        """Test pmi::get_molecule_name_and_copy()"""
+        mdl = IMP.Model()
+        s = IMP.pmi.topology.System(mdl)
+        seqs = IMP.pmi.topology.Sequences(self.get_input_file_name('seqs.fasta'))
+        st1 = s.create_state()
+
+        m1 = st1.create_molecule("Prot1",sequence=seqs["Protein_1"])
+        a1 = m1.add_structure(self.get_input_file_name('prot.pdb'),
+                              chain_id='A',res_range=(1,10),offset=-54)
+        m1.add_representation(a1,resolutions=[0,1])
+        m2 = m1.create_clone('B')
+        hier = s.build()
+        sel0 = IMP.atom.Selection(hier,resolution=1,copy_index=0).get_selected_particles()
+        self.assertEqual(IMP.pmi.get_molecule_name_and_copy(sel0[0]),"Prot1.0")
+        sel1 = IMP.atom.Selection(hier,resolution=1,copy_index=1).get_selected_particles()
+        self.assertEqual(IMP.pmi.get_molecule_name_and_copy(sel1[0]),"Prot1.1")
 
     def test_input_adaptor(self):
         """Test that input adaptor correctly performs selection"""

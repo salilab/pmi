@@ -49,7 +49,8 @@ class DegreesOfFreedom(object):
                           name=None):
         """Create rigid body constraint and mover
         @param rigid_parts Can be one of the following inputs:
-           IMP Hierarchy, PMI System/State/Molecule/TempResidue, or a list/set (of list/set) of them.
+           IMP Hierarchy, PMI System/State/Molecule/TempResidue, a list/set (of list/set) of them
+           or a RigidBody object.
            Must be uniform input, however. No mixing object types.
         @param nonrigid_parts Same input format as rigid_parts.
                Must be a subset of rigid_parts particles.
@@ -66,14 +67,20 @@ class DegreesOfFreedom(object):
 
         # ADD CHECK: these particles are not already part of some RB or SRB
 
-        ### setup RB
-        hiers = IMP.pmi.tools.input_adaptor(rigid_parts,
-                                            resolution,
-                                            flatten=True)
-        if not hiers:
-            print("WARNING: No hierarchies were passed to create_rigid_body()")
-            return []
-        rb = IMP.atom.create_rigid_body(hiers)
+        # First, is this already a rigid body?
+        if type(rigid_parts) is IMP.core.RigidBody:
+            rb = rigid_parts
+            if name is not None:
+                name = rb.get_name()
+        else:
+        ### Otherwise, setup RB
+            hiers = IMP.pmi.tools.input_adaptor(rigid_parts,
+                                                resolution,
+                                                flatten=True)
+            if not hiers:
+                print("WARNING: No hierarchies were passed to create_rigid_body()")
+                return []
+            rb = IMP.atom.create_rigid_body(hiers)
         self.rigid_bodies.append(rb)
         rb.set_coordinates_are_optimized(True)
         rb_mover = IMP.core.RigidBodyMover(rb,max_trans,max_rot)

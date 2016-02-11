@@ -11,6 +11,7 @@ import IMP.pmi.io
 import IMP.pmi.io.crosslink
 import IMP.pmi.representation
 import IMP.pmi.restraints
+import IMP.pmi.restraints.em
 import IMP.pmi.restraints.crosslinking
 import IMP.pmi.macros
 from math import *
@@ -73,8 +74,22 @@ class TestTools(IMP.test.TestCase):
         m1.add_representation(m1.get_non_atomic_residues(),resolutions=[1])
         m2.add_representation(a2,resolutions=[0,1]) # m2 only has atoms
         m3.add_representation(a3,resolutions=[1,10])
-        m3.add_representation(m3.get_non_atomic_residues(),resolutions=[1])
+        m3.add_representation(m3.get_non_atomic_residues(),resolutions=[1], setup_particles_as_densities=True)
         hier = s.build()
+
+        densities = [r.get_hierarchy() for r in m3.get_non_atomic_residues()]
+
+        #set up GMM particles
+        gemt = IMP.pmi.restraints.em.GaussianEMRestraint(densities,
+                                                 self.get_input_file_name('prot_gmm.txt'),
+                                                 target_is_rigid_body=True)
+
+        gmm_hier = gemt.get_density_as_hierarchy()
+
+        print(gmm_hier, gmm_hier.get_children())
+
+        test0 = IMP.pmi.tools.input_adaptor(gmm_hier)
+        self.assertEqual(test0, gmm_hier.get_children())
 
         # get one resolution
         test1 = IMP.pmi.tools.input_adaptor(m1,pmi_resolution=0)

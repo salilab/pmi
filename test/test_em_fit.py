@@ -43,10 +43,35 @@ class TestGaussianEMRestraint(IMP.test.TestCase):
 
         # make sure you can score
         gem = IMP.pmi.restraints.em.GaussianEMRestraint(densities,
-                                                        target_fn=self.get_input_file_name('prot_gmm.txt'))
+                                                        target_fn=self.get_input_file_name('prot_gmm.txt'),
+                                                        target_is_rigid_body=True)
+
         gem.add_to_model()
         mdl.update()
         init_em_score = gem.evaluate()
+
+        # get rigid body object
+        rb = gem.get_rigid_body()
+        self.assertEqual(IMP.core.RigidBody, type(rb))
+        self.assertEqual(len(rb.get_rigid_members()), 1)
+
+        #test target transformations
+        p = gem.target_ps[0]
+        pos = IMP.core.XYZ(p).get_coordinates()
+
+        self.assertEqual(pos[0], -6.50710525063)
+        self.assertEqual(pos[1], -44.7706839578)
+        self.assertEqual(pos[2], -70.33819299)
+
+        gem.center_target_density_on_model()
+        pos = IMP.core.XYZ(p).get_coordinates()
+        self.assertNotEqual(pos[0], -6.50710525063)
+
+        gem.center_target_density_on_origin()  
+        pos = IMP.core.XYZ(p).get_coordinates()    
+        self.assertEqual(pos[0], 0)
+        self.assertEqual(pos[1], 0)
+        self.assertEqual(pos[2], 0)
 
 class TestPMI(IMP.test.TestCase):
     def test_em_pmi(self):

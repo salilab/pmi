@@ -27,7 +27,6 @@ import csv
 import os
 from collections import defaultdict
 from . import system_tools
-from Bio import SeqIO
 from bisect import bisect_left
 
 class _SystemBase(object):
@@ -573,7 +572,7 @@ class Sequences(object):
     def __init__(self,fasta_fn,name_map=None):
         """read a fasta file and extract all the requested sequences
         @param fasta_fn sequence file
-        @param name_map dictionary mapping the fasta name to the stored name
+        @param name_map dictionary mapping the fasta name to final stored name
         """
         self.sequences={}
         self.seqs_in_order = []
@@ -596,21 +595,31 @@ class Sequences(object):
             ret+='%s\t%s\n'%(s,self.sequences[s])
         return ret
     def read_sequences(self,fasta_fn,name_map=None):
-        # read all sequences
-        with open(fasta_fn) as handle:
-            record_dict = SeqIO.to_dict(SeqIO.parse(handle, "fasta"))
-        if name_map is None:
-            for pn in record_dict:
-                self.sequences[pn]=str(record_dict[pn].seq).replace("*", "")
-                self.seqs_in_order.append(self.sequences[pn])
-        else:
-            for pn in name_map:
-                try:
-                    self.sequences[name_map[pn]]=str(record_dict[pn].seq).replace("*", "")
-                    self.seqs_in_order.append(self.sequences[name_map[pn]])
-                except:
-                    print("tried to add sequence but: id %s not found in fasta file" % pn)
-                    exit()
+        code = None
+        seq = None
+        fh = open(fasta_fn,'r')
+        for (num, line) in enumerate(fh):
+            if line.startswith('>'):
+                if seq is not None:
+                    self.sequences[code] = seq
+                    self.seqs_in_order.append(seq)
+                code = line.rstrip()[1:]
+                if name_map is not None:
+                    try:
+                        code = name_map[code]
+                    except:
+                        pass
+                seq = ''
+            else:
+                line = line.rstrip()
+                if line: # Skip blank lines
+                    if seq is None:
+                        raise Exception( \
+"Found FASTA sequence before first header at line %d: %s" % (num + 1, line))
+                    seq += line
+        if seq is not None:
+            self.sequences[code] = seq
+            self.seqs_in_order.append(seq)
 
 #------------------------
 

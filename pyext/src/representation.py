@@ -10,17 +10,16 @@ import IMP.core
 import IMP.algebra
 import IMP.atom
 import IMP.display
-import IMP.pmi
 import IMP.isd
-from math import pi, sqrt
-
-from operator import itemgetter
+import IMP.pmi
 import IMP.pmi.tools
 import IMP.pmi.output
 import IMP.rmf
+import IMP.pmi.topology
 import RMF
+from math import pi, sqrt
+from operator import itemgetter
 import os
-
 
 class Representation(object):
     # Authors: Peter Cimermancic, Riccardo Pellarin, Charles Greenberg
@@ -180,17 +179,13 @@ class Representation(object):
         @param id Identifier of the sequence in the FASTA file header
                   (if not provided, use `name` instead)
         '''
-        from Bio import SeqIO
-        with open(filename) as handle:
-            record_dict = SeqIO.to_dict(SeqIO.parse(handle, "fasta"))
+        record_dict = IMP.pmi.topology.Sequences(filename)
         if id is None:
             id = name
-        try:
-            length = len(record_dict[id].seq)
-        except KeyError:
+        if id not in record_dict:
             raise KeyError("id %s not found in fasta file" % id)
-
-        self.sequence_dict[name] = str(record_dict[id].seq).replace("*", "")
+        length = len(record_dict[id])
+        self.sequence_dict[name] = str(record_dict[id])
         if offs is not None:
             offs_str="-"*offs
             self.sequence_dict[name]=offs_str+self.sequence_dict[name]

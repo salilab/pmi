@@ -1039,6 +1039,8 @@ class ComponentTopology(object):
     def _l2s(self,l):
         l = str(l).strip('[').strip(']')
         return l
+    def __repr__(self):
+        return self.get_str()
     def get_str(self):
         res_range = self.residue_range
         if self.residue_range is None:

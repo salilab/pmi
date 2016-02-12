@@ -1893,10 +1893,10 @@ def shuffle_configuration(root_hier=None,
     @param root_hier Will find rigid bodies and flexible beads. Or just provide them
     @param max_translation Max translation (rbs and flexible beads)
     @param max_rotation Max rotation (rbs only)
-    @param avoidcollision_rigid check if the particle/rigid body was
+    @param avoidcollision_rb check if the particle/rigid body was
            placed close to another particle; uses the optional
            arguments cutoff and niterations
-    @param avoidcollision_flexible Be careful only set to True if they don't start out overlapping!
+    @param avoidcollision_fb Be careful only set to True if they don't start out overlapping!
     @param cutoff Distance less than this is a collision
     @param niterations How many times to try avoiding collision
     @param bounding_box defined by ((x1,y1,z1),(x2,y2,z2))

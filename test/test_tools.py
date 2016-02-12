@@ -62,7 +62,7 @@ class TestTools(IMP.test.TestCase):
 
         m1 = st1.create_molecule("Prot1",sequence=seqs["Protein_1"])
         a1 = m1.add_structure(self.get_input_file_name('prot.pdb'),
-                              chain_id='A',res_range=(1,10),offset=-54)
+                              chain_id='A',res_range=(55,63),offset=-54)
         m1.add_representation(a1,resolutions=[0,1])
         m2 = m1.create_clone('B')
         hier = s.build()
@@ -82,11 +82,11 @@ class TestTools(IMP.test.TestCase):
         m2 = st1.create_molecule("Prot2",sequence=seqs["Protein_2"])
         m3 = st1.create_molecule("Prot3",sequence=seqs["Protein_3"])
         a1 = m1.add_structure(self.get_input_file_name('prot.pdb'),
-                              chain_id='A',res_range=(1,10),offset=-54)
+                              chain_id='A',res_range=(55,63),offset=-54)
         a2 = m2.add_structure(self.get_input_file_name('prot.pdb'),
-                              chain_id='B',res_range=(1,13),offset=-179)
+                              chain_id='B',res_range=(180,192),offset=-179)
         a3 = m3.add_structure(self.get_input_file_name('prot.pdb'),
-                              chain_id='G',res_range=(1,10),offset=-54)
+                              chain_id='G',res_range=(55,63),offset=-54)
         m1.add_representation(a1,resolutions=[0,1])
         m1.add_representation(m1.get_non_atomic_residues(),resolutions=[1])
         m2.add_representation(a2,resolutions=[0,1]) # m2 only has atoms

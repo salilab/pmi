@@ -28,7 +28,7 @@ class TestGaussianEMRestraint(IMP.test.TestCase):
         seqs = IMP.pmi.topology.Sequences(self.get_input_file_name('seqs.fasta'))
         m1 = st1.create_molecule("Prot1",sequence=seqs["Protein_1"])
         atomic_res = m1.add_structure(self.get_input_file_name('prot.pdb'),chain_id='A',
-                                      res_range=(1,10),offset=-54)
+                                      res_range=(55,63),offset=-54)
         fname = self.get_tmp_file_name('test_gmm')
         m1.add_representation(atomic_res,resolutions=[1,10],
                               density_residues_per_component=2,
@@ -67,8 +67,8 @@ class TestGaussianEMRestraint(IMP.test.TestCase):
         pos = IMP.core.XYZ(p).get_coordinates()
         self.assertNotEqual(pos[0], -6.50710525063)
 
-        gem.center_target_density_on_origin()  
-        pos = IMP.core.XYZ(p).get_coordinates()    
+        gem.center_target_density_on_origin()
+        pos = IMP.core.XYZ(p).get_coordinates()
         self.assertEqual(pos[0], 0)
         self.assertEqual(pos[1], 0)
         self.assertEqual(pos[2], 0)

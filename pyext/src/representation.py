@@ -261,11 +261,9 @@ class Representation(object):
                                                    offset=offset, isnucleicacid=isnucleicacid)
             elif g[2] == "gap" and n > 0:
                 print("autobuild_model: constructing fragment %s as a bead" % (str((first, last))))
-                parts = self.hier_db.get_particles_at_closest_resolution(
-                    name,
-                    first -
-                    1,
-                    1)
+                parts = self.hier_db.get_particles_at_closest_resolution(name,
+                                                                         first + offset - 1,
+                                                                         1)
                 xyz = IMP.core.XYZ(parts[0]).get_coordinates()
                 outhiers += self.add_component_necklace(name,
                                                         first+offset, last+offset, missingbeadsize, incoord=xyz)

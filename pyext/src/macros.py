@@ -524,21 +524,34 @@ class BuildSystem(object):
             srbs = reader.get_super_rigid_bodies()
             csrbs = reader.get_chains_of_super_rigid_bodies()
 
+            # add rigid bodies
+            domains_in_rbs = set()
             for rblist in rbs:
                 all_res = set()
                 bead_res = set()
                 for domain in rblist:
                     all_res|=self._domains[nstate][domain][0]
                     bead_res|=self._domains[nstate][domain][1]
+                    domains_in_rbs.add(domain)
                 all_res|=bead_res
                 self.dof.create_rigid_body(all_res,
                                            nonrigid_parts=bead_res)
+
+            # if you have any BEAD domains not in an RB, set them as flexible beads
+            for molname in reader.get_unique_molecules():
+                mlist = reader.get_unique_molecules()[molname]
+                for domain in mlist:
+                    if domain.pdb_file=="BEADS" and domain not in domains_in_rbs:
+                        self.dof.create_flexible_beads(self._domains[nstate][domain.domain_name][1])
+
+            # add super rigid bodies
             for srblist in srbs:
                 all_res = set()
                 for domain in srblist:
                     all_res|=self._domains[nstate][domain][0]
                 self.dof.create_super_rigid_body(all_res)
 
+            # add chains of super rigid bodies
             for csrblist in csrbs:
                 all_res = set()
                 for domain in csrblist:

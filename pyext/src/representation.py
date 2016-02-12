@@ -293,7 +293,7 @@ class Representation(object):
         Add a component that has an associated 3D structure in a PDB file.
 
         Reads the PDB, and constructs the fragments corresponding to contiguous
-        senquence stretches.
+        sequence stretches.
 
         @return a list of hierarchies.
 
@@ -621,7 +621,7 @@ class Representation(object):
         @param num_iter num GMM iterations. more will increase accuracy and fitting time
         @param multiply_by_total_mass multiply the weights of the GMM by this value (only works on creation!)
         @param transform for input file only, apply a transformation (eg for multiple copies same GMM)
-        @param intermediate_map_fn for debugging, this will write the itermediate (simulated) map
+        @param intermediate_map_fn for debugging, this will write the intermediate (simulated) map
         @param density_ps_to_copy in case you already created the appropriate GMM (eg, for beads)
         @param use_precomputed_gaussians Set this flag and pass fragments - will use roughly spherical Gaussian setup
         '''

@@ -1344,7 +1344,7 @@ class AnalysisReplicaExchange0(object):
         @param score_key                           The score for ranking models
         @param rmf_file_key                        Key pointing to RMF filename
         @param rmf_file_frame_key                  Key pointing to RMF frame number
-        @param state_number                        State number to analyse
+        @param state_number                        State number to analyze
         @param prefiltervalue                      Only include frames where the score key is below this value
         @param feature_keys                        Keywords for which you want to calculate average,
                                                     medians, etc,

@@ -173,7 +173,7 @@ class Molecule(_SystemBase):
     """
 
     def __init__(self,state,name,sequence,chain_id,copy_num,mol_to_clone=None):
-        """The user should not call this direclty, instead call State::create_molecule()
+        """The user should not call this directly; instead call State::create_molecule()
         @param state           The parent PMI State
         @param name            The name of the molecule (string)
         @param sequence        Sequence (string)
@@ -735,7 +735,7 @@ class TopologyReader(object):
                  fasta_dir='./',
                  gmm_dir='./'):
         """Constructor.
-        @param topology_file Pipe-delimetted file specifying the topology
+        @param topology_file Pipe-delimited file specifying the topology
         @param resolutions What resolutions to build for ALL structured components
         @param pdb_dir Relative path to the pdb directory
         @param fasta_dir Relative path to the fasta directory

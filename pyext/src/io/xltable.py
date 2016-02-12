@@ -208,7 +208,7 @@ class XLTable():
     def load_rmf_coordinates(self,rmf_name,rmf_frame_index, chain_names, nomap=False):
         """ read coordinates from a rmf file. It needs IMP to run.
         rmf has been created using IMP.pmi conventions. It gets the
-        highest resolution atomatically. Also appends to distance maps
+        highest resolution automatically. Also appends to distance maps
         @param rmf_name             file for reading coords
         @param rmf_frame_index      frame index from the rmf
         @param nomap                Default False, if True it will not calculate the contact map
@@ -337,7 +337,6 @@ class XLTable():
 
     def setup_contact_map(self):
         """ loop through each distance map and get frequency of contacts
-        upperbound:   maximum distance to be marked
         """
         if self.num_pdbs!=0 and self.num_rmfs==0:
             self.av_dist_map = 1.0/self.num_pdbs * self.av_dist_map

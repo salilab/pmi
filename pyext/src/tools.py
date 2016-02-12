@@ -1403,7 +1403,7 @@ def input_adaptor(stuff,
                   pmi_resolution=0,
                   flatten=False):
     """Adapt things for PMI (degrees of freedom, restraints, ...)
-    Returns list of list of hierarchies, seperated into Molecules if possible.
+    Returns list of list of hierarchies, separated into Molecules if possible.
     (iterable of ^2) hierarchy -> returns input as list of list of hierarchies, only one entry.
     (iterable of ^2) PMI::System/State/Molecule/TempResidue ->
         returns residue hierarchies, grouped in molecules, at requested resolution

@@ -464,7 +464,7 @@ class BuildSystem(object):
             seq = IMP.pmi.topology.Sequences(mlist[0].fasta_file)
             mol = state.create_molecule(molname,seq[mlist[0].fasta_id],mlist[0].chain)
             for domain in mlist:
-                if domain.residue_range==(1,-1):
+                if domain.residue_range is None:
                     domain_res = mol.get_residues()
                 else:
                     domain_res = mol.residue_range(domain.residue_range[0]-1,domain.residue_range[1]-1)
@@ -758,7 +758,7 @@ class BuildModel(object):
 
         else:
             if len(pdbbits)!=0:
-                num_components=number_of_residues/abs(num_components)
+                num_components=number_of_residues/abs(num_components)+1
                 outhier+=simo.add_component_density(compname,
                                          pdbbits,
                                          num_components=num_components,
@@ -768,7 +768,7 @@ class BuildModel(object):
                                          multiply_by_total_mass=True)
 
             if len(helixbits)!=0:
-                num_components=number_of_residues/abs(num_components)
+                num_components=number_of_residues/abs(num_components)+1
                 outhier+=simo.add_component_density(compname,
                                          helixbits,
                                          num_components=num_components,
@@ -782,8 +782,6 @@ class BuildModel(object):
     def autobuild(self,simo,comname,pdbname,chain,resrange,include_res0=False,
                   beadsize=5,color=0.0,offset=0):
         if pdbname is not None and pdbname is not "IDEAL_HELIX" and pdbname is not "BEADS" :
-            if resrange[-1]==-1:
-                resrange=(resrange[0],len(simo.sequence_dict[comname]))
             if include_res0:
                 outhier=simo.autobuild_model(comname,
                                  pdbname=pdbname,

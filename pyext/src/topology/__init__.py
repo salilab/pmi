@@ -287,8 +287,9 @@ class Molecule(_SystemBase):
         Returns the atomic residues (as a set)
         @param pdb_fn    The file to read
         @param chain_id  Chain ID to read
-        @param res_range Add only a specific set of residues
-        @param offset    Apply an offset to the residue indexes of the PDB file
+        @param res_range Add only a specific set of residues from the PDB file.
+        @param offset    Apply an offset to the residue indexes of the PDB file.
+                         This number is added to the PDB sequence.
         @param model_num Read multi-model PDB and return that model
         @param ca_only   Only read the CA positions from the PDB file
         @param soft_check If True, it only warns if there are sequence mismatches between the pdb and the Molecules sequence. Actually replaces the fasta values.
@@ -712,8 +713,8 @@ class TopologyReader(object):
        If left empty, will set up as BEADS (you can also specify "BEADS")
        Can also write "IDEAL_HELIX".
     - `chain`: Chain ID of this domain in the PDB file.
-    - `residue_range`: Comma delimited pair defining range. -1 = last residue.
-      all = [1,-1].
+    - `residue_range`: Comma delimited pair defining range.
+       Can leave empty or use 'all' for entire sequence from PDB file.
     - `pdb_offset`: Offset to sync PDB residue numbering with FASTA numbering.
     - `bead_size`: The size (in residues) of beads used to model areas not
       covered by PDB coordinates. These will be automatically built.
@@ -850,14 +851,14 @@ class TopologyReader(object):
             if (c.fasta_file!=self.unique_molecules[c.name][0].fasta_file or \
                 c.fasta_id!=self.unique_molecules[c.name][0].fasta_id or \
                 c.chain!=self.unique_molecules[c.name][0].chain):
-                errors.append("All domains with the same component name must have the same sequence")
+                errors.append("All domains with the same component name must have the same sequence. %s doesn't match %s"%(c.domain_name,c.name))
             self.unique_molecules[c.name].append(c)
 
         ### Optional fields
         # Residue Range
         f = values[7]
         if f.strip()=='all' or str(f)=="":
-            c.residue_range = (1,-1)
+            c.residue_range = None
         elif len(f.split(','))==2 and self._is_int(f.split(',')[0]) and self._is_int(f.split(',')[1]):
             # Make sure that is residue range is given, there are only two values and they are integers
             c.residue_range = (int(f.split(',')[0]), int(f.split(',')[1]))
@@ -1024,7 +1025,7 @@ class ComponentTopology(object):
         self.pdb_file = None
         self._orig_pdb_input = None
         self.chain = None
-        self.residue_range = [1,-1]
+        self.residue_range = None
         self.pdb_offset = 0
         self.bead_size = 10
         self.em_residues_per_gaussian = 0
@@ -1039,7 +1040,10 @@ class ComponentTopology(object):
         l = str(l).strip('[').strip(']')
         return l
     def get_str(self):
+        res_range = self.residue_range
+        if self.residue_range is None:
+            res_range = []
         return '|'+'|'.join([self.name,self.domain_name,self._orig_fasta_file,self.fasta_id,
-                         self._orig_pdb_input,self.chain,self._l2s(list(self.residue_range)),str(self.pdb_offset),
+                         self._orig_pdb_input,self.chain,self._l2s(list(res_range)),str(self.pdb_offset),
                          str(self.bead_size),str(self.em_residues_per_gaussian),self._l2s(self.rigid_bodies),
                          self._l2s(self.super_rigid_bodies),self._l2s(self.chain_of_super_rigid_bodies)])+'|'

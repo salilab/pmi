@@ -29,12 +29,12 @@ def resnums2str(res):
             ret+=', '
     return ret
 
-def get_structure(mdl,pdb_fn,chain_id,res_range=[],offset=0,model_num=None,ca_only=False):
+def get_structure(mdl,pdb_fn,chain_id,res_range=None,offset=0,model_num=None,ca_only=False):
     """read a structure from a PDB file and return a list of residues
     @param mdl The IMP model
     @param pdb_fn    The file to read
     @param chain_id  Chain ID to read
-    @param res_range Add only a specific set of residues
+    @param res_range Add only a specific set of residues. None gets you all
     @param offset    Apply an offset to the residue indexes of the PDB file
     @param model_num Read multi-model PDB and return that model
     @param ca_only Read only CA atoms (by default, all non-waters are read)
@@ -56,7 +56,7 @@ def get_structure(mdl,pdb_fn,chain_id,res_range=[],offset=0,model_num=None,ca_on
         for rr in IMP.atom.get_by_type(mh,IMP.atom.RESIDUE_TYPE):
             IMP.atom.Residue(rr).set_index(IMP.atom.Residue(rr).get_index()+offset)
 
-    if res_range==[] or res_range==(1,-1):
+    if res_range==[] or res_range is None:
         sel = IMP.atom.Selection(mh,chain=chain_id,atom_type=IMP.atom.AtomType('CA'))
     else:
         sel = IMP.atom.Selection(mh,chain=chain_id,residue_indexes=range(res_range[0],res_range[1]+1),

@@ -1681,7 +1681,6 @@ def shuffle_configuration(root_hier=None,
 
     # Add particles from excluded hierarchies to excluded list 
     for h in hierarchies_excluded_from_collision:
-        print(h, type(h))
         for p in IMP.core.get_leaves(h):
             hierarchies_excluded_from_collision_indexes.append(p.get_particle_index())
 

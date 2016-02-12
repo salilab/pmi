@@ -1678,6 +1678,13 @@ def shuffle_configuration(root_hier=None,
     gcpf.set_distance(cutoff)
     allparticleindexes = []
     hierarchies_excluded_from_collision_indexes = []
+
+    # Add particles from excluded hierarchies to excluded list 
+    for h in hierarchies_excluded_from_collision:
+        print(h, type(h))
+        for p in IMP.core.get_leaves(h):
+            hierarchies_excluded_from_collision_indexes.append(p.get_particle_index())
+
     for p in IMP.core.get_leaves(root_hier):
         if IMP.core.XYZ.get_is_setup(p):
             allparticleindexes.append(p.get_particle_index())

@@ -310,22 +310,15 @@ class TestDOF(IMP.test.TestCase):
                                                  target_is_rigid_body=True)
 
         em_rb = gem_xtal.get_rigid_body()
-
         em_rb.set_coordinates_are_optimized(False)
 
         dof = IMP.pmi.dof.DegreesOfFreedom(mdl)
-
-        dof.create_rigid_body(gem_xtal.get_density_as_hierarchy())
-
         dof.create_rigid_body(em_rb)
 
         self.assertTrue(em_rb in dof.get_rigid_bodies())
         self.assertEqual(len(dof.get_rigid_bodies()), 1)
         self.assertTrue(em_rb.get_coordinates_are_optimized())
         self.assertEqual(len(dof.get_movers()), 1)
-
-
-
 
 
 

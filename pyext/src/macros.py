@@ -467,7 +467,8 @@ class BuildSystem(object):
                 if domain.residue_range is None:
                     domain_res = mol.get_residues()
                 else:
-                    domain_res = mol.residue_range(domain.residue_range[0]-1,domain.residue_range[1]-1)
+                    domain_res = mol.residue_range(domain.residue_range[0]-1+domain.pdb_offset,
+                                                   domain.residue_range[1]-1+domain.pdb_offset)
                 if domain.pdb_file=="BEADS":
                     mol.add_representation(domain_res,
                                            resolutions=[domain.bead_size],
@@ -488,17 +489,19 @@ class BuildSystem(object):
                     if domain.em_residues_per_gaussian==0:
                         mol.add_representation(domain_atomic,
                                                resolutions=reader.resolutions)
-                        mol.add_representation(domain_non_atomic,
-                                               resolutions=[domain.bead_size])
+                        if len(domain_non_atomic)>0:
+                            mol.add_representation(domain_non_atomic,
+                                                   resolutions=[domain.bead_size])
                     else:
                         mol.add_representation(domain_atomic,
                                                resolutions=reader.resolutions,
                                                density_residues_per_component=domain.em_residues_per_gaussian,
                                                density_prefix=domain.density_prefix,
                                                density_force_compute=self.force_create_gmm_files)
-                        mol.add_representation(domain_non_atomic,
-                                               resolutions=[domain.bead_size],
-                                               setup_particles_as_densities=True)
+                        if len(domain_non_atomic)>0:
+                            mol.add_representation(domain_non_atomic,
+                                                   resolutions=[domain.bead_size],
+                                                   setup_particles_as_densities=True)
                     these_domains[domain.domain_name] = (domain_atomic,domain_non_atomic)
             self._domains.append(these_domains)
         print('State',len(self.system.states),'added')

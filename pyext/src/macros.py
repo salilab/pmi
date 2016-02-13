@@ -2,7 +2,7 @@
 Protocols for sampling structures and analyzing them.
 """
 
-from __future__ import print_function
+from __future__ import print_function, division
 import IMP
 import IMP.pmi.representation
 import IMP.pmi.tools
@@ -775,7 +775,7 @@ class BuildModel(object):
 
         else:
             if len(pdbbits)!=0:
-                num_components=number_of_residues/abs(num_components)+1
+                num_components=number_of_residues//abs(num_components)+1
                 outhier+=simo.add_component_density(compname,
                                          pdbbits,
                                          num_components=num_components,
@@ -785,7 +785,7 @@ class BuildModel(object):
                                          multiply_by_total_mass=True)
 
             if len(helixbits)!=0:
-                num_components=number_of_residues/abs(num_components)+1
+                num_components=number_of_residues//abs(num_components)+1
                 outhier+=simo.add_component_density(compname,
                                          helixbits,
                                          num_components=num_components,

@@ -465,10 +465,11 @@ class BuildSystem(object):
             mol = state.create_molecule(molname,seq[mlist[0].fasta_id],mlist[0].chain)
             for domain in mlist:
                 if domain.residue_range is None:
-                    domain_res = mol.get_residues()
+                   domain_res = mol.get_residues()
                 else:
-                    domain_res = mol.residue_range(domain.residue_range[0]-1+domain.pdb_offset,
-                                                   domain.residue_range[1]-1+domain.pdb_offset)
+                   domain_res = mol.residue_range(domain.residue_range[0]-1+domain.pdb_offset,
+                                                  domain.residue_range[1]-1+domain.pdb_offset)
+
                 if domain.pdb_file=="BEADS":
                     mol.add_representation(domain_res,
                                            resolutions=[domain.bead_size],
@@ -527,8 +528,8 @@ class BuildSystem(object):
             # add rigid bodies
             domains_in_rbs = set()
             for rblist in rbs:
-                all_res = set()
-                bead_res = set()
+                all_res = IMP.pmi.tools.OrderedSet()
+                bead_res = IMP.pmi.tools.OrderedSet()
                 for domain in rblist:
                     all_res|=self._domains[nstate][domain][0]
                     bead_res|=self._domains[nstate][domain][1]
@@ -546,14 +547,14 @@ class BuildSystem(object):
 
             # add super rigid bodies
             for srblist in srbs:
-                all_res = set()
+                all_res = IMP.pmi.tools.OrderedSet()
                 for domain in srblist:
                     all_res|=self._domains[nstate][domain][0]
                 self.dof.create_super_rigid_body(all_res)
 
             # add chains of super rigid bodies
             for csrblist in csrbs:
-                all_res = set()
+                all_res = IMP.pmi.tools.OrderedSet()
                 for domain in csrblist:
                     all_res|=self._domains[nstate][domain][0]
                 all_res = list(all_res)

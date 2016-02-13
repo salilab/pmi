@@ -190,7 +190,7 @@ class Molecule(_SystemBase):
         self.built = False
         self.mol_to_clone = mol_to_clone
         self.representations = []  # list of stuff to build
-        self.represented = set()   # residues with representation
+        self.represented = IMP.pmi.tools.OrderedSet()   # residues with representation
         self.coord_finder = _FindCloseStructure() # helps you place beads by storing structure
 
         # create root node and set it as child to passed parent hierarchy
@@ -214,7 +214,7 @@ class Molecule(_SystemBase):
         elif isinstance(val,str):
             return self.residues[int(val)-1]
         elif isinstance(val,slice):
-            return set(self.residues[val])
+            return IMP.pmi.tools.OrderedSet(self.residues[val])
         else:
             print("ERROR: range ends must be int or str. Stride must be int.")
 
@@ -230,22 +230,20 @@ class Molecule(_SystemBase):
     def residue_range(self,a,b,stride=1):
         """get residue range. Use integers to get 0-indexing, or strings to get PDB-indexing"""
         if isinstance(a,int) and isinstance(b,int) and isinstance(stride,int):
-            return set(self.residues[a:b:stride])
+            return IMP.pmi.tools.OrderedSet(self.residues[a:b:stride])
         elif isinstance(a,str) and isinstance(b,str) and isinstance(stride,int):
-            return set(self.residues[int(a)-1:int(b)-1:stride])
+            return IMP.pmi.tools.OrderedSet(self.residues[int(a)-1:int(b)-1:stride])
         else:
             print("ERROR: range ends must be int or str. Stride must be int.")
 
     def get_residues(self):
         """ Return all modeled TempResidues as a set"""
-        all_res=set()
-        for res in self.residues:
-            all_res.add(res)
+        all_res = IMP.pmi.tools.OrderedSet(self.residues)
         return all_res
 
     def get_atomic_residues(self):
         """ Return a set of TempResidues that have associated structure coordinates """
-        atomic_res=set()
+        atomic_res = IMP.pmi.tools.OrderedSet()
         for res in self.residues:
             if res.get_has_structure():
                 atomic_res.add(res)
@@ -253,7 +251,7 @@ class Molecule(_SystemBase):
 
     def get_non_atomic_residues(self):
         """ Return a set of TempResidues that don't have associated structure coordinates """
-        non_atomic_res=set()
+        non_atomic_res = IMP.pmi.tools.OrderedSet()
         for res in self.residues:
             if not res.get_has_structure():
                 non_atomic_res.add(res)
@@ -309,7 +307,7 @@ class Molecule(_SystemBase):
             print("WARNING: Extracting sequence from structure. Potentially dangerous.")
 
         # load those into TempResidue object
-        atomic_res = set() # collect integer indexes of atomic residues to return
+        atomic_res = IMP.pmi.tools.OrderedSet() # collect integer indexes of atomic residues to return
         for nrh,rh in enumerate(rhs):
             pdb_idx = rh.get_index()
             raw_idx = pdb_idx - 1
@@ -376,21 +374,25 @@ class Molecule(_SystemBase):
 
         # format input
         if residues is None:
-            res = set(self.residues)
+            res = IMP.pmi.tools.OrderedSet(self.residues)
         elif residues==self:
-            res = set(self.residues)
+            res = IMP.pmi.tools.OrderedSet(self.residues)
         elif hasattr(residues,'__iter__'):
             if len(residues)==0:
                 raise Exception('You passed an empty set to add_representation')
-            if type(residues) is set and type(next(iter(residues))) is TempResidue:
+            if type(residues) is IMP.pmi.tools.OrderedSet and type(next(iter(residues))) is TempResidue:
                 res = residues
+            elif type(residues) is set and type(next(iter(residues))) is TempResidue:
+                res = IMP.pmi.tools.OrderedSet(residues)
             elif type(residues) is list and type(residues[0]) is TempResidue:
-                res = set(residues)
+                res = IMP.pmi.tools.OrderedSet(residues)
+            else:
+                raise Exception("You passed an iteratible of something other than TempResidue",res)
         else:
             raise Exception("add_representation: you must pass a set of residues or nothing(=all residues)")
 
         # check that each residue has not been represented yet
-        ov = res&self.represented
+        ov = res & self.represented
         if ov:
             raise Exception('You have already added representation for '+ov.__repr__())
         self.represented|=res

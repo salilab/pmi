@@ -93,7 +93,7 @@ class TopologyReaderTests(IMP.test.TestCase):
         p1dict=children_as_dict(cdict["Prot1"])
         self.assertEqual(len(IMP.core.get_leaves(p1dict["Prot1_Res:1"])),7)
         self.assertEqual(len(IMP.core.get_leaves(p1dict["Prot1_Res:10"])),2)
-        self.assertEqual(len(IMP.core.get_leaves(p1dict["Beads"])),1)
+        self.assertEqual(len(IMP.core.get_leaves(p1dict["Beads"])),2)
         self.assertEqual(len(IMP.core.get_leaves(p1dict["Densities"])),1)
         p2dict=children_as_dict(cdict["Prot2"])
         self.assertEqual(len(IMP.core.get_leaves(p2dict["Prot2_Res:1"])),13)
@@ -137,7 +137,7 @@ class TopologyReaderTests(IMP.test.TestCase):
         self.assertEqual(len(IMP.core.get_leaves(p1dict["Prot1_Res:0"])),57)
         self.assertEqual(len(IMP.core.get_leaves(p1dict["Prot1_Res:1"])),7)
         self.assertEqual(len(IMP.core.get_leaves(p1dict["Prot1_Res:10"])),2)
-        self.assertEqual(len(IMP.core.get_leaves(p1dict["Beads"])),1)
+        self.assertEqual(len(IMP.core.get_leaves(p1dict["Beads"])),2)
         self.assertEqual(len(IMP.core.get_leaves(p1dict["Densities"])),1)
         p2dict=children_as_dict(cdict["Prot2"])
         self.assertEqual(len(IMP.core.get_leaves(p2dict["Prot2_Res:1"])),13)
@@ -202,7 +202,7 @@ class TopologyReaderTests(IMP.test.TestCase):
         # check a few selections
         sel1 = IMP.atom.Selection(root_hier,molecule="Prot1",resolution=1).get_selected_particles()
         #                          res1 bead
-        self.assertEqual(len(sel1), 7  + 1 )
+        self.assertEqual(len(sel1), 7  + 2 )
         sel1D = IMP.atom.Selection(root_hier,molecule="Prot1",
                                   representation_type=IMP.atom.DENSITIES).get_selected_particles()
         self.assertEqual(len(sel1D),1)
@@ -217,7 +217,8 @@ class TopologyReaderTests(IMP.test.TestCase):
         rbs = dof.get_rigid_bodies()
         fbs = dof.get_flexible_beads()
         self.assertEqual(len(rbs),2)
-        self.assertEqual(len(fbs),3)
+        #                         Prot1 Prot3
+        self.assertEqual(len(fbs), 2   +  2)
 
 if __name__=="__main__":
     IMP.test.main()

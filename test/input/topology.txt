@@ -5,6 +5,6 @@
 
 |topology_dictionary|
 |component_name|domain_name|fasta_fn|fasta_id|pdb_fn|chain|residue_range|pdb_offset|bead_size|em_residues_per_gaussian|
-|Prot1 |Prot1 |seqs.fasta|Protein_1|prot.pdb|A|55,63  |-54 |5|10|
+|Prot1 |Prot1 |seqs.fasta|Protein_1|prot.pdb|A|55,65  |-54 |5|10|
 |Prot2 |Prot2A|seqs.fasta|Protein_2|prot.pdb|B|180,187|-179|5|0 |
 |Prot2 |Prot2B|seqs.fasta|Protein_2|prot.pdb|B|188,192|-179|5|0 |

@@ -102,11 +102,8 @@ class TestTools(IMP.test.TestCase):
                                                  target_is_rigid_body=True)
 
         gmm_hier = gemt.get_density_as_hierarchy()
-
-        print(gmm_hier, gmm_hier.get_children())
-
         test0 = IMP.pmi.tools.input_adaptor(gmm_hier)
-        self.assertEqual(test0, gmm_hier.get_children())
+        self.assertEqual(test0, [gmm_hier])
 
         # get one resolution
         test1 = IMP.pmi.tools.input_adaptor(m1,pmi_resolution=0)

@@ -143,7 +143,6 @@ class TopologyReaderTests(IMP.test.TestCase):
         self.assertEqual(len(IMP.core.get_leaves(p2dict["Prot2_Res:1"])),13)
         self.assertEqual(len(IMP.core.get_leaves(p2dict["Prot2_Res:10"])),2)
         for output in [os.path.join(os.pardir,'Prot1.mrc'),os.path.join(os.pardir,'Prot1.txt')]:
-            print('trying to unlink',self.get_input_file_name(output))
             os.unlink(self.get_input_file_name(output))
 
     def test_beads_only(self):

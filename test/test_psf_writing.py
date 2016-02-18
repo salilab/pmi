@@ -3,12 +3,13 @@ import IMP
 import IMP.test
 
 import IMP.pmi.restraints.stereochemistry
+import IMP.pmi.restraints.em
 import IMP.pmi.representation
 import IMP.pmi.tools
 import IMP.pmi.output
 
 class Tests(IMP.test.TestCase):
-    def test_pdb_writing(self):
+    def test_psf_writing(self):
         """Test writing of PSF files"""
 
         # input parameter
@@ -74,6 +75,45 @@ class Tests(IMP.test.TestCase):
         with open("test_psf_writing.psf") as f:
             for nl, l in enumerate(f):
                 self.assertEqual(psf_content[nl],l.replace('\n',''))
+        os.unlink('test_psf_writing.psf')
+        os.unlink('test_psf_writing.pdb')
+
+    def test_pmi2_pdb_writing_with_gaussians(self):
+        """Test writing of PDB/PSF files"""
+
+        # input parameter
+        beadsize = 1
+        mdl = IMP.Model()
+        s = IMP.pmi.topology.System(mdl)
+        st1 = s.create_state()
+        seqs = IMP.pmi.topology.Sequences(self.get_input_file_name('seqs.fasta'))
+
+        m1 = st1.create_molecule("Prot1",sequence=seqs["Protein_1"])
+        atomic_res = m1.add_structure(self.get_input_file_name('prot.pdb'),
+                                      chain_id='A',res_range=(55,63),offset=-54)
+
+        fname = self.get_tmp_file_name('test_gmm')
+        m1.add_representation(atomic_res,resolutions=[1,10],
+                              density_residues_per_component=2,
+                              density_voxel_size=3.0,
+                              density_prefix=fname)
+
+        m1.add_representation(m1.get_non_atomic_residues(),resolutions=[5])
+        hier = m1.build()
+        densities = IMP.atom.Selection(hier,representation_type=IMP.atom.DENSITIES).get_selected_particles() +\
+                    [r.get_hierarchy() for r in m1.get_non_atomic_residues()]
+        gem = IMP.pmi.restraints.em.GaussianEMRestraint(densities,
+                                                        target_fn=self.get_input_file_name('prot_gmm.txt'),
+                                                        target_is_rigid_body=True)
+
+        gem.add_to_model()
+        gem.add_target_density_to_hierarchy(st1.get_hierarchy())
+
+        output = IMP.pmi.output.Output()
+        output.init_pdb("test_psf_writing.pdb", s.get_hierarchy())
+        output.write_pdb("test_psf_writing.pdb")
+        output.write_psf("test_psf_writing.psf","test_psf_writing.pdb")
+
         os.unlink('test_psf_writing.psf')
         os.unlink('test_psf_writing.pdb')
 

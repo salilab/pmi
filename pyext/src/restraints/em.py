@@ -80,6 +80,7 @@ class GaussianEMRestraint(object):
         self.sigmainit = 2.0
         self.label = "None"
         self.densities = densities
+        self.em_root_hier = None
 
         # setup target GMM
         self.m = self.densities[0].get_model()
@@ -269,44 +270,20 @@ class GaussianEMRestraint(object):
             raise Exception("No rigid body created for GMM particles. Ensure target_is_rigid_body is set to True")
         return self.rb
 
-    def get_density_as_hierarchy(self, chain='A'):
-        f=IMP.atom.Chain().setup_particle(IMP.Particle(self.m), chain)
-        # Set up a Resolution decorator for selection purposes
-        f.set_name("GaussianEMRestraint_density_"+self.label)
-        for p in self.target_ps:
-            f.add_child(p)
-        return f
+    def get_density_as_hierarchy(self):
+        if self.em_root_hier is None:
+            self.em_root_hier = IMP.atom.Copy.setup_particle(IMP.Particle(self.m),0)
+            self.em_root_hier.set_name("GaussianEMRestraint_density_"+self.label)
+            for p in self.target_ps:
+                self.em_root_hier.add_child(p)
+        return self.em_root_hier
 
-    def add_target_density_to_hierarchy(self,st_hier):
-        '''
-        we'll need this function to add the density particles to a
-        molecular hierarchy root, e.g. have them in the rmf file and display them in Chimera
-        '''
-
-        #if not IMP.atom.State().get_is_setup(st_hier):
-        #    raise Exception("Must pass a hierarchy corresponding to a State")
-        # See if the PMI2 State already has a molecule named "EM_maps"
-        # if it does not
-        for m in st_hier.get_children():
-            if m.get_name() == "EM_maps":
-                em_root_hier = m
-                chain_id='B'
-
-        if 'em_root_hier' not in locals():
-            print("Setting up new EM_Maps Molecular Node")
-            em_root_hier = IMP.atom.Molecule().setup_particle(IMP.Particle(self.m))
-            em_root_hier.set_name("EM_maps")
-            IMP.atom.Copy().setup_particle(em_root_hier, 0)
-            IMP.atom.Representation().setup_particle(em_root_hier)
-            st_hier.add_child(em_root_hier)
-            chain_id='A'
-
-        print(em_root_hier.get_children())
-
-        tdh=self.get_density_as_hierarchy(chain_id)
-        em_root_hier.add_child(tdh)
-        print(em_root_hier.get_children())
-        return em_root_hier
+    def add_target_density_to_state(self,state):
+        # Check to make sure this is a state:
+        if type(state) is IMP.pmi.topology.State:
+            state.get_hierarchy().add_child(self.get_density_as_hierarchy())
+        else:
+            raise Exception("Can only add a density to a PMI State object")
 
     def get_restraint_set(self):
         return self.rs

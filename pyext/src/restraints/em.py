@@ -263,27 +263,50 @@ class GaussianEMRestraint(object):
                 4,
                 0.03)
         return ps
-        
+
     def get_rigid_body(self):
         if self.rb is None:
             raise Exception("No rigid body created for GMM particles. Ensure target_is_rigid_body is set to True")
         return self.rb
 
-
-    def get_density_as_hierarchy(self):
-        f=IMP.atom.Fragment().setup_particle(IMP.Particle(self.m))
+    def get_density_as_hierarchy(self, chain='A'):
+        f=IMP.atom.Chain().setup_particle(IMP.Particle(self.m), chain)
+        # Set up a Resolution decorator for selection purposes
         f.set_name("GaussianEMRestraint_density_"+self.label)
         for p in self.target_ps:
             f.add_child(p)
         return f
 
-    def add_target_density_to_hierarchy(self,hier):
+    def add_target_density_to_hierarchy(self,st_hier):
         '''
         we'll need this function to add the density particles to a
         molecular hierarchy root, e.g. have them in the rmf file and display them in Chimera
         '''
-        tdh=self.get_density_as_hierarchy()
-        hier.add_child(tdh)
+
+        #if not IMP.atom.State().get_is_setup(st_hier):
+        #    raise Exception("Must pass a hierarchy corresponding to a State")
+        # See if the PMI2 State already has a molecule named "EM_maps"
+        # if it does not
+        for m in st_hier.get_children():
+            if m.get_name() == "EM_maps":
+                em_root_hier = m
+                chain_id='B'
+
+        if 'em_root_hier' not in locals():
+            print("Setting up new EM_Maps Molecular Node")
+            em_root_hier = IMP.atom.Molecule().setup_particle(IMP.Particle(self.m))
+            em_root_hier.set_name("EM_maps")
+            IMP.atom.Copy().setup_particle(em_root_hier, 0)
+            IMP.atom.Representation().setup_particle(em_root_hier)
+            st_hier.add_child(em_root_hier)
+            chain_id='A'
+
+        print(em_root_hier.get_children())
+
+        tdh=self.get_density_as_hierarchy(chain_id)
+        em_root_hier.add_child(tdh)
+        print(em_root_hier.get_children())
+        return em_root_hier
 
     def get_restraint_set(self):
         return self.rs

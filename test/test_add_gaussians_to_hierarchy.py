@@ -35,7 +35,7 @@ class Tests(IMP.test.TestCase):
         gem.set_label("em_1")
         gem.add_to_model()
 
-        gem.add_target_density_to_hierarchy(st1.get_hierarchy())
+        gem.add_target_density_to_hierarchy(st1)
 
         # Add a second gmm, which should become a second chain, B
 
@@ -46,30 +46,11 @@ class Tests(IMP.test.TestCase):
         gem2.set_label("em_2")
         gem2.add_to_model()
 
-        gem2.add_target_density_to_hierarchy(st1.get_hierarchy())
+        gem2.add_target_density_to_state(st1)
 
-        # Test that a second child molecule was added to State
-        self.assertEqual(len(st1.get_hierarchy().get_children()), 2)
+        # Test that a two child molecules were added to State
+        self.assertEqual(len(st1.get_hierarchy().get_children()), 3)
 
-        # Test that there is a molecule named EM_maps as a child of State
-        self.assertTrue("EM_maps" in [m.get_name() for m in st1.get_hierarchy().get_children()])
-
-        # Test that two child chains were added to the molecule EM_maps
-        n_maps = 0
-        for m in st1.get_hierarchy().get_children():
-            if m.get_name() == 'EM_maps':
-                n_maps = len(m.get_children())
-        self.assertEqual(n_maps, 2)
-
-
-        output = IMP.pmi.output.Output()
-
-        output.init_pdb("test_psf_writing.pdb", s.get_hierarchy())
-        #output.write_pdb("test_psf_writing.pdb")
-        output.write_psf("test_psf_writing.psf","test_psf_writing.pdb")
-
-        os.unlink('test_psf_writing.psf')
-        os.unlink('test_psf_writing.pdb')
 
 if __name__ == '__main__':
     IMP.test.main()

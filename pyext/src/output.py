@@ -365,7 +365,7 @@ class Output(object):
                 "self.best_score_list=" + str(self.best_score_list))
             best_score_file.close()
 
-    def init_rmf(self, name, hierarchies, geometries=None, rs=None):
+    def init_rmf(self, name, hierarchies, rs=None, geometries=None):
         rh = RMF.create_rmf_file(name)
         IMP.rmf.add_hierarchies(rh, hierarchies)
         if rs is not None:

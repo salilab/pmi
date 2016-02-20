@@ -178,11 +178,14 @@ class ReplicaExchange0(object):
         self.vars["best_pdb_dir"] = best_pdb_dir
         self.vars["atomistic"] = atomistic
         self.vars["replica_stat_file_suffix"] = replica_stat_file_suffix
-        self.vars["geometries"] = []
+        self.vars["geometries"] = None
         self.test_mode = test_mode
 
     def add_geometries(self, geometries):
-        self.vars["geometries"].extend(geometries)
+        if self.vars["geometries"] is None:
+            self.vars["geometries"] = list(geometries)
+        else:
+            self.vars["geometries"].extend(geometries)
 
     def show_info(self):
         print("ReplicaExchange0: it generates initial.*.rmf3, stat.*.out, rmfs/*.rmf3 for each replica ")

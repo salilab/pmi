@@ -1,6 +1,4 @@
 import os
-import tempfile
-import shutil
 
 import IMP
 import IMP.test
@@ -49,24 +47,23 @@ class OutputGeometriesTests(IMP.test.TestCase):
         mol.add_representation(ares, [1])
         root_hier = s.build()
 
-        out_dir = tempfile.mkdtemp("geo_rmf_tmp_dir")
+        out_dir = IMP.test.TempDir(None)
         rex = IMP.pmi.macros.ReplicaExchange0(mdl,
                                               root_hier=root_hier,
                                               number_of_frames=1,
                                               monte_carlo_steps=1,
                                               number_of_best_scoring_models=0,
-                                              global_output_directory=out_dir)
+                                              global_output_directory=out_dir.tmpdir)
         geo = IMP.display.SphereGeometry(
             IMP.algebra.Sphere3D(IMP.algebra.Vector3D(1, 2, 3), 4.))
         rex.add_geometries([geo])
         rex.execute_macro()
-        rmf_fn = os.path.join(out_dir, "rmfs", "0.rmf3")
+        rmf_fn = os.path.join(out_dir.tmpdir, "rmfs", "0.rmf3")
         f = RMF.open_rmf_file_read_only(rmf_fn)
         rmf_geos = IMP.rmf.create_geometries(f)
         IMP.rmf.load_frame(f, RMF.FrameID(0))
         self.assertEqual(len(rmf_geos), 1)
         self.assertEqual(len(rmf_geos[0].get_components()), 1)
-        shutil.rmtree(out_dir)
 
 
 if __name__ == "__main__":

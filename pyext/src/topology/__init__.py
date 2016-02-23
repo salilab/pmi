@@ -754,11 +754,11 @@ class TopologyReader(object):
         self.component_list = self.import_topology_file(topology_file)
 
     def write_topology_file(self,outfile):
-        f=open(outfile, "w")
-        f.write("|component_name|domain_name|fasta_fn|fasta_id|pdb_fn|chain|residue_range|pdb_offset|bead_size|em_residues_per_gaussian|rigid_body|super_rigid_body|chain_of_super_rigid_bodies|\n")
-        for c in self.component_list:
-            output = c.get_str()+'\n'
-            f.write(output)
+        with open(outfile, "w") as f:
+            f.write("|component_name|domain_name|fasta_fn|fasta_id|pdb_fn|chain|residue_range|pdb_offset|bead_size|em_residues_per_gaussian|rigid_body|super_rigid_body|chain_of_super_rigid_bodies|\n")
+            for c in self.component_list:
+                output = c.get_str()+'\n'
+                f.write(output)
         return outfile
 
     def get_component_topologies(self, topology_list = "all"):

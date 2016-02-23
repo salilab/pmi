@@ -600,26 +600,26 @@ class Sequences(object):
     def read_sequences(self,fasta_fn,name_map=None):
         code = None
         seq = None
-        fh = open(fasta_fn,'r')
-        for (num, line) in enumerate(fh):
-            if line.startswith('>'):
-                if seq is not None:
-                    self.sequences[code] = seq
-                    self.seqs_in_order.append(seq)
-                code = line.rstrip()[1:]
-                if name_map is not None:
-                    try:
-                        code = name_map[code]
-                    except:
-                        pass
-                seq = ''
-            else:
-                line = line.rstrip()
-                if line: # Skip blank lines
-                    if seq is None:
-                        raise Exception( \
-"Found FASTA sequence before first header at line %d: %s" % (num + 1, line))
-                    seq += line
+        with open(fasta_fn,'r') as fh:
+            for (num, line) in enumerate(fh):
+                if line.startswith('>'):
+                    if seq is not None:
+                        self.sequences[code] = seq
+                        self.seqs_in_order.append(seq)
+                    code = line.rstrip()[1:]
+                    if name_map is not None:
+                        try:
+                            code = name_map[code]
+                        except:
+                            pass
+                    seq = ''
+                else:
+                    line = line.rstrip()
+                    if line: # Skip blank lines
+                        if seq is None:
+                            raise Exception( \
+    "Found FASTA sequence before first header at line %d: %s" % (num + 1, line))
+                        seq += line
         if seq is not None:
             self.sequences[code] = seq
             self.seqs_in_order.append(seq)

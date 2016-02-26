@@ -90,6 +90,16 @@ inline std::string get_molecule_name_and_copy(atom::Hierarchy h){
   IMP_THROW("Hierarchy " << h << " has no molecule name or copy num.", ValueException);
 }
 
+//! Walk up a PMI2 hierarchy/representations and check if the root is named System
+inline bool get_is_canonical(atom::Hierarchy h){
+  do {
+    if (h->get_name()=="System") {
+      return true;
+    }
+  } while ((h = get_parent_representation(h)));
+  return false;
+}
+
 IMPPMI_END_NAMESPACE
 
 #endif /* IMPPMI_UTILITIES_H */

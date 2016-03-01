@@ -285,6 +285,16 @@ class GaussianEMRestraint(object):
         else:
             raise Exception("Can only add a density to a PMI State object")
 
+    def add_target_density_to_hierarchy(self,inp):
+        ''' Can add a target GMM to a Hierarchy.
+        For PMI2 a state object may also be passed'''
+        if type(inp) is IMP.pmi.topology.State:
+            inp.get_hierarchy().add_child(self.get_density_as_hierarchy())
+        elif type(inp) is IMP.atom.Hierarchy:
+            inp.add_child(self.get_density_as_hierarchy())
+        else:
+            raise Exception("Can only add a density to a PMI State object or IMP.atom.Hierarchy. You passed a", type(inp))
+
     def get_restraint_set(self):
         return self.rs
 

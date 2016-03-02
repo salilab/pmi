@@ -14,11 +14,14 @@ class ExternalBarrier(object):
 
     def __init__(self,
                  representation=None,
+                 center=None,
                  radius=10.0,
                  hierarchies=None,
-                 resolution=10):
+                 resolution=10,
+                 weight=1.0):
         """Setup external barrier to keep all your structures inside sphere
         @param representation DEPRECATED
+        @param center - Center of the external barrier restraint (IMP.algebra.Vector3D object)
         @param radius Size of external barrier
         @param hierarchies Can be one of the following inputs:
                IMP Hierarchy, PMI System/State/Molecule/TempResidue, or a list/set of them
@@ -26,6 +29,7 @@ class ExternalBarrier(object):
         """
         self.radius = radius
         self.label = "None"
+        self.weight = weight
 
         if representation:
             self.m = representation.prot.get_model()
@@ -34,14 +38,21 @@ class ExternalBarrier(object):
                 resolution=resolution,
                 hierarchies=hierarchies)
         elif hierarchies:
-            hiers = IMP.pmi.tools.input_adaptor(objects,resolution,flatten=True)
+            hiers = IMP.pmi.tools.input_adaptor(hierarchies,resolution,flatten=True)
             self.m = hiers[0].get_model()
             particles = [h.get_particle() for h in hiers]
         else:
             raise Exception("ExternalBarrier: must pass representation or hierarchies")
 
         self.rs = IMP.RestraintSet(self.m, 'barrier')
-        c3 = IMP.algebra.Vector3D(0, 0, 0)
+
+        if center is None:
+            c3 = IMP.algebra.Vector3D(0, 0, 0)
+        elif type(center) is IMP.algebra.Vector3D:
+            c3 = center
+        else:
+            raise Exception("ExternalBarrier: @param center must be an algebra::Vector3D object")
+
         ub3 = IMP.core.HarmonicUpperBound(radius, 10.0)
         ss3 = IMP.core.DistanceToSingletonScore(ub3, c3)
         lsc = IMP.container.ListSingletonContainer(self.m)
@@ -49,6 +60,7 @@ class ExternalBarrier(object):
         lsc.add(particles)
         r3 = IMP.container.SingletonsRestraint(ss3, lsc)
         self.rs.add_restraint(r3)
+        self.set_weight(self.weight)
 
     def set_label(self, label):
         self.label = label
@@ -62,10 +74,17 @@ class ExternalBarrier(object):
     def get_output(self):
         self.m.update()
         output = {}
-        score = self.rs.unprotected_evaluate(None)
+        score = self.evaluate()
         output["_TotalScore"] = str(score)
         output["ExternalBarrier_" + self.label] = str(score)
         return output
+
+    def set_weight(self, weight):
+        self.weight = weight
+        self.rs.set_weight(weight)
+
+    def evaluate(self):
+        return self.weight * self.rs.unprotected_evaluate(None)
 
 
 class DistanceRestraint(object):

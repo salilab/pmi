@@ -12,27 +12,40 @@ import IMP.pmi.tools
 
 class ExternalBarrier(object):
 
-    def __init__(
-        self,
-        representation,
-        radius,
-        hierarchies=None,
-            resolution=None):
-        self.m = representation.prot.get_model()
-        self.rs = IMP.RestraintSet(self.m, 'barrier')
-
+    def __init__(self,
+                 representation=None,
+                 radius=10.0,
+                 hierarchies=None,
+                 resolution=10):
+        """Setup external barrier to keep all your structures inside sphere
+        @param representation DEPRECATED
+        @param radius Size of external barrier
+        @param hierarchies Can be one of the following inputs:
+               IMP Hierarchy, PMI System/State/Molecule/TempResidue, or a list/set of them
+        @param resolution Select which resolutions to act upon
+        """
         self.radius = radius
         self.label = "None"
 
+        if representation:
+            self.m = representation.prot.get_model()
+            particles = IMP.pmi.tools.select(
+                representation,
+                resolution=resolution,
+                hierarchies=hierarchies)
+        elif hierarchies:
+            hiers = IMP.pmi.tools.input_adaptor(objects,resolution,flatten=True)
+            self.m = hiers[0].get_model()
+            particles = [h.get_particle() for h in hiers]
+        else:
+            raise Exception("ExternalBarrier: must pass representation or hierarchies")
+
+        self.rs = IMP.RestraintSet(self.m, 'barrier')
         c3 = IMP.algebra.Vector3D(0, 0, 0)
         ub3 = IMP.core.HarmonicUpperBound(radius, 10.0)
         ss3 = IMP.core.DistanceToSingletonScore(ub3, c3)
         lsc = IMP.container.ListSingletonContainer(self.m)
         # IMP.atom.get_by_type
-        particles = IMP.pmi.tools.select(
-            representation,
-            resolution=resolution,
-            hierarchies=hierarchies)
         lsc.add(particles)
         r3 = IMP.container.SingletonsRestraint(ss3, lsc)
         self.rs.add_restraint(r3)

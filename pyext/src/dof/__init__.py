@@ -308,7 +308,7 @@ class DegreesOfFreedom(object):
         import IMP.pmi.samplers
         pts = IMP.pmi.tools.ParticleToSampleList()
         for n, fb in enumerate(self.get_flexible_beads()):
-            pts.add_particle(fb, "Flexible_Beads", 1.0, "Flexible_Bead_" + str(n))
+            pts.add_particle(fb, "Floppy_Bodies", 1.0, "Flexible_Bead_" + str(n))
         if len(pts.get_particles_to_sample()) > 0:
             mc = IMP.pmi.samplers.MonteCarlo(self.mdl, [pts], temperature)
             print("optimize_flexible_beads: optimizing %i flexible beads" % len(self.get_flexible_beads()))

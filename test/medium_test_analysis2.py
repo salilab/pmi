@@ -133,13 +133,21 @@ class AnalysisTest(IMP.test.TestCase):
             icoords1.append(IMP.core.XYZ(p1).get_coordinates())
 
         # get clustered coords
-        coords0 = []
-        coords1 = []
+        coords0 = [] # all first coordinates in cluster 0
+        coords1 = [] # all first coordinates in cluster 1
+        c_prot01 = [] # all coords for cluster 0, protein 1
+        c_prot02 = [] # all coords for cluster 0, protein 2
         for i in range(10):
             mh0 = IMP.atom.read_pdb(os.path.join(cl0,str(i)+'.pdb'),mdl,IMP.atom.CAlphaPDBSelector())
             coords0.append(IMP.core.XYZ(IMP.core.get_leaves(mh0)[0]).get_coordinates())
             mh1 = IMP.atom.read_pdb(os.path.join(cl1,str(i)+'.pdb'),mdl,IMP.atom.CAlphaPDBSelector())
             coords1.append(IMP.core.XYZ(IMP.core.get_leaves(mh1)[0]).get_coordinates())
+
+            sel_prot1 = IMP.atom.Selection(mh0,chain_id='A').get_selected_particles()
+            sel_prot2 = IMP.atom.Selection(mh0,chain_id='B').get_selected_particles()
+            c_prot01 += [IMP.core.XYZ(p).get_coordinates() for p in sel_prot1]
+            c_prot02 += [IMP.core.XYZ(p).get_coordinates() for p in sel_prot2]
+
             IMP.atom.destroy(mh0)
             del mh0
             IMP.atom.destroy(mh1)
@@ -158,5 +166,14 @@ class AnalysisTest(IMP.test.TestCase):
             n11 += min(IMP.algebra.get_distance(c1,i1) for i1 in icoords1)<0.01
 
         self.assertTrue((n00==10 and n11==10) or (n01==10 and n10==10))
+
+        # check density
+        bbox1 = IMP.algebra.BoundingBox3D(c_prot01)
+        bbox2 = IMP.algebra.BoundingBox3D(c_prot02)
+        dmap1 = IMP.em.read_map(os.path.join(cl0,'Prot1.mrc'))
+        dmap2 = IMP.em.read_map(os.path.join(cl0,'Prot2.mrc'))
+        self.assertTrue(IMP.em.get_bounding_box(dmap1).get_contains(bbox1))
+        self.assertTrue(IMP.em.get_bounding_box(dmap2).get_contains(bbox2))
+
 if __name__ == '__main__':
     IMP.test.main()

@@ -306,6 +306,14 @@ class GaussianEMRestraint(object):
     def evaluate(self):
         return self.weight * self.rs.unprotected_evaluate(None)
 
+    def write_target_gmm_to_mrc(self, fileout=None, voxel_size=5.0):
+        '''Writes target GMM file to MRC'''
+        if fileout is None:
+            fileout="Gaussian_map_" + self.label + ".mrc"
+        IMP.isd.gmm_tools.write_gmm_to_map(self.target_ps, fileout, voxel_size)
+        return fileout
+
+
 #-------------------------------------------
 
 class CrossCorrelationRestraint(object):

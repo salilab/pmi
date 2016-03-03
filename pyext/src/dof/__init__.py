@@ -313,6 +313,21 @@ class DegreesOfFreedom(object):
         return 'DegreesOfFreedom: ' + \
           "\n".join(repr(m) for m in self.movers)
 
+    def optimize_flexible_beads(self, nsteps, temperature=1.0):
+        '''Set up MC run with just flexible beads.
+        Optimization works much better when restraints
+        are already set up.'''
+        import IMP.pmi.samplers
+        pts = IMP.pmi.tools.ParticleToSampleList()
+        for n, fb in enumerate(self.get_flexible_beads()):
+            pts.add_particle(fb, "Floppy_Bodies", 1.0, "Floppy_Body_" + str(n))
+        if len(pts.get_particles_to_sample()) > 0:
+            mc = IMP.pmi.samplers.MonteCarlo(self.mdl, [pts], temperature)
+            print("optimize_floppy_bodies: optimizing %i floppy bodies" % len(self.get_flexible_beads()))
+            mc.optimize(nsteps)
+        else:
+            print("optimize_floppy_bodies: no particle to optimize")
+
     def get_movers(self):
         """Should only return Enabled movers?"""
         return self.movers

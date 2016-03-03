@@ -1023,9 +1023,10 @@ class GetModelDensity(object):
                                                        seg, resolution=1, name_is_ambiguous=False)
                 else:
                     # else, when you have a hierarchy, but not a representation
-                    for h in hierarchy.get_children():
-                        if not IMP.atom.Molecule.get_is_setup(h):
-                            IMP.atom.Molecule.setup_particle(h.get_particle())
+                    if not IMP.pmi.get_is_canonical(hierarchy):
+                        for h in hierarchy.get_children():
+                            if not IMP.atom.Molecule.get_is_setup(h):
+                                IMP.atom.Molecule.setup_particle(h.get_particle())
 
                     if type(seg) == str:
                         s = IMP.atom.Selection(hierarchy,molecule=seg)
@@ -1036,14 +1037,12 @@ class GetModelDensity(object):
                         raise Exception('could not understand selection tuple '+str(seg))
 
                     all_particles_by_segments += s.get_selected_particles()
-
             if hierarchy:
                 if IMP.pmi.get_is_canonical(hierarchy):
                     parts = all_particles_by_segments
                 else:
                     parts = list(
                         set(all_particles_by_segments) & set(all_particles_by_resolution))
-
             self._create_density_from_particles(parts, density_name)
 
     def normalize_density(self):

@@ -75,8 +75,77 @@ class AnalysisTest(IMP.test.TestCase):
                                                self.get_input_file_name("pmi2_sample_1/"),
                                                replica_exchange_object = rex.get_replica_exchange_object())
         rex2.execute_macro()
+
+    def init_res5(self,mdl):
+        s = IMP.pmi.topology.System(mdl)
+        st1 = s.create_state()
+        seqs = IMP.pmi.topology.Sequences(self.get_input_file_name('seqs.fasta'),
+                         name_map={'Protein_1':'Prot1',
+                                   'Protein_2':'Prot2',
+                                   'Protein_3':'Prot3'})
+
+        m1 = st1.create_molecule("Prot1",chain_id='A',sequence=seqs["Prot1"])
+        m2 = st1.create_molecule("Prot2",chain_id='B',sequence=seqs["Prot2"])
+        a1 = m1.add_structure(self.get_input_file_name('prot.pdb'),
+                              chain_id='A',res_range=(55,64),offset=-54)
+        a2 = m2.add_structure(self.get_input_file_name('prot.pdb'),
+                              chain_id='B',res_range=(180,192),offset=-179)
+        m1.add_representation(m1,resolutions=[5])
+        m2.add_representation(m2,resolutions=[5])
+        hier = s.build()
+
+        dof = IMP.pmi.dof.DegreesOfFreedom(mdl)
+        dof.create_rigid_body(m1,nonrigid_parts = m1.get_non_atomic_residues(),
+                              max_trans=0.1)
+        dof.create_rigid_body(m2,nonrigid_parts = m2.get_non_atomic_residues(),
+                              max_trans=0.1)
+
+        dr = IMP.pmi.restraints.basic.DistanceRestraint(root_hier = hier,
+                                                        tuple_selection1=("Prot1",1,1),
+                                                        tuple_selection2=("Prot2",1,1),
+                                                        distancemin=5,
+                                                        distancemax=15)
+        dr.add_to_model()
+
+        rex = IMP.pmi.macros.ReplicaExchange0(mdl,
+                                              root_hier=hier,
+                                              output_objects=[dr],
+                                              monte_carlo_sample_objects=dof.get_movers(),
+                                              number_of_frames=10,
+                                              number_of_best_scoring_models=0,
+                                              global_output_directory = \
+                                              self.get_input_file_name("pmi2_sample_res5/"))
+        rex.execute_macro()
     def test_get_model_density(self):
-        """Test creation of density correctly averages frames"""
+        """Test creation of density correctly averages frames for res=5"""
+        mdl = IMP.Model()
+        #self.init_res5(mdl)
+        density_ranges = {"Prot1":["Prot1"],
+                          "Prot2":["Prot2"]}
+        mdens = IMP.pmi.analysis.GetModelDensity(density_ranges)
+        rmf_file = self.get_input_file_name('pmi2_sample_res5/rmfs/0.rmf3')
+        rh = RMF.open_rmf_file_read_only(rmf_file)
+        hier = IMP.rmf.create_hierarchies(rh,mdl)[0]
+        sel1 = IMP.atom.Selection(hier,molecule='Prot1').get_selected_particles()
+
+        IMP.rmf.load_frame(rh,RMF.FrameID(0))
+        mdens.add_subunits_density(hier)
+        self.assertEqual(sorted(mdens.get_density_keys()),['Prot1','Prot2'])
+
+        sel1_coords=[]
+        sel2_coords=[]
+        for i in range(4):
+            IMP.rmf.load_frame(rh,RMF.FrameID(i))
+            sel1 = IMP.atom.Selection(hier,molecule='Prot1').get_selected_particles()
+            sel1_coords += [IMP.core.XYZ(p).get_coordinates() for p in sel1]
+            sel2 = IMP.atom.Selection(hier,molecule='Prot2').get_selected_particles()
+            sel2_coords += [IMP.core.XYZ(p).get_coordinates() for p in sel2]
+            mdens.add_subunits_density(hier)
+
+        bbox1=IMP.algebra.BoundingBox3D(sel1_coords)
+        bbox2=IMP.algebra.BoundingBox3D(sel2_coords)
+        self.assertTrue(IMP.em.get_bounding_box(mdens.get_density('Prot1')).get_contains(bbox1))
+        self.assertTrue(IMP.em.get_bounding_box(mdens.get_density('Prot2')).get_contains(bbox2))
 
     def test_clustering(self):
         """Test create correct clusters"""

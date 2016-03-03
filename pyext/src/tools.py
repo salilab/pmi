@@ -551,7 +551,39 @@ def get_closest_residue_position(hier, resindex, terminus="N"):
     else:
         raise ValueError("got multiple residues for hierarchy %s and residue %i; the list of particles is %s" % (hier, resindex, str([pp.get_name() for pp in p])))
 
-def get_position_terminal_residue(representation,hier, terminus="C", resolution=1):
+@IMP.deprecated_function("2.6", "Use get_terminal_residue_position() instead.")
+def get_position_terminal_residue(hier, terminus="C", resolution=1):
+    '''
+    Get the xyz position of the terminal residue at the given resolution.
+    @param hier hierarchy containing the terminal residue
+    @param terminus either 'N' or 'C'
+    @param resolution resolution to use.
+    '''
+    termresidue = None
+    termparticle = None
+    for p in IMP.atom.get_leaves(hier):
+        if IMP.pmi.Resolution(p).get_resolution() == resolution:
+            residues = IMP.pmi.tools.get_residue_indexes(p)
+            if terminus == "C":
+                if max(residues) >= termresidue and not termresidue is None:
+                    termresidue = max(residues)
+                    termparticle = p
+                elif termresidue is None:
+                    termresidue = max(residues)
+                    termparticle = p
+            elif terminus == "N":
+                if min(residues) <= termresidue and not termresidue is None:
+                    termresidue = min(residues)
+                    termparticle = p
+                elif termresidue is None:
+                    termresidue = min(residues)
+                    termparticle = p
+            else:
+                raise ValueError("terminus argument should be either N or C")
+
+    return IMP.core.XYZ(termparticle).get_coordinates()
+
+def get_terminal_residue_position(representation,hier, terminus="C", resolution=1):
     '''
     Get the xyz position of the terminal residue at the given resolution.
     @param hier hierarchy containing the terminal residue

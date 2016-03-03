@@ -376,8 +376,11 @@ def read_coordinates_of_rmfs(model,
 
         if not prots:
             continue
-
-        prot=prots[state_number]
+        if IMP.pmi.get_is_canonical(prots[0]):
+            states = IMP.atom.get_by_type(prots[0],IMP.atom.STATE_TYPE)
+            prot = states[state_number]
+        else:
+            prot = prots[state_number]
 
         # getting the particles
         part_dict = IMP.pmi.analysis.get_particles_at_resolution_one(prot)
@@ -446,7 +449,13 @@ def get_bead_sizes(model,rmf_tuple,rmsd_calculation_components=None,state_number
     prots = IMP.pmi.analysis.get_hiers_from_rmf(model,
                                                 frame_number,
                                                 rmf_file)
-    prot = prots[state_number]
+
+    if IMP.pmi.get_is_canonical(prots[0]):
+        states = IMP.atom.get_by_type(prots[0],IMP.atom.STATE_TYPE)
+        prot = states[state_number]
+    else:
+        prot = prots[state_number]
+
     rmsd_bead_size_dict = {}
 
     # PMI2: do selection of resolution and name at the same time

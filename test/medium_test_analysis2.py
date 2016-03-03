@@ -95,6 +95,8 @@ class AnalysisTest(IMP.test.TestCase):
         #self.init_topology(mdl)
         rmsd_names = {"Prot1":"Prot1",
                       "Prot2":"Prot2"}
+        density_ranges = {"Prot1":["Prot1"],
+                          "Prot2":["Prot2"]}
         am = IMP.pmi.macros.AnalysisReplicaExchange0(
             mdl,
             merge_directories=[self.get_input_file_name("pmi2_sample_0/"),
@@ -106,7 +108,8 @@ class AnalysisTest(IMP.test.TestCase):
                       rmsd_calculation_components=rmsd_names,
                       number_of_clusters=2,
                       number_of_best_scoring_models=20,
-                      outputdir=out_dir)
+                      outputdir=out_dir,
+                      density_custom_ranges=density_ranges)
 
         cl0 = os.path.join(out_dir,'cluster.0')
         cl1 = os.path.join(out_dir,'cluster.1')

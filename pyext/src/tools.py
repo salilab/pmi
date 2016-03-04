@@ -1723,7 +1723,7 @@ def shuffle_configuration(root_hier=None,
         if IMP.core.XYZ.get_is_setup(p):
             allparticleindexes.append(p.get_particle_index())
         # remove the fixed densities particles out of the calculation
-        if IMP.core.RigidMember.get_is_setup(p) and IMP.core.Gaussian.get_is_setup(p):
+        if IMP.core.Gaussian.get_is_setup(p):
             hierarchies_excluded_from_collision_indexes.append(p.get_particle_index())
     if not bounding_box is None:
         ((x1, y1, z1), (x2, y2, z2)) = bounding_box

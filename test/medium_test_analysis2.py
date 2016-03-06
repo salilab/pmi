@@ -7,11 +7,13 @@ from math import sqrt
 import itertools
 import os
 import glob
+nicemodules = True
 try:
     import scipy
+    import sklearn
 except ImportError:
-    scipy = None
-if scipy is not None:
+    nicemodules = False
+if nicemodules:
     import IMP.pmi.analysis
     import IMP.pmi.io
     import IMP.pmi.dof
@@ -118,8 +120,8 @@ class AnalysisTest(IMP.test.TestCase):
         rex.execute_macro()
     def test_get_model_density(self):
         """Test creation of density correctly averages frames for res=5"""
-        if scipy is None:
-            self.skipTest("no sklearn package")
+        if not nicemodules:
+            self.skipTest("missing scipy or sklearn")
 
         mdl = IMP.Model()
         #self.init_res5(mdl)
@@ -158,8 +160,8 @@ class AnalysisTest(IMP.test.TestCase):
 
     def test_analysis_macro(self):
         """Test you can organize files correctly with macro"""
-        if scipy is None:
-            self.skipTest("no sklearn package")
+        if not nicemodules:
+            self.skipTest("missing scipy or sklearn")
 
         mdl = IMP.Model()
         #self.init_topology(mdl)

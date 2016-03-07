@@ -594,5 +594,27 @@ class TopologyTest(IMP.test.TestCase):
         built_sequence = [IMP.atom.Residue(p).get_residue_type() for p in ps]
         self.assertEqual(expect_sequence,built_sequence)
 
+    def test_ideal_helix(self):
+        """Test you can build an ideal helix"""
+        mdl = IMP.Model()
+        s = IMP.pmi.topology.System(mdl)
+        st1 = s.create_state()
+        m1 = st1.create_molecule("Prot1",sequence='A'*25)
+        m1.add_representation(m1[0:20],
+                              resolutions=[1,10],
+                              ideal_helix=True,
+                              density_prefix='hgmm',
+                              density_voxel_size=0.0,
+                              density_residues_per_component=10)
+        m1.add_representation(m1[20:25],resolutions=[1])
+        hier = s.build()
+
+        # no idea how to test this
+        selB = IMP.atom.Selection(hier,resolution=IMP.atom.ALL_RESOLUTIONS)
+        selD = IMP.atom.Selection(hier,resolution=IMP.atom.ALL_RESOLUTIONS,representation_type=IMP.atom.DENSITIES)
+        self.assertEqual(len(selB.get_selected_particles()),20+2+5)
+        self.assertEqual(len(selD.get_selected_particles()),3)
+        os.unlink('hgmm.txt')
+
 if __name__ == '__main__':
     IMP.test.main()

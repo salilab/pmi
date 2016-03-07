@@ -641,8 +641,13 @@ class Precision(object):
                 self.structures_dictionary = self.comm.recv(source=0, tag=11)
 
     def _get_residue_particle_index_map(self,prot_name,structure,hier):
+        # Creates map from all particles to residue numbers
         residue_particle_index_map = []
-        s = IMP.atom.Selection(hier,molecules=[prot_name])
+        if IMP.pmi.get_is_canonical(hier):
+            s = IMP.atom.Selection(hier,molecules=[prot_name],
+                                   resolution=1)
+        else:
+            s = IMP.atom.Selection(hier,molecules=[prot_name])
         all_selected_particles = s.get_selected_particles()
         intersection = list(set(all_selected_particles) & set(structure))
         sorted_intersection = IMP.pmi.tools.sort_by_residues(intersection)
@@ -839,42 +844,41 @@ class Precision(object):
         @param set_plot_yaxis_range In case you need to change the plot
         """
         # get the centroid structure for the whole complex
-        centroid_index=self.get_precision(
-            structure_set_name,
-            structure_set_name,
-            outfile=None,
-            skip=skip)
+        centroid_index = self.get_precision(structure_set_name,
+                                            structure_set_name,
+                                            outfile=None,
+                                            skip=skip)
         if self.rank==0:
             for sel_name in self.protein_names:
                 self.selection_dictionary.update({sel_name:[sel_name]})
                 try:
-                    number_of_structures=len(self.structures_dictionary[structure_set_name][sel_name])
+                    number_of_structures = len(self.structures_dictionary[structure_set_name][sel_name])
                 except KeyError:
                     # that protein was not included in the selection
                     continue
-                rpim=self.residue_particle_index_map[sel_name]
-                outfile=outdir+"/rmsf."+sel_name+".dat"
-                of=open(outfile,"w")
-                residue_distances={}
-                residue_nblock={}
+                rpim = self.residue_particle_index_map[sel_name]
+                outfile = outdir+"/rmsf."+sel_name+".dat"
+                of = open(outfile,"w")
+                residue_distances = {}
+                residue_nblock = {}
                 for index in range(number_of_structures):
-                    distances=self._get_particle_distances(structure_set_name,
-                                                          structure_set_name,
-                                                          sel_name,
-                                                          centroid_index,index)
+                    distances = self._get_particle_distances(structure_set_name,
+                                                             structure_set_name,
+                                                             sel_name,
+                                                             centroid_index,index)
                     for nblock,block in enumerate(rpim):
                         for residue_number in block:
-                            residue_nblock[residue_number]=nblock
+                            residue_nblock[residue_number] = nblock
                             if residue_number not in residue_distances:
-                                residue_distances[residue_number]=[distances[nblock]]
+                                residue_distances[residue_number] = [distances[nblock]]
                             else:
                                 residue_distances[residue_number].append(distances[nblock])
 
-                residues=[]
-                rmsfs=[]
+                residues = []
+                rmsfs = []
                 for rn in residue_distances:
                     residues.append(rn)
-                    rmsf=np.std(residue_distances[rn])
+                    rmsf = np.std(residue_distances[rn])
                     rmsfs.append(rmsf)
                     of.write(str(rn)+" "+str(residue_nblock[rn])+" "+str(rmsf)+"\n")
 

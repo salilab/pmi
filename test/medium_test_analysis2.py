@@ -7,18 +7,20 @@ from math import sqrt
 import itertools
 import os
 import glob
+import shutil
+import tempfile
 nicemodules = True
 try:
+    import numpy as np
     import scipy
     import sklearn
-except ImportError:
-    nicemodules = False
-if nicemodules:
     import IMP.pmi.analysis
     import IMP.pmi.io
     import IMP.pmi.dof
     import IMP.pmi.macros
     import IMP.pmi.restraints.basic
+except ImportError:
+    nicemodules = False
 
 def get_drms(coords0,coords1):
     total = 0.0
@@ -272,7 +274,7 @@ class AnalysisTest(IMP.test.TestCase):
         self.assertTrue(IMP.em.get_bounding_box(dmap2).get_contains(bbox2))
 
     def test_precision(self):
-        """Test correct calcluation of precision"""
+        """Test correct calcluation of precision and RMSF"""
         if not nicemodules:
             self.skipTest("missing scipy or sklearn")
 
@@ -293,7 +295,7 @@ class AnalysisTest(IMP.test.TestCase):
         fn00 = self.get_tmp_file_name('f00.txt')
         fn01 = self.get_tmp_file_name('f01.txt')
         fn11 = self.get_tmp_file_name('f11.txt')
-        pr.get_precision('set0','set0',fn00)
+        cn00 = pr.get_precision('set0','set0',fn00)
         pr.get_precision('set0','set1',fn01)
         pr.get_precision('set1','set1',fn11)
 
@@ -314,5 +316,14 @@ class AnalysisTest(IMP.test.TestCase):
             pdist11 = float(inf.readlines()[-1].strip().split()[-1])
             self.assertAlmostEqual(dist11,pdist11,places=2)
 
+        # check RMSF
+        rmsf_dir = tempfile.mkdtemp()
+        pr.get_rmsf('set0',outdir=rmsf_dir)
+        mean1 = coordslist0[cn00][0]
+        rmsf1 = np.std([IMP.algebra.get_distance(c[0],mean1) for c in coordslist0])
+        with open(os.path.join(rmsf_dir,'rmsf.Prot1.dat'),'r') as inf:
+            prmsf1 = float(inf.readline().split()[2])
+            self.assertAlmostEqual(rmsf1,prmsf1)
+        shutil.rmtree(rmsf_dir)
 if __name__ == '__main__':
     IMP.test.main()

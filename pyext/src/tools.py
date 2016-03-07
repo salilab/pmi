@@ -1431,6 +1431,17 @@ class OrderedDefaultDict(OrderedDict):
 
 # -------------- PMI2 Tools --------------- #
 
+def set_coordinates_from_rmf(hier,rmf_fn,frame_num):
+    """Extract frame from RMF file and fill coordinates. Must be identical topology.
+    @param hier The hierarchy to fill (e.g. after you've built it)
+    @param rmf_fn The file to extract from
+    @param frame_num The frame number to extract
+    """
+    rh = RMF.open_rmf_file_read_only(rmf_fn)
+    IMP.rmf.link_hierarchies(rh,hier)
+    IMP.rmf.load_frame(rh, RMF.FrameID(frame_num))
+    del rh
+
 def input_adaptor(stuff,
                   pmi_resolution=0,
                   flatten=False):

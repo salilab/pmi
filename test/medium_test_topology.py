@@ -491,13 +491,12 @@ class TopologyTest(IMP.test.TestCase):
         atomic_res = m1.add_structure(self.get_input_file_name('prot.pdb'),
                                       chain_id='A',res_range=(55,63),offset=-54)
         non_atomic_res = m1.get_non_atomic_residues()
-        m1.add_representation(atomic_res,resolutions=[base_res,bead_res])
-        m1.add_representation(non_atomic_res,resolutions=[bead_res])
+        m1.add_representation(atomic_res,resolutions=[base_res,bead_res],color=0.5)
+        m1.add_representation(non_atomic_res,resolutions=[bead_res],color=0.25)
         s.build()
         orig_hier = s.get_hierarchy()
 
         fname = self.get_tmp_file_name('test_round_trip.rmf3')
-        #fname = 'test_round_trip.rmf3'
         rh = RMF.create_rmf_file(fname)
         IMP.rmf.add_hierarchy(rh, orig_hier)
         IMP.rmf.save_frame(rh)
@@ -514,10 +513,13 @@ class TopologyTest(IMP.test.TestCase):
         selA0 = IMP.atom.Selection(orig_hier,resolution=base_res).get_selected_particles()
         coordsA0 = [list(map(float,IMP.core.XYZ(p).get_coordinates()))
                     for p in selA0]
+        colorsA0 = [IMP.display.Colored(p).get_color() for p in selA0]
         selB0 = IMP.atom.Selection(h2,resolution=base_res).get_selected_particles()
         coordsB0 = [list(map(float,IMP.core.XYZ(p).get_coordinates()))
                     for p in selB0]
+        colorsB0 = [IMP.display.Colored(p).get_color() for p in selB0]
         self.assertEqual(coordsA0,coordsB0)
+        self.assertEqual(colorsA0,colorsB0)
 
         selA1 = IMP.atom.Selection(orig_hier,resolution=bead_res).get_selected_particles()
         coordsA1 = [list(map(float,IMP.core.XYZ(p).get_coordinates()))

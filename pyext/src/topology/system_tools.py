@@ -183,6 +183,11 @@ def build_representation(parent,rep,coord_finder):
     atomic_res = 0
     ca_res = 1
     mdl = parent.get_model()
+    if rep.color is not None:
+        color = IMP.display.get_rgb_color(rep.color)
+    else:
+        color = None
+
 
     # first get the primary representation (currently, the smallest bead size)
     #  eventually we won't require beads to be present at all
@@ -293,6 +298,11 @@ def build_representation(parent,rep,coord_finder):
                                        input_coord)
                 for bead in beads:
                     this_resolution.add_child(bead)
+
+            # if requested, color all resolutions the same
+            if color:
+                for lv in IMP.core.get_leaves(this_resolution):
+                    IMP.display.Colored.setup_particle(lv,color)
 
             # finally decide where to put this resolution
             #  if volumetric, collect resolutions from different segments together

@@ -46,12 +46,20 @@ class TestTools(IMP.test.TestCase):
         atomic_res = mol.add_structure(self.get_input_file_name('chainA.pdb'),
                                        chain_id='A',
                                        res_range=(1,100))
-        mol.add_representation(mol.get_atomic_residues(),resolutions=[0,10])
-        mol.add_representation(mol.get_non_atomic_residues(), resolutions=[10])
+        mol.add_representation(mol.get_atomic_residues(),
+                               resolutions=[0,10],
+                               density_prefix='testselect',
+                               density_voxel_size=0,
+                               density_residues_per_component=10)
+
+        mol.add_representation(mol.get_non_atomic_residues(),
+                               resolutions=[10],
+                               setup_particles_as_densities=True)
         hier = s.build()
 
         ps = IMP.pmi.tools.select_at_all_resolutions(mol.get_hierarchy(),residue_index=93)
-        self.assertEqual(len(ps),10) #should get res0 and res10
+        self.assertEqual(len(ps),14) #should get res0, res10, and ALL densities
+        os.unlink('testselect.txt')
 
     def test_get_name(self):
         """Test pmi::get_molecule_name_and_copy()"""

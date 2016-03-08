@@ -16,6 +16,8 @@ from math import log,pi,sqrt,exp
 import sys,os
 import random
 import time
+import RMF
+import IMP.rmf
 from collections import defaultdict
 try:
     from collections import OrderedDict
@@ -1431,14 +1433,14 @@ class OrderedDefaultDict(OrderedDict):
 
 # -------------- PMI2 Tools --------------- #
 
-def set_coordinates_from_rmf(hier,rmf_fn,frame_num):
+def set_coordinates_from_rmf(hier,rmf_fn,frame_num=0):
     """Extract frame from RMF file and fill coordinates. Must be identical topology.
-    @param hier The hierarchy to fill (e.g. after you've built it)
+    @param hier The (System) hierarchy to fill (e.g. after you've built it)
     @param rmf_fn The file to extract from
     @param frame_num The frame number to extract
     """
     rh = RMF.open_rmf_file_read_only(rmf_fn)
-    IMP.rmf.link_hierarchies(rh,hier)
+    IMP.rmf.link_hierarchies(rh,[hier])
     IMP.rmf.load_frame(rh, RMF.FrameID(frame_num))
     del rh
 

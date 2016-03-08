@@ -14,6 +14,8 @@ import IMP.pmi.restraints
 import IMP.pmi.restraints.em
 import IMP.pmi.restraints.crosslinking
 import IMP.pmi.macros
+import RMF
+import IMP.rmf
 from math import *
 
 class TestTools(IMP.test.TestCase):
@@ -169,6 +171,36 @@ class TestTools(IMP.test.TestCase):
         sel1 = IMP.atom.Selection(hier,molecule="Prot1",resolution=1).get_selected_particles()
         for p in sel0+sel1:
             self.assertTrue(IMP.pmi.get_is_canonical(p))
+
+    def test_set_coordinates_from_rmf(self):
+        mdl = IMP.Model()
+        s = IMP.pmi.topology.System(mdl)
+        seqs = IMP.pmi.topology.Sequences(self.get_input_file_name('seqs.fasta'))
+        st1 = s.create_state()
+
+        m1 = st1.create_molecule("Prot1",sequence=seqs["Protein_1"])
+        a1 = m1.add_structure(self.get_input_file_name('prot.pdb'),
+                              chain_id='A',res_range=(55,63),offset=-54)
+        m1.add_representation(a1,resolutions=[0,1])
+        m1.add_representation(m1.get_residues()-a1,resolutions=1)
+        hier = s.build()
+
+        sel = IMP.atom.Selection(hier,resolution=IMP.atom.ALL_RESOLUTIONS).get_selected_particles()
+        orig_coords = [IMP.core.XYZ(p).get_coordinates() for p in sel]
+        fname = self.get_tmp_file_name('test_set_coords.rmf3')
+        rh = RMF.create_rmf_file(fname)
+        IMP.rmf.add_hierarchy(rh, hier)
+        IMP.rmf.save_frame(rh)
+        del rh
+        for p in sel:
+            IMP.core.transform(IMP.core.XYZ(p),IMP.algebra.Transformation3D([10,10,10]))
+        coords1 = [IMP.core.XYZ(p).get_coordinates() for p in sel]
+        for c0,c1 in zip(orig_coords,coords1):
+            self.assertNotEqual(IMP.algebra.get_distance(c0,c1),0.0)
+        IMP.pmi.tools.set_coordinates_from_rmf(hier,fname,0)
+        coords2 = [IMP.core.XYZ(p).get_coordinates() for p in sel]
+        for c0,c2 in zip(orig_coords,coords2):
+            self.assertAlmostEqual(IMP.algebra.get_distance(c0,c2),0.0)
 
 if __name__ == '__main__':
     IMP.test.main()

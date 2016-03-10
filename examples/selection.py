@@ -78,5 +78,10 @@ dof.create_rigid_body(mol,
 # Advanced: IMP selection
 # Note if you request a resolution this will find the NEAREST available resolution.
 #  E.g. if only resolution 1 is built, those particles will be returned below:
-sel = IMP.atom.Selection(hier,resolution=10,molecule="Rpn4",residue_indexes=range(1,10))
+sel = IMP.atom.Selection(hier,resolution=10,molecule="Rpb4",residue_indexes=range(1,10))
 particles = sel.get_selected_particles()
+
+# Retrieving the molecule object
+# The molecules are stored within the state, so you can do :
+all_mol_copies = st.molecules["Rpb4"] # a list of all copies
+mol = all_mol_copies[0]

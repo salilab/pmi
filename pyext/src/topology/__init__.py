@@ -670,7 +670,8 @@ class Sequences(object):
     def __getitem__(self,key):
         if type(key) is int:
             try:
-                return self.sequences[self.sequences.keys()[key]]
+                allseqs = list(self.sequences.keys())
+                return self.sequences[allseqs[key]]
             except:
                 raise Exception("You tried to access sequence num",key,"but there's only",len(self.sequences.keys()))
         else:

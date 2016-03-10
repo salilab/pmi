@@ -689,7 +689,7 @@ class Sequences(object):
             for (num, line) in enumerate(fh):
                 if line.startswith('>'):
                     if seq is not None:
-                        self.sequences[code] = seq
+                        self.sequences[code] = seq.strip('*')
                     code = line.rstrip()[1:]
                     if name_map is not None:
                         try:
@@ -705,7 +705,7 @@ class Sequences(object):
     "Found FASTA sequence before first header at line %d: %s" % (num + 1, line))
                         seq += line
         if seq is not None:
-            self.sequences[code] = seq
+            self.sequences[code] = seq.strip('*')
 
 #------------------------
 

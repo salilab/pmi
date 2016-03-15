@@ -245,6 +245,7 @@ class Molecule(_SystemBase):
         self.representations = []  # list of stuff to build
         self.represented = IMP.pmi.tools.OrderedSet()   # residues with representation
         self.coord_finder = _FindCloseStructure() # helps you place beads by storing structure
+        self._ideal_helices = [] # list of OrderedSets of tempresidues set to ideal helix
 
         # create root node and set it as child to passed parent hierarchy
         self.hier = self._create_child(self.state.get_hierarchy())
@@ -272,13 +273,20 @@ class Molecule(_SystemBase):
             print("ERROR: range ends must be int or str. Stride must be int.")
 
     def get_hierarchy(self):
+        """Return the IMP Hierarchy corresponding to this Molecule"""
         return self.hier
 
     def get_name(self):
+        """Return this Molecule name"""
         return self.hier.get_name()
 
     def get_state(self):
+        """Return the State containing this Molecule"""
         return self.state
+
+    def get_ideal_helices(self):
+        """Returns list of OrderedSets with requested ideal helices"""
+        return self._ideal_helices
 
     def residue_range(self,a,b,stride=1):
         """get residue range. Use integers to get 0-indexing, or strings to get PDB-indexing"""
@@ -489,6 +497,7 @@ class Molecule(_SystemBase):
                                 "you have to do that in MODELLER")
             if 1 not in resolutions:
                 resolutions = [1] + list(resolutions)
+            self._ideal_helices.append(res)
 
         # check residues are all part of this molecule:
         for r in res:

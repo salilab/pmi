@@ -623,5 +623,7 @@ class TopologyTest(IMP.test.TestCase):
         self.assertEqual(len(selD.get_selected_particles()),3)
         os.unlink('hgmm.txt')
 
+        self.assertEqual(m1.get_ideal_helices(),[m1[0:20]])
+
 if __name__ == '__main__':
     IMP.test.main()

@@ -428,8 +428,11 @@ class Molecule(_SystemBase):
         @param ideal_helix Create idealized helix structures for these residues at resolution 1.
                Any other resolutions passed will be coarsened from there.
                Resolution 0 will not work, you may have to use MODELLER to do that (for now).
-        @param color (float from 0 to 1) the color applied to the
-                     hierarchies generated
+        @param color the color applied to the hierarchies generated.
+               Format options: tuple (r,g,b) with values 0 to 1
+               or float (from 0 to 1, a map from Blue to Green to Red)
+               or IMP.display.Color object
+
         \note You cannot call add_representation multiple times for the same residues.
         """
 

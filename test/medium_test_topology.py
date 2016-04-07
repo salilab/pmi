@@ -52,6 +52,86 @@ class MultiscaleTopologyTest(IMP.test.TestCase):
 
         return a1, hier, mol
 
+    def test_molecule_set_behaviour(self):
+        '''
+        Here we assert that residue sets are not changed before and after
+        the model build. The current behaviour does not make the test pass.
+        '''
+        
+        mdl=IMP.Model()
+        s = IMP.pmi.topology.System(mdl)
+        st1 = s.create_state()
+
+        # Read sequences and create Molecules
+        seqs = IMP.pmi.topology.Sequences(IMP.pmi.get_example_path('data/gcp2.fasta'))
+        mol = st1.create_molecule("GCP2",sequence=seqs["GCP2_YEAST"][:100],chain_id='A')
+
+        # Add structure. This function returns a list of the residues that now have structure
+        a1 = mol.add_structure(IMP.pmi.get_example_path('data/gcp2.pdb'),
+                               res_range=(1,100),
+                               chain_id='A')
+
+        # Add representations. For structured regions, created a few beads as well as densities
+        #  For unstructured regions, create a single bead level and set those up as densities
+        gmm_prefix = self.get_input_file_name('gcp2_gmm.txt').strip('.txt')
+        mol.add_representation(a1,
+                               resolutions=[10,100],
+                               density_prefix=gmm_prefix,
+                               density_residues_per_component=20,
+                               density_voxel_size=3.0)
+
+
+        # before we add the beads representation we chack the consistency
+        # of mol.represented with the list obtained by removing it from the
+        # whole molecule, and store the list of results
+
+        mol_beads_1 = mol[:] - mol.represented
+        status_1=[]
+        for x in mol:
+            status_1.append(x in mol_beads_1)
+            self.assertEqual(x in mol_beads_1, not x in mol.represented)
+
+        mol.add_representation(mol_beads_1,
+                               resolutions=[10],
+                               setup_particles_as_densities=True)
+
+        # after adding the beads to the representation,
+        # we check that the residues are all represented (ie, no residue in mol_beads_2)
+        # and store the result
+ 
+        mol_beads_2 = mol[:] - mol.represented
+        status_2=[]
+        for x in mol:
+            status_2.append(x in mol_beads_2)
+            self.assertEqual(x in mol_beads_2, not x in mol.represented)
+            self.assertFalse(x in mol_beads_2)
+
+
+        hier = s.build()
+        
+        # after we build the coordinates, we shouldn't get any residue in mol_beads_3,
+        # but it is not the case. 
+
+        mol_beads_3 = mol[:] - mol.represented
+
+        # when we print the results, there are big inconsistencies 
+        # with the expected behaviour. We expect that the sixth column is indentical to the fifth and the second;
+        # and we expect that the first is equal to the first. But this is not obtained :-)
+        # The results are not intuitive at this stage, we think that mol has changed after build,
+        # and mol.represented is not changed correspondigly. 
+
+        for n,x in enumerate(mol):
+            print(x,status_1[n],status_2[n],x in mol_beads_1,x in mol_beads_2,x in mol_beads_3)
+
+        # and this test fails
+
+        for x in mol:
+            self.assertEqual(x in mol_beads_3, not x in mol.represented)
+            self.assertFalse(x in mol_beads_3)
+
+
+
+
     def test_num_residues(self):
         """ Test different ways of accessing residues"""
         try:

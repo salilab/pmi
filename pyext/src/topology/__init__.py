@@ -243,7 +243,7 @@ class Molecule(_SystemBase):
         self.built = False
         self.mol_to_clone = mol_to_clone
         self.representations = []  # list of stuff to build
-        self.represented = IMP.pmi.tools.OrderedSet()   # residues with representation
+        self._represented = IMP.pmi.tools.OrderedSet()   # residues with representation
         self.coord_finder = _FindCloseStructure() # helps you place beads by storing structure
         self._ideal_helices = [] # list of OrderedSets of tempresidues set to ideal helix
 
@@ -301,6 +301,10 @@ class Molecule(_SystemBase):
         """ Return all modeled TempResidues as a set"""
         all_res = IMP.pmi.tools.OrderedSet(self.residues)
         return all_res
+
+    def get_represented(self):
+        """ Return set of TempResidues that have representation"""
+        return self._represented
 
     def get_atomic_residues(self):
         """ Return a set of TempResidues that have associated structure coordinates """
@@ -461,10 +465,10 @@ class Molecule(_SystemBase):
             raise Exception("add_representation: you must pass a set of residues or nothing(=all residues)")
 
         # check that each residue has not been represented yet
-        ov = res & self.represented
+        ov = res & self._represented
         if ov:
             raise Exception('You have already added representation for '+self.get_hierarchy().get_name()+': '+ov.__repr__())
-        self.represented|=res
+        self._represented|=res
 
         # check you aren't creating multiple resolutions without structure
         if not hasattr(resolutions,'__iter__'):
@@ -541,7 +545,7 @@ class Molecule(_SystemBase):
                     new_res = IMP.pmi.tools.OrderedSet()
                     for r in old_rep.residues:
                         new_res.add(self.residues[r.get_internal_index()])
-                        self.represented.add(self.residues[r.get_internal_index()])
+                        self._represented.add(self.residues[r.get_internal_index()])
                     new_rep = _Representation(new_res,
                                               old_rep.bead_resolutions,
                                               old_rep.bead_extra_breaks,
@@ -558,7 +562,7 @@ class Molecule(_SystemBase):
                 self.coord_finder = self.mol_to_clone.coord_finder
 
             # give a warning for all residues that don't have representation
-            no_rep = [r for r in self.residues if r not in self.represented]
+            no_rep = [r for r in self.residues if r not in self._represented]
             if len(no_rep)>0:
                 print('WARNING: Residues without representation in molecule',
                       self.get_name(),':',system_tools.resnums2str(no_rep))
@@ -592,7 +596,7 @@ class Molecule(_SystemBase):
                     res.hier = new_hier
                 else:
                     res.hier = None
-
+            self._represented = IMP.pmi.tools.OrderedSet([a for a in self._represented])
         print('done building',self.get_hierarchy())
         return self.hier
 

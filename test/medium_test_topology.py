@@ -57,7 +57,7 @@ class MultiscaleTopologyTest(IMP.test.TestCase):
         Here we assert that residue sets are not changed before and after
         the model build. The current behaviour does not make the test pass.
         '''
-        
+
         mdl=IMP.Model()
         s = IMP.pmi.topology.System(mdl)
         st1 = s.create_state()
@@ -85,11 +85,11 @@ class MultiscaleTopologyTest(IMP.test.TestCase):
         # of mol.represented with the list obtained by removing it from the
         # whole molecule, and store the list of results
 
-        mol_beads_1 = mol[:] - mol.represented
+        mol_beads_1 = mol[:] - mol.get_represented()
         status_1=[]
         for x in mol:
             status_1.append(x in mol_beads_1)
-            self.assertEqual(x in mol_beads_1, not x in mol.represented)
+            self.assertEqual(x in mol_beads_1, not x in mol.get_represented())
 
         mol.add_representation(mol_beads_1,
                                resolutions=[10],
@@ -98,27 +98,26 @@ class MultiscaleTopologyTest(IMP.test.TestCase):
         # after adding the beads to the representation,
         # we check that the residues are all represented (ie, no residue in mol_beads_2)
         # and store the result
- 
-        mol_beads_2 = mol[:] - mol.represented
+
+        mol_beads_2 = mol[:] - mol.get_represented()
         status_2=[]
         for x in mol:
             status_2.append(x in mol_beads_2)
-            self.assertEqual(x in mol_beads_2, not x in mol.represented)
+            self.assertEqual(x in mol_beads_2, not x in mol.get_represented())
             self.assertFalse(x in mol_beads_2)
 
 
         hier = s.build()
-        
+
         # after we build the coordinates, we shouldn't get any residue in mol_beads_3,
-        # but it is not the case. 
+        # but it is not the case.
 
-        mol_beads_3 = mol[:] - mol.represented
-
-        # when we print the results, there are big inconsistencies 
+        mol_beads_3 = mol[:] - mol.get_represented()
+        # when we print the results, there are big inconsistencies
         # with the expected behaviour. We expect that the sixth column is indentical to the fifth and the second;
         # and we expect that the first is equal to the first. But this is not obtained :-)
         # The results are not intuitive at this stage, we think that mol has changed after build,
-        # and mol.represented is not changed correspondigly. 
+        # and mol.get_represented() is not changed correspondigly.
 
         for n,x in enumerate(mol):
             print(x,status_1[n],status_2[n],x in mol_beads_1,x in mol_beads_2,x in mol_beads_3)
@@ -126,7 +125,7 @@ class MultiscaleTopologyTest(IMP.test.TestCase):
         # and this test fails
 
         for x in mol:
-            self.assertEqual(x in mol_beads_3, not x in mol.represented)
+            self.assertEqual(x in mol_beads_3, not x in mol.get_represented())
             self.assertFalse(x in mol_beads_3)
 
 

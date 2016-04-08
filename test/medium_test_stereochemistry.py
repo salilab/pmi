@@ -118,8 +118,9 @@ class StereochemistryTests(IMP.test.TestCase):
         self.assertEqual(er.get_restraint().get_number_of_restraints(),12)
 
         lhelix = sses['helix'][0][0][1] - sses['helix'][0][0][0]+1
-        hr = IMP.pmi.restraints.stereochemistry.AtomicHelixRestraint(hier,sses['helix'][0][0])
-        self.assertEqual(hr.get_number_of_restraints(),lhelix*2-4)
+        hr = IMP.pmi.restraints.stereochemistry.HelixRestraint(hier,sses['helix'][0][0])
+        self.assertEqual(hr.get_number_of_dihedrals(),lhelix*2-4)
+        self.assertEqual(hr.get_number_of_bonds(),lhelix-4)
 
 
     def test_excluded_volume_sphere_pmi2(self):

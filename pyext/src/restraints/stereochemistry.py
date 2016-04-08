@@ -277,21 +277,22 @@ class ExcludedVolumeSphere(object):
     def evaluate(self):
         return self.weight * self.rs.unprotected_evaluate(None)
 
-class AtomicHelixRestraint(object):
-    """Enforce current dihedrals for a selection"""
+class HelixRestraint(object):
+    """Enforce ideal Helix dihedrals and bonds for a selection at resolution 0"""
     def __init__(self,
                  hierarchy,
                  selection_tuple,
-                 strength=10.0):
+                 weight=1.0,
+                 label=''):
         """Constructor
         @param hierarchy the root node
-        @param selection_tuple (start,stop, molname, copynum=0)
-        @param strength the restraint strength
+        @param selection_tuple (start, stop, molname, copynum=0)
+        @param weight
         """
         self.mdl = hierarchy.get_model()
         self.rs = IMP.RestraintSet(self.mdl)
-        self.weight = 1.0
-        self.label = ''
+        self.weight = weight
+        self.label = label
         start = selection_tuple[0]
         stop = selection_tuple[1]
         mol = selection_tuple[2]
@@ -299,26 +300,13 @@ class AtomicHelixRestraint(object):
         if len(selection_tuple)>3:
             copy_index = selection_tuple[3]
 
-        sel0 = IMP.atom.Selection(hierarchy,molecule=mol,copy_index=copy_index)
-        mol_hier = sel0.get_selected_particles(with_representation=False)[0]
-        def get_atom(idx,name):
-            sel = IMP.atom.Selection(mol_hier,residue_index=idx,atom_type=IMP.atom.AtomType(name))
-            return IMP.atom.Atom(sel.get_selected_particles()[0])
-
-        #create two dihedrals: C(-1)-N-CA-C and a N - CA - C - N(+1)
-        for res_idx in range(start,stop+1-2):
-            a1 = get_atom(res_idx,'C')
-            a2 = get_atom(res_idx+1,'N')
-            a3 = get_atom(res_idx+1,'CA')
-            a4 = get_atom(res_idx+1,'C')
-            a5 = get_atom(res_idx+2,'N')
-
-            angle1 = IMP.pmi.get_dihedral_angle(a1,a2,a3,a4)
-            hr = IMP.core.Harmonic(angle1,strength)
-            self.rs.add_restraint(IMP.core.DihedralRestraint(self.mdl,hr,a1,a2,a3,a4))
-            angle2 = IMP.pmi.get_dihedral_angle(a2,a3,a4,a5)
-            hr = IMP.core.Harmonic(angle2,strength)
-            self.rs.add_restraint(IMP.core.DihedralRestraint(self.mdl,hr,a2,a3,a4,a5))
+        sel = IMP.atom.Selection(hierarchy,molecule=mol,copy_index=copy_index,
+                                 residue_indexes=range(start,stop+1))
+        ps = sel.get_selected_particles(with_representation=False)
+        res = [IMP.atom.Residue(p) for p in ps]
+        self.rs = IMP.RestraintSet(self.mdl,self.weight)
+        self.r = IMP.atom.HelixRestraint(res)
+        self.rs.add_restraint(self.r)
 
     def set_label(self, label):
         self.label = label
@@ -336,9 +324,11 @@ class AtomicHelixRestraint(object):
         self.weight = weight
         self.rs.set_weight(weight)
 
-    def get_number_of_restraints(self):
-        """ Returns number of connectivity restraints """
-        return len(self.rs.get_restraints())
+    def get_number_of_bonds(self):
+        return self.r.get_number_of_bonds()
+
+    def get_number_of_dihedrals(self):
+        return self.r.get_number_of_dihedrals()
 
     def evaluate(self):
         return self.weight * self.rs.unprotected_evaluate(None)
@@ -346,7 +336,7 @@ class AtomicHelixRestraint(object):
     def get_output(self):
         self.mdl.update()
         output = {}
-        score = self.weight * self.rs.unprotected_evaluate(None)
+        score = self.evaluate()
         output["_TotalScore"] = str(score)
         output["AtomicHelixRestraint_" + self.label] = str(score)
         return output

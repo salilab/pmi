@@ -36,20 +36,24 @@ def _build_ideal_helix(mdl, residues, coord_finder):
     Residues MUST be contiguous.
     This function actually adds them to the TempResidue hierarchy
     """
-    all_res = []
-    for n, res in enumerate(residues):
-        if res.get_has_structure():
+    created_hiers = []
+
+    # this function creates a CAlpha helix structure (which can be used for coarsening)
+    for n, tempres in enumerate(residues):
+        if tempres.get_has_structure():
             raise Exception("You tried to build ideal_helix for a residue "
-                            "that already has structure:",res)
-        if n>0 and (not res.get_index()==prev_idx+1):
-            raise Exception("Passed non-contiguous segment to build_ideal_helix for",res.get_molecule())
+                            "that already has structure:",tempres)
+        if n>0 and (not tempres.get_index()==prev_idx+1):
+            raise Exception("Passed non-contiguous segment to build_ideal_helix for",tempres.get_molecule())
 
-        rt = res.get_residue_type()
-
+        # New residue particle will replace the TempResidue's existing (empty) hierarchy
         rp = IMP.Particle(mdl)
-        rp.set_name("Residue_%i" % res.get_index())
-        this_res = IMP.atom.Residue.setup_particle(rp,res.get_hierarchy())
+        rp.set_name("Residue_%i" % tempres.get_index())
 
+        # Copy the original residue type and index
+        this_res = IMP.atom.Residue.setup_particle(rp,tempres.get_hierarchy())
+
+        # Create the CAlpha
         ap = IMP.Particle(mdl)
         d = IMP.core.XYZR.setup_particle(ap)
         x = 2.3 * cos(n * 2 * pi / 3.6)
@@ -57,13 +61,14 @@ def _build_ideal_helix(mdl, residues, coord_finder):
         z = 6.2 / 3.6 / 2 * n * 2 * pi / 3.6
         d.set_coordinates(IMP.algebra.Vector3D(x, y, z))
         d.set_radius(1.0)
-
-        a = IMP.atom.Atom.setup_particle(ap, IMP.atom.AT_CA)
+        a = IMP.atom.Atom.setup_particle(ap, IMP.atom.AT_CA)  # Decorating as Atom also adds Mass
         this_res.add_child(a)
-        res.set_structure(this_res)
-        all_res.append(this_res)
-        prev_idx = res.get_index()
-    coord_finder.add_residues(all_res)
+
+        # Add this structure to the TempResidue
+        tempres.set_structure(this_res)
+        created_hiers.append(this_res)
+        prev_idx = tempres.get_index()
+    coord_finder.add_residues(created_hiers) #the coord finder is for placing beads (later)
 
 class _SystemBase(object):
     """The base class for System, State and Molecule

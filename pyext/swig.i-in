@@ -2,6 +2,11 @@
 //IMP_SWIG_DECORATOR(IMP::example, ExampleDecorator, ExampleDecorators);
 //IMP_SWIG_VALUE_TEMPLATE(IMP::example, ExampleTemplateClassD)
 
+IMP_SWIG_OBJECT(IMP::pmi, FuzzyRestraint, FuzzyRestraints);
+IMP_SWIG_OBJECT(IMP::pmi, FuzzyOr, FuzzyOrs);
+IMP_SWIG_OBJECT(IMP::pmi, FuzzyAnd, FuzzyAnds);
+IMP_SWIG_OBJECT(IMP::pmi, FuzzySigmoidRestraint, FuzzySigmoidRestraints);
+IMP_SWIG_OBJECT(IMP::pmi, FuzzyLinearRestraint, FuzzyLinearRestraints);
 IMP_SWIG_OBJECT(IMP::pmi, MembraneRestraint, MembraneRestraints);
 IMP_SWIG_OBJECT(IMP::pmi, CompositeRestraint, CompositeRestraints);
 IMP_SWIG_DECORATOR(IMP::pmi, Uncertainty, Uncertainties);
@@ -11,6 +16,7 @@ IMP_SWIG_OBJECT(IMP::pmi, SigmoidRestraintSphere, SigmoidRestraintSpheres);
 IMP_SWIG_OBJECT(IMP::pmi, TransformMover, TransformMovers);
 
 //%include "IMP/example/ExampleRestraint.h"
+%include "IMP/pmi/FuzzyRestraint.h"
 %include "IMP/pmi/MembraneRestraint.h"
 %include "IMP/pmi/CompositeRestraint.h"
 %include "IMP/pmi/Uncertainty.h"

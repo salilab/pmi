@@ -29,7 +29,8 @@ class ConnectivityRestraint(object):
                  resolution=1):
         """
         @param objects - a list of hierarchies, PMI TempResidues OR a single Molecule
-        @param scale - Riccardo knows what this is
+        @param scale Scale the maximal distance between the beads by this factor when disorderedlength is False. 
+                     The maximal distance is calculated as ((float(residuegap) + 1.0) * 3.6) * scale.
         @param disorderedlength - This flag uses either disordered length
                      calculated for random coil peptides (True) or zero
                      surface-to-surface distance between beads (False)
@@ -48,7 +49,7 @@ class ConnectivityRestraint(object):
             raise Exception("ConnectivityRestraint: only pass stuff from one Molecule, please")
         hiers = hiers[0]
 
-        self.kappa = 10  # No idea what this is
+        self.kappa = 10  # spring constant used for the harmonic restraints
         self.m = list(hiers)[0].get_model()
         SortedSegments = []
         self.rs = IMP.RestraintSet(self.m, "connectivity_restraint")
@@ -123,7 +124,6 @@ class ConnectivityRestraint(object):
 
                 print("Adding sequence connectivity restraint between", pt0.get_name(), " and ", pt1.get_name(), 'of distance', optdist)
                 self.rs.add_restraint(r)
-
 
     def set_label(self, label):
         self.label = label

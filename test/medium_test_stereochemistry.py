@@ -8,7 +8,7 @@ import IMP.pmi.topology
 import IMP.pmi.restraints.stereochemistry
 
 
-class StereochemistryTests(IMP.test.TestCase):
+class Tests(IMP.test.TestCase):
 
     def test_stereochemistry_basic(self):
         """ test PMI2 connectivity restraint on basic system

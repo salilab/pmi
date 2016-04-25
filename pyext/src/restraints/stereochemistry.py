@@ -307,7 +307,9 @@ class HelixRestraint(object):
         self.rs = IMP.RestraintSet(self.mdl,self.weight)
         self.r = IMP.atom.HelixRestraint(res)
         self.rs.add_restraint(self.r)
-
+        print('Created helix %s.%i.%i-%i with %i dihedrals and %i bonds'%(
+            mol,copy_index,start,stop,
+            self.get_number_of_bonds(),self.get_number_of_dihedrals()))
     def set_label(self, label):
         self.label = label
 
@@ -338,7 +340,7 @@ class HelixRestraint(object):
         output = {}
         score = self.evaluate()
         output["_TotalScore"] = str(score)
-        output["AtomicHelixRestraint_" + self.label] = str(score)
+        output["HelixRestraint_" + self.label] = str(score)
         return output
 
 class ResidueBondRestraint(object):

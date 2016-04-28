@@ -206,21 +206,17 @@ class MultiscaleTopologyTest(IMP.test.TestCase):
 
     def test_num_residues(self):
         """ Test different ways of accessing residues"""
-        try:
-            import sklearn
-        except ImportError:
-            self.skipTest("no sklearn package")
-
         mdl = IMP.Model()
         (a1, hier, mol) = self.initialize_system(mdl)
+        print(a1, mol.get_atomic_residues())
 
         self.assertEqual(37, len(a1))                # now these are duplicated
         # only 5 after build()!
-        self.assertEqual(5, len(mol.get_atomic_residues()))
+        self.assertEqual(len(a1), len(mol.get_atomic_residues()))
         self.assertEqual(len(mol.get_residues()),
                          len(mol.get_atomic_residues()) + len(mol.get_non_atomic_residues()))
         # now contains only beads that are built
-        self.assertEqual(len(mol.get_residues()), 12)
+        self.assertEqual(len(mol.get_residues()), 100)
 
     def test_num_unstruct_res(self):
         try:

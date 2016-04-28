@@ -742,20 +742,23 @@ class TempResidue(object):
         @param index    PDB index
         @param internal_index The number in the sequence
         """
+        #these attributes should be immutable
         self.molecule = molecule
         self.rtype = IMP.pmi.tools.get_residue_type_from_one_letter_code(code)
+        self.pdb_index = index
+        self.internal_index = internal_index
+        #these are expected to change
+        self._structured = False
         self.hier = IMP.atom.Residue.setup_particle(IMP.Particle(molecule.mdl),
                                                     self.rtype,
                                                     index)
-        self.pdb_index = index
-        self.internal_index = internal_index
-        self._structured = False
     def __str__(self):
         return self.get_code()+str(self.get_index())
     def __repr__(self):
         return self.__str__()
     def __key(self):
-        return (self.molecule,self.hier)
+        #this returns the immutable attributes only
+        return (self.molecule, self.rtype, self.pdb_index, self.internal_index)
     def __eq__(self,other):
         return type(other)==type(self) and self.__key() == other.__key()
     def __hash__(self):

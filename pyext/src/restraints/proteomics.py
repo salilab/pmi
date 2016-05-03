@@ -561,8 +561,8 @@ class SetupConnectivityNetworkRestraint(object):
 
     def __init__(
         self,
-        representation,
-        selection_tuples,
+        representation=None,
+        objects=None,
         kappa=10.0,
         resolution=1.0,
             label="None"):
@@ -573,18 +573,27 @@ class SetupConnectivityNetworkRestraint(object):
         if self.label == "None":
             self.label = str(selection_tuples)
 
-        self.m = representation.m
-        self.rs = IMP.RestraintSet(self.m, label)
+        hiers=[]
 
+        if representation is None:
+            print(objects)
+            for obj in objects:
+                hiers.append(IMP.pmi.tools.input_adaptor(obj,
+                                                resolution,
+                                                flatten=True))
+            self.m=hiers[0][0].get_model()
+        else:
+            self.m = representation.m
+            for s in objects:
+                hiers.append(IMP.pmi.tools.select_by_tuple(representation, s,
+                                                          resolution=resolution,
+                                                          name_is_ambiguous=False))
+
+        #particles=[h.get_particle() for h in hiers]
         cr = ConnectivityNetworkRestraint(self.m)
-
-        for s in selection_tuples:
-            particles = IMP.pmi.tools.select_by_tuple(representation, s,
-                                                      resolution=resolution,
-                                                      name_is_ambiguous=False)
-
-            cr.add_particles([p.get_particle() for p in particles])
-
+        for hs in hiers:
+            cr.add_particles([h.get_particle() for h in hs])
+        self.rs = IMP.RestraintSet(self.m, label)
         self.rs.add_restraint(cr)
 
     def set_label(self, label):
@@ -704,75 +713,85 @@ class SetupMembraneRestraint(object):
 
     '''
 
+    def get_from_selection_tuple(self,tuples):
+        particles = []
+        for s in tuples:
+            ps = IMP.pmi.tools.select_by_tuple(
+                self.representation, s,
+                resolution=self.resolution, name_is_ambiguous=True)
+            particles += ps
+        return particles
+
     def __init__(
             self,
-            representation,
-            selection_tuples_above=None,
-            selection_tuples_inside=None,
-            selection_tuples_below=None,
+            representation=None,
+            objects_above=None,
+            objects_inside=None,
+            objects_below=None,
             z_init=0.0,
             z_min=0.0,
             z_max=0.0,
             thickness=30,
             resolution=1,
             label="None"):
+        self.resolution=resolution
 
         self.weight = 1.0
         self.label = label
-        self.m = representation.prot.get_model()
-        self.rs = IMP.RestraintSet(self.m, label)
         self.representation = representation
         self.thickness = thickness
 
-        self.z_center = IMP.pmi.tools.SetupNuisance(
-            self.m, z_init, z_min, z_max, isoptimized=True).get_particle()
 
         softness = 3.0
         plateau = 1e-10
         linear = 0.02
+
+        mr=None
+        hierarchies_above =  []
+        hierarchies_inside = []
+        hierarchies_below =  []
+
+        if representation is None:
+            hierarchies_above, hierarchies_inside, hierarchies_below = (
+                IMP.pmi.tools.input_adaptor(objects,
+                                            resolution,
+                                            flatten=True) for objects in [objects_above, objects_inside, objects_below])
+            for h in hierarchies_above, hierarchies_inside, hierarchies_below:
+                if h is not None:
+                    self.m=hierarchies_above[0].get_model()
+                    break
+        else:
+            self.m = representation.prot.get_model()
+            if selection_tuples_above is not None:
+                hierarchies_above = self.get_from_selection_tuple(selection_tuples_above)
+
+            if selection_tuples_below is not None:
+                particles_below = self.get_from_selection_tuple(selection_tuples_below)
+
+            if selection_tuples_inside is not None:
+                particles_inside = self.get_from_selection_tuple(selection_tuples_inside)
+
+        self.z_center = IMP.pmi.tools.SetupNuisance(
+            self.m, z_init, z_min, z_max, isoptimized=True).get_particle()
         mr = IMP.pmi.MembraneRestraint(
             self.m, self.z_center.get_particle_index(), self.thickness, softness, plateau, linear)
+        mr.add_particles_inside([h.get_particle().get_index()
+                                for h in hierarchies_inside])
+        mr.add_particles_above([h.get_particle().get_index()
+                               for h in hierarchies_above])
+        mr.add_particles_below([h.get_particle().get_index()
+                               for h in hierarchies_below])
 
-        if selection_tuples_above is not None:
-            particles_above = []
-            for s in selection_tuples_above:
-                particles = IMP.pmi.tools.select_by_tuple(
-                    self.representation, s,
-                    resolution=resolution, name_is_ambiguous=True)
-                particles_above += particles
-
-            mr.add_particles_above([h.get_particle().get_index()
-                                   for h in particles_above])
-
-        if selection_tuples_below is not None:
-            particles_below = []
-            for s in selection_tuples_below:
-                particles = IMP.pmi.tools.select_by_tuple(
-                    self.representation, s,
-                    resolution=resolution, name_is_ambiguous=True)
-                particles_below += particles
-            mr.add_particles_below([h.get_particle().get_index()
-                                   for h in particles_below])
-
-        if selection_tuples_inside is not None:
-            particles_inside = []
-            for s in selection_tuples_inside:
-                particles = IMP.pmi.tools.select_by_tuple(
-                    self.representation, s,
-                    resolution=resolution, name_is_ambiguous=True)
-                particles_inside += particles
-            mr.add_particles_inside([h.get_particle().get_index()
-                                    for h in particles_inside])
-
+        self.rs = IMP.RestraintSet(self.m, label)
         self.rs.add_restraint(mr)
 
-    def create_box(self, x_center, y_center):
+    def create_box(self, x_center, y_center, hierarchy):
 
         z = self.z_center.get_nuisance()
         p = IMP.Particle(self.m)
         h = IMP.atom.Hierarchy.setup_particle(p)
         h.set_name("Membrane_" + self.label)
-        self.representation.prot.add_child(h)
+        hierarchy.add_child(h)
 
         particles_box = []
         p_origin = IMP.Particle(self.m)
@@ -862,11 +881,12 @@ class SetupMembraneRestraint(object):
         sm = self._MembraneSingletonModifier(p_origin, self.z_center)
         lc = IMP.container.ListSingletonContainer(self.m)
         for p in particles_box:
+            smp = self._MembraneSingletonModifier(p_origin, self.z_center)
+            lcp = IMP.container.ListSingletonContainer(self.m)
             IMP.core.XYZ(p).set_coordinates_are_optimized(True)
-            lc.add(p.get_index())
-            print(p)
-        c = IMP.container.SingletonsConstraint(sm, None, lc)
-        self.m.add_score_state(c)
+            lcp.add(p.get_index())
+            c = IMP.container.SingletonsConstraint(smp, None, lcp)
+            self.m.add_score_state(c)
         self.m.update()
 
     class _MembraneSingletonModifier(IMP.SingletonModifier):
@@ -915,6 +935,19 @@ class SetupMembraneRestraint(object):
         ps["Nuisances_MembraneRestraint_Z_" +
             self.label] = ([self.z_center], 2.0)
         return ps
+
+    def get_movers(self):
+        movers=[]
+        mover_name="Nuisances_MembraneRestraint_Z_" + self.label
+        particle=self.z_center
+        maxstep=2.0
+        mv=IMP.core.NormalMover([particle],
+                          IMP.FloatKeys([IMP.FloatKey("nuisance")]),maxstep)
+        mv.set_name(mover_name)
+        movers.append(mv)
+
+        return movers
+
 
     def get_output(self):
         self.m.update()
@@ -1033,8 +1066,8 @@ class FuzzyRestraint(IMP.Restraint):
         d1 = IMP.core.XYZ(self.particle_pair[0])
         d2 = IMP.core.XYZ(self.particle_pair[1])
         d = IMP.core.get_distance(d1, d2)
-        argvalue = (d -self.theta)/self.slope
-        return -self.math.log(1.0 - (1.0-self.plateau)/(1.0+self.math.exp(-argvalue)))+self.innerslope*d
+        argvalue = (d-self.theta)/self.slope
+        return -self.math.log(1.0 -(1.0-self.plateau)/(1.0+self.math.exp(-argvalue)))+self.innerslope*d
 
     def add_to_model(self):
         IMP.pmi.tools.add_restraint_to_model(self.m, self)

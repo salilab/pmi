@@ -747,18 +747,20 @@ class TempResidue(object):
         self.rtype = IMP.pmi.tools.get_residue_type_from_one_letter_code(code)
         self.pdb_index = index
         self.internal_index = internal_index
+        self.copy_index = IMP.atom.Copy(self.molecule.hier).get_copy_index()
+        self.state_index = IMP.atom.State(self.molecule.state.hier).get_state_index()
         #these are expected to change
         self._structured = False
         self.hier = IMP.atom.Residue.setup_particle(IMP.Particle(molecule.mdl),
                                                     self.rtype,
                                                     index)
     def __str__(self):
-        return self.get_code()+str(self.get_index())
+        return str(self.state_index)+"_"+self.molecule.get_name()+"_"+str(self.copy_index)+"_"+self.get_code()+str(self.get_index())
     def __repr__(self):
         return self.__str__()
     def __key(self):
         #this returns the immutable attributes only
-        return (self.molecule, self.rtype, self.pdb_index, self.internal_index)
+        return (self.state_index, self.molecule, self.copy_index, self.rtype, self.pdb_index, self.internal_index)
     def __eq__(self,other):
         return type(other)==type(self) and self.__key() == other.__key()
     def __hash__(self):

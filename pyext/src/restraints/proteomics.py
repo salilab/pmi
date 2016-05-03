@@ -10,6 +10,7 @@ import IMP.atom
 import IMP.container
 import IMP.pmi.tools
 
+
 class ConnectivityRestraint(object):
 
     '''
@@ -85,6 +86,8 @@ class ConnectivityRestraint(object):
         return output
 
 #
+
+
 class CompositeRestraint(object):
 
     '''
@@ -111,9 +114,10 @@ class CompositeRestraint(object):
 
         self.handleparticles = []
         for s in handleparticles_tuples:
-            self.handleparticles += IMP.pmi.tools.select_by_tuple(representation, s,
-                                                             resolution=resolution, name_is_ambiguous=True)
-        self.compositeparticles=[]
+            self.handleparticles += IMP.pmi.tools.select_by_tuple(
+                representation, s,
+                resolution=resolution, name_is_ambiguous=True)
+        self.compositeparticles = []
         compositeparticle_list = []
         for list in compositeparticles_tuple_list:
             tmplist = []
@@ -122,8 +126,7 @@ class CompositeRestraint(object):
                     representation, s,
                     resolution=resolution, name_is_ambiguous=True)
             compositeparticle_list.append(tmplist)
-            self.compositeparticles+=tmplist
-
+            self.compositeparticles += tmplist
 
         ln = IMP.pmi.CompositeRestraint(
             self.m,
@@ -221,7 +224,9 @@ class AmbiguousCompositeRestraint(object):
                          for p in ps1nosym]
 
             if len(ps1) == 0:
-                print("AmbiguousCompositeRestraint: WARNING> residue %d of chain %s is not there" % (r1, c1))
+                print(
+                    "AmbiguousCompositeRestraint: WARNING> residue %d of chain %s is not there" %
+                    (r1, c1))
                 continue
 
             ps2 = IMP.pmi.tools.select(
@@ -239,7 +244,9 @@ class AmbiguousCompositeRestraint(object):
                          for p in ps2nosym]
 
             if len(ps2) == 0:
-                print("AmbiguousCompositeRestraint: WARNING> residue %d of chain %s is not there" % (r2, c2))
+                print(
+                    "AmbiguousCompositeRestraint: WARNING> residue %d of chain %s is not there" %
+                    (r2, c2))
                 continue
 
             cr = IMP.pmi.CompositeRestraint(
@@ -416,10 +423,14 @@ class SimplifiedPEMAP(object):
                 name_is_ambiguous=False,
                 residue=r1)
             if len(ps1) == 0:
-                print("SimplifiedPEMAP: WARNING> residue %d of chain %s is not there (w/ %d %s)" % (r1, c1, r2, c2))
+                print(
+                    "SimplifiedPEMAP: WARNING> residue %d of chain %s is not there (w/ %d %s)" %
+                    (r1, c1, r2, c2))
                 continue
             if len(ps1) > 1:
-                print("SimplifiedPEMAP: WARNING> residue %d of chain %s selected multiple particles" % (r1, c1))
+                print(
+                    "SimplifiedPEMAP: WARNING> residue %d of chain %s selected multiple particles" %
+                    (r1, c1))
                 continue
 
             ps2 = IMP.pmi.tools.select(
@@ -429,10 +440,14 @@ class SimplifiedPEMAP(object):
                 name_is_ambiguous=False,
                 residue=r2)
             if len(ps2) == 0:
-                print("SimplifiedPEMAP: WARNING> residue %d of chain %s is not there (w/ %d %s)" % (r1, c1, r2, c2))
+                print(
+                    "SimplifiedPEMAP: WARNING> residue %d of chain %s is not there (w/ %d %s)" %
+                    (r1, c1, r2, c2))
                 continue
             if len(ps2) > 1:
-                print("SimplifiedPEMAP: WARNING> residue %d of chain %s selected multiple particles" % (r2, c2))
+                print(
+                    "SimplifiedPEMAP: WARNING> residue %d of chain %s selected multiple particles" %
+                    (r2, c2))
                 continue
 
             p1 = ps1[0]
@@ -561,7 +576,7 @@ class SetupConnectivityNetworkRestraint(object):
         self.m = representation.m
         self.rs = IMP.RestraintSet(self.m, label)
 
-        cr=ConnectivityNetworkRestraint(self.m)
+        cr = ConnectivityNetworkRestraint(self.m)
 
         for s in selection_tuples:
             particles = IMP.pmi.tools.select_by_tuple(representation, s,
@@ -603,8 +618,8 @@ class SetupConnectivityNetworkRestraint(object):
         return output
 
 
-
 class ConnectivityNetworkRestraint(IMP.Restraint):
+
     '''
     a python restraint that computes the score for a composite of proteins
     Authors: G. Bouvier, R. Pellarin. Pasteur Institute.
@@ -613,28 +628,28 @@ class ConnectivityNetworkRestraint(IMP.Restraint):
     import numpy
     import math
 
-    def __init__(self,m,slope=1.0,theta=0.0,plateau=0.0000000001,linear_slope=0.015):
+    def __init__(self, m, slope=1.0, theta=0.0, plateau=0.0000000001, linear_slope=0.015):
         '''
         input a list of particles, the slope and theta of the sigmoid potential
         theta is the cutoff distance for a protein-protein contact
         '''
         IMP.Restraint.__init__(self, m, "ConnectivityNetworkRestraint %1%")
-        self.slope=slope
-        self.theta=theta
-        self.linear_slope=linear_slope
-        self.plateau=plateau
-        self.particles_blocks=[]
-        self.particle_list=[]
+        self.slope = slope
+        self.theta = theta
+        self.linear_slope = linear_slope
+        self.plateau = plateau
+        self.particles_blocks = []
+        self.particle_list = []
 
     def get_number_of_particle_blocks(self):
         return len(self.particles_blocks)
 
-    def get_number_of_particles_for_block(self,block_index):
+    def get_number_of_particles_for_block(self, block_index):
         return len(self.particles_blocks[block_index])
 
-    def add_particles(self,particles):
+    def add_particles(self, particles):
         self.particles_blocks.append(particles)
-        self.particle_list+=particles
+        self.particle_list += particles
 
     def get_full_graph(self):
         '''
@@ -643,8 +658,9 @@ class ConnectivityNetworkRestraint(IMP.Restraint):
         import networkx
         import scipy.spatial
 
-        pdist_array = self.numpy.array(IMP.pmi.get_list_of_bipartite_minimum_sphere_distance(self.particles_blocks))
-        pdist_mat=scipy.spatial.distance.squareform(pdist_array)
+        pdist_array = self.numpy.array(
+            IMP.pmi.get_list_of_bipartite_minimum_sphere_distance(self.particles_blocks))
+        pdist_mat = scipy.spatial.distance.squareform(pdist_array)
         pdist_mat[pdist_mat < 0] = 0
         graph = networkx.Graph(pdist_mat)
         return graph
@@ -658,23 +674,24 @@ class ConnectivityNetworkRestraint(IMP.Restraint):
         graph = networkx.minimum_spanning_tree(graph)
         return graph
 
-    def sigmoid(self,x):
+    def sigmoid(self, x):
         '''
         a sigmoid function that scores the probability of a contact
         between two proteins
         '''
-        #return 1 - (x)**self.slope/ float(((x)**self.slope + self.theta**self.slope))
-        argvalue=(x-self.theta)/self.slope
-        return 1.0-(1.0-self.plateau)/(1.0+self.math.exp(-argvalue))
+        # return 1 - (x)**self.slope/ float(((x)**self.slope +
+        # self.theta**self.slope))
+        argvalue = (x - self.theta) / self.slope
+        return 1.0 - (1.0 - self.plateau) / (1.0 + self.math.exp(-argvalue))
 
-    def unprotected_evaluate(self,da):
+    def unprotected_evaluate(self, da):
         graph = self.get_minimum_spanning_tree()
         score = 0.0
         for e in graph.edges():
-            dist=graph.get_edge_data(*e)['weight']
-            prob=self.sigmoid(dist)
-            score+=-self.numpy.log(prob)
-            score+=self.linear_slope*dist
+            dist = graph.get_edge_data(*e)['weight']
+            prob = self.sigmoid(dist)
+            score += -self.numpy.log(prob)
+            score += self.linear_slope * dist
         return score
 
     def do_get_inputs(self):
@@ -687,141 +704,148 @@ class SetupMembraneRestraint(object):
 
     '''
 
-
     def __init__(
-        self,
-        representation,
-        selection_tuples_above=None,
-        selection_tuples_inside=None,
-        selection_tuples_below=None,
-        z_init=0.0,
-        z_min=0.0,
-        z_max=0.0,
-        thickness=30,
-        resolution=1,
-        label="None"):
+            self,
+            representation,
+            selection_tuples_above=None,
+            selection_tuples_inside=None,
+            selection_tuples_below=None,
+            z_init=0.0,
+            z_min=0.0,
+            z_max=0.0,
+            thickness=30,
+            resolution=1,
+            label="None"):
 
         self.weight = 1.0
         self.label = label
         self.m = representation.prot.get_model()
         self.rs = IMP.RestraintSet(self.m, label)
-        self.representation=representation
-        self.thickness=thickness
+        self.representation = representation
+        self.thickness = thickness
 
-        self.z_center=IMP.pmi.tools.SetupNuisance(self.m, z_init, z_min, z_max, isoptimized=True).get_particle()
+        self.z_center = IMP.pmi.tools.SetupNuisance(
+            self.m, z_init, z_min, z_max, isoptimized=True).get_particle()
 
-        softness=3.0
-        plateau=1e-10
-        linear=0.02
-        mr = IMP.pmi.MembraneRestraint(self.m,self.z_center.get_particle_index(),self.thickness, softness, plateau, linear)
+        softness = 3.0
+        plateau = 1e-10
+        linear = 0.02
+        mr = IMP.pmi.MembraneRestraint(
+            self.m, self.z_center.get_particle_index(), self.thickness, softness, plateau, linear)
 
         if selection_tuples_above is not None:
             particles_above = []
             for s in selection_tuples_above:
-                particles = IMP.pmi.tools.select_by_tuple(self.representation, s,
-                                                          resolution=resolution, name_is_ambiguous=True)
-                particles_above+=particles
+                particles = IMP.pmi.tools.select_by_tuple(
+                    self.representation, s,
+                    resolution=resolution, name_is_ambiguous=True)
+                particles_above += particles
 
-            mr.add_particles_above([h.get_particle().get_index() for h in particles_above])
+            mr.add_particles_above([h.get_particle().get_index()
+                                   for h in particles_above])
 
         if selection_tuples_below is not None:
             particles_below = []
             for s in selection_tuples_below:
-                particles = IMP.pmi.tools.select_by_tuple(self.representation, s,
-                                                          resolution=resolution, name_is_ambiguous=True)
-                particles_below+=particles
-            mr.add_particles_below([h.get_particle().get_index() for h in particles_below])
+                particles = IMP.pmi.tools.select_by_tuple(
+                    self.representation, s,
+                    resolution=resolution, name_is_ambiguous=True)
+                particles_below += particles
+            mr.add_particles_below([h.get_particle().get_index()
+                                   for h in particles_below])
 
         if selection_tuples_inside is not None:
             particles_inside = []
             for s in selection_tuples_inside:
-                particles = IMP.pmi.tools.select_by_tuple(self.representation, s,
-                                                          resolution=resolution, name_is_ambiguous=True)
-                particles_inside+=particles
-            mr.add_particles_inside([h.get_particle().get_index() for h in particles_inside])
+                particles = IMP.pmi.tools.select_by_tuple(
+                    self.representation, s,
+                    resolution=resolution, name_is_ambiguous=True)
+                particles_inside += particles
+            mr.add_particles_inside([h.get_particle().get_index()
+                                    for h in particles_inside])
 
         self.rs.add_restraint(mr)
 
     def create_box(self, x_center, y_center):
 
-        z=self.z_center.get_nuisance()
-        p=IMP.Particle(self.m)
-        h=IMP.atom.Hierarchy.setup_particle(p)
-        h.set_name("Membrane_"+self.label)
+        z = self.z_center.get_nuisance()
+        p = IMP.Particle(self.m)
+        h = IMP.atom.Hierarchy.setup_particle(p)
+        h.set_name("Membrane_" + self.label)
         self.representation.prot.add_child(h)
 
-        particles_box=[]
-        p_origin=IMP.Particle(self.m)
+        particles_box = []
+        p_origin = IMP.Particle(self.m)
 
-        IMP.atom.Mass.setup_particle(p_origin,100)
-        d=IMP.core.XYZR.setup_particle(p_origin)
-        d.set_coordinates((x_center,y_center,0))
+        IMP.atom.Mass.setup_particle(p_origin, 100)
+        d = IMP.core.XYZR.setup_particle(p_origin)
+        d.set_coordinates((x_center, y_center, 0))
         d.set_radius(1)
-        h_origin=IMP.atom.Hierarchy.setup_particle(p_origin)
+        h_origin = IMP.atom.Hierarchy.setup_particle(p_origin)
         h.add_child(h_origin)
         particles_box.append(p_origin)
 
-        p1=IMP.Particle(self.m)
-        IMP.atom.Mass.setup_particle(p1,100)
-        d=IMP.core.XYZR.setup_particle(p1)
-        d.set_coordinates((x_center,y_center,z+100))
+        p1 = IMP.Particle(self.m)
+        IMP.atom.Mass.setup_particle(p1, 100)
+        d = IMP.core.XYZR.setup_particle(p1)
+        d.set_coordinates((x_center, y_center, z + 100))
         d.set_radius(1)
-        h1=IMP.atom.Hierarchy.setup_particle(p1)
+        h1 = IMP.atom.Hierarchy.setup_particle(p1)
         h.add_child(h1)
         particles_box.append(p1)
 
-        p2=IMP.Particle(self.m)
-        IMP.atom.Mass.setup_particle(p2,100)
-        d=IMP.core.XYZR.setup_particle(p2)
-        d.set_coordinates((x_center,y_center,z-100))
+        p2 = IMP.Particle(self.m)
+        IMP.atom.Mass.setup_particle(p2, 100)
+        d = IMP.core.XYZR.setup_particle(p2)
+        d.set_coordinates((x_center, y_center, z - 100))
         d.set_radius(1)
-        h2=IMP.atom.Hierarchy.setup_particle(p2)
+        h2 = IMP.atom.Hierarchy.setup_particle(p2)
         h.add_child(h2)
         particles_box.append(p2)
 
         IMP.atom.Bonded.setup_particle(p1)
         IMP.atom.Bonded.setup_particle(p2)
 
-        IMP.atom.create_bond(IMP.atom.Bonded(p1),IMP.atom.Bonded(p2),1)
+        IMP.atom.create_bond(IMP.atom.Bonded(p1), IMP.atom.Bonded(p2), 1)
 
         p1.set_name("z_positive")
         p2.set_name("z_negative")
 
         # to display the membrane in the rmf file
-        for offs in [self.thickness/2,-self.thickness/2]:
-            p1=IMP.Particle(self.m)
-            IMP.atom.Mass.setup_particle(p1,100)
-            d=IMP.core.XYZR.setup_particle(p1)
-            d.set_coordinates((-100+x_center,-100+y_center,z+offs))
+        for offs in [self.thickness / 2, -self.thickness / 2]:
+            p1 = IMP.Particle(self.m)
+            IMP.atom.Mass.setup_particle(p1, 100)
+            d = IMP.core.XYZR.setup_particle(p1)
+            d.set_coordinates((-100 + x_center, -100 + y_center, z + offs))
             d.set_radius(1)
-            h1=IMP.atom.Hierarchy.setup_particle(p1)
+            h1 = IMP.atom.Hierarchy.setup_particle(p1)
             h.add_child(h1)
             particles_box.append(p1)
 
-            p2=IMP.Particle(self.m)
-            IMP.atom.Mass.setup_particle(p2,100)
-            d=IMP.core.XYZR.setup_particle(p2)
-            d.set_coordinates((-100+x_center,100+y_center,z+offs))
+            p2 = IMP.Particle(self.m)
+            IMP.atom.Mass.setup_particle(p2, 100)
+            d = IMP.core.XYZR.setup_particle(p2)
+            d.set_coordinates((-100 + x_center, 100 + y_center, z + offs))
             d.set_radius(1)
-            h2=IMP.atom.Hierarchy.setup_particle(p2)
+            h2 = IMP.atom.Hierarchy.setup_particle(p2)
             h.add_child(h2)
             particles_box.append(p2)
 
-            p3=IMP.Particle(self.m)
-            IMP.atom.Mass.setup_particle(p3,100)
-            d=IMP.core.XYZR.setup_particle(p3)
-            d.set_coordinates((100+x_center,-100+y_center,z+offs))
+            p3 = IMP.Particle(self.m)
+            IMP.atom.Mass.setup_particle(p3, 100)
+            d = IMP.core.XYZR.setup_particle(p3)
+            d.set_coordinates((100 + x_center, -100 + y_center, z + offs))
             d.set_radius(1)
-            h3=IMP.atom.Hierarchy.setup_particle(p3)
+            h3 = IMP.atom.Hierarchy.setup_particle(p3)
             h.add_child(h3)
             particles_box.append(p3)
 
-            p4=IMP.Particle(self.m)
-            IMP.atom.Mass.setup_particle(p4,100)
-            d=IMP.core.XYZR.setup_particle(p4)
-            d.set_coordinates((100+x_center,100+y_center,z+offs))
+            p4 = IMP.Particle(self.m)
+            IMP.atom.Mass.setup_particle(p4, 100)
+            d = IMP.core.XYZR.setup_particle(p4)
+            d.set_coordinates((100 + x_center, 100 + y_center, z + offs))
             d.set_radius(1)
-            h4=IMP.atom.Hierarchy.setup_particle(p4)
+            h4 = IMP.atom.Hierarchy.setup_particle(p4)
             h.add_child(h4)
             particles_box.append(p4)
 
@@ -830,12 +854,12 @@ class SetupMembraneRestraint(object):
             IMP.atom.Bonded.setup_particle(p3)
             IMP.atom.Bonded.setup_particle(p4)
 
-            IMP.atom.create_bond(IMP.atom.Bonded(p1),IMP.atom.Bonded(p2),1)
-            IMP.atom.create_bond(IMP.atom.Bonded(p1),IMP.atom.Bonded(p3),1)
-            IMP.atom.create_bond(IMP.atom.Bonded(p4),IMP.atom.Bonded(p2),1)
-            IMP.atom.create_bond(IMP.atom.Bonded(p4),IMP.atom.Bonded(p3),1)
+            IMP.atom.create_bond(IMP.atom.Bonded(p1), IMP.atom.Bonded(p2), 1)
+            IMP.atom.create_bond(IMP.atom.Bonded(p1), IMP.atom.Bonded(p3), 1)
+            IMP.atom.create_bond(IMP.atom.Bonded(p4), IMP.atom.Bonded(p2), 1)
+            IMP.atom.create_bond(IMP.atom.Bonded(p4), IMP.atom.Bonded(p3), 1)
 
-        sm = self._MembraneSingletonModifier(p_origin,self.z_center)
+        sm = self._MembraneSingletonModifier(p_origin, self.z_center)
         lc = IMP.container.ListSingletonContainer(self.m)
         for p in particles_box:
             IMP.core.XYZ(p).set_coordinates_are_optimized(True)
@@ -846,20 +870,22 @@ class SetupMembraneRestraint(object):
         self.m.update()
 
     class _MembraneSingletonModifier(IMP.SingletonModifier):
+
         """A class that updates the membrane particles
         """
 
-        def __init__(self, p_origin,z_nuisance):
-            IMP.SingletonModifier.__init__(self, "MembraneSingletonModifier%1%")
-            self.p_origin_index=p_origin.get_index()
-            self.z_nuisance=z_nuisance
+        def __init__(self, p_origin, z_nuisance):
+            IMP.SingletonModifier.__init__(
+                self, "MembraneSingletonModifier%1%")
+            self.p_origin_index = p_origin.get_index()
+            self.z_nuisance = z_nuisance
 
         def apply_index(self, m, pi):
-            z_center=IMP.core.XYZ(m,self.p_origin_index).get_z()
-            new_z=self.z_nuisance.get_nuisance()
+            z_center = IMP.core.XYZ(m, self.p_origin_index).get_z()
+            new_z = self.z_nuisance.get_nuisance()
             d = IMP.core.XYZ(m, pi)
-            current_z=d.get_z()
-            d.set_z(current_z+new_z-z_center)
+            current_z = d.get_z()
+            d.set_z(current_z + new_z - z_center)
 
         def do_get_inputs(self, m, pis):
             return IMP.get_particles(m, pis)
@@ -886,7 +912,8 @@ class SetupMembraneRestraint(object):
     def get_particles_to_sample(self):
         ps = {}
 
-        ps["Nuisances_MembraneRestraint_Z_" + self.label] =([self.z_center],2.0)
+        ps["Nuisances_MembraneRestraint_Z_" +
+            self.label] = ([self.z_center], 2.0)
         return ps
 
     def get_output(self):
@@ -895,18 +922,19 @@ class SetupMembraneRestraint(object):
         score = self.weight * self.rs.unprotected_evaluate(None)
         output["_TotalScore"] = str(score)
         output["MembraneRestraint_" + self.label] = str(score)
-        output["MembraneRestraint_Z_"+ self.label] = str(self.z_center.get_nuisance())
+        output["MembraneRestraint_Z_" +
+               self.label] = str(self.z_center.get_nuisance())
         return output
 
 
-
 class FuzzyBoolean(object):
+
     '''
     Fully Ambiguous Restraint that can be built using boolean logic
     R. Pellarin. Pasteur Institute.
     '''
 
-    def __init__(self,p1,operator=None,p2=None):
+    def __init__(self, p1, operator=None, p2=None):
         '''
         input a list of particles, the slope and theta of the sigmoid potential
         theta is the cutoff distance for a protein-protein contact
@@ -924,11 +952,11 @@ class FuzzyBoolean(object):
     def __and__(self, FuzzyBoolean2):
         return FuzzyBoolean(self, self.and_, FuzzyBoolean2)
 
-    def and_(self,a,b):
-        return a*b
+    def and_(self, a, b):
+        return a * b
 
-    def or_(self,a,b):
-        return 1.0-(1.0-a)*(1.0-b)
+    def or_(self, a, b):
+        return 1.0 - (1.0 - a) * (1.0 - b)
 
     def evaluate(self):
 
@@ -936,28 +964,30 @@ class FuzzyBoolean(object):
             return self.value
         FuzzyBoolean1, op, FuzzyBoolean2 = self.operations
 
-        return op(FuzzyBoolean1.evaluate(),FuzzyBoolean2.evaluate())
+        return op(FuzzyBoolean1.evaluate(), FuzzyBoolean2.evaluate())
+
 
 class FuzzyRestraint(IMP.Restraint):
+
     '''
     Fully Ambiguous Restraint that can be built using boolean logic
     R. Pellarin. Pasteur Institute.
     '''
     import math
-    plateau=0.00000000000001
-    theta=5.0
-    slope=2.0
-    innerslope=0.01
+    plateau = 0.00000000000001
+    theta = 5.0
+    slope = 2.0
+    innerslope = 0.01
     import sys
 
-    def __init__(self,m,p1,p2,operator=None):
+    def __init__(self, m, p1, p2, operator=None):
         '''
         input a list of particles, the slope and theta of the sigmoid potential
         theta is the cutoff distance for a protein-protein contact
         '''
         IMP.Restraint.__init__(self, m, "FuzzyRestraint %1%")
-        self.m=m
-        self.min=self.sys.float_info.min
+        self.m = m
+        self.min = self.sys.float_info.min
         if isinstance(p1, FuzzyRestraint) and isinstance(p2, FuzzyRestraint):
             self.operations = [p1, operator, p2]
             self.particle_pair = None
@@ -966,7 +996,7 @@ class FuzzyRestraint(IMP.Restraint):
             self.particle_pair = None
         else:
             self.operations = []
-            self.particle_pair = (p1,p2)
+            self.particle_pair = (p1, p2)
 
     def __or__(self, FuzzyRestraint2):
         return FuzzyRestraint(self.m, self, FuzzyRestraint2, self.or_)
@@ -977,16 +1007,16 @@ class FuzzyRestraint(IMP.Restraint):
     def __invert__(self):
         return FuzzyRestraint(self.m, self, None, self.invert_)
 
-    def and_(self,a,b):
-        c=a+b
+    def and_(self, a, b):
+        c = a + b
         return c
 
-    def or_(self,a,b):
-        c=self.math.exp(-a)+self.math.exp(-b)-self.math.exp(-a-b)
+    def or_(self, a, b):
+        c = self.math.exp(-a) + self.math.exp(-b) - self.math.exp(-a - b)
         return -self.math.log(c)
 
-    def invert_(self,a):
-        c=1.0-self.math.exp(-a)
+    def invert_(self, a):
+        c = 1.0 - self.math.exp(-a)
         return -self.math.log(c)
 
     def evaluate(self):
@@ -995,21 +1025,21 @@ class FuzzyRestraint(IMP.Restraint):
         FuzzyRestraint1, op, FuzzyRestraint2 = self.operations
 
         if FuzzyRestraint2 is not None:
-            return op(FuzzyRestraint1.evaluate(),FuzzyRestraint2.evaluate())
+            return op(FuzzyRestraint1.evaluate(), FuzzyRestraint2.evaluate())
         else:
             return op(FuzzyRestraint1.evaluate())
 
     def distance(self):
-        d1=IMP.core.XYZ(self.particle_pair[0])
-        d2=IMP.core.XYZ(self.particle_pair[1])
-        d=IMP.core.get_distance(d1,d2)
-        argvalue=(d-self.theta)/self.slope
-        return -self.math.log(1.0-(1.0-self.plateau)/(1.0+self.math.exp(-argvalue)))+self.innerslope*d
+        d1 = IMP.core.XYZ(self.particle_pair[0])
+        d2 = IMP.core.XYZ(self.particle_pair[1])
+        d = IMP.core.get_distance(d1, d2)
+        argvalue = (d -self.theta)/self.slope
+        return -self.math.log(1.0 - (1.0-self.plateau)/(1.0+self.math.exp(-argvalue)))+self.innerslope*d
 
     def add_to_model(self):
         IMP.pmi.tools.add_restraint_to_model(self.m, self)
 
-    def unprotected_evaluate(self,da):
+    def unprotected_evaluate(self, da):
         return self.evaluate()
 
     def __str__(self):
@@ -1017,15 +1047,15 @@ class FuzzyRestraint(IMP.Restraint):
             return str(self.particle_pair)
         FuzzyRestraint1, op, FuzzyRestraint2 = self.operations
         if FuzzyRestraint2 is not None:
-            return str(FuzzyRestraint1)+str(op)+str(FuzzyRestraint2)
+            return str(FuzzyRestraint1) +str(op)+str(FuzzyRestraint2)
         else:
-            return str(FuzzyRestraint1)+str(op)
+            return str(FuzzyRestraint1) +str(op)
 
     def do_get_inputs(self):
         if len(self.operations) == 0:
             return list(self.particle_pair)
         FuzzyRestraint1, op, FuzzyRestraint2 = self.operations
         if FuzzyRestraint2 is not None:
-            return list(set(FuzzyRestraint1.do_get_inputs()+FuzzyRestraint2.do_get_inputs()))
+            return list(set(FuzzyRestraint1.do_get_inputs() +FuzzyRestraint2.do_get_inputs()))
         else:
             return list(set(FuzzyRestraint1.do_get_inputs()))

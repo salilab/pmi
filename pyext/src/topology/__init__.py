@@ -558,8 +558,8 @@ class Molecule(_SystemBase):
                                               old_rep.bead_default_coord,
                                               old_rep.density_residues_per_component,
                                               old_rep.density_prefix,
-                                              old_rep.density_voxel_size,
                                               False,
+                                              old_rep.density_voxel_size,
                                               old_rep.setup_particles_as_densities,
                                               old_rep.ideal_helix,
                                               old_rep.color)

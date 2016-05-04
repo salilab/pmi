@@ -294,11 +294,12 @@ class Molecule(_SystemBase):
         return self._ideal_helices
 
     def residue_range(self,a,b,stride=1):
-        """get residue range. Use integers to get 0-indexing, or strings to get PDB-indexing"""
+        """get residue range from a to b, inclusive.
+        Use integers to get 0-indexing, or strings to get PDB-indexing"""
         if isinstance(a,int) and isinstance(b,int) and isinstance(stride,int):
-            return IMP.pmi.tools.OrderedSet(self.residues[a:b:stride])
+            return IMP.pmi.tools.OrderedSet(self.residues[a:b+1:stride])
         elif isinstance(a,str) and isinstance(b,str) and isinstance(stride,int):
-            return IMP.pmi.tools.OrderedSet(self.residues[int(a)-1:int(b)-1:stride])
+            return IMP.pmi.tools.OrderedSet(self.residues[int(a)-1:int(b):stride])
         else:
             print("ERROR: range ends must be int or str. Stride must be int.")
 

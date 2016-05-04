@@ -432,10 +432,12 @@ class Tests(IMP.test.TestCase):
 
         mdl = IMP.Model()
         #expected_rmsd = self.init_with_copies(mdl)
-        #alignment_comp = {"Prot1":"Prot1"}
-        #rmsd_comp = {"Prot1":"Prot1"}
-        alignment_comp = {"Prot1..0":(1,-1,"Prot1",0),"Prot1..1":(1,-1,"Prot1",1)}
-        rmsd_comp = {"Prot1..0":(1,-1,"Prot1",0),"Prot1..1":(1,-1,"Prot1",1)}
+        alignment_comp = {"Prot1":"Prot1"}
+        rmsd_comp = {"Prot1":"Prot1"}
+
+        # the code should expand into:
+        #alignment_comp = {"Prot1..0":(1,-1,"Prot1",0),"Prot1..1":(1,-1,"Prot1",1)}
+        #rmsd_comp = {"Prot1..0":(1,-1,"Prot1",0),"Prot1..1":(1,-1,"Prot1",1)}
 
         am = IMP.pmi.macros.AnalysisReplicaExchange0(
             mdl,

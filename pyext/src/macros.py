@@ -1347,6 +1347,38 @@ class AnalysisReplicaExchange0(object):
         print(binned_model_indexes)
 
 
+    def _expand_ambiguity(self,prot,d):
+        """If using PMI2, expand the dictionary to include copies as ambiguous options
+        This also keeps the states separate.
+        """
+        newdict = {}
+        for key in d:
+            val = d[key]
+            if '..' in key or (type(val) is tuple and len(val)>=3):
+                newdict[key] = val
+                continue
+            states = IMP.atom.get_by_type(prot,IMP.atom.STATE_TYPE)
+            if type(val) is tuple:
+                start = val[0]
+                stop = val[1]
+                name = val[2]
+            else:
+                start = 1
+                stop = -1
+                name = val
+            for nst in range(len(states)):
+                sel = IMP.atom.Selection(prot,molecule=name,state_index=nst)
+                copies = sel.get_selected_particles(with_representation=False)
+                if len(copies)>1:
+                    for nc in range(len(copies)):
+                        if len(states)>1:
+                            newdict['%s.%i..%i'%(name,nst,nc)] = (start,stop,name,nc,nst)
+                        else:
+                            newdict['%s..%i'%(name,nc)] = (start,stop,name,nc,nst)
+                else:
+                    newdict[key] = val
+        return newdict
+
 
     def clustering(self,
                    score_key="SimplifiedModel_Total_Score_None",
@@ -1476,6 +1508,17 @@ class AnalysisReplicaExchange0(object):
                 best_score_rmf_tuples,
                 self.number_of_processes)[self.rank]
 
+            # expand the dictionaries to include ambiguous copies
+            prot_ahead = IMP.pmi.analysis.get_hiers_from_rmf(self.model,
+                                                             0,
+                                                             my_best_score_rmf_tuples[0][1])[0]
+            if IMP.pmi.get_is_canonical(prot_ahead):
+                if rmsd_calculation_components is not None:
+                    rmsd_calculation_components = self._expand_ambiguity(prot_ahead,rmsd_calculation_components)
+                    print('Detected ambiguity, expand rmsd components to',rmsd_calculation_components)
+                if alignment_components is not None:
+                    alignment_components = self._expand_ambiguity(prot_ahead,alignment_components)
+                    print('Detected ambiguity, expand alignment components to',alignment_components)
 
 #-------------------------------------------------------------
 # read the coordinates

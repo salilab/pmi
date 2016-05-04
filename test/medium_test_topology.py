@@ -602,6 +602,33 @@ class Tests(IMP.test.TestCase):
         sel10 = IMP.atom.Selection(hier, resolution=10)
         self.assertEquals(len(sel10.get_selected_particles()), 2)
 
+    def test_extra_breaks(self):
+        """test adding extra breaks actually works"""
+        s = IMP.pmi.topology.System()
+        st1 = s.create_state()
+        seqs = IMP.pmi.topology.Sequences(
+            self.get_input_file_name('seqs.fasta'),
+            name_map={'Protein_1': 'Prot1',
+                      'Protein_2': 'Prot2',
+                      'Protein_3': 'Prot3'})
+        m1 = st1.create_molecule("Prot1", sequence=seqs["Prot1"])
+        atomic_res = m1.add_structure(self.get_input_file_name('prot.pdb'),
+                                      chain_id='A', res_range=(55, 63), offset=-54)
+        m1.add_representation(m1, resolutions=10,bead_extra_breaks=['6'])
+        hier = s.build()
+        sel10 = IMP.atom.Selection(hier, resolution=10).get_selected_particles()
+        self.assertEquals(len(sel10), 5)
+        self.assertEquals(IMP.atom.Fragment(sel10[0]).get_residue_indexes(),
+                          [1,2])
+        self.assertEquals(IMP.atom.Fragment(sel10[1]).get_residue_indexes(),
+                          [3,4])
+        self.assertEquals(IMP.atom.Fragment(sel10[2]).get_residue_indexes(),
+                          [5,6])
+        self.assertEquals(IMP.atom.Fragment(sel10[3]).get_residue_indexes(),
+                          [7,8,9])
+        self.assertEquals(IMP.atom.Residue(sel10[4]).get_index(),
+                          10)
+
     def test_create_copy(self):
         """Test creation of Copies"""
         s = IMP.pmi.topology.System()

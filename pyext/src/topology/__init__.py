@@ -417,7 +417,9 @@ class Molecule(_SystemBase):
                If unstructured, will just create beads.
                Pass an integer or list of integers
         @param bead_extra_breaks Additional breakpoints for splitting beads.
-               The number is the first PDB-style index that belongs in the second bead
+               The value can be the 0-ordered position, after which it'll insert the break.
+               Alternatively pass PDB-style (1-ordered) indices as a string.
+               I.e., bead_extra_breaks=[5,25] is the same as ['6','26']
         @param bead_ca_centers Set to True if you want the resolution=1 beads to be at CA centers
                (otherwise will average atoms to get center). Defaults to True.
         @param bead_default_coord Advanced feature. Normally beads are placed at the nearest structure.
@@ -516,10 +518,17 @@ class Molecule(_SystemBase):
             if r.get_molecule()!=self:
                 raise Exception('You are adding residues from a different molecule to',self.__repr__())
 
+        # unify formatting for extra breaks
+        breaks = []
+        for b in bead_extra_breaks:
+            if type(b)==str:
+                breaks.append(int(b)-1)
+            else:
+                breaks.append(b)
         # store the representation group
         self.representations.append(_Representation(res,
                                                     resolutions,
-                                                    bead_extra_breaks,
+                                                    breaks,
                                                     bead_ca_centers,
                                                     bead_default_coord,
                                                     density_residues_per_component,

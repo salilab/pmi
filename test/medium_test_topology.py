@@ -8,6 +8,7 @@ import IMP.test
 import RMF
 import IMP.rmf
 import IMP.pmi.dof
+import IMP.pmi.macros
 import os
 
 
@@ -352,7 +353,7 @@ class MultiscaleTopologyTest(IMP.test.TestCase):
         self.assertEqual(0, nrms)
 
 
-class TopologyTest(IMP.test.TestCase):
+class Tests(IMP.test.TestCase):
 
     def test_read_sequences(self):
         """Test if the sequence reader returns correct strings"""
@@ -824,6 +825,37 @@ class TopologyTest(IMP.test.TestCase):
         os.unlink('hgmm.txt')
 
         self.assertEqual(m1.get_ideal_helices(), [m1[0:20]])
+
+    def test_write_multistate(self):
+        """Test you write multistate system with correct hierarchy"""
+        mdl = IMP.Model()
+        s = IMP.pmi.topology.System(mdl)
+        seqs = IMP.pmi.topology.Sequences(self.get_input_file_name('seqs.fasta'))
+
+        st1 = s.create_state()
+        m1 = st1.create_molecule("Prot1",sequence=seqs["Protein_1"])
+        atomic_res = m1.add_structure(self.get_input_file_name('prot.pdb'),
+                                      chain_id='A',res_range=(55,63),offset=-54)
+        m1.add_representation(atomic_res,resolutions=0)
+        st2 = s.create_state()
+        m2 = st2.create_molecule("Prot1",sequence=seqs["Protein_1"])
+        atomic_res = m2.add_structure(self.get_input_file_name('prot.pdb'),
+                                      chain_id='A',res_range=(55,63),offset=-54)
+        m2.add_representation(atomic_res,resolutions=0)
+        root_hier = s.build()
+
+        rex = IMP.pmi.macros.ReplicaExchange0(mdl,
+                                              root_hier=root_hier,
+                                              number_of_frames=0,
+                                              number_of_best_scoring_models=0,
+                                              global_output_directory='multistate_test/')
+        rex.execute_macro()
+
+        rh2 = RMF.open_rmf_file_read_only('multistate_test/initial.0.rmf3')
+        hs = IMP.rmf.create_hierarchies(rh2,mdl)
+        self.assertEqual(len(hs),1)
+        states = IMP.atom.get_by_type(hs[0],IMP.atom.STATE_TYPE)
+        self.assertEqual(len(states),2)
 
 if __name__ == '__main__':
     IMP.test.main()

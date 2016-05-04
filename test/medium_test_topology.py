@@ -195,9 +195,9 @@ class MultiscaleTopologyTest(IMP.test.TestCase):
         # The results are not intuitive at this stage, we think that mol has changed after build,
         # and mol.get_represented() is not changed correspondigly.
 
-        for n, x in enumerate(mol):
-            print(x, status_1[n], status_2[n], x in mol_beads_1,
-                  x in mol_beads_2, x in mol_beads_3)
+        #for n, x in enumerate(mol):
+        #    print(x, status_1[n], status_2[n], x in mol_beads_1,
+        #          x in mol_beads_2, x in mol_beads_3)
 
         # and this test fails
 
@@ -209,7 +209,7 @@ class MultiscaleTopologyTest(IMP.test.TestCase):
         """ Test different ways of accessing residues"""
         mdl = IMP.Model()
         (a1, hier, mol) = self.initialize_system(mdl)
-        print(a1, mol.get_atomic_residues())
+        #print(a1, mol.get_atomic_residues())
 
         self.assertEqual(37, len(a1))                # now these are duplicated
         # only 5 after build()!
@@ -495,8 +495,8 @@ class Tests(IMP.test.TestCase):
         self.assertEqual(m1[1], m1.residues[1])
         self.assertEqual(m1[1:5], set(m1.residues[1:5]))
         self.assertEqual(m1['1'], m1.residues[0])
-        self.assertEqual(m1.residue_range(1, 5), set(m1.residues[1:5]))
-        self.assertEqual(m1.residue_range('2', '6'), set(m1.residues[1:5]))
+        self.assertEqual(m1.residue_range(1, 5), set(m1.residues[1:6]))
+        self.assertEqual(m1.residue_range('2', '6'), set(m1.residues[1:6]))
         inv = m1[:] - m1[1:5]
         self.assertEqual(inv, set([m1.residues[0]] + m1.residues[5:10]))
 
@@ -628,6 +628,8 @@ class Tests(IMP.test.TestCase):
                           [7,8,9])
         self.assertEquals(IMP.atom.Residue(sel10[4]).get_index(),
                           10)
+        with self.assertRaises(Exception) as context:
+            ps = IMP.pmi.tools.input_adaptor(m1.residue_range('1','8'))
 
     def test_create_copy(self):
         """Test creation of Copies"""

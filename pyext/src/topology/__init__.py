@@ -458,6 +458,8 @@ class Molecule(_SystemBase):
             res = IMP.pmi.tools.OrderedSet(self.residues)
         elif residues==self:
             res = IMP.pmi.tools.OrderedSet(self.residues)
+        elif type(residues) is IMP.pmi.topology.TempResidue:
+            res = IMP.pmi.tools.OrderedSet([residues])
         elif hasattr(residues,'__iter__'):
             if len(residues)==0:
                 raise Exception('You passed an empty set to add_representation')

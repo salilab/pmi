@@ -61,12 +61,12 @@ class Tests(IMP.test.TestCase):
         seqs = IMP.pmi.topology.Sequences(self.get_input_file_name('seqs.fasta'))
 
         m1 = st1.create_molecule("Prot1",sequence=seqs["Protein_1"])
-        m1.add_representation(m1.residue_range('2','10'),ideal_helix=True,resolutions=[1,10])
-        m1.add_representation(m1.residue_range('1','2'),resolutions=[1])
-        m1.add_representation(m1.residue_range('10','11'),resolutions=[1])
+        print(m1[:])
+        m1.add_representation(m1.residue_range('2','9'),ideal_helix=True,resolutions=[1,10])
+        m1.add_representation(m1['1'],resolutions=[1])
+        m1.add_representation(m1['10'],resolutions=[1])
         s.build()
         return s,m1
-
 
     def init_topology_densities(self,mdl):
         s = IMP.pmi.topology.System(mdl)

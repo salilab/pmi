@@ -446,7 +446,7 @@ class Tests(IMP.test.TestCase):
             global_output_directory="./")
 
         out_dir = IMP.test.TempDir(None).tmpdir
-        am.clustering(score_key="Total_Score",
+        am.clustering(feature_keys=["Total_Score"],
                       alignment_components=alignment_comp,
                       rmsd_calculation_components=rmsd_comp,
                       number_of_clusters=1,

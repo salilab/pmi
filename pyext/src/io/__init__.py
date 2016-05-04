@@ -261,24 +261,24 @@ def get_best_models(stat_files,
         po = IMP.pmi.output.ProcessOutput(sf)
 
         try:
-            keywords = po.get_keys()
+            file_keywords = po.get_keys()
         except:
             continue
 
-        feature_keywords = [score_key,
-                            rmf_file_key,
-                            rmf_file_frame_key]
+        final_keywords = [score_key,
+                          rmf_file_key,
+                          rmf_file_frame_key]
 
-        for k in keywords:
-            for fk in feature_keys:
-                if fk in k:
-                    feature_keywords.append(k)
+        for file_k in file_keywords:
+            for requested_key in feature_keys:
+                if requested_key in file_k:
+                    final_keywords.append(k)
 
         if prefiltervalue is None:
-            fields = po.get_fields(feature_keywords,
+            fields = po.get_fields(final_keywords,
                                    get_every=get_every)
         else:
-            fields = po.get_fields(feature_keywords,
+            fields = po.get_fields(final_keywords,
                                    filtertuple=(score_key,"<",prefiltervalue),
                                    get_every=get_every)
 
@@ -302,8 +302,8 @@ def get_best_models(stat_files,
 
         rmf_file_frame_list += fields[rmf_file_frame_key]
 
-        if feature_keywords is not None:
-            for k in feature_keywords:
+        if final_keywords is not None:
+            for k in final_keywords:
                 feature_keyword_list_dict[k] += fields[k]
 
     return rmf_file_list,rmf_file_frame_list,score_list,feature_keyword_list_dict

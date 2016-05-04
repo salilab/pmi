@@ -123,6 +123,7 @@ class ReplicaExchange0(object):
                 self.vars["number_of_states"] = 1
         elif root_hier and type(root_hier) == IMP.atom.Hierarchy and root_hier.get_name()=='System':
             self.pmi2 = True
+            self.output_objects.append(IMP.pmi.io.TotalScoreOutput(self.model))
             self.root_hier = root_hier
             states = IMP.atom.get_by_type(root_hier,IMP.atom.STATE_TYPE)
             self.vars["number_of_states"] = len(states)
@@ -181,8 +182,6 @@ class ReplicaExchange0(object):
         self.vars["replica_stat_file_suffix"] = replica_stat_file_suffix
         self.vars["geometries"] = None
         self.test_mode = test_mode
-        if root_hier:
-            self.output_objects.append(IMP.pmi.io.TotalScoreOutput(self.model))
 
     def add_geometries(self, geometries):
         if self.vars["geometries"] is None:
@@ -1413,7 +1412,8 @@ class AnalysisReplicaExchange0(object):
         @param prefiltervalue         Only include frames where the
                score key is below this value
         @param feature_keys           Keywords for which you want to
-               calculate average, medians, etc,
+               calculate average, medians, etc.
+               If you pass "Keyname" it'll include everything that matches "*Keyname*"
         @param outputdir               The local output directory used in the run
         @param alignment_components    Dictionary with keys=groupname, values are tuples
                for aligning the structures  e.g. {"Rpb1": (20,100,"Rpb1"),"Rpb2":"Rpb2"}
@@ -1444,8 +1444,22 @@ class AnalysisReplicaExchange0(object):
 
         if not load_distance_matrix_file:
             if len(self.stat_files)==0: print("ERROR: no stat file found in the given path"); return
-            my_stat_files=IMP.pmi.tools.chunk_list_into_segments(
+            my_stat_files = IMP.pmi.tools.chunk_list_into_segments(
                 self.stat_files,self.number_of_processes)[self.rank]
+
+            # read ahead to check if you need the PMI2 score key instead
+            po = IMP.pmi.output.ProcessOutput(my_stat_files[0])
+            orig_score_key = score_key
+            if score_key not in po.get_keys():
+                if 'Total_Score' in po.get_keys():
+                    score_key = 'Total_Score'
+                    print("WARNING: Using 'Total_Score' instead of "
+                          "'SimplifiedModel_Total_Score_None' for the score key")
+            for k in [orig_score_key,score_key,rmf_file_key,rmf_file_frame_key]:
+                if k in feature_keys:
+                    print("WARNING: no need to pass " +k+" to feature_keys.")
+                    feature_keys.remove(k)
+
             best_models = IMP.pmi.io.get_best_models(my_stat_files,
                                                      score_key,
                                                      feature_keys,

@@ -1283,6 +1283,7 @@ class AnalysisReplicaExchange0(object):
             self.rank = 0
             self.number_of_processes = 1
 
+        self.cluster_obj = None
         self.model = model
         stat_dir = global_output_directory
         self.stat_files = []
@@ -1627,29 +1628,29 @@ class AnalysisReplicaExchange0(object):
 # Calculate distance matrix and cluster
 # ------------------------------------------------------------------------
             print("setup clustering class")
-            Clusters = IMP.pmi.analysis.Clustering(rmsd_weights)
+            self.cluster_obj = IMP.pmi.analysis.Clustering(rmsd_weights)
 
             for n, model_coordinate_dict in enumerate(all_coordinates):
                 template_coordinate_dict = {}
                 # let's try to align
-                if alignment_components is not None and len(Clusters.all_coords) == 0:
+                if alignment_components is not None and len(self.cluster_obj.all_coords) == 0:
                     # set the first model as template coordinates
-                    Clusters.set_template(alignment_coordinates[n])
-                Clusters.fill(all_rmf_file_names[n], rmsd_coordinates[n])
+                    self.cluster_obj.set_template(alignment_coordinates[n])
+                self.cluster_obj.fill(all_rmf_file_names[n], rmsd_coordinates[n])
             print("Global calculating the distance matrix")
 
             # calculate distance matrix, all against all
-            Clusters.dist_matrix()
+            self.cluster_obj.dist_matrix()
 
             # perform clustering and optionally display
             if self.rank == 0:
-                Clusters.do_cluster(number_of_clusters)
+                self.cluster_obj.do_cluster(number_of_clusters)
                 if display_plot:
                     if self.rank == 0:
-                        Clusters.plot_matrix(figurename=os.path.join(outputdir,'dist_matrix.pdf'))
+                        self.cluster_obj.plot_matrix(figurename=os.path.join(outputdir,'dist_matrix.pdf'))
                     if exit_after_display:
                         exit()
-                Clusters.save_distance_matrix_file(file_name=distance_matrix_file)
+                self.cluster_obj.save_distance_matrix_file(file_name=distance_matrix_file)
 
 # ------------------------------------------------------------------------
 # Alteratively, load the distance matrix from file and cluster that
@@ -1657,15 +1658,15 @@ class AnalysisReplicaExchange0(object):
         else:
             if self.rank==0:
                 print("setup clustering class")
-                Clusters = IMP.pmi.analysis.Clustering()
-                Clusters.load_distance_matrix_file(file_name=distance_matrix_file)
+                self.cluster_obj = IMP.pmi.analysis.Clustering()
+                self.cluster_obj.load_distance_matrix_file(file_name=distance_matrix_file)
                 print("clustering with %s clusters" % str(number_of_clusters))
-                Clusters.do_cluster(number_of_clusters)
+                self.cluster_obj.do_cluster(number_of_clusters)
                 [best_score_feature_keyword_list_dict,
                  rmf_file_name_index_dict] = self.load_objects(".macro.pkl")
                 if display_plot:
                     if self.rank == 0:
-                        Clusters.plot_matrix(figurename=os.path.join(outputdir,'dist_matrix.pdf'))
+                        self.cluster_obj.plot_matrix(figurename=os.path.join(outputdir,'dist_matrix.pdf'))
                     if exit_after_display:
                         exit()
         if self.number_of_processes > 1:
@@ -1676,12 +1677,12 @@ class AnalysisReplicaExchange0(object):
 # ------------------------------------------------------------------------
 
         if self.rank == 0:
-            print(Clusters.get_cluster_labels())
-            for n, cl in enumerate(Clusters.get_cluster_labels()):
+            print(self.cluster_obj.get_cluster_labels())
+            for n, cl in enumerate(self.cluster_obj.get_cluster_labels()):
                 print("rank %s " % str(self.rank))
                 print("cluster %s " % str(n))
                 print("cluster label %s " % str(cl))
-                print(Clusters.get_cluster_label_names(cl))
+                print(self.cluster_obj.get_cluster_label_names(cl))
 
                 # first initialize the Density class if requested
                 if density_custom_ranges:
@@ -1696,9 +1697,9 @@ class AnalysisReplicaExchange0(object):
                     pass
 
                 rmsd_dict = {"AVERAGE_RMSD":
-                             str(Clusters.get_cluster_label_average_rmsd(cl))}
+                             str(self.cluster_obj.get_cluster_label_average_rmsd(cl))}
                 clusstat = open(dircluster + "stat.out", "w")
-                for k, structure_name in enumerate(Clusters.get_cluster_label_names(cl)):
+                for k, structure_name in enumerate(self.cluster_obj.get_cluster_label_names(cl)):
                     # extract the features
                     tmp_dict = {}
                     tmp_dict.update(rmsd_dict)
@@ -1741,9 +1742,9 @@ class AnalysisReplicaExchange0(object):
 
                     # transform clusters onto first
                     if k > 0:
-                        model_index = Clusters.get_model_index_from_name(
+                        model_index = self.cluster_obj.get_model_index_from_name(
                             structure_name)
-                        transformation = Clusters.get_transformation_to_first_member(
+                        transformation = self.cluster_obj.get_transformation_to_first_member(
                             cl,
                             model_index)
                         rbs = set()
@@ -1791,6 +1792,11 @@ class AnalysisReplicaExchange0(object):
 
         if self.number_of_processes>1:
             self.comm.Barrier()
+
+    def get_cluster_rmsd(self,cluster_num):
+        if self.cluster_obj is None:
+            raise Exception("Run clustering first")
+        return self.cluster_obj.get_cluster_label_average_rmsd(cluster_num)
 
     def save_objects(self, objects, file_name):
         import pickle

@@ -414,17 +414,9 @@ def read_coordinates_of_rmfs(model,
             # PMI2: do selection of resolution and name at the same time
             if IMP.pmi.get_is_canonical(prot):
                 for pr in tuple_dict:
-                    if type(tuple_dict[pr]) is str:
-                        name = tuple_dict[pr]
-                        s = IMP.atom.Selection(prot,molecule=name,resolution=1)
-                    elif type(tuple_dict[pr]) is tuple:
-                        name = tuple_dict[pr][2]
-                        rend = tuple_dict[pr][1]
-                        rbegin = tuple_dict[pr][0]
-                        s = IMP.atom.Selection(prot,molecule=name,resolution=1,
-                                               residue_indexes=range(rbegin,rend+1))
+                    ps = IMP.pmi.tools.select_by_tuple_2(prot,tuple_dict[pr],resolution=1)
                     result_dict[pr] = [list(map(float,IMP.core.XYZ(p).get_coordinates()))
-                                       for p in s.get_selected_particles()]
+                                       for p in ps]
             else:
                 for pr in tuple_dict:
                     if type(tuple_dict[pr]) is str:
@@ -474,16 +466,9 @@ def get_bead_sizes(model,rmf_tuple,rmsd_calculation_components=None,state_number
     # PMI2: do selection of resolution and name at the same time
     if IMP.pmi.get_is_canonical(prot):
         for pr in rmsd_calculation_components:
-            if type(rmsd_calculation_components[pr]) is str:
-                name = rmsd_calculation_components[pr]
-                s = IMP.atom.Selection(prot,molecule=name,resolution=1)
-            elif type(rmsd_calculation_components[pr]) is tuple:
-                rend = rmsd_calculation_components[pr][1]
-                rbegin = rmsd_calculation_components[pr][0]
-                s = IMP.atom.Selection(prot,molecule=name,resolution=1,
-                                       residue_indexes=range(rbegin,rend+1))
+            ps = IMP.pmi.tools.select_by_tuple_2(prot,rmsd_calculation_components[pr],resolution=1)
             rmsd_bead_size_dict[pr] = [len(IMP.pmi.tools.get_residue_indexes(p))
-                                       for p in s.get_selected_particles()]
+                                       for p in ps]
     else:
         # getting the particles
         part_dict = IMP.pmi.analysis.get_particles_at_resolution_one(prot)

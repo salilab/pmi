@@ -1370,20 +1370,21 @@ class AnalysisReplicaExchange0(object):
                    density_custom_ranges=None,
                    write_pdb_with_centered_coordinates=False,
                    voxel_size=5.0):
-        """ Get the best scoring models, compute a distance matrix, cluster them, and create density maps
-        @param score_key                      The score for ranking models
-        @param rmf_file_key                   Key pointing to RMF filename
-        @param rmf_file_frame_key             Key pointing to RMF frame number
-        @param state_number                   State number to analyze
-        @param prefiltervalue                 Only include frames where the
-                                               score key is below this value
-        @param feature_keys                   Keywords for which you want to
-                                               calculate average, medians, etc,
-        @param outputdir                      The local output directory used in the run
-        @param alignment_components           Dictionary with keys=groupname,
-                                               values are list of tuples for aligning
-                                               the structures
-                                               e.g. {"Rpb1": (20,100,"Rpb1"),"Rpb2":"Rpb2"}
+        """ Get the best scoring models, compute a distance matrix, cluster them, and create density maps.
+        Tuple format: "molname" just the molecule, or (start,stop,molname,copy_num(optional),state_num(optional)
+        Can pass None for copy or state to ignore that field.
+        If you don't pass a specific copy number
+        @param score_key              The score for ranking models
+        @param rmf_file_key           Key pointing to RMF filename
+        @param rmf_file_frame_key     Key pointing to RMF frame number
+        @param state_number           State number to analyze
+        @param prefiltervalue         Only include frames where the
+               score key is below this value
+        @param feature_keys           Keywords for which you want to
+               calculate average, medians, etc,
+        @param outputdir               The local output directory used in the run
+        @param alignment_components    Dictionary with keys=groupname, values are tuples
+               for aligning the structures  e.g. {"Rpb1": (20,100,"Rpb1"),"Rpb2":"Rpb2"}
         @param number_of_best_scoring_models  Num models to keep per run
         @param rmsd_calculation_components    For calculating RMSD
                                                (same format as alignment_components)

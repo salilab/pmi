@@ -163,24 +163,22 @@ class Tests(IMP.test.TestCase):
         m1 = st1.create_molecule("Prot1",chain_id='A',sequence=seqs["Prot1"])
         a1 = m1.add_structure(self.get_input_file_name('prot.pdb'),
                               chain_id='A',res_range=(55,64),offset=-54)
-        m1.add_representation(a1,resolutions=[0,1])
+        m1.add_representation(a1,resolutions=[1])
         m1.add_representation(m1[:]-a1,resolutions=[1])
         m2 = m1.create_clone('B')
         hier = s.build()
 
         dof = IMP.pmi.dof.DegreesOfFreedom(mdl)
         mv1,rb1 = dof.create_rigid_body(m1,nonrigid_parts = m1.get_non_atomic_residues(),
-                                        max_trans=0.0001)
+                                        max_trans=0.000001)
         mv2,rb2 = dof.create_rigid_body(m2,nonrigid_parts = m2.get_non_atomic_residues(),
-                                        max_trans=0.0001)
+                                        max_trans=0.000001)
 
         trans = IMP.algebra.Transformation3D(IMP.algebra.Vector3D(100,0,0))
         IMP.core.transform(rb2,trans)
 
         ps0 = IMP.atom.Selection(hier,molecule='Prot1',copy_index=0).get_selected_particles()
         ps1 = IMP.atom.Selection(hier,molecule='Prot1',copy_index=1).get_selected_particles()
-        coords0A = [IMP.core.XYZ(p).get_coordinates() for p in ps0]
-        coords1A = [IMP.core.XYZ(p).get_coordinates() for p in ps1]
 
         rex = IMP.pmi.macros.ReplicaExchange0(mdl,
                                               root_hier=hier,
@@ -190,6 +188,9 @@ class Tests(IMP.test.TestCase):
                                               global_output_directory = \
                                               self.get_input_file_name("pmi2_copies_0/"))
         rex.execute_macro()
+
+        coords0A = [IMP.core.XYZ(p).get_coordinates() for p in ps0]
+        coords1A = [IMP.core.XYZ(p).get_coordinates() for p in ps1]
 
         # swap the objects
         IMP.core.transform(rb2,trans.get_inverse())
@@ -430,9 +431,11 @@ class Tests(IMP.test.TestCase):
             self.skipTest("missing scipy or sklearn")
 
         mdl = IMP.Model()
-        expected_rmsd = self.init_with_copies(mdl)
-        alignment_comp = {"Prot1":"Prot1"}
-        rmsd_comp = {"Prot1":"Prot1"}
+        #expected_rmsd = self.init_with_copies(mdl)
+        #alignment_comp = {"Prot1":"Prot1"}
+        #rmsd_comp = {"Prot1":"Prot1"}
+        alignment_comp = {"Prot1..0":(1,-1,"Prot1",0),"Prot1..1":(1,-1,"Prot1",1)}
+        rmsd_comp = {"Prot1..0":(1,-1,"Prot1",0),"Prot1..1":(1,-1,"Prot1",1)}
 
         am = IMP.pmi.macros.AnalysisReplicaExchange0(
             mdl,
@@ -440,7 +443,7 @@ class Tests(IMP.test.TestCase):
                                self.get_input_file_name("pmi2_copies_1/")],
             global_output_directory="./")
 
-        out_dir = "copies/" #IMP.test.TempDir(None).tmpdir
+        out_dir = IMP.test.TempDir(None).tmpdir
         am.clustering(score_key="Total_Score",
                       alignment_components=alignment_comp,
                       rmsd_calculation_components=rmsd_comp,
@@ -450,7 +453,7 @@ class Tests(IMP.test.TestCase):
 
         # check average RMSD
         av_rmsd = am.get_cluster_rmsd(0)
-        self.assertAlmostEqual(av_rmsd,expected_rmsd)
+        self.assertLess(av_rmsd,1.5) # if swapped it'll be 100
 
 if __name__ == '__main__':
     IMP.test.main()

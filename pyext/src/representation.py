@@ -1516,12 +1516,11 @@ class Representation(object):
         else:
             print("optimize_floppy_bodies: no particle to optimize")
 
-   def create_rotational_symmetry(self, maincopy, copies):
+    def create_rotational_symmetry(self, maincopy, copies):
         from math import pi
         self.representation_is_modified = True
         ncopies = len(copies) + 1
         main_rbs,main_beads = IMP.pmi.tools.get_rbs_and_beads(self.hier_dict[maincopy])
-
         for k in range(len(copies)):
             rotation3D = IMP.algebra.get_rotation_about_axis(
                 IMP.algebra.Vector3D(0, 0, 1), 2 * pi / ncopies * (k + 1))
@@ -1539,7 +1538,6 @@ class Representation(object):
             lc = IMP.container.ListSingletonContainer(self.m,idxs)
             c = IMP.container.SingletonsConstraint(sm, None, lc)
             self.m.add_score_state(c)
-
         self.m.update()
 
     def create_rigid_body_symmetry(self, particles_reference, particles_copy,label="None",

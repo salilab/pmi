@@ -112,6 +112,7 @@ class ReplicaExchange0(object):
         self.pmi2 = False
 
         ### add check hierarchy is multistate
+        self.output_objects = output_objects
         if representation:
             if type(representation) == list:
                 self.is_multi_state = True
@@ -142,7 +143,6 @@ class ReplicaExchange0(object):
         if sample_objects is not None:
             self.monte_carlo_sample_objects+=sample_objects
         self.molecular_dynamics_sample_objects=molecular_dynamics_sample_objects
-        self.output_objects = output_objects
         self.replica_exchange_object = replica_exchange_object
         self.molecular_dynamics_max_time_step = molecular_dynamics_max_time_step
         self.vars["monte_carlo_temperature"] = monte_carlo_temperature

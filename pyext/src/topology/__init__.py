@@ -388,8 +388,11 @@ class Molecule(_SystemBase):
             while len(self.residues)<pdb_idx:
                 r = TempResidue(self,'A',len(self.residues)+1,len(self.residues))
                 self.residues.append(r)
+                self.sequence += 'A'
 
             internal_res = self.residues[raw_idx]
+            if len(self.sequence)<raw_idx:
+                self.sequence += IMP.atom.get_one_letter_code(rh.get_residue_type())
             internal_res.set_structure(rh,soft_check)
             atomic_res.add(internal_res)
         return atomic_res

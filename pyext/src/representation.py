@@ -1532,8 +1532,15 @@ class Representation(object):
                 print("setting " + ref.get_name() + " as reference for " + copy.get_name())
                 IMP.core.Reference.setup_particle(copy,ref)
                 idxs.append(copy.get_particle_index())
-                IMP.pmi.Symmetric.setup_particle(ref, 0)
-                IMP.pmi.Symmetric.setup_particle(copy, 1)
+                if k==0:
+                    if not IMP.pmi.Symmetric.get_is_setup(ref):
+                        IMP.pmi.Symmetric.setup_particle(ref, 0)
+                    else:
+                        IMP.pmi.Symmetric(ref).set_symmetric(0)
+                if not IMP.pmi.Symmetric.get_is_setup(copy):
+                    IMP.pmi.Symmetric.setup_particle(copy, 1)
+                else:
+                    IMP.pmi.Symmetric(copy).set_symmetric(1)
 
             lc = IMP.container.ListSingletonContainer(self.m,idxs)
             c = IMP.container.SingletonsConstraint(sm, None, lc)

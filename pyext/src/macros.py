@@ -19,6 +19,7 @@ import glob
 from operator import itemgetter
 from collections import defaultdict
 import numpy as np
+import string
 
 class ReplicaExchange0(object):
     """A macro to help setup and run replica exchange.
@@ -440,7 +441,8 @@ class BuildSystem(object):
     def __init__(self,
                  mdl,
                  sequence_connectivity_scale=4.0,
-                 force_create_gmm_files=False):
+                 force_create_gmm_files=False,
+                 resolutions=[1,10]):
         """Constructor
         @param mdl An IMP Model
         @param sequence_connectivity_scale For scaling the connectivity restraint
@@ -448,12 +450,15 @@ class BuildSystem(object):
                   no matter what. If False, will only only sample if the
                   files don't exist. If number of Gaussians is zero, won't
                   do anything.
+        @param resolutions The resolutions to build for structured regions
         """
         self.mdl = mdl
         self.system = IMP.pmi.topology.System(self.mdl)
         self._readers = [] #internal storage of the TopologyReaders (one per state)
         self._domains = [] #internal storage of key=domain name, value=(atomic_res,non_atomic_res). (one per state)
         self.force_create_gmm_files = force_create_gmm_files
+        self.resolutions = resolutions
+
     def add_state(self,reader):
         """Add a state using the topology info in a IMP::pmi::topology::TopologyReader object.
         When you are done adding states, call execute_macro()
@@ -462,61 +467,80 @@ class BuildSystem(object):
         state = self.system.create_state()
         self._readers.append(reader)
         these_domains = {}
+        chain_ids = string.ascii_uppercase
+        numchain = 0
 
         ### setup representation
-        # setup each component once, then each domain gets seperate structure, representation
-        for molname in reader.get_unique_molecules():
-            mlist = reader.get_unique_molecules()[molname]
-            seq = IMP.pmi.topology.Sequences(mlist[0].fasta_file)
-            mol = state.create_molecule(molname,seq[mlist[0].fasta_id],mlist[0].chain)
-            for domain in mlist:
-                # we build everything in the residue range, even if it extends beyond what's in the actual PDB file
-                if domain.residue_range==[] or domain.residue_range is None:
-                    domain_res = mol.get_residues()
+        # loop over molecules, copies, then domains
+        for molname in reader.get_molecules():
+            copies = reader.get_molecules()[molname].domains
+            for nc,copyname in enumerate(copies):
+                copy = copies[copyname]
+                if nc==0:
+                    seq = IMP.pmi.topology.Sequences(copy[0].fasta_file)[copy[0].fasta_id]
+                    orig_mol = state.create_molecule(molname,
+                                                     seq,
+                                                     chain_ids[numchain])
+                    mol = orig_mol
+                    numchain+=1
                 else:
-                    start = domain.residue_range[0]+domain.pdb_offset
-                    if domain.residue_range[1]==-1:
-                        end = -1
+                    mol = orig_mol.create_copy(chain_ids[numchain])
+                    numchain+=1
+
+                for domain in copy:
+                    # we build everything in the residue range, even if it
+                    #  extends beyond what's in the actual PDB file
+                    if domain.residue_range==[] or domain.residue_range is None:
+                        domain_res = mol.get_residues()
                     else:
-                        end = domain.residue_range[1]+domain.pdb_offset
-                    domain_res = mol.residue_range(start,end)
-                if domain.pdb_file=="BEADS":
-                    mol.add_representation(domain_res,
-                                           resolutions=[domain.bead_size],
-                                           setup_particles_as_densities=(domain.em_residues_per_gaussian!=0))
-                    these_domains[domain.domain_name] = (set(),domain_res)
-                elif domain.pdb_file=="IDEAL_HELIX":
-                    mol.add_representation(domain_res,
-                                           resolutions=reader.resolutions,
-                                           ideal_helix=True,
-                                           density_residues_per_component=domain.em_residues_per_gaussian,
-                                           density_prefix=domain.density_prefix,
-                                           density_force_compute=self.force_create_gmm_files)
-                    these_domains[domain.domain_name] = (domain_res,set())
-                else:
-                    domain_atomic = mol.add_structure(domain.pdb_file,
-                                                      domain.chain,
-                                                      domain.residue_range,
-                                                      domain.pdb_offset,
-                                                      soft_check=True)
-                    domain_non_atomic = domain_res - domain_atomic
-                    if domain.em_residues_per_gaussian==0:
-                        mol.add_representation(domain_atomic,
-                                               resolutions=reader.resolutions)
-                        if len(domain_non_atomic)>0:
-                            mol.add_representation(domain_non_atomic,
-                                                   resolutions=[domain.bead_size])
+                        start = domain.residue_range[0]+domain.pdb_offset
+                        if domain.residue_range[1]==-1:
+                            end = -1
+                        else:
+                            end = domain.residue_range[1]+domain.pdb_offset
+                        domain_res = mol.residue_range(start-1,end-1)
+                    if domain.pdb_file=="BEADS":
+                        mol.add_representation(
+                            domain_res,
+                            resolutions=[domain.bead_size],
+                            setup_particles_as_densities=(
+                                domain.em_residues_per_gaussian!=0))
+                        these_domains[domain.get_unique_name()] = (set(),domain_res)
+                    elif domain.pdb_file=="IDEAL_HELIX":
+                        mol.add_representation(
+                            domain_res,
+                            resolutions=self.resolutions,
+                            ideal_helix=True,
+                            density_residues_per_component=domain.em_residues_per_gaussian,
+                            density_prefix=domain.density_prefix,
+                            density_force_compute=self.force_create_gmm_files)
+                        these_domains[domain.get_unique_name()] = (domain_res,set())
                     else:
-                        mol.add_representation(domain_atomic,
-                                               resolutions=reader.resolutions,
-                                               density_residues_per_component=domain.em_residues_per_gaussian,
-                                               density_prefix=domain.density_prefix,
-                                               density_force_compute=self.force_create_gmm_files)
-                        if len(domain_non_atomic)>0:
-                            mol.add_representation(domain_non_atomic,
-                                                   resolutions=[domain.bead_size],
-                                                   setup_particles_as_densities=True)
-                    these_domains[domain.domain_name] = (domain_atomic,domain_non_atomic)
+                        domain_atomic = mol.add_structure(domain.pdb_file,
+                                                          domain.chain,
+                                                          domain.residue_range,
+                                                          domain.pdb_offset,
+                                                          soft_check=True)
+                        domain_non_atomic = domain_res - domain_atomic
+                        if domain.em_residues_per_gaussian==0:
+                            mol.add_representation(domain_atomic,
+                                                   resolutions=self.resolutions)
+                            if len(domain_non_atomic)>0:
+                                mol.add_representation(domain_non_atomic,
+                                                       resolutions=[domain.bead_size])
+                        else:
+                            mol.add_representation(
+                                domain_atomic,
+                                resolutions=self.resolutions,
+                                density_residues_per_component=domain.em_residues_per_gaussian,
+                                density_prefix=domain.density_prefix,
+                                density_force_compute=self.force_create_gmm_files)
+                            if len(domain_non_atomic)>0:
+                                mol.add_representation(domain_non_atomic,
+                                                       resolutions=[domain.bead_size],
+                                                       setup_particles_as_densities=True)
+                        these_domains[domain.get_unique_name()] = (
+                            domain_atomic,domain_non_atomic)
             self._domains.append(these_domains)
         print('State',len(self.system.states),'added')
 
@@ -525,6 +549,9 @@ class BuildSystem(object):
         For each state, it's a dictionary of Molecules where key is the molecule name
         """
         return [s.get_molecules() for s in self.system.get_states()]
+
+    def get_molecule(self,molname,copy_index=0,state_index=0):
+        return self.system.get_states()[state_index].get_molecules()[molname][copy_index]
 
     def execute_macro(self):
         """Builds representations and sets up degrees of freedom"""
@@ -537,7 +564,6 @@ class BuildSystem(object):
             rbs = reader.get_rigid_bodies()
             srbs = reader.get_super_rigid_bodies()
             csrbs = reader.get_chains_of_super_rigid_bodies()
-
             # add rigid bodies
             domains_in_rbs = set()
             for rblist in rbs:
@@ -552,11 +578,15 @@ class BuildSystem(object):
                                            nonrigid_parts=bead_res)
 
             # if you have any BEAD domains not in an RB, set them as flexible beads
-            for molname in reader.get_unique_molecules():
-                mlist = reader.get_unique_molecules()[molname]
-                for domain in mlist:
-                    if domain.pdb_file=="BEADS" and domain not in domains_in_rbs:
-                        self.dof.create_flexible_beads(self._domains[nstate][domain.domain_name][1])
+            for molname in reader.get_molecules():
+                copies = reader.get_molecules()[molname].domains
+                for nc,copyname in enumerate(copies):
+                    copy = copies[copyname]
+                    for domain in copy:
+                        uname = domain.get_unique_name()
+                        if domain.pdb_file=="BEADS" and uname not in domains_in_rbs:
+                            self.dof.create_flexible_beads(
+                                self._domains[nstate][uname][1])
 
             # add super rigid bodies
             for srblist in srbs:
@@ -1529,11 +1559,15 @@ class AnalysisReplicaExchange0(object):
                                                              my_best_score_rmf_tuples[0][1])[0]
             if IMP.pmi.get_is_canonical(prot_ahead):
                 if rmsd_calculation_components is not None:
-                    rmsd_calculation_components = self._expand_ambiguity(prot_ahead,rmsd_calculation_components)
-                    print('Detected ambiguity, expand rmsd components to',rmsd_calculation_components)
+                    tmp = self._expand_ambiguity(prot_ahead,rmsd_calculation_components)
+                    if tmp!=rmsd_calculation_components:
+                        print('Detected ambiguity, expand rmsd components to',tmp)
+                        rmsd_calculation_components = tmp
                 if alignment_components is not None:
-                    alignment_components = self._expand_ambiguity(prot_ahead,alignment_components)
-                    print('Detected ambiguity, expand alignment components to',alignment_components)
+                    tmp = self._expand_ambiguity(prot_ahead,alignment_components)
+                    if tmp!=alignment_components:
+                        print('Detected ambiguity, expand alignment components to',tmp)
+                        alignment_components = tmp
 
 #-------------------------------------------------------------
 # read the coordinates

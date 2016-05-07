@@ -504,7 +504,8 @@ class BuildSystem(object):
                             domain_res,
                             resolutions=[domain.bead_size],
                             setup_particles_as_densities=(
-                                domain.em_residues_per_gaussian!=0))
+                                domain.em_residues_per_gaussian!=0),
+                            color = domain.color)
                         these_domains[domain.get_unique_name()] = (set(),domain_res)
                     elif domain.pdb_file=="IDEAL_HELIX":
                         mol.add_representation(
@@ -513,7 +514,8 @@ class BuildSystem(object):
                             ideal_helix=True,
                             density_residues_per_component=domain.em_residues_per_gaussian,
                             density_prefix=domain.density_prefix,
-                            density_force_compute=self.force_create_gmm_files)
+                            density_force_compute=self.force_create_gmm_files,
+                            color = domain.color)
                         these_domains[domain.get_unique_name()] = (domain_res,set())
                     else:
                         domain_atomic = mol.add_structure(domain.pdb_file,
@@ -534,11 +536,13 @@ class BuildSystem(object):
                                 resolutions=self.resolutions,
                                 density_residues_per_component=domain.em_residues_per_gaussian,
                                 density_prefix=domain.density_prefix,
-                                density_force_compute=self.force_create_gmm_files)
+                                density_force_compute=self.force_create_gmm_files,
+                                color = domain.color)
                             if len(domain_non_atomic)>0:
                                 mol.add_representation(domain_non_atomic,
                                                        resolutions=[domain.bead_size],
-                                                       setup_particles_as_densities=True)
+                                                       setup_particles_as_densities=True,
+                                                       color = domain.color)
                         these_domains[domain.get_unique_name()] = (
                             domain_atomic,domain_non_atomic)
             self._domains.append(these_domains)

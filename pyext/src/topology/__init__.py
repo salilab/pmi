@@ -1160,7 +1160,7 @@ class _Component(object):
         self.chain_of_super_rigid_bodies = []
 
     def _l2s(self,l):
-        l = str(l).strip('[').strip(']')
+        l = str(map(int,l)).strip('[').strip(']')
         return l
 
     def __repr__(self):
@@ -1175,8 +1175,15 @@ class _Component(object):
             res_range = []
         name = self.molname
         if self.copyname!='':
-            name += self.copyname
-        return '|'+'|'.join([name,self.color,self._orig_fasta_file,self.fasta_id,
-                         self._orig_pdb_input,self.chain,self._l2s(list(res_range)),str(self.pdb_offset),
-                         str(self.bead_size),str(self.em_residues_per_gaussian),self._l2s(self.rigid_bodies),
-                         self._l2s(self.super_rigid_bodies),self._l2s(self.chain_of_super_rigid_bodies)])+'|'
+            name += '.'+self.copyname
+        if self.chain is None:
+            chain = ' '
+        else:
+            chain = self.chain
+        a= '|'+'|'.join([name,self.color,self._orig_fasta_file,self.fasta_id,
+                         self._orig_pdb_input,chain,self._l2s(list(res_range)),
+                             str(self.pdb_offset),str(self.bead_size),
+                             str(self.em_residues_per_gaussian),self._l2s(self.rigid_bodies),
+                             self._l2s(self.super_rigid_bodies),
+                             self._l2s(self.chain_of_super_rigid_bodies)])+'|'
+        return a

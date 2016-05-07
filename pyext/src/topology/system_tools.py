@@ -204,7 +204,7 @@ def build_representation(parent,rep,coord_finder):
     # if collective densities, will return single node with everything
     # below we sample or read the GMMs and add them as representation
     single_node = False
-    if rep.density_residues_per_component!=None:
+    if rep.density_residues_per_component:
         single_node = True
         num_components = len(rep.residues)//rep.density_residues_per_component+1
         rep_dict = defaultdict(list)

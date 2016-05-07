@@ -166,9 +166,6 @@ def show_representation(node):
     else:
         return False
 
-def recursive_show_representations(root):
-    pass
-
 def build_representation(parent,rep,coord_finder):
     """Create requested representation.
     For beads, identifies continuous segments and sets up as Representation.

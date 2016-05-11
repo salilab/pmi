@@ -585,7 +585,7 @@ def get_position_terminal_residue(hier, terminus="C", resolution=1):
 
     return IMP.core.XYZ(termparticle).get_coordinates()
 
-def get_terminal_residue_position(representation,hier, terminus="C", resolution=1):
+def get_terminal_residue(representation, hier, terminus="C", resolution=1):
     '''
     Get the xyz position of the terminal residue at the given resolution.
     @param hier hierarchy containing the terminal residue
@@ -618,9 +618,11 @@ def get_terminal_residue_position(representation,hier, terminus="C", resolution=
                     termparticle = p
             else:
                 raise ValueError("terminus argument should be either N or C")
+    return termparticle
 
+def get_terminal_residue_position(representation, hier, terminus="C", resolution=1):
+    p = get_terminal_residue(representation, hier, terminus, resolution)
     return IMP.core.XYZ(termparticle).get_coordinates()
-
 
 def get_residue_gaps_in_hierarchy(hierarchy, start, end):
     '''

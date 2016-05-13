@@ -743,7 +743,7 @@ class BuildModel1(object):
                     rfn=self.rmf_frame_number[c]
                     rfm=self.rmf_names_map[c]
                     self.simo.set_coordinates_from_rmf(c, rf,rfn,representation_name_to_rmf_name_map=rfm)
-            if not skip_connectivity_these_domains or comp_name not in skip_connectivity_these_domains:
+            if (not skip_connectivity_these_domains) or (c not in skip_connectivity_these_domains):
                 self.simo.setup_component_sequence_connectivity(c,
                                                                 resolution=sequence_connectivity_resolution,
                                                                 scale=sequence_connectivity_scale)

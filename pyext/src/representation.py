@@ -1516,7 +1516,7 @@ class Representation(object):
         else:
             print("optimize_floppy_bodies: no particle to optimize")
 
-    def create_rotational_symmetry(self, maincopy, copies):
+    def create_rotational_symmetry(self, maincopy, copies, rotational_axis="Z", nSymmetry=None):
         '''
         The copies must not contain rigid bodies.
         The symmetry restraints are applied at each leaf.
@@ -1526,21 +1526,41 @@ class Representation(object):
         self.representation_is_modified = True
         ncopies = len(copies) + 1
         main_hiers = IMP.atom.get_leaves(self.hier_dict[maincopy])
+        if (rotational_axis == "Z"):
+            axis_vector = IMP.algebra.Vector3D(0, 0, 1.0)
+        elif (rotational_axis == "Y"):
+            axis_vector = IMP.algebra.Vector3D(0, 1.0, 0)
+        elif (rotational_axis == "X"):
+            axis_vector = IMP.algebra.Vector3D(1.0, 0, 0)
+        else:
+            axis_vector = IMP.algebra.Vector3D(0, 0, 1.0)
+
         for k in range(len(copies)):
-            rotation3D = IMP.algebra.get_rotation_about_axis(
-                IMP.algebra.Vector3D(0, 0, 1.0), 2.0 * pi / float(ncopies) * float(k + 1))
+            if (nSymmetry is None):
+                rotation_angle = 2.0 * pi / float(ncopies) * float(k + 1)
+            else:
+                if ( k % 2 == 0 ):
+                    rotation_angle = 2.0 * pi / float(nSymmetry) * float((k + 2) / 2)
+                else:
+                    rotation_angle = -2.0 * pi / float(nSymmetry) * float((k + 1) / 2)
+
+            #print ("rotation_angle = " + str(rotation_angle))
+            rotation3D = IMP.algebra.get_rotation_about_axis(axis_vector, rotation_angle)
+
             sm = IMP.core.TransformationSymmetry(rotation3D)
             clone_hiers = IMP.atom.get_leaves(self.hier_dict[copies[k]])
 
             lc = IMP.container.ListSingletonContainer(self.m)
             for n, p in enumerate(main_hiers):
                 pc = clone_hiers[n]
-                print("setting " + p.get_name() + " as reference for " + pc.get_name())
+                #print("setting " + p.get_name() + " as reference for " + pc.get_name())
                 IMP.core.Reference.setup_particle(pc.get_particle(), p.get_particle())
                 lc.add(pc.get_particle().get_index())
 
             c = IMP.container.SingletonsConstraint(sm, None, lc)
             self.m.add_score_state(c)
+            print("Completed setting " + str(maincopy) + " as a reference for " + str(copies[k]) \
+                   + "that is rotated in " + str(rotation_angle / 2.0 / pi * 360) + " degree around the " + rotational_axis + " axis.")
         self.m.update()
 
     def create_rigid_body_symmetry(self, particles_reference, particles_copy,label="None",

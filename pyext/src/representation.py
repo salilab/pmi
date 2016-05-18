@@ -1220,6 +1220,7 @@ class Representation(object):
         avoidcollision=True, cutoff=10.0, niterations=100,
         bounding_box=None,
         excluded_rigid_bodies=None,
+        initial_transformation_to_origin=False,
         hierarchies_excluded_from_collision=None):
         '''
         Shuffle configuration; used to restart the optimization.
@@ -1271,12 +1272,11 @@ class Representation(object):
         print(hierarchies_excluded_from_collision)
         print(len(allparticleindexes),len(hierarchies_excluded_from_collision_indexes))
 
+        print('shuffling', len(self.rigid_bodies) - len(excluded_rigid_bodies), 'rigid bodies')
         for rb in self.rigid_bodies:
             if rb not in excluded_rigid_bodies:
                 if avoidcollision:
-
                     rbindexes = rb.get_member_particle_indexes()
-
                     rbindexes = list(
                         set(rbindexes) - set(hierarchies_excluded_from_collision_indexes))
                     otherparticleindexes = list(
@@ -1285,18 +1285,18 @@ class Representation(object):
                     if len(otherparticleindexes) is None:
                         continue
 
+                if (initial_transformation_to_origin):
+                    # Move the particle to the origin
+                    transformation = IMP.algebra.Transformation3D(IMP.algebra.get_identity_rotation_3d(), -IMP.core.XYZ(rb).get_coordinates())
+                    IMP.core.transform(rb, transformation)
                 niter = 0
                 while niter < niterations:
-                    rbxyz = (rb.get_x(), rb.get_y(), rb.get_z())
-
+                    rbxyz = IMP.core.XYZ(rb).get_coordinates()
                     if not bounding_box is None:
-                    # overrides the perturbation
+                        # overrides the perturbation
                         translation = IMP.algebra.get_random_vector_in(bb)
-                        old_coord=IMP.core.XYZ(rb).get_coordinates()
                         rotation = IMP.algebra.get_random_rotation_3d()
-                        transformation = IMP.algebra.Transformation3D(
-                            rotation,
-                            translation-old_coord)
+                        transformation = IMP.algebra.Transformation3D(rotation, translation-rbxyz)
                     else:
                         transformation = IMP.algebra.get_random_local_transformation(
                             rbxyz,
@@ -1337,6 +1337,17 @@ class Representation(object):
                 else:
                     continue
 
+            if IMP.core.RigidBodyMember.get_is_setup(fb):
+                d=IMP.core.RigidBodyMember(fb).get_rigid_body()
+            elif IMP.core.RigidBody.get_is_setup(fb):
+                d=IMP.core.RigidBody(fb)
+            elif IMP.core.XYZ.get_is_setup(fb):
+                d=IMP.core.XYZ(fb)
+
+            if (initial_transformation_to_origin):
+                # Move the particle to the origin
+                transformation = IMP.algebra.Transformation3D(IMP.algebra.get_identity_rotation_3d(), -IMP.core.XYZ(fb).get_coordinates())
+                IMP.core.transform(d, transformation)
             niter = 0
             while niter < niterations:
                 fbxyz = IMP.core.XYZ(fb).get_coordinates()
@@ -1349,13 +1360,6 @@ class Representation(object):
                         fbxyz,
                         max_translation,
                         max_rotation)
-
-                if IMP.core.RigidBodyMember.get_is_setup(fb):
-                    d=IMP.core.RigidBodyMember(fb).get_rigid_body()
-                elif IMP.core.RigidBody.get_is_setup(fb):
-                    d=IMP.core.RigidBody(fb)
-                elif IMP.core.XYZ.get_is_setup(fb):
-                    d=IMP.core.XYZ(fb)
 
                 IMP.core.transform(d, transformation)
 

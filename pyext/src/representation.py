@@ -1220,7 +1220,7 @@ class Representation(object):
         avoidcollision=True, cutoff=10.0, niterations=100,
         bounding_box=None,
         excluded_rigid_bodies=None,
-        ignore_initial_coordinates=False,
+        initial_transformation_to_origin=False,
         hierarchies_excluded_from_collision=None):
         '''
         Shuffle configuration; used to restart the optimization.
@@ -1285,7 +1285,7 @@ class Representation(object):
                     if len(otherparticleindexes) is None:
                         continue
 
-                if (ignore_initial_coordinates):
+                if (initial_transformation_to_origin):
                     # Move the particle to the origin
                     transformation = IMP.algebra.Transformation3D(IMP.algebra.get_identity_rotation_3d(), -IMP.core.XYZ(rb).get_coordinates())
                     IMP.core.transform(rb, transformation)
@@ -1344,7 +1344,7 @@ class Representation(object):
             elif IMP.core.XYZ.get_is_setup(fb):
                 d=IMP.core.XYZ(fb)
 
-            if (ignore_initial_coordinates):
+            if (initial_transformation_to_origin):
                 # Move the particle to the origin
                 transformation = IMP.algebra.Transformation3D(IMP.algebra.get_identity_rotation_3d(), -IMP.core.XYZ(fb).get_coordinates())
                 IMP.core.transform(d, transformation)

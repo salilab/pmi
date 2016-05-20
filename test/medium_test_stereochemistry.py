@@ -11,8 +11,7 @@ import IMP.pmi.restraints.stereochemistry
 class Tests(IMP.test.TestCase):
 
     def test_stereochemistry_basic(self):
-        """ test PMI2 connectivity restraint on basic system
-        Currently failing"""
+        """ test PMI2 connectivity restraint on basic system"""
         mdl = IMP.Model()
         s = IMP.pmi.topology.System(mdl)
         st1 = s.create_state()
@@ -23,6 +22,26 @@ class Tests(IMP.test.TestCase):
         cr = IMP.pmi.restraints.stereochemistry.ConnectivityRestraint(mol)
 
         self.assertEqual(len(mol.get_residues()) - 1, cr.get_num_restraints() )
+
+    def test_stereochemistry_different_input(self):
+        """ test PMI2 connectivity restraint on basic system
+        different inputs"""
+        mdl = IMP.Model()
+        s = IMP.pmi.topology.System(mdl)
+        st1 = s.create_state()
+        mol = st1.create_molecule("test", sequence="CHARLES", chain_id="A")
+        mol.add_representation(mol.get_residues(),resolutions=[1])
+        hier = s.build()
+        # check the molecule input
+        cr1 = IMP.pmi.restraints.stereochemistry.ConnectivityRestraint(mol)
+        # check the molecule root hierarchy
+        # cr2 = IMP.pmi.restraints.stereochemistry.ConnectivityRestraint(IMP.atom.get_leaves(hier))
+        # check the molecules
+        molecules=IMP.atom.get_by_type(hier,IMP.atom.MOLECULE_TYPE)
+        for ml in molecules:
+            cr3 = IMP.pmi.restraints.stereochemistry.ConnectivityRestraint(IMP.atom.get_leaves(ml))
+
+        self.assertEqual(len(mol.get_residues()) - 1, cr1.get_num_restraints() )
 
     def test_stereochemistry_basic_rb(self):
         """ test PMI2 connectivity restraint on basic system with rigid body"""

@@ -1595,7 +1595,10 @@ def input_adaptor(stuff,
     else:
         try:
             if IMP.atom.Hierarchy.get_is_setup(stuff[0]):
-                hier_list = stuff
+                if flatten:
+                    hier_list = stuff
+                else:
+                    hier_list = [stuff]
             else:
                 raise Exception('input_adaptor: you passed something of type',tp)
         except:

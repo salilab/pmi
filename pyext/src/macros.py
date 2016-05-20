@@ -509,7 +509,7 @@ class BuildSystem(object):
                             setup_particles_as_densities=(
                                 domain.em_residues_per_gaussian!=0),
                             color = domain.color)
-                        these_dres[domain.get_unique_name()] = (set(),domain_res)
+                        these_dres[domain.get_unique_name()] = (domain_res,set())
                     elif domain.pdb_file=="IDEAL_HELIX":
                         mol.add_representation(
                             domain_res,
@@ -591,21 +591,22 @@ class BuildSystem(object):
                     domains_in_rbs.add(dname)
                 all_res|=bead_res
                 self.dof.create_rigid_body(all_res,
-                                           nonrigid_parts=bead_res)
+                                           nonrigid_parts=bead_res,max_trans=4.0)
 
             # if you have any BEAD domains not in an RB, set them as flexible beads
             for dname in self._domains[nstate]:
                 domain = self._domains[nstate][dname]
                 if domain.pdb_file=="BEADS" and dname not in domains_in_rbs:
                     self.dof.create_flexible_beads(
-                        self._domain_res[nstate][dname][1])
+                        self._domain_res[nstate][dname][1],max_trans=4.0)
 
             # add super rigid bodies
+            print(srbs)
             for srblist in srbs:
                 all_res = IMP.pmi.tools.OrderedSet()
                 for dname in srblist:
                     all_res|=self._domain_res[nstate][dname][0]
-                self.dof.create_super_rigid_body(all_res)
+                self.dof.create_super_rigid_body(all_res,max_trans=4.0)
 
             # add chains of super rigid bodies
             for csrblist in csrbs:

@@ -1820,7 +1820,7 @@ def shuffle_configuration(root_hier,
         if IMP.core.XYZ.get_is_setup(p):
             all_idxs.append(p.get_particle_index())
         if IMP.core.Gaussian.get_is_setup(p):
-            collision_excluded_idxs.append(p.get_index())
+            collision_excluded_idxs.add(p.get_particle_index())
 
     if bounding_box is not None:
         ((x1, y1, z1), (x2, y2, z2)) = bounding_box

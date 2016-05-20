@@ -498,7 +498,7 @@ class BuildSystem(object):
                     else:
                         start = domain.residue_range[0]+domain.pdb_offset
                         if domain.residue_range[1]==-1:
-                            end = -1
+                            end = 0
                         else:
                             end = domain.residue_range[1]+domain.pdb_offset
                         domain_res = mol.residue_range(start-1,end-1)

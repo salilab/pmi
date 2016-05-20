@@ -195,7 +195,7 @@ class DegreesOfFreedom(object):
 
     def create_flexible_beads(self,
                               flex_parts,
-                              max_trans=0.1,
+                              max_trans=1.0,
                               resolution='all'):
         """Create a chain of flexible beads
         @param flex_parts Can be one of the following inputs:

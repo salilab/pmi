@@ -43,9 +43,9 @@ class DegreesOfFreedom(object):
     def create_rigid_body(self,
                           rigid_parts,
                           nonrigid_parts=None,
-                          max_trans=1.0,
-                          max_rot=0.1,
-                          nonrigid_max_trans = 0.1,
+                          max_trans=4.0,
+                          max_rot=0.5,
+                          nonrigid_max_trans = 1.0,
                           resolution='all',
                           name=None):
         """Create rigid body constraint and mover

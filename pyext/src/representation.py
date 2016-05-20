@@ -1221,7 +1221,6 @@ class Representation(object):
         bounding_box=None,
         excluded_rigid_bodies=None,
         ignore_initial_coordinates=False,
-        avoidcollision_floppy_bodies=True,
         hierarchies_excluded_from_collision=None):
         '''
         Shuffle configuration; used to restart the optimization.
@@ -1337,6 +1336,11 @@ class Representation(object):
                         continue
                 else:
                     continue
+            else:
+                rm = IMP.core.RigidMember.get_is_setup(fb)
+                nrm = IMP.core.NonRigidMember.get_is_setup(fb)
+                if (rm or nrm):
+                    continue
 
             if IMP.core.RigidBodyMember.get_is_setup(fb):
                 d=IMP.core.RigidBodyMember(fb).get_rigid_body()
@@ -1364,7 +1368,7 @@ class Representation(object):
 
                 IMP.core.transform(d, transformation)
 
-                if (avoidcollision and avoidcollision_floppy_bodies):
+                if (avoidcollision):
                     self.m.update()
                     npairs = len(
                         gcpf.get_close_pairs(

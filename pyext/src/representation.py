@@ -1326,7 +1326,7 @@ class Representation(object):
 
         print('shuffling', len(self.floppy_bodies), 'floppy bodies')
         for fb in self.floppy_bodies:
-            if (avoidcollision and avoidcollision_floppy_bodies):
+            if (avoidcollision):
                 rm = not IMP.core.RigidMember.get_is_setup(fb)
                 nrm = not IMP.core.NonRigidMember.get_is_setup(fb)
                 if rm and nrm:

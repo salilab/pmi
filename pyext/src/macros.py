@@ -467,8 +467,8 @@ class BuildSystem(object):
         """
         state = self.system.create_state()
         self._readers.append(reader)
-        these_dres = {}
-        these_domains = {}
+        these_domain_res = {}    #  key is unique name, value is (atomic res, nonatomicres)
+        these_domains = {}       #  key is unique name, value is _Component
         chain_ids = string.ascii_uppercase
         numchain = 0
 
@@ -509,7 +509,7 @@ class BuildSystem(object):
                             setup_particles_as_densities=(
                                 domain.em_residues_per_gaussian!=0),
                             color = domain.color)
-                        these_dres[domain.get_unique_name()] = (domain_res,set())
+                        these_domain_res[domain.get_unique_name()] = (set(),domain_res)
                     elif domain.pdb_file=="IDEAL_HELIX":
                         mol.add_representation(
                             domain_res,
@@ -519,7 +519,7 @@ class BuildSystem(object):
                             density_prefix=domain.density_prefix,
                             density_force_compute=self.force_create_gmm_files,
                             color = domain.color)
-                        these_dres[domain.get_unique_name()] = (domain_res,set())
+                        these_domain_res[domain.get_unique_name()] = (domain_res,set())
                     else:
                         domain_atomic = mol.add_structure(domain.pdb_file,
                                                           domain.chain,
@@ -548,9 +548,9 @@ class BuildSystem(object):
                                                        resolutions=[domain.bead_size],
                                                        setup_particles_as_densities=True,
                                                        color = domain.color)
-                        these_dres[domain.get_unique_name()] = (
+                        these_domain_res[domain.get_unique_name()] = (
                             domain_atomic,domain_non_atomic)
-            self._domain_res.append(these_dres)
+            self._domain_res.append(these_domain_res)
             self._domains.append(these_domains)
         print('State',len(self.system.states),'added')
 
@@ -582,16 +582,14 @@ class BuildSystem(object):
                 bead_res = IMP.pmi.tools.OrderedSet()
                 for dname in rblist:
                     domain = self._domains[nstate][dname]
-                    if domain.pdb_file=="BEADS":
-                        print("WARNING: You have a rigid body containing BEADS "
-                              "You should probably set the rigid body field for "+domain.molname+
-                              " to blank")
                     all_res|=self._domain_res[nstate][dname][0]
                     bead_res|=self._domain_res[nstate][dname][1]
                     domains_in_rbs.add(dname)
                 all_res|=bead_res
                 self.dof.create_rigid_body(all_res,
-                                           nonrigid_parts=bead_res,max_trans=4.0)
+                                           nonrigid_parts=bead_res,
+                                           max_trans=4.0,
+                                           nonrigid_max_trans=1.0)
 
             # if you have any BEAD domains not in an RB, set them as flexible beads
             for dname in self._domains[nstate]:
@@ -601,7 +599,6 @@ class BuildSystem(object):
                         self._domain_res[nstate][dname][1],max_trans=4.0)
 
             # add super rigid bodies
-            print(srbs)
             for srblist in srbs:
                 all_res = IMP.pmi.tools.OrderedSet()
                 for dname in srblist:

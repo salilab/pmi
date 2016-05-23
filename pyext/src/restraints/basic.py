@@ -195,25 +195,85 @@ class DistanceRestraint(object):
         return self.weight * self.rs.unprotected_evaluate(None)
 
 
+class TorqueRestraint(IMP.Restraint):
+    import math
+    def __init__(self, m, objects, resolution, angular_tolerance,label='None'):
+        IMP.Restraint.__init__(self, m, "TorqueRestraint %1%")
+        self.softness_angle = 0.5
+        self.plateau = 1e-10
+        self.weight = 1.0
+        self.m=m
+        hierarchies = IMP.pmi.tools.input_adaptor(objects,
+                                            resolution,
+                                            flatten=True)
+        self.particles = [h.get_particle() for h in hierarchies]
+        self.ds=[IMP.core.XYZ(p) for p in self.particles]
+        self.label=label
+        self.at=angular_tolerance
+
+    def get_angle_probability(self,xyz,angle_center):
+        maxtheta=angle_center+self.at
+        mintheta=angle_center-self.at
+        angle=self.math.atan2(xyz.get_y(),xyz.get_x() )*180.0/self.math.pi
+        anglediff = (angle - maxtheta + 180 + 360) % 360 - 180
+        argvalue1=anglediff / self.softness_angle
+        anglediff = (angle - mintheta + 180 + 360) % 360 - 180
+        argvalue2=-anglediff / self.softness_angle
+        prob = (1.0-self.plateau) / (1.0 + self.math.exp(-max(argvalue1,argvalue2)))
+        return prob
+
+    def unprotected_evaluate(self, da):
+        s=0.0
+        center=IMP.core.get_centroid(self.ds)
+        angle_center=self.math.atan2(center[1],center[0])*180.0/self.math.pi
+        for xyz in self.ds:
+            s+=-self.math.log(1.0-self.get_angle_probability(xyz,angle_center))
+        return s
+
+    def do_get_inputs(self):
+        return self.particles
+
+    def add_to_model(self):
+        IMP.pmi.tools.add_restraint_to_model(self.m, self)
+
+    def get_output(self):
+        self.m.update()
+        output = {}
+        score = self.weight * self.unprotected_evaluate(None)
+        output["_TotalScore"] = str(score)
+        output["TorqueRestraint_" + self.label] = str(score)
+        return output
+
+
+
+
 class CylinderRestraint(IMP.Restraint):
     '''
     PMI2 python restraint. Restrains particles within a
     Cylinder aligned along the z-axis and
     centered in x,y=0,0
+    Optionally, one can restrain the cylindrical angle
     '''
     import math
-    def __init__(self, m, objects, resolution, radius,label='None'):
+    def __init__(self, m, objects, resolution, radius,mintheta=None,
+                 maxtheta=None,repulsive=False,label='None'):
         '''
         @param objects PMI2 objects
         @param resolution the resolution you want the restraint to be applied
         @param radius the radius of the cylinder
+        @param mintheta minimum cylindrical angle in degrees
+        @param maxtheta maximum cylindrical angle in degrees
         '''
         IMP.Restraint.__init__(self, m, "CylinderRestraint %1%")
         self.radius=radius
         self.softness = 3.0
+        self.softness_angle = 0.5
         self.plateau = 1e-10
         self.weight = 1.0
         self.m=m
+        self.mintheta=mintheta
+        self.maxtheta=maxtheta
+        self.repulsive=repulsive
         hierarchies = IMP.pmi.tools.input_adaptor(objects,
                                             resolution,
                                             flatten=True)
@@ -224,13 +284,26 @@ class CylinderRestraint(IMP.Restraint):
         xyz=IMP.core.XYZ(p)
         r=self.math.sqrt(xyz.get_x()**2+xyz.get_y()**2)
         argvalue=(r-self.radius) / self.softness
+        if self.repulsive: argvalue=-argvalue
         prob = (1.0 - self.plateau) / (1.0 + self.math.exp(-argvalue))
+        return prob
+
+    def get_angle_probability(self,p):
+        xyz=IMP.core.XYZ(p)
+        angle=self.math.atan2(xyz.get_y(),xyz.get_x() )*180.0/self.math.pi
+        anglediff = (angle - self.maxtheta + 180 + 360) % 360 - 180
+        argvalue1=anglediff / self.softness_angle
+        anglediff = (angle - self.mintheta + 180 + 360) % 360 - 180
+        argvalue2=-anglediff / self.softness_angle
+        prob = (1.0-self.plateau) / (1.0 + self.math.exp(-max(argvalue1,argvalue2)))
         return prob
 
     def unprotected_evaluate(self, da):
         s=0.0
         for p in self.particles:
             s+=-self.math.log(1.0-self.get_probability(p))
+            if self.mintheta is not None and self.maxtheta is not None:
+                s+=-self.math.log(1.0-self.get_angle_probability(p))
         return s
 
     def do_get_inputs(self):

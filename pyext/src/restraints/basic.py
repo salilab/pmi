@@ -362,3 +362,101 @@ class BiStableDistanceRestraint(IMP.Restraint):
 
     def do_get_inputs(self):
         return self.particle_list
+
+
+class Distance_to_Point_Restraint(object):
+    """Distance_to_Point_Restraint for anchoring a particle to a specific coordinate"""
+    def __init__(self,
+                 representation=None,
+                 tuple_selection=None,
+                 anchor_point=IMP.algebra.Vector3D(0, 0, 0),
+                 radius=10.0,
+                 kappa=10.0,
+                 resolution=1.0,
+                 weight=1.0,
+                 root_hier = None):
+        """Setup distance restraint.
+        @param representation DEPRECATED
+        @param tuple_selection (resnum,resnum,molecule name, copy number (=0))
+        @param anchor_point - Center of the Distance_to_Point_Restraint (IMP.algebra.Vector3D object)
+        @param radius Size of the tolerance length in Distance_to_Point_Restraint
+        @param resolution For selecting a particle
+        @param root_hier The hierarchy to select from (use this instead of representation)
+        \note Pass the same resnum twice to each tuple_selection. Optionally add a copy number (PMI2 only)
+        """
+        self.radius = radius
+        self.label = "None"
+        self.weight = weight
+
+        if tuple_selection is None:
+            raise Exception("You must pass a tuple_selection")
+
+        if representation and not root_hier:
+            self.m = representation.prot.get_model()
+            ps = IMP.pmi.tools.select(representation,
+                                              resolution=resolution,
+                                              name=tuple_selection[2],
+                                              residue=tuple_selection[0])
+        elif root_hier and not representation:
+            self.m = root_hier.get_model()
+            copy_num1 = 0
+            if len(tuple_selection)>3:
+                copy_num1 = tuple_selection[3]
+
+            sel1 = IMP.atom.Selection(root_hier,
+                                      resolution=resolution,
+                                      molecule=tuple_selection[2],
+                                      residue_index=tuple_selection[0],
+                                      copy_index=copy_num1)
+            ps = sel1.get_selected_particles()
+        else:
+            raise Exception("Distance_to_Point_Restraint: Pass representation or root_hier, not both")
+        if len(ps) > 1:
+            raise ValueError("Distance_to_Point_Restraint: more than one particle selected")
+
+        self.rs = IMP.RestraintSet(self.m, 'distance_to_point')
+        ub3 = IMP.core.HarmonicUpperBound(self.radius, kappa)
+        if anchor_point is None:
+            c3 = IMP.algebra.Vector3D(0, 0, 0)
+        elif type(anchor_point) is IMP.algebra.Vector3D:
+            c3 = anchor_point
+        else:
+            raise Exception("Distance_to_Point_Restraint: @param anchor_point must be an algebra::Vector3D object")
+        ss3 = IMP.core.DistanceToSingletonScore(ub3, c3)
+
+        lsc = IMP.container.ListSingletonContainer(self.m)
+        lsc.add(ps)
+
+        r3 = IMP.container.SingletonsRestraint(ss3, lsc)
+        self.rs.add_restraint(r3)
+        self.set_weight(self.weight)
+
+        print("\nDistance_to_Point_Restraint: Created distance_to_point_restraint between "
+              "%s and %s" % (ps[0].get_name(), c3))
+
+    def set_weight(self,weight):
+        self.weight = weight
+        self.rs.set_weight(weight)
+
+    def set_label(self, label):
+        self.label = label
+
+    def add_to_model(self):
+        IMP.pmi.tools.add_restraint_to_model(self.m, self.rs)
+
+    def get_restraint(self):
+        return self.rs
+
+    def get_restraint_for_rmf(self):
+        return self.rs
+
+    def get_output(self):
+        self.m.update()
+        output = {}
+        score = self.evaluate()
+        output["_TotalScore"] = str(score)
+        output["DistanceToPointRestraint_" + self.label] = str(score)
+        return output
+
+    def evaluate(self):
+        return self.weight * self.rs.unprotected_evaluate(None)

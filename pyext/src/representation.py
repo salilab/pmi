@@ -1256,11 +1256,11 @@ class Representation(object):
                 hierarchies_excluded_from_collision_indexes += IMP.get_indexes([p])
         allparticleindexes = IMP.get_indexes(ps)
 
-        if not bounding_box is None:
+        if bounding_box is not None:
             ((x1, y1, z1), (x2, y2, z2)) = bounding_box
-            ub = IMP.algebra.Vector3D(x1, y1, z1)
-            lb = IMP.algebra.Vector3D(x2, y2, z2)
-            bb = IMP.algebra.BoundingBox3D(ub, lb)
+            lb = IMP.algebra.Vector3D(x1, y1, z1)
+            ub = IMP.algebra.Vector3D(x2, y2, z2)
+            bb = IMP.algebra.BoundingBox3D(lb, ub)
 
         for h in hierarchies_excluded_from_collision:
             hierarchies_excluded_from_collision_indexes += IMP.get_indexes(IMP.atom.get_leaves(h))
@@ -1285,14 +1285,15 @@ class Representation(object):
                     if len(otherparticleindexes) is None:
                         continue
 
-                if (ignore_initial_coordinates):
-                    # Move the particle to the origin
-                    transformation = IMP.algebra.Transformation3D(IMP.algebra.get_identity_rotation_3d(), -IMP.core.XYZ(rb).get_coordinates())
-                    IMP.core.transform(rb, transformation)
                 niter = 0
                 while niter < niterations:
+                    if (ignore_initial_coordinates):
+                        # Move the particle to the origin
+                        transformation = IMP.algebra.Transformation3D(IMP.algebra.get_identity_rotation_3d(), -IMP.core.XYZ(rb).get_coordinates())
+                        IMP.core.transform(rb, transformation)
                     rbxyz = IMP.core.XYZ(rb).get_coordinates()
-                    if not bounding_box is None:
+
+                    if bounding_box is not None:
                         # overrides the perturbation
                         translation = IMP.algebra.get_random_vector_in(bb)
                         rotation = IMP.algebra.get_random_rotation_3d()
@@ -1314,6 +1315,8 @@ class Representation(object):
                                 rbindexes))
                         if npairs == 0:
                             niter = niterations
+                            if (ignore_initial_coordinates):
+                                print (rb.get_name(), IMP.core.XYZ(rb).get_coordinates())
                         else:
                             niter += 1
                             print("shuffle_configuration: rigid body placed close to other %d particles, trying again..." % npairs)
@@ -1349,14 +1352,15 @@ class Representation(object):
             elif IMP.core.XYZ.get_is_setup(fb):
                 d=IMP.core.XYZ(fb)
 
-            if (ignore_initial_coordinates):
-                # Move the particle to the origin
-                transformation = IMP.algebra.Transformation3D(IMP.algebra.get_identity_rotation_3d(), -IMP.core.XYZ(fb).get_coordinates())
-                IMP.core.transform(d, transformation)
             niter = 0
             while niter < niterations:
+                if (ignore_initial_coordinates):
+                    # Move the particle to the origin
+                    transformation = IMP.algebra.Transformation3D(IMP.algebra.get_identity_rotation_3d(), -IMP.core.XYZ(fb).get_coordinates())
+                    IMP.core.transform(d, transformation)
                 fbxyz = IMP.core.XYZ(fb).get_coordinates()
-                if not bounding_box is None:
+
+                if bounding_box is not None:
                     # overrides the perturbation
                     translation = IMP.algebra.get_random_vector_in(bb)
                     transformation = IMP.algebra.Transformation3D(translation-fbxyz)
@@ -1377,9 +1381,12 @@ class Representation(object):
                             fbindexes))
                     if npairs == 0:
                         niter = niterations
+                        if (ignore_initial_coordinates):
+                            print (fb.get_name(), IMP.core.XYZ(fb).get_coordinates())
                     else:
                         niter += 1
                         print("shuffle_configuration: floppy body placed close to other %d particles, trying again..." % npairs)
+                        print("shuffle_configuration: floppy body name: " + fb.get_name())
                         if niter == niterations:
                             raise ValueError("tried the maximum number of iterations to avoid collisions, increase the distance cutoff")
                 else:

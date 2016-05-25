@@ -1767,7 +1767,7 @@ def get_rbs_and_beads(hiers):
             beads.append(p)
     return rbs_ordered,beads
 
-def shuffle_configuration(root_hier,
+def shuffle_configuration(objects,
                           max_translation=300., max_rotation=2.0 * pi,
                           avoidcollision_rb=True, avoidcollision_fb=False,
                           cutoff=10.0, niterations=100,
@@ -1780,7 +1780,8 @@ def shuffle_configuration(root_hier,
     rigid body and each bead randomly in a box with a side of
     max_translation angstroms, and far enough from each other to
     prevent any steric clashes. The rigid bodies are also randomly rotated.
-    @param root_hier The hierarchy to shuffle. Will find rigid bodies and flexible beads.
+    @param objects Can be one of the following inputs:
+               IMP Hierarchy, PMI System/State/Molecule/TempResidue, or a list/set of them
     @param max_translation Max translation (rbs and flexible beads)
     @param max_rotation Max rotation (rbs only)
     @param avoidcollision_rb check if the particle/rigid body was
@@ -1798,8 +1799,10 @@ def shuffle_configuration(root_hier,
     """
 
     ### checking input
-    rigid_bodies,flexible_beads = get_rbs_and_beads(root_hier)
-
+    hierarchies = IMP.pmi.tools.input_adaptor(objects,
+                                              pmi_resolution='all',
+                                              flatten=True)
+    rigid_bodies,flexible_beads = get_rbs_and_beads(hierarchies)
     if len(rigid_bodies)>0:
         mdl = rigid_bodies[0].get_model()
     elif len(flexible_beads)>0:
@@ -1819,7 +1822,7 @@ def shuffle_configuration(root_hier,
 
     # Excluded collision with Gaussians
     all_idxs = [] #expand to representations?
-    for p in IMP.core.get_leaves(root_hier):
+    for p in IMP.pmi.tools.get_all_leaves(hierarchies):
         if IMP.core.XYZ.get_is_setup(p):
             all_idxs.append(p.get_particle_index())
         if IMP.core.Gaussian.get_is_setup(p):

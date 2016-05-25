@@ -268,7 +268,7 @@ class DegreesOfFreedom(object):
                            references,
                            clones,
                            transform,
-                           resolution=1):
+                           resolution='all'):
         """Create a symmetry constraint. Checks:
         same number of particles
         disable ANY movers involving symmetry copies

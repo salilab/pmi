@@ -975,7 +975,8 @@ class Representation(object):
             (protname, is_a_bead) = IMP.pmi.tools.get_prot_name_from_particle(
                 p, self.hier_dict.keys())
             if (skip_gaussian_in_rmf):
-                if (IMP.core.Gaussian.get_is_setup(p)):
+                #if (IMP.core.Gaussian.get_is_setup(p)):    # Not working?
+                if (p.get_name()[0:10] == "_gaussian_"):
                     continue
             if (rmf_component_name is not None) and (protname == rmf_component_name):
                 psrmf.append(p)
@@ -989,7 +990,8 @@ class Representation(object):
             for p in allpsrepr:
                 (protname, is_a_bead) = IMP.pmi.tools.get_prot_name_from_particle(
                     p, self.hier_dict.keys())
-                if (IMP.core.Gaussian.get_is_setup(p)):
+                #if (IMP.core.Gaussian.get_is_setup(p)):    # Not working?
+                if (p.get_name()[0:10] == "_gaussian_"):
                     continue
                 if (rmf_component_name is not None) and (protname == rmf_component_name):
                     psrepr.append(p)

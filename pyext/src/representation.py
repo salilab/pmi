@@ -938,6 +938,8 @@ class Representation(object):
                                  check_number_particles=True,
                                  representation_name_to_rmf_name_map=None,
                                  state_number=0,
+                                 skip_gaussian_in_rmf=False,
+                                 skip_gaussian_in_representation=False,
                                  save_file=False):
         '''Read and replace coordinates from an RMF file.
         Replace the coordinates of particles with the same name.
@@ -968,17 +970,31 @@ class Representation(object):
         #   exit()
 
         allpsrmf = IMP.atom.get_leaves(prot)
-
         psrmf = []
         for p in allpsrmf:
             (protname, is_a_bead) = IMP.pmi.tools.get_prot_name_from_particle(
                 p, self.hier_dict.keys())
-            if not rmf_component_name is None and protname == rmf_component_name:
+            if (skip_gaussian_in_rmf):
+                if (p.get_name()[0:10] == "_gaussian_"):
+                    continue
+            if (rmf_component_name is not None) and (protname == rmf_component_name):
                 psrmf.append(p)
-            elif rmf_component_name is None and protname == component_name:
+            elif (rmf_component_name is None) and (protname == component_name):
                 psrmf.append(p)
 
         psrepr = IMP.atom.get_leaves(self.hier_dict[component_name])
+        if (skip_gaussian_in_representation):
+            allpsrepr = psrepr
+            psrepr = []
+            for p in allpsrepr:
+                (protname, is_a_bead) = IMP.pmi.tools.get_prot_name_from_particle(
+                    p, self.hier_dict.keys())
+                if (p.get_name()[0:10] == "_gaussian_"):
+                    continue
+                if (rmf_component_name is not None) and (protname == rmf_component_name):
+                    psrepr.append(p)
+                elif (rmf_component_name is None) and (protname == component_name):
+                    psrepr.append(p)
 
         import itertools
         reprnames=[p.get_name() for p in psrepr]

@@ -635,7 +635,8 @@ class BuildModel1(object):
     def build_model(self,data_structure,sequence_connectivity_scale=4.0,
                     sequence_connectivity_resolution=10,
                     rmf_file=None,rmf_frame_number=0,rmf_file_map=None,
-                    skip_connectivity_these_domains=None):
+                    skip_connectivity_these_domains=None,
+                    skip_gaussian_in_rmf=False, skip_gaussian_in_representation=False):
         """Create model.
         @param data_structure List of lists containing these entries:
              comp_name, hier_name, color, fasta_file, fasta_id, pdb_name, chain_id,
@@ -727,20 +728,23 @@ class BuildModel1(object):
             if rmf_file is not None:
                 rf=rmf_file
                 rfn=rmf_frame_number
-                self.simo.set_coordinates_from_rmf(c, rf,rfn)
+                self.simo.set_coordinates_from_rmf(c, rf,rfn,
+                    skip_gaussian_in_rmf=skip_gaussian_in_rmf, skip_gaussian_in_representation=skip_gaussian_in_representation)
             elif rmf_file_map:
                 for k in rmf_file_map:
                     cname=k
                     rf=rmf_file_map[k][0]
                     rfn=rmf_file_map[k][1]
                     rcname=rmf_file_map[k][2]
-                    self.simo.set_coordinates_from_rmf(cname, rf,rfn,rcname)
+                    self.simo.set_coordinates_from_rmf(cname, rf,rfn,rcname,
+                        skip_gaussian_in_rmf=skip_gaussian_in_rmf, skip_gaussian_in_representation=skip_gaussian_in_representation)
             else:
                 if c in self.rmf_file:
                     rf=self.rmf_file[c]
                     rfn=self.rmf_frame_number[c]
                     rfm=self.rmf_names_map[c]
-                    self.simo.set_coordinates_from_rmf(c, rf,rfn,representation_name_to_rmf_name_map=rfm)
+                    self.simo.set_coordinates_from_rmf(c, rf,rfn,representation_name_to_rmf_name_map=rfm,
+                        skip_gaussian_in_rmf=skip_gaussian_in_rmf, skip_gaussian_in_representation=skip_gaussian_in_representation)
             if (not skip_connectivity_these_domains) or (c not in skip_connectivity_these_domains):
                 self.simo.setup_component_sequence_connectivity(c,
                                                                 resolution=sequence_connectivity_resolution,

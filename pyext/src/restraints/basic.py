@@ -364,8 +364,8 @@ class BiStableDistanceRestraint(IMP.Restraint):
         return self.particle_list
 
 
-class Distance_to_Point_Restraint(object):
-    """Distance_to_Point_Restraint for anchoring a particle to a specific coordinate"""
+class DistanceToPointRestraint(object):
+    """DistanceToPointRestraint for anchoring a particle to a specific coordinate"""
     def __init__(self,
                  representation=None,
                  tuple_selection=None,
@@ -378,8 +378,8 @@ class Distance_to_Point_Restraint(object):
         """Setup distance restraint.
         @param representation DEPRECATED
         @param tuple_selection (resnum,resnum,molecule name, copy number (=0))
-        @param anchor_point - Center of the Distance_to_Point_Restraint (IMP.algebra.Vector3D object)
-        @param radius Size of the tolerance length in Distance_to_Point_Restraint
+        @param anchor_point - Center of the DistanceToPointRestraint (IMP.algebra.Vector3D object)
+        @param radius Size of the tolerance length in DistanceToPointRestraint
         @param resolution For selecting a particle
         @param root_hier The hierarchy to select from (use this instead of representation)
         \note Pass the same resnum twice to each tuple_selection. Optionally add a copy number (PMI2 only)
@@ -410,9 +410,9 @@ class Distance_to_Point_Restraint(object):
                                       copy_index=copy_num1)
             ps = sel1.get_selected_particles()
         else:
-            raise Exception("Distance_to_Point_Restraint: Pass representation or root_hier, not both")
+            raise Exception("DistanceToPointRestraint: Pass representation or root_hier, not both")
         if len(ps) > 1:
-            raise ValueError("Distance_to_Point_Restraint: more than one particle selected")
+            raise ValueError("DistanceToPointRestraint: more than one particle selected")
 
         self.rs = IMP.RestraintSet(self.m, 'distance_to_point')
         ub3 = IMP.core.HarmonicUpperBound(self.radius, kappa)
@@ -421,7 +421,7 @@ class Distance_to_Point_Restraint(object):
         elif type(anchor_point) is IMP.algebra.Vector3D:
             c3 = anchor_point
         else:
-            raise Exception("Distance_to_Point_Restraint: @param anchor_point must be an algebra::Vector3D object")
+            raise Exception("DistanceToPointRestraint: @param anchor_point must be an algebra::Vector3D object")
         ss3 = IMP.core.DistanceToSingletonScore(ub3, c3)
 
         lsc = IMP.container.ListSingletonContainer(self.m)
@@ -431,7 +431,7 @@ class Distance_to_Point_Restraint(object):
         self.rs.add_restraint(r3)
         self.set_weight(self.weight)
 
-        print("\nDistance_to_Point_Restraint: Created distance_to_point_restraint between "
+        print("\nDistanceToPointRestraint: Created distance_to_point_restraint between "
               "%s and %s" % (ps[0].get_name(), c3))
 
     def set_weight(self,weight):

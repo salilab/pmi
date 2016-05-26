@@ -975,7 +975,7 @@ class Representation(object):
             (protname, is_a_bead) = IMP.pmi.tools.get_prot_name_from_particle(
                 p, self.hier_dict.keys())
             if (skip_gaussian_in_rmf):
-                if (p.get_name()[0:10] == "_gaussian_"):
+                if (IMP.core.Gaussian.get_is_setup(p)):
                     continue
             if (rmf_component_name is not None) and (protname == rmf_component_name):
                 psrmf.append(p)
@@ -989,7 +989,7 @@ class Representation(object):
             for p in allpsrepr:
                 (protname, is_a_bead) = IMP.pmi.tools.get_prot_name_from_particle(
                     p, self.hier_dict.keys())
-                if (p.get_name()[0:10] == "_gaussian_"):
+                if (IMP.core.Gaussian.get_is_setup(p)):
                     continue
                 if (rmf_component_name is not None) and (protname == rmf_component_name):
                     psrepr.append(p)
@@ -1548,7 +1548,7 @@ class Representation(object):
         else:
             print("optimize_floppy_bodies: no particle to optimize")
 
-    def create_rotational_symmetry(self, maincopy, copies, rotational_axis="Z", nSymmetry=None):
+    def create_rotational_symmetry(self, maincopy, copies, rotational_axis=IMP.algebra.Vector3D(0, 0, 1.0), nSymmetry=None):
         '''
         The copies must not contain rigid bodies.
         The symmetry restraints are applied at each leaf.
@@ -1558,14 +1558,6 @@ class Representation(object):
         self.representation_is_modified = True
         ncopies = len(copies) + 1
         main_hiers = IMP.atom.get_leaves(self.hier_dict[maincopy])
-        if (rotational_axis == "Z"):
-            axis_vector = IMP.algebra.Vector3D(0, 0, 1.0)
-        elif (rotational_axis == "Y"):
-            axis_vector = IMP.algebra.Vector3D(0, 1.0, 0)
-        elif (rotational_axis == "X"):
-            axis_vector = IMP.algebra.Vector3D(1.0, 0, 0)
-        else:
-            axis_vector = IMP.algebra.Vector3D(0, 0, 1.0)
 
         for k in range(len(copies)):
             if (nSymmetry is None):
@@ -1576,8 +1568,7 @@ class Representation(object):
                 else:
                     rotation_angle = -2.0 * pi / float(nSymmetry) * float((k + 1) / 2)
 
-            #print ("rotation_angle = " + str(rotation_angle))
-            rotation3D = IMP.algebra.get_rotation_about_axis(axis_vector, rotation_angle)
+            rotation3D = IMP.algebra.get_rotation_about_axis(rotational_axis, rotation_angle)
 
             sm = IMP.core.TransformationSymmetry(rotation3D)
             clone_hiers = IMP.atom.get_leaves(self.hier_dict[copies[k]])
@@ -1592,7 +1583,7 @@ class Representation(object):
             c = IMP.container.SingletonsConstraint(sm, None, lc)
             self.m.add_score_state(c)
             print("Completed setting " + str(maincopy) + " as a reference for " + str(copies[k]) \
-                   + " by rotating it in " + str(rotation_angle / 2.0 / pi * 360) + " degree around the " + rotational_axis + " axis.")
+                   + " by rotating it in " + str(rotation_angle / 2.0 / pi * 360) + " degree around the " + str(rotational_axis) + " axis.")
         self.m.update()
 
     def create_rigid_body_symmetry(self, particles_reference, particles_copy,label="None",

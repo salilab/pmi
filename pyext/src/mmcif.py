@@ -3,6 +3,13 @@
 """
 
 from __future__ import print_function
+import IMP.pmi.representation
+import IMP.pmi.tools
+import IMP.pmi.output
+from IMP.pmi.tools import OrderedDict
+import sys
+import os
+import operator
 
 class _LineWriter(object):
     def __init__(self, writer, line_len=80, multi_line_len=70):
@@ -85,3 +92,129 @@ class CifWriter(object):
             return "%.3f" % obj
         else:
             return repr(obj)
+
+
+class Dumper(object):
+    """Base class for helpers to dump output to mmCIF"""
+    def __init__(self, simo):
+        self.simo = simo
+
+
+class SoftwareDumper(Dumper):
+    def dump(self, writer):
+        with writer.loop("_software",
+                         ["pdbx_ordinal", "name", "classification", "version",
+                          "type", "location"]) as l:
+            l.write(pdbx_ordinal=1, name="Integrative Modeling Platform (IMP)",
+                    version=IMP.__version__, type="program",
+                    classification="integrative model building",
+                    location='https://integrativemodeling.org')
+            l.write(pdbx_ordinal=2, name="IMP PMI module",
+                    version=IMP.pmi.__version__, type="program",
+                    classification="integrative model building",
+                    location='https://integrativemodeling.org')
+
+
+class EntityDumper(Dumper):
+    def dump(self, writer):
+        all_entities = [x for x in sorted(self.simo._entity_id.items(),
+                                          key=operator.itemgetter(1))]
+        with writer.loop("_entity",
+                         ["id", "type", "src_method", "pdbx_description",
+                          "formula_weight", "pdbx_number_of_molecules",
+                          "details"]) as l:
+            for name, entity_id in all_entities:
+                l.write(id=entity_id, type='polymer', src_method='man',
+                        pdbx_description=name, formula_weight=writer.unknown,
+                        pdbx_number_of_molecules=1, details=writer.unknown)
+
+
+class EntityPolyDumper(Dumper):
+    def __init__(self, simo):
+        super(EntityPolyDumper, self).__init__(simo)
+        self.output = IMP.pmi.output.Output()
+
+    def dump(self, writer):
+        all_entities = [x for x in sorted(self.simo._entity_id.items(),
+                                          key=operator.itemgetter(1))]
+        chain = 0
+        with writer.loop("_entity_poly",
+                         ["entity_id", "type", "nstd_linkage",
+                          "nstd_monomer", "pdbx_strand_id",
+                          "pdbx_seq_one_letter_code",
+                          "pdbx_seq_one_letter_code_can"]) as l:
+            for name, entity_id in all_entities:
+                seq = self.simo.sequence_dict[name]
+                l.write(entity_id=entity_id, type='polypeptide(L)',
+                        nstd_linkage='no', nstd_monomer='no',
+                        pdbx_strand_id=self.output.chainids[chain],
+                        pdbx_seq_one_letter_code=seq,
+                        pdbx_seq_one_letter_code_can=seq)
+                chain += 1
+
+
+class StartingModelCoordDumper(Dumper):
+    def __init__(self, simo):
+        super(StartingModelCoordDumper, self).__init__(simo)
+        self.model_hier = OrderedDict()
+
+    def add_model(self, name, hier):
+        self.model_hier[name] = hier
+
+    def dump(self, writer):
+        ordinal = 1
+        with writer.loop("_ihm_starting_model_coord",
+                     ["starting_model_id", "group_PDB", "id", "type_symbol",
+                      "atom_id", "comp_id", "entity_id", "seq_id", "Cartn_x",
+                      "Cartn_y", "Cartn_z", "B_iso_or_equiv",
+                      "ordinal_id"]) as l:
+            for model_name, hier in self.model_hier.items():
+                for a in IMP.atom.get_leaves(hier):
+                    coord = IMP.core.XYZ(a).get_coordinates()
+                    atom = IMP.atom.Atom(a)
+                    element = atom.get_element()
+                    element = IMP.atom.get_element_table().get_name(element)
+                    atom_name = atom.get_atom_type().get_string()
+                    group_pdb = 'ATOM'
+                    if atom_name.startswith('HET:'):
+                        group_pdb = 'HETATM'
+                        del atom_name[:4]
+                    res = IMP.atom.get_residue(atom)
+                    res_name = res.get_residue_type().get_string()
+                    chain = IMP.atom.get_chain(res)
+                    l.write(starting_model_id=model_name, group_PDB=group_pdb,
+                            id=atom.get_input_index(), type_symbol=element,
+                            atom_id=atom_name, comp_id=res_name,
+                            entity_id=self.simo._entity_id[model_name],
+                            seq_id=res.get_index(), Cartn_x=coord[0],
+                            Cartn_y=coord[1], Cartn_z=coord[2],
+                            B_iso_or_equiv=atom.get_temperature_factor(),
+                            ordinal_id=ordinal)
+                    ordinal += 1
+
+
+class Representation(IMP.pmi.representation.Representation):
+    def __init__(self, m, fh, *args, **kwargs):
+        self._cif_writer = CifWriter(fh)
+        self._entity_id = {}
+        self.starting_model_coord_dump = StartingModelCoordDumper(self)
+        super(Representation, self).__init__(m, *args, **kwargs)
+
+    def create_component(self, name, *args, **kwargs):
+        self._entity_id[name] = len(self._entity_id) + 1
+        super(Representation, self).create_component(name, *args, **kwargs)
+
+    def flush(self):
+        for dumper in SoftwareDumper, EntityDumper, EntityPolyDumper:
+            dumper(self).dump(self._cif_writer)
+        for dumper in (self.starting_model_coord_dump,):
+            dumper.dump(self._cif_writer)
+
+    def add_component_pdb(self, name, pdbname, chain, resolutions,
+                          resrange=None, *args, **kwargs):
+        sel = IMP.atom.NonWaterNonHydrogenPDBSelector() & IMP.atom.ChainPDBSelector(chain)
+        ph = IMP.atom.read_pdb(pdbname, self.m, sel)
+        self.starting_model_coord_dump.add_model(name, ph)
+        return super(Representation, self).add_component_pdb(name, pdbname,
+                                     chain, resolutions, resrange=resrange,
+                                     *args, **kwargs)

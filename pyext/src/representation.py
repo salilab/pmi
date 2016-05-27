@@ -1813,7 +1813,7 @@ class Representation(object):
         self,
         hiers,
         axis=None,
-            min_size=0):
+        min_size=1):
         # axis is the rotation axis for 2D rotation
         super_rigid_xyzs = set()
         super_rigid_rbs = set()
@@ -1829,12 +1829,12 @@ class Representation(object):
                 else:
                     super_rigid_xyzs.add(p)
             print("set_rigid_body_from_hierarchies> adding %s to the rigid body" % hier.get_name())
-        if len(super_rigid_rbs) < min_size:
+        if len(super_rigid_rbs|super_rigid_xyzs) < min_size:
             return
         if axis is None:
             self.super_rigid_bodies.append((super_rigid_xyzs, super_rigid_rbs))
         else:
-            # these will be 2D rotation SRB
+            # these will be 2D rotation SRB or a bond rotamer (axis can be a IMP.algebra.Vector3D or particle Pair)
             self.super_rigid_bodies.append(
                 (super_rigid_xyzs, super_rigid_rbs, axis))
 

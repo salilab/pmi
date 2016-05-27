@@ -467,8 +467,8 @@ class BuildSystem(object):
         """
         state = self.system.create_state()
         self._readers.append(reader)
-        these_domain_res = {}    #  key is unique name, value is (atomic res, nonatomicres)
-        these_domains = {}       #  key is unique name, value is _Component
+        these_dres = {}
+        these_domains = {}
         chain_ids = string.ascii_uppercase
         numchain = 0
 
@@ -498,7 +498,7 @@ class BuildSystem(object):
                     else:
                         start = domain.residue_range[0]+domain.pdb_offset
                         if domain.residue_range[1]==-1:
-                            end = 0
+                            end = -1
                         else:
                             end = domain.residue_range[1]+domain.pdb_offset
                         domain_res = mol.residue_range(start-1,end-1)
@@ -509,7 +509,7 @@ class BuildSystem(object):
                             setup_particles_as_densities=(
                                 domain.em_residues_per_gaussian!=0),
                             color = domain.color)
-                        these_domain_res[domain.get_unique_name()] = (set(),domain_res)
+                        these_dres[domain.get_unique_name()] = (domain_res,set())
                     elif domain.pdb_file=="IDEAL_HELIX":
                         mol.add_representation(
                             domain_res,
@@ -519,7 +519,7 @@ class BuildSystem(object):
                             density_prefix=domain.density_prefix,
                             density_force_compute=self.force_create_gmm_files,
                             color = domain.color)
-                        these_domain_res[domain.get_unique_name()] = (domain_res,set())
+                        these_dres[domain.get_unique_name()] = (domain_res,set())
                     else:
                         domain_atomic = mol.add_structure(domain.pdb_file,
                                                           domain.chain,
@@ -548,9 +548,9 @@ class BuildSystem(object):
                                                        resolutions=[domain.bead_size],
                                                        setup_particles_as_densities=True,
                                                        color = domain.color)
-                        these_domain_res[domain.get_unique_name()] = (
+                        these_dres[domain.get_unique_name()] = (
                             domain_atomic,domain_non_atomic)
-            self._domain_res.append(these_domain_res)
+            self._domain_res.append(these_dres)
             self._domains.append(these_domains)
         print('State',len(self.system.states),'added')
 
@@ -582,14 +582,16 @@ class BuildSystem(object):
                 bead_res = IMP.pmi.tools.OrderedSet()
                 for dname in rblist:
                     domain = self._domains[nstate][dname]
+                    if domain.pdb_file=="BEADS":
+                        print("WARNING: You have a rigid body containing BEADS "
+                              "You should probably set the rigid body field for "+domain.molname+
+                              " to blank")
                     all_res|=self._domain_res[nstate][dname][0]
                     bead_res|=self._domain_res[nstate][dname][1]
                     domains_in_rbs.add(dname)
                 all_res|=bead_res
                 self.dof.create_rigid_body(all_res,
-                                           nonrigid_parts=bead_res,
-                                           max_trans=4.0,
-                                           nonrigid_max_trans=1.0)
+                                           nonrigid_parts=bead_res,max_trans=4.0)
 
             # if you have any BEAD domains not in an RB, set them as flexible beads
             for dname in self._domains[nstate]:
@@ -599,6 +601,7 @@ class BuildSystem(object):
                         self._domain_res[nstate][dname][1],max_trans=4.0)
 
             # add super rigid bodies
+            print(srbs)
             for srblist in srbs:
                 all_res = IMP.pmi.tools.OrderedSet()
                 for dname in srblist:
@@ -633,10 +636,7 @@ class BuildModel1(object):
         self.gmm_models_directory=directory_name
 
     def build_model(self,data_structure,sequence_connectivity_scale=4.0,
-                    sequence_connectivity_resolution=10,
-                    rmf_file=None,rmf_frame_number=0,rmf_file_map=None,
-                    skip_connectivity_these_domains=None,
-                    skip_gaussian_in_rmf=False, skip_gaussian_in_representation=False):
+                         sequence_connectivity_resolution=10,rmf_file=None,rmf_frame_number=0,rmf_file_map=None):
         """Create model.
         @param data_structure List of lists containing these entries:
              comp_name, hier_name, color, fasta_file, fasta_id, pdb_name, chain_id,
@@ -728,27 +728,21 @@ class BuildModel1(object):
             if rmf_file is not None:
                 rf=rmf_file
                 rfn=rmf_frame_number
-                self.simo.set_coordinates_from_rmf(c, rf,rfn,
-                    skip_gaussian_in_rmf=skip_gaussian_in_rmf, skip_gaussian_in_representation=skip_gaussian_in_representation)
+                self.simo.set_coordinates_from_rmf(c, rf,rfn)
             elif rmf_file_map:
                 for k in rmf_file_map:
                     cname=k
                     rf=rmf_file_map[k][0]
                     rfn=rmf_file_map[k][1]
                     rcname=rmf_file_map[k][2]
-                    self.simo.set_coordinates_from_rmf(cname, rf,rfn,rcname,
-                        skip_gaussian_in_rmf=skip_gaussian_in_rmf, skip_gaussian_in_representation=skip_gaussian_in_representation)
+                    self.simo.set_coordinates_from_rmf(cname, rf,rfn,rcname)
             else:
                 if c in self.rmf_file:
                     rf=self.rmf_file[c]
                     rfn=self.rmf_frame_number[c]
                     rfm=self.rmf_names_map[c]
-                    self.simo.set_coordinates_from_rmf(c, rf,rfn,representation_name_to_rmf_name_map=rfm,
-                        skip_gaussian_in_rmf=skip_gaussian_in_rmf, skip_gaussian_in_representation=skip_gaussian_in_representation)
-            if (not skip_connectivity_these_domains) or (c not in skip_connectivity_these_domains):
-                self.simo.setup_component_sequence_connectivity(c,
-                                                                resolution=sequence_connectivity_resolution,
-                                                                scale=sequence_connectivity_scale)
+                    self.simo.set_coordinates_from_rmf(c, rf,rfn,representation_name_to_rmf_name_map=rfm)
+            self.simo.setup_component_sequence_connectivity(c,resolution=sequence_connectivity_resolution,scale=sequence_connectivity_scale)
             self.simo.setup_component_geometry(c)
 
         for rb in rigid_bodies:
@@ -763,6 +757,17 @@ class BuildModel1(object):
         self.simo.set_floppy_bodies()
         self.simo.setup_bonds()
 
+    def set_main_chain_mover(self,hier_name,lengths=[5,10,20,30]):
+        hiers=self.domain_dict[hier_name]
+        for length in lengths:
+            for n in range(len(hiers)-length):
+                hs=hiers[n+1:n+length-1]
+                self.simo.set_super_rigid_body_from_hierarchies(hs, axis=(hiers[n].get_particle(),hiers[n+length].get_particle()),min_size=3)
+        for n in range(1,len(hiers)-1,5):
+            hs=hiers[n+1:]
+            self.simo.set_super_rigid_body_from_hierarchies(hs, axis=(hiers[n].get_particle(),hiers[n-1].get_particle()),min_size=3)
+            hs=hiers[:n-1]
+            self.simo.set_super_rigid_body_from_hierarchies(hs, axis=(hiers[n].get_particle(),hiers[n-1].get_particle()),min_size=3)
 
 
     def set_rmf_file(self,component_name,rmf_file,rmf_frame_number,rmf_names_map=None):

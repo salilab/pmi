@@ -397,6 +397,7 @@ class Representation(object):
         start = start + offset
         end = end + offset
 
+        self._add_pdb_element(name, start, end, offset, pdbname, chain)
         self.elements[name].append(
             (start, end, pdbname.split("/")[-1] + ":" + chain, "pdb"))
 
@@ -411,6 +412,9 @@ class Representation(object):
         del t
 
         return outhiers
+
+    def _add_pdb_element(self, name, start, end, offset, pdbname, chain):
+        pass
 
     def add_component_ideal_helix(
         self,

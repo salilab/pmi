@@ -5,8 +5,8 @@
 from __future__ import print_function
 import IMP.pmi.representation
 import IMP.pmi.tools
-import IMP.pmi.output
 from IMP.pmi.tools import OrderedDict
+import IMP.pmi.output
 import sys
 import os
 import operator
@@ -152,52 +152,121 @@ class EntityPolyDumper(Dumper):
                         pdbx_seq_one_letter_code_can=seq)
                 chain += 1
 
+class _PDBFragment(object):
+    """Record details about part of a PDB file used as input
+       for a component."""
+    def __init__(self, m, component, start, end, offset, pdbname, chain):
+        self.component, self.start, self.end, self.offset, self.pdbname \
+              = component, start, end, offset, pdbname
+        sel = IMP.atom.NonWaterNonHydrogenPDBSelector() \
+              & IMP.atom.ChainPDBSelector(chain)
+        self.hier = IMP.atom.read_pdb(pdbname, m, sel)
 
-class StartingModelCoordDumper(Dumper):
+class _StartingModel(object):
+    """Record details about an input model (e.g. comparative modeling
+       template) used for a component."""
+
+    def __init__(self, fragment):
+        self.fragments = [fragment]
+
+class StartingModelDumper(Dumper):
     def __init__(self, simo):
-        super(StartingModelCoordDumper, self).__init__(simo)
-        self.model_hier = OrderedDict()
+        super(StartingModelDumper, self).__init__(simo)
+        # dict of PDB fragments, ordered by component name
+        self.fragments = OrderedDict()
+        # dict of starting models (entire PDB files), collected from fragments
+        self.models = OrderedDict()
 
-    def add_model(self, name, hier):
-        self.model_hier[name] = hier
+    def add_pdb_fragment(self, fragment):
+        """Add a starting model PDB fragment."""
+        comp = fragment.component
+        if comp not in self.fragments:
+            self.fragments[comp] = []
+            self.models[comp] = []
+        self.fragments[comp].append(fragment)
+        models = self.models[comp]
+        if len(models) == 0 \
+           or models[-1].fragments[0].pdbname != fragment.pdbname:
+            models.append(_StartingModel(fragment))
+        else:
+            models[-1].fragments.append(fragment)
+
+    def assign_model_names_ids(self):
+        ordinal = 1
+        for comp, models in self.models.items():
+            for i, model in enumerate(models):
+                model.name = "%s-m%d" % (comp, i+1)
+                model.ordinal = ordinal
+                ordinal += 1
+
+    def all_models(self):
+        for comp, models in self.models.items():
+            for model in models:
+                yield model
 
     def dump(self, writer):
+        self.assign_model_names_ids()
+        self.dump_details(writer)
+        self.dump_coords(writer)
+
+    def dump_details(self, writer):
+        with writer.loop("_ihm_starting_model_details",
+                     ["id", "entity_id", "entity_description", "seq_id_begin",
+                      "seq_id_end", "starting_model_source",
+                      "starting_model_db_name", "starting_model_db_code",
+                      "starting_model_db_pdb_auth_seq_id",
+                      "starting_model_sequence_identity",
+                      "starting_model_id"]) as l:
+            for model in self.all_models():
+                f = model.fragments[0]
+                l.write(id=model.ordinal,
+                        entity_id=self.simo._entity_id[f.component],
+                        entity_description=f.component,
+                        seq_id_begin=min(x.start + x.offset
+                                         for x in model.fragments),
+                        seq_id_end=max(x.end + x.offset
+                                       for x in model.fragments),
+                        starting_model_id=model.name)
+
+    def dump_coords(self, writer):
         ordinal = 1
         with writer.loop("_ihm_starting_model_coord",
                      ["starting_model_id", "group_PDB", "id", "type_symbol",
                       "atom_id", "comp_id", "entity_id", "seq_id", "Cartn_x",
                       "Cartn_y", "Cartn_z", "B_iso_or_equiv",
                       "ordinal_id"]) as l:
-            for model_name, hier in self.model_hier.items():
-                for a in IMP.atom.get_leaves(hier):
-                    coord = IMP.core.XYZ(a).get_coordinates()
-                    atom = IMP.atom.Atom(a)
-                    element = atom.get_element()
-                    element = IMP.atom.get_element_table().get_name(element)
-                    atom_name = atom.get_atom_type().get_string()
-                    group_pdb = 'ATOM'
-                    if atom_name.startswith('HET:'):
-                        group_pdb = 'HETATM'
-                        del atom_name[:4]
-                    res = IMP.atom.get_residue(atom)
-                    res_name = res.get_residue_type().get_string()
-                    chain = IMP.atom.get_chain(res)
-                    l.write(starting_model_id=model_name, group_PDB=group_pdb,
-                            id=atom.get_input_index(), type_symbol=element,
-                            atom_id=atom_name, comp_id=res_name,
-                            entity_id=self.simo._entity_id[model_name],
-                            seq_id=res.get_index(), Cartn_x=coord[0],
-                            Cartn_y=coord[1], Cartn_z=coord[2],
-                            B_iso_or_equiv=atom.get_temperature_factor(),
-                            ordinal_id=ordinal)
-                    ordinal += 1
+            for model in self.all_models():
+                for f in model.fragments:
+                    for a in IMP.atom.get_leaves(f.hier):
+                        coord = IMP.core.XYZ(a).get_coordinates()
+                        atom = IMP.atom.Atom(a)
+                        element = atom.get_element()
+                        element = IMP.atom.get_element_table().get_name(element)
+                        atom_name = atom.get_atom_type().get_string()
+                        group_pdb = 'ATOM'
+                        if atom_name.startswith('HET:'):
+                            group_pdb = 'HETATM'
+                            del atom_name[:4]
+                        res = IMP.atom.get_residue(atom)
+                        res_name = res.get_residue_type().get_string()
+                        chain = IMP.atom.get_chain(res)
+                        l.write(starting_model_id=model.name,
+                                group_PDB=group_pdb,
+                                id=atom.get_input_index(), type_symbol=element,
+                                atom_id=atom_name, comp_id=res_name,
+                                entity_id=self.simo._entity_id[f.component],
+                                seq_id=res.get_index(), Cartn_x=coord[0],
+                                Cartn_y=coord[1], Cartn_z=coord[2],
+                                B_iso_or_equiv=atom.get_temperature_factor(),
+                                ordinal_id=ordinal)
+                        ordinal += 1
 
 
 class Representation(IMP.pmi.representation.Representation):
     def __init__(self, m, fh, *args, **kwargs):
         self._cif_writer = CifWriter(fh)
         self._entity_id = {}
-        self.starting_model_coord_dump = StartingModelCoordDumper(self)
+        self.starting_model_dump = StartingModelDumper(self)
         super(Representation, self).__init__(m, *args, **kwargs)
 
     def create_component(self, name, *args, **kwargs):
@@ -207,14 +276,9 @@ class Representation(IMP.pmi.representation.Representation):
     def flush(self):
         for dumper in SoftwareDumper, EntityDumper, EntityPolyDumper:
             dumper(self).dump(self._cif_writer)
-        for dumper in (self.starting_model_coord_dump,):
+        for dumper in (self.starting_model_dump,):
             dumper.dump(self._cif_writer)
 
-    def add_component_pdb(self, name, pdbname, chain, resolutions,
-                          resrange=None, *args, **kwargs):
-        sel = IMP.atom.NonWaterNonHydrogenPDBSelector() & IMP.atom.ChainPDBSelector(chain)
-        ph = IMP.atom.read_pdb(pdbname, self.m, sel)
-        self.starting_model_coord_dump.add_model(name, ph)
-        return super(Representation, self).add_component_pdb(name, pdbname,
-                                     chain, resolutions, resrange=resrange,
-                                     *args, **kwargs)
+    def _add_pdb_element(self, name, start, end, offset, pdbname, chain):
+        p = _PDBFragment(self.m, name, start, end, offset, pdbname, chain)
+        self.starting_model_dump.add_pdb_fragment(p)

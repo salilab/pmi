@@ -587,7 +587,9 @@ def get_position_terminal_residue(hier, terminus="C", resolution=1):
 
 def get_terminal_residue(representation, hier, terminus="C", resolution=1):
     '''
-    Get the xyz position of the terminal residue at the given resolution.
+    Get the particle of the terminal residue at the GIVEN resolution
+    (NOTE: not the closest resolution!).
+    It is needed for instance to determine the last residue of a pdb.
     @param hier hierarchy containing the terminal residue
     @param terminus either 'N' or 'C'
     @param resolution resolution to use.

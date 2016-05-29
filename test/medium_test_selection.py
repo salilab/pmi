@@ -25,8 +25,6 @@ class Tests(IMP.test.TestCase):
                 resolutions=[1, 10, 100], missingbeadsize=beadsize)
             r.setup_component_sequence_connectivity(components[n], 1)
 
-        for name in ["Rpb3","Rpb4","Rpb5","Rpb6"]:
-            r.show_component_table(name)
         return r
 
     def test_get_terminal_residue_two_methods(self):

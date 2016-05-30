@@ -974,6 +974,9 @@ class Representation(object):
         for p in allpsrmf:
             (protname, is_a_bead) = IMP.pmi.tools.get_prot_name_from_particle(
                 p, self.hier_dict.keys())
+            if (protname is None) and (rmf_component_name is not None):
+                (protname, is_a_bead) = IMP.pmi.tools.get_prot_name_from_particle(
+                    p, rmf_component_name)
             if (skip_gaussian_in_rmf):
                 if (IMP.core.Gaussian.get_is_setup(p)) and not (IMP.atom.Fragment.get_is_setup(p) or IMP.atom.Residue.get_is_setup(p)):
                     continue
@@ -987,14 +990,11 @@ class Representation(object):
             allpsrepr = psrepr
             psrepr = []
             for p in allpsrepr:
-                (protname, is_a_bead) = IMP.pmi.tools.get_prot_name_from_particle(
-                    p, self.hier_dict.keys())
+                #(protname, is_a_bead) = IMP.pmi.tools.get_prot_name_from_particle(
+                #    p, self.hier_dict.keys())
                 if (IMP.core.Gaussian.get_is_setup(p)) and not (IMP.atom.Fragment.get_is_setup(p) or IMP.atom.Residue.get_is_setup(p)):
                     continue
-                if (rmf_component_name is not None) and (protname == rmf_component_name):
-                    psrepr.append(p)
-                elif (rmf_component_name is None) and (protname == component_name):
-                    psrepr.append(p)
+                psrepr.append(p)
 
         import itertools
         reprnames=[p.get_name() for p in psrepr]
@@ -1036,7 +1036,6 @@ class Representation(object):
                     grepr=IMP.core.Gaussian(psrepr[n])
                     g=gprmf.get_gaussian()
                     grepr.set_gaussian(g)
-
 
         else:
             repr_name_particle_map={}

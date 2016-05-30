@@ -624,6 +624,7 @@ class BuildModel1(object):
         self.rmf_file={}
         self.rmf_frame_number={}
         self.rmf_names_map={}
+        self.rmf_component_name={}
 
     def set_gmm_models_directory(self,directory_name):
         self.gmm_models_directory=directory_name
@@ -739,7 +740,9 @@ class BuildModel1(object):
                     rf=self.rmf_file[c]
                     rfn=self.rmf_frame_number[c]
                     rfm=self.rmf_names_map[c]
+                    rcname=self.rmf_component_name[c]
                     self.simo.set_coordinates_from_rmf(c, rf,rfn,representation_name_to_rmf_name_map=rfm,
+                        rmf_component_name=rcname,
                         skip_gaussian_in_rmf=skip_gaussian_in_rmf, skip_gaussian_in_representation=skip_gaussian_in_representation)
             if (not skip_connectivity_these_domains) or (c not in skip_connectivity_these_domains):
                 self.simo.setup_component_sequence_connectivity(c,
@@ -772,10 +775,11 @@ class BuildModel1(object):
             self.simo.set_super_rigid_body_from_hierarchies(hs, axis=(hiers[n].get_particle(),hiers[n-1].get_particle()),min_size=3)
 
 
-    def set_rmf_file(self,component_name,rmf_file,rmf_frame_number,rmf_names_map=None):
+    def set_rmf_file(self,component_name,rmf_file,rmf_frame_number,rmf_names_map=None,rmf_component_name=None):
         self.rmf_file[component_name]=rmf_file
         self.rmf_frame_number[component_name]=rmf_frame_number
         self.rmf_names_map[component_name]=rmf_names_map
+        self.rmf_component_name[component_name]=rmf_component_name
 
     def get_density_hierarchies(self,hier_name_list):
         # return a list of density hierarchies

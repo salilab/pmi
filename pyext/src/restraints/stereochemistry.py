@@ -217,7 +217,7 @@ class ExcludedVolumeSphere(object):
                 resolution=resolution,
                 hierarchies=hierarchies)
             if bipartite:
-                other_particles = IMP.pmi.tools.select(
+                other_ps = IMP.pmi.tools.select(
                     representation,
                     resolution=resolution,
                     hierarchies=other_hierarchies)

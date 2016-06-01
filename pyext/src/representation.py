@@ -1547,7 +1547,8 @@ class Representation(object):
         else:
             print("optimize_floppy_bodies: no particle to optimize")
 
-    def create_rotational_symmetry(self, maincopy, copies, rotational_axis=IMP.algebra.Vector3D(0, 0, 1.0), nSymmetry=None):
+    def create_rotational_symmetry(self, maincopy, copies, rotational_axis=IMP.algebra.Vector3D(0, 0, 1.0),
+                                   nSymmetry=None, skip_gaussian_in_clones=False):
         '''
         The copies must not contain rigid bodies.
         The symmetry restraints are applied at each leaf.
@@ -1574,6 +1575,9 @@ class Representation(object):
 
             lc = IMP.container.ListSingletonContainer(self.m)
             for n, p in enumerate(main_hiers):
+                if (skip_gaussian_in_clones):
+                    if (IMP.core.Gaussian.get_is_setup(p)) and not (IMP.atom.Fragment.get_is_setup(p) or IMP.atom.Residue.get_is_setup(p)):
+                        continue
                 pc = clone_hiers[n]
                 #print("setting " + p.get_name() + " as reference for " + pc.get_name())
                 IMP.core.Reference.setup_particle(pc.get_particle(), p.get_particle())

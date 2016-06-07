@@ -1705,7 +1705,7 @@ class Representation(object):
         it will be stored in self.prot, which will be overwritten.
         load the coordinates from the rmf file at frameindex.
         '''
-        rh = RMF.open_rmf_file(rmfname)
+        rh = RMF.open_rmf_file_read_only(rmfname)
         self.prot = IMP.rmf.create_hierarchies(rh, self.m)[0]
         IMP.atom.show_molecular_hierarchy(self.prot)
         IMP.rmf.link_hierarchies(rh, [self.prot])

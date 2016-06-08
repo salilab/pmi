@@ -152,6 +152,22 @@ class EntityPolyDumper(Dumper):
                         pdbx_seq_one_letter_code_can=seq)
                 chain += 1
 
+class EntityPolySeqDumper(Dumper):
+    def dump(self, writer):
+        all_entities = [x for x in sorted(self.simo._entity_id.items(),
+                                          key=operator.itemgetter(1))]
+        num = 1
+        with writer.loop("_entity_poly_seq",
+                         ["entity_id", "num", "mon_id", "hetero"]) as l:
+            for name, entity_id in all_entities:
+                seq = self.simo.sequence_dict[name]
+                for one_letter_code in seq:
+                    restyp = IMP.atom.get_residue_type(one_letter_code)
+                    l.write(entity_id=entity_id, num=num,
+                            mon_id=restyp.get_string(),
+                            hetero=CifWriter.omitted)
+                    num += 1
+
 class _PDBFragment(object):
     """Record details about part of a PDB file used as input
        for a component."""
@@ -267,6 +283,9 @@ class Representation(IMP.pmi.representation.Representation):
         self._cif_writer = CifWriter(fh)
         self._entity_id = {}
         self.starting_model_dump = StartingModelDumper(self)
+        self._dumpers = [SoftwareDumper(self), EntityDumper(self),
+                         EntityPolyDumper(self), EntityPolySeqDumper(self),
+                         self.starting_model_dump]
         super(Representation, self).__init__(m, *args, **kwargs)
 
     def create_component(self, name, *args, **kwargs):
@@ -274,9 +293,7 @@ class Representation(IMP.pmi.representation.Representation):
         super(Representation, self).create_component(name, *args, **kwargs)
 
     def flush(self):
-        for dumper in SoftwareDumper, EntityDumper, EntityPolyDumper:
-            dumper(self).dump(self._cif_writer)
-        for dumper in (self.starting_model_dump,):
+        for dumper in self._dumpers:
             dumper.dump(self._cif_writer)
 
     def _add_pdb_element(self, name, start, end, offset, pdbname, chain):

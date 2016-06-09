@@ -188,6 +188,9 @@ class _PDBFragment(object):
               & IMP.atom.ChainPDBSelector(chain)
         self.hier = IMP.atom.read_pdb(pdbname, m, sel)
 
+    def combine(self, other):
+        pass
+
 class _BeadsFragment(object):
     """Record details about beads used to represent part of a component."""
     primitive = 'sphere'
@@ -195,6 +198,12 @@ class _BeadsFragment(object):
     def __init__(self, m, component, start, end, num):
         self.component, self.start, self.end, self.num \
               = component, start, end, num
+
+    def combine(self, other):
+        if type(other) == type(self) and other.start == self.end + 1:
+            self.end = other.end
+            self.num += other.num
+            return True
 
 class _StartingModel(object):
     """Record details about an input model (e.g. comparative modeling
@@ -219,7 +228,9 @@ class ModelDetailsDumper(Dumper):
         comp = fragment.component
         if comp not in self.fragments:
             self.fragments[comp] = []
-        self.fragments[comp].append(fragment)
+        fragments = self.fragments[comp]
+        if len(fragments) == 0 or not fragments[-1].combine(fragment):
+            fragments.append(fragment)
 
     def dump(self, writer):
         segment_id = 1

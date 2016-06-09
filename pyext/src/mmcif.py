@@ -103,6 +103,9 @@ class Dumper(object):
     def __init__(self, simo):
         self.simo = simo
 
+    def finalize(self):
+        pass
+
 
 class SoftwareDumper(Dumper):
     def dump(self, writer):
@@ -175,12 +178,23 @@ class EntityPolySeqDumper(Dumper):
 class _PDBFragment(object):
     """Record details about part of a PDB file used as input
        for a component."""
+    primitive = 'sphere'
+    granularity = 'by-residue'
+    num = CifWriter.omitted
     def __init__(self, m, component, start, end, offset, pdbname, chain):
         self.component, self.start, self.end, self.offset, self.pdbname \
               = component, start, end, offset, pdbname
         sel = IMP.atom.NonWaterNonHydrogenPDBSelector() \
               & IMP.atom.ChainPDBSelector(chain)
         self.hier = IMP.atom.read_pdb(pdbname, m, sel)
+
+class _BeadsFragment(object):
+    """Record details about beads used to represent part of a component."""
+    primitive = 'sphere'
+    granularity = 'by-feature'
+    def __init__(self, m, component, start, end, num):
+        self.component, self.start, self.end, self.num \
+              = component, start, end, num
 
 class _StartingModel(object):
     """Record details about an input model (e.g. comparative modeling
@@ -194,6 +208,43 @@ class _StartingModel(object):
     def __init__(self, fragment):
         self.fragments = [fragment]
 
+class ModelDetailsDumper(Dumper):
+    def __init__(self, simo):
+        super(ModelDetailsDumper, self).__init__(simo)
+        # dict of fragments, ordered by component name
+        self.fragments = OrderedDict()
+
+    def add_fragment(self, fragment):
+        """Add a model fragment."""
+        comp = fragment.component
+        if comp not in self.fragments:
+            self.fragments[comp] = []
+        self.fragments[comp].append(fragment)
+
+    def dump(self, writer):
+        segment_id = 1
+        with writer.loop("_ihm_model_details",
+                         ["segment_id", "entity_id", "entity_description",
+                          "seq_id_begin", "seq_id_end",
+                          "model_object_primitive", "starting_model_id",
+                          "model_mode", "model_granularity",
+                          "model_object_count"]) as l:
+            for comp, fragments in self.fragments.items():
+                for f in fragments:
+                    starting_model_id = CifWriter.omitted
+                    if hasattr(f, 'pdbname'):
+                        starting_model_id = self.starting_model_id[f.pdbname]
+                    l.write(segment_id=segment_id,
+                            entity_id=self.simo._entity_id[f.component],
+                            entity_description=f.component,
+                            seq_id_begin=f.start,
+                            seq_id_end=f.end,
+                            model_object_primitive=f.primitive,
+                            starting_model_id=starting_model_id,
+                            model_granularity=f.granularity,
+                            model_object_count=f.num)
+                    segment_id += 1
+
 class StartingModelDumper(Dumper):
     def __init__(self, simo):
         super(StartingModelDumper, self).__init__(simo)
@@ -201,6 +252,8 @@ class StartingModelDumper(Dumper):
         self.fragments = OrderedDict()
         # dict of starting models (entire PDB files), collected from fragments
         self.models = OrderedDict()
+        # mapping from pdbname to starting_model_id
+        self.starting_model_id = {}
 
     def add_pdb_fragment(self, fragment):
         """Add a starting model PDB fragment."""
@@ -221,6 +274,7 @@ class StartingModelDumper(Dumper):
         for comp, models in self.models.items():
             for i, model in enumerate(models):
                 model.name = "%s-m%d" % (comp, i+1)
+                self.starting_model_id[model.fragments[0].pdbname] = model.name
                 model.ordinal = ordinal
                 # Attempt to identity PDB file vs. comparative model
                 first_line = open(model.fragments[0].pdbname).readline()
@@ -238,8 +292,10 @@ class StartingModelDumper(Dumper):
             for model in models:
                 yield model
 
-    def dump(self, writer):
+    def finalize(self):
         self.assign_model_details()
+
+    def dump(self, writer):
         self.dump_details(writer)
         self.dump_coords(writer)
 
@@ -308,10 +364,13 @@ class Representation(IMP.pmi.representation.Representation):
     def __init__(self, m, fh, *args, **kwargs):
         self._cif_writer = CifWriter(fh)
         self._entity_id = {}
+        self.model_details_dump = ModelDetailsDumper(self)
         self.starting_model_dump = StartingModelDumper(self)
+        self.model_details_dump.starting_model_id \
+                    = self.starting_model_dump.starting_model_id
         self._dumpers = [SoftwareDumper(self), EntityDumper(self),
                          EntityPolyDumper(self), EntityPolySeqDumper(self),
-                         self.starting_model_dump]
+                         self.model_details_dump, self.starting_model_dump]
         super(Representation, self).__init__(m, *args, **kwargs)
 
     def create_component(self, name, *args, **kwargs):
@@ -320,8 +379,15 @@ class Representation(IMP.pmi.representation.Representation):
 
     def flush(self):
         for dumper in self._dumpers:
+            dumper.finalize()
+        for dumper in self._dumpers:
             dumper.dump(self._cif_writer)
 
     def _add_pdb_element(self, name, start, end, offset, pdbname, chain):
         p = _PDBFragment(self.m, name, start, end, offset, pdbname, chain)
+        self.model_details_dump.add_fragment(p)
         self.starting_model_dump.add_pdb_fragment(p)
+
+    def _add_bead_element(self, name, start, end, num):
+        b = _BeadsFragment(self.m, name, start, end, num)
+        self.model_details_dump.add_fragment(b)

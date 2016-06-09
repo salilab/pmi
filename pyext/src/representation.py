@@ -416,6 +416,9 @@ class Representation(object):
     def _add_pdb_element(self, name, start, end, offset, pdbname, chain):
         pass
 
+    def _add_bead_element(self, name, start, end, num):
+        pass
+
     def add_component_ideal_helix(
         self,
         name,
@@ -498,6 +501,7 @@ class Representation(object):
             colors = [self.color_dict[name]]
 
 
+        self._add_bead_element(name, ds[0][0], ds[-1][1], len(ds))
         for n, dss in enumerate(ds):
             ds_frag = (dss[0], dss[1])
             self.elements[name].append((dss[0], dss[1], " ", "bead"))

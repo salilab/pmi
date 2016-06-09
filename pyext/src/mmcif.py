@@ -10,6 +10,7 @@ import IMP.pmi.output
 import sys
 import os
 import operator
+import textwrap
 
 class _LineWriter(object):
     def __init__(self, writer, line_len=80, multi_line_len=70):
@@ -80,6 +81,9 @@ class CifWriter(object):
         return CifCategoryWriter(self, category)
     def loop(self, category, keys):
         return CifLoopWriter(self, category, keys)
+    def write_comment(self, comment):
+        for line in textwrap.wrap(comment, 78):
+            self.fh.write('# ' + line + '\n')
     def _write(self, category, kwargs):
         for key in kwargs:
             self.fh.write("%s.%s %s\n" % (category, key,
@@ -182,6 +186,11 @@ class _StartingModel(object):
     """Record details about an input model (e.g. comparative modeling
        template) used for a component."""
 
+    source = CifWriter.unknown
+    db_name = CifWriter.unknown
+    db_code = CifWriter.unknown
+    sequence_identity = CifWriter.unknown
+
     def __init__(self, fragment):
         self.fragments = [fragment]
 
@@ -207,12 +216,21 @@ class StartingModelDumper(Dumper):
         else:
             models[-1].fragments.append(fragment)
 
-    def assign_model_names_ids(self):
+    def assign_model_details(self):
         ordinal = 1
         for comp, models in self.models.items():
             for i, model in enumerate(models):
                 model.name = "%s-m%d" % (comp, i+1)
                 model.ordinal = ordinal
+                # Attempt to identity PDB file vs. comparative model
+                first_line = open(model.fragments[0].pdbname).readline()
+                if first_line.startswith('HEADER'):
+                    model.source = 'experimental model'
+                    model.db_name = 'PDB'
+                    model.db_code = first_line[62:66].strip()
+                    model.sequence_identity = 100.0
+                elif first_line.startswith('EXPDTA    MODEL, MODELLER'):
+                    model.source = 'comparative model'
                 ordinal += 1
 
     def all_models(self):
@@ -221,11 +239,15 @@ class StartingModelDumper(Dumper):
                 yield model
 
     def dump(self, writer):
-        self.assign_model_names_ids()
+        self.assign_model_details()
         self.dump_details(writer)
         self.dump_coords(writer)
 
     def dump_details(self, writer):
+        writer.write_comment("""IMP will attempt to identify which input models
+are crystal structures and which are comparative models, but does not have
+sufficient information to deduce all of the templates used for comparative
+modeling. These may need to be added manually below.""")
         with writer.loop("_ihm_starting_model_details",
                      ["id", "entity_id", "entity_description", "seq_id_begin",
                       "seq_id_end", "starting_model_source",
@@ -242,7 +264,11 @@ class StartingModelDumper(Dumper):
                                          for x in model.fragments),
                         seq_id_end=max(x.end + x.offset
                                        for x in model.fragments),
-                        starting_model_id=model.name)
+                        starting_model_id=model.name,
+                        starting_model_source=model.source,
+                        starting_model_db_name=model.db_name,
+                        starting_model_db_code=model.db_code,
+                        starting_model_sequence_identity=model.sequence_identity)
 
     def dump_coords(self, writer):
         ordinal = 1

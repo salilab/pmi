@@ -638,7 +638,8 @@ class BuildModel1(object):
         @param data_structure List of lists containing these entries:
              comp_name, hier_name, color, fasta_file, fasta_id, pdb_name, chain_id,
              res_range, read_em_files, bead_size, rb, super_rb,
-             em_num_components, em_txt_file_name, em_mrc_file_name
+             em_num_components, em_txt_file_name, em_mrc_file_name, chain_of_super_rb, 
+             keep_gaussian_flexible_beads (optional)
         @param sequence_connectivity_scale
         @param rmf_file
         @param rmf_frame_number

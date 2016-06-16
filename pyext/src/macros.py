@@ -673,6 +673,10 @@ class BuildModel1(object):
             em_txt_file_name  = d[13]
             em_mrc_file_name  = d[14]
             chain_of_super_rb = d[15]
+            try:
+                keep_gaussian_flexible_beads = d[16]
+            except:
+                keep_gaussian_flexible_beads = True
 
             if comp_name not in self.simo.get_component_names():
                 self.simo.create_component(comp_name,color=0.0)
@@ -687,9 +691,9 @@ class BuildModel1(object):
 
                 dens_hier,beads=self.create_density(self.simo,comp_name,outhier,em_txt_file_name,em_mrc_file_name,em_num_components,read_em_files)
 
-                self.simo.add_all_atom_densities(comp_name, particles=beads)
-                dens_hier+=beads
-
+                if (keep_gaussian_flexible_beads):
+                    self.simo.add_all_atom_densities(comp_name, particles=beads)
+                    dens_hier+=beads
             else:
                 dens_hier=[]
 

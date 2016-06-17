@@ -124,7 +124,7 @@ class SoftwareDumper(Dumper):
 
 class EntityDumper(Dumper):
     def dump(self, writer):
-        all_entities = [x for x in sorted(self.simo._entity_id.items(),
+        all_entities = [x for x in sorted(self.simo.entities.items(),
                                           key=operator.itemgetter(1))]
         with writer.loop("_entity",
                          ["id", "type", "src_method", "pdbx_description",
@@ -142,7 +142,7 @@ class EntityPolyDumper(Dumper):
         self.output = IMP.pmi.output.Output()
 
     def dump(self, writer):
-        all_entities = [x for x in sorted(self.simo._entity_id.items(),
+        all_entities = [x for x in sorted(self.simo.entities.items(),
                                           key=operator.itemgetter(1))]
         chain = 0
         with writer.loop("_entity_poly",
@@ -161,7 +161,7 @@ class EntityPolyDumper(Dumper):
 
 class EntityPolySeqDumper(Dumper):
     def dump(self, writer):
-        all_entities = [x for x in sorted(self.simo._entity_id.items(),
+        all_entities = [x for x in sorted(self.simo.entities.items(),
                                           key=operator.itemgetter(1))]
         num = 1
         with writer.loop("_entity_poly_seq",
@@ -246,7 +246,7 @@ class ModelDetailsDumper(Dumper):
                     if hasattr(f, 'pdbname'):
                         starting_model_id = self.starting_model_id[f.pdbname]
                     l.write(segment_id=segment_id,
-                            entity_id=self.simo._entity_id[f.component],
+                            entity_id=self.simo.entities[f.component],
                             entity_description=f.component,
                             seq_id_begin=f.start,
                             seq_id_end=f.end,
@@ -325,7 +325,7 @@ modeling. These may need to be added manually below.""")
             for model in self.all_models():
                 f = model.fragments[0]
                 l.write(id=model.ordinal,
-                        entity_id=self.simo._entity_id[f.component],
+                        entity_id=self.simo.entities[f.component],
                         entity_description=f.component,
                         seq_id_begin=min(x.start + x.offset
                                          for x in model.fragments),
@@ -363,7 +363,7 @@ modeling. These may need to be added manually below.""")
                                 group_PDB=group_pdb,
                                 id=atom.get_input_index(), type_symbol=element,
                                 atom_id=atom_name, comp_id=res_name,
-                                entity_id=self.simo._entity_id[f.component],
+                                entity_id=self.simo.entities[f.component],
                                 seq_id=res.get_index(), Cartn_x=coord[0],
                                 Cartn_y=coord[1], Cartn_z=coord[2],
                                 B_iso_or_equiv=atom.get_temperature_factor(),
@@ -371,10 +371,25 @@ modeling. These may need to be added manually below.""")
                         ordinal += 1
 
 
+class CifEntities(dict):
+    """Handle mapping from IMP components to CIF entity IDs.
+       An entity is a chain with a unique sequence. Thus, multiple
+       components may map to the same entity if they share sequence."""
+    def __init__(self):
+        super(CifEntities, self).__init__()
+        self._sequence_dict = {}
+
+    def add(self, component_name, sequence):
+        if sequence not in self._sequence_dict:
+            entity_id = len(self._sequence_dict) + 1
+            self._sequence_dict[sequence] = entity_id
+            self[component_name] = entity_id
+
+
 class Representation(IMP.pmi.representation.Representation):
     def __init__(self, m, fh, *args, **kwargs):
         self._cif_writer = CifWriter(fh)
-        self._entity_id = {}
+        self.entities = CifEntities()
         self.model_details_dump = ModelDetailsDumper(self)
         self.starting_model_dump = StartingModelDumper(self)
         self.model_details_dump.starting_model_id \
@@ -385,8 +400,12 @@ class Representation(IMP.pmi.representation.Representation):
         super(Representation, self).__init__(m, *args, **kwargs)
 
     def create_component(self, name, *args, **kwargs):
-        self._entity_id[name] = len(self._entity_id) + 1
         super(Representation, self).create_component(name, *args, **kwargs)
+
+    def add_component_sequence(self, name, *args, **kwargs):
+        super(Representation, self).add_component_sequence(name, *args,
+                                                           **kwargs)
+        self.entities.add(name, self.sequence_dict[name])
 
     def flush(self):
         for dumper in self._dumpers:

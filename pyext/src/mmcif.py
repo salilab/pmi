@@ -7,6 +7,7 @@ import IMP.pmi.representation
 import IMP.pmi.tools
 from IMP.pmi.tools import OrderedDict
 import IMP.pmi.output
+import re
 import sys
 import os
 import operator
@@ -270,6 +271,45 @@ class ModelDetailsDumper(Dumper):
                             model_object_count=f.num)
                     segment_id += 1
 
+class PDBSource(object):
+    """An experimental PDB file used as part of a starting model"""
+    source = 'experimental model'
+    db_name = 'PDB'
+    chain_id = CifWriter.unknown
+    sequence_identity = 100.0
+
+    def __init__(self, model, db_code):
+        self.db_code = db_code
+        # Assume the structure covers the entire sequence
+        self.seq_id_begin = model.seq_id_begin
+        self.seq_id_end = model.seq_id_end
+
+class TemplateSource(object):
+    """A PDB file used as a template for a comparative starting model"""
+    source = 'comparative model'
+    db_name = 'PDB'
+
+    def __init__(self, db_code, chain_id, seq_id_begin, seq_id_end, seq_id,
+                 model):
+        self.db_code, self.chain_id = db_code.upper(), chain_id
+        self.sequence_identity = seq_id
+        # The template may cover more than the current starting model
+        self.seq_id_begin = max(model.seq_id_begin, seq_id_begin)
+        self.seq_id_end = min(model.seq_id_end, seq_id_end)
+
+class UnknownSource(object):
+    """Part of a starting model from an unknown source"""
+    source = CifWriter.unknown
+    db_code = CifWriter.unknown
+    db_name = CifWriter.unknown
+    chain_id = CifWriter.unknown
+    sequence_identity = CifWriter.unknown
+
+    def __init__(self, model):
+        self.seq_id_begin = model.seq_id_begin
+        self.seq_id_end = model.seq_id_end
+
+
 class StartingModelDumper(Dumper):
     def __init__(self, simo):
         super(StartingModelDumper, self).__init__(simo)
@@ -294,23 +334,46 @@ class StartingModelDumper(Dumper):
         else:
             models[-1].fragments.append(fragment)
 
+    def get_templates(self, pdbname, model):
+        templates = []
+        tmpre = re.compile('REMARK   6 TEMPLATE: (\S{4})(\S) .* '
+                           'MODELS (\S+):\S+ \- (\S+):\S+ AT (\S+)%')
+
+        with open(pdbname) as fh:
+            for line in fh:
+                if line.startswith('ATOM'): # Read only the header
+                    break
+                m = tmpre.match(line)
+                if m:
+                    templates.append(TemplateSource(m.group(1), m.group(2),
+                                                    int(m.group(3)),
+                                                    int(m.group(4)),
+                                                    m.group(5), model))
+        # Sort by starting residue
+        return sorted(templates, key=lambda x: x.seq_id_begin)
+
+    def get_sources(self, model, pdbname):
+        # Attempt to identity PDB file vs. comparative model
+        first_line = open(pdbname).readline()
+        if first_line.startswith('HEADER'):
+            return [PDBSource(model, first_line[62:66].strip())]
+        elif first_line.startswith('EXPDTA    THEORETICAL MODEL, MODELLER'):
+            templates = self.get_templates(pdbname, model)
+            if templates:
+                return templates
+        return [UnknownSource(model)]
+
     def assign_model_details(self):
-        ordinal = 1
         for comp, models in self.models.items():
             for i, model in enumerate(models):
                 model.name = "%s-m%d" % (comp, i+1)
                 self.starting_model_id[model.fragments[0].pdbname] = model.name
-                model.ordinal = ordinal
-                # Attempt to identity PDB file vs. comparative model
-                first_line = open(model.fragments[0].pdbname).readline()
-                if first_line.startswith('HEADER'):
-                    model.source = 'experimental model'
-                    model.db_name = 'PDB'
-                    model.db_code = first_line[62:66].strip()
-                    model.sequence_identity = 100.0
-                elif first_line.startswith('EXPDTA    MODEL, MODELLER'):
-                    model.source = 'comparative model'
-                ordinal += 1
+                model.seq_id_begin = min(x.start + x.offset
+                                         for x in model.fragments)
+                model.seq_id_end = max(x.end + x.offset
+                                       for x in model.fragments)
+                model.sources = self.get_sources(model,
+                                                 model.fragments[0].pdbname)
 
     def all_models(self):
         for comp, models in self.models.items():
@@ -336,20 +399,22 @@ modeling. These may need to be added manually below.""")
                       "starting_model_db_pdb_auth_seq_id",
                       "starting_model_sequence_identity",
                       "starting_model_id"]) as l:
+            ordinal = 1
             for model in self.all_models():
                 f = model.fragments[0]
-                l.write(id=model.ordinal,
-                        entity_id=self.simo.entities[f.component],
-                        entity_description=f.component,
-                        seq_id_begin=min(x.start + x.offset
-                                         for x in model.fragments),
-                        seq_id_end=max(x.end + x.offset
-                                       for x in model.fragments),
-                        starting_model_id=model.name,
-                        starting_model_source=model.source,
-                        starting_model_db_name=model.db_name,
-                        starting_model_db_code=model.db_code,
-                        starting_model_sequence_identity=model.sequence_identity)
+                for source in model.sources:
+                    l.write(id=ordinal,
+                      entity_id=self.simo.entities[f.component],
+                      entity_description=f.component,
+                      seq_id_begin=source.seq_id_begin,
+                      seq_id_end=source.seq_id_end,
+                      starting_model_db_pdb_auth_seq_id=source.chain_id,
+                      starting_model_id=model.name,
+                      starting_model_source=source.source,
+                      starting_model_db_name=source.db_name,
+                      starting_model_db_code=source.db_code,
+                      starting_model_sequence_identity=source.sequence_identity)
+                    ordinal += 1
 
     def dump_coords(self, writer):
         ordinal = 1

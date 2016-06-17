@@ -174,6 +174,21 @@ class EntityPolySeqDumper(Dumper):
                             hetero=CifWriter.omitted)
                     num += 1
 
+class StructAsymDumper(Dumper):
+    def __init__(self, simo):
+        super(StructAsymDumper, self).__init__(simo)
+        self.output = IMP.pmi.output.Output()
+
+    def dump(self, writer):
+        all_entities = [x for x in sorted(self.simo.entities.items(),
+                                          key=operator.itemgetter(1))]
+        with writer.loop("_struct_asym",
+                         ["id", "entity_id", "details"]) as l:
+            for name, entity_id in all_entities:
+                chain = self.simo.chains[name]
+                l.write(id=self.output.chainids[chain],
+                        entity_id=entity_id)
+
 class _PDBFragment(object):
     """Record details about part of a PDB file used as input
        for a component."""
@@ -396,6 +411,7 @@ class Representation(IMP.pmi.representation.Representation):
                     = self.starting_model_dump.starting_model_id
         self._dumpers = [SoftwareDumper(self), EntityDumper(self),
                          EntityPolyDumper(self), EntityPolySeqDumper(self),
+                         StructAsymDumper(self),
                          self.model_details_dump, self.starting_model_dump]
         super(Representation, self).__init__(m, *args, **kwargs)
 

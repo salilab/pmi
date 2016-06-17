@@ -144,7 +144,6 @@ class EntityPolyDumper(Dumper):
     def dump(self, writer):
         all_entities = [x for x in sorted(self.simo.entities.items(),
                                           key=operator.itemgetter(1))]
-        chain = 0
         with writer.loop("_entity_poly",
                          ["entity_id", "type", "nstd_linkage",
                           "nstd_monomer", "pdbx_strand_id",
@@ -152,12 +151,12 @@ class EntityPolyDumper(Dumper):
                           "pdbx_seq_one_letter_code_can"]) as l:
             for name, entity_id in all_entities:
                 seq = self.simo.sequence_dict[name]
+                chain = self.simo.chains[name]
                 l.write(entity_id=entity_id, type='polypeptide(L)',
                         nstd_linkage='no', nstd_monomer='no',
                         pdbx_strand_id=self.output.chainids[chain],
                         pdbx_seq_one_letter_code=seq,
                         pdbx_seq_one_letter_code_can=seq)
-                chain += 1
 
 class EntityPolySeqDumper(Dumper):
     def dump(self, writer):
@@ -390,6 +389,7 @@ class Representation(IMP.pmi.representation.Representation):
     def __init__(self, m, fh, *args, **kwargs):
         self._cif_writer = CifWriter(fh)
         self.entities = CifEntities()
+        self.chains = {}
         self.model_details_dump = ModelDetailsDumper(self)
         self.starting_model_dump = StartingModelDumper(self)
         self.model_details_dump.starting_model_id \
@@ -401,6 +401,7 @@ class Representation(IMP.pmi.representation.Representation):
 
     def create_component(self, name, *args, **kwargs):
         super(Representation, self).create_component(name, *args, **kwargs)
+        self.chains[name] = len(self.chains)
 
     def add_component_sequence(self, name, *args, **kwargs):
         super(Representation, self).add_component_sequence(name, *args,

@@ -349,8 +349,8 @@ class StartingModelDumper(Dumper):
                                                     int(m.group(3)),
                                                     int(m.group(4)),
                                                     m.group(5), model))
-        # Sort by starting residue
-        return sorted(templates, key=lambda x: x.seq_id_begin)
+        # Sort by starting residue, then ending residue
+        return sorted(templates, key=lambda x: (x.seq_id_begin, x.seq_id_end))
 
     def get_sources(self, model, pdbname):
         # Attempt to identity PDB file vs. comparative model

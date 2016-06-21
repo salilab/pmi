@@ -232,9 +232,9 @@ class _StartingModel(object):
     def __init__(self, fragment):
         self.fragments = [fragment]
 
-class ModelDetailsDumper(Dumper):
+class ModelRepresentationDumper(Dumper):
     def __init__(self, simo):
-        super(ModelDetailsDumper, self).__init__(simo)
+        super(ModelRepresentationDumper, self).__init__(simo)
         # dict of fragments, ordered by component name
         self.fragments = OrderedDict()
 
@@ -249,7 +249,7 @@ class ModelDetailsDumper(Dumper):
 
     def dump(self, writer):
         segment_id = 1
-        with writer.loop("_ihm_model_details",
+        with writer.loop("_ihm_model_representation",
                          ["segment_id", "entity_id", "entity_description",
                           "seq_id_begin", "seq_id_end",
                           "model_object_primitive", "starting_model_id",
@@ -470,14 +470,14 @@ class Representation(IMP.pmi.representation.Representation):
         self._cif_writer = CifWriter(fh)
         self.entities = CifEntities()
         self.chains = {}
-        self.model_details_dump = ModelDetailsDumper(self)
+        self.model_repr_dump = ModelRepresentationDumper(self)
         self.starting_model_dump = StartingModelDumper(self)
-        self.model_details_dump.starting_model_id \
+        self.model_repr_dump.starting_model_id \
                     = self.starting_model_dump.starting_model_id
         self._dumpers = [SoftwareDumper(self), EntityDumper(self),
                          EntityPolyDumper(self), EntityPolySeqDumper(self),
                          StructAsymDumper(self),
-                         self.model_details_dump, self.starting_model_dump]
+                         self.model_repr_dump, self.starting_model_dump]
         super(Representation, self).__init__(m, *args, **kwargs)
 
     def create_component(self, name, *args, **kwargs):
@@ -497,9 +497,9 @@ class Representation(IMP.pmi.representation.Representation):
 
     def _add_pdb_element(self, name, start, end, offset, pdbname, chain):
         p = _PDBFragment(self.m, name, start, end, offset, pdbname, chain)
-        self.model_details_dump.add_fragment(p)
+        self.model_repr_dump.add_fragment(p)
         self.starting_model_dump.add_pdb_fragment(p)
 
     def _add_bead_element(self, name, start, end, num):
         b = _BeadsFragment(self.m, name, start, end, num)
-        self.model_details_dump.add_fragment(b)
+        self.model_repr_dump.add_fragment(b)

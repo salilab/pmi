@@ -289,9 +289,14 @@ class TemplateSource(object):
     source = 'comparative model'
     db_name = 'PDB'
 
-    def __init__(self, db_code, chain_id, seq_id_begin, seq_id_end, seq_id,
+    def __init__(self, code, seq_id_begin, seq_id_end, seq_id,
                  model):
-        self.db_code, self.chain_id = db_code.upper(), chain_id
+        # Assume a code of 1abcX refers to a real PDB structure
+        if len(code) == 5:
+            self.db_code = code[:4].upper()
+            self.chain_id = code[4]
+        else:
+            self.db_code = self.chain_id = CifWriter.unknown
         self.sequence_identity = seq_id
         # The template may cover more than the current starting model
         self.seq_id_begin = max(model.seq_id_begin, seq_id_begin)
@@ -336,7 +341,7 @@ class StartingModelDumper(Dumper):
 
     def get_templates(self, pdbname, model):
         templates = []
-        tmpre = re.compile('REMARK   6 TEMPLATE: (\S{4})(\S) .* '
+        tmpre = re.compile('REMARK   6 TEMPLATE: (\S+) .* '
                            'MODELS (\S+):\S+ \- (\S+):\S+ AT (\S+)%')
 
         with open(pdbname) as fh:
@@ -345,10 +350,10 @@ class StartingModelDumper(Dumper):
                     break
                 m = tmpre.match(line)
                 if m:
-                    templates.append(TemplateSource(m.group(1), m.group(2),
+                    templates.append(TemplateSource(m.group(1),
+                                                    int(m.group(2)),
                                                     int(m.group(3)),
-                                                    int(m.group(4)),
-                                                    m.group(5), model))
+                                                    m.group(4), model))
         # Sort by starting residue, then ending residue
         return sorted(templates, key=lambda x: (x.seq_id_begin, x.seq_id_end))
 

@@ -1846,6 +1846,9 @@ class ISDCrossLinkMS(IMP.pmi.restraints._NuisancesBase):
                     if xluniqueid not in entry: print(str(xluniqueid)+" keyword not in database")
                     continue
 
+            # todo: check that offset is handled correctly
+            representation._add_cross_link(r1, c1, r2, c2, self.label)
+
             for nstate, r in enumerate(representations):
                 # loop over every state
 

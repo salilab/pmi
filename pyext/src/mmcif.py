@@ -312,6 +312,41 @@ class UnknownSource(object):
         self.seq_id_begin = model.seq_id_begin
         self.seq_id_end = model.seq_id_end
 
+class CrossLink(object):
+    def __init__(self, r1, c1, r2, c2, label):
+        self.r1, self.c1, self.r2, self.c2, self.label = r1, c1, r2, c2, label
+
+class CrossLinkDumper(Dumper):
+    def __init__(self, simo):
+        super(CrossLinkDumper, self).__init__(simo)
+        self.cross_links = []
+
+    def add(self, cross_link):
+        self.cross_links.append(cross_link)
+
+    def dump(self, writer):
+        with writer.loop("_ihm_cross_link_list",
+                         ["id", "group_id", "entity_description_1",
+                          "entity_id_1", "seq_id_1", "comp_id_1",
+                          "entity_description_2",
+                          "entity_id_2", "seq_id_2", "comp_id_2", "type",
+                          "dataset_list_id"]) as l:
+            for n, xl in enumerate(self.cross_links):
+                seq1 = self.simo.sequence_dict[xl.c1]
+                seq2 = self.simo.sequence_dict[xl.c2]
+                rt1 = IMP.atom.get_residue_type(seq1[xl.r1-1])
+                rt2 = IMP.atom.get_residue_type(seq2[xl.r2-1])
+                l.write(id=n + 1,
+                        entity_description_1=xl.c1,
+                        entity_id_1=self.simo.entities[xl.c1],
+                        seq_id_1=xl.r1,
+                        comp_id_1=rt1.get_string(),
+                        entity_description_2=xl.c2,
+                        entity_id_2=self.simo.entities[xl.c2],
+                        seq_id_2=xl.r2,
+                        comp_id_2=rt2.get_string(),
+                        type=xl.label)
+
 
 class StartingModelDumper(Dumper):
     def __init__(self, simo):
@@ -474,13 +509,15 @@ class Representation(IMP.pmi.representation.Representation):
         self.entities = CifEntities()
         self.chains = {}
         self.model_repr_dump = ModelRepresentationDumper(self)
+        self.cross_link_dump = CrossLinkDumper(self)
         self.starting_model_dump = StartingModelDumper(self)
         self.model_repr_dump.starting_model_id \
                     = self.starting_model_dump.starting_model_id
         self._dumpers = [SoftwareDumper(self), EntityDumper(self),
                          EntityPolyDumper(self), EntityPolySeqDumper(self),
                          StructAsymDumper(self),
-                         self.model_repr_dump, self.starting_model_dump]
+                         self.model_repr_dump, self.cross_link_dump,
+                         self.starting_model_dump]
         super(Representation, self).__init__(m, *args, **kwargs)
 
     def create_component(self, name, *args, **kwargs):
@@ -506,3 +543,6 @@ class Representation(IMP.pmi.representation.Representation):
     def _add_bead_element(self, name, start, end, num):
         b = _BeadsFragment(self.m, name, start, end, num)
         self.model_repr_dump.add_fragment(b)
+
+    def _add_cross_link(self, r1, c1, r2, c2, label):
+        self.cross_link_dump.add(CrossLink(r1, c1, r2, c2, label))

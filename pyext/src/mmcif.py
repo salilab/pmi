@@ -163,17 +163,15 @@ class EntityPolySeqDumper(Dumper):
     def dump(self, writer):
         all_entities = [x for x in sorted(self.simo.entities.items(),
                                           key=operator.itemgetter(1))]
-        num = 1
         with writer.loop("_entity_poly_seq",
                          ["entity_id", "num", "mon_id", "hetero"]) as l:
             for name, entity_id in all_entities:
                 seq = self.simo.sequence_dict[name]
-                for one_letter_code in seq:
+                for num, one_letter_code in enumerate(seq):
                     restyp = IMP.atom.get_residue_type(one_letter_code)
-                    l.write(entity_id=entity_id, num=num,
+                    l.write(entity_id=entity_id, num=num + 1,
                             mon_id=restyp.get_string(),
                             hetero=CifWriter.omitted)
-                    num += 1
 
 class StructAsymDumper(Dumper):
     def __init__(self, simo):

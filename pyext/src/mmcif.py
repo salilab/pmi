@@ -436,7 +436,8 @@ modeling. These may need to be added manually below.""")
                       "starting_model_db_name", "starting_model_db_code",
                       "starting_model_db_pdb_auth_seq_id",
                       "starting_model_sequence_identity",
-                      "starting_model_id"]) as l:
+                      "starting_model_id",
+                      "dataset_list_id"]) as l:
             ordinal = 1
             for model in self.all_models():
                 f = model.fragments[0]

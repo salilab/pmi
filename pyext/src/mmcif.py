@@ -313,7 +313,11 @@ class UnknownSource(object):
         self.seq_id_begin = model.seq_id_begin
         self.seq_id_end = model.seq_id_end
 
-class DatasetRepo(object):
+class DatasetLocation(object):
+    """External location of a dataset"""
+    pass
+
+class RepoDatasetLocation(DatasetLocation):
     """Pointer to a dataset stored in a repository"""
     doi = content_filename = CifWriter.unknown
 
@@ -322,15 +326,38 @@ class DatasetRepo(object):
             self.doi = repo.doi
             self.content_filename = repo.get_fname(fname)
 
+class DBDatasetLocation(DatasetLocation):
+    """Pointer to a dataset stored in an official database (e.g. PDB)"""
+    version = CifWriter.omitted
+    details = CifWriter.omitted
+
+    def __init__(self, db_name, db_code):
+        self.db_name = db_name
+        self.access_code = db_code
+
 class Dataset(object):
     group_id = 1
     location = None
 
     def set_location(self, repo, fname):
-        self.location = DatasetRepo(repo, fname)
+        self.location = RepoDatasetLocation(repo, fname)
 
 class CXMSDataset(Dataset):
     data_type = 'CX-MS data'
+
+class CompModelDataset(Dataset):
+    """A comparative model dataset.
+       Currently it is assumed that models are stored in a repository."""
+    data_type = 'Comparative model'
+    def __init__(self, repo, fname):
+        self.set_location(repo, fname)
+
+class PDBDataset(Dataset):
+    """An experimental PDB structure dataset."""
+    data_type = 'unspecified' # todo: missing enumeration?
+    def __init__(self, db_code):
+        self.location = DBDatasetLocation('PDB', db_code)
+
 
 class DatasetDumper(Dumper):
     def __init__(self, simo):
@@ -347,11 +374,30 @@ class DatasetDumper(Dumper):
                           "database_hosted"]) as l:
             for d in self.datasets:
                 l.write(id=d.id, group_id=d.group_id, data_type=d.data_type,
-                        database_hosted=not isinstance(d.location, DatasetRepo))
+                        database_hosted=not isinstance(d.location,
+                                                       RepoDatasetLocation))
         others = [d for d in self.datasets
-                  if isinstance(d.location, DatasetRepo)]
+                  if isinstance(d.location, RepoDatasetLocation)]
         if len(others) > 0:
             self.dump_other(others, writer)
+        rel_dbs = [d for d in self.datasets
+                   if isinstance(d.location, DBDatasetLocation)]
+        if len(rel_dbs) > 0:
+            self.dump_rel_dbs(rel_dbs, writer)
+
+    def dump_rel_dbs(self, datasets, writer):
+        ordinal = 1
+        with writer.loop("_ihm_dataset_related_db_reference",
+                         ["id", "dataset_list_id", "db_name",
+                          "access_code", "version", "data_type",
+                          "details"]) as l:
+            for d in datasets:
+                l.write(id=ordinal, dataset_list_id=d.id,
+                        db_name=d.location.db_name,
+                        access_code=d.location.access_code,
+                        version=d.location.version,
+                        data_type=d.data_type, details=d.location.details)
+                ordinal += 1
 
     def dump_other(self, datasets, writer):
         ordinal = 1
@@ -488,8 +534,13 @@ class StartingModelDumper(Dumper):
         # Attempt to identity PDB file vs. comparative model
         first_line = open(pdbname).readline()
         if first_line.startswith('HEADER'):
-            return [PDBSource(model, first_line[62:66].strip())]
+            source = PDBSource(model, first_line[62:66].strip())
+            model.dataset = PDBDataset(source.db_code)
+            self.simo.dataset_dump.add(model.dataset)
+            return [source]
         elif first_line.startswith('EXPDTA    THEORETICAL MODEL, MODELLER'):
+            model.dataset = CompModelDataset(self.simo._repo, pdbname)
+            self.simo.dataset_dump.add(model.dataset)
             templates = self.get_templates(pdbname, model)
             if templates:
                 return templates
@@ -546,7 +597,8 @@ modeling. These may need to be added manually below.""")
                       starting_model_source=source.source,
                       starting_model_db_name=source.db_name,
                       starting_model_db_code=source.db_code,
-                      starting_model_sequence_identity=source.sequence_identity)
+                      starting_model_sequence_identity=source.sequence_identity,
+                      dataset_list_id=model.dataset.id)
                     ordinal += 1
 
     def dump_coords(self, writer):

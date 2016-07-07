@@ -441,7 +441,10 @@ class Representation(object):
     def _add_bead_element(self, name, start, end, num):
         pass
 
-    def _add_cross_link(self, r1, c1, r2, c2, label):
+    def _add_experimental_cross_link(self, r1, c1, r2, c2, label):
+        pass
+
+    def _add_cross_link(self, ex_xl, p1, p2, sigma1, sigma2, psi):
         pass
 
     def add_component_ideal_helix(

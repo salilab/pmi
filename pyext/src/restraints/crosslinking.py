@@ -1850,7 +1850,8 @@ class ISDCrossLinkMS(IMP.pmi.restraints._NuisancesBase):
                     continue
 
             # todo: check that offset is handled correctly
-            representation._add_cross_link(r1, c1, r2, c2, self.label, dataset)
+            ex_xl = representation._add_experimental_cross_link(r1, c1, r2, c2,
+                                                 self.label, dataset)
 
             for nstate, r in enumerate(representations):
                 # loop over every state
@@ -1929,6 +1930,8 @@ class ISDCrossLinkMS(IMP.pmi.restraints._NuisancesBase):
                 print("ISDCrossLinkMS: between particles %s and %s" % (p1.get_name(), p2.get_name()))
                 print("==========================================\n")
                 indb.write(str(entry) + "\n")
+                representation._add_cross_link(ex_xl, p1, p2, mappedr1,
+                                               mappedr2, psival)
 
                 # check if the two residues belong to the same rigid body
                 if(IMP.core.RigidMember.get_is_setup(p1) and

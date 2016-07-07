@@ -21,6 +21,15 @@ from math import pi, sqrt
 from operator import itemgetter
 import os
 
+class _Repo(object):
+    def __init__(self, doi, root):
+        self.doi = doi
+        self._root = root
+
+    def get_fname(self, fname):
+        """Return a path relative to the top of the repository"""
+        return os.path.relpath(fname, self._root)
+
 class Representation(object):
     # Authors: Peter Cimermancic, Riccardo Pellarin, Charles Greenberg
 
@@ -66,6 +75,8 @@ class Representation(object):
     self.set_super_rigid_bodies(["prot1"])
 
     '''
+
+    _repo = None
 
     def __init__(self, m, upperharmonic=True, disorderedlength=True):
         """Constructor.
@@ -146,6 +157,17 @@ class Representation(object):
         self.onetothree = dict((v, k) for k, v in self.threetoone.items())
 
         self.residuenamekey = IMP.StringKey("ResidueName")
+
+    def set_repo_doi(self, doi, root):
+        """Set the DOI of this repository.
+           Assume that the PMI script is part of a repository, and that
+           that entire repository has been archived somewhere with a DOI.
+           `root` specifies the relative path to the top-level directory
+           of the repository from the working directory of the script.
+           This can be used to construct permanent references to files
+           used in this modeling, even if they haven't been uploaded to
+           a database such as PDB or EMDB."""
+        self._repo = _Repo(doi, root)
 
     def set_label(self, label):
         self.label = label

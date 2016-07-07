@@ -434,6 +434,7 @@ class CrossLinkDumper(Dumper):
                 rt2 = IMP.atom.get_residue_type(seq2[xl.ex_xl.r2-1])
                 # todo: get chain ids for xl.p1 and xl.p2
                 l.write(id=xl.id,
+                        group_id=xl.ex_xl.id,
                         entity_id_1=self.simo.entities[xl.ex_xl.c1],
                         seq_id_1=xl.ex_xl.r1,
                         comp_id_1=rt1.get_string(),

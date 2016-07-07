@@ -331,8 +331,6 @@ class Dataset(object):
 
 class CXMSDataset(Dataset):
     data_type = 'CX-MS data'
-    database_hosted = 'NO'
-    category_info = CifWriter.unknown
 
 class DatasetDumper(Dumper):
     def __init__(self, simo):
@@ -346,11 +344,10 @@ class DatasetDumper(Dumper):
     def dump(self, writer):
         with writer.loop("_ihm_dataset_list",
                          ["id", "group_id", "data_type",
-                          "database_hosted", "category_info"]) as l:
+                          "database_hosted"]) as l:
             for d in self.datasets:
                 l.write(id=d.id, group_id=d.group_id, data_type=d.data_type,
-                        database_hosted=d.database_hosted,
-                        category_info=d.category_info)
+                        database_hosted=not isinstance(d.location, DatasetRepo))
         others = [d for d in self.datasets
                   if isinstance(d.location, DatasetRepo)]
         if len(others) > 0:

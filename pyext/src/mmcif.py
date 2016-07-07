@@ -312,9 +312,37 @@ class UnknownSource(object):
         self.seq_id_begin = model.seq_id_begin
         self.seq_id_end = model.seq_id_end
 
+class Dataset(object):
+    group_id = 1
+
+class CXMSDataset(Dataset):
+    data_type = 'CX-MS data'
+    database_hosted = 'NO'
+    category_info = CifWriter.unknown
+
+class DatasetDumper(Dumper):
+    def __init__(self, simo):
+        super(DatasetDumper, self).__init__(simo)
+        self.datasets = []
+
+    def add(self, dataset):
+        self.datasets.append(dataset)
+        dataset.id = len(self.datasets)
+
+    def dump(self, writer):
+        with writer.loop("_ihm_dataset_list",
+                         ["id", "group_id", "data_type",
+                          "database_hosted", "category_info"]) as l:
+            for d in self.datasets:
+                l.write(id=d.id, group_id=d.group_id, data_type=d.data_type,
+                        database_hosted=d.database_hosted,
+                        category_info=d.category_info)
+
+
 class CrossLink(object):
-    def __init__(self, r1, c1, r2, c2, label):
+    def __init__(self, r1, c1, r2, c2, label, dataset):
         self.r1, self.c1, self.r2, self.c2, self.label = r1, c1, r2, c2, label
+        self.dataset = dataset
 
 class CrossLinkDumper(Dumper):
     def __init__(self, simo):
@@ -345,7 +373,8 @@ class CrossLinkDumper(Dumper):
                         entity_id_2=self.simo.entities[xl.c2],
                         seq_id_2=xl.r2,
                         comp_id_2=rt2.get_string(),
-                        type=xl.label)
+                        type=xl.label,
+                        dataset_list_id=xl.dataset.id)
 
 
 class StartingModelDumper(Dumper):
@@ -511,13 +540,15 @@ class Representation(IMP.pmi.representation.Representation):
         self.chains = {}
         self.model_repr_dump = ModelRepresentationDumper(self)
         self.cross_link_dump = CrossLinkDumper(self)
+        self.dataset_dump = DatasetDumper(self)
         self.starting_model_dump = StartingModelDumper(self)
         self.model_repr_dump.starting_model_id \
                     = self.starting_model_dump.starting_model_id
         self._dumpers = [SoftwareDumper(self), EntityDumper(self),
                          EntityPolyDumper(self), EntityPolySeqDumper(self),
                          StructAsymDumper(self),
-                         self.model_repr_dump, self.cross_link_dump,
+                         self.model_repr_dump, self.dataset_dump,
+                         self.cross_link_dump,
                          self.starting_model_dump]
         super(Representation, self).__init__(m, *args, **kwargs)
 
@@ -545,5 +576,10 @@ class Representation(IMP.pmi.representation.Representation):
         b = _BeadsFragment(self.m, name, start, end, num)
         self.model_repr_dump.add_fragment(b)
 
-    def _add_cross_link(self, r1, c1, r2, c2, label):
-        self.cross_link_dump.add(CrossLink(r1, c1, r2, c2, label))
+    def _get_cross_link_dataset(self):
+        d = CXMSDataset()
+        self.dataset_dump.add(d)
+        return d
+
+    def _add_cross_link(self, r1, c1, r2, c2, label, dataset):
+        self.cross_link_dump.add(CrossLink(r1, c1, r2, c2, label, dataset))

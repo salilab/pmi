@@ -1711,6 +1711,8 @@ class ISDCrossLinkMS(IMP.pmi.restraints._NuisancesBase):
         self.psi_is_sampled = True
         self.sigma_is_sampled = True
 
+        dataset = representation._get_cross_link_dataset()
+
         # isd_map is a dictionary/map that is used to determine the psi
         # parameter from identity scores (such as ID-Score, or FDR)
         if ids_map is None:
@@ -1847,7 +1849,7 @@ class ISDCrossLinkMS(IMP.pmi.restraints._NuisancesBase):
                     continue
 
             # todo: check that offset is handled correctly
-            representation._add_cross_link(r1, c1, r2, c2, self.label)
+            representation._add_cross_link(r1, c1, r2, c2, self.label, dataset)
 
             for nstate, r in enumerate(representations):
                 # loop over every state

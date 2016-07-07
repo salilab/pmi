@@ -1711,7 +1711,8 @@ class ISDCrossLinkMS(IMP.pmi.restraints._NuisancesBase):
         self.psi_is_sampled = True
         self.sigma_is_sampled = True
 
-        dataset = representation._get_cross_link_dataset()
+        # todo: allow the user to override this default
+        dataset = representation._get_cross_link_dataset(restraints_file)
 
         # isd_map is a dictionary/map that is used to determine the psi
         # parameter from identity scores (such as ID-Score, or FDR)

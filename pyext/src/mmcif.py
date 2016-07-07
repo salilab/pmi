@@ -312,8 +312,21 @@ class UnknownSource(object):
         self.seq_id_begin = model.seq_id_begin
         self.seq_id_end = model.seq_id_end
 
+class DatasetRepo(object):
+    """Pointer to a dataset stored in a repository"""
+    doi = content_filename = CifWriter.unknown
+
+    def __init__(self, repo, fname):
+        if repo:
+            self.doi = repo.doi
+            self.content_filename = repo.get_fname(fname)
+
 class Dataset(object):
     group_id = 1
+    location = None
+
+    def set_location(self, repo, fname):
+        self.location = DatasetRepo(repo, fname)
 
 class CXMSDataset(Dataset):
     data_type = 'CX-MS data'
@@ -337,6 +350,21 @@ class DatasetDumper(Dumper):
                 l.write(id=d.id, group_id=d.group_id, data_type=d.data_type,
                         database_hosted=d.database_hosted,
                         category_info=d.category_info)
+        others = [d for d in self.datasets
+                  if isinstance(d.location, DatasetRepo)]
+        if len(others) > 0:
+            self.dump_other(others, writer)
+
+    def dump_other(self, datasets, writer):
+        ordinal = 1
+        with writer.loop("_ihm_dataset_other",
+                         ["id", "dataset_list_id", "data_type",
+                          "doi", "content_filename"]) as l:
+            for d in datasets:
+                l.write(id=ordinal, dataset_list_id=d.id,
+                        data_type=d.data_type, doi=d.location.doi,
+                        content_filename=d.location.content_filename)
+                ordinal += 1
 
 
 class CrossLink(object):
@@ -576,8 +604,9 @@ class Representation(IMP.pmi.representation.Representation):
         b = _BeadsFragment(self.m, name, start, end, num)
         self.model_repr_dump.add_fragment(b)
 
-    def _get_cross_link_dataset(self):
+    def _get_cross_link_dataset(self, fname):
         d = CXMSDataset()
+        d.set_location(self._repo, fname)
         self.dataset_dump.add(d)
         return d
 

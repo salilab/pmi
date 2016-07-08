@@ -336,7 +336,6 @@ class DBDatasetLocation(DatasetLocation):
         self.access_code = db_code
 
 class Dataset(object):
-    group_id = 1
     location = None
 
     def set_location(self, repo, fname):
@@ -358,24 +357,43 @@ class PDBDataset(Dataset):
     def __init__(self, db_code):
         self.location = DBDatasetLocation('PDB', db_code)
 
+class DatasetGroup(object):
+    """A group of datasets"""
+    def __init__(self, datasets):
+        self.datasets = datasets[:]
 
 class DatasetDumper(Dumper):
     def __init__(self, simo):
         super(DatasetDumper, self).__init__(simo)
         self.datasets = []
+        self.dataset_groups = {}
+
+    def get_all_group(self):
+        """Get a DatasetGroup encompassing all datasets so far"""
+        num_datasets = len(self.datasets)
+        if num_datasets not in self.dataset_groups:
+            g = DatasetGroup(self.datasets)
+            self.dataset_groups[num_datasets] = g
+            g.id = len(self.dataset_groups)
+        return self.dataset_groups[num_datasets]
 
     def add(self, dataset):
         self.datasets.append(dataset)
         dataset.id = len(self.datasets)
 
     def dump(self, writer):
+        ordinal = 1
+        groups = sorted(self.dataset_groups.values(), key=lambda x: x.id)
         with writer.loop("_ihm_dataset_list",
-                         ["id", "group_id", "data_type",
+                         ["ordinal_id", "id", "group_id", "data_type",
                           "database_hosted"]) as l:
-            for d in self.datasets:
-                l.write(id=d.id, group_id=d.group_id, data_type=d.data_type,
-                        database_hosted=not isinstance(d.location,
-                                                       RepoDatasetLocation))
+            for g in groups:
+                for d in self.datasets:
+                    l.write(ordinal_id=ordinal, id=d.id, group_id=g.id,
+                            data_type=d.data_type,
+                            database_hosted=not isinstance(d.location,
+                                                           RepoDatasetLocation))
+                    ordinal += 1
         others = [d for d in self.datasets
                   if isinstance(d.location, RepoDatasetLocation)]
         if len(others) > 0:

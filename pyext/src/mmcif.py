@@ -353,7 +353,7 @@ class CompModelDataset(Dataset):
 
 class PDBDataset(Dataset):
     """An experimental PDB structure dataset."""
-    data_type = 'unspecified' # todo: missing enumeration?
+    data_type = 'experimental model'
     def __init__(self, db_code):
         self.location = DBDatasetLocation('PDB', db_code)
 

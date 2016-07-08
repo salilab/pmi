@@ -114,6 +114,7 @@ class ReplicaExchange0(object):
 
         ### add check hierarchy is multistate
         self.output_objects = output_objects
+        self.representation = representation
         if representation:
             if type(representation) == list:
                 self.is_multi_state = True
@@ -413,6 +414,8 @@ class ReplicaExchange0(object):
             if not self.test_mode:
                 output.write_stat2(replica_stat_file)
             rex.swap_temp(i, score)
+        if self.representation:
+            self.representation._add_replica_exchange(self)
 
 # ----------------------------------------------------------------------
 class BuildSystem(object):

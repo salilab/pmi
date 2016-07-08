@@ -505,6 +505,48 @@ class CrossLinkDumper(Dumper):
                         type=xl.ex_xl.label,
                         psi=xl.psi, sigma_1=xl.sigma1, sigma_2=xl.sigma2)
 
+class ReplicaExchangeProtocol(object):
+    def __init__(self, rex):
+        if rex.monte_carlo_sample_objects is not None:
+            self.step_method = 'Replica exchange monte carlo'
+        else:
+            self.step_method = 'Replica exchange molecular dynamics'
+        self.num_models_end = rex.vars["number_of_frames"]
+
+
+class ModelProtocolDumper(Dumper):
+    def __init__(self, simo):
+        super(ModelProtocolDumper, self).__init__(simo)
+        self.protocols = []
+
+    def add(self, protocol):
+        self.protocols.append(protocol)
+        protocol.id = len(self.protocols)
+        # Assume that protocol uses all currently-defined datasets
+        protocol.dataset_group = self.simo.dataset_dump.get_all_group()
+
+    def dump(self, writer):
+        ordinal = 1
+        with writer.loop("_ihm_modeling_protocol",
+                         ["ordinal_id", "protocol_id", "step_id",
+                          "struct_assembly_id", "dataset_group_id",
+                          "assembly_description", "protocol_name",
+                          "step_name", "step_method", "num_models_begin",
+                          "num_models_end", "multi_scale_flag",
+                          "multi_state_flag", "time_ordered_flag"]) as l:
+            # todo: handle multiple protocols (e.g. sampling then refinement)
+            num_models_begin = 0
+            for p in self.protocols:
+                l.write(ordinal_id=ordinal, protocol_id=1,
+                        step_id=p.id, step_method=p.step_method,
+                        step_name='Sampling',
+                        struct_assembly_id=1,
+                        dataset_group_id=p.dataset_group.id,
+                        num_models_begin=num_models_begin,
+                        num_models_end=p.num_models_end)
+                num_models_begin = p.num_models_end
+                ordinal += 1
+
 
 class StartingModelDumper(Dumper):
     def __init__(self, simo):
@@ -675,6 +717,7 @@ class Representation(IMP.pmi.representation.Representation):
         self.chains = {}
         self.model_repr_dump = ModelRepresentationDumper(self)
         self.cross_link_dump = CrossLinkDumper(self)
+        self.model_prot_dump = ModelProtocolDumper(self)
         self.dataset_dump = DatasetDumper(self)
         self.starting_model_dump = StartingModelDumper(self)
         self.model_repr_dump.starting_model_id \
@@ -684,7 +727,8 @@ class Representation(IMP.pmi.representation.Representation):
                          StructAsymDumper(self),
                          self.model_repr_dump, self.dataset_dump,
                          self.cross_link_dump,
-                         self.starting_model_dump]
+                         self.starting_model_dump,
+                         self.model_prot_dump]
         super(Representation, self).__init__(m, *args, **kwargs)
 
     def create_component(self, name, *args, **kwargs):
@@ -724,3 +768,6 @@ class Representation(IMP.pmi.representation.Representation):
 
     def _add_cross_link(self, ex_xl, p1, p2, sigma1, sigma2, psi):
         self.cross_link_dump.add(CrossLink(ex_xl, p1, p2, sigma1, sigma2, psi))
+
+    def _add_replica_exchange(self, rex):
+        self.model_prot_dump.add(ReplicaExchangeProtocol(rex))

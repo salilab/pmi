@@ -447,6 +447,9 @@ class Representation(object):
     def _add_cross_link(self, ex_xl, p1, p2, sigma1, sigma2, psi):
         pass
 
+    def _add_replica_exchange(self, rex):
+        pass
+
     def add_component_ideal_helix(
         self,
         name,

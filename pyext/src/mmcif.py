@@ -279,9 +279,10 @@ class PDBSource(object):
 
     def __init__(self, model, db_code):
         self.db_code = db_code
+
+    def get_seq_id_range(self, model):
         # Assume the structure covers the entire sequence
-        self.seq_id_begin = model.seq_id_begin
-        self.seq_id_end = model.seq_id_end
+        return (model.seq_id_begin, model.seq_id_end)
 
 class TemplateSource(object):
     """A PDB file used as a template for a comparative starting model"""
@@ -297,9 +298,13 @@ class TemplateSource(object):
         else:
             self.db_code = self.chain_id = CifWriter.unknown
         self.sequence_identity = seq_id
+        self._seq_id_begin, self._seq_id_end = seq_id_begin, seq_id_end
+
+    def get_seq_id_range(self, model):
         # The template may cover more than the current starting model
-        self.seq_id_begin = max(model.seq_id_begin, seq_id_begin)
-        self.seq_id_end = min(model.seq_id_end, seq_id_end)
+        seq_id_begin = max(model.seq_id_begin, self._seq_id_begin)
+        seq_id_end = min(model.seq_id_end, self._seq_id_end)
+        return (seq_id_begin, seq_id_end)
 
 class UnknownSource(object):
     """Part of a starting model from an unknown source"""
@@ -310,8 +315,10 @@ class UnknownSource(object):
     sequence_identity = CifWriter.unknown
 
     def __init__(self, model):
-        self.seq_id_begin = model.seq_id_begin
-        self.seq_id_end = model.seq_id_end
+        pass
+
+    def get_seq_id_range(self, model):
+        return (model.seq_id_begin, model.seq_id_end)
 
 class DatasetLocation(object):
     """External location of a dataset"""
@@ -603,7 +610,9 @@ class StartingModelDumper(Dumper):
         models = self.models[comp]
         if len(models) == 0 \
            or models[-1].fragments[0].pdbname != fragment.pdbname:
-            models.append(_StartingModel(fragment))
+            model = _StartingModel(fragment)
+            models.append(model)
+            model.sources = self.get_sources(model, fragment.pdbname)
         else:
             models[-1].fragments.append(fragment)
 
@@ -623,7 +632,7 @@ class StartingModelDumper(Dumper):
                                                     int(m.group(3)),
                                                     m.group(4), model))
         # Sort by starting residue, then ending residue
-        return sorted(templates, key=lambda x: (x.seq_id_begin, x.seq_id_end))
+        return sorted(templates, key=lambda x: (x._seq_id_begin, x._seq_id_end))
 
     def get_sources(self, model, pdbname):
         # Attempt to identity PDB file vs. comparative model
@@ -650,8 +659,6 @@ class StartingModelDumper(Dumper):
                                          for x in model.fragments)
                 model.seq_id_end = max(x.end + x.offset
                                        for x in model.fragments)
-                model.sources = self.get_sources(model,
-                                                 model.fragments[0].pdbname)
 
     def all_models(self):
         for comp, models in self.models.items():
@@ -682,11 +689,12 @@ modeling. These may need to be added manually below.""")
             for model in self.all_models():
                 f = model.fragments[0]
                 for source in model.sources:
+                    seq_id_begin, seq_id_end = source.get_seq_id_range(model)
                     l.write(id=ordinal,
                       entity_id=self.simo.entities[f.component],
                       entity_description=f.component,
-                      seq_id_begin=source.seq_id_begin,
-                      seq_id_end=source.seq_id_end,
+                      seq_id_begin=seq_id_begin,
+                      seq_id_end=seq_id_end,
                       starting_model_db_pdb_auth_seq_id=source.chain_id,
                       starting_model_id=model.name,
                       starting_model_source=source.source,

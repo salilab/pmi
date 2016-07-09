@@ -391,7 +391,7 @@ class DatasetDumper(Dumper):
                          ["ordinal_id", "id", "group_id", "data_type",
                           "database_hosted"]) as l:
             for g in groups:
-                for d in self.datasets:
+                for d in g.datasets:
                     l.write(ordinal_id=ordinal, id=d.id, group_id=g.id,
                             data_type=d.data_type,
                             database_hosted=not isinstance(d.location,

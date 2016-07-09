@@ -344,6 +344,9 @@ class Dataset(object):
 class CXMSDataset(Dataset):
     data_type = 'CX-MS data'
 
+class EM2DClassDataset(Dataset):
+    data_type = '2DEM class average'
+
 class CompModelDataset(Dataset):
     """A comparative model dataset.
        Currently it is assumed that models are stored in a repository."""
@@ -504,6 +507,38 @@ class CrossLinkDumper(Dumper):
                         comp_id_2=rt2.get_string(),
                         type=xl.ex_xl.label,
                         psi=xl.psi, sigma_1=xl.sigma1, sigma_2=xl.sigma2)
+
+class EM2DRestraint(object):
+    def __init__(self, dataset, resolution, pixel_size,
+                 image_resolution, projection_number):
+        self.dataset, self.resolution = dataset, resolution
+        self.pixel_size, self.image_resolution = pixel_size, image_resolution
+        self.projection_number = projection_number
+
+class EM2DDumper(Dumper):
+    def __init__(self, simo):
+        super(EM2DDumper, self).__init__(simo)
+        self.restraints = []
+
+    def add(self, rsr):
+        self.restraints.append(rsr)
+        rsr.id = len(self.restraints)
+
+    def dump(self, writer):
+        with writer.loop("_ihm_2dem_class_average_restraint",
+                         ["id", "dataset_list_id", "number_raw_micrographs",
+                          "pixel_size_width", "pixel_size_height",
+                          "image_resolution", "image_segment_flag",
+                          "number_of_projections", "struct_assembly_id",
+                          "details"]) as l:
+            for r in self.restraints:
+                l.write(id=r.id, dataset_list_id=r.dataset.id,
+                        pixel_size_width=r.pixel_size,
+                        pixel_size_height=r.pixel_size,
+                        image_resolution=r.image_resolution,
+                        number_of_projections=r.projection_number,
+                        struct_assembly_id=1, image_segment_flag=False)
+
 
 class ReplicaExchangeProtocol(object):
     def __init__(self, rex):
@@ -717,6 +752,7 @@ class Representation(IMP.pmi.representation.Representation):
         self.chains = {}
         self.model_repr_dump = ModelRepresentationDumper(self)
         self.cross_link_dump = CrossLinkDumper(self)
+        self.em2d_dump = EM2DDumper(self)
         self.model_prot_dump = ModelProtocolDumper(self)
         self.dataset_dump = DatasetDumper(self)
         self.starting_model_dump = StartingModelDumper(self)
@@ -727,6 +763,7 @@ class Representation(IMP.pmi.representation.Representation):
                          StructAsymDumper(self),
                          self.model_repr_dump, self.dataset_dump,
                          self.cross_link_dump,
+                         self.em2d_dump,
                          self.starting_model_dump,
                          self.model_prot_dump]
         super(Representation, self).__init__(m, *args, **kwargs)
@@ -771,3 +808,12 @@ class Representation(IMP.pmi.representation.Representation):
 
     def _add_replica_exchange(self, rex):
         self.model_prot_dump.add(ReplicaExchangeProtocol(rex))
+
+    def _add_em2d_restraint(self, images, resolution, pixel_size,
+                            image_resolution, projection_number):
+        for image in images:
+            d = EM2DClassDataset()
+            d.set_location(self._repo, image)
+            self.dataset_dump.add(d)
+            self.em2d_dump.add(EM2DRestraint(d, resolution, pixel_size,
+                                        image_resolution, projection_number))

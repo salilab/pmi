@@ -450,6 +450,10 @@ class Representation(object):
     def _add_replica_exchange(self, rex):
         pass
 
+    def _add_em2d_restraint(self, images, resolution, pixel_size,
+                            image_resolution, projection_number):
+        pass
+
     def add_component_ideal_helix(
         self,
         name,

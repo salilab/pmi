@@ -49,6 +49,9 @@ class ElectronMicroscopy2D(object):
             raise Exception("Must pass pixel size")
         if image_resolution is None:
             raise Exception("must pass image resolution")
+        if representation:
+            representation._add_em2d_restraint(images, resolution, pixel_size,
+                                           image_resolution, projection_number)
 
         # PMI1/2 selection
         if representation is None and hier is not None:

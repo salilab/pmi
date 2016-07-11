@@ -544,7 +544,41 @@ class EM2DDumper(Dumper):
                         pixel_size_height=r.pixel_size,
                         image_resolution=r.image_resolution,
                         number_of_projections=r.projection_number,
-                        struct_assembly_id=1, image_segment_flag=False)
+                        struct_assembly_id=self.simo.default_assembly.id,
+                        image_segment_flag=False)
+
+class Assembly(list):
+    """A collection of components. Currently simply implemented as a list of
+       the component names."""
+    pass
+
+class AssemblyDumper(Dumper):
+    def __init__(self, simo):
+        super(AssemblyDumper, self).__init__(simo)
+        self.assemblies = []
+        self.output = IMP.pmi.output.Output()
+
+    def add(self, a):
+        self.assemblies.append(a)
+        a.id = len(self.assemblies)
+
+    def dump(self, writer):
+        ordinal = 1
+        with writer.loop("_ihm_struct_assembly",
+                         ["ordinal_id", "assembly_id", "entity_description",
+                          "entity_id", "asym_id", "seq_id_begin",
+                          "seq_id_end"]) as l:
+            for a in self.assemblies:
+                for comp in a:
+                    seq = self.simo.sequence_dict[comp]
+                    chain = self.simo.chains[comp]
+                    l.write(ordinal_id=ordinal, assembly_id=a.id,
+                            entity_description=comp,
+                            entity_id=self.simo.entities[comp],
+                            asym_id=self.output.chainids[chain],
+                            seq_id_begin=1,
+                            seq_id_end=len(seq))
+                ordinal += 1
 
 
 class ReplicaExchangeProtocol(object):
@@ -582,7 +616,7 @@ class ModelProtocolDumper(Dumper):
                 l.write(ordinal_id=ordinal, protocol_id=1,
                         step_id=p.id, step_method=p.step_method,
                         step_name='Sampling',
-                        struct_assembly_id=1,
+                        struct_assembly_id=self.simo.default_assembly.id,
                         dataset_group_id=p.dataset_group.id,
                         num_models_begin=num_models_begin,
                         num_models_end=p.num_models_end)
@@ -764,11 +798,15 @@ class Representation(IMP.pmi.representation.Representation):
         self.model_prot_dump = ModelProtocolDumper(self)
         self.dataset_dump = DatasetDumper(self)
         self.starting_model_dump = StartingModelDumper(self)
+        self.assembly_dump = AssemblyDumper(self)
+        self.default_assembly = Assembly()
+        self.assembly_dump.add(self.default_assembly)
         self.model_repr_dump.starting_model_id \
                     = self.starting_model_dump.starting_model_id
         self._dumpers = [SoftwareDumper(self), EntityDumper(self),
                          EntityPolyDumper(self), EntityPolySeqDumper(self),
                          StructAsymDumper(self),
+                         self.assembly_dump,
                          self.model_repr_dump, self.dataset_dump,
                          self.cross_link_dump,
                          self.em2d_dump,
@@ -778,6 +816,7 @@ class Representation(IMP.pmi.representation.Representation):
 
     def create_component(self, name, *args, **kwargs):
         super(Representation, self).create_component(name, *args, **kwargs)
+        self.default_assembly.append(name)
         self.chains[name] = len(self.chains)
 
     def add_component_sequence(self, name, *args, **kwargs):

@@ -408,14 +408,12 @@ class DatasetDumper(Dumper):
                             database_hosted=not isinstance(d.location,
                                                            RepoDatasetLocation))
                     ordinal += 1
-        others = [d for d in self.datasets
-                  if isinstance(d.location, RepoDatasetLocation)]
-        if len(others) > 0:
-            self.dump_other(others, writer)
-        rel_dbs = [d for d in self.datasets
-                   if isinstance(d.location, DBDatasetLocation)]
-        if len(rel_dbs) > 0:
-            self.dump_rel_dbs(rel_dbs, writer)
+        self.dump_other((d for d in self.datasets
+                         if isinstance(d.location, RepoDatasetLocation)),
+                        writer)
+        self.dump_rel_dbs((d for d in self.datasets
+                           if isinstance(d.location, DBDatasetLocation)),
+                          writer)
 
     def dump_rel_dbs(self, datasets, writer):
         ordinal = 1
@@ -622,10 +620,8 @@ class ModelDumper(Dumper):
     def dump(self, writer):
         num_atoms = sum(len(m.atoms) for m in self.models)
         num_beads = sum(len(m.beads) for m in self.models)
-        if num_atoms > 0:
-            self.dump_atoms(writer)
-        if num_beads > 0:
-            self.dump_beads(writer)
+        self.dump_atoms(writer)
+        self.dump_beads(writer)
 
     def dump_atoms(self, writer):
         ordinal = 1

@@ -58,15 +58,7 @@ class Output(object):
     def get_stat_names(self):
         return list(self.dictionary_stats.keys())
 
-    def init_pdb(self, name, prot):
-        """Init PDB Writing.
-        @param name The PDB filename
-        @param prot The hierarchy to write to this pdb file
-        \note if the PDB name is 'System' then will use Selection to get molecules
-        """
-        flpdb = open(name, 'w')
-        flpdb.close()
-        self.dictionary_pdbs[name] = prot
+    def _init_dictchain(self, name, prot):
         self.dictchain[name] = {}
         self.use_pmi2 = False
 
@@ -80,6 +72,17 @@ class Output(object):
         else:
             for n, i in enumerate(self.dictionary_pdbs[name].get_children()):
                 self.dictchain[name][i.get_name()] = self.chainids[n]
+
+    def init_pdb(self, name, prot):
+        """Init PDB Writing.
+        @param name The PDB filename
+        @param prot The hierarchy to write to this pdb file
+        \note if the PDB name is 'System' then will use Selection to get molecules
+        """
+        flpdb = open(name, 'w')
+        flpdb.close()
+        self.dictionary_pdbs[name] = prot
+        self._init_dictchain(name, prot)
 
     def write_psf(self,filename,name):
         flpsf=open(filename,'w')
@@ -310,15 +313,7 @@ class Output(object):
             flpdb = open(name, 'w')
             flpdb.close()
             self.dictionary_pdbs[name] = prot
-            self.dictchain[name] = {}
-            if IMP.pmi.get_is_canonical(prot):
-                self.use_pmi2 = True
-                self.atomistic = True
-                for n,mol in enumerate(IMP.atom.get_by_type(prot,IMP.atom.MOLECULE_TYPE)):
-                    self.dictchain[name][IMP.pmi.get_molecule_name_and_copy(mol)] = IMP.atom.Chain(mol).get_id()
-            else:
-                for n, i in enumerate(self.dictionary_pdbs[name].get_children()):
-                    self.dictchain[name][i.get_name()] = self.chainids[n]
+            self._init_dictchain(name, prot)
 
     def write_pdb_best_scoring(self, score):
         if self.nbestscoring is None:

@@ -589,6 +589,85 @@ class ReplicaExchangeProtocol(object):
             self.step_method = 'Replica exchange molecular dynamics'
         self.num_models_end = rex.vars["number_of_frames"]
 
+class Model(object):
+    def __init__(self, prot, simo):
+        o = IMP.pmi.output.Output()
+        name = 'cif-output'
+        o.dictionary_pdbs[name] = prot
+        o._init_dictchain(name, prot)
+        (particle_infos_for_pdb,
+         self.geometric_center) = o.get_particle_infos_for_pdb_writing(name)
+        bead = IMP.atom.ResidueType("BEA")
+        self.entity_for_chain = {}
+        for protname, chain_id in o.dictchain[name].items():
+            self.entity_for_chain[chain_id] = simo.entities[protname]
+        self.beads = [t for t in particle_infos_for_pdb if t[2] == bead]
+        self.atoms = [t for t in particle_infos_for_pdb if t[2] != bead]
+
+class ModelDumper(Dumper):
+    def __init__(self, simo):
+        super(ModelDumper, self).__init__(simo)
+        self.models = []
+
+    def add(self, prot):
+        m = Model(prot, self.simo)
+        self.models.append(m)
+        m.id = len(self.models)
+        return m.id
+
+    def dump(self, writer):
+        num_atoms = sum(len(m.atoms) for m in self.models)
+        num_beads = sum(len(m.beads) for m in self.models)
+        if num_atoms > 0:
+            self.dump_atoms(writer)
+        if num_beads > 0:
+            self.dump_beads(writer)
+
+    def dump_atoms(self, writer):
+        ordinal = 1
+        with writer.loop("_ihm_atom_site",
+                         ["id", "label_atom_id", "label_comp_id",
+                          "label_seq_id",
+                          "label_asym_id", "Cartn_x",
+                          "Cartn_y", "Cartn_z", "label_entity_id",
+                          "model_id"]) as l:
+            for model in self.models:
+                for atom in model.atoms:
+                    (xyz, atom_type, residue_type, chain_id, residue_index,
+                     all_indexes, radius) = atom
+                    l.write(id=ordinal, label_atom_id=atom_type.get_string(),
+                            label_comp_id=residue_type.get_string(),
+                            label_asym_id=chain_id,
+                            label_entity_id=model.entity_for_chain[chain_id],
+                            label_seq_id=residue_index,
+                            Cartn_x=xyz[0] - model.geometric_center[0],
+                            Cartn_y=xyz[1] - model.geometric_center[1],
+                            Cartn_z=xyz[2] - model.geometric_center[2],
+                            model_id=model.id)
+                    ordinal += 1
+
+    def dump_beads(self, writer):
+        ordinal = 1
+        with writer.loop("_ihm_sphere_obj_site",
+                         ["ordinal_id", "entity_id", "seq_id_begin",
+                          "seq_id_end", "asym_id", "Cartn_x",
+                          "Cartn_y", "Cartn_z", "object_radius",
+                          "model_id"]) as l:
+            for model in self.models:
+                for bead in model.beads:
+                    (xyz, atom_type, residue_type, chain_id, residue_index,
+                     all_indexes, radius) = bead
+                    l.write(ordinal_id=ordinal,
+                            entity_id=model.entity_for_chain[chain_id],
+                            seq_id_begin = all_indexes[0],
+                            seq_id_end = all_indexes[-1],
+                            asym_id=chain_id,
+                            Cartn_x=xyz[0] - model.geometric_center[0],
+                            Cartn_y=xyz[1] - model.geometric_center[1],
+                            Cartn_z=xyz[2] - model.geometric_center[2],
+                            object_radius=radius, model_id=model.id)
+                    ordinal += 1
+
 
 class ModelProtocolDumper(Dumper):
     def __init__(self, simo):
@@ -801,6 +880,7 @@ class Representation(IMP.pmi.representation.Representation):
         self.assembly_dump = AssemblyDumper(self)
         self.default_assembly = Assembly()
         self.assembly_dump.add(self.default_assembly)
+        self.model_dump = ModelDumper(self)
         self.model_repr_dump.starting_model_id \
                     = self.starting_model_dump.starting_model_id
         self._dumpers = [SoftwareDumper(self), EntityDumper(self),
@@ -811,7 +891,7 @@ class Representation(IMP.pmi.representation.Representation):
                          self.cross_link_dump,
                          self.em2d_dump,
                          self.starting_model_dump,
-                         self.model_prot_dump]
+                         self.model_prot_dump, self.model_dump]
         super(Representation, self).__init__(m, *args, **kwargs)
 
     def create_component(self, name, *args, **kwargs):
@@ -864,3 +944,6 @@ class Representation(IMP.pmi.representation.Representation):
             self.dataset_dump.add(d)
             self.em2d_dump.add(EM2DRestraint(d, resolution, pixel_size,
                                         image_resolution, projection_number))
+
+    def add_model(self):
+        return self.model_dump.add(self.prot)

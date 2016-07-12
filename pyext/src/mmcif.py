@@ -58,19 +58,23 @@ class CifLoopWriter(object):
         self.writer = writer
         self.category = category
         self.keys = keys
+        self._empty_loop = True
     def write(self, **kwargs):
+        if self._empty_loop:
+            f = self.writer.fh
+            f.write("#\nloop_\n")
+            for k in self.keys:
+                f.write("%s.%s\n" % (self.category, k))
+            self._empty_loop = False
         l = _LineWriter(self.writer)
         for k in self.keys:
             l.write(kwargs.get(k, self.writer.omitted))
         self.writer.fh.write("\n")
     def __enter__(self):
-        f = self.writer.fh
-        f.write("#\nloop_\n")
-        for k in self.keys:
-            f.write("%s.%s\n" % (self.category, k))
         return self
     def __exit__(self, exc_type, exc_value, traceback):
-        self.writer.fh.write("#\n")
+        if not self._empty_loop:
+            self.writer.fh.write("#\n")
 
 
 class CifWriter(object):

@@ -625,7 +625,7 @@ class ModelDumper(Dumper):
 
     def dump_atoms(self, writer):
         ordinal = 1
-        with writer.loop("_ihm_atom_site",
+        with writer.loop("_atom_site",
                          ["id", "label_atom_id", "label_comp_id",
                           "label_seq_id",
                           "label_asym_id", "Cartn_x",
@@ -869,6 +869,7 @@ class CifEntities(dict):
 class Representation(IMP.pmi.representation.Representation):
     def __init__(self, m, fh, *args, **kwargs):
         self._cif_writer = CifWriter(fh)
+        fh.write("data_model\n")
         self.entities = CifEntities()
         self.chains = {}
         self.model_repr_dump = ModelRepresentationDumper(self)

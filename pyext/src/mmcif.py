@@ -80,6 +80,7 @@ class CifLoopWriter(object):
 class CifWriter(object):
     omitted = '.'
     unknown = '?'
+    _boolmap = {False: 'NO', True: 'YES'}
 
     def __init__(self, fh):
         self.fh = fh
@@ -100,6 +101,8 @@ class CifWriter(object):
             return obj
         elif isinstance(obj, float):
             return "%.3f" % obj
+        elif isinstance(obj, bool):
+            return self._boolmap[obj]
         else:
             return repr(obj)
 

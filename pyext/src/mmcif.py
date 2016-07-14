@@ -217,6 +217,7 @@ class _PDBFragment(object):
     def __init__(self, m, component, start, end, offset, pdbname, chain):
         self.component, self.start, self.end, self.offset, self.pdbname \
               = component, start, end, offset, pdbname
+        self.chain = chain
         sel = IMP.atom.NonWaterNonHydrogenPDBSelector() \
               & IMP.atom.ChainPDBSelector(chain)
         self.hier = IMP.atom.read_pdb(pdbname, m, sel)
@@ -228,6 +229,7 @@ class _BeadsFragment(object):
     """Record details about beads used to represent part of a component."""
     primitive = 'sphere'
     granularity = 'by-feature'
+    chain = None
     def __init__(self, m, component, start, end, num):
         self.component, self.start, self.end, self.num \
               = component, start, end, num
@@ -293,11 +295,11 @@ class PDBSource(object):
     """An experimental PDB file used as part of a starting model"""
     source = 'experimental model'
     db_name = 'PDB'
-    chain_id = CifWriter.unknown
     sequence_identity = 100.0
 
-    def __init__(self, model, db_code):
+    def __init__(self, model, db_code, chain_id):
         self.db_code = db_code
+        self.chain_id = chain_id
 
     def get_seq_id_range(self, model):
         # Assume the structure covers the entire sequence
@@ -743,7 +745,8 @@ class StartingModelDumper(Dumper):
            or models[-1].fragments[0].pdbname != fragment.pdbname:
             model = _StartingModel(fragment)
             models.append(model)
-            model.sources = self.get_sources(model, fragment.pdbname)
+            model.sources = self.get_sources(model, fragment.pdbname,
+                                             fragment.chain)
         else:
             models[-1].fragments.append(fragment)
 
@@ -765,11 +768,11 @@ class StartingModelDumper(Dumper):
         # Sort by starting residue, then ending residue
         return sorted(templates, key=lambda x: (x._seq_id_begin, x._seq_id_end))
 
-    def get_sources(self, model, pdbname):
+    def get_sources(self, model, pdbname, chain):
         # Attempt to identity PDB file vs. comparative model
         first_line = open(pdbname).readline()
         if first_line.startswith('HEADER'):
-            source = PDBSource(model, first_line[62:66].strip())
+            source = PDBSource(model, first_line[62:66].strip(), chain)
             model.dataset = PDBDataset(source.db_code)
             self.simo.dataset_dump.add(model.dataset)
             return [source]

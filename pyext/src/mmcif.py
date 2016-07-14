@@ -199,14 +199,14 @@ class StructAsymDumper(Dumper):
         self.output = IMP.pmi.output.Output()
 
     def dump(self, writer):
-        all_entities = [x for x in sorted(self.simo.entities.items(),
-                                          key=operator.itemgetter(1))]
         with writer.loop("_struct_asym",
                          ["id", "entity_id", "details"]) as l:
-            for name, entity_id in all_entities:
+            for name in self.simo.all_components:
+                entity_id = self.simo.entities[name]
                 chain = self.simo.chains[name]
                 l.write(id=self.output.chainids[chain],
-                        entity_id=entity_id)
+                        entity_id=entity_id,
+                        details=name)
 
 class _PDBFragment(object):
     """Record details about part of a PDB file used as input
@@ -893,6 +893,7 @@ class Representation(IMP.pmi.representation.Representation):
         fh.write("data_model\n")
         self.entities = CifEntities()
         self.chains = {}
+        self.all_components = []
         self.model_repr_dump = ModelRepresentationDumper(self)
         self.cross_link_dump = CrossLinkDumper(self)
         self.em2d_dump = EM2DDumper(self)
@@ -918,6 +919,7 @@ class Representation(IMP.pmi.representation.Representation):
 
     def create_component(self, name, *args, **kwargs):
         super(Representation, self).create_component(name, *args, **kwargs)
+        self.all_components.append(name)
         self.default_assembly.append(name)
         self.chains[name] = len(self.chains)
 

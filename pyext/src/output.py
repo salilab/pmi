@@ -166,6 +166,15 @@ class Output(object):
 
         del particle_infos_for_pdb
 
+    def get_prot_name_from_particle(self, name, p):
+        """Get the protein name from the particle.
+           This is done by traversing the hierarchy."""
+        if self.use_pmi2:
+            return IMP.pmi.get_molecule_name_and_copy(p), True
+        else:
+            return IMP.pmi.tools.get_prot_name_from_particle(
+                                       p, self.dictchain[name])
+
     def get_particle_infos_for_pdb_writing(self, name):
         # index_residue_pair_list={}
 
@@ -189,14 +198,7 @@ class Output(object):
             ps = IMP.atom.get_leaves(self.dictionary_pdbs[name])
 
         for n, p in enumerate(ps):
-            # this loop gets the protein name from the
-            # particle leave by descending into the hierarchy
-            if self.use_pmi2:
-                protname = IMP.pmi.get_molecule_name_and_copy(p)
-                is_a_bead = True
-            else:
-                (protname, is_a_bead) = IMP.pmi.tools.get_prot_name_from_particle(
-                    p, self.dictchain[name])
+            protname, is_a_bead = self.get_prot_name_from_particle(name, p)
 
             if protname not in resindexes_dict:
                 resindexes_dict[protname] = []

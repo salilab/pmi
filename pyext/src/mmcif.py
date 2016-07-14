@@ -106,6 +106,18 @@ class CifWriter(object):
         else:
             return repr(obj)
 
+class AsymIDMapper(object):
+    """Map a Particle to an asym_id (chain ID)"""
+    def __init__(self, prot):
+        self.o = IMP.pmi.output.Output()
+        self.prot = prot
+        self.name = 'cif-output'
+        self.o.dictionary_pdbs[self.name] = self.prot
+        self.o._init_dictchain(self.name, self.prot)
+
+    def __getitem__(self, p):
+        protname, is_a_bead = self.o.get_prot_name_from_particle(self.name, p)
+        return self.o.dictchain[self.name][protname]
 
 class Dumper(object):
     """Base class for helpers to dump output to mmCIF"""
@@ -498,6 +510,7 @@ class CrossLinkDumper(Dumper):
                         dataset_list_id=xl.dataset.id)
 
     def dump_restraint(self, writer):
+        asym = AsymIDMapper(self.simo.prot)
         with writer.loop("_ihm_cross_link_restraint",
                          ["id", "group_id", "entity_id_1", "asym_id_1",
                           "seq_id_1", "comp_id_1",
@@ -512,9 +525,11 @@ class CrossLinkDumper(Dumper):
                 l.write(id=xl.id,
                         group_id=xl.ex_xl.id,
                         entity_id_1=self.simo.entities[xl.ex_xl.c1],
+                        asym_id_1=asym[xl.p1],
                         seq_id_1=xl.ex_xl.r1,
                         comp_id_1=rt1.get_string(),
                         entity_id_2=self.simo.entities[xl.ex_xl.c2],
+                        asym_id_2=asym[xl.p2],
                         seq_id_2=xl.ex_xl.r2,
                         comp_id_2=rt2.get_string(),
                         type=xl.ex_xl.label,

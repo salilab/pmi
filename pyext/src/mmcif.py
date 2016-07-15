@@ -387,12 +387,10 @@ class RepoDatasetLocation(DatasetLocation):
 
 class DBDatasetLocation(DatasetLocation):
     """Pointer to a dataset stored in an official database (e.g. PDB)"""
-    version = CifWriter.omitted
-    details = CifWriter.omitted
-
-    def __init__(self, db_name, db_code):
+    def __init__(self, db_name, db_code, version, details):
         self.db_name = db_name
         self.access_code = db_code
+        self.version, self.details = version, details
 
 class Dataset(object):
     location = None
@@ -421,8 +419,8 @@ class CompModelDataset(Dataset):
 class PDBDataset(Dataset):
     """An experimental PDB structure dataset."""
     data_type = 'experimental model'
-    def __init__(self, db_code):
-        self.location = DBDatasetLocation('PDB', db_code)
+    def __init__(self, db_code, version, details):
+        self.location = DBDatasetLocation('PDB', db_code, version, details)
 
 class DatasetGroup(object):
     """A group of datasets"""
@@ -810,13 +808,25 @@ class StartingModelDumper(Dumper):
         # Sort by starting residue, then ending residue
         return sorted(templates, key=lambda x: (x._seq_id_begin, x._seq_id_end))
 
+    def _parse_pdb_header(self, fh, first_line):
+        """Extract information from an official PDB header"""
+        def get_details():
+            details = ''
+            for i in range(10):
+                line = fh.readline()
+                if line.startswith('TITLE'):
+                    details += line[10:].rstrip()
+            return details if details else CifWriter.unknown
+        return first_line[50:59].strip(), get_details()
+
     def get_sources(self, model, pdbname, chain):
         # Attempt to identity PDB file vs. comparative model
-        first_line = open(pdbname).readline()
+        fh = open(pdbname)
+        first_line = fh.readline()
         if first_line.startswith('HEADER'):
-            # todo: extract model details
             source = PDBSource(model, first_line[62:66].strip(), chain)
-            model.dataset = PDBDataset(source.db_code)
+            version, details = self._parse_pdb_header(fh, first_line)
+            model.dataset = PDBDataset(source.db_code, version, details)
             self.simo.dataset_dump.add(model.dataset)
             return [source]
         elif first_line.startswith('EXPDTA    THEORETICAL MODEL, MODELLER'):

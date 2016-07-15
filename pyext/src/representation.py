@@ -76,8 +76,6 @@ class Representation(object):
 
     '''
 
-    _repo = None
-
     def __init__(self, m, upperharmonic=True, disorderedlength=True):
         """Constructor.
            @param m                the model
@@ -92,6 +90,7 @@ class Representation(object):
         """
 
         self._metadata = []
+        self._protocol_output = []
 
         # this flag uses either harmonic (False) or upperharmonic (True)
         # in the intra-pair connectivity restraint. Harmonic is used whe you want to
@@ -166,16 +165,14 @@ class Representation(object):
         """
         self._metadata.append(m)
 
-    def set_repo_doi(self, doi, root):
-        """Set the DOI of this repository.
-           Assume that the PMI script is part of a repository, and that
-           that entire repository has been archived somewhere with a DOI.
-           `root` specifies the relative path to the top-level directory
-           of the repository from the working directory of the script.
-           This can be used to construct permanent references to files
-           used in this modeling, even if they haven't been uploaded to
-           a database such as PDB or EMDB."""
-        self._repo = _Repo(doi, root)
+    def add_protocol_output(self, p):
+        """Capture details of the modeling protocol.
+           @param p an instance of IMP.pmi.output.ProtocolOutput or a subclass.
+        """
+        self._protocol_output.append(p)
+        p._metadata = self._metadata
+        p.m = self.m
+        p.prot = self.prot
 
     def set_label(self, label):
         self.label = label
@@ -189,6 +186,8 @@ class Representation(object):
         self.prot.add_child(protein_h)
         self.color_dict[name] = color
         self.elements[name] = []
+        for p in self._protocol_output:
+            p.create_component(name)
 
     # Deprecation warning
 
@@ -221,6 +220,8 @@ class Representation(object):
             self.sequence_dict[name]=offs_str+self.sequence_dict[name]
 
         self.elements[name].append((length, length, " ", "end"))
+        for p in self._protocol_output:
+            p.add_component_sequence(name, self.sequence_dict[name])
 
     def autobuild_model(self, name, pdbname, chain,
                         resolutions=None, resrange=None,
@@ -427,7 +428,8 @@ class Representation(object):
         start = start + offset
         end = end + offset
 
-        self._add_pdb_element(name, start, end, offset, pdbname, chain)
+        for p in self._protocol_output:
+            p.add_pdb_element(name, start, end, offset, pdbname, chain)
         self.elements[name].append(
             (start, end, pdbname.split("/")[-1] + ":" + chain, "pdb"))
 
@@ -442,25 +444,6 @@ class Representation(object):
         del t
 
         return outhiers
-
-    def _add_pdb_element(self, name, start, end, offset, pdbname, chain):
-        pass
-
-    def _add_bead_element(self, name, start, end, num):
-        pass
-
-    def _add_experimental_cross_link(self, r1, c1, r2, c2, label):
-        pass
-
-    def _add_cross_link(self, ex_xl, p1, p2, sigma1, sigma2, psi):
-        pass
-
-    def _add_replica_exchange(self, rex):
-        pass
-
-    def _add_em2d_restraint(self, images, resolution, pixel_size,
-                            image_resolution, projection_number):
-        pass
 
     def add_component_ideal_helix(
         self,
@@ -544,7 +527,8 @@ class Representation(object):
             colors = [self.color_dict[name]]
 
 
-        self._add_bead_element(name, ds[0][0], ds[-1][1], len(ds))
+        for p in self._protocol_output:
+            p.add_bead_element(name, ds[0][0], ds[-1][1], len(ds))
         for n, dss in enumerate(ds):
             ds_frag = (dss[0], dss[1])
             self.elements[name].append((dss[0], dss[1], " ", "bead"))

@@ -415,7 +415,8 @@ class ReplicaExchange0(object):
                 output.write_stat2(replica_stat_file)
             rex.swap_temp(i, score)
         if self.representation:
-            self.representation._add_replica_exchange(self)
+            for p in self.representation._protocol_output:
+                p.add_replica_exchange(self)
 
 # ----------------------------------------------------------------------
 class BuildSystem(object):

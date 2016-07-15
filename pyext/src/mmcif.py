@@ -383,7 +383,7 @@ class RepoDatasetLocation(DatasetLocation):
     def __init__(self, repo, fname):
         if repo:
             self.doi = repo.doi
-            self.content_filename = repo.get_fname(fname)
+            self.content_filename = repo.get_path(fname)
 
 class DBDatasetLocation(DatasetLocation):
     """Pointer to a dataset stored in an official database (e.g. PDB)"""
@@ -803,12 +803,14 @@ class StartingModelDumper(Dumper):
         # Attempt to identity PDB file vs. comparative model
         first_line = open(pdbname).readline()
         if first_line.startswith('HEADER'):
+            # todo: extract model details
             source = PDBSource(model, first_line[62:66].strip(), chain)
             model.dataset = PDBDataset(source.db_code)
             self.simo.dataset_dump.add(model.dataset)
             return [source]
         elif first_line.startswith('EXPDTA    THEORETICAL MODEL, MODELLER'):
-            model.dataset = CompModelDataset(self.simo._repo, pdbname)
+            # todo: add modeller to software
+            model.dataset = CompModelDataset(self.simo._get_repo(), pdbname)
             self.simo.dataset_dump.add(model.dataset)
             templates = self.get_templates(pdbname, model)
             if templates:
@@ -918,12 +920,13 @@ class CifEntities(dict):
             self[component_name] = entity_id
 
 
-class Representation(IMP.pmi.representation.Representation):
-    def __init__(self, m, fh, *args, **kwargs):
+class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
+    def __init__(self, fh):
         self._cif_writer = CifWriter(fh)
         fh.write("data_model\n")
         self.entities = CifEntities()
         self.chains = {}
+        self.sequence_dict = {}
         self.all_components = []
         self.model_repr_dump = ModelRepresentationDumper(self)
         self.cross_link_dump = CrossLinkDumper(self)
@@ -947,18 +950,15 @@ class Representation(IMP.pmi.representation.Representation):
                          self.em2d_dump,
                          self.starting_model_dump,
                          self.model_prot_dump, self.model_dump]
-        super(Representation, self).__init__(m, *args, **kwargs)
 
-    def create_component(self, name, *args, **kwargs):
-        super(Representation, self).create_component(name, *args, **kwargs)
+    def create_component(self, name):
         self.all_components.append(name)
         self.default_assembly.append(name)
         self.chains[name] = len(self.chains)
 
-    def add_component_sequence(self, name, *args, **kwargs):
-        super(Representation, self).add_component_sequence(name, *args,
-                                                           **kwargs)
-        self.entities.add(name, self.sequence_dict[name])
+    def add_component_sequence(self, name, seq):
+        self.sequence_dict[name] = seq
+        self.entities.add(name, seq)
 
     def flush(self):
         for dumper in self._dumpers:
@@ -966,40 +966,47 @@ class Representation(IMP.pmi.representation.Representation):
         for dumper in self._dumpers:
             dumper.dump(self._cif_writer)
 
-    def _add_pdb_element(self, name, start, end, offset, pdbname, chain):
+    def add_pdb_element(self, name, start, end, offset, pdbname, chain):
         p = _PDBFragment(self.m, name, start, end, offset, pdbname, chain)
         self.model_repr_dump.add_fragment(p)
         self.starting_model_dump.add_pdb_fragment(p)
 
-    def _add_bead_element(self, name, start, end, num):
+    def add_bead_element(self, name, start, end, num):
         b = _BeadsFragment(self.m, name, start, end, num)
         self.model_repr_dump.add_fragment(b)
 
-    def _get_cross_link_dataset(self, fname):
+    def get_cross_link_dataset(self, fname):
         d = CXMSDataset()
-        d.set_location(self._repo, fname)
+        d.set_location(self._get_repo(), fname)
         self.dataset_dump.add(d)
         return d
 
-    def _add_experimental_cross_link(self, r1, c1, r2, c2, label, dataset):
+    def add_experimental_cross_link(self, r1, c1, r2, c2, label, dataset):
         xl = ExperimentalCrossLink(r1, c1, r2, c2, label, dataset)
         self.cross_link_dump.add_experimental(xl)
         return xl
 
-    def _add_cross_link(self, ex_xl, p1, p2, sigma1, sigma2, psi):
+    def add_cross_link(self, ex_xl, p1, p2, sigma1, sigma2, psi):
         self.cross_link_dump.add(CrossLink(ex_xl, p1, p2, sigma1, sigma2, psi))
 
-    def _add_replica_exchange(self, rex):
+    def add_replica_exchange(self, rex):
         self.model_prot_dump.add(ReplicaExchangeProtocol(rex))
 
-    def _add_em2d_restraint(self, images, resolution, pixel_size,
-                            image_resolution, projection_number):
+    def add_em2d_restraint(self, images, resolution, pixel_size,
+                           image_resolution, projection_number):
         for image in images:
             d = EM2DClassDataset()
-            d.set_location(self._repo, image)
+            d.set_location(self._get_repo(), image)
             self.dataset_dump.add(d)
             self.em2d_dump.add(EM2DRestraint(d, resolution, pixel_size,
                                         image_resolution, projection_number))
 
     def add_model(self):
         return self.model_dump.add(self.prot)
+
+    def _get_repo(self):
+        """Get the repository where all files are stored, or None"""
+        repos = [m for m in self._metadata
+                 if isinstance(m, IMP.pmi.metadata.Repository)]
+        if repos:
+            return repos[0]

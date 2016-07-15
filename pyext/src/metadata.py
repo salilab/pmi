@@ -54,3 +54,17 @@ class Repository(Metadata):
     def get_path(self, fname):
         """Return a path relative to the top of the repository"""
         return os.path.relpath(fname, self._root)
+
+
+class RepositoryFile(Metadata):
+    """An individual file or directory in a repository."""
+
+    def __init__(self, doi, path):
+        """Constructor.
+           @param doi the Digital Object Identifer for the repository.
+           @param path the location of the file or directory in the repository.
+        """
+        self.doi, self.path = doi, path
+
+    def get_path(self, fname):
+        return self.path

@@ -403,6 +403,11 @@ class Dataset(object):
 class CXMSDataset(Dataset):
     data_type = 'CX-MS data'
 
+class EMMicrographsDataset(Dataset):
+    data_type = 'EM raw micrographs'
+    def __init__(self, number):
+        self.number = number
+
 class EM2DClassDataset(Dataset):
     data_type = '2DEM class average'
 
@@ -570,10 +575,11 @@ class CrossLinkDumper(Dumper):
 
 class EM2DRestraint(object):
     def __init__(self, dataset, resolution, pixel_size,
-                 image_resolution, projection_number):
+                 image_resolution, projection_number, micrographs_dataset):
         self.dataset, self.resolution = dataset, resolution
         self.pixel_size, self.image_resolution = pixel_size, image_resolution
         self.projection_number = projection_number
+        self.micrographs_dataset = micrographs_dataset
 
 class EM2DDumper(Dumper):
     def __init__(self, simo):
@@ -587,12 +593,17 @@ class EM2DDumper(Dumper):
     def dump(self, writer):
         with writer.loop("_ihm_2dem_class_average_restraint",
                          ["id", "dataset_list_id", "number_raw_micrographs",
+                          "raw_micrographs_dataset_list_id",
                           "pixel_size_width", "pixel_size_height",
                           "image_resolution", "image_segment_flag",
                           "number_of_projections", "struct_assembly_id",
                           "details"]) as l:
             for r in self.restraints:
+                mgd = r.micrographs_dataset
+                unk = CifWriter.unknown
                 l.write(id=r.id, dataset_list_id=r.dataset.id,
+                        number_raw_micrographs=mgd.number if mgd else unk,
+                        raw_micrographs_dataset_list_id=mgd.id if mgd else unk,
                         pixel_size_width=r.pixel_size,
                         pixel_size_height=r.pixel_size,
                         image_resolution=r.image_resolution,
@@ -993,20 +1004,26 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.model_prot_dump.add(ReplicaExchangeProtocol(rex))
 
     def add_em2d_restraint(self, images, resolution, pixel_size,
-                           image_resolution, projection_number):
+                           image_resolution, projection_number, micrographs):
+        mgd = None
+        if micrographs:
+            mgd = EMMicrographsDataset(micrographs.number)
+            mgd.set_location(self._get_repo(micrographs.metadata), None)
+            self.dataset_dump.add(mgd)
         for image in images:
             d = EM2DClassDataset()
             d.set_location(self._get_repo(), image)
             self.dataset_dump.add(d)
             self.em2d_dump.add(EM2DRestraint(d, resolution, pixel_size,
-                                        image_resolution, projection_number))
+                                      image_resolution, projection_number, mgd))
 
     def add_model(self):
         return self.model_dump.add(self.prot)
 
-    def _get_repo(self):
+    def _get_repo(self, metadata=[]):
         """Get the repository where all files are stored, or None"""
-        repos = [m for m in self._metadata
-                 if isinstance(m, IMP.pmi.metadata.Repository)]
+        repos = [m for m in metadata + self._metadata
+                 if isinstance(m, (IMP.pmi.metadata.Repository,
+                                   IMP.pmi.metadata.RepositoryFile))]
         if repos:
             return repos[0]

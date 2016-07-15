@@ -151,6 +151,29 @@ class SoftwareDumper(Dumper):
                     ordinal += 1
 
 
+class CitationDumper(Dumper):
+    def dump(self, writer):
+        citations = [m for m in self.simo._metadata
+                     if isinstance(m, IMP.pmi.metadata.Citation)]
+        with writer.loop("_citation",
+                         ["id", "title", "journal_abbrev", "journal_volume",
+                          "page_first", "page_last", "year",
+                          "pdbx_database_id_PubMed"]) as l:
+            for n, c in enumerate(citations):
+                l.write(id=n+1, title=c.title, journal_abbrev=c.journal,
+                        journal_volume=c.volume, page_first=c.page_range[0],
+                        page_last=c.page_range[1], year=c.year,
+                        pdbx_database_id_PubMed=c.pmid)
+
+        with writer.loop("_citation_author",
+                         ["citation_id", "name", "ordinal"]) as l:
+            ordinal = 1
+            for n, c in enumerate(citations):
+                for a in c.authors:
+                    l.write(citation_id=n+1, name=a, ordinal=ordinal)
+                    ordinal += 1
+
+
 class EntityDumper(Dumper):
     def dump(self, writer):
         all_entities = [x for x in sorted(self.simo.entities.items(),
@@ -914,7 +937,8 @@ class Representation(IMP.pmi.representation.Representation):
         self.model_dump = ModelDumper(self)
         self.model_repr_dump.starting_model_id \
                     = self.starting_model_dump.starting_model_id
-        self._dumpers = [SoftwareDumper(self), EntityDumper(self),
+        self._dumpers = [SoftwareDumper(self), CitationDumper(self),
+                         EntityDumper(self),
                          EntityPolyDumper(self), EntityPolySeqDumper(self),
                          StructAsymDumper(self),
                          self.assembly_dump,

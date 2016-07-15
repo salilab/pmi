@@ -380,10 +380,10 @@ class RepoDatasetLocation(DatasetLocation):
     """Pointer to a dataset stored in a repository"""
     doi = content_filename = CifWriter.unknown
 
-    def __init__(self, repo, fname):
-        if repo:
-            self.doi = repo.doi
-            self.content_filename = repo.get_path(fname)
+    def __init__(self, loc):
+        if loc:
+            self.doi = loc.doi
+            self.content_filename = loc.path
 
 class DBDatasetLocation(DatasetLocation):
     """Pointer to a dataset stored in an official database (e.g. PDB)"""
@@ -397,8 +397,8 @@ class DBDatasetLocation(DatasetLocation):
 class Dataset(object):
     location = None
 
-    def set_location(self, repo, fname):
-        self.location = RepoDatasetLocation(repo, fname)
+    def set_location(self, loc):
+        self.location = RepoDatasetLocation(loc)
 
 class CXMSDataset(Dataset):
     data_type = 'CX-MS data'
@@ -415,8 +415,8 @@ class CompModelDataset(Dataset):
     """A comparative model dataset.
        Currently it is assumed that models are stored in a repository."""
     data_type = 'Comparative model'
-    def __init__(self, repo, fname):
-        self.set_location(repo, fname)
+    def __init__(self, location):
+        self.set_location(location)
 
 class PDBDataset(Dataset):
     """An experimental PDB structure dataset."""
@@ -821,7 +821,7 @@ class StartingModelDumper(Dumper):
             return [source]
         elif first_line.startswith('EXPDTA    THEORETICAL MODEL, MODELLER'):
             # todo: add modeller to software
-            model.dataset = CompModelDataset(self.simo._get_repo(), pdbname)
+            model.dataset = CompModelDataset(self.simo._get_location(pdbname))
             self.simo.dataset_dump.add(model.dataset)
             templates = self.get_templates(pdbname, model)
             if templates:
@@ -988,7 +988,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
 
     def get_cross_link_dataset(self, fname):
         d = CXMSDataset()
-        d.set_location(self._get_repo(), fname)
+        d.set_location(self._get_location(fname))
         self.dataset_dump.add(d)
         return d
 
@@ -1008,11 +1008,11 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         mgd = None
         if micrographs:
             mgd = EMMicrographsDataset(micrographs.number)
-            mgd.set_location(self._get_repo(micrographs.metadata), None)
+            mgd.set_location(self._get_location(None, micrographs.metadata))
             self.dataset_dump.add(mgd)
         for image in images:
             d = EM2DClassDataset()
-            d.set_location(self._get_repo(), image)
+            d.set_location(self._get_location(image))
             self.dataset_dump.add(d)
             self.em2d_dump.add(EM2DRestraint(d, resolution, pixel_size,
                                       image_resolution, projection_number, mgd))
@@ -1020,10 +1020,13 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
     def add_model(self):
         return self.model_dump.add(self.prot)
 
-    def _get_repo(self, metadata=[]):
-        """Get the repository where all files are stored, or None"""
-        repos = [m for m in metadata + self._metadata
-                 if isinstance(m, (IMP.pmi.metadata.Repository,
-                                   IMP.pmi.metadata.RepositoryFile))]
-        if repos:
-            return repos[0]
+    def _get_location(self, path, metadata=[]):
+        """Get the location where the given file is deposited, or None.
+           If a RepositoryFile object is available, return that.
+           Otherwise, if a Repository object is available, construct a
+           RepositoryFile object from that and return it."""
+        for m in metadata + self._metadata:
+            if isinstance(m, IMP.pmi.metadata.RepositoryFile):
+                return m
+            if isinstance(m, IMP.pmi.metadata.Repository):
+                return m.get_path(path)

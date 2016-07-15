@@ -35,13 +35,30 @@ class Citation(RootMetadata):
         self.pmid, self.authors = pmid, authors
 
 
+class RepositoryFile(Metadata):
+    """An individual file or directory in a repository.
+       A repository in this context is simply a collection of files -
+       it does not have to be under version control (git, svn, etc.)
+
+       @see Repository"""
+
+    def __init__(self, doi, path):
+        """Constructor.
+           @param doi the Digital Object Identifer for the repository.
+           @param path the location of the file or directory in the repository.
+        """
+        self.doi, self.path = doi, path
+
+
 class Repository(Metadata):
     """A repository containing modeling files.
-       This can be used if the PMI script is part of a repository, which
-       has been archived somewhere with a DOI.
-       This can be used to construct permanent references to files
+       This can be used if the PMI script plus inputs files are part of a
+       repository, which has been archived somewhere with a DOI.
+       This will be used to construct permanent references to files
        used in this modeling, even if they haven't been uploaded to
-       a database such as PDB or EMDB."""
+       a database such as PDB or EMDB (by creating a RepositoryFile object).
+
+       @see RepositoryFile."""
 
     def __init__(self, doi, root):
         """Constructor.
@@ -53,18 +70,4 @@ class Repository(Metadata):
 
     def get_path(self, fname):
         """Return a path relative to the top of the repository"""
-        return os.path.relpath(fname, self._root)
-
-
-class RepositoryFile(Metadata):
-    """An individual file or directory in a repository."""
-
-    def __init__(self, doi, path):
-        """Constructor.
-           @param doi the Digital Object Identifer for the repository.
-           @param path the location of the file or directory in the repository.
-        """
-        self.doi, self.path = doi, path
-
-    def get_path(self, fname):
-        return self.path
+        return RepositoryFile(self.doi, os.path.relpath(fname, self._root))

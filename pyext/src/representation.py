@@ -91,6 +91,8 @@ class Representation(object):
                      restraint.
         """
 
+        self._metadata = []
+
         # this flag uses either harmonic (False) or upperharmonic (True)
         # in the intra-pair connectivity restraint. Harmonic is used whe you want to
         # remove the intra-ev term from energy calculations, e.g.:
@@ -157,6 +159,12 @@ class Representation(object):
         self.onetothree = dict((v, k) for k, v in self.threetoone.items())
 
         self.residuenamekey = IMP.StringKey("ResidueName")
+
+    def add_metadata(self, m):
+        """Associate some metadata with this modeling.
+           @param m an instance of IMP.pmi.metadata.Metadata or a subclass.
+        """
+        self._metadata.append(m)
 
     def set_repo_doi(self, doi, root):
         """Set the DOI of this repository.

@@ -17,11 +17,13 @@ class RootMetadata(Metadata):
 
 class Software(RootMetadata):
     """Software (other than IMP) used as part of the modeling protocol."""
-    def __init__(self, name, classification, description, url, version=None):
+    def __init__(self, name, classification, description, url, type='program',
+                 version=None):
         self.name = name
         self.classification = classification
         self.description = description
         self.url = url
+        self.type = type
         self.version = version
 
 

@@ -8,6 +8,7 @@ import IMP.pmi.representation
 import IMP.pmi.tools
 from IMP.pmi.tools import OrderedDict
 import IMP.pmi.output
+import IMP.pmi.metadata
 import re
 import sys
 import os
@@ -141,6 +142,13 @@ class SoftwareDumper(Dumper):
                     version=IMP.pmi.__version__, type="program",
                     classification="integrative model building",
                     location='https://integrativemodeling.org')
+            ordinal = 3
+            for m in self.simo._metadata:
+                if isinstance(m, IMP.pmi.metadata.Software):
+                    l.write(pdbx_ordinal=ordinal, name=m.name,
+                            classification=m.classification, version=m.version,
+                            type=m.type, location=m.url)
+                    ordinal += 1
 
 
 class EntityDumper(Dumper):

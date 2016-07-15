@@ -130,20 +130,42 @@ class Dumper(object):
 
 
 class SoftwareDumper(Dumper):
+    software = [
+       IMP.pmi.metadata.Software(
+             name="Integrative Modeling Platform (IMP)",
+             version=IMP.__version__,
+             classification="integrative model building",
+             description="integrative model building",
+             url='https://integrativemodeling.org'),
+       IMP.pmi.metadata.Software(
+            name="IMP PMI module",
+            version=IMP.pmi.__version__,
+            classification="integrative model building",
+            description="integrative model building",
+            url='https://integrativemodeling.org')
+       ]
+
+    def __init__(self, simo):
+        super(SoftwareDumper, self).__init__(simo)
+        self.modeller_used = False
+
+    def set_modeller_used(self, version, date):
+        if self.modeller_used:
+            return
+        self.modeller_used = True
+        self.software.append(IMP.pmi.metadata.Software(
+                    name='MODELLER', classification='comparative modeling',
+                    description='Comparative modeling by satisfaction '
+                                'of spatial restraints, build ' + date,
+                    url='https://salilab.org',
+                    version=version))
+
     def dump(self, writer):
+        ordinal = 1
         with writer.loop("_software",
                          ["pdbx_ordinal", "name", "classification", "version",
                           "type", "location"]) as l:
-            l.write(pdbx_ordinal=1, name="Integrative Modeling Platform (IMP)",
-                    version=IMP.__version__, type="program",
-                    classification="integrative model building",
-                    location='https://integrativemodeling.org')
-            l.write(pdbx_ordinal=2, name="IMP PMI module",
-                    version=IMP.pmi.__version__, type="program",
-                    classification="integrative model building",
-                    location='https://integrativemodeling.org')
-            ordinal = 3
-            for m in self.simo._metadata:
+            for m in self.software + self.simo._metadata:
                 if isinstance(m, IMP.pmi.metadata.Software):
                     l.write(pdbx_ordinal=ordinal, name=m.name,
                             classification=m.classification, version=m.version,
@@ -830,7 +852,8 @@ class StartingModelDumper(Dumper):
             self.simo.dataset_dump.add(model.dataset)
             return [source]
         elif first_line.startswith('EXPDTA    THEORETICAL MODEL, MODELLER'):
-            # todo: add modeller to software
+            self.simo.software_dump.set_modeller_used(
+                                        *first_line[38:].split(' ', 1))
             model.dataset = CompModelDataset(self.simo._get_location(pdbname))
             self.simo.dataset_dump.add(model.dataset)
             templates = self.get_templates(pdbname, model)
@@ -961,7 +984,8 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.model_dump = ModelDumper(self)
         self.model_repr_dump.starting_model_id \
                     = self.starting_model_dump.starting_model_id
-        self._dumpers = [SoftwareDumper(self), CitationDumper(self),
+        self.software_dump = SoftwareDumper(self)
+        self._dumpers = [self.software_dump, CitationDumper(self),
                          EntityDumper(self),
                          EntityPolyDumper(self), EntityPolySeqDumper(self),
                          StructAsymDumper(self),

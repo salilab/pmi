@@ -365,7 +365,7 @@ class MonteCarlo(object):
 class MolecularDynamics(object):
     """Sample using molecular dynamics"""
 
-    def __init__(self,m,objects,kt,gamma=0.01,maximum_time_step=1.0):
+    def __init__(self,m,objects,kt,gamma=0.01,maximum_time_step=1.0,sf=None):
         """Setup MD
         @param m The IMP Model
         @param objects What to sample. Use flat list of particles or (deprecated) 'MD Sample Objects' from PMI1
@@ -387,7 +387,10 @@ class MolecularDynamics(object):
                                                                gamma)
         self.md = IMP.atom.MolecularDynamics(self.m)
         self.md.set_maximum_time_step(maximum_time_step)
-        self.md.set_scoring_function(get_restraint_set(self.m))
+        if sf:
+            self.md.set_scoring_function(sf)
+        else:
+            self.md.set_scoring_function(get_restraint_set(self.m))
         self.md.add_optimizer_state(self.ltstate)
         self.simulated_annealing = False
         self.nframe = -1

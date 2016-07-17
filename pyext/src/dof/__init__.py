@@ -279,13 +279,14 @@ class DegreesOfFreedom(object):
         hiers = IMP.pmi.tools.input_adaptor(hspec,flatten=True)
         mdl = hiers[0].get_model()
         all_ps = []
-        for h in hiers:
-            p = h.get_particle()
-            IMP.core.XYZ(mdl,p.get_index()).set_coordinates_are_optimized(True)
-            mdl.add_attribute(vxkey,p.get_index(),0.0)
-            mdl.add_attribute(vykey,p.get_index(),0.0)
-            mdl.add_attribute(vzkey,p.get_index(),0.0)
-            all_ps.append(p)
+        for hl in hiers:
+            for h in IMP.core.get_leaves(hl):
+                p = h.get_particle()
+                IMP.core.XYZ(mdl,p.get_index()).set_coordinates_are_optimized(True)
+                mdl.add_attribute(vxkey,p.get_index(),0.0)
+                mdl.add_attribute(vykey,p.get_index(),0.0)
+                mdl.add_attribute(vzkey,p.get_index(),0.0)
+                all_ps.append(p)
         return all_ps
 
     def constrain_symmetry(self,

@@ -1167,8 +1167,7 @@ class _Component(object):
         self.chain_of_super_rigid_bodies = []
 
     def _l2s(self,l):
-        l = str(map(int,l)).strip('[').strip(']')
-        return l
+        return ",".join("%d" % int(x) for x in l)
 
     def __repr__(self):
         return self.get_str()

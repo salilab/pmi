@@ -129,6 +129,15 @@ class Dumper(object):
         pass
 
 
+class EntryDumper(Dumper):
+    def dump(self, writer):
+        entry_id = 'imp_model'
+        # Write CIF header (so this dumper should always be first)
+        writer.fh.write("data_%s\n" % entry_id)
+        with writer.category("_entry") as l:
+            l.write(id=entry_id)
+
+
 class SoftwareDumper(Dumper):
     software = [
        IMP.pmi.metadata.Software(
@@ -967,7 +976,6 @@ class CifEntities(dict):
 class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
     def __init__(self, fh):
         self._cif_writer = CifWriter(fh)
-        fh.write("data_model\n")
         self.entities = CifEntities()
         self.chains = {}
         self.sequence_dict = {}
@@ -985,7 +993,8 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.model_repr_dump.starting_model_id \
                     = self.starting_model_dump.starting_model_id
         self.software_dump = SoftwareDumper(self)
-        self._dumpers = [self.software_dump, CitationDumper(self),
+        self._dumpers = [EntryDumper(self), # should always be first
+                         self.software_dump, CitationDumper(self),
                          EntityDumper(self),
                          EntityPolyDumper(self), EntityPolySeqDumper(self),
                          StructAsymDumper(self),

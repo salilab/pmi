@@ -181,6 +181,24 @@ class SoftwareDumper(Dumper):
                             type=m.type, location=m.url)
                     ordinal += 1
 
+class AuditAuthorDumper(Dumper):
+    """Populate the mmCIF audit_author category (a list of the people that
+       authored this mmCIF file; here we assume that's just the authors of
+       any associated publications)"""
+    def dump(self, writer):
+        citations = [m for m in self.simo._metadata
+                     if isinstance(m, IMP.pmi.metadata.Citation)]
+        seen_authors = {}
+        with writer.loop("_audit_author",
+                         ["name", "pdbx_ordinal"]) as l:
+            ordinal = 1
+            for n, c in enumerate(citations):
+                for a in c.authors:
+                    if a not in seen_authors:
+                        seen_authors[a] = None
+                        l.write(name=a, pdbx_ordinal=ordinal)
+                        ordinal += 1
+
 
 class CitationDumper(Dumper):
     def dump(self, writer):
@@ -994,6 +1012,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                     = self.starting_model_dump.starting_model_id
         self.software_dump = SoftwareDumper(self)
         self._dumpers = [EntryDumper(self), # should always be first
+                         AuditAuthorDumper(self),
                          self.software_dump, CitationDumper(self),
                          EntityDumper(self),
                          EntityPolyDumper(self), EntityPolySeqDumper(self),

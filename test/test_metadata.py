@@ -16,7 +16,8 @@ class Tests(IMP.test.TestCase):
         """Test metadata.Citation"""
         s = IMP.pmi.metadata.Citation(title='Test paper', journal='J Mol Biol',
                                       volume=45, page_range=(1,20), year=2016,
-                                      authors=['Smith, A.', 'Jones, B.'])
+                                      authors=['Smith, A.', 'Jones, B.'],
+                                      doi='10.2345/S1384107697000225')
         self.assertEqual(s.title, 'Test paper')
 
     def test_repository(self):

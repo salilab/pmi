@@ -207,12 +207,14 @@ class CitationDumper(Dumper):
         with writer.loop("_citation",
                          ["id", "title", "journal_abbrev", "journal_volume",
                           "page_first", "page_last", "year",
-                          "pdbx_database_id_PubMed"]) as l:
+                          "pdbx_database_id_PubMed",
+                          "pdbx_database_id_DOI"]) as l:
             for n, c in enumerate(citations):
                 l.write(id=n+1, title=c.title, journal_abbrev=c.journal,
                         journal_volume=c.volume, page_first=c.page_range[0],
                         page_last=c.page_range[1], year=c.year,
-                        pdbx_database_id_PubMed=c.pmid)
+                        pdbx_database_id_PubMed=c.pmid,
+                        pdbx_database_id_DOI=c.doi)
 
         with writer.loop("_citation_author",
                          ["citation_id", "name", "ordinal"]) as l:

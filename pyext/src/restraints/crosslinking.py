@@ -1852,7 +1852,7 @@ class ISDCrossLinkMS(IMP.pmi.restraints._NuisancesBase):
 
             # todo: check that offset is handled correctly
             ex_xls = [p.add_experimental_cross_link(r1, c1, r2, c2,
-                                                    self.label, dataset)
+                                                    self.label, length, dataset)
                       for p, dataset in zip(representations[0]._protocol_output,
                                             datasets)]
 

@@ -547,9 +547,9 @@ class DatasetDumper(Dumper):
 
 
 class ExperimentalCrossLink(object):
-    def __init__(self, r1, c1, r2, c2, label, dataset):
+    def __init__(self, r1, c1, r2, c2, label, length, dataset):
         self.r1, self.c1, self.r2, self.c2, self.label = r1, c1, r2, c2, label
-        self.dataset = dataset
+        self.length, self.dataset = length, dataset
 
 class CrossLink(object):
     def __init__(self, ex_xl, p1, p2, sigma1, sigma2, psi):
@@ -601,7 +601,7 @@ class CrossLinkDumper(Dumper):
 
     def dump_restraint(self, writer):
         asym = AsymIDMapper(self.simo.prot)
-        # todo: support model_granularity, distance_threshold
+        # todo: support model_granularity
         with writer.loop("_ihm_cross_link_restraint",
                          ["id", "group_id", "entity_id_1", "asym_id_1",
                           "seq_id_1", "comp_id_1",
@@ -627,6 +627,7 @@ class CrossLinkDumper(Dumper):
                         type=xl.ex_xl.label,
                         # todo: any circumstances where this could be ANY?
                         conditional_crosslink_flag="ALL",
+                        distance_threshold=xl.ex_xl.length,
                         psi=xl.psi, sigma_1=xl.sigma1, sigma_2=xl.sigma2)
 
 class EM2DRestraint(object):
@@ -1063,8 +1064,9 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.dataset_dump.add(d)
         return d
 
-    def add_experimental_cross_link(self, r1, c1, r2, c2, label, dataset):
-        xl = ExperimentalCrossLink(r1, c1, r2, c2, label, dataset)
+    def add_experimental_cross_link(self, r1, c1, r2, c2, label, length,
+                                    dataset):
+        xl = ExperimentalCrossLink(r1, c1, r2, c2, label, length, dataset)
         self.cross_link_dump.add_experimental(xl)
         return xl
 

@@ -107,6 +107,11 @@ class CifWriter(object):
         else:
             return repr(obj)
 
+def _get_by_residue(p):
+    """Determine whether the given particle represents a specific residue
+       or a more coarse-grained object."""
+    return IMP.atom.Residue.get_is_setup(p) or IMP.atom.Atom.get_is_setup(p)
+
 class AsymIDMapper(object):
     """Map a Particle to an asym_id (chain ID)"""
     def __init__(self, prot):
@@ -599,9 +604,15 @@ class CrossLinkDumper(Dumper):
                         type=xl.label,
                         dataset_list_id=xl.dataset.id)
 
+    def _granularity(self, xl):
+        """Determine the granularity of a cross link"""
+        if _get_by_residue(xl.p1) and _get_by_residue(xl.p2):
+            return 'by-residue'
+        else:
+            return 'by-feature'
+
     def dump_restraint(self, writer):
         asym = AsymIDMapper(self.simo.prot)
-        # todo: support model_granularity
         with writer.loop("_ihm_cross_link_restraint",
                          ["id", "group_id", "entity_id_1", "asym_id_1",
                           "seq_id_1", "comp_id_1",
@@ -627,6 +638,7 @@ class CrossLinkDumper(Dumper):
                         type=xl.ex_xl.label,
                         # todo: any circumstances where this could be ANY?
                         conditional_crosslink_flag="ALL",
+                        model_granularity=self._granularity(xl),
                         distance_threshold=xl.ex_xl.length,
                         psi=xl.psi, sigma_1=xl.sigma1, sigma_2=xl.sigma2)
 

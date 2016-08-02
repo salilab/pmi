@@ -166,7 +166,7 @@ class SoftwareDumper(Dumper):
                     name='MODELLER', classification='comparative modeling',
                     description='Comparative modeling by satisfaction '
                                 'of spatial restraints, build ' + date,
-                    url='https://salilab.org',
+                    url='https://salilab.org/modeller/',
                     version=version))
 
     def dump(self, writer):

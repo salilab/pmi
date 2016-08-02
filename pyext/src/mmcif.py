@@ -226,6 +226,7 @@ class CitationDumper(Dumper):
 
 
 class EntityDumper(Dumper):
+    # todo: we currently only support amino acid sequences here
     def dump(self, writer):
         all_entities = [x for x in sorted(self.simo.entities.items(),
                                           key=operator.itemgetter(1))]
@@ -240,6 +241,7 @@ class EntityDumper(Dumper):
 
 
 class EntityPolyDumper(Dumper):
+    # todo: we currently only support amino acid sequences here
     def __init__(self, simo):
         super(EntityPolyDumper, self).__init__(simo)
         self.output = IMP.pmi.output.Output()
@@ -351,6 +353,7 @@ class ModelRepresentationDumper(Dumper):
 
     def dump(self, writer):
         segment_id = 1
+        # todo: support model_mode
         with writer.loop("_ihm_model_representation",
                          ["segment_id", "entity_id", "entity_description",
                           "seq_id_begin", "seq_id_end",
@@ -598,17 +601,19 @@ class CrossLinkDumper(Dumper):
 
     def dump_restraint(self, writer):
         asym = AsymIDMapper(self.simo.prot)
+        # todo: support model_granularity, distance_threshold
         with writer.loop("_ihm_cross_link_restraint",
                          ["id", "group_id", "entity_id_1", "asym_id_1",
                           "seq_id_1", "comp_id_1",
                           "entity_id_2", "asym_id_2", "seq_id_2", "comp_id_2",
-                          "type", "psi", "sigma_1", "sigma_2"]) as l:
+                          "type", "conditional_crosslink_flag",
+                          "model_granularity", "distance_threshold",
+                          "psi", "sigma_1", "sigma_2"]) as l:
             for xl in self.cross_links:
                 seq1 = self.simo.sequence_dict[xl.ex_xl.c1]
                 seq2 = self.simo.sequence_dict[xl.ex_xl.c2]
                 rt1 = IMP.atom.get_residue_type(seq1[xl.ex_xl.r1-1])
                 rt2 = IMP.atom.get_residue_type(seq2[xl.ex_xl.r2-1])
-                # todo: get chain ids for xl.p1 and xl.p2
                 l.write(id=xl.id,
                         group_id=xl.ex_xl.id,
                         entity_id_1=self.simo.entities[xl.ex_xl.c1],
@@ -620,6 +625,8 @@ class CrossLinkDumper(Dumper):
                         seq_id_2=xl.ex_xl.r2,
                         comp_id_2=rt2.get_string(),
                         type=xl.ex_xl.label,
+                        # todo: any circumstances where this could be ANY?
+                        conditional_crosslink_flag="ALL",
                         psi=xl.psi, sigma_1=xl.sigma1, sigma_2=xl.sigma2)
 
 class EM2DRestraint(object):
@@ -914,8 +921,8 @@ class StartingModelDumper(Dumper):
 
     def dump_details(self, writer):
         writer.write_comment("""IMP will attempt to identify which input models
-are crystal structures and which are comparative models, but does not have
-sufficient information to deduce all of the templates used for comparative
+are crystal structures and which are comparative models, but does not always
+have sufficient information to deduce all of the templates used for comparative
 modeling. These may need to be added manually below.""")
         with writer.loop("_ihm_starting_model_details",
                      ["id", "entity_id", "entity_description", "seq_id_begin",

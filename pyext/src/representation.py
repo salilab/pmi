@@ -978,7 +978,8 @@ class Representation(object):
                                  state_number=0,
                                  skip_gaussian_in_rmf=False,
                                  skip_gaussian_in_representation=False,
-                                 save_file=False):
+                                 save_file=False,
+                                 force_rigid_update=False):
         '''Read and replace coordinates from an RMF file.
         Replace the coordinates of particles with the same name.
         It assumes that the RMF and the representation have the particles
@@ -989,7 +990,8 @@ class Representation(object):
         @param representation_name_to_rmf_name_map a dictionary that map
                 the original rmf particle name to the recipient particle component name
         @param save_file: save a file with the names of particles of the component
-
+        @param force_rigid_update: update the coordinates of rigid bodies
+               (normally this should be called before rigid bodies are set up)
         '''
         import IMP.pmi.analysis
 
@@ -1002,6 +1004,9 @@ class Representation(object):
             raise ValueError("cannot read hierarchy from rmf")
 
         prot=prots[0]
+        # Make sure coordinates of rigid body members in the RMF are correct
+        if force_rigid_update:
+            self.m.update()
 
         # if len(self.rigid_bodies)!=0:
         #   print "set_coordinates_from_rmf: cannot proceed if rigid bodies were initialized. Use the function before defining the rigid bodies"
@@ -1058,16 +1063,25 @@ class Representation(object):
 
                 prmfname = prmf.get_name()
                 preprname = psrepr[n].get_name()
-                if IMP.core.RigidMember.get_is_setup(psrepr[n]):
-                    raise ValueError("component %s cannot proceed if rigid bodies were initialized. Use the function before defining the rigid bodies" % component_name)
-                if IMP.core.NonRigidMember.get_is_setup(psrepr[n]):
-                    raise ValueError("component %s cannot proceed if rigid bodies were initialized. Use the function before defining the rigid bodies" % component_name)
+                if force_rigid_update:
+                    if IMP.core.RigidBody.get_is_setup(psrepr[n]):
+                        continue
+                else:
+                    if IMP.core.RigidBodyMember.get_is_setup(psrepr[n]):
+                        raise ValueError("component %s cannot proceed if rigid bodies were initialized. Use the function before defining the rigid bodies" % component_name)
 
                 if prmfname != preprname:
                     print("set_coordinates_from_rmf: WARNING rmf particle and representation particles have not the same name %s %s " % (prmfname, preprname))
                 if IMP.core.XYZ.get_is_setup(prmf) and IMP.core.XYZ.get_is_setup(psrepr[n]):
                     xyz = IMP.core.XYZ(prmf).get_coordinates()
                     IMP.core.XYZ(psrepr[n]).set_coordinates(xyz)
+                    if IMP.core.RigidBodyMember.get_is_setup(psrepr[n]):
+                        # Set rigid body so that coordinates are preserved
+                        # on future model updates
+                        rbm = IMP.core.RigidBodyMember(psrepr[n])
+                        rbm.set_internal_coordinates(xyz)
+                        tr = IMP.algebra.ReferenceFrame3D()
+                        rbm.get_rigid_body().set_reference_frame_lazy(tr)
                 else:
                     print("set_coordinates_from_rmf: WARNING particles are not XYZ decorated %s %s " % (str(IMP.core.XYZ.get_is_setup(prmf)), str(IMP.core.XYZ.get_is_setup(psrepr[n]))))
 

@@ -428,13 +428,15 @@ class Representation(object):
         start = start + offset
         end = end + offset
 
-        for p in self._protocol_output:
-            p.add_pdb_element(name, start, end, offset, pdbname, chain)
         self.elements[name].append(
             (start, end, pdbname.split("/")[-1] + ":" + chain, "pdb"))
 
-        outhiers += self.coarse_hierarchy(name, start, end,
-                                          resolutions, isnucleicacid, c0, protein_h, "pdb", color)
+        hiers = self.coarse_hierarchy(name, start, end,
+                                      resolutions, isnucleicacid, c0, protein_h, "pdb", color)
+        outhiers += hiers
+        for p in self._protocol_output:
+            p.add_pdb_element(name, start, end, offset, pdbname, chain,
+                              hiers[0])
 
         if show:
             IMP.atom.show_molecular_hierarchy(protein_h)
@@ -527,8 +529,6 @@ class Representation(object):
             colors = [self.color_dict[name]]
 
 
-        for p in self._protocol_output:
-            p.add_bead_element(name, ds[0][0], ds[-1][1], len(ds))
         for n, dss in enumerate(ds):
             ds_frag = (dss[0], dss[1])
             self.elements[name].append((dss[0], dss[1], " ", "bead"))
@@ -601,6 +601,9 @@ class Representation(object):
             self.floppy_bodies.append(prt)
             IMP.core.XYZ(prt).set_coordinates_are_optimized(True)
             outhiers += [h]
+
+        for p in self._protocol_output:
+            p.add_bead_element(name, ds[0][0], ds[-1][1], len(ds), outhiers[0])
 
         return outhiers
 

@@ -303,13 +303,13 @@ class _PDBFragment(object):
     primitive = 'sphere'
     granularity = 'by-residue'
     num = CifWriter.omitted
-    def __init__(self, m, component, start, end, offset, pdbname, chain):
+    def __init__(self, m, component, start, end, offset, pdbname, chain, hier):
         self.component, self.start, self.end, self.offset, self.pdbname \
               = component, start, end, offset, pdbname
-        self.chain = chain
+        self.chain, self.hier = chain, hier
         sel = IMP.atom.NonWaterNonHydrogenPDBSelector() \
               & IMP.atom.ChainPDBSelector(chain)
-        self.hier = IMP.atom.read_pdb(pdbname, m, sel)
+        self.starting_hier = IMP.atom.read_pdb(pdbname, m, sel)
 
     def combine(self, other):
         pass
@@ -319,11 +319,12 @@ class _BeadsFragment(object):
     primitive = 'sphere'
     granularity = 'by-feature'
     chain = None
-    def __init__(self, m, component, start, end, num):
-        self.component, self.start, self.end, self.num \
-              = component, start, end, num
+    def __init__(self, m, component, start, end, num, hier):
+        self.component, self.start, self.end, self.num, self.hier \
+              = component, start, end, num, hier
 
     def combine(self, other):
+        # todo: don't combine if one fragment is rigid and the other flexible
         if type(other) == type(self) and other.start == self.end + 1:
             self.end = other.end
             self.num += other.num
@@ -356,9 +357,18 @@ class ModelRepresentationDumper(Dumper):
         if len(fragments) == 0 or not fragments[-1].combine(fragment):
             fragments.append(fragment)
 
+    def get_model_mode(self, fragment):
+        """Determine the model_mode for a given fragment ('rigid' or
+           'flexible')"""
+        leaves = IMP.atom.get_leaves(fragment.hier)
+        # Assume all leaves are set up as rigid/flexible in the same way
+        if IMP.core.RigidMember.get_is_setup(leaves[0]):
+            return 'rigid'
+        else:
+            return 'flexible'
+
     def dump(self, writer):
         segment_id = 1
-        # todo: support model_mode
         with writer.loop("_ihm_model_representation",
                          ["segment_id", "entity_id", "entity_description",
                           "seq_id_begin", "seq_id_end",
@@ -377,6 +387,7 @@ class ModelRepresentationDumper(Dumper):
                             seq_id_end=f.end,
                             model_object_primitive=f.primitive,
                             starting_model_id=starting_model_id,
+                            model_mode=self.get_model_mode(f),
                             model_granularity=f.granularity,
                             model_object_count=f.num)
                     segment_id += 1
@@ -973,7 +984,7 @@ modeling. These may need to be added manually below.""")
                       "ordinal_id"]) as l:
             for model in self.all_models():
                 for f in model.fragments:
-                    for a in IMP.atom.get_leaves(f.hier):
+                    for a in IMP.atom.get_leaves(f.starting_hier):
                         coord = IMP.core.XYZ(a).get_coordinates()
                         atom = IMP.atom.Atom(a)
                         element = atom.get_element()
@@ -1061,13 +1072,13 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         for dumper in self._dumpers:
             dumper.dump(self._cif_writer)
 
-    def add_pdb_element(self, name, start, end, offset, pdbname, chain):
-        p = _PDBFragment(self.m, name, start, end, offset, pdbname, chain)
+    def add_pdb_element(self, name, start, end, offset, pdbname, chain, hier):
+        p = _PDBFragment(self.m, name, start, end, offset, pdbname, chain, hier)
         self.model_repr_dump.add_fragment(p)
         self.starting_model_dump.add_pdb_fragment(p)
 
-    def add_bead_element(self, name, start, end, num):
-        b = _BeadsFragment(self.m, name, start, end, num)
+    def add_bead_element(self, name, start, end, num, hier):
+        b = _BeadsFragment(self.m, name, start, end, num, hier)
         self.model_repr_dump.add_fragment(b)
 
     def get_cross_link_dataset(self, fname):

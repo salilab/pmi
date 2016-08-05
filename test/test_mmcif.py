@@ -86,5 +86,16 @@ _citation_author.ordinal
 """
         self.assertEqual(out, expected)
 
+    def test_pdb_helix(self):
+        """Test PDBHelix class"""
+        p = IMP.pmi.mmcif.PDBHelix("HELIX   10  10 ASP A  607  GLU A  624  1                                  18   ")
+        self.assertEqual(p.helix_id, '10')
+        self.assertEqual(p.start_asym, 'A')
+        self.assertEqual(p.start_resnum, 607)
+        self.assertEqual(p.end_asym, 'A')
+        self.assertEqual(p.end_resnum, 624)
+        self.assertEqual(p.helix_class, 1)
+        self.assertEqual(p.length, 18)
+
 if __name__ == '__main__':
     IMP.test.main()

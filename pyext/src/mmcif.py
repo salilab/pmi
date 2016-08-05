@@ -398,9 +398,10 @@ class PDBSource(object):
     db_name = 'PDB'
     sequence_identity = 100.0
 
-    def __init__(self, model, db_code, chain_id):
+    def __init__(self, model, db_code, chain_id, metadata):
         self.db_code = db_code
         self.chain_id = chain_id
+        self.metadata = metadata
 
     def get_seq_id_range(self, model):
         # Assume the structure covers the entire sequence
@@ -846,6 +847,18 @@ class ModelProtocolDumper(Dumper):
                 ordinal += 1
 
 
+class PDBHelix(object):
+    """Represent a HELIX record from a PDB file."""
+    def __init__(self, line):
+        self.helix_id = line[11:14].strip()
+        self.start_asym = line[19]
+        self.start_resnum = int(line[21:25])
+        self.end_asym = line[31]
+        self.end_resnum = int(line[33:37])
+        self.helix_class = int(line[38:40])
+        self.length = int(line[71:76])
+
+
 class StartingModelDumper(Dumper):
     def __init__(self, simo):
         super(StartingModelDumper, self).__init__(simo)
@@ -891,24 +904,26 @@ class StartingModelDumper(Dumper):
         # Sort by starting residue, then ending residue
         return sorted(templates, key=lambda x: (x._seq_id_begin, x._seq_id_end))
 
-    def _parse_pdb_header(self, fh, first_line):
-        """Extract information from an official PDB header"""
-        def get_details():
-            details = ''
-            for i in range(10):
-                line = fh.readline()
-                if line.startswith('TITLE'):
-                    details += line[10:].rstrip()
-            return details if details else CifWriter.unknown
-        return first_line[50:59].strip(), get_details()
+    def _parse_pdb(self, fh, first_line):
+        """Extract information from an official PDB"""
+        metadata = []
+        details = ''
+        for line in fh:
+            if line.startswith('TITLE'):
+                details += line[10:].rstrip()
+            elif line.startswith('HELIX'):
+                metadata.append(PDBHelix(line))
+        return (first_line[50:59].strip(),
+                details if details else CifWriter.unknown, metadata)
 
     def get_sources(self, model, pdbname, chain):
         # Attempt to identity PDB file vs. comparative model
         fh = open(pdbname)
         first_line = fh.readline()
         if first_line.startswith('HEADER'):
-            source = PDBSource(model, first_line[62:66].strip(), chain)
-            version, details = self._parse_pdb_header(fh, first_line)
+            version, details, metadata = self._parse_pdb(fh, first_line)
+            source = PDBSource(model, first_line[62:66].strip(), chain,
+                               metadata)
             model.dataset = PDBDataset(source.db_code, version, details)
             self.simo.dataset_dump.add(model.dataset)
             return [source]

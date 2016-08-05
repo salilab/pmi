@@ -379,7 +379,7 @@ class ModelRepresentationDumper(Dumper):
                 for f in fragments:
                     starting_model_id = CifWriter.omitted
                     if hasattr(f, 'pdbname'):
-                        starting_model_id = self.starting_model_id[f.pdbname]
+                        starting_model_id = self.starting_model[f.pdbname].name
                     l.write(segment_id=segment_id,
                             entity_id=self.simo.entities[f.component],
                             entity_description=f.component,
@@ -851,8 +851,10 @@ class PDBHelix(object):
     """Represent a HELIX record from a PDB file."""
     def __init__(self, line):
         self.helix_id = line[11:14].strip()
+        self.start_resnam = line[14:18].strip()
         self.start_asym = line[19]
         self.start_resnum = int(line[21:25])
+        self.end_resnam = line[27:30].strip()
         self.end_asym = line[31]
         self.end_resnum = int(line[33:37])
         self.helix_class = int(line[38:40])
@@ -866,8 +868,8 @@ class StartingModelDumper(Dumper):
         self.fragments = OrderedDict()
         # dict of starting models (entire PDB files), collected from fragments
         self.models = OrderedDict()
-        # mapping from pdbname to starting_model_id
-        self.starting_model_id = {}
+        # mapping from pdbname to starting model
+        self.starting_model = {}
 
     def add_pdb_fragment(self, fragment):
         """Add a starting model PDB fragment."""
@@ -941,7 +943,7 @@ class StartingModelDumper(Dumper):
         for comp, models in self.models.items():
             for i, model in enumerate(models):
                 model.name = "%s-m%d" % (comp, i+1)
-                self.starting_model_id[model.fragments[0].pdbname] = model.name
+                self.starting_model[model.fragments[0].pdbname] = model
                 model.seq_id_begin = min(x.start + x.offset
                                          for x in model.fragments)
                 model.seq_id_end = max(x.end + x.offset
@@ -1024,6 +1026,58 @@ modeling. These may need to be added manually below.""")
                                 ordinal_id=ordinal)
                         ordinal += 1
 
+class StructConfDumper(Dumper):
+    def all_rigid_fragments(self):
+        """Yield all rigid model representation fragments"""
+        asym = AsymIDMapper(self.simo.prot)
+        model_repr = self.simo.model_repr_dump
+        for comp, fragments in model_repr.fragments.items():
+            for f in fragments:
+                if hasattr(f, 'pdbname') \
+                   and model_repr.get_model_mode(f) == 'rigid':
+                    yield (f, model_repr.starting_model[f.pdbname],
+                           asym[f.hier])
+
+    def all_helices(self):
+        """Yield all helices that overlap with rigid model fragments"""
+        for f, starting_model, asym_id in self.all_rigid_fragments():
+            if len(starting_model.sources) == 1 \
+               and isinstance(starting_model.sources[0], PDBSource):
+                pdb = starting_model.sources[0]
+                for m in pdb.metadata:
+                    if isinstance(m, PDBHelix) \
+                       and m.start_asym == pdb.chain_id \
+                       and m.end_asym == pdb.chain_id \
+                       and m.start_resnum >= f.start and m.end_resnum <= f.end:
+                        yield (m, max(f.start, m.start_resnum),
+                               min(f.end, m.end_resnum), asym_id)
+
+    def dump(self, writer):
+        with writer.category("_struct_conf_type") as l:
+            l.write(id='HELX_P', criteria=CifWriter.unknown,
+                    reference=CifWriter.unknown)
+        # Dump helix information for the model. For any model fragment that
+        # is rigid and uses an experimental PDB structure as the starting
+        # model, inherit any helix information from that PDB file.
+        # Note that we can't use the helix id from the original PDB, since
+        # it has to be unique and this might not be the case if we inherit
+        # from multiple PDBs.
+        ordinal = 0
+        with writer.loop("_struct_conf",
+                     ["id", "conf_type_id", "beg_label_comp_id",
+                      "beg_label_asym_id", "beg_label_seq_id",
+                      "end_label_comp_id", "end_label_asym_id",
+                      "end_label_seq_id",]) as l:
+            for h, begin, end, asym_id in self.all_helices():
+                ordinal += 1
+                l.write(id='HELX_P%d' % ordinal, conf_type_id='HELX_P',
+                        beg_label_comp_id=h.start_resnam,
+                        beg_label_asym_id=asym_id,
+                        beg_label_seq_id=begin,
+                        end_label_comp_id=h.end_resnam,
+                        end_label_asym_id=asym_id,
+                        end_label_seq_id=end)
+
 
 class CifEntities(dict):
     """Handle mapping from IMP components to CIF entity IDs.
@@ -1057,8 +1111,8 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.default_assembly = Assembly()
         self.assembly_dump.add(self.default_assembly)
         self.model_dump = ModelDumper(self)
-        self.model_repr_dump.starting_model_id \
-                    = self.starting_model_dump.starting_model_id
+        self.model_repr_dump.starting_model \
+                    = self.starting_model_dump.starting_model
         self.software_dump = SoftwareDumper(self)
         self._dumpers = [EntryDumper(self), # should always be first
                          AuditAuthorDumper(self),
@@ -1071,6 +1125,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                          self.cross_link_dump,
                          self.em2d_dump,
                          self.starting_model_dump,
+                         StructConfDumper(self),
                          self.model_prot_dump, self.model_dump]
 
     def create_component(self, name):

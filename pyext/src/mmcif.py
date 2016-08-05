@@ -741,12 +741,11 @@ class Model(object):
         o._init_dictchain(name, prot)
         (particle_infos_for_pdb,
          self.geometric_center) = o.get_particle_infos_for_pdb_writing(name)
-        bead = IMP.atom.ResidueType("BEA")
         self.entity_for_chain = {}
         for protname, chain_id in o.dictchain[name].items():
             self.entity_for_chain[chain_id] = simo.entities[protname]
-        self.beads = [t for t in particle_infos_for_pdb if t[2] == bead]
-        self.atoms = [t for t in particle_infos_for_pdb if t[2] != bead]
+        self.spheres = [t for t in particle_infos_for_pdb if t[1] is None]
+        self.atoms = [t for t in particle_infos_for_pdb if t[1] is not None]
 
 class ModelDumper(Dumper):
     def __init__(self, simo):
@@ -761,9 +760,9 @@ class ModelDumper(Dumper):
 
     def dump(self, writer):
         num_atoms = sum(len(m.atoms) for m in self.models)
-        num_beads = sum(len(m.beads) for m in self.models)
+        num_spheres = sum(len(m.spheres) for m in self.models)
         self.dump_atoms(writer)
-        self.dump_beads(writer)
+        self.dump_spheres(writer)
 
     def dump_atoms(self, writer):
         ordinal = 1
@@ -788,7 +787,7 @@ class ModelDumper(Dumper):
                             model_id=model.id)
                     ordinal += 1
 
-    def dump_beads(self, writer):
+    def dump_spheres(self, writer):
         ordinal = 1
         with writer.loop("_ihm_sphere_obj_site",
                          ["ordinal_id", "entity_id", "seq_id_begin",
@@ -796,9 +795,9 @@ class ModelDumper(Dumper):
                           "Cartn_y", "Cartn_z", "object_radius",
                           "model_id"]) as l:
             for model in self.models:
-                for bead in model.beads:
+                for sphere in model.spheres:
                     (xyz, atom_type, residue_type, chain_id, residue_index,
-                     all_indexes, radius) = bead
+                     all_indexes, radius) = sphere
                     l.write(ordinal_id=ordinal,
                             entity_id=model.entity_for_chain[chain_id],
                             seq_id_begin = all_indexes[0],

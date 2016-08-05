@@ -798,6 +798,8 @@ class ModelDumper(Dumper):
                 for sphere in model.spheres:
                     (xyz, atom_type, residue_type, chain_id, residue_index,
                      all_indexes, radius) = sphere
+                    if all_indexes is None:
+                        all_indexes = (residue_index,)
                     l.write(ordinal_id=ordinal,
                             entity_id=model.entity_for_chain[chain_id],
                             seq_id_begin = all_indexes[0],

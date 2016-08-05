@@ -38,7 +38,9 @@ class Tests(IMP.test.TestCase):
               year=2014,
               authors=['Shi Y', 'Fernandez-Martinez J', 'Tjioe E', 'Pellarin R',
                        'Kim SJ', 'Williams R', 'Schneidman-Duhovny D', 'Sali A',
-                       'Rout MP', 'Chait BT'])
+                       'Rout MP', 'Chait BT'],
+              doi='10.1074/mcp.M114.041673')
+
         m = IMP.Model()
         r = IMP.pmi.representation.Representation(m)
         r.add_metadata(s)
@@ -60,12 +62,13 @@ _citation.page_first
 _citation.page_last
 _citation.year
 _citation.pdbx_database_id_PubMed
+_citation.pdbx_database_id_DOI
 1
 ;Structural characterization by cross-linking reveals the detailed arch
 itecture of a coatomer-related heptameric module from the nuclear pore
  complex.
 ;
-'Mol Cell Proteomics' 13 2927 2943 2014 25161197
+'Mol Cell Proteomics' 13 2927 2943 2014 25161197 10.1074/mcp.M114.041673
 #
 #
 loop_

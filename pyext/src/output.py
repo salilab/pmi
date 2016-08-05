@@ -107,7 +107,6 @@ class Output(object):
         flpsf.write(str(nparticles)+" !NATOM"+"\n")
         for n,p in enumerate(particle_infos_for_pdb):
             atom_index=n+1
-            atomtype=p[1]
             residue_type=p[2]
             chain=p[3]
             resid=p[4]
@@ -170,6 +169,8 @@ class Output(object):
         for n,tupl in enumerate(particle_infos_for_pdb):
             (xyz, atom_type, residue_type,
              chain_id, residue_index, all_indexes, radius) = tupl
+            if atom_type is None:
+                atom_type = IMP.atom.AT_CA
             flpdb.write(IMP.atom.get_pdb_string((xyz[0] - geometric_center[0],
                                                 xyz[1] - geometric_center[1],
                                                 xyz[2] - geometric_center[2]),
@@ -249,8 +250,8 @@ class Output(object):
                 geometric_center[1] += xyz[1]
                 geometric_center[2] += xyz[2]
                 atom_count += 1
-                particle_infos_for_pdb.append((xyz,
-                                               IMP.atom.AT_CA, rt, self.dictchain[name][protname], resind, None, radius))
+                particle_infos_for_pdb.append((xyz, None,
+                                               rt, self.dictchain[name][protname], resind, None, radius))
 
             elif IMP.atom.Fragment.get_is_setup(p) and not is_a_bead:
                 resindexes = IMP.pmi.tools.get_residue_indexes(p)
@@ -266,8 +267,8 @@ class Output(object):
                 geometric_center[1] += xyz[1]
                 geometric_center[2] += xyz[2]
                 atom_count += 1
-                particle_infos_for_pdb.append((xyz,
-                                               IMP.atom.AT_CA, rt, self.dictchain[name][protname], resind, resindexes, radius))
+                particle_infos_for_pdb.append((xyz, None,
+                                               rt, self.dictchain[name][protname], resind, resindexes, radius))
 
             else:
                 if is_a_bead:
@@ -281,8 +282,8 @@ class Output(object):
                         geometric_center[1] += xyz[1]
                         geometric_center[2] += xyz[2]
                         atom_count += 1
-                        particle_infos_for_pdb.append((xyz,
-                                                       IMP.atom.AT_CA, rt, self.dictchain[name][protname], resind, resindexes, radius))
+                        particle_infos_for_pdb.append((xyz, None,
+                                                       rt, self.dictchain[name][protname], resind, resindexes, radius))
 
         if atom_count > 0:
             geometric_center = (geometric_center[0] / atom_count,

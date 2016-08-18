@@ -683,6 +683,7 @@ class BuildModel1(object):
             if comp_name not in self.simo.get_component_names():
                 self.simo.create_component(comp_name,color=0.0)
                 self.simo.add_component_sequence(comp_name,fasta_file,fasta_id)
+            self.simo._add_component_copy(comp_name, hier_name)
             outhier=self.autobuild(self.simo,comp_name,pdb_name,chain_id,res_range,read=read_em_files,beadsize=bead_size,color=color,offset=offset)
 
 

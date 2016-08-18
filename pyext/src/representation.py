@@ -177,6 +177,10 @@ class Representation(object):
     def set_label(self, label):
         self.label = label
 
+    def _add_component_copy(self, component_name, copy_name):
+        for p in self._protocol_output:
+            p.add_copy(component_name, copy_name)
+
     def create_component(self, name, color=0.0):
         protein_h = IMP.atom.Molecule.setup_particle(IMP.Particle(self.m))
         protein_h.set_name(name)

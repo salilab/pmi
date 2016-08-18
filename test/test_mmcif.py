@@ -131,5 +131,23 @@ _citation_author.ordinal
         self.assertEqual(p.helix_class, 1)
         self.assertEqual(p.length, 18)
 
+    def test_asym_id_mapper(self):
+        """Test AsymIDMapper class"""
+        m = IMP.Model()
+        simo = IMP.pmi.representation.Representation(m)
+        simo.create_component("Nup84")
+        simo.add_component_sequence("Nup84",
+                                    self.get_input_file_name("test.fasta"))
+        simo.create_component("Nup85")
+        simo.add_component_sequence("Nup85",
+                                    self.get_input_file_name("test.fasta"))
+        h1 = simo.add_component_beads("Nup84", [(1,2), (3,4)])
+        h2 = simo.add_component_beads("Nup85", [(1,2), (3,4)])
+        mapper = IMP.pmi.mmcif.AsymIDMapper(simo.prot)
+        self.assertEqual(mapper[h1[0]], 'A')
+        self.assertEqual(mapper[h1[1]], 'A')
+        self.assertEqual(mapper[h2[0]], 'B')
+        self.assertEqual(mapper[h2[1]], 'B')
+
 if __name__ == '__main__':
     IMP.test.main()

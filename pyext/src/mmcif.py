@@ -1011,7 +1011,7 @@ modeling. These may need to be added manually below.""")
                         group_pdb = 'ATOM'
                         if atom_name.startswith('HET:'):
                             group_pdb = 'HETATM'
-                            del atom_name[:4]
+                            atom_name = atom_name[4:]
                         res = IMP.atom.get_residue(atom)
                         res_name = res.get_residue_type().get_string()
                         chain = IMP.atom.get_chain(res)

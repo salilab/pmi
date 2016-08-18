@@ -1089,12 +1089,18 @@ class CifEntities(dict):
     def __init__(self):
         super(CifEntities, self).__init__()
         self._sequence_dict = {}
+        self._first_component = {}
 
     def add(self, component_name, sequence):
         if sequence not in self._sequence_dict:
             entity_id = len(self._sequence_dict) + 1
+            self._first_component[entity_id] = component_name
             self._sequence_dict[sequence] = entity_id
         self[component_name] = self._sequence_dict[sequence]
+
+    def get_all(self):
+        """Yield all (entity, component) pairs"""
+        return self._first_component.items()
 
 
 class ProtocolOutput(IMP.pmi.output.ProtocolOutput):

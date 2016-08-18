@@ -158,6 +158,8 @@ _citation_author.ordinal
         self.assertEqual(c['foo'], 1)
         self.assertEqual(c['foo_2'], 1)
         self.assertEqual(c['bar'], 2)
+        self.assertEqual(list(c.get_all()),
+                         [(1, 'foo'), (2, 'bar')])
 
 if __name__ == '__main__':
     IMP.test.main()

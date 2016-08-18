@@ -1091,7 +1091,7 @@ class CifEntities(dict):
         if sequence not in self._sequence_dict:
             entity_id = len(self._sequence_dict) + 1
             self._sequence_dict[sequence] = entity_id
-            self[component_name] = entity_id
+        self[component_name] = self._sequence_dict[sequence]
 
 
 class ProtocolOutput(IMP.pmi.output.ProtocolOutput):

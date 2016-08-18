@@ -61,6 +61,32 @@ _ihm_struct_assembly.seq_id_end
 #
 """)
 
+    def test_struct_asym(self):
+        """Test StructAsymDumper"""
+        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
+            def flush(self):
+                pass
+        po = DummyPO(None)
+        d = IMP.pmi.mmcif.StructAsymDumper(po)
+        for c, seq in (("foo", "AAA"), ("bar", "AAA"), ("baz", "AA")):
+            po.create_component(c)
+            po.add_component_sequence(c, seq)
+
+        fh = StringIO()
+        w = IMP.pmi.mmcif.CifWriter(fh)
+        d.dump(w)
+        out = fh.getvalue()
+        self.assertEqual(out, """#
+loop_
+_struct_asym.id
+_struct_asym.entity_id
+_struct_asym.details
+A 1 foo
+B 1 bar
+C 2 baz
+#
+""")
+
     def test_citation(self):
         """Test CitationDumper"""
         s = IMP.pmi.metadata.Citation(

@@ -287,11 +287,11 @@ class StructAsymDumper(Dumper):
         with writer.loop("_struct_asym",
                          ["id", "entity_id", "details"]) as l:
             for comp in self.simo.all_components:
-                entity_id = self.simo.entities[comp]
+                entity = self.simo.entities[comp]
                 for copy in self.simo.copies[comp]:
                     chain = self.simo.chains[(comp, copy)]
                     l.write(id=self.output.chainids[chain],
-                            entity_id=entity_id,
+                            entity_id=entity.id,
                             details=copy)
 
 class _PDBFragment(object):

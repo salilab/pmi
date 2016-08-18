@@ -5,6 +5,10 @@ import IMP.pmi.representation
 import IMP.pmi.mmcif
 import sys
 import io
+if sys.version_info[0] >= 3:
+    from io import StringIO
+else:
+    from io import BytesIO as StringIO
 
 class Tests(IMP.test.TestCase):
 
@@ -17,15 +21,45 @@ class Tests(IMP.test.TestCase):
         r = IMP.pmi.representation.Representation(m)
         r.add_metadata(s)
         d = IMP.pmi.mmcif.SoftwareDumper(r)
-        if sys.version_info[0] >= 3:
-            fh = io.StringIO()
-        else:
-            fh = io.BytesIO()
+        fh = StringIO()
         w = IMP.pmi.mmcif.CifWriter(fh)
         d.dump(w)
         out = fh.getvalue().split('\n')
         self.assertEqual(out[-3],
                          "3 test 'test code' 1 program http://salilab.org")
+
+    def test_assembly(self):
+        """Test AssemblyDumper"""
+        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
+            def flush(self):
+                pass
+        po = DummyPO(None)
+        d = IMP.pmi.mmcif.AssemblyDumper(po)
+        for c, seq in (("foo", "AAA"), ("bar", "AAA"), ("baz", "AA")):
+            po.create_component(c)
+            po.add_component_sequence(c, seq)
+        d.add(IMP.pmi.mmcif.Assembly(["foo", "bar"]))
+        d.add(IMP.pmi.mmcif.Assembly(["bar", "baz"]))
+
+        fh = StringIO()
+        w = IMP.pmi.mmcif.CifWriter(fh)
+        d.dump(w)
+        out = fh.getvalue()
+        self.assertEqual(out, """#
+loop_
+_ihm_struct_assembly.ordinal_id
+_ihm_struct_assembly.assembly_id
+_ihm_struct_assembly.entity_description
+_ihm_struct_assembly.entity_id
+_ihm_struct_assembly.asym_id
+_ihm_struct_assembly.seq_id_begin
+_ihm_struct_assembly.seq_id_end
+1 1 foo 1 A 1 3
+2 1 bar 1 B 1 3
+3 2 bar 1 B 1 3
+4 2 baz 2 C 1 2
+#
+""")
 
     def test_citation(self):
         """Test CitationDumper"""
@@ -45,10 +79,7 @@ class Tests(IMP.test.TestCase):
         r = IMP.pmi.representation.Representation(m)
         r.add_metadata(s)
         d = IMP.pmi.mmcif.CitationDumper(r)
-        if sys.version_info[0] >= 3:
-            fh = io.StringIO()
-        else:
-            fh = io.BytesIO()
+        fh = StringIO()
         w = IMP.pmi.mmcif.CifWriter(fh)
         d.dump(w)
         out = fh.getvalue()

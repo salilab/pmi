@@ -723,7 +723,7 @@ class AssemblyDumper(Dumper):
                             asym_id=self.output.chainids[chain],
                             seq_id_begin=1,
                             seq_id_end=len(seq))
-                ordinal += 1
+                    ordinal += 1
 
 
 class ReplicaExchangeProtocol(object):

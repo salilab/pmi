@@ -236,9 +236,10 @@ class EntityDumper(Dumper):
                          ["id", "type", "src_method", "pdbx_description",
                           "formula_weight", "pdbx_number_of_molecules",
                           "details"]) as l:
-            for entity_id, name in self.simo.entities.get_all():
-                l.write(id=entity_id, type='polymer', src_method='man',
-                        pdbx_description=name, formula_weight=writer.unknown,
+            for entity in self.simo.entities.get_all():
+                l.write(id=entity.id, type='polymer', src_method='man',
+                        pdbx_description=entity.first_component,
+                        formula_weight=writer.unknown,
                         pdbx_number_of_molecules=1, details=writer.unknown)
 
 
@@ -254,11 +255,12 @@ class EntityPolyDumper(Dumper):
                           "nstd_monomer", "pdbx_strand_id",
                           "pdbx_seq_one_letter_code",
                           "pdbx_seq_one_letter_code_can"]) as l:
-            for entity_id, name in self.simo.entities.get_all():
-                seq = self.simo.sequence_dict[name]
+            for entity in self.simo.entities.get_all():
+                seq = entity.sequence
+                name = entity.first_component
                 first_copy = self.simo.copies[name][0]
                 chain = self.simo.chains[(name, first_copy)]
-                l.write(entity_id=entity_id, type='polypeptide(L)',
+                l.write(entity_id=entity.id, type='polypeptide(L)',
                         nstd_linkage='no', nstd_monomer='no',
                         pdbx_strand_id=self.output.chainids[chain],
                         pdbx_seq_one_letter_code=seq,
@@ -268,11 +270,11 @@ class EntityPolySeqDumper(Dumper):
     def dump(self, writer):
         with writer.loop("_entity_poly_seq",
                          ["entity_id", "num", "mon_id", "hetero"]) as l:
-            for entity_id, name in self.simo.entities.get_all():
-                seq = self.simo.sequence_dict[name]
+            for entity in self.simo.entities.get_all():
+                seq = entity.sequence
                 for num, one_letter_code in enumerate(seq):
                     restyp = IMP.atom.get_residue_type(one_letter_code)
-                    l.write(entity_id=entity_id, num=num + 1,
+                    l.write(entity_id=entity.id, num=num + 1,
                             mon_id=restyp.get_string(),
                             hetero=CifWriter.omitted)
 
@@ -372,11 +374,12 @@ class ModelRepresentationDumper(Dumper):
                           "model_object_count"]) as l:
             for comp, fragments in self.fragments.items():
                 for f in fragments:
+                    entity = self.simo.entities[f.component]
                     starting_model_id = CifWriter.omitted
                     if hasattr(f, 'pdbname'):
                         starting_model_id = self.starting_model[f.pdbname].name
                     l.write(segment_id=segment_id,
-                            entity_id=self.simo.entities[f.component],
+                            entity_id=entity.id,
                             entity_description=f.component,
                             seq_id_begin=f.start,
                             seq_id_end=f.end,
@@ -595,17 +598,19 @@ class CrossLinkDumper(Dumper):
                           "entity_id_2", "seq_id_2", "comp_id_2", "type",
                           "dataset_list_id"]) as l:
             for xl in self.exp_cross_links:
-                seq1 = self.simo.sequence_dict[xl.c1]
-                seq2 = self.simo.sequence_dict[xl.c2]
+                entity1 = self.simo.entities[xl.c1]
+                entity2 = self.simo.entities[xl.c2]
+                seq1 = entity1.sequence
+                seq2 = entity2.sequence
                 rt1 = IMP.atom.get_residue_type(seq1[xl.r1-1])
                 rt2 = IMP.atom.get_residue_type(seq2[xl.r2-1])
                 l.write(id=xl.id,
                         entity_description_1=xl.c1,
-                        entity_id_1=self.simo.entities[xl.c1],
+                        entity_id_1=entity1.id,
                         seq_id_1=xl.r1,
                         comp_id_1=rt1.get_string(),
                         entity_description_2=xl.c2,
-                        entity_id_2=self.simo.entities[xl.c2],
+                        entity_id_2=entity2.id,
                         seq_id_2=xl.r2,
                         comp_id_2=rt2.get_string(),
                         type=xl.label,
@@ -710,12 +715,13 @@ class AssemblyDumper(Dumper):
                           "seq_id_end"]) as l:
             for a in self.assemblies:
                 for comp in a:
+                    entity = self.simo.entities[comp]
                     for copy in self.simo.copies[comp]:
                         seq = self.simo.sequence_dict[comp]
                         chain = self.simo.chains[(comp, copy)]
                         l.write(ordinal_id=ordinal, assembly_id=a.id,
                                 entity_description=comp,
-                                entity_id=self.simo.entities[comp],
+                                entity_id=entity.id,
                                 asym_id=self.output.chainids[chain],
                                 seq_id_begin=1,
                                 seq_id_end=len(seq))
@@ -973,10 +979,11 @@ modeling. These may need to be added manually below.""")
             ordinal = 1
             for model in self.all_models():
                 f = model.fragments[0]
+                entity = self.simo.entities[f.component]
                 for source in model.sources:
                     seq_id_begin, seq_id_end = source.get_seq_id_range(model)
                     l.write(id=ordinal,
-                      entity_id=self.simo.entities[f.component],
+                      entity_id=entity.id,
                       entity_description=f.component,
                       seq_id_begin=seq_id_begin,
                       seq_id_end=seq_id_end,
@@ -1074,32 +1081,37 @@ class StructConfDumper(Dumper):
                         end_label_asym_id=asym_id,
                         end_label_seq_id=end)
 
+class Entity(object):
+    """Represent a CIF entity (a chain with a unique sequence)"""
+    def __init__(self, seq, first_component):
+        self.sequence = seq
+        self.first_component = first_component
 
-class CifEntities(dict):
-    """Handle mapping from IMP components to CIF entity IDs.
-       An entity is a chain with a unique sequence. Thus, multiple
-       components may map to the same entity if they share sequence."""
+class _EntityMapper(dict):
+    """Handle mapping from IMP components to CIF entities.
+       Multiple components may map to the same entity if they share sequence."""
     def __init__(self):
-        super(CifEntities, self).__init__()
+        super(_EntityMapper, self).__init__()
         self._sequence_dict = {}
-        self._first_component = {}
+        self._entities = []
 
     def add(self, component_name, sequence):
         if sequence not in self._sequence_dict:
-            entity_id = len(self._sequence_dict) + 1
-            self._first_component[entity_id] = component_name
-            self._sequence_dict[sequence] = entity_id
+            entity = Entity(sequence, component_name)
+            self._entities.append(entity)
+            entity.id = len(self._entities)
+            self._sequence_dict[sequence] = entity
         self[component_name] = self._sequence_dict[sequence]
 
     def get_all(self):
-        """Yield all (entity, component) pairs"""
-        return self._first_component.items()
+        """Yield all entities"""
+        return self._entities
 
 
 class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
     def __init__(self, fh):
         self._cif_writer = CifWriter(fh)
-        self.entities = CifEntities()
+        self.entities = _EntityMapper()
         self.chains = {}
         self.copies = {}
         self._default_copy = {}

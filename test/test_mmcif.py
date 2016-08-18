@@ -149,5 +149,15 @@ _citation_author.ordinal
         self.assertEqual(mapper[h2[0]], 'B')
         self.assertEqual(mapper[h2[1]], 'B')
 
+    def test_cif_entities(self):
+        """Test CifEntities class"""
+        c = IMP.pmi.mmcif.CifEntities()
+        c.add('foo', 'MELS')
+        c.add('bar', 'SELM')
+        c.add('foo_2', 'MELS')
+        self.assertEqual(c['foo'], 1)
+        self.assertEqual(c['foo_2'], 1)
+        self.assertEqual(c['bar'], 2)
+
 if __name__ == '__main__':
     IMP.test.main()

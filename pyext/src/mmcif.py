@@ -12,7 +12,6 @@ import IMP.pmi.metadata
 import re
 import sys
 import os
-import operator
 import textwrap
 
 class _LineWriter(object):
@@ -233,13 +232,11 @@ class CitationDumper(Dumper):
 class EntityDumper(Dumper):
     # todo: we currently only support amino acid sequences here
     def dump(self, writer):
-        all_entities = [x for x in sorted(self.simo.entities.items(),
-                                          key=operator.itemgetter(1))]
         with writer.loop("_entity",
                          ["id", "type", "src_method", "pdbx_description",
                           "formula_weight", "pdbx_number_of_molecules",
                           "details"]) as l:
-            for name, entity_id in all_entities:
+            for entity_id, name in self.simo.entities.get_all():
                 l.write(id=entity_id, type='polymer', src_method='man',
                         pdbx_description=name, formula_weight=writer.unknown,
                         pdbx_number_of_molecules=1, details=writer.unknown)
@@ -252,14 +249,12 @@ class EntityPolyDumper(Dumper):
         self.output = IMP.pmi.output.Output()
 
     def dump(self, writer):
-        all_entities = [x for x in sorted(self.simo.entities.items(),
-                                          key=operator.itemgetter(1))]
         with writer.loop("_entity_poly",
                          ["entity_id", "type", "nstd_linkage",
                           "nstd_monomer", "pdbx_strand_id",
                           "pdbx_seq_one_letter_code",
                           "pdbx_seq_one_letter_code_can"]) as l:
-            for name, entity_id in all_entities:
+            for entity_id, name in self.simo.entities.get_all():
                 seq = self.simo.sequence_dict[name]
                 first_copy = self.simo.copies[name][0]
                 chain = self.simo.chains[(name, first_copy)]
@@ -271,11 +266,9 @@ class EntityPolyDumper(Dumper):
 
 class EntityPolySeqDumper(Dumper):
     def dump(self, writer):
-        all_entities = [x for x in sorted(self.simo.entities.items(),
-                                          key=operator.itemgetter(1))]
         with writer.loop("_entity_poly_seq",
                          ["entity_id", "num", "mon_id", "hetero"]) as l:
-            for name, entity_id in all_entities:
+            for entity_id, name in self.simo.entities.get_all():
                 seq = self.simo.sequence_dict[name]
                 for num, one_letter_code in enumerate(seq):
                     restyp = IMP.atom.get_residue_type(one_letter_code)

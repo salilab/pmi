@@ -10,6 +10,9 @@ if sys.version_info[0] >= 3:
 else:
     from io import BytesIO as StringIO
 
+class EmptyObject(object):
+    pass
+
 class Tests(IMP.test.TestCase):
 
     def test_software(self):
@@ -33,7 +36,7 @@ class Tests(IMP.test.TestCase):
         class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
             def flush(self):
                 pass
-        po = DummyPO(None)
+        po = DummyPO(EmptyObject())
         d = IMP.pmi.mmcif.AssemblyDumper(po)
         for c, seq in (("foo", "AAA"), ("bar", "AAA"), ("baz", "AA")):
             po.create_component(c)
@@ -66,7 +69,7 @@ _ihm_struct_assembly.seq_id_end
         class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
             def flush(self):
                 pass
-        po = DummyPO(None)
+        po = DummyPO(EmptyObject())
         d = IMP.pmi.mmcif.StructAsymDumper(po)
         for c, seq in (("foo", "AAA"), ("bar", "AAA"), ("baz", "AA")):
             po.create_component(c)
@@ -197,7 +200,7 @@ _citation_author.ordinal
 
     def test_dataset_dumper_all_group(self):
         """Test DatasetDumper.get_all_group()"""
-        dump = IMP.pmi.mmcif.DatasetDumper(None)
+        dump = IMP.pmi.mmcif.DatasetDumper(EmptyObject())
         ds1 = IMP.pmi.mmcif.EM2DClassDataset()
         ds2 = IMP.pmi.mmcif.CXMSDataset()
         ds3 = IMP.pmi.mmcif.PDBDataset('1abc', '1.0', 'test details')
@@ -221,7 +224,7 @@ _citation_author.ordinal
 
     def test_dataset_dumper_duplicates(self):
         """Check that DatasetDumper ignores duplicate datasets"""
-        dump = IMP.pmi.mmcif.DatasetDumper(None)
+        dump = IMP.pmi.mmcif.DatasetDumper(EmptyObject())
         ds1 = dump.add(IMP.pmi.mmcif.PDBDataset('1abc', '1.0', 'test details'))
         self.assertEqual(ds1.id, 1)
         # A duplicate dataset should be ignored even if details differ
@@ -256,7 +259,7 @@ _citation_author.ordinal
 
     def test_dataset_dumper_dump(self):
         """Test DatasetDumper.dump()"""
-        dump = IMP.pmi.mmcif.DatasetDumper(None)
+        dump = IMP.pmi.mmcif.DatasetDumper(EmptyObject())
         ds = dump.add(IMP.pmi.mmcif.PDBDataset('1abc', '1.0', 'test details'))
         self.assertEqual(ds.location.access_code, '1abc')
 

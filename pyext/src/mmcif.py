@@ -13,6 +13,7 @@ import re
 import sys
 import os
 import textwrap
+import weakref
 
 class _LineWriter(object):
     def __init__(self, writer, line_len=80, multi_line_len=70):
@@ -127,7 +128,7 @@ class AsymIDMapper(object):
 class Dumper(object):
     """Base class for helpers to dump output to mmCIF"""
     def __init__(self, simo):
-        self.simo = simo
+        self.simo = weakref.proxy(simo)
 
     def finalize(self):
         pass

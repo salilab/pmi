@@ -258,8 +258,7 @@ class EntityPolyDumper(Dumper):
             for entity in self.simo.entities.get_all():
                 seq = entity.sequence
                 name = entity.first_component
-                first_copy = self.simo.copies[name][0]
-                chain = self.simo.chains[(name, first_copy)]
+                chain = self.simo.chains[name]
                 l.write(entity_id=entity.id, type='polypeptide(L)',
                         nstd_linkage='no', nstd_monomer='no',
                         pdbx_strand_id=self.output.chainids[chain],
@@ -288,11 +287,10 @@ class StructAsymDumper(Dumper):
                          ["id", "entity_id", "details"]) as l:
             for comp in self.simo.all_components:
                 entity = self.simo.entities[comp]
-                for copy in self.simo.copies[comp]:
-                    chain = self.simo.chains[(comp, copy)]
-                    l.write(id=self.output.chainids[chain],
-                            entity_id=entity.id,
-                            details=copy)
+                chain = self.simo.chains[comp]
+                l.write(id=self.output.chainids[chain],
+                        entity_id=entity.id,
+                        details=comp)
 
 class _PDBFragment(object):
     """Record details about part of a PDB file used as input
@@ -718,16 +716,15 @@ class AssemblyDumper(Dumper):
             for a in self.assemblies:
                 for comp in a:
                     entity = self.simo.entities[comp]
-                    for copy in self.simo.copies[comp]:
-                        seq = self.simo.sequence_dict[comp]
-                        chain = self.simo.chains[(comp, copy)]
-                        l.write(ordinal_id=ordinal, assembly_id=a.id,
-                                entity_description=entity.description,
-                                entity_id=entity.id,
-                                asym_id=self.output.chainids[chain],
-                                seq_id_begin=1,
-                                seq_id_end=len(seq))
-                        ordinal += 1
+                    seq = self.simo.sequence_dict[comp]
+                    chain = self.simo.chains[comp]
+                    l.write(ordinal_id=ordinal, assembly_id=a.id,
+                            entity_description=entity.description,
+                            entity_id=entity.id,
+                            asym_id=self.output.chainids[chain],
+                            seq_id_begin=1,
+                            seq_id_end=len(seq))
+                    ordinal += 1
 
 
 class ReplicaExchangeProtocol(object):
@@ -1118,8 +1115,6 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self._cif_writer = CifWriter(fh)
         self.entities = _EntityMapper()
         self.chains = {}
-        self.copies = {}
-        self._default_copy = {}
         self.sequence_dict = {}
         self.all_components = []
         self.model_repr_dump = ModelRepresentationDumper(self)
@@ -1152,23 +1147,11 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
     def create_component(self, name):
         self.all_components.append(name)
         self.default_assembly.append(name)
-        # Set the component to have only a single copy to start with.
-        self.copies[name] = [name]
-        self._default_copy[name] = True
-        self.chains[(name, name)] = len(self.chains)
+        self.chains[name] = len(self.chains)
 
     def add_component_sequence(self, name, seq):
         self.sequence_dict[name] = seq
         self.entities.add(name, seq)
-
-    def add_copy(self, component_name, copy_name):
-        # Remove any default-constructed copy
-        if self._default_copy[component_name]:
-            self.copies[component_name] = []
-            self._default_copy[component_name] = False
-            del self.chains[(component_name, component_name)]
-        self.copies[component_name].append(copy_name)
-        self.chains[(component_name, copy_name)] = len(self.chains)
 
     def flush(self):
         for dumper in self._dumpers:
@@ -1193,7 +1176,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
 
     def add_experimental_cross_link(self, r1, c1, r2, c2, label, length,
                                     dataset):
-        if c1 not in self.copies or c2 not in self.copies:
+        if c1 not in self.chains or c2 not in self.chains:
             # Crosslink refers to a component we didn't model
             # As a quick hack, just ignore it.
             # todo: need to add an entity for this anyway (so will need the

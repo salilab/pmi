@@ -286,5 +286,46 @@ _ihm_dataset_related_db_reference.details
 #
 """)
 
+    def test_model_dumper_sphere(self):
+        """Test ModelDumper sphere_obj output"""
+        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
+            def flush(self):
+                pass
+
+        m = IMP.Model()
+        simo = IMP.pmi.representation.Representation(m)
+        po = DummyPO(None)
+        simo.add_protocol_output(po)
+        simo.create_component("Nup84")
+        simo.add_component_sequence("Nup84",
+                                    self.get_input_file_name("test.fasta"))
+        nup84 = simo.autobuild_model("Nup84",
+                                     self.get_input_file_name("test.nup84.pdb"),
+                                     "A")
+
+        d = IMP.pmi.mmcif.ModelDumper(po)
+        self.assertEqual(d.add(simo.prot), 1)
+        fh = StringIO()
+        w = IMP.pmi.mmcif.CifWriter(fh)
+        d.dump(w)
+        out = fh.getvalue()
+        self.assertEqual(out, """#
+loop_
+_ihm_sphere_obj_site.ordinal_id
+_ihm_sphere_obj_site.entity_id
+_ihm_sphere_obj_site.seq_id_begin
+_ihm_sphere_obj_site.seq_id_end
+_ihm_sphere_obj_site.asym_id
+_ihm_sphere_obj_site.Cartn_x
+_ihm_sphere_obj_site.Cartn_y
+_ihm_sphere_obj_site.Cartn_z
+_ihm_sphere_obj_site.object_radius
+_ihm_sphere_obj_site.model_id
+1 1 1 1 A 0.000 0.000 0.000 3.068 1
+2 1 2 2 A 0.000 0.000 0.000 2.997 1
+3 1 3 4 A 0.000 0.000 0.000 3.504 1
+#
+""")
+
 if __name__ == '__main__':
     IMP.test.main()

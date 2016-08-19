@@ -1193,7 +1193,9 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                                     dataset):
         if c1 not in self.copies or c2 not in self.copies:
             # Crosslink refers to a component we didn't model
-            # todo: should add an entity for this anyway
+            # As a quick hack, just ignore it.
+            # todo: need to add an entity for this anyway (so will need the
+            # sequence, and add to struct_assembly)
             return None
         xl = ExperimentalCrossLink(r1, c1, r2, c2, label, length, dataset)
         self.cross_link_dump.add_experimental(xl)

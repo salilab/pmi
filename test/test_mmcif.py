@@ -195,5 +195,60 @@ _citation_author.ordinal
         self.assertEqual(a[1].description, 'bar')
         self.assertEqual(a[1].sequence, 'SELM')
 
+    def test_dataset_dumper_all_group(self):
+        """Test DatasetDumper.get_all_group()"""
+        dump = IMP.pmi.mmcif.DatasetDumper(None)
+        ds1 = IMP.pmi.mmcif.EM2DClassDataset()
+        ds2 = IMP.pmi.mmcif.CXMSDataset()
+        ds3 = IMP.pmi.mmcif.PDBDataset('1abc', '1.0', 'test details')
+
+        g = dump.get_all_group()
+        self.assertEqual(g.id, 1)
+        self.assertEqual(g.datasets, [])
+
+        dump.add(ds1)
+        dump.add(ds2)
+        g = dump.get_all_group()
+        self.assertEqual(g.id, 2)
+        self.assertEqual(g.datasets, [ds1, ds2])
+        g = dump.get_all_group()
+        self.assertEqual(g.id, 2)
+
+        dump.add(ds3)
+        g = dump.get_all_group()
+        self.assertEqual(g.id, 3)
+        self.assertEqual(g.datasets, [ds1, ds2, ds3])
+
+    def test_dataset_dumper_dump(self):
+        """Test DatasetDumper.dump()"""
+        dump = IMP.pmi.mmcif.DatasetDumper(None)
+        dump.add(IMP.pmi.mmcif.PDBDataset('1abc', '1.0', 'test details'))
+
+        fh = StringIO()
+        w = IMP.pmi.mmcif.CifWriter(fh)
+        dump.dump(w)
+        out = fh.getvalue()
+        self.assertEqual(out, """#
+loop_
+_ihm_dataset_list.ordinal_id
+_ihm_dataset_list.id
+_ihm_dataset_list.group_id
+_ihm_dataset_list.data_type
+_ihm_dataset_list.database_hosted
+1 1 1 'experimental model' YES
+#
+#
+loop_
+_ihm_dataset_related_db_reference.id
+_ihm_dataset_related_db_reference.dataset_list_id
+_ihm_dataset_related_db_reference.db_name
+_ihm_dataset_related_db_reference.access_code
+_ihm_dataset_related_db_reference.version
+_ihm_dataset_related_db_reference.data_type
+_ihm_dataset_related_db_reference.details
+1 1 PDB 1abc 1.0 'experimental model' 'test details'
+#
+""")
+
 if __name__ == '__main__':
     IMP.test.main()

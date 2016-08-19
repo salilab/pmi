@@ -515,6 +515,8 @@ class DatasetDumper(Dumper):
 
     def dump(self, writer):
         ordinal = 1
+        # Make sure that all datasets are listed, even if they weren't used
+        all_group = self.get_all_group()
         groups = sorted(self.dataset_groups.values(), key=lambda x: x.id)
         with writer.loop("_ihm_dataset_list",
                          ["ordinal_id", "id", "group_id", "data_type",

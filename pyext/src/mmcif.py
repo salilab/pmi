@@ -510,8 +510,12 @@ class DatasetDumper(Dumper):
         return self.dataset_groups[num_datasets]
 
     def add(self, dataset):
+        """Add a new dataset.
+           The dataset is returned (this object should be used rather than
+           that passed to the method)."""
         self.datasets.append(dataset)
         dataset.id = len(self.datasets)
+        return dataset
 
     def dump(self, writer):
         ordinal = 1
@@ -929,14 +933,14 @@ class StartingModelDumper(Dumper):
             version, details, metadata = self._parse_pdb(fh, first_line)
             source = PDBSource(model, first_line[62:66].strip(), chain,
                                metadata)
-            model.dataset = PDBDataset(source.db_code, version, details)
-            self.simo.dataset_dump.add(model.dataset)
+            d = PDBDataset(source.db_code, version, details)
+            model.dataset = self.simo.dataset_dump.add(d)
             return [source]
         elif first_line.startswith('EXPDTA    THEORETICAL MODEL, MODELLER'):
             self.simo.software_dump.set_modeller_used(
                                         *first_line[38:].split(' ', 1))
-            model.dataset = CompModelDataset(self.simo._get_location(pdbname))
-            self.simo.dataset_dump.add(model.dataset)
+            d = CompModelDataset(self.simo._get_location(pdbname))
+            model.dataset = self.simo.dataset_dump.add(d)
             templates = self.get_templates(pdbname, model)
             if templates:
                 return templates
@@ -1173,8 +1177,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
     def get_cross_link_dataset(self, fname):
         d = CXMSDataset()
         d.set_location(self._get_location(fname))
-        self.dataset_dump.add(d)
-        return d
+        return self.dataset_dump.add(d)
 
     def add_experimental_cross_link(self, r1, c1, r2, c2, label, length,
                                     dataset):
@@ -1200,11 +1203,11 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         if micrographs:
             mgd = EMMicrographsDataset(micrographs.number)
             mgd.set_location(self._get_location(None, micrographs.metadata))
-            self.dataset_dump.add(mgd)
+            mgd = self.dataset_dump.add(mgd)
         for image in images:
             d = EM2DClassDataset()
             d.set_location(self._get_location(image))
-            self.dataset_dump.add(d)
+            d = self.dataset_dump.add(d)
             self.em2d_dump.add(EM2DRestraint(d, resolution, pixel_size,
                                       image_resolution, projection_number, mgd))
 

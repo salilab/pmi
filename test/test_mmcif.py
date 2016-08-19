@@ -222,7 +222,8 @@ _citation_author.ordinal
     def test_dataset_dumper_dump(self):
         """Test DatasetDumper.dump()"""
         dump = IMP.pmi.mmcif.DatasetDumper(None)
-        dump.add(IMP.pmi.mmcif.PDBDataset('1abc', '1.0', 'test details'))
+        ds = dump.add(IMP.pmi.mmcif.PDBDataset('1abc', '1.0', 'test details'))
+        self.assertEqual(ds.location.access_code, '1abc')
 
         fh = StringIO()
         w = IMP.pmi.mmcif.CifWriter(fh)

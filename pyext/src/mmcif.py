@@ -356,6 +356,7 @@ class ModelRepresentationDumper(Dumper):
         super(ModelRepresentationDumper, self).__init__(simo)
         # dict of fragments, ordered by component name
         self.fragments = OrderedDict()
+        self.output = IMP.pmi.output.Output()
 
     def add_fragment(self, fragment):
         """Add a model fragment."""
@@ -377,22 +378,30 @@ class ModelRepresentationDumper(Dumper):
             return 'flexible'
 
     def dump(self, writer):
+        ordinal_id = 1
         segment_id = 1
         with writer.loop("_ihm_model_representation",
-                         ["segment_id", "entity_id", "entity_description",
+                         ["ordinal_id", "representation_id",
+                          "segment_id", "entity_id", "entity_description",
+                          "entity_asym_id",
                           "seq_id_begin", "seq_id_end",
                           "model_object_primitive", "starting_model_id",
                           "model_mode", "model_granularity",
                           "model_object_count"]) as l:
             for comp, fragments in self.fragments.items():
+                chain = self.simo.chains[comp]
                 for f in fragments:
                     entity = self.simo.entities[f.component]
                     starting_model_id = CifWriter.omitted
                     if hasattr(f, 'pdbname'):
                         starting_model_id = self.starting_model[f.pdbname].name
-                    l.write(segment_id=segment_id,
+                    # todo: handle multiple representations
+                    l.write(ordinal_id=ordinal_id,
+                            representation_id=1,
+                            segment_id=segment_id,
                             entity_id=entity.id,
                             entity_description=entity.description,
+                            entity_asym_id=self.output.chainids[chain],
                             seq_id_begin=f.start,
                             seq_id_end=f.end,
                             model_object_primitive=f.primitive,
@@ -400,6 +409,7 @@ class ModelRepresentationDumper(Dumper):
                             model_mode=self.get_model_mode(f),
                             model_granularity=f.granularity,
                             model_object_count=f.num)
+                    ordinal_id += 1
                     segment_id += 1
 
 class PDBSource(object):

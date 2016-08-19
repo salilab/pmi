@@ -265,6 +265,19 @@ class EntityPolyDumper(Dumper):
                         pdbx_seq_one_letter_code=seq,
                         pdbx_seq_one_letter_code_can=seq)
 
+class ChemCompDumper(Dumper):
+    def dump(self, writer):
+        seen = {}
+        with writer.loop("_chem_comp", ["id"]) as l:
+            for entity in self.simo.entities.get_all():
+                seq = entity.sequence
+                for num, one_letter_code in enumerate(seq):
+                    restyp = IMP.atom.get_residue_type(one_letter_code)
+                    resid = restyp.get_string()
+                    if resid not in seen:
+                        seen[resid] = None
+                        l.write(id=resid)
+
 class EntityPolySeqDumper(Dumper):
     def dump(self, writer):
         with writer.loop("_entity_poly_seq",
@@ -1169,6 +1182,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self._dumpers = [EntryDumper(self), # should always be first
                          AuditAuthorDumper(self),
                          self.software_dump, CitationDumper(self),
+                         ChemCompDumper(self),
                          EntityDumper(self),
                          EntityPolyDumper(self), EntityPolySeqDumper(self),
                          StructAsymDumper(self),

@@ -327,5 +327,34 @@ _ihm_sphere_obj_site.model_id
 #
 """)
 
+    def test_chem_comp_dumper(self):
+        """Test ChemCompDumper"""
+        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
+            def flush(self):
+                pass
+
+        po = DummyPO(None)
+        po.create_component("Nup84")
+        po.add_component_sequence("Nup84", "MELS")
+        po.create_component("Nup85")
+        po.add_component_sequence("Nup85", "MC")
+
+        d = IMP.pmi.mmcif.ChemCompDumper(po)
+
+        fh = StringIO()
+        w = IMP.pmi.mmcif.CifWriter(fh)
+        d.dump(w)
+        out = fh.getvalue()
+        self.assertEqual(out, """#
+loop_
+_chem_comp.id
+MET
+GLU
+LEU
+SER
+CYS
+#
+""")
+
 if __name__ == '__main__':
     IMP.test.main()

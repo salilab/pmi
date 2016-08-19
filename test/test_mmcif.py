@@ -219,6 +219,41 @@ _citation_author.ordinal
         self.assertEqual(g.id, 3)
         self.assertEqual(g.datasets, [ds1, ds2, ds3])
 
+    def test_dataset_dumper_duplicates(self):
+        """Check that DatasetDumper ignores duplicate datasets"""
+        dump = IMP.pmi.mmcif.DatasetDumper(None)
+        ds1 = dump.add(IMP.pmi.mmcif.PDBDataset('1abc', '1.0', 'test details'))
+        self.assertEqual(ds1.id, 1)
+        # A duplicate dataset should be ignored even if details differ
+        ds2 = dump.add(IMP.pmi.mmcif.PDBDataset('1abc', '1.0', 'other details'))
+        self.assertEqual(ds2.id, 1)
+        self.assertEqual(id(ds1), id(ds2))
+
+        loc1 = IMP.pmi.mmcif.DBDatasetLocation("mydb", "abc", "1.0", "")
+        loc2 = IMP.pmi.mmcif.DBDatasetLocation("mydb", "xyz", "1.0", "")
+
+        # Identical datasets in the same location aren't duplicated
+        cx1 = IMP.pmi.mmcif.CXMSDataset()
+        cx1.location = loc1
+        cx2 = IMP.pmi.mmcif.CXMSDataset()
+        cx2.location = loc1
+        ds3 = dump.add(cx1)
+        ds4 = dump.add(cx1)
+        self.assertEqual(ds3.id, 2)
+        self.assertEqual(ds4.id, 2)
+
+        # Datasets in different locations are OK
+        cx3 = IMP.pmi.mmcif.CXMSDataset()
+        cx3.location = loc2
+        ds5 = dump.add(cx3)
+        self.assertEqual(ds5.id, 3)
+
+        # Different datasets in same location are OK (but odd)
+        em2d = IMP.pmi.mmcif.EM2DClassDataset()
+        em2d.location = loc2
+        ds6 = dump.add(em2d)
+        self.assertEqual(ds6.id, 4)
+
     def test_dataset_dumper_dump(self):
         """Test DatasetDumper.dump()"""
         dump = IMP.pmi.mmcif.DatasetDumper(None)

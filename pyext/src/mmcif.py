@@ -441,10 +441,23 @@ class UnknownSource(object):
 
 class DatasetLocation(object):
     """External location of a dataset"""
-    pass
+    _eq_keys = []
+
+    # DatasetLocations compare equal iff they are the same class and have the
+    # same attributes
+    def _eq_vals(self):
+        return tuple([self.__class__]
+                     + [getattr(self, x) for x in self._eq_keys])
+    def __eq__(self, other):
+        return self._eq_vals() == other._eq_vals()
+    def __hash__(self):
+        return hash(self._eq_vals())
+
 
 class RepoDatasetLocation(DatasetLocation):
     """Pointer to a dataset stored in a repository"""
+    _eq_keys = DatasetLocation._eq_keys + ['doi', 'content_filename']
+
     doi = content_filename = CifWriter.unknown
 
     def __init__(self, loc):
@@ -453,6 +466,9 @@ class RepoDatasetLocation(DatasetLocation):
             self.content_filename = loc.path
 
 class DBDatasetLocation(DatasetLocation):
+    # details can differ without affecting dataset equality
+    _eq_keys = DatasetLocation._eq_keys + ['db_name', 'access_code', 'version']
+
     """Pointer to a dataset stored in an official database (e.g. PDB)"""
     def __init__(self, db_name, db_code, version, details):
         self.db_name = db_name
@@ -461,14 +477,27 @@ class DBDatasetLocation(DatasetLocation):
 
 class Dataset(object):
     location = None
+    _eq_keys = ['location']
 
     def set_location(self, loc):
         self.location = RepoDatasetLocation(loc)
+
+    # Datasets compare equal iff they are the same class and have the
+    # same attributes
+    def _eq_vals(self):
+        return tuple([self.__class__]
+                     + [getattr(self, x) for x in self._eq_keys])
+    def __eq__(self, other):
+        return self._eq_vals() == other._eq_vals()
+    def __hash__(self):
+        return hash(self._eq_vals())
 
 class CXMSDataset(Dataset):
     data_type = 'CX-MS data'
 
 class EMMicrographsDataset(Dataset):
+    _eq_keys = Dataset._eq_keys + ['number']
+
     data_type = 'EM raw micrographs'
     def __init__(self, number):
         self.number = number
@@ -497,14 +526,14 @@ class DatasetGroup(object):
 class DatasetDumper(Dumper):
     def __init__(self, simo):
         super(DatasetDumper, self).__init__(simo)
-        self.datasets = []
+        self.datasets = OrderedDict()
         self.dataset_groups = {}
 
     def get_all_group(self):
         """Get a DatasetGroup encompassing all datasets so far"""
         num_datasets = len(self.datasets)
         if num_datasets not in self.dataset_groups:
-            g = DatasetGroup(self.datasets)
+            g = DatasetGroup(self.datasets.keys())
             self.dataset_groups[num_datasets] = g
             g.id = len(self.dataset_groups)
         return self.dataset_groups[num_datasets]
@@ -512,10 +541,11 @@ class DatasetDumper(Dumper):
     def add(self, dataset):
         """Add a new dataset.
            The dataset is returned (this object should be used rather than
-           that passed to the method)."""
-        self.datasets.append(dataset)
-        dataset.id = len(self.datasets)
-        return dataset
+           that passed to the method, since duplicates are removed)."""
+        if dataset not in self.datasets:
+            self.datasets[dataset] = dataset
+            dataset.id = len(self.datasets)
+        return self.datasets[dataset]
 
     def dump(self, writer):
         ordinal = 1
@@ -532,10 +562,10 @@ class DatasetDumper(Dumper):
                             database_hosted=not isinstance(d.location,
                                                            RepoDatasetLocation))
                     ordinal += 1
-        self.dump_other((d for d in self.datasets
+        self.dump_other((d for d in self.datasets.keys()
                          if isinstance(d.location, RepoDatasetLocation)),
                         writer)
-        self.dump_rel_dbs((d for d in self.datasets
+        self.dump_rel_dbs((d for d in self.datasets.keys()
                            if isinstance(d.location, DBDatasetLocation)),
                           writer)
 

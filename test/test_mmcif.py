@@ -55,8 +55,8 @@ _ihm_struct_assembly.asym_id
 _ihm_struct_assembly.seq_id_begin
 _ihm_struct_assembly.seq_id_end
 1 1 foo 1 A 1 3
-2 1 bar 1 B 1 3
-3 2 bar 1 B 1 3
+2 1 foo 1 B 1 3
+3 2 foo 1 B 1 3
 4 2 baz 2 C 1 2
 #
 """)
@@ -188,9 +188,11 @@ _citation_author.ordinal
         self.assertEqual(len(a), 2)
         self.assertEqual(a[0].id, 1)
         self.assertEqual(a[0].first_component, 'foo')
+        self.assertEqual(a[0].description, 'foo')
         self.assertEqual(a[0].sequence, 'MELS')
         self.assertEqual(a[1].id, 2)
         self.assertEqual(a[1].first_component, 'bar')
+        self.assertEqual(a[1].description, 'bar')
         self.assertEqual(a[1].sequence, 'SELM')
 
 if __name__ == '__main__':

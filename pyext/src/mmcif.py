@@ -380,7 +380,7 @@ class ModelRepresentationDumper(Dumper):
                         starting_model_id = self.starting_model[f.pdbname].name
                     l.write(segment_id=segment_id,
                             entity_id=entity.id,
-                            entity_description=f.component,
+                            entity_description=entity.description,
                             seq_id_begin=f.start,
                             seq_id_end=f.end,
                             model_object_primitive=f.primitive,
@@ -605,11 +605,11 @@ class CrossLinkDumper(Dumper):
                 rt1 = IMP.atom.get_residue_type(seq1[xl.r1-1])
                 rt2 = IMP.atom.get_residue_type(seq2[xl.r2-1])
                 l.write(id=xl.id,
-                        entity_description_1=xl.c1,
+                        entity_description_1=entity1.description,
                         entity_id_1=entity1.id,
                         seq_id_1=xl.r1,
                         comp_id_1=rt1.get_string(),
-                        entity_description_2=xl.c2,
+                        entity_description_2=entity2.description,
                         entity_id_2=entity2.id,
                         seq_id_2=xl.r2,
                         comp_id_2=rt2.get_string(),
@@ -722,7 +722,7 @@ class AssemblyDumper(Dumper):
                         seq = self.simo.sequence_dict[comp]
                         chain = self.simo.chains[(comp, copy)]
                         l.write(ordinal_id=ordinal, assembly_id=a.id,
-                                entity_description=comp,
+                                entity_description=entity.description,
                                 entity_id=entity.id,
                                 asym_id=self.output.chainids[chain],
                                 seq_id_begin=1,
@@ -986,7 +986,7 @@ modeling. These may need to be added manually below.""")
                     seq_id_begin, seq_id_end = source.get_seq_id_range(model)
                     l.write(id=ordinal,
                       entity_id=entity.id,
-                      entity_description=f.component,
+                      entity_description=entity.description,
                       seq_id_begin=seq_id_begin,
                       seq_id_end=seq_id_end,
                       starting_model_db_pdb_auth_seq_id=source.chain_id,
@@ -1089,6 +1089,8 @@ class Entity(object):
     def __init__(self, seq, first_component):
         self.sequence = seq
         self.first_component = first_component
+        # Use the name of the first component as the description
+        self.description = first_component
 
 class _EntityMapper(dict):
     """Handle mapping from IMP components to CIF entities.

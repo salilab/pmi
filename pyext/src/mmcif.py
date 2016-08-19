@@ -817,7 +817,7 @@ class ModelDumper(Dumper):
                     l.write(id=ordinal, label_atom_id=atom_type.get_string(),
                             label_comp_id=residue_type.get_string(),
                             label_asym_id=chain_id,
-                            label_entity_id=model.entity_for_chain[chain_id],
+                            label_entity_id=model.entity_for_chain[chain_id].id,
                             label_seq_id=residue_index,
                             Cartn_x=xyz[0] - model.geometric_center[0],
                             Cartn_y=xyz[1] - model.geometric_center[1],
@@ -839,7 +839,7 @@ class ModelDumper(Dumper):
                     if all_indexes is None:
                         all_indexes = (residue_index,)
                     l.write(ordinal_id=ordinal,
-                            entity_id=model.entity_for_chain[chain_id],
+                            entity_id=model.entity_for_chain[chain_id].id,
                             seq_id_begin = all_indexes[0],
                             seq_id_end = all_indexes[-1],
                             asym_id=chain_id,

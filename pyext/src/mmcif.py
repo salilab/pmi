@@ -633,17 +633,19 @@ class CrossLinkDumper(Dumper):
                           "model_granularity", "distance_threshold",
                           "psi", "sigma_1", "sigma_2"]) as l:
             for xl in self.cross_links:
-                seq1 = self.simo.sequence_dict[xl.ex_xl.c1]
-                seq2 = self.simo.sequence_dict[xl.ex_xl.c2]
+                entity1 = self.simo.entities[xl.ex_xl.c1]
+                entity2 = self.simo.entities[xl.ex_xl.c2]
+                seq1 = entity1.sequence
+                seq2 = entity2.sequence
                 rt1 = IMP.atom.get_residue_type(seq1[xl.ex_xl.r1-1])
                 rt2 = IMP.atom.get_residue_type(seq2[xl.ex_xl.r2-1])
                 l.write(id=xl.id,
                         group_id=xl.ex_xl.id,
-                        entity_id_1=self.simo.entities[xl.ex_xl.c1],
+                        entity_id_1=entity1.id,
                         asym_id_1=asym[xl.p1],
                         seq_id_1=xl.ex_xl.r1,
                         comp_id_1=rt1.get_string(),
-                        entity_id_2=self.simo.entities[xl.ex_xl.c2],
+                        entity_id_2=entity2.id,
                         asym_id_2=asym[xl.p2],
                         seq_id_2=xl.ex_xl.r2,
                         comp_id_2=rt2.get_string(),
@@ -1018,11 +1020,12 @@ modeling. These may need to be added manually below.""")
                         res = IMP.atom.get_residue(atom)
                         res_name = res.get_residue_type().get_string()
                         chain = IMP.atom.get_chain(res)
+                        entity = self.simo.entities[f.component]
                         l.write(starting_model_id=model.name,
                                 group_PDB=group_pdb,
                                 id=atom.get_input_index(), type_symbol=element,
                                 atom_id=atom_name, comp_id=res_name,
-                                entity_id=self.simo.entities[f.component],
+                                entity_id=entity.id,
                                 seq_id=res.get_index(), Cartn_x=coord[0],
                                 Cartn_y=coord[1], Cartn_z=coord[2],
                                 B_iso_or_equiv=atom.get_temperature_factor(),

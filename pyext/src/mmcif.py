@@ -931,6 +931,7 @@ class StartingModelDumper(Dumper):
         self.models = OrderedDict()
         # mapping from pdbname to starting model
         self.starting_model = {}
+        self.output = IMP.pmi.output.Output()
 
     def add_pdb_fragment(self, fragment):
         """Add a starting model PDB fragment."""
@@ -1028,7 +1029,8 @@ are crystal structures and which are comparative models, but does not always
 have sufficient information to deduce all of the templates used for comparative
 modeling. These may need to be added manually below.""")
         with writer.loop("_ihm_starting_model_details",
-                     ["id", "entity_id", "entity_description", "seq_id_begin",
+                     ["ordinal_id", "entity_id", "entity_description",
+                      "asym_id", "seq_id_begin",
                       "seq_id_end", "starting_model_source",
                       "starting_model_db_name", "starting_model_db_code",
                       "starting_model_db_pdb_auth_seq_id",
@@ -1039,11 +1041,13 @@ modeling. These may need to be added manually below.""")
             for model in self.all_models():
                 f = model.fragments[0]
                 entity = self.simo.entities[f.component]
+                chain = self.simo.chains[f.component]
                 for source in model.sources:
                     seq_id_begin, seq_id_end = source.get_seq_id_range(model)
-                    l.write(id=ordinal,
+                    l.write(ordinal_id=ordinal,
                       entity_id=entity.id,
                       entity_description=entity.description,
+                      asym_id=self.output.chainids[chain],
                       seq_id_begin=seq_id_begin,
                       seq_id_end=seq_id_end,
                       starting_model_db_pdb_auth_seq_id=source.chain_id,

@@ -274,7 +274,7 @@ _ihm_dataset_list.id
 _ihm_dataset_list.group_id
 _ihm_dataset_list.data_type
 _ihm_dataset_list.database_hosted
-1 1 1 'experimental model' YES
+1 1 1 'Experimental model' YES
 #
 #
 loop_
@@ -285,7 +285,7 @@ _ihm_dataset_related_db_reference.access_code
 _ihm_dataset_related_db_reference.version
 _ihm_dataset_related_db_reference.data_type
 _ihm_dataset_related_db_reference.details
-1 1 PDB 1abc 1.0 'experimental model' 'test details'
+1 1 PDB 1abc 1.0 'Experimental model' 'test details'
 #
 """)
 

@@ -538,7 +538,7 @@ class CompModelDataset(Dataset):
 
 class PDBDataset(Dataset):
     """An experimental PDB structure dataset."""
-    data_type = 'experimental model'
+    data_type = 'Experimental model'
     def __init__(self, db_code, version, details):
         self.location = DBDatasetLocation('PDB', db_code, version, details)
 

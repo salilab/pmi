@@ -231,7 +231,8 @@ class CitationDumper(Dumper):
 
 
 class EntityDumper(Dumper):
-    # todo: we currently only support amino acid sequences here
+    # todo: we currently only support amino acid sequences here (and
+    # then only standard amino acids; need to add support for MSE etc.)
     def dump(self, writer):
         with writer.loop("_entity",
                          ["id", "type", "src_method", "pdbx_description",

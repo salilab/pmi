@@ -1063,7 +1063,8 @@ modeling. These may need to be added manually below.""")
         ordinal = 1
         with writer.loop("_ihm_starting_model_coord",
                      ["starting_model_id", "group_PDB", "id", "type_symbol",
-                      "atom_id", "comp_id", "entity_id", "seq_id", "Cartn_x",
+                      "atom_id", "comp_id", "entity_id", "asym_id",
+                      "seq_id", "Cartn_x",
                       "Cartn_y", "Cartn_z", "B_iso_or_equiv",
                       "ordinal_id"]) as l:
             for model in self.all_models():
@@ -1080,13 +1081,14 @@ modeling. These may need to be added manually below.""")
                             atom_name = atom_name[4:]
                         res = IMP.atom.get_residue(atom)
                         res_name = res.get_residue_type().get_string()
-                        chain = IMP.atom.get_chain(res)
+                        chain = self.simo.chains[f.component]
                         entity = self.simo.entities[f.component]
                         l.write(starting_model_id=model.name,
                                 group_PDB=group_pdb,
                                 id=atom.get_input_index(), type_symbol=element,
                                 atom_id=atom_name, comp_id=res_name,
                                 entity_id=entity.id,
+                                asym_id=self.output.chainids[chain],
                                 seq_id=res.get_index(), Cartn_x=coord[0],
                                 Cartn_y=coord[1], Cartn_z=coord[2],
                                 B_iso_or_equiv=atom.get_temperature_factor(),

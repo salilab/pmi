@@ -307,12 +307,26 @@ _ihm_dataset_related_db_reference.details
                                      "A")
 
         d = IMP.pmi.mmcif.ModelDumper(po)
-        self.assertEqual(d.add(simo.prot), 1)
+        assembly = IMP.pmi.mmcif.Assembly()
+        assembly.id = 42
+        protocol = IMP.pmi.mmcif.Protocol()
+        protocol.id = 93
+        self.assertEqual(d.add(simo.prot, protocol, assembly), 1)
         fh = StringIO()
         w = IMP.pmi.mmcif.CifWriter(fh)
         d.dump(w)
         out = fh.getvalue()
         self.assertEqual(out, """#
+loop_
+_ihm_model_list.ordinal_id
+_ihm_model_list.model_id
+_ihm_model_list.model_group_id
+_ihm_model_list.model_group_name
+_ihm_model_list.assembly_id
+_ihm_model_list.protocol_id
+1 1 1 . 42 93
+#
+#
 loop_
 _ihm_sphere_obj_site.ordinal_id
 _ihm_sphere_obj_site.entity_id

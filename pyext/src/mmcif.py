@@ -787,7 +787,10 @@ class AssemblyDumper(Dumper):
                     ordinal += 1
 
 
-class ReplicaExchangeProtocol(object):
+class Protocol(object):
+    pass
+
+class ReplicaExchangeProtocol(Protocol):
     def __init__(self, rex):
         if rex.monte_carlo_sample_objects is not None:
             self.step_method = 'Replica exchange monte carlo'
@@ -796,7 +799,10 @@ class ReplicaExchangeProtocol(object):
         self.num_models_end = rex.vars["number_of_frames"]
 
 class Model(object):
-    def __init__(self, prot, simo):
+    def __init__(self, prot, simo, protocol, assembly):
+        # The Protocol which produced this model
+        self.protocol = protocol
+        self.assembly = assembly
         o = IMP.pmi.output.Output()
         name = 'cif-output'
         o.dictionary_pdbs[name] = prot
@@ -814,17 +820,32 @@ class ModelDumper(Dumper):
         super(ModelDumper, self).__init__(simo)
         self.models = []
 
-    def add(self, prot):
-        m = Model(prot, self.simo)
+    def add(self, prot, protocol, assembly):
+        m = Model(prot, self.simo, protocol, assembly)
         self.models.append(m)
         m.id = len(self.models)
         return m.id
 
     def dump(self, writer):
+        self.dump_model_list(writer)
         num_atoms = sum(len(m.atoms) for m in self.models)
         num_spheres = sum(len(m.spheres) for m in self.models)
         self.dump_atoms(writer)
         self.dump_spheres(writer)
+
+    def dump_model_list(self, writer):
+        # todo: support groups of models
+        ordinal = 1
+        with writer.loop("_ihm_model_list",
+                         ["ordinal_id", "model_id", "model_group_id",
+                          "model_group_name", "assembly_id",
+                          "protocol_id"]) as l:
+            for model in self.models:
+                l.write(ordinal_id=ordinal, model_id=model.id,
+                        model_group_id=1, model_group_name=CifWriter.omitted,
+                        assembly_id=model.assembly.id,
+                        protocol_id=model.protocol.id)
+                ordinal += 1
 
     def dump_atoms(self, writer):
         ordinal = 1
@@ -884,6 +905,10 @@ class ModelProtocolDumper(Dumper):
         protocol.id = len(self.protocols)
         # Assume that protocol uses all currently-defined datasets
         protocol.dataset_group = self.simo.dataset_dump.get_all_group()
+
+    def get_last_protocol(self):
+        """Return the most recently-added Protocol"""
+        return self.protocols[-1]
 
     def dump(self, writer):
         ordinal = 1
@@ -1273,7 +1298,9 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                                       image_resolution, projection_number, mgd))
 
     def add_model(self):
-        return self.model_dump.add(self.prot)
+        return self.model_dump.add(self.prot,
+                                   self.model_prot_dump.get_last_protocol(),
+                                   self.default_assembly)
 
     def _get_location(self, path, metadata=[]):
         """Get the location where the given file is deposited, or None.

@@ -802,8 +802,14 @@ class ReplicaExchangeProtocol(Protocol):
             self.step_method = 'Replica exchange molecular dynamics'
         self.num_models_end = rex.vars["number_of_frames"]
 
+class ModelGroup(object):
+    """Group sets of models"""
+    def __init__(self, name):
+        self.name = name
+
 class Model(object):
-    def __init__(self, prot, simo, protocol, assembly):
+    def __init__(self, prot, simo, protocol, assembly, group):
+        self.group = group
         # The Protocol which produced this model
         self.protocol = protocol
         self.assembly = assembly
@@ -824,8 +830,8 @@ class ModelDumper(Dumper):
         super(ModelDumper, self).__init__(simo)
         self.models = []
 
-    def add(self, prot, protocol, assembly):
-        m = Model(prot, self.simo, protocol, assembly)
+    def add(self, prot, protocol, assembly, group):
+        m = Model(prot, self.simo, protocol, assembly, group)
         self.models.append(m)
         m.id = len(self.models)
         return m.id
@@ -838,7 +844,6 @@ class ModelDumper(Dumper):
         self.dump_spheres(writer)
 
     def dump_model_list(self, writer):
-        # todo: support groups of models
         ordinal = 1
         with writer.loop("_ihm_model_list",
                          ["ordinal_id", "model_id", "model_group_id",
@@ -846,7 +851,8 @@ class ModelDumper(Dumper):
                           "protocol_id"]) as l:
             for model in self.models:
                 l.write(ordinal_id=ordinal, model_id=model.id,
-                        model_group_id=1, model_group_name=CifWriter.omitted,
+                        model_group_id=model.group.id,
+                        model_group_name=model.group.name,
                         assembly_id=model.assembly.id,
                         protocol_id=model.protocol.id)
                 ordinal += 1
@@ -1178,6 +1184,113 @@ class StructConfDumper(Dumper):
                         end_label_asym_id=asym_id,
                         end_label_seq_id=end)
 
+
+class PostProcess(object):
+    """Base class for any post processing"""
+    pass
+
+
+class ReplicaExchangeAnalysisPostProcess(PostProcess):
+    """Post processing using AnalysisReplicaExchange0 macro"""
+    type = 'cluster'
+    feature = 'RMSD'
+
+    def __init__(self, rex, num_models_begin):
+        self.rex = rex
+        self.num_models_begin = num_models_begin
+        self.num_models_end = 0
+        for fname in self.get_all_stat_files():
+            with open(fname) as fh:
+                self.num_models_end += len(fh.readlines())
+
+    def get_stat_file(self, cluster_num):
+        return os.path.join(self.rex._outputdir, "cluster.%d" % cluster_num,
+                            'stat.out')
+
+    def get_all_stat_files(self):
+        for i in range(self.rex._number_of_clusters):
+            yield self.get_stat_file(i)
+
+
+class PostProcessDumper(Dumper):
+    def __init__(self, simo):
+        super(PostProcessDumper, self).__init__(simo)
+        self.postprocs = []
+
+    def add(self, postproc):
+        self.postprocs.append(postproc)
+        postproc.id = len(self.postprocs)
+
+    def dump(self, writer):
+        with writer.loop("_ihm_modeling_post_process",
+                         ["id", "protocol_id", "analysis_id", "step_id",
+                          "type", "feature", "num_models_begin",
+                          "num_models_end"]) as l:
+            # todo: handle multiple protocols (e.g. sampling then refinement)
+            # and multiple analyses
+            for p in self.postprocs:
+                l.write(id=p.id, protocol_id=1, analysis_id=1, step_id=p.id,
+                        type=p.type, feature=p.feature,
+                        num_models_begin=p.num_models_begin,
+                        num_models_end=p.num_models_end)
+
+class Ensemble(object):
+    """Base class for any ensemble"""
+    pass
+
+
+class ReplicaExchangeAnalysisEnsemble(Ensemble):
+    """Ensemble generated using AnalysisReplicaExchange0 macro"""
+
+    def __init__(self, pp, cluster_num, model_group):
+        self.model_group = model_group
+        self.cluster_num = cluster_num
+        self.postproc = pp
+        with open(pp.get_stat_file(cluster_num)) as fh:
+            self.num_models = len(fh.readlines())
+
+    def _get_precision(self):
+        precfile = os.path.join(self.postproc.rex._outputdir,
+                                "precision.%d.%d.out" % (self.cluster_num,
+                                                         self.cluster_num))
+        r = re.compile('All .* average centroid distance ([\d\.]+)')
+        with open(precfile) as fh:
+            for line in fh:
+                m = r.match(line)
+                if m:
+                    return float(m.group(1))
+
+    feature = property(lambda self: self.postproc.feature)
+    name = property(lambda self: "Cluster %d" % (self.cluster_num + 1))
+    precision = property(lambda self: self._get_precision())
+
+
+class EnsembleDumper(Dumper):
+    def __init__(self, simo):
+        super(EnsembleDumper, self).__init__(simo)
+        self.ensembles = []
+
+    def add(self, ensemble):
+        self.ensembles.append(ensemble)
+        ensemble.id = len(self.ensembles)
+
+    def dump(self, writer):
+        with writer.loop("_ihm_ensemble_info",
+                         ["ensemble_id", "ensemble_name", "post_process_id",
+                          "model_group_id", "ensemble_clustering_method",
+                          "ensemble_clustering_feature",
+                          "num_ensemble_models",
+                          "num_ensemble_models_deposited",
+                          "ensemble_precision"]) as l:
+            for e in self.ensembles:
+                l.write(ensemble_id=e.id, ensemble_name=e.name,
+                        post_process_id=e.postproc.id,
+                        model_group_id=e.model_group.id,
+                        ensemble_clustering_feature=e.feature,
+                        num_ensemble_models=e.num_models,
+                        ensemble_precision=e.precision)
+
+
 class Entity(object):
     """Represent a CIF entity (a chain with a unique sequence)"""
     def __init__(self, seq, first_component):
@@ -1213,6 +1326,8 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.entities = _EntityMapper()
         self.chains = {}
         self._all_components = {}
+        self.model_groups = []
+        self.default_model_group = None
         self.sequence_dict = {}
         self.all_modeled_components = []
         self.model_repr_dump = ModelRepresentationDumper(self)
@@ -1235,6 +1350,8 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.model_repr_dump.starting_model \
                     = self.starting_model_dump.starting_model
         self.software_dump = SoftwareDumper(self)
+        self.post_process_dump = PostProcessDumper(self)
+        self.ensemble_dump = EnsembleDumper(self)
         self._dumpers = [EntryDumper(self), # should always be first
                          AuditAuthorDumper(self),
                          self.software_dump, CitationDumper(self),
@@ -1248,7 +1365,8 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                          self.em2d_dump,
                          self.starting_model_dump,
                          StructConfDumper(self),
-                         self.model_prot_dump, self.model_dump]
+                         self.model_prot_dump, self.post_process_dump,
+                         self.ensemble_dump, self.model_dump]
 
     def get_chain_for_component(self, name, output):
         """Get the chain ID for a component, if any."""
@@ -1316,6 +1434,20 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
     def add_replica_exchange(self, rex):
         self.model_prot_dump.add(ReplicaExchangeProtocol(rex))
 
+    def add_model_group(self, group):
+        self.model_groups.append(group)
+        group.id = len(self.model_groups)
+        return group
+
+    def add_replica_exchange_analysis(self, rex):
+        num_models = self.model_prot_dump.get_last_protocol().num_models_end
+        pp = ReplicaExchangeAnalysisPostProcess(rex, num_models)
+        self.post_process_dump.add(pp)
+        for i in range(rex._number_of_clusters):
+            group = self.add_model_group(ModelGroup('Cluster %d' % (i + 1)))
+            e = ReplicaExchangeAnalysisEnsemble(pp, i, group)
+            self.ensemble_dump.add(e)
+
     def add_em2d_restraint(self, images, resolution, pixel_size,
                            image_resolution, projection_number, micrographs):
         mgd = None
@@ -1330,10 +1462,15 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
             self.em2d_dump.add(EM2DRestraint(d, resolution, pixel_size,
                                       image_resolution, projection_number, mgd))
 
-    def add_model(self):
+    def add_model(self, group=None):
+        if group is None:
+            if self.default_model_group is None:
+                self.default_model_group \
+                         = self.add_model_group(ModelGroup("All models"))
+            group = self.default_model_group
         return self.model_dump.add(self.prot,
                                    self.model_prot_dump.get_last_protocol(),
-                                   self.default_assembly)
+                                   self.default_assembly, group)
 
     def _get_location(self, path, metadata=[]):
         """Get the location where the given file is deposited, or None.

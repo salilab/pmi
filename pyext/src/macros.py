@@ -1041,7 +1041,8 @@ class AnalysisReplicaExchange0(object):
                  do_create_directories=True,
                  global_output_directory="output/",
                  replica_stat_file_suffix="stat_replica",
-                 global_analysis_result_directory="./analysis/"):
+                 global_analysis_result_directory="./analysis/",
+                 test_mode=False):
         """Constructor.
            @param model                           The IMP model
            @param stat_file_name_suffix
@@ -1052,6 +1053,7 @@ class AnalysisReplicaExchange0(object):
            @param global_output_directory          Where everything is
            @param replica_stat_file_suffix
            @param global_analysis_result_directory
+           @param test_mode If True, nothing is changed on disk
         """
 
         try:
@@ -1063,6 +1065,8 @@ class AnalysisReplicaExchange0(object):
             self.rank = 0
             self.number_of_processes = 1
 
+        self.test_mode = test_mode
+        self._protocol_output = []
         self.cluster_obj = None
         self.model = model
         stat_dir = global_output_directory
@@ -1074,6 +1078,11 @@ class AnalysisReplicaExchange0(object):
                 print("WARNING: no stat files found in",os.path.join(rd,stat_dir))
             self.stat_files += stat_files
 
+    def add_protocol_output(self, p):
+        """Capture details of the modeling protocol.
+           @param p an instance of IMP.pmi.output.ProtocolOutput or a subclass.
+        """
+        self._protocol_output.append(p)
 
     def get_modeling_trajectory(self,
                                 score_key="SimplifiedModel_Total_Score_None",
@@ -1218,6 +1227,14 @@ class AnalysisReplicaExchange0(object):
         @param write_pdb_with_centered_coordinates
         @param voxel_size                     Used for the density output
         """
+        self._outputdir = outputdir
+        self._number_of_clusters = number_of_clusters
+        for p in self._protocol_output:
+            p.add_replica_exchange_analysis(self)
+
+        if self.test_mode:
+            return
+
         if self.rank==0:
             try:
                 os.mkdir(outputdir)

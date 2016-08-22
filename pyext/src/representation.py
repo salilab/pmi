@@ -173,6 +173,7 @@ class Representation(object):
         p._metadata = self._metadata
         p.m = self.m
         p.prot = self.prot
+    protocol_output = property(lambda self: self._protocol_output[:])
 
     def set_label(self, label):
         self.label = label

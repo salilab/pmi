@@ -31,15 +31,15 @@ class Tests(IMP.test.TestCase):
         self.assertEqual(out[-3],
                          "3 test 'test code' 1 program http://salilab.org")
 
-    def test_assembly(self):
-        """Test AssemblyDumper"""
+    def test_assembly_all_modeled(self):
+        """Test AssemblyDumper, all components modeled"""
         class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
             def flush(self):
                 pass
         po = DummyPO(EmptyObject())
         d = IMP.pmi.mmcif.AssemblyDumper(po)
         for c, seq in (("foo", "AAA"), ("bar", "AAA"), ("baz", "AA")):
-            po.create_component(c)
+            po.create_component(c, True)
             po.add_component_sequence(c, seq)
         d.add(IMP.pmi.mmcif.Assembly(["foo", "bar"]))
         d.add(IMP.pmi.mmcif.Assembly(["bar", "baz"]))
@@ -64,6 +64,35 @@ _ihm_struct_assembly.seq_id_end
 #
 """)
 
+    def test_assembly_subset_modeled(self):
+        """Test AssemblyDumper, subset of components modeled"""
+        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
+            def flush(self):
+                pass
+        po = DummyPO(EmptyObject())
+        for c, seq, modeled in (("foo", "AAA", True), ("bar", "AA", False)):
+            po.create_component(c, modeled)
+            po.add_component_sequence(c, seq)
+
+        fh = StringIO()
+        w = IMP.pmi.mmcif.CifWriter(fh)
+        po.assembly_dump.dump(w)
+        out = fh.getvalue()
+        self.assertEqual(out, """#
+loop_
+_ihm_struct_assembly.ordinal_id
+_ihm_struct_assembly.assembly_id
+_ihm_struct_assembly.entity_description
+_ihm_struct_assembly.entity_id
+_ihm_struct_assembly.asym_id
+_ihm_struct_assembly.seq_id_begin
+_ihm_struct_assembly.seq_id_end
+1 1 foo 1 A 1 3
+2 2 foo 1 A 1 3
+3 2 bar 2 . 1 2
+#
+""")
+
     def test_struct_asym(self):
         """Test StructAsymDumper"""
         class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
@@ -72,7 +101,7 @@ _ihm_struct_assembly.seq_id_end
         po = DummyPO(EmptyObject())
         d = IMP.pmi.mmcif.StructAsymDumper(po)
         for c, seq in (("foo", "AAA"), ("bar", "AAA"), ("baz", "AA")):
-            po.create_component(c)
+            po.create_component(c, True)
             po.add_component_sequence(c, seq)
 
         fh = StringIO()
@@ -164,10 +193,10 @@ _citation_author.ordinal
         """Test AsymIDMapper class"""
         m = IMP.Model()
         simo = IMP.pmi.representation.Representation(m)
-        simo.create_component("Nup84")
+        simo.create_component("Nup84", True)
         simo.add_component_sequence("Nup84",
                                     self.get_input_file_name("test.fasta"))
-        simo.create_component("Nup85")
+        simo.create_component("Nup85", True)
         simo.add_component_sequence("Nup85",
                                     self.get_input_file_name("test.fasta"))
         h1 = simo.add_component_beads("Nup84", [(1,2), (3,4)])
@@ -299,7 +328,7 @@ _ihm_dataset_related_db_reference.details
         simo = IMP.pmi.representation.Representation(m)
         po = DummyPO(None)
         simo.add_protocol_output(po)
-        simo.create_component("Nup84")
+        simo.create_component("Nup84", True)
         simo.add_component_sequence("Nup84",
                                     self.get_input_file_name("test.fasta"))
         nup84 = simo.autobuild_model("Nup84",
@@ -351,9 +380,9 @@ _ihm_sphere_obj_site.model_id
                 pass
 
         po = DummyPO(None)
-        po.create_component("Nup84")
+        po.create_component("Nup84", True)
         po.add_component_sequence("Nup84", "MELS")
-        po.create_component("Nup85")
+        po.create_component("Nup85", True)
         po.add_component_sequence("Nup85", "MC")
 
         d = IMP.pmi.mmcif.ChemCompDumper(po)

@@ -187,7 +187,18 @@ class Representation(object):
         self.color_dict[name] = color
         self.elements[name] = []
         for p in self._protocol_output:
-            p.create_component(name)
+            p.create_component(name, True)
+
+    def create_non_modeled_component(self, name):
+        """Create a component that isn't used in the modeling.
+           No coordinates or other structural data for this component will
+           be read or written, but a primary sequence can be assigned. This
+           is useful if the input experimental data is of a system larger
+           than that modeled. Any references to these non-modeled components
+           can then be correctly resolved later."""
+        self.elements[name] = []
+        for p in self._protocol_output:
+            p.create_component(name, False)
 
     # Deprecation warning
 

@@ -260,12 +260,13 @@ class EntityPolyDumper(Dumper):
             for entity in self.simo.entities.get_all():
                 seq = entity.sequence
                 name = entity.first_component
-                chain = self.simo.chains[name]
+                chain_id = self.simo.get_chain_for_component(name, self.output)
                 l.write(entity_id=entity.id, type='polypeptide(L)',
                         nstd_linkage='no', nstd_monomer='no',
-                        pdbx_strand_id=self.output.chainids[chain],
+                        pdbx_strand_id=chain_id,
                         pdbx_seq_one_letter_code=seq,
                         pdbx_seq_one_letter_code_can=seq)
+
 
 class ChemCompDumper(Dumper):
     def dump(self, writer):
@@ -300,10 +301,10 @@ class StructAsymDumper(Dumper):
     def dump(self, writer):
         with writer.loop("_struct_asym",
                          ["id", "entity_id", "details"]) as l:
-            for comp in self.simo.all_components:
+            for comp in self.simo.all_modeled_components:
                 entity = self.simo.entities[comp]
-                chain = self.simo.chains[comp]
-                l.write(id=self.output.chainids[chain],
+                chain_id = self.simo.get_chain_for_component(comp, self.output)
+                l.write(id=chain_id,
                         entity_id=entity.id,
                         details=comp)
 
@@ -390,7 +391,7 @@ class ModelRepresentationDumper(Dumper):
                           "model_mode", "model_granularity",
                           "model_object_count"]) as l:
             for comp, fragments in self.fragments.items():
-                chain = self.simo.chains[comp]
+                chain_id = self.simo.get_chain_for_component(comp, self.output)
                 for f in fragments:
                     entity = self.simo.entities[f.component]
                     starting_model_id = CifWriter.omitted
@@ -402,7 +403,7 @@ class ModelRepresentationDumper(Dumper):
                             segment_id=segment_id,
                             entity_id=entity.id,
                             entity_description=entity.description,
-                            entity_asym_id=self.output.chainids[chain],
+                            entity_asym_id=chain_id,
                             seq_id_begin=f.start,
                             seq_id_end=f.end,
                             model_object_primitive=f.primitive,
@@ -750,7 +751,7 @@ class EM2DDumper(Dumper):
                         pixel_size_height=r.pixel_size,
                         image_resolution=r.image_resolution,
                         number_of_projections=r.projection_number,
-                        struct_assembly_id=self.simo.default_assembly.id,
+                        struct_assembly_id=self.simo.modeled_assembly.id,
                         image_segment_flag=False)
 
 class Assembly(list):
@@ -778,11 +779,12 @@ class AssemblyDumper(Dumper):
                 for comp in a:
                     entity = self.simo.entities[comp]
                     seq = self.simo.sequence_dict[comp]
-                    chain = self.simo.chains[comp]
+                    chain_id = self.simo.get_chain_for_component(comp,
+                                                                 self.output)
                     l.write(ordinal_id=ordinal, assembly_id=a.id,
                             entity_description=entity.description,
                             entity_id=entity.id,
-                            asym_id=self.output.chainids[chain],
+                            asym_id=chain_id,
                             seq_id_begin=1,
                             seq_id_end=len(seq))
                     ordinal += 1
@@ -926,7 +928,7 @@ class ModelProtocolDumper(Dumper):
                 l.write(ordinal_id=ordinal, protocol_id=1,
                         step_id=p.id, step_method=p.step_method,
                         step_name='Sampling',
-                        struct_assembly_id=self.simo.default_assembly.id,
+                        struct_assembly_id=self.simo.modeled_assembly.id,
                         dataset_group_id=p.dataset_group.id,
                         num_models_begin=num_models_begin,
                         num_models_end=p.num_models_end)
@@ -1067,13 +1069,14 @@ modeling. These may need to be added manually below.""")
             for model in self.all_models():
                 f = model.fragments[0]
                 entity = self.simo.entities[f.component]
-                chain = self.simo.chains[f.component]
+                chain_id = self.simo.get_chain_for_component(f.component,
+                                                             self.output)
                 for source in model.sources:
                     seq_id_begin, seq_id_end = source.get_seq_id_range(model)
                     l.write(ordinal_id=ordinal,
                       entity_id=entity.id,
                       entity_description=entity.description,
-                      asym_id=self.output.chainids[chain],
+                      asym_id=chain_id,
                       seq_id_begin=seq_id_begin,
                       seq_id_end=seq_id_end,
                       starting_model_db_pdb_auth_seq_id=source.chain_id,
@@ -1107,14 +1110,15 @@ modeling. These may need to be added manually below.""")
                             atom_name = atom_name[4:]
                         res = IMP.atom.get_residue(atom)
                         res_name = res.get_residue_type().get_string()
-                        chain = self.simo.chains[f.component]
+                        chain_id = self.simo.get_chain_for_component(
+                                            f.component, self.output)
                         entity = self.simo.entities[f.component]
                         l.write(starting_model_id=model.name,
                                 group_PDB=group_pdb,
                                 id=atom.get_input_index(), type_symbol=element,
                                 atom_id=atom_name, comp_id=res_name,
                                 entity_id=entity.id,
-                                asym_id=self.output.chainids[chain],
+                                asym_id=chain_id,
                                 seq_id=res.get_index(), Cartn_x=coord[0],
                                 Cartn_y=coord[1], Cartn_z=coord[2],
                                 B_iso_or_equiv=atom.get_temperature_factor(),
@@ -1207,8 +1211,9 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self._cif_writer = CifWriter(fh)
         self.entities = _EntityMapper()
         self.chains = {}
+        self._all_components = {}
         self.sequence_dict = {}
-        self.all_components = []
+        self.all_modeled_components = []
         self.model_repr_dump = ModelRepresentationDumper(self)
         self.cross_link_dump = CrossLinkDumper(self)
         self.em2d_dump = EM2DDumper(self)
@@ -1216,8 +1221,15 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.dataset_dump = DatasetDumper(self)
         self.starting_model_dump = StartingModelDumper(self)
         self.assembly_dump = AssemblyDumper(self)
-        self.default_assembly = Assembly()
-        self.assembly_dump.add(self.default_assembly)
+
+        # The assembly of all components modeled by IMP
+        self.modeled_assembly = Assembly()
+        self.assembly_dump.add(self.modeled_assembly)
+
+        # The assembly of all known components. This may be bigger than the
+        # modeled assembly.
+        self.complete_assembly = self.modeled_assembly
+
         self.model_dump = ModelDumper(self)
         self.model_repr_dump.starting_model \
                     = self.starting_model_dump.starting_model
@@ -1237,10 +1249,29 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                          StructConfDumper(self),
                          self.model_prot_dump, self.model_dump]
 
-    def create_component(self, name):
-        self.all_components.append(name)
-        self.default_assembly.append(name)
-        self.chains[name] = len(self.chains)
+    def get_chain_for_component(self, name, output):
+        """Get the chain ID for a component, if any."""
+        # todo: handle multiple copies
+        if name in self.chains:
+            chain = self.chains[name]
+            return output.chainids[chain]
+        else:
+            # A non-modeled component doesn't have a chain ID
+            return CifWriter.omitted
+
+    def create_component(self, name, modeled):
+        self._all_components[name] = None
+        if modeled:
+            self.all_modeled_components.append(name)
+            self.modeled_assembly.append(name)
+            self.chains[name] = len(self.chains)
+        elif self.complete_assembly is self.modeled_assembly:
+            # If this component is not modeled, we need to start tracking
+            # the complete and modeled assemblies separately
+            self.complete_assembly = Assembly(self.modeled_assembly)
+            self.assembly_dump.add(self.complete_assembly)
+        if self.complete_assembly is not self.modeled_assembly:
+            self.complete_assembly.append(name)
 
     def add_component_sequence(self, name, seq):
         self.sequence_dict[name] = seq
@@ -1268,7 +1299,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
 
     def add_experimental_cross_link(self, r1, c1, r2, c2, label, length,
                                     dataset):
-        if c1 not in self.chains or c2 not in self.chains:
+        if c1 not in self._all_components or c2 not in self._all_components:
             # Crosslink refers to a component we didn't model
             # As a quick hack, just ignore it.
             # todo: need to add an entity for this anyway (so will need the

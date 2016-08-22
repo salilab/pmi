@@ -3,6 +3,7 @@ import IMP.test
 import IMP.pmi.metadata
 import IMP.pmi.representation
 import IMP.pmi.mmcif
+import IMP.pmi.macros
 import sys
 import io
 if sys.version_info[0] >= 3:
@@ -399,6 +400,57 @@ GLU
 LEU
 SER
 CYS
+#
+""")
+
+    def test_protocol_dumper(self):
+        """Test ModelProtocolDumper output"""
+        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
+            def flush(self):
+                pass
+
+        m = IMP.Model()
+        simo = IMP.pmi.representation.Representation(m)
+        po = DummyPO(None)
+        simo.add_protocol_output(po)
+        simo.create_component("Nup84", True)
+        simo.add_component_sequence("Nup84",
+                                    self.get_input_file_name("test.fasta"))
+        nup84 = simo.autobuild_model("Nup84",
+                                     self.get_input_file_name("test.nup84.pdb"),
+                                     "A")
+        mc1 = IMP.pmi.macros.ReplicaExchange0(m, simo,
+                                 monte_carlo_sample_objects=[simo],
+                                 output_objects=[simo],
+                                 test_mode=True)
+        mc1.execute_macro()
+        mc2 = IMP.pmi.macros.ReplicaExchange0(m, simo,
+                                 monte_carlo_sample_objects=[simo],
+                                 output_objects=[simo],
+                                 test_mode=True)
+        mc2.execute_macro()
+        fh = StringIO()
+        w = IMP.pmi.mmcif.CifWriter(fh)
+        po.model_prot_dump.dump(w)
+        out = fh.getvalue()
+        self.assertEqual(out, """#
+loop_
+_ihm_modeling_protocol.ordinal_id
+_ihm_modeling_protocol.protocol_id
+_ihm_modeling_protocol.step_id
+_ihm_modeling_protocol.struct_assembly_id
+_ihm_modeling_protocol.dataset_group_id
+_ihm_modeling_protocol.assembly_description
+_ihm_modeling_protocol.protocol_name
+_ihm_modeling_protocol.step_name
+_ihm_modeling_protocol.step_method
+_ihm_modeling_protocol.num_models_begin
+_ihm_modeling_protocol.num_models_end
+_ihm_modeling_protocol.multi_scale_flag
+_ihm_modeling_protocol.multi_state_flag
+_ihm_modeling_protocol.time_ordered_flag
+1 1 1 1 1 . . Sampling 'Replica exchange monte carlo' 0 1000 . . .
+2 1 2 1 1 . . Sampling 'Replica exchange monte carlo' 1000 1000 . . .
 #
 """)
 

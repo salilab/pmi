@@ -396,7 +396,8 @@ class ModelRepresentationDumper(Dumper):
                     entity = self.simo.entities[f.component]
                     starting_model_id = CifWriter.omitted
                     if hasattr(f, 'pdbname'):
-                        starting_model_id = self.starting_model[f.pdbname].name
+                        starting_model_id \
+                               = self.starting_model[comp, f.pdbname].name
                     # todo: handle multiple representations
                     l.write(ordinal_id=ordinal_id,
                             representation_id=1,
@@ -957,7 +958,7 @@ class StartingModelDumper(Dumper):
         self.fragments = OrderedDict()
         # dict of starting models (entire PDB files), collected from fragments
         self.models = OrderedDict()
-        # mapping from pdbname to starting model
+        # mapping from component+pdbname to starting model
         self.starting_model = {}
         self.output = IMP.pmi.output.Output()
 
@@ -1033,7 +1034,7 @@ class StartingModelDumper(Dumper):
         for comp, models in self.models.items():
             for i, model in enumerate(models):
                 model.name = "%s-m%d" % (comp, i+1)
-                self.starting_model[model.fragments[0].pdbname] = model
+                self.starting_model[comp, model.fragments[0].pdbname] = model
                 model.seq_id_begin = min(x.start + x.offset
                                          for x in model.fragments)
                 model.seq_id_end = max(x.end + x.offset
@@ -1134,7 +1135,7 @@ class StructConfDumper(Dumper):
             for f in fragments:
                 if hasattr(f, 'pdbname') \
                    and model_repr.get_model_mode(f) == 'rigid':
-                    yield (f, model_repr.starting_model[f.pdbname],
+                    yield (f, model_repr.starting_model[comp, f.pdbname],
                            asym[f.hier])
 
     def all_helices(self):

@@ -1260,10 +1260,9 @@ class ReplicaExchangeAnalysisEnsemble(Ensemble):
         model_num = 0
         with open(stat_fname) as fh:
             stats = eval(fh.readline())
-            rmf_file = stats['rmf_file']
             # Correct path
             rmf_file = os.path.join(os.path.dirname(stat_fname),
-                                    os.path.basename(rmf_file))
+                                    "%d.rmf3" % model_num)
             for c in simo.all_modeled_components:
                 # todo: this only works with PMI 1
                 simo._representation.set_coordinates_from_rmf(c, rmf_file, 0,

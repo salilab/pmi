@@ -665,7 +665,8 @@ class CrossLinkDumper(Dumper):
                 seq2 = entity2.sequence
                 rt1 = IMP.atom.get_residue_type(seq1[xl.r1-1])
                 rt2 = IMP.atom.get_residue_type(seq2[xl.r2-1])
-                l.write(id=xl.id,
+                # todo: handle experimental ambiguity (group_id) properly
+                l.write(id=xl.id, group_id=xl.id,
                         entity_description_1=entity1.description,
                         entity_id_1=entity1.id,
                         seq_id_1=xl.r1,
@@ -938,7 +939,11 @@ class ModelProtocolDumper(Dumper):
                         struct_assembly_id=self.simo.modeled_assembly.id,
                         dataset_group_id=p.dataset_group.id,
                         num_models_begin=num_models_begin,
-                        num_models_end=p.num_models_end)
+                        num_models_end=p.num_models_end,
+                        # todo: support multiple states, time ordered
+                        multi_state_flag=False, time_ordered_flag=False,
+                        # all PMI models are multi scale
+                        multi_scale_flag=True)
                 num_models_begin = p.num_models_end
                 ordinal += 1
 
@@ -1269,6 +1274,7 @@ class ReplicaExchangeAnalysisEnsemble(Ensemble):
             if model_num >= self.num_deposit:
                 return
 
+    # todo: also support dRMS precision
     def _get_precision(self):
         precfile = os.path.join(self.postproc.rex._outputdir,
                                 "precision.%d.%d.out" % (self.cluster_num,

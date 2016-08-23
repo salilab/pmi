@@ -835,7 +835,7 @@ class ModelDumper(Dumper):
         m = Model(prot, self.simo, protocol, assembly, group)
         self.models.append(m)
         m.id = len(self.models)
-        return m.id
+        return m
 
     def dump(self, writer):
         self.dump_model_list(writer)
@@ -1475,8 +1475,10 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
             # todo: make # of models to deposit configurable somewhere
             e = ReplicaExchangeAnalysisEnsemble(pp, i, group, 1)
             self.ensemble_dump.add(e)
-            for m in e.load_all_models(self):
-                self.add_model(group)
+            for x in e.load_all_models(self):
+                m = self.add_model(group)
+                # Don't alter original RMF coordinates
+                m.geometric_center = [0,0,0]
 
     def add_em2d_restraint(self, images, resolution, pixel_size,
                            image_resolution, projection_number, micrographs):

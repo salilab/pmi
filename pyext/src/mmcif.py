@@ -1242,12 +1242,32 @@ class Ensemble(object):
 class ReplicaExchangeAnalysisEnsemble(Ensemble):
     """Ensemble generated using AnalysisReplicaExchange0 macro"""
 
-    def __init__(self, pp, cluster_num, model_group):
+    def __init__(self, pp, cluster_num, model_group, num_deposit):
         self.model_group = model_group
         self.cluster_num = cluster_num
         self.postproc = pp
+        self.num_deposit = num_deposit
         with open(pp.get_stat_file(cluster_num)) as fh:
             self.num_models = len(fh.readlines())
+
+    def load_all_models(self, simo):
+        stat_fname = self.postproc.get_stat_file(self.cluster_num)
+        model_num = 0
+        with open(stat_fname) as fh:
+            stats = eval(fh.readline())
+            rmf_file = stats['rmf_file']
+            # Correct path
+            rmf_file = os.path.join(os.path.dirname(stat_fname),
+                                    os.path.basename(rmf_file))
+            for c in simo.all_modeled_components:
+                # todo: this only works with PMI 1
+                simo._representation.set_coordinates_from_rmf(c, rmf_file, 0,
+                                                       force_rigid_update=True)
+            # todo: fill in other data from stat file, e.g. crosslink phi/psi
+            yield
+            model_num += 1
+            if model_num >= self.num_deposit:
+                return
 
     def _get_precision(self):
         precfile = os.path.join(self.postproc.rex._outputdir,
@@ -1288,6 +1308,7 @@ class EnsembleDumper(Dumper):
                         model_group_id=e.model_group.id,
                         ensemble_clustering_feature=e.feature,
                         num_ensemble_models=e.num_models,
+                        num_ensemble_models_deposited=e.num_deposit,
                         ensemble_precision=e.precision)
 
 
@@ -1445,8 +1466,11 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.post_process_dump.add(pp)
         for i in range(rex._number_of_clusters):
             group = self.add_model_group(ModelGroup('Cluster %d' % (i + 1)))
-            e = ReplicaExchangeAnalysisEnsemble(pp, i, group)
+            # todo: make # of models to deposit configurable somewhere
+            e = ReplicaExchangeAnalysisEnsemble(pp, i, group, 1)
             self.ensemble_dump.add(e)
+            for m in e.load_all_models(self):
+                self.add_model(group)
 
     def add_em2d_restraint(self, images, resolution, pixel_size,
                            image_resolution, projection_number, micrographs):
@@ -1470,7 +1494,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
             group = self.default_model_group
         return self.model_dump.add(self.prot,
                                    self.model_prot_dump.get_last_protocol(),
-                                   self.default_assembly, group)
+                                   self.modeled_assembly, group)
 
     def _get_location(self, path, metadata=[]):
         """Get the location where the given file is deposited, or None.

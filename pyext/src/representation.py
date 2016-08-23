@@ -20,6 +20,7 @@ import RMF
 from math import pi, sqrt
 from operator import itemgetter
 import os
+import weakref
 
 class _Repo(object):
     def __init__(self, doi, root):
@@ -173,6 +174,8 @@ class Representation(object):
         p._metadata = self._metadata
         p.m = self.m
         p.prot = self.prot
+        # Ugly, but we need to be able to call set_coordinates_from_rmf().
+        p._representation = weakref.proxy(self)
     protocol_output = property(lambda self: self._protocol_output[:])
 
     def set_label(self, label):

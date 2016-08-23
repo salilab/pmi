@@ -1278,7 +1278,9 @@ class ReplicaExchangeAnalysisEnsemble(Ensemble):
         precfile = os.path.join(self.postproc.rex._outputdir,
                                 "precision.%d.%d.out" % (self.cluster_num,
                                                          self.cluster_num))
-        r = re.compile('All .* average centroid distance ([\d\.]+)')
+        # Fail if the precision.x.x.out file doesn't match the cluster
+        r = re.compile('All .*/cluster.%d/ average centroid distance ([\d\.]+)'
+                       % self.cluster_num)
         with open(precfile) as fh:
             for line in fh:
                 m = r.match(line)

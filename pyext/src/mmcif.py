@@ -716,7 +716,9 @@ class CrossLinkDumper(Dumper):
                         conditional_crosslink_flag="ALL",
                         model_granularity=self._granularity(xl),
                         distance_threshold=xl.ex_xl.length,
-                        psi=xl.psi, sigma_1=xl.sigma1, sigma_2=xl.sigma2)
+                        # todo: handle cases where psi is optimized
+                        psi=xl.psi.get_scale(),
+                        sigma_1=xl.sigma1, sigma_2=xl.sigma2)
 
 class EM2DRestraint(object):
     def __init__(self, dataset, resolution, pixel_size,

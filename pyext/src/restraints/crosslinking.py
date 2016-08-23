@@ -1936,7 +1936,7 @@ class ISDCrossLinkMS(IMP.pmi.restraints._NuisancesBase):
                 for p, ex_xl in zip(representations[0]._protocol_output,
                                     ex_xls):
                     p.add_cross_link(ex_xl, p1, p2, mappedr1,
-                                     mappedr2, psival)
+                                     mappedr2, psi)
 
                 # check if the two residues belong to the same rigid body
                 if(IMP.core.RigidMember.get_is_setup(p1) and

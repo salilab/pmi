@@ -1502,6 +1502,10 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.cross_link_dump.add(CrossLink(ex_xl, p1, p2, sigma1, sigma2, psi))
 
     def add_replica_exchange(self, rex):
+        # todo: allow for metadata to say how many replicas were used in the
+        # actual experiment, and how many independent runs were carried out
+        # (use these as multipliers to get the correct total number of
+        # output models)
         self.model_prot_dump.add(ReplicaExchangeProtocol(rex))
 
     def add_model_group(self, group):
@@ -1510,6 +1514,10 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         return group
 
     def add_replica_exchange_analysis(self, rex):
+        # todo: add prefilter as an additional postprocess step (complication:
+        # we don't know how many models it filtered)
+        # todo: extract rmsf and density localization info if available for
+        # each cluster
         num_models = self.model_prot_dump.get_last_protocol().num_models_end
         pp = ReplicaExchangeAnalysisPostProcess(rex, num_models)
         self.post_process_dump.add(pp)

@@ -1041,7 +1041,13 @@ class StartingModelDumper(Dumper):
             templates = self.get_templates(pdbname, model)
             if templates:
                 return templates
-        return [UnknownSource(model)]
+        else:
+            # todo: extract Modeller-like template info for Phyre models;
+            # revisit assumption that all such unknown source PDBs are
+            # comparative models
+            d = CompModelDataset(self.simo._get_location(pdbname))
+            model.dataset = self.simo.dataset_dump.add(d)
+            return [UnknownSource(model)]
 
     def assign_model_details(self):
         for comp, models in self.models.items():

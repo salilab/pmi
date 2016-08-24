@@ -545,6 +545,13 @@ class PDBDataset(Dataset):
     def __init__(self, db_code, version, details):
         self.location = DBDatasetLocation('PDB', db_code, version, details)
 
+class EMDBDataset(Dataset):
+    """An EM map stored in EMDB."""
+    data_type = '3DEM volume'
+    def __init__(self, emdb):
+        self.location = DBDatasetLocation('EMDB', emdb, CifWriter.omitted,
+                                          CifWriter.omitted)
+
 class DatasetGroup(object):
     """A group of datasets"""
     def __init__(self, datasets):
@@ -757,6 +764,32 @@ class EM2DDumper(Dumper):
                         number_of_projections=r.projection_number,
                         struct_assembly_id=self.simo.modeled_assembly.id,
                         image_segment_flag=False)
+
+class EM3DRestraint(object):
+    fitting_method = 'Gaussian mixture models'
+
+    def __init__(self, dataset, target_ps):
+        self.dataset = dataset
+        self.number_of_gaussians = len(target_ps)
+
+class EM3DDumper(Dumper):
+    def __init__(self, simo):
+        super(EM3DDumper, self).__init__(simo)
+        self.restraints = []
+
+    def add(self, rsr):
+        self.restraints.append(rsr)
+        rsr.id = len(self.restraints)
+
+    def dump(self, writer):
+        # todo: support other fields
+        with writer.loop("_ihm_3dem_restraint",
+                         ["id", "dataset_list_id", "fitting_method",
+                          "number_of_gaussians"]) as l:
+            for r in self.restraints:
+                l.write(id=r.id, dataset_list_id=r.dataset.id,
+                        fitting_method=r.fitting_method,
+                        number_of_gaussians=r.number_of_gaussians)
 
 class Assembly(list):
     """A collection of components. Currently simply implemented as a list of
@@ -1369,6 +1402,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.model_repr_dump = ModelRepresentationDumper(self)
         self.cross_link_dump = CrossLinkDumper(self)
         self.em2d_dump = EM2DDumper(self)
+        self.em3d_dump = EM3DDumper(self)
         self.model_prot_dump = ModelProtocolDumper(self)
         self.dataset_dump = DatasetDumper(self)
         self.starting_model_dump = StartingModelDumper(self)
@@ -1398,7 +1432,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                          self.assembly_dump,
                          self.model_repr_dump, self.dataset_dump,
                          self.cross_link_dump,
-                         self.em2d_dump,
+                         self.em2d_dump, self.em3d_dump,
                          self.starting_model_dump,
                          StructConfDumper(self),
                          self.model_prot_dump, self.post_process_dump,
@@ -1502,6 +1536,10 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
             d = self.dataset_dump.add(d)
             self.em2d_dump.add(EM2DRestraint(d, resolution, pixel_size,
                                       image_resolution, projection_number, mgd))
+
+    def add_em3d_restraint(self, target_ps, emdb):
+        d = self.dataset_dump.add(EMDBDataset(emdb))
+        self.em3d_dump.add(EM3DRestraint(d, target_ps))
 
     def add_model(self, group=None):
         if group is None:

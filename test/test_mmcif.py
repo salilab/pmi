@@ -179,6 +179,15 @@ _citation_author.ordinal
 """
         self.assertEqual(out, expected)
 
+        # Handle no last page
+        s.page_range = 'e1637'
+        d = IMP.pmi.mmcif.CitationDumper(r)
+        fh = StringIO()
+        w = IMP.pmi.mmcif.CifWriter(fh)
+        d.dump(w)
+        out = fh.getvalue()
+        self.assertTrue("'Mol Cell Proteomics' 13 e1637 . 2014 " in out)
+
     def test_pdb_helix(self):
         """Test PDBHelix class"""
         p = IMP.pmi.mmcif.PDBHelix("HELIX   10  10 ASP A  607  GLU A  624  1                                  18   ")

@@ -215,9 +215,14 @@ class CitationDumper(Dumper):
                           "pdbx_database_id_PubMed",
                           "pdbx_database_id_DOI"]) as l:
             for n, c in enumerate(citations):
+                if isinstance(c.page_range, (tuple, list)):
+                    page_first, page_last = c.page_range
+                else:
+                    page_first = c.page_range
+                    page_last = CifWriter.omitted
                 l.write(id=n+1, title=c.title, journal_abbrev=c.journal,
-                        journal_volume=c.volume, page_first=c.page_range[0],
-                        page_last=c.page_range[1], year=c.year,
+                        journal_volume=c.volume, page_first=page_first,
+                        page_last=page_last, year=c.year,
                         pdbx_database_id_PubMed=c.pmid,
                         pdbx_database_id_DOI=c.doi)
 

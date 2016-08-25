@@ -1422,13 +1422,13 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.starting_model_dump = StartingModelDumper(self)
         self.assembly_dump = AssemblyDumper(self)
 
-        # The assembly of all components modeled by IMP
-        self.modeled_assembly = Assembly()
-        self.assembly_dump.add(self.modeled_assembly)
+        # The assembly of all known components.
+        self.complete_assembly = Assembly()
+        self.assembly_dump.add(self.complete_assembly)
 
-        # The assembly of all known components. This may be bigger than the
-        # modeled assembly.
-        self.complete_assembly = self.modeled_assembly
+        # The assembly of all components modeled by IMP
+        # This may be smaller than the complete assembly.
+        self.modeled_assembly = self.complete_assembly
 
         self.model_dump = ModelDumper(self)
         self.model_repr_dump.starting_model \
@@ -1467,15 +1467,15 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self._all_components[name] = None
         if modeled:
             self.all_modeled_components.append(name)
-            self.modeled_assembly.append(name)
             self.chains[name] = len(self.chains)
+            if self.modeled_assembly is not self.complete_assembly:
+                self.modeled_assembly.append(name)
         elif self.complete_assembly is self.modeled_assembly:
             # If this component is not modeled, we need to start tracking
             # the complete and modeled assemblies separately
-            self.complete_assembly = Assembly(self.modeled_assembly)
-            self.assembly_dump.add(self.complete_assembly)
-        if self.complete_assembly is not self.modeled_assembly:
-            self.complete_assembly.append(name)
+            self.modeled_assembly = Assembly(self.complete_assembly)
+            self.assembly_dump.add(self.modeled_assembly)
+        self.complete_assembly.append(name)
 
     def add_component_sequence(self, name, seq):
         self.sequence_dict[name] = seq

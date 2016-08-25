@@ -89,8 +89,8 @@ _ihm_struct_assembly.asym_id
 _ihm_struct_assembly.seq_id_begin
 _ihm_struct_assembly.seq_id_end
 1 1 foo 1 A 1 3
-2 2 foo 1 A 1 3
-3 2 bar 2 . 1 2
+2 1 bar 2 . 1 2
+3 2 foo 1 A 1 3
 #
 """)
 

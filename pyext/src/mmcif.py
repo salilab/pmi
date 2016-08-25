@@ -276,7 +276,10 @@ class EntityPolyDumper(Dumper):
 class ChemCompDumper(Dumper):
     def dump(self, writer):
         seen = {}
-        with writer.loop("_chem_comp", ["id"]) as l:
+        std = dict.fromkeys(('ALA', 'CYS', 'ASP', 'GLU', 'PHE', 'GLY', 'HIS',
+               'ILE', 'LYS', 'LEU', 'MET', 'ASN', 'PRO', 'GLN', 'ARG', 'SER',
+               'THR', 'VAL', 'TRP', 'TYR'))
+        with writer.loop("_chem_comp", ["id", "type"]) as l:
             for entity in self.simo.entities.get_all():
                 seq = entity.sequence
                 for num, one_letter_code in enumerate(seq):
@@ -284,7 +287,9 @@ class ChemCompDumper(Dumper):
                     resid = restyp.get_string()
                     if resid not in seen:
                         seen[resid] = None
-                        l.write(id=resid)
+                        l.write(id=resid,
+                                type='L-peptide linking' if resid in std \
+                                                         else 'other')
 
 class EntityPolySeqDumper(Dumper):
     def dump(self, writer):

@@ -406,11 +406,12 @@ _ihm_sphere_obj_site.model_id
         self.assertEqual(out, """#
 loop_
 _chem_comp.id
-MET
-GLU
-LEU
-SER
-CYS
+_chem_comp.type
+MET 'L-peptide linking'
+GLU 'L-peptide linking'
+LEU 'L-peptide linking'
+SER 'L-peptide linking'
+CYS 'L-peptide linking'
 #
 """)
 

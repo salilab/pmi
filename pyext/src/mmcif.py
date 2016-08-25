@@ -1219,8 +1219,8 @@ class StructConfDumper(Dumper):
             l.write(id='HELX_P', criteria=CifWriter.unknown,
                     reference=CifWriter.unknown)
         # Dump helix information for the model. For any model fragment that
-        # is rigid and uses an experimental PDB structure as the starting
-        # model, inherit any helix information from that PDB file.
+        # is rigid, atomic, and uses an experimental PDB structure as the
+        # starting model, inherit any helix information from that PDB file.
         # Note that we can't use the helix id from the original PDB, since
         # it has to be unique and this might not be the case if we inherit
         # from multiple PDBs.
@@ -1444,7 +1444,8 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                          self.cross_link_dump,
                          self.em2d_dump, self.em3d_dump,
                          self.starting_model_dump,
-                         StructConfDumper(self),
+                         # todo: detect atomic models and emit struct_conf
+                         #StructConfDumper(self),
                          self.model_prot_dump, self.post_process_dump,
                          self.ensemble_dump, self.model_dump]
 

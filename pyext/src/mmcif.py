@@ -1161,7 +1161,9 @@ modeling. These may need to be added manually below.""")
                       "ordinal_id"]) as l:
             for model in self.all_models():
                 for f in model.fragments:
-                    for a in IMP.atom.get_leaves(f.starting_hier):
+                    sel = IMP.atom.Selection(f.starting_hier,
+                               residue_indexes=list(range(f.start, f.end + 1)))
+                    for a in sel.get_selected_particles():
                         coord = IMP.core.XYZ(a).get_coordinates()
                         atom = IMP.atom.Atom(a)
                         element = atom.get_element()

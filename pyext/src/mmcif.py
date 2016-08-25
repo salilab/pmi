@@ -1329,6 +1329,8 @@ class ReplicaExchangeAnalysisEnsemble(Ensemble):
         precfile = os.path.join(self.postproc.rex._outputdir,
                                 "precision.%d.%d.out" % (self.cluster_num,
                                                          self.cluster_num))
+        if not os.path.exists(precfile):
+            return CifWriter.unknown
         # Fail if the precision.x.x.out file doesn't match the cluster
         r = re.compile('All .*/cluster.%d/ average centroid distance ([\d\.]+)'
                        % self.cluster_num)

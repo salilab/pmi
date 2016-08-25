@@ -1124,7 +1124,7 @@ modeling. These may need to be added manually below.""")
                       "asym_id", "seq_id_begin",
                       "seq_id_end", "starting_model_source",
                       "starting_model_db_name", "starting_model_db_code",
-                      "starting_model_db_pdb_auth_seq_id",
+                      "starting_model_db_pdb_auth_asym_id",
                       "starting_model_sequence_identity",
                       "starting_model_id",
                       "dataset_list_id"]) as l:
@@ -1142,7 +1142,7 @@ modeling. These may need to be added manually below.""")
                       asym_id=chain_id,
                       seq_id_begin=seq_id_begin,
                       seq_id_end=seq_id_end,
-                      starting_model_db_pdb_auth_seq_id=source.chain_id,
+                      starting_model_db_pdb_auth_asym_id=source.chain_id,
                       starting_model_id=model.name,
                       starting_model_source=source.source,
                       starting_model_db_name=source.db_name,

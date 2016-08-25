@@ -452,7 +452,7 @@ _ihm_modeling_protocol.protocol_id
 _ihm_modeling_protocol.step_id
 _ihm_modeling_protocol.struct_assembly_id
 _ihm_modeling_protocol.dataset_group_id
-_ihm_modeling_protocol.assembly_description
+_ihm_modeling_protocol.struct_assembly_description
 _ihm_modeling_protocol.protocol_name
 _ihm_modeling_protocol.step_name
 _ihm_modeling_protocol.step_method

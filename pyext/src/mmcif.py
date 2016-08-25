@@ -971,7 +971,7 @@ class ModelProtocolDumper(Dumper):
         with writer.loop("_ihm_modeling_protocol",
                          ["ordinal_id", "protocol_id", "step_id",
                           "struct_assembly_id", "dataset_group_id",
-                          "assembly_description", "protocol_name",
+                          "struct_assembly_description", "protocol_name",
                           "step_name", "step_method", "num_models_begin",
                           "num_models_end", "multi_scale_flag",
                           "multi_state_flag", "time_ordered_flag"]) as l:
@@ -1359,7 +1359,7 @@ class EnsembleDumper(Dumper):
                           "ensemble_clustering_feature",
                           "num_ensemble_models",
                           "num_ensemble_models_deposited",
-                          "ensemble_precision"]) as l:
+                          "ensemble_precision_value"]) as l:
             for e in self.ensembles:
                 l.write(ensemble_id=e.id, ensemble_name=e.name,
                         post_process_id=e.postproc.id,
@@ -1367,7 +1367,7 @@ class EnsembleDumper(Dumper):
                         ensemble_clustering_feature=e.feature,
                         num_ensemble_models=e.num_models,
                         num_ensemble_models_deposited=e.num_deposit,
-                        ensemble_precision=e.precision)
+                        ensemble_precision_value=e.precision)
 
 
 class Entity(object):

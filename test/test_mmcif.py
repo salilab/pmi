@@ -296,6 +296,14 @@ _citation_author.ordinal
         ds6 = dump.add(em2d)
         self.assertEqual(ds6.id, 4)
 
+        # EM3D datasets allow duplication (since they identify the restraint)
+        em3d_1 = IMP.pmi.mmcif.EMDBDataset('EMD-123', allow_duplicates=True)
+        em3d_2 = IMP.pmi.mmcif.EMDBDataset('EMD-123', allow_duplicates=True)
+        ds7 = dump.add(em3d_1)
+        self.assertEqual(ds7.id, 5)
+        ds8 = dump.add(em3d_2)
+        self.assertEqual(ds8.id, 6)
+
     def test_dataset_dumper_dump(self):
         """Test DatasetDumper.dump()"""
         dump = IMP.pmi.mmcif.DatasetDumper(EmptyObject())

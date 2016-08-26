@@ -479,12 +479,16 @@ class UnknownSource(object):
 class DatasetLocation(object):
     """External location of a dataset"""
     _eq_keys = []
+    _allow_duplicates = False
 
-    # DatasetLocations compare equal iff they are the same class and have the
-    # same attributes
+    # DatasetLocations compare equal iff they are the same class, have the
+    # same attributes, and allow_duplicates=False
     def _eq_vals(self):
-        return tuple([self.__class__]
-                     + [getattr(self, x) for x in self._eq_keys])
+        if self._allow_duplicates:
+            return id(self)
+        else:
+            return tuple([self.__class__]
+                         + [getattr(self, x) for x in self._eq_keys])
     def __eq__(self, other):
         return self._eq_vals() == other._eq_vals()
     def __hash__(self):
@@ -558,9 +562,10 @@ class PDBDataset(Dataset):
 class EMDBDataset(Dataset):
     """An EM map stored in EMDB."""
     data_type = '3DEM volume'
-    def __init__(self, emdb):
+    def __init__(self, emdb, allow_duplicates):
         self.location = DBDatasetLocation('EMDB', emdb, CifWriter.omitted,
                                           CifWriter.omitted)
+        self.location._allow_duplicates = allow_duplicates
 
 class DatasetGroup(object):
     """A group of datasets"""
@@ -1561,7 +1566,9 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                                       image_resolution, projection_number, mgd))
 
     def add_em3d_restraint(self, target_ps, emdb):
-        d = self.dataset_dump.add(EMDBDataset(emdb))
+        # A 3DEM restraint's dataset ID uniquely defines the restraint, so
+        # we need to allow duplicates
+        d = self.dataset_dump.add(EMDBDataset(emdb, allow_duplicates=True))
         self.em3d_dump.add(EM3DRestraint(d, target_ps))
 
     def add_model(self, group=None):

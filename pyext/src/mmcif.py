@@ -1180,6 +1180,12 @@ modeling. These may need to be added manually below.""")
                             atom_name = atom_name[4:]
                         res = IMP.atom.get_residue(atom)
                         res_name = res.get_residue_type().get_string()
+                        # MSE in the original PDB is automatically mutated
+                        # by IMP to MET, so reflect that in the output.
+                        # todo: also add to the notes for starting_model_details
+                        # that the sequence was changed
+                        if res_name == 'MSE':
+                            res_name = 'MET'
                         chain_id = self.simo.get_chain_for_component(
                                             f.component, self.output)
                         entity = self.simo.entities[f.component]

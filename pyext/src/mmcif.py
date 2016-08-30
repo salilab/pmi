@@ -871,10 +871,31 @@ class Model(object):
         (particle_infos_for_pdb,
          self.geometric_center) = o.get_particle_infos_for_pdb_writing(name)
         self.entity_for_chain = {}
+        self.comp_for_chain = {}
         for protname, chain_id in o.dictchain[name].items():
             self.entity_for_chain[chain_id] = simo.entities[protname]
+            self.comp_for_chain[chain_id] = protname
         self.spheres = [t for t in particle_infos_for_pdb if t[1] is None]
         self.atoms = [t for t in particle_infos_for_pdb if t[1] is not None]
+        self.rmsf = {}
+
+    def parse_rmsf_file(self, fname, component):
+        self.rmsf[component] = rmsf = {}
+        with open(fname) as fh:
+            for line in fh:
+                resnum, blocknum, val = line.split()
+                rmsf[int(resnum)] = (int(blocknum), float(val))
+
+    def get_rmsf(self, component, indexes):
+        """Get the RMSF value for the given residue indexes."""
+        if not self.rmsf:
+            return CifWriter.omitted
+        rmsf = self.rmsf[component]
+        blocknums = dict.fromkeys(rmsf[ind][0] for ind in indexes)
+        if len(blocknums) != 1:
+            raise ValueError("Residue indexes %s aren't all in the same block"
+                             % str(indexes))
+        return rmsf[indexes[0]][1]
 
 class ModelDumper(Dumper):
     def __init__(self, simo):
@@ -936,7 +957,7 @@ class ModelDumper(Dumper):
         with writer.loop("_ihm_sphere_obj_site",
                          ["ordinal_id", "entity_id", "seq_id_begin",
                           "seq_id_end", "asym_id", "Cartn_x",
-                          "Cartn_y", "Cartn_z", "object_radius",
+                          "Cartn_y", "Cartn_z", "object_radius", "rmsf",
                           "model_id"]) as l:
             for model in self.models:
                 for sphere in model.spheres:
@@ -952,7 +973,10 @@ class ModelDumper(Dumper):
                             Cartn_x=xyz[0] - model.geometric_center[0],
                             Cartn_y=xyz[1] - model.geometric_center[1],
                             Cartn_z=xyz[2] - model.geometric_center[2],
-                            object_radius=radius, model_id=model.id)
+                            object_radius=radius,
+                            rmsf=model.get_rmsf(model.comp_for_chain[chain_id],
+                                                all_indexes),
+                            model_id=model.id)
                     ordinal += 1
 
 
@@ -1319,6 +1343,16 @@ class ReplicaExchangeAnalysisEnsemble(Ensemble):
         with open(pp.get_stat_file(cluster_num)) as fh:
             self.num_models = len(fh.readlines())
 
+    def get_rmsf_file(self, component):
+        return os.path.join(self.postproc.rex._outputdir,
+                            'cluster.%d' % self.cluster_num,
+                            'rmsf.%s.dat' % component)
+
+    def load_rmsf(self, model, component):
+        fname = self.get_rmsf_file(component)
+        if os.path.exists(fname):
+            model.parse_rmsf_file(fname, component)
+
     def load_all_models(self, simo):
         stat_fname = self.postproc.get_stat_file(self.cluster_num)
         model_num = 0
@@ -1556,6 +1590,9 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                 m = self.add_model(group)
                 # Don't alter original RMF coordinates
                 m.geometric_center = [0,0,0]
+                # Add RMSF info if available
+                for c in self.all_modeled_components:
+                    e.load_rmsf(m, c)
 
     def add_em2d_restraint(self, images, resolution, pixel_size,
                            image_resolution, projection_number, micrographs):

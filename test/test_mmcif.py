@@ -360,7 +360,9 @@ _ihm_dataset_related_db_reference.details
         protocol.id = 93
         group = IMP.pmi.mmcif.ModelGroup("all models")
         group.id = 7
-        self.assertEqual(d.add(simo.prot, protocol, assembly, group).id, 1)
+        model = d.add(simo.prot, protocol, assembly, group)
+        self.assertEqual(model.id, 1)
+        self.assertEqual(model.get_rmsf('Nup84', (1,)), '.')
         fh = StringIO()
         w = IMP.pmi.mmcif.CifWriter(fh)
         d.dump(w)
@@ -386,10 +388,74 @@ _ihm_sphere_obj_site.Cartn_x
 _ihm_sphere_obj_site.Cartn_y
 _ihm_sphere_obj_site.Cartn_z
 _ihm_sphere_obj_site.object_radius
+_ihm_sphere_obj_site.rmsf
 _ihm_sphere_obj_site.model_id
-1 1 1 1 A 0.000 0.000 0.000 3.068 1
-2 1 2 2 A 0.000 0.000 0.000 2.997 1
-3 1 3 4 A 0.000 0.000 0.000 3.504 1
+1 1 1 1 A 0.000 0.000 0.000 3.068 . 1
+2 1 2 2 A 0.000 0.000 0.000 2.997 . 1
+3 1 3 4 A 0.000 0.000 0.000 3.504 . 1
+#
+""")
+
+    def test_model_dumper_sphere_rmsf(self):
+        """Test ModelDumper sphere_obj output with RMSF"""
+        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
+            def flush(self):
+                pass
+
+        m = IMP.Model()
+        simo = IMP.pmi.representation.Representation(m)
+        po = DummyPO(None)
+        simo.add_protocol_output(po)
+        simo.create_component("Nup84", True)
+        simo.add_component_sequence("Nup84",
+                                    self.get_input_file_name("test.fasta"))
+        nup84 = simo.autobuild_model("Nup84",
+                                     self.get_input_file_name("test.nup84.pdb"),
+                                     "A")
+
+        d = IMP.pmi.mmcif.ModelDumper(po)
+        assembly = IMP.pmi.mmcif.Assembly()
+        assembly.id = 42
+        protocol = IMP.pmi.mmcif.Protocol()
+        protocol.id = 93
+        group = IMP.pmi.mmcif.ModelGroup("all models")
+        group.id = 7
+        model = d.add(simo.prot, protocol, assembly, group)
+        self.assertEqual(model.id, 1)
+        model.parse_rmsf_file(self.get_input_file_name('test.nup84.rmsf'),
+                              'Nup84')
+        self.assertAlmostEqual(model.get_rmsf('Nup84', (1,)), 4.5, delta=1e-4)
+        self.assertRaises(ValueError, model.get_rmsf, 'Nup84', (1,2))
+        fh = StringIO()
+        w = IMP.pmi.mmcif.CifWriter(fh)
+        d.dump(w)
+        out = fh.getvalue()
+        self.assertEqual(out, """#
+loop_
+_ihm_model_list.ordinal_id
+_ihm_model_list.model_id
+_ihm_model_list.model_group_id
+_ihm_model_list.model_group_name
+_ihm_model_list.assembly_id
+_ihm_model_list.protocol_id
+1 1 7 'all models' 42 93
+#
+#
+loop_
+_ihm_sphere_obj_site.ordinal_id
+_ihm_sphere_obj_site.entity_id
+_ihm_sphere_obj_site.seq_id_begin
+_ihm_sphere_obj_site.seq_id_end
+_ihm_sphere_obj_site.asym_id
+_ihm_sphere_obj_site.Cartn_x
+_ihm_sphere_obj_site.Cartn_y
+_ihm_sphere_obj_site.Cartn_z
+_ihm_sphere_obj_site.object_radius
+_ihm_sphere_obj_site.rmsf
+_ihm_sphere_obj_site.model_id
+1 1 1 1 A 0.000 0.000 0.000 3.068 4.500 1
+2 1 2 2 A 0.000 0.000 0.000 2.997 3.500 1
+3 1 3 4 A 0.000 0.000 0.000 3.504 5.500 1
 #
 """)
 

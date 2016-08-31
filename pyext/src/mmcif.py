@@ -570,7 +570,7 @@ class EMDBDataset(Dataset):
 class DatasetGroup(object):
     """A group of datasets"""
     def __init__(self, datasets):
-        self.datasets = datasets[:]
+        self.datasets = list(datasets)
 
 class DatasetDumper(Dumper):
     def __init__(self, simo):

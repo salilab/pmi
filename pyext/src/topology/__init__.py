@@ -811,11 +811,10 @@ class PDBSequences(object):
         #        print(c,group,self.sequences[c][group])
                 
     def group_indexes(self,indexes):
-        from operator import itemgetter
         from itertools import groupby
         ranges = []
-        for k, g in groupby(enumerate(indexes), lambda (i,x):i-x):
-            group = map(itemgetter(1), g)
+        for k, g in groupby(enumerate(indexes), lambda x:x[0]-x[1]):
+            group = [x[1] for x in g]
             ranges.append((group[0], group[-1]))
         return ranges
 

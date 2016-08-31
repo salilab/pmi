@@ -540,5 +540,66 @@ _ihm_modeling_protocol.time_ordered_flag
 #
 """)
 
+    def test_density_dumper(self):
+        """Test DensityDumper"""
+        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
+            def flush(self):
+                pass
+
+        class DummyEnsemble(object):
+            pass
+
+        m = IMP.Model()
+        simo = IMP.pmi.representation.Representation(m)
+        po = DummyPO(None)
+        simo.add_protocol_output(po)
+        simo.create_component("Nup84", True)
+        simo.add_component_sequence("Nup84",
+                                    self.get_input_file_name("test.fasta"))
+
+        ensemble = DummyEnsemble()
+        ensemble.id = 42
+        p = IMP.Particle(m)
+        IMP.atom.Mass.setup_particle(p, 3.5)
+        rot = IMP.algebra.get_rotation_about_axis(IMP.algebra.Vector3D(0,0,1),
+                                                  0.5)
+        tran = IMP.algebra.Vector3D(4,6,8)
+        tr = IMP.algebra.Transformation3D(rot, tran)
+        rf = IMP.algebra.ReferenceFrame3D(tr)
+        g = IMP.algebra.Gaussian3D(rf, IMP.algebra.Vector3D(10,11,12))
+        IMP.core.Gaussian.setup_particle(p, g)
+        ensemble.localization_density = {'Nup84': [p]}
+        po.density_dump.add(ensemble)
+
+        fh = StringIO()
+        w = IMP.pmi.mmcif.CifWriter(fh)
+        po.density_dump.dump(w)
+        out = fh.getvalue()
+        self.assertEqual(out, """#
+loop_
+_ihm_gaussian_obj_ensemble.ordinal_id
+_ihm_gaussian_obj_ensemble.entity_id
+_ihm_gaussian_obj_ensemble.seq_id_begin
+_ihm_gaussian_obj_ensemble.seq_id_end
+_ihm_gaussian_obj_ensemble.asym_id
+_ihm_gaussian_obj_ensemble.mean_Cartn_x
+_ihm_gaussian_obj_ensemble.mean_Cartn_y
+_ihm_gaussian_obj_ensemble.mean_Cartn_z
+_ihm_gaussian_obj_ensemble.weight
+_ihm_gaussian_obj_ensemble.covariance_matrix[1][1]
+_ihm_gaussian_obj_ensemble.covariance_matrix[1][2]
+_ihm_gaussian_obj_ensemble.covariance_matrix[1][3]
+_ihm_gaussian_obj_ensemble.covariance_matrix[2][1]
+_ihm_gaussian_obj_ensemble.covariance_matrix[2][2]
+_ihm_gaussian_obj_ensemble.covariance_matrix[2][3]
+_ihm_gaussian_obj_ensemble.covariance_matrix[3][1]
+_ihm_gaussian_obj_ensemble.covariance_matrix[3][2]
+_ihm_gaussian_obj_ensemble.covariance_matrix[3][3]
+_ihm_gaussian_obj_ensemble.ensemble_id
+1 1 1 4 A 4.000 6.000 8.000 3.500 10.230 -0.421 0.000 -0.421 10.770 0.000 0.000
+0.000 12.000 42
+#
+""")
+
 if __name__ == '__main__':
     IMP.test.main()

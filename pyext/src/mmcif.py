@@ -853,19 +853,20 @@ class EM3DDumper(Dumper):
 
     def add(self, rsr):
         self.restraints.append(rsr)
-        rsr.id = len(self.restraints)
 
     def dump(self, writer):
         # todo: support other fields
+        ordinal = 1
         with writer.loop("_ihm_3dem_restraint",
-                         ["id", "dataset_list_id", "fitting_method",
+                         ["ordinal_id", "dataset_list_id", "fitting_method",
                           "struct_assembly_id",
                           "number_of_gaussians"]) as l:
             for r in self.restraints:
-                l.write(id=r.id, dataset_list_id=r.dataset.id,
+                l.write(ordinal_id=ordinal, dataset_list_id=r.dataset.id,
                         fitting_method=r.fitting_method,
                         struct_assembly_id=r.assembly.id,
                         number_of_gaussians=r.number_of_gaussians)
+                ordinal += 1
 
 class Assembly(list):
     """A collection of components. Currently simply implemented as a list of

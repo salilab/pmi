@@ -1077,7 +1077,8 @@ class Representation(object):
                 prmfname = prmf.get_name()
                 preprname = psrepr[n].get_name()
                 if force_rigid_update:
-                    if IMP.core.RigidBody.get_is_setup(psrepr[n]):
+                    if IMP.core.RigidBody.get_is_setup(psrepr[n]) \
+                       and not IMP.core.RigidBodyMember.get_is_setup(psrepr[n]):
                         continue
                 else:
                     if IMP.core.RigidBodyMember.get_is_setup(psrepr[n]):
@@ -1094,7 +1095,11 @@ class Representation(object):
                         rbm = IMP.core.RigidBodyMember(psrepr[n])
                         rbm.set_internal_coordinates(xyz)
                         tr = IMP.algebra.ReferenceFrame3D()
-                        rbm.get_rigid_body().set_reference_frame_lazy(tr)
+                        rb = rbm.get_rigid_body()
+                        if IMP.core.RigidBodyMember.get_is_setup(rb):
+                            raise ValueError("Cannot handle nested "
+                                             "rigid bodies yet")
+                        rb.set_reference_frame_lazy(tr)
                 else:
                     print("set_coordinates_from_rmf: WARNING particles are not XYZ decorated %s %s " % (str(IMP.core.XYZ.get_is_setup(prmf)), str(IMP.core.XYZ.get_is_setup(psrepr[n]))))
 

@@ -341,7 +341,10 @@ _citation_author.ordinal
     def test_dataset_dumper_dump(self):
         """Test DatasetDumper.dump()"""
         dump = IMP.pmi.mmcif.DatasetDumper(EmptyObject())
+        pds = dump.add(IMP.pmi.mmcif.CXMSDataset())
+        pds.set_location(IMP.pmi.metadata.RepositoryFile(doi='foo', path='bar'))
         ds = dump.add(IMP.pmi.mmcif.PDBDataset('1abc', '1.0', 'test details'))
+        ds.add_primary(pds)
         self.assertEqual(ds.location.access_code, '1abc')
 
         fh = StringIO()
@@ -355,7 +358,17 @@ _ihm_dataset_list.id
 _ihm_dataset_list.group_id
 _ihm_dataset_list.data_type
 _ihm_dataset_list.database_hosted
-1 1 1 'Experimental model' YES
+1 1 1 'CX-MS data' NO
+2 2 1 'Experimental model' YES
+#
+#
+loop_
+_ihm_dataset_other.id
+_ihm_dataset_other.dataset_list_id
+_ihm_dataset_other.data_type
+_ihm_dataset_other.doi
+_ihm_dataset_other.content_filename
+1 1 'CX-MS data' foo bar
 #
 #
 loop_
@@ -366,7 +379,16 @@ _ihm_dataset_related_db_reference.access_code
 _ihm_dataset_related_db_reference.version
 _ihm_dataset_related_db_reference.data_type
 _ihm_dataset_related_db_reference.details
-1 1 PDB 1abc 1.0 'Experimental model' 'test details'
+1 2 PDB 1abc 1.0 'Experimental model' 'test details'
+#
+#
+loop_
+_ihm_related_datasets.ordinal_id
+_ihm_related_datasets.dataset_list_id_derived
+_ihm_related_datasets.data_type_derived
+_ihm_related_datasets.dataset_list_id_primary
+_ihm_related_datasets.data_type_primary
+1 2 'Experimental model' 1 'CX-MS data'
 #
 """)
 

@@ -721,6 +721,7 @@ class CrossLinkDumper(Dumper):
     def dump(self, writer):
         self.dump_list(writer)
         self.dump_restraint(writer)
+        self.dump_results(writer)
 
     def dump_list(self, writer):
         with writer.loop("_ihm_cross_link_list",
@@ -790,6 +791,20 @@ class CrossLinkDumper(Dumper):
                         # todo: handle cases where psi is optimized
                         psi=xl.psi.get_scale(),
                         sigma_1=xl.sigma1, sigma_2=xl.sigma2)
+
+    def dump_results(self, writer):
+        ordinal = 1
+        with writer.loop("_ihm_cross_link_result_parameters",
+                         ["ordinal_id", "restraint_id", "model_id",
+                          "sigma_1", "sigma_2"]) as l:
+            for model in self.models:
+                for xl in self.cross_links:
+                    # todo: handle resolutions!=1, multiple independent sigmas
+                    statname = 'ISDCrossLinkMS_Sigma_1_%s' % xl.ex_xl.label
+                    sigma = float(model.stats[statname])
+                    l.write(ordinal_id=ordinal, restraint_id=xl.id,
+                            model_id=model.id, sigma_1=sigma, sigma_2=sigma)
+                    ordinal += 1
 
 class EM2DRestraint(object):
     def __init__(self, dataset, resolution, pixel_size,
@@ -940,6 +955,7 @@ class Model(object):
         # The Protocol which produced this model
         self.protocol = protocol
         self.assembly = assembly
+        self.stats = None
         o = IMP.pmi.output.Output()
         name = 'cif-output'
         o.dictionary_pdbs[name] = prot
@@ -1467,7 +1483,7 @@ class ReplicaExchangeAnalysisEnsemble(Ensemble):
                 simo._representation.set_coordinates_from_rmf(c, rmf_file, 0,
                                                        force_rigid_update=True)
             # todo: fill in other data from stat file, e.g. crosslink phi/psi
-            yield
+            yield stats
             model_num += 1
             if model_num >= self.num_deposit:
                 return
@@ -1635,6 +1651,11 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.post_process_dump = PostProcessDumper(self)
         self.ensemble_dump = EnsembleDumper(self)
         self.density_dump = DensityDumper(self)
+
+        # Some dumpers add per-model information; give them a pointer to
+        # the model list
+        self.cross_link_dump.models = self.model_dump.models
+
         self._dumpers = [EntryDumper(self), # should always be first
                          AuditAuthorDumper(self),
                          self.software_dump, CitationDumper(self),
@@ -1745,8 +1766,9 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
             # Add localization density info if available
             for c in self.all_modeled_components:
                 e.load_localization_density(self.m, c)
-            for x in e.load_all_models(self):
+            for stats in e.load_all_models(self):
                 m = self.add_model(group)
+                m.stats = stats
                 # Don't alter original RMF coordinates
                 m.geometric_center = [0,0,0]
                 # Add RMSF info if available

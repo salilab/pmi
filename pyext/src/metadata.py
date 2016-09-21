@@ -87,7 +87,7 @@ class EMMicrographsDataset(Dataset):
     _eq_keys = Dataset._eq_keys + ['number']
 
     _data_type = 'EM raw micrographs'
-    def __init__(self, number, location):
+    def __init__(self, location, number):
         super(EMMicrographsDataset, self).__init__(location)
         self.number = number
 

@@ -554,6 +554,21 @@ class DatasetDumper(Dumper):
             else:
                 d.id = seen_datasets[d]
 
+        # Make sure that all datasets are listed, even if they weren't used
+        all_group = self.get_all_group(True)
+        # Assign IDs to all groups and remove duplicates
+        seen_group_ids = {}
+        self._dataset_group_by_id = []
+        for g in self._dataset_groups:
+            g.finalize()
+            ids = tuple(sorted(d.id for d in g._datasets))
+            if ids not in seen_group_ids:
+                self._dataset_group_by_id.append(g)
+                g.id = len(self._dataset_group_by_id)
+                seen_group_ids[ids] = g
+            else:
+                g.id = seen_group_ids[ids].id
+
     def _flatten_dataset(self, d):
         if isinstance(d, list):
             for p in d:
@@ -570,24 +585,10 @@ class DatasetDumper(Dumper):
 
     def dump(self, writer):
         ordinal = 1
-        # Make sure that all datasets are listed, even if they weren't used
-        all_group = self.get_all_group(True)
-        # Assign IDs to all groups and remove duplicates
-        seen_group_ids = {}
-        groups = []
-        for g in self._dataset_groups:
-            g.finalize()
-            ids = tuple(sorted(d.id for d in g._datasets))
-            if ids not in seen_group_ids:
-                groups.append(g)
-                g.id = len(groups)
-                seen_group_ids[ids] = g
-            else:
-                g.id = seen_group_ids[ids]
         with writer.loop("_ihm_dataset_list",
                          ["ordinal_id", "id", "group_id", "data_type",
                           "database_hosted"]) as l:
-            for g in groups:
+            for g in self._dataset_group_by_id:
                 for d in g._datasets:
                     l.write(ordinal_id=ordinal, id=d.id, group_id=g.id,
                             data_type=d._data_type,

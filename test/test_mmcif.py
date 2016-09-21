@@ -746,5 +746,39 @@ _ihm_gaussian_obj_ensemble.ensemble_id
         # since allow_duplicates=True
         self.assertNotEqual(d, d2)
 
+    def test_em2d_restraint_no_raw(self):
+        """Test EM2DRestraint class, no raw micrographs"""
+        class DummyRestraint(object):
+            pass
+        pr = DummyRestraint()
+        rd = IMP.pmi.mmcif.RestraintDataset(pr, num=None,
+                                            allow_duplicates=False)
+        r = IMP.pmi.mmcif.EM2DRestraint(rd, resolution=10.0, pixel_size=4.2,
+                                        image_resolution=1.0,
+                                        projection_number=200)
+        l = IMP.pmi.metadata.RepositoryFileLocation(doi='foo', path='bar')
+        d = IMP.pmi.metadata.EM2DClassDataset(l)
+        pr.dataset = d
+        self.assertEqual(r.get_num_raw_micrographs(), None)
+        self.assertEqual(r.rdataset.dataset.location.doi, 'foo')
+
+    def test_em2d_restraint_with_raw(self):
+        """Test EM2DRestraint class, with raw micrographs"""
+        class DummyRestraint(object):
+            pass
+        pr = DummyRestraint()
+        rd = IMP.pmi.mmcif.RestraintDataset(pr, num=None,
+                                            allow_duplicates=False)
+        r = IMP.pmi.mmcif.EM2DRestraint(rd, resolution=10.0, pixel_size=4.2,
+                                        image_resolution=1.0,
+                                        projection_number=200)
+        lp = IMP.pmi.metadata.RepositoryFileLocation(doi='foo', path='baz')
+        dp = IMP.pmi.metadata.EMMicrographsDataset(lp, number=50)
+        l = IMP.pmi.metadata.RepositoryFileLocation(doi='foo', path='bar')
+        d = IMP.pmi.metadata.EM2DClassDataset(l)
+        d.add_primary(dp)
+        pr.dataset = d
+        self.assertEqual(r.get_num_raw_micrographs(), 50)
+
 if __name__ == '__main__':
     IMP.test.main()

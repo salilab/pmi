@@ -770,6 +770,13 @@ class EM2DRestraint(object):
         self.pixel_size, self.image_resolution = pixel_size, image_resolution
         self.projection_number = projection_number
 
+    def get_num_raw_micrographs(self):
+        """Return the number of raw micrographs used, if known.
+           This is extracted from the EMMicrographsDataset if any."""
+        for d in self.rdataset.dataset._primaries.keys():
+            if isinstance(d, IMP.pmi.metadata.EMMicrographsDataset):
+                return d.number
+
 class EM2DDumper(Dumper):
     def __init__(self, simo):
         super(EM2DDumper, self).__init__(simo)
@@ -782,17 +789,15 @@ class EM2DDumper(Dumper):
     def dump(self, writer):
         with writer.loop("_ihm_2dem_class_average_restraint",
                          ["id", "dataset_list_id", "number_raw_micrographs",
-                          "raw_micrographs_dataset_list_id",
                           "pixel_size_width", "pixel_size_height",
                           "image_resolution", "image_segment_flag",
                           "number_of_projections", "struct_assembly_id",
                           "details"]) as l:
             for r in self.restraints:
-                mgd = r.micrographs_dataset
                 unk = CifWriter.unknown
+                num_raw = r.get_num_raw_micrographs()
                 l.write(id=r.id, dataset_list_id=r.rdataset.dataset.id,
-                        number_raw_micrographs=mgd.number if mgd else unk,
-                        raw_micrographs_dataset_list_id=mgd.id if mgd else unk,
+                        number_raw_micrographs=num_raw if num_raw else unk,
                         pixel_size_width=r.pixel_size,
                         pixel_size_height=r.pixel_size,
                         image_resolution=r.image_resolution,

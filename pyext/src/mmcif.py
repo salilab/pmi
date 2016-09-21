@@ -1594,7 +1594,7 @@ class RestraintDataset(object):
     def __get_dataset(self):
         if self.__dataset:
             return self.__dataset
-        if self.num:
+        if self.num is not None:
             d = copy.deepcopy(self.restraint.datasets[self.num])
         else:
             d = copy.deepcopy(self.restraint.dataset)

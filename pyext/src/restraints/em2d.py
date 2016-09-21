@@ -50,15 +50,15 @@ class ElectronMicroscopy2D(object):
         if image_resolution is None:
             raise Exception("must pass image resolution")
 
-        self.dataset = IMP.pmi.metadata.ListDataset()
+        self.datasets = []
         for image in images:
             l = IMP.pmi.metadata.get_default_file_location(image)
             d = IMP.pmi.metadata.EM2DClassDataset(l)
-            self.dataset.append(d)
+            self.datasets.append(d)
 
         if representation:
             for p in representation._protocol_output:
-                for i in range(self.dataset):
+                for i in range(len(self.datasets)):
                     p.add_em2d_restraint(self, i, resolution, pixel_size,
                                          image_resolution, projection_number)
 

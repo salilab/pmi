@@ -780,5 +780,48 @@ _ihm_gaussian_obj_ensemble.ensemble_id
         pr.dataset = d
         self.assertEqual(r.get_num_raw_micrographs(), 50)
 
+    def test_em2d_dumper(self):
+        """Test EM2DDumper class"""
+        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
+            def flush(self):
+                pass
+        class DummyRestraint(object):
+            pass
+        pr = DummyRestraint()
+        rd = IMP.pmi.mmcif.RestraintDataset(pr, num=None,
+                                            allow_duplicates=False)
+        r = IMP.pmi.mmcif.EM2DRestraint(rd, resolution=10.0, pixel_size=4.2,
+                                        image_resolution=1.0,
+                                        projection_number=200)
+        lp = IMP.pmi.metadata.RepositoryFileLocation(doi='foo', path='baz')
+        dp = IMP.pmi.metadata.EMMicrographsDataset(lp, number=50)
+        l = IMP.pmi.metadata.RepositoryFileLocation(doi='foo', path='bar')
+        d = IMP.pmi.metadata.EM2DClassDataset(l)
+        d.id = 4
+        d.add_primary(dp)
+        pr.dataset = d
+        po = DummyPO(EmptyObject())
+        d = IMP.pmi.mmcif.EM2DDumper(po)
+        d.add(r)
+        fh = StringIO()
+        w = IMP.pmi.mmcif.CifWriter(fh)
+        d.dump(w)
+        out = fh.getvalue()
+        self.assertEqual(out, """#
+loop_
+_ihm_2dem_class_average_restraint.id
+_ihm_2dem_class_average_restraint.dataset_list_id
+_ihm_2dem_class_average_restraint.number_raw_micrographs
+_ihm_2dem_class_average_restraint.pixel_size_width
+_ihm_2dem_class_average_restraint.pixel_size_height
+_ihm_2dem_class_average_restraint.image_resolution
+_ihm_2dem_class_average_restraint.image_segment_flag
+_ihm_2dem_class_average_restraint.number_of_projections
+_ihm_2dem_class_average_restraint.struct_assembly_id
+_ihm_2dem_class_average_restraint.details
+1 4 50 4.200 4.200 1.000 NO 200 1 .
+#
+""")
+
 if __name__ == '__main__':
     IMP.test.main()

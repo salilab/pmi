@@ -758,10 +758,11 @@ class CrossLinkDumper(Dumper):
                 for xl in self.cross_links:
                     # todo: handle resolutions!=1, multiple independent sigmas
                     statname = 'ISDCrossLinkMS_Sigma_1_%s' % xl.ex_xl.label
-                    sigma = float(model.stats[statname])
-                    l.write(ordinal_id=ordinal, restraint_id=xl.id,
-                            model_id=model.id, sigma_1=sigma, sigma_2=sigma)
-                    ordinal += 1
+                    if model.stats and statname in model.stats:
+                        sigma = float(model.stats[statname])
+                        l.write(ordinal_id=ordinal, restraint_id=xl.id,
+                                model_id=model.id, sigma_1=sigma, sigma_2=sigma)
+                        ordinal += 1
 
 class EM2DRestraint(object):
     def __init__(self, rdataset, resolution, pixel_size,

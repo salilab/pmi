@@ -10,6 +10,7 @@ import IMP.atom
 import IMP.container
 import IMP.isd
 import IMP.pmi.tools
+import IMP.pmi.metadata
 import IMP.isd.gmm_tools
 import sys
 from math import sqrt

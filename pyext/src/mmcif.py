@@ -901,6 +901,7 @@ class Protocol(object):
 
 class ReplicaExchangeProtocol(Protocol):
     def __init__(self, rex):
+        self.step_name = 'Sampling'
         if rex.monte_carlo_sample_objects is not None:
             self.step_method = 'Replica exchange monte carlo'
         else:
@@ -1042,7 +1043,9 @@ class ModelProtocolDumper(Dumper):
 
     def add(self, protocol):
         self.protocols.append(protocol)
-        protocol.id = len(self.protocols)
+        # todo: support multiple protocols with multiple steps
+        protocol.id = 1
+        protocol.step_id = len(self.protocols)
         # Assume that protocol uses all currently-defined datasets
         protocol.dataset_group = self.simo.dataset_dump.get_all_group()
 
@@ -1059,12 +1062,11 @@ class ModelProtocolDumper(Dumper):
                           "step_name", "step_method", "num_models_begin",
                           "num_models_end", "multi_scale_flag",
                           "multi_state_flag", "time_ordered_flag"]) as l:
-            # todo: handle multiple protocols (e.g. sampling then refinement)
             num_models_begin = 0
             for p in self.protocols:
-                l.write(ordinal_id=ordinal, protocol_id=1,
-                        step_id=p.id, step_method=p.step_method,
-                        step_name='Sampling',
+                l.write(ordinal_id=ordinal, protocol_id=p.id,
+                        step_id=p.step_id, step_method=p.step_method,
+                        step_name=p.step_name,
                         struct_assembly_id=self.simo.modeled_assembly.id,
                         dataset_group_id=p.dataset_group.id,
                         num_models_begin=num_models_begin,

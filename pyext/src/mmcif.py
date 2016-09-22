@@ -544,12 +544,11 @@ class DatasetDumper(Dumper):
                 if not hasattr(d, 'id'):
                     self._dataset_by_id.append(d)
                     d.id = len(self._dataset_by_id)
+                    # Map any local files to repository locations
                     if isinstance(d.location,
-                                  IMP.pmi.metadata.RepositoryFileLocation) \
-                       and not d.location.doi:
-                        newloc = self.simo._get_location(d.location.path)
-                        d.location.doi = newloc.doi
-                        d.location.path = newloc.path
+                                  IMP.pmi.metadata.LocalFileLocation):
+                        d.location = self.simo._get_repository_location(
+                                                  d.location)
                 seen_datasets[d] = d.id
             else:
                 d.id = seen_datasets[d]
@@ -1159,6 +1158,7 @@ class StartingModelDumper(Dumper):
         # Attempt to identity PDB file vs. comparative model
         fh = open(pdbname)
         first_line = fh.readline()
+        local_file = IMP.pmi.metadata.LocalFileLocation(pdbname)
         if first_line.startswith('HEADER'):
             version, details, metadata = self._parse_pdb(fh, first_line)
             source = PDBSource(model, first_line[62:66].strip(), chain,
@@ -1170,8 +1170,7 @@ class StartingModelDumper(Dumper):
         elif first_line.startswith('EXPDTA    THEORETICAL MODEL, MODELLER'):
             self.simo.software_dump.set_modeller_used(
                                         *first_line[38:].split(' ', 1))
-            d = IMP.pmi.metadata.ComparativeModelDataset(
-                                     self.simo._get_location(pdbname))
+            d = IMP.pmi.metadata.ComparativeModelDataset(local_file)
             model.dataset = self.simo.dataset_dump.add(d)
             templates = self.get_templates(pdbname, model)
             if templates:
@@ -1182,8 +1181,7 @@ class StartingModelDumper(Dumper):
             # todo: extract Modeller-like template info for Phyre models;
             # revisit assumption that all such unknown source PDBs are
             # comparative models
-            d = IMP.pmi.metadata.ComparativeModelDataset(
-                                      self.simo._get_location(pdbname))
+            d = IMP.pmi.metadata.ComparativeModelDataset(local_file)
             model.dataset = self.simo.dataset_dump.add(d)
             return [UnknownSource(model)]
 
@@ -1797,13 +1795,9 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                                    self.model_prot_dump.get_last_protocol(),
                                    self.modeled_assembly, group)
 
-    def _get_location(self, path, metadata=[]):
-        """Get the location where the given file is deposited, or None.
-           If a RepositoryFileLocation object is available, return that.
-           Otherwise, if a Repository object is available, construct a
-           RepositoryFileLocation object from that and return it."""
-        for m in metadata + self._metadata:
-            if isinstance(m, IMP.pmi.metadata.RepositoryFileLocation):
-                return m
+    def _get_repository_location(self, local_file):
+        """Get the repository location for a given LocalFileLocation."""
+        for m in self._metadata:
             if isinstance(m, IMP.pmi.metadata.Repository):
-                return m.get_path(path)
+                return m.get_path(local_file)
+        raise ValueError("Could not determine a DOI for %s" % local_file.path)

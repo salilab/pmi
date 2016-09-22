@@ -97,7 +97,7 @@ class GaussianEMRestraint(object):
         print('will scale target mass by', target_mass_scale)
 
         if target_fn != '':
-            l = IMP.pmi.metadata.get_default_file_location(target_fn)
+            l = IMP.pmi.metadata.LocalFileLocation(target_fn)
             self.dataset = IMP.pmi.metadata.EMDensityDataset(l)
             self.target_ps = []
             IMP.isd.gmm_tools.decorate_gmm_from_text(

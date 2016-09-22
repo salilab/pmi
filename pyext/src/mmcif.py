@@ -625,12 +625,12 @@ class DatasetDumper(Dumper):
         ordinal = 1
         with writer.loop("_ihm_dataset_related_db_reference",
                          ["id", "dataset_list_id", "db_name",
-                          "access_code", "version", "data_type",
+                          "accession_code", "version", "data_type",
                           "details"]) as l:
             for d in datasets:
                 l.write(id=ordinal, dataset_list_id=d.id,
                         db_name=d.location.db_name,
-                        access_code=d.location.access_code,
+                        accession_code=d.location.access_code,
                         version=d.location.version if d.location.version
                                 else CifWriter.omitted,
                         data_type=d._data_type,

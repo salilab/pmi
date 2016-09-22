@@ -837,14 +837,18 @@ class EM3DDumper(Dumper):
         with writer.loop("_ihm_3dem_restraint",
                          ["ordinal_id", "dataset_list_id", "fitting_method",
                           "struct_assembly_id",
-                          "number_of_gaussians"]) as l:
-            for r in self.restraints:
-                l.write(ordinal_id=ordinal,
-                        dataset_list_id=r.rdataset.dataset.id,
-                        fitting_method=r.fitting_method,
-                        struct_assembly_id=r.assembly.id,
-                        number_of_gaussians=r.number_of_gaussians)
-                ordinal += 1
+                          "number_of_gaussians", "model_id",
+                          "cross_correlation_coefficient"]) as l:
+            for model in self.models:
+                for r in self.restraints:
+                    # todo: fill in CCC
+                    l.write(ordinal_id=ordinal,
+                            dataset_list_id=r.rdataset.dataset.id,
+                            fitting_method=r.fitting_method,
+                            struct_assembly_id=r.assembly.id,
+                            number_of_gaussians=r.number_of_gaussians,
+                            model_id=model.id)
+                    ordinal += 1
 
 class Assembly(list):
     """A collection of components. Currently simply implemented as a list of
@@ -1647,6 +1651,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         # Some dumpers add per-model information; give them a pointer to
         # the model list
         self.cross_link_dump.models = self.model_dump.models
+        self.em3d_dump.models = self.model_dump.models
 
         self._dumpers = [EntryDumper(self), # should always be first
                          AuditAuthorDumper(self),

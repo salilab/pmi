@@ -643,11 +643,13 @@ class DatasetDumper(Dumper):
         ordinal = 1
         with writer.loop("_ihm_dataset_other",
                          ["id", "dataset_list_id", "data_type",
-                          "doi", "content_filename"]) as l:
+                          "doi", "content_filename", "details"]) as l:
             for d in datasets:
                 l.write(id=ordinal, dataset_list_id=d.id,
                         data_type=d._data_type, doi=d.location.doi,
-                        content_filename=d.location.path)
+                        content_filename=d.location.path,
+                        details=d.location.details if d.location.details
+                                else CifWriter.omitted)
                 ordinal += 1
 
 

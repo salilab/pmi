@@ -86,9 +86,11 @@ class Tests(IMP.test.TestCase):
 
     def test_repo_file_location(self):
         """Test RepositoryFileLocation class"""
-        d = IMP.pmi.metadata.RepositoryFileLocation('mydoi', 'mypath')
+        d = IMP.pmi.metadata.RepositoryFileLocation('mydoi', 'mypath',
+                                                    details='bar')
         self.assertEqual(d.doi, 'mydoi')
         self.assertEqual(d.path, 'mypath')
+        self.assertEqual(d.details, 'bar')
         d2 = IMP.pmi.metadata.RepositoryFileLocation('mydoi', 'mypath')
         self.assertEqual(d, d2)
         d3 = IMP.pmi.metadata.RepositoryFileLocation('mydoi', 'otherpath')
@@ -102,11 +104,13 @@ class Tests(IMP.test.TestCase):
         with open(os.path.join(t.tmpdir, 'bar'), 'w') as f:
             f.write("")
         d1 = IMP.pmi.metadata.LocalFileLocation(
-                              os.path.relpath(os.path.join(t.tmpdir, 'bar')))
+                              os.path.relpath(os.path.join(t.tmpdir, 'bar')),
+                              details='foo')
         d2 = IMP.pmi.metadata.LocalFileLocation(
                               os.path.relpath(os.path.join(t.tmpdir, 'bar')))
         self.assertEqual(d1, d2)
         self.assertEqual(d1.path, os.path.join(t.tmpdir, 'bar'))
+        self.assertEqual(d1.details, 'foo')
         self.assertRaises(ValueError, IMP.pmi.metadata.LocalFileLocation,
                           os.path.join(t.tmpdir, 'not-exists'))
 

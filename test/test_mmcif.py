@@ -412,7 +412,8 @@ _ihm_dataset_other.dataset_list_id
 _ihm_dataset_other.data_type
 _ihm_dataset_other.doi
 _ihm_dataset_other.content_filename
-1 1 'CX-MS data' foo bar
+_ihm_dataset_other.details
+1 1 'CX-MS data' foo bar .
 #
 #
 loop_

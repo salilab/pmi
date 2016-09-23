@@ -79,7 +79,7 @@ class Tests(IMP.test.TestCase):
     def test_massive_location(self):
         """Test MassIVELocation class"""
         d = IMP.pmi.metadata.MassIVELocation('abc', version=1, details='foo')
-        self.assertEqual(d.db_name, 'MassIVE')
+        self.assertEqual(d.db_name, 'MASSIVE')
         self.assertEqual(d.access_code, 'abc')
         self.assertEqual(d.version, 1)
         self.assertEqual(d.details, 'foo')

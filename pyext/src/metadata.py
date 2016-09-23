@@ -152,7 +152,7 @@ class PDBLocation(DatabaseLocation):
 class MassIVELocation(DatabaseLocation):
     """Something stored in the MassIVE database."""
     def __init__(self, db_code, version=None, details=None):
-        DatabaseLocation.__init__(self, 'MassIVE', db_code, version, details)
+        DatabaseLocation.__init__(self, 'MASSIVE', db_code, version, details)
 
 class LocalFileLocation(Location):
     """An individual file or directory on the local filesystem."""

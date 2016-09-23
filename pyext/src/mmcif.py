@@ -1161,19 +1161,20 @@ class StartingModelDumper(Dumper):
         fh = open(pdbname)
         first_line = fh.readline()
         local_file = IMP.pmi.metadata.LocalFileLocation(pdbname)
+        file_dataset = self.simo.get_file_dataset(pdbname)
         if first_line.startswith('HEADER'):
             version, details, metadata = self._parse_pdb(fh, first_line)
             source = PDBSource(model, first_line[62:66].strip(), chain,
                                metadata)
             l = IMP.pmi.metadata.PDBLocation(source.db_code, version, details)
             d = IMP.pmi.metadata.PDBDataset(l)
-            model.dataset = self.simo.dataset_dump.add(d)
+            model.dataset = self.simo.dataset_dump.add(file_dataset or d)
             return [source]
         elif first_line.startswith('EXPDTA    THEORETICAL MODEL, MODELLER'):
             self.simo.software_dump.set_modeller_used(
                                         *first_line[38:].split(' ', 1))
             d = IMP.pmi.metadata.ComparativeModelDataset(local_file)
-            model.dataset = self.simo.dataset_dump.add(d)
+            model.dataset = self.simo.dataset_dump.add(file_dataset or d)
             templates = self.get_templates(pdbname, model)
             if templates:
                 return templates
@@ -1184,7 +1185,7 @@ class StartingModelDumper(Dumper):
             # revisit assumption that all such unknown source PDBs are
             # comparative models
             d = IMP.pmi.metadata.ComparativeModelDataset(local_file)
-            model.dataset = self.simo.dataset_dump.add(d)
+            model.dataset = self.simo.dataset_dump.add(file_dataset or d)
             return [UnknownSource(model)]
 
     def assign_model_details(self):
@@ -1669,6 +1670,9 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                          #StructConfDumper(self),
                          self.model_prot_dump, self.post_process_dump,
                          self.ensemble_dump, self.density_dump, self.model_dump]
+
+    def get_file_dataset(self, fname):
+        return self._file_dataset.get(os.path.abspath(fname), None)
 
     def get_chain_for_component(self, name, output):
         """Get the chain ID for a component, if any."""

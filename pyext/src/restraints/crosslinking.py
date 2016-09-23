@@ -1713,7 +1713,8 @@ class ISDCrossLinkMS(IMP.pmi.restraints._NuisancesBase):
         self.psi_is_sampled = True
         self.sigma_is_sampled = True
 
-        if os.path.exists(restraints_file):
+        self.dataset = representations[0].get_file_dataset(restraints_file)
+        if not self.dataset and os.path.exists(restraints_file):
             l = IMP.pmi.metadata.LocalFileLocation(restraints_file)
             self.dataset = IMP.pmi.metadata.CXMSDataset(l)
 

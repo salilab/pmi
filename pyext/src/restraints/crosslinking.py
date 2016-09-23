@@ -17,6 +17,7 @@ from math import log
 from collections import defaultdict
 import itertools
 import operator
+import os
 
 class CrossLinkingMassSpectrometryRestraint(object):
     """Setup cross-link distance restraints from mass spectrometry data.

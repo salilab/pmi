@@ -490,8 +490,9 @@ class UnknownSource(object):
     chain_id = CifWriter.unknown
     sequence_identity = CifWriter.unknown
 
-    def __init__(self, model):
-        pass
+    def __init__(self, model, source=None):
+        if source:
+            self.source = source
 
     def get_seq_id_range(self, model):
         return (model.seq_id_begin, model.seq_id_end)
@@ -1177,7 +1178,7 @@ class StartingModelDumper(Dumper):
             if templates:
                 return templates
             else:
-                return [UnknownSource(model)]
+                return [UnknownSource(model, 'comparative model')]
         else:
             # todo: extract Modeller-like template info for Phyre models;
             # revisit assumption that all such unknown source PDBs are

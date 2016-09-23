@@ -484,15 +484,16 @@ class TemplateSource(object):
 
 class UnknownSource(object):
     """Part of a starting model from an unknown source"""
-    source = CifWriter.unknown
     db_code = CifWriter.unknown
     db_name = CifWriter.unknown
     chain_id = CifWriter.unknown
     sequence_identity = CifWriter.unknown
+    # Map dataset types to starting model sources
+    _source_map = {'Comparative model': 'comparative model',
+                   'Experimental model': 'experimental model'}
 
-    def __init__(self, model, source=None):
-        if source:
-            self.source = source
+    def __init__(self, model):
+        self.source = self._source_map[model.dataset._data_type]
 
     def get_seq_id_range(self, model):
         return (model.seq_id_begin, model.seq_id_end)
@@ -1181,7 +1182,7 @@ class StartingModelDumper(Dumper):
             if templates:
                 return templates
             else:
-                return [UnknownSource(model, 'comparative model')]
+                return [UnknownSource(model)]
         else:
             # todo: extract Modeller-like template info for Phyre models;
             # revisit assumption that all such unknown source PDBs are

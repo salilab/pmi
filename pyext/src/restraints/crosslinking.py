@@ -1713,8 +1713,9 @@ class ISDCrossLinkMS(IMP.pmi.restraints._NuisancesBase):
         self.psi_is_sampled = True
         self.sigma_is_sampled = True
 
-        l = IMP.pmi.metadata.LocalFileLocation(restraints_file)
-        self.dataset = IMP.pmi.metadata.CXMSDataset(l)
+        if os.path.exists(restraints_file):
+            l = IMP.pmi.metadata.LocalFileLocation(restraints_file)
+            self.dataset = IMP.pmi.metadata.CXMSDataset(l)
 
         xl_datasets = [p.get_restraint_dataset(self)
                        for p in representations[0]._protocol_output]

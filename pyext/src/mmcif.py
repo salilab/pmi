@@ -505,6 +505,10 @@ class DatasetGroup(object):
     def finalize(self):
         """Get final datasets for each restraint and remove duplicates"""
         final_datasets = OrderedDict()
+        def add_parents(d):
+            for p in d._parents.keys():
+                final_datasets[p] = None
+                add_parents(p)
         for ds in self._datasets:
             if isinstance(ds, RestraintDataset):
                 d = ds.dataset
@@ -512,8 +516,7 @@ class DatasetGroup(object):
                 d = ds
             final_datasets[d] = None
             if self.include_primaries:
-                for p in d._primaries.keys():
-                    final_datasets[p] = None
+                add_parents(d)
         self._datasets = final_datasets.keys()
 
 
@@ -575,7 +578,7 @@ class DatasetDumper(Dumper):
             for x in self._flatten_dataset(d.dataset):
                 yield x
         else:
-            for p in d._primaries.keys():
+            for p in d._parents.keys():
                 for x in self._flatten_dataset(p):
                     yield x
             yield d
@@ -609,13 +612,13 @@ class DatasetDumper(Dumper):
                           "data_type_derived", "dataset_list_id_primary",
                           "data_type_primary"]) as l:
             for derived in self._dataset_by_id:
-                for primary in sorted(derived._primaries.keys(),
+                for parent in sorted(derived._parents.keys(),
                                       lambda d: d.id):
                     l.write(ordinal_id=ordinal,
                             dataset_list_id_derived=derived.id,
                             data_type_derived=derived._data_type,
-                            dataset_list_id_primary=primary.id,
-                            data_type_primary=primary._data_type)
+                            dataset_list_id_primary=parent.id,
+                            data_type_primary=parent._data_type)
                     ordinal += 1
 
     def dump_rel_dbs(self, datasets, writer):
@@ -771,7 +774,7 @@ class EM2DRestraint(object):
     def get_num_raw_micrographs(self):
         """Return the number of raw micrographs used, if known.
            This is extracted from the EMMicrographsDataset if any."""
-        for d in self.rdataset.dataset._primaries.keys():
+        for d in self.rdataset.dataset._parents.keys():
             if isinstance(d, IMP.pmi.metadata.EMMicrographsDataset):
                 return d.number
 

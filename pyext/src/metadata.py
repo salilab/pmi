@@ -54,12 +54,23 @@ class Dataset(Metadata):
     _data_type = 'unspecified'
     def __init__(self, location):
         self.location = location
-        self._primaries = {}
+        self._parents = {}
 
-    def add_primary(self, dataset):
+    def add_parent(self, dataset):
         """Add another Dataset from which this one was derived.
            For example, a 3D EM map may be derived from a set of 2D images."""
-        self._primaries[dataset] = None
+        self._parents[dataset] = None
+
+    def add_primary(self, dataset):
+        """Add another Dataset from which the ultimate parent of this one
+           was derived."""
+        if len(self._parents) == 0:
+            self.add_parent(dataset)
+        elif len(self._parents) == 1:
+            self._parents.keys()[0].add_parent(dataset)
+        else:
+            raise ValueError("This dataset has multiple parents - don't "
+                             "know which one to add to")
 
 class CXMSDataset(Dataset):
     """Processed crosslinks from a CX-MS experiment"""

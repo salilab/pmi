@@ -110,17 +110,53 @@ class Tests(IMP.test.TestCase):
         self.assertRaises(ValueError, IMP.pmi.metadata.LocalFileLocation,
                           os.path.join(t.tmpdir, 'not-exists'))
 
-    def test_dataset_add_primary(self):
-        """Test Dataset.add_primary()"""
+    def test_dataset_add_parent(self):
+        """Test Dataset.add_parent()"""
+        loc = IMP.pmi.metadata.RepositoryFileLocation('mydoi', 'a')
+        d1 = IMP.pmi.metadata.CXMSDataset(loc)
+        loc = IMP.pmi.metadata.RepositoryFileLocation('mydoi', 'b')
+        d2 = IMP.pmi.metadata.MassSpecDataset(loc)
+        d1.add_parent(d2)
+        self.assertEqual(d1._parents, {d2:None})
+        # Ignore duplicates
+        d1.add_parent(d2)
+        self.assertEqual(d1._parents, {d2:None})
+
+    def test_dataset_add_primary_no_parents(self):
+        """Test Dataset.add_primary() with no parents"""
         loc = IMP.pmi.metadata.RepositoryFileLocation('mydoi', 'a')
         d1 = IMP.pmi.metadata.CXMSDataset(loc)
         loc = IMP.pmi.metadata.RepositoryFileLocation('mydoi', 'b')
         d2 = IMP.pmi.metadata.MassSpecDataset(loc)
         d1.add_primary(d2)
-        self.assertEqual(d1._primaries, {d2:None})
-        # Ignore duplicates
-        d1.add_primary(d2)
-        self.assertEqual(d1._primaries, {d2:None})
+        self.assertEqual(d1._parents, {d2:None})
+
+    def test_dataset_add_primary_one_parent(self):
+        """Test Dataset.add_primary() with one parent"""
+        loc = IMP.pmi.metadata.RepositoryFileLocation('mydoi', 'a')
+        d1 = IMP.pmi.metadata.CXMSDataset(loc)
+        loc = IMP.pmi.metadata.RepositoryFileLocation('mydoi', 'b')
+        d2 = IMP.pmi.metadata.MassSpecDataset(loc)
+        d1.add_parent(d2)
+        loc = IMP.pmi.metadata.RepositoryFileLocation('mydoi', 'c')
+        d3 = IMP.pmi.metadata.MassSpecDataset(loc)
+        d1.add_primary(d3)
+        self.assertEqual(d1._parents, {d2:None})
+        self.assertEqual(d2._parents, {d3:None})
+
+    def test_dataset_add_primary_two_parents(self):
+        """Test Dataset.add_primary() with two parents"""
+        loc = IMP.pmi.metadata.RepositoryFileLocation('mydoi', 'a')
+        d1 = IMP.pmi.metadata.CXMSDataset(loc)
+        loc = IMP.pmi.metadata.RepositoryFileLocation('mydoi', 'b')
+        d2 = IMP.pmi.metadata.MassSpecDataset(loc)
+        d1.add_parent(d2)
+        loc = IMP.pmi.metadata.RepositoryFileLocation('mydoi', 'c')
+        d3 = IMP.pmi.metadata.MassSpecDataset(loc)
+        d1.add_parent(d3)
+        loc = IMP.pmi.metadata.RepositoryFileLocation('mydoi', 'd')
+        d4 = IMP.pmi.metadata.MassSpecDataset(loc)
+        self.assertRaises(ValueError, d1.add_primary, d4)
 
     def test_cxms_dataset(self):
         """Test CXMSDataset"""

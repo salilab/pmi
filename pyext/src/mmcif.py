@@ -540,15 +540,13 @@ class DatasetDumper(Dumper):
         # Assign IDs to all datasets
         self._dataset_by_id = []
         for d in self._flatten_dataset(self._datasets):
+            # Map any local files to repository locations
+            if isinstance(d.location, IMP.pmi.metadata.LocalFileLocation):
+                d.location = self.simo._get_repository_location(d.location)
             if d not in seen_datasets:
                 if not hasattr(d, 'id'):
                     self._dataset_by_id.append(d)
                     d.id = len(self._dataset_by_id)
-                    # Map any local files to repository locations
-                    if isinstance(d.location,
-                                  IMP.pmi.metadata.LocalFileLocation):
-                        d.location = self.simo._get_repository_location(
-                                                  d.location)
                 seen_datasets[d] = d.id
             else:
                 d.id = seen_datasets[d]

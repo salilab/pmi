@@ -384,12 +384,17 @@ class ReplicaExchange0(object):
         if self.test_mode:
             nframes = 1
         for i in range(nframes):
-            for nr in range(self.vars["num_sample_rounds"]):
-                if sampler_md is not None:
-                    sampler_md.optimize(self.vars["molecular_dynamics_steps"])
-                if sampler_mc is not None:
-                    sampler_mc.optimize(self.vars["monte_carlo_steps"])
-            score = IMP.pmi.tools.get_restraint_set(self.model).evaluate(False)
+            if self.test_mode:
+                score = 0.
+            else:
+                for nr in range(self.vars["num_sample_rounds"]):
+                    if sampler_md is not None:
+                        sampler_md.optimize(
+                                  self.vars["molecular_dynamics_steps"])
+                    if sampler_mc is not None:
+                        sampler_mc.optimize(self.vars["monte_carlo_steps"])
+                score = IMP.pmi.tools.get_restraint_set(
+                                             self.model).evaluate(False)
             output.set_output_entry("score", score)
 
             my_temp_index = int(rex.get_my_temp() * temp_index_factor)

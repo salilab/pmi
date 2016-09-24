@@ -493,7 +493,7 @@ class BuildSystem(object):
                     chain_id = copy[0].chain
                 else:
                     chain_id = chain_ids[numchain]
-                    
+
                 if nc==0:
                     seq = IMP.pmi.topology.Sequences(copy[0].fasta_file)[copy[0].fasta_id]
                     orig_mol = state.create_molecule(molname,
@@ -518,7 +518,7 @@ class BuildSystem(object):
                         else:
                             end = domain.residue_range[1]+domain.pdb_offset
                         domain_res = mol.residue_range(start-1,end-1)
-                    
+
                     if domain.pdb_file=="BEADS":
                         mol.add_representation(
                             domain_res,
@@ -659,7 +659,7 @@ class BuildModel1(object):
         @param data_structure List of lists containing these entries:
              comp_name, hier_name, color, fasta_file, fasta_id, pdb_name, chain_id,
              res_range, read_em_files, bead_size, rb, super_rb,
-             em_num_components, em_txt_file_name, em_mrc_file_name, chain_of_super_rb, 
+             em_num_components, em_txt_file_name, em_mrc_file_name, chain_of_super_rb,
              keep_gaussian_flexible_beads (optional)
         @param sequence_connectivity_scale
         @param rmf_file

@@ -654,10 +654,17 @@ class DatasetDumper(Dumper):
                 ordinal += 1
 
 
+class CrossLinkGroup(object):
+    """Group common information for a set of cross links"""
+    def __init__(self, pmi_restraint, rdataset):
+        self.pmi_restraint, self.rdataset = pmi_restraint, rdataset
+        self.label = self.pmi_restraint.label
+
+
 class ExperimentalCrossLink(object):
-    def __init__(self, r1, c1, r2, c2, label, length, rdataset):
-        self.r1, self.c1, self.r2, self.c2, self.label = r1, c1, r2, c2, label
-        self.length, self.rdataset = length, rdataset
+    def __init__(self, r1, c1, r2, c2, length, group):
+        self.r1, self.c1, self.r2, self.c2 = r1, c1, r2, c2
+        self.length, self.group = length, group
 
 class CrossLink(object):
     def __init__(self, ex_xl, p1, p2, sigma1, sigma2, psi):
@@ -708,8 +715,8 @@ class CrossLinkDumper(Dumper):
                         entity_id_2=entity2.id,
                         seq_id_2=xl.r2,
                         comp_id_2=rt2.get_string(),
-                        type=xl.label,
-                        dataset_list_id=xl.rdataset.dataset.id)
+                        type=xl.group.label,
+                        dataset_list_id=xl.group.rdataset.dataset.id)
 
     def _granularity(self, xl):
         """Determine the granularity of a cross link"""
@@ -744,28 +751,46 @@ class CrossLinkDumper(Dumper):
                         asym_id_2=asym[xl.p2],
                         seq_id_2=xl.ex_xl.r2,
                         comp_id_2=rt2.get_string(),
-                        type=xl.ex_xl.label,
+                        type=xl.ex_xl.group.label,
                         # todo: any circumstances where this could be ANY?
                         conditional_crosslink_flag="ALL",
                         model_granularity=self._granularity(xl),
                         distance_threshold=xl.ex_xl.length,
-                        # todo: handle cases where psi is optimized
                         psi=xl.psi.get_scale(),
-                        sigma_1=xl.sigma1, sigma_2=xl.sigma2)
+                        sigma_1=xl.sigma1.get_scale(),
+                        sigma_2=xl.sigma2.get_scale())
+
+    def _set_psi_sigma(self, model, g):
+        for resolution in g.pmi_restraint.sigma_dictionary:
+            statname = 'ISDCrossLinkMS_Sigma_%s_%s' % (resolution, g.label)
+            if model.stats and statname in model.stats:
+                sigma = float(model.stats[statname])
+                p = g.pmi_restraint.sigma_dictionary[resolution][0]
+                p.set_scale(sigma)
+        for psiindex in g.pmi_restraint.psi_dictionary:
+            statname = 'ISDCrossLinkMS_Psi_%s_%s' % (psiindex, g.label)
+            if model.stats and statname in model.stats:
+                psi = float(model.stats[statname])
+                p = g.pmi_restraint.psi_dictionary[psiindex][0]
+                p.set_scale(psi)
 
     def dump_results(self, writer):
+        all_groups = {}
+        for xl in self.cross_links:
+            all_groups[xl.ex_xl.group] = None
         ordinal = 1
         with writer.loop("_ihm_cross_link_result_parameters",
                          ["ordinal_id", "restraint_id", "model_id",
-                          "sigma_1", "sigma_2"]) as l:
+                          "psi", "sigma_1", "sigma_2"]) as l:
             for model in self.models:
+                for g in all_groups.keys():
+                    self._set_psi_sigma(model, g)
                 for xl in self.cross_links:
-                    # todo: handle resolutions!=1, multiple independent sigmas
-                    statname = 'ISDCrossLinkMS_Sigma_1_%s' % xl.ex_xl.label
-                    if model.stats and statname in model.stats:
-                        sigma = float(model.stats[statname])
+                    if model.stats:
                         l.write(ordinal_id=ordinal, restraint_id=xl.id,
-                                model_id=model.id, sigma_1=sigma, sigma_2=sigma)
+                                model_id=model.id, psi=xl.psi.get_scale(),
+                                sigma_1=xl.sigma1.get_scale(),
+                                sigma_2=xl.sigma2.get_scale())
                         ordinal += 1
 
 class EM2DRestraint(object):
@@ -1728,15 +1753,17 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.dataset_dump.add(rs)
         return rs
 
-    def add_experimental_cross_link(self, r1, c1, r2, c2, label, length,
-                                    dataset):
+    def get_cross_link_group(self, r):
+        return CrossLinkGroup(r, self.get_restraint_dataset(r))
+
+    def add_experimental_cross_link(self, r1, c1, r2, c2, length, group):
         if c1 not in self._all_components or c2 not in self._all_components:
             # Crosslink refers to a component we didn't model
             # As a quick hack, just ignore it.
             # todo: need to add an entity for this anyway (so will need the
             # sequence, and add to struct_assembly)
             return None
-        xl = ExperimentalCrossLink(r1, c1, r2, c2, label, length, dataset)
+        xl = ExperimentalCrossLink(r1, c1, r2, c2, length, group)
         self.cross_link_dump.add_experimental(xl)
         return xl
 

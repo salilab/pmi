@@ -65,7 +65,7 @@ def parse_dssp(dssp_fn, limit_to_chains='',name_map=None):
     start = False
 
     # temporary beta dictionary indexed by DSSP's ID
-    beta_dict = defaultdict(list)
+    beta_dict = IMP.pmi.tools.OrderedDefaultDict(list)
     prev_sstype = None
     prev_beta_id = None
 

@@ -1635,7 +1635,7 @@ class RestraintDataset(object):
         else:
             d = copy.deepcopy(self.restraint.dataset)
         if self.allow_duplicates:
-            d.location.allow_duplicates = True
+            d.location._allow_duplicates = True
         # Don't copy again next time we access self.dataset
         self.__dataset = d
         return d

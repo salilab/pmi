@@ -87,7 +87,7 @@ rex=IMP.pmi.macros.ReplicaExchange0(mdl,
                                     output_objects=output_objects,
                                     monte_carlo_steps=10,
                                     number_of_best_scoring_models=0,
-                                    number_of_frames=100)
+                                    number_of_frames=5)
 rex.execute_macro()
 
 

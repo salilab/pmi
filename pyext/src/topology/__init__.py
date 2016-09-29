@@ -949,7 +949,7 @@ class TopologyReader(object):
 |molecule_name|color|fasta_fn|fasta_id|pdb_fn|chain|residue_range|pdb_offset|bead_size|em_residues_per_gaussian|rigid_body|super_rigid_body|chain_of_super_rigid_bodies|flags|
 |Rpb1   |blue   |1WCM.fasta|1WCM:A|1WCM.pdb|A|1,1140   |0|10|0|1|1,3|1||
 |Rpb1   |blue   |1WCM.fasta|1WCM:A|1WCM.pdb|A|1141,1274|0|10|0|2|1,3|1||
-|Rpb1   |blue   |1WCM.fasta|1WCM:A|1WCM.pdb|A|1275,-1  |0|10|0|3|1,3|1||
+|Rpb1   |blue   |1WCM.fasta|1WCM:A|1WCM.pdb|A|1275,END |0|10|0|3|1,3|1||
 |Rpb2   |red    |1WCM.fasta|1WCM:B|1WCM.pdb|B|all      |0|10|0|4|2,3|2||
 |Rpb2.1 |green  |1WCM.fasta|1WCM:B|1WCM.pdb|B|all      |0|10|0|4|2,3|2||
 
@@ -967,6 +967,8 @@ class TopologyReader(object):
     - `chain`: Chain ID of this domain in the PDB file.
     - `residue_range`: Comma delimited pair defining range.
        Can leave empty or use 'all' for entire sequence from PDB file.
+       The second item in the pair can be END to select the last residue in the
+       PDB chain.
     - `pdb_offset`: Offset to sync PDB residue numbering with FASTA numbering.
     - `bead_size`: The size (in residues) of beads used to model areas not
       covered by PDB coordinates. These will be automatically built.
@@ -1114,12 +1116,14 @@ class TopologyReader(object):
         # Residue Range
         if rr.strip()=='all' or str(rr)=="":
             c.residue_range = None
-        elif len(rr.split(','))==2 and self._is_int(rr.split(',')[0]) and self._is_int(rr.split(',')[1]):
+        elif len(rr.split(','))==2 and self._is_int(rr.split(',')[0]) and (self._is_int(rr.split(',')[1]) or rr.split(',')[1] == 'END'):
             # Make sure that is residue range is given, there are only two values and they are integers
-            c.residue_range = (int(rr.split(',')[0]), int(rr.split(',')[1]))
+            c.residue_range = (int(rr.split(',')[0]), rr.split(',')[1])
+            if c.residue_range[1] != 'END':
+                c.residue_range = (c.residue_range[0], int(c.residue_range[1]))
         else:
             errors.append("Residue Range format for component %s line %d is not correct" % (c.molname, linenum))
-            errors.append("Correct syntax is two comma separated integers:  |start_res, end_res|. |%s| was given." % rr)
+            errors.append("Correct syntax is two comma separated integers:  |start_res, end_res|. end_res can also be END to select the last residue in the chain. |%s| was given." % rr)
             errors.append("To select all residues, indicate |\"all\"|")
 
         # PDB Offset
@@ -1287,7 +1291,7 @@ class _Component(object):
         self.chain_of_super_rigid_bodies = []
 
     def _l2s(self,l):
-        return ",".join("%d" % int(x) for x in l)
+        return ",".join("%s" % x for x in l)
 
     def __repr__(self):
         return self.get_str()

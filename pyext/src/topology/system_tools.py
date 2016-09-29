@@ -70,6 +70,9 @@ def get_structure(mdl,pdb_fn,chain_id,res_range=None,offset=0,model_num=None,ca_
         res = IMP.atom.Residue(IMP.atom.Atom(p).get_parent())
         res.set_index(res.get_index() + offset)
         ret.append(res)
+    if len(ret) == 0:
+        print("WARNING: no residues selected from %s in range %s"
+              % (pdb_fn, res_range))
     return ret
 
 def build_bead(mdl,residues,input_coord=None):

@@ -37,7 +37,8 @@ charmm = IMP.pmi.restraints.stereochemistry.CharmmForceFieldRestraint(hier)
 charmm.add_to_model()
 
 # add elastic network on secondary structure units
-sses = IMP.pmi.io.parse_dssp(IMP.pmi.get_example_path('data/gcp2.dssp'),'A')
+sses = IMP.pmi.io.parse_dssp(IMP.pmi.get_example_path('data/gcp2.dssp'),'A',
+                             name_map={'A':'GCP2'})
 all_rs = []
 for sse in sses['helix']+sses['beta']:
     er = IMP.pmi.restraints.stereochemistry.ElasticNetworkRestraint(

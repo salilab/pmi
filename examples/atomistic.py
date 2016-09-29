@@ -12,6 +12,9 @@ import IMP.pmi.topology
 import IMP.pmi.dof
 import IMP.pmi.macros
 import IMP.pmi.restraints.stereochemistry
+import sys
+
+IMP.setup_from_argv(sys.argv, "Simulation of an atomic system")
 
 # Setup System and add a State
 mdl = IMP.Model()

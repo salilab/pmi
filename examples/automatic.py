@@ -13,6 +13,9 @@ import IMP.pmi.macros
 import IMP.pmi.restraints
 import IMP.pmi.restraints.stereochemistry
 import tempfile,os
+import sys
+
+IMP.setup_from_argv(sys.argv, "Automatic setup of a large system")
 
 # This is the topology table format.
 #  It allows you to create many components in a simple way

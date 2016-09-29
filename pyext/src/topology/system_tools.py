@@ -34,10 +34,10 @@ def get_structure(mdl,pdb_fn,chain_id,res_range=None,offset=0,model_num=None,ca_
     @param mdl The IMP model
     @param pdb_fn    The file to read
     @param chain_id  Chain ID to read
-    @param res_range Add only a specific set of residues. 
+    @param res_range Add only a specific set of residues.
            res_range[0] is the starting and res_range[1] is the ending residue index
            The ending residue can be "END", that will take everything to the end of the sequence.
-           None gets you all. 
+           None gets you all.
     @param offset    Apply an offset to the residue indexes of the PDB file
     @param model_num Read multi-model PDB and return that model
     @param ca_only Read only CA atoms (by default, all non-waters are read)

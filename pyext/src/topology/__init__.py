@@ -975,8 +975,9 @@ class TopologyReader(object):
     - `em_residues`: The number of Gaussians used to model the electron
       density of this domain. Set to zero if no EM fitting will be done.
       The GMM files will be written to <gmm_dir>/<component_name>_<em_res>.txt (and .mrc)
-    - `rigid_body`: Number corresponding to the rigid body containing this object.
-       The number itself is just used for grouping things.
+    - `rigid_body`: Leave empty if this object is not in a rigid body.
+       Otherwise, this is a number corresponding to the rigid body containing
+       this object. The number itself is just used for grouping things.
     - `super_rigid_body`: Like a rigid_body, except things are only occasionally rigid
     - `chain_of_super_rigid_bodies` For a polymer, create SRBs from groups.
     - `flags` additional flags for advanced options
@@ -1166,7 +1167,8 @@ class TopologyReader(object):
             if not self._is_int(rbs):
                 errors.append("rigid bodies format for component "
                               "%s line %d is not correct" % (c.molname, linenum))
-                errors.append("Each RB must be a single integer. |%s| was given." % rbs)
+                errors.append("Each RB must be a single integer, or empty. "
+                              "|%s| was given." % rbs)
             c.rigid_body = int(rbs)
 
         # super rigid bodies
@@ -1228,9 +1230,8 @@ class TopologyReader(object):
         """Return list of lists of rigid bodies (as domain name)"""
         rbl = defaultdict(list)
         for c in self.components:
-            #for rbnum in c.rigid_bodies:
-            #rbl[rbnum].append(c.get_unique_name())
-            rbl[c.rigid_body].append(c.get_unique_name())
+            if c.rigid_body:
+                rbl[c.rigid_body].append(c.get_unique_name())
         return rbl.values()
 
     def get_super_rigid_bodies(self):
@@ -1286,7 +1287,7 @@ class _Component(object):
         self.mrc_file = ''
         self.density_prefix = ''
         self.color = 0.1
-        self.rigid_body = ''
+        self.rigid_body = None
         self.super_rigid_bodies = []
         self.chain_of_super_rigid_bodies = []
 
@@ -1314,7 +1315,7 @@ class _Component(object):
                          self._orig_pdb_input,chain,self._l2s(list(res_range)),
                              str(self.pdb_offset),str(self.bead_size),
                              str(self.em_residues_per_gaussian),
-                             str(self.rigid_body),
+                             str(self.rigid_body) if self.rigid_body else '',
                              self._l2s(self.super_rigid_bodies),
                              self._l2s(self.chain_of_super_rigid_bodies)])+'|'
         return a

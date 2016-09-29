@@ -1163,7 +1163,7 @@ class TopologyReader(object):
                 errors.append("rigid bodies format for component "
                               "%s line %d is not correct" % (c.molname, linenum))
                 errors.append("Each RB must be a single integer. |%s| was given." % rbs)
-            c.rigid_bodies = int(rbs)
+            c.rigid_body = int(rbs)
 
         # super rigid bodies
         if len(srbs)>0:
@@ -1226,7 +1226,7 @@ class TopologyReader(object):
         for c in self.components:
             #for rbnum in c.rigid_bodies:
             #rbl[rbnum].append(c.get_unique_name())
-            rbl[c.rigid_bodies].append(c.get_unique_name())
+            rbl[c.rigid_body].append(c.get_unique_name())
         return rbl.values()
 
     def get_super_rigid_bodies(self):
@@ -1282,7 +1282,7 @@ class _Component(object):
         self.mrc_file = ''
         self.density_prefix = ''
         self.color = 0.1
-        self.rigid_bodies = []
+        self.rigid_body = ''
         self.super_rigid_bodies = []
         self.chain_of_super_rigid_bodies = []
 
@@ -1309,7 +1309,8 @@ class _Component(object):
         a= '|'+'|'.join([name,self.color,self._orig_fasta_file,self.fasta_id,
                          self._orig_pdb_input,chain,self._l2s(list(res_range)),
                              str(self.pdb_offset),str(self.bead_size),
-                             str(self.em_residues_per_gaussian),self._l2s(self.rigid_bodies),
+                             str(self.em_residues_per_gaussian),
+                             str(self.rigid_body),
                              self._l2s(self.super_rigid_bodies),
                              self._l2s(self.chain_of_super_rigid_bodies)])+'|'
         return a

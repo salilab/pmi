@@ -9,8 +9,9 @@ import IMP.algebra
 import IMP.atom
 import IMP.container
 import IMP.pmi.tools
+import IMP.pmi.restraints
 
-class ExternalBarrier(object):
+class ExternalBarrier(IMP.pmi.restraints.RestraintBase):
 
     def __init__(self,
                  representation=None,
@@ -27,31 +28,29 @@ class ExternalBarrier(object):
                IMP Hierarchy, PMI System/State/Molecule/TempResidue, or a list/set of them
         @param resolution Select which resolutions to act upon
         """
-        self.radius = radius
-        self.label = "None"
-        self.weight = weight
-
         if representation:
-            self.m = representation.prot.get_model()
+            m = representation.prot.get_model()
             particles = IMP.pmi.tools.select(
                 representation,
                 resolution=resolution,
                 hierarchies=hierarchies)
         elif hierarchies:
             hiers = IMP.pmi.tools.input_adaptor(hierarchies,resolution,flatten=True)
-            self.m = hiers[0].get_model()
+            m = hiers[0].get_model()
             particles = [h.get_particle() for h in hiers]
         else:
-            raise Exception("ExternalBarrier: must pass representation or hierarchies")
+            raise Exception(self.__class__.__name__ + ": must pass representation or hierarchies")
 
-        self.rs = IMP.RestraintSet(self.m, 'barrier')
+        super(ExternalBarrier, self).__init__(m)
+        self.set_weight(weight)
+        self.radius = radius
 
         if center is None:
             c3 = IMP.algebra.Vector3D(0, 0, 0)
         elif type(center) is IMP.algebra.Vector3D:
             c3 = center
         else:
-            raise Exception("ExternalBarrier: @param center must be an algebra::Vector3D object")
+            raise Exception(self.__class__.__name__ + ": @param center must be an algebra::Vector3D object")
 
         ub3 = IMP.core.HarmonicUpperBound(radius, 10.0)
         ss3 = IMP.core.DistanceToSingletonScore(ub3, c3)
@@ -60,34 +59,10 @@ class ExternalBarrier(object):
         lsc.add(particles)
         r3 = IMP.container.SingletonsRestraint(ss3, lsc)
         self.rs.add_restraint(r3)
-        self.set_weight(self.weight)
-
-    def set_label(self, label):
-        self.label = label
-
-    def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.m, self.rs)
-
-    def get_restraint(self):
-        return self.rs
-
-    def get_output(self):
-        self.m.update()
-        output = {}
-        score = self.evaluate()
-        output["_TotalScore"] = str(score)
-        output["ExternalBarrier_" + self.label] = str(score)
-        return output
-
-    def set_weight(self, weight):
-        self.weight = weight
-        self.rs.set_weight(weight)
-
-    def evaluate(self):
-        return self.weight * self.rs.unprotected_evaluate(None)
+        self.set_weight(weight)
 
 
-class DistanceRestraint(object):
+class DistanceRestraint(IMP.pmi.restraints.RestraintBase):
     """A simple distance restraint"""
     def __init__(self,
                  representation=None,
@@ -109,15 +84,13 @@ class DistanceRestraint(object):
         @param root_hier The hierarchy to select from (use this instead of representation)
         \note Pass the same resnum twice to each tuple_selection. Optionally add a copy number (PMI2 only)
         """
-        self.weight=1.0
-        self.label="None"
         if tuple_selection1 is None or tuple_selection2 is None:
             raise Exception("You must pass tuple_selection1/2")
         ts1 = IMP.core.HarmonicUpperBound(distancemax, kappa)
         ts2 = IMP.core.HarmonicLowerBound(distancemin, kappa)
 
         if representation and not root_hier:
-            self.m = representation.prot.get_model()
+            m = representation.prot.get_model()
             particles1 = IMP.pmi.tools.select(representation,
                                               resolution=resolution,
                                               name=tuple_selection1[2],
@@ -127,7 +100,7 @@ class DistanceRestraint(object):
                                               name=tuple_selection2[2],
                                               residue=tuple_selection2[0])
         elif root_hier and not representation:
-            self.m = root_hier.get_model()
+            m = root_hier.get_model()
             copy_num1 = 0
             if len(tuple_selection1)>3:
                 copy_num1 = tuple_selection1[3]
@@ -150,7 +123,7 @@ class DistanceRestraint(object):
         else:
             raise Exception("Pass representation or root_hier, not both")
 
-        self.rs = IMP.RestraintSet(self.m, 'distance')
+        super(DistanceRestraint, self).__init__(m)
 
         print("Created distance restraint between "
               "%s and %s" % (particles1[0].get_name(),particles2[0].get_name()))
@@ -166,33 +139,6 @@ class DistanceRestraint(object):
             IMP.core.DistanceRestraint(self.m, ts2,
                                        particles1[0],
                                        particles2[0]))
-
-    def set_weight(self,weight):
-        self.weight = weight
-        self.rs.set_weight(weight)
-
-    def set_label(self, label):
-        self.label = label
-
-    def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.m, self.rs)
-
-    def get_restraint(self):
-        return self.rs
-
-    def get_restraint_for_rmf(self):
-        return self.rs
-
-    def get_output(self):
-        self.m.update()
-        output = {}
-        score = self.weight * self.rs.unprotected_evaluate(None)
-        output["_TotalScore"] = str(score)
-        output["DistanceRestraint_" + self.label] = str(score)
-        return output
-
-    def evaluate(self):
-        return self.weight * self.rs.unprotected_evaluate(None)
 
 
 class TorqueRestraint(IMP.Restraint):
@@ -364,7 +310,7 @@ class BiStableDistanceRestraint(IMP.Restraint):
         return self.particle_list
 
 
-class DistanceToPointRestraint(object):
+class DistanceToPointRestraint(IMP.pmi.restraints.RestraintBase):
     """DistanceToPointRestraint for anchoring a particle to a specific coordinate"""
     def __init__(self,
                  representation=None,
@@ -384,21 +330,17 @@ class DistanceToPointRestraint(object):
         @param root_hier The hierarchy to select from (use this instead of representation)
         \note Pass the same resnum twice to each tuple_selection. Optionally add a copy number (PMI2 only)
         """
-        self.radius = radius
-        self.label = "None"
-        self.weight = weight
-
         if tuple_selection is None:
             raise Exception("You must pass a tuple_selection")
 
         if representation and not root_hier:
-            self.m = representation.prot.get_model()
+            m = representation.prot.get_model()
             ps = IMP.pmi.tools.select(representation,
                                               resolution=resolution,
                                               name=tuple_selection[2],
                                               residue=tuple_selection[0])
         elif root_hier and not representation:
-            self.m = root_hier.get_model()
+            m = root_hier.get_model()
             copy_num1 = 0
             if len(tuple_selection)>3:
                 copy_num1 = tuple_selection[3]
@@ -410,18 +352,20 @@ class DistanceToPointRestraint(object):
                                       copy_index=copy_num1)
             ps = sel1.get_selected_particles()
         else:
-            raise Exception("DistanceToPointRestraint: Pass representation or root_hier, not both")
+            raise Exception(self.__class__.__name__ + ": Pass representation or root_hier, not both")
         if len(ps) > 1:
-            raise ValueError("DistanceToPointRestraint: more than one particle selected")
+            raise ValueError(self.__class__.__name__ + ": more than one particle selected")
 
-        self.rs = IMP.RestraintSet(self.m, 'distance_to_point')
+        super(DistanceToPointRestraint, self).__init__(m)
+        self.radius = radius
+
         ub3 = IMP.core.HarmonicUpperBound(self.radius, kappa)
         if anchor_point is None:
             c3 = IMP.algebra.Vector3D(0, 0, 0)
         elif type(anchor_point) is IMP.algebra.Vector3D:
             c3 = anchor_point
         else:
-            raise Exception("DistanceToPointRestraint: @param anchor_point must be an algebra::Vector3D object")
+            raise Exception(self.__class__.__name__ + ": @param anchor_point must be an algebra::Vector3D object")
         ss3 = IMP.core.DistanceToSingletonScore(ub3, c3)
 
         lsc = IMP.container.ListSingletonContainer(self.m)
@@ -431,32 +375,5 @@ class DistanceToPointRestraint(object):
         self.rs.add_restraint(r3)
         self.set_weight(self.weight)
 
-        print("\nDistanceToPointRestraint: Created distance_to_point_restraint between "
-              "%s and %s" % (ps[0].get_name(), c3))
-
-    def set_weight(self,weight):
-        self.weight = weight
-        self.rs.set_weight(weight)
-
-    def set_label(self, label):
-        self.label = label
-
-    def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.m, self.rs)
-
-    def get_restraint(self):
-        return self.rs
-
-    def get_restraint_for_rmf(self):
-        return self.rs
-
-    def get_output(self):
-        self.m.update()
-        output = {}
-        score = self.evaluate()
-        output["_TotalScore"] = str(score)
-        output["DistanceToPointRestraint_" + self.label] = str(score)
-        return output
-
-    def evaluate(self):
-        return self.weight * self.rs.unprotected_evaluate(None)
+        print("\n%s: Created distance_to_point_restraint between "
+              "%s and %s" % (self.__class__.__name__, ps[0].get_name(), c3))

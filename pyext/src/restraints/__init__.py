@@ -86,13 +86,15 @@ class RestraintBase(object):
 
 
 class _NuisancesBase(object):
-    ''' This base class is used to provide nuisance setup and interface
-    for the ISD cross-link restraints '''
-    sigma_dictionary={}
-    psi_dictionary={}
+
+    """This base class is used to provide nuisance setup and interface
+    for the ISD cross-link restraints"""
+
+    sigma_dictionary = {}
+    psi_dictionary = {}
 
     def create_length(self):
-        ''' a nuisance on the length of the cross-link '''
+        """Create a nuisance on the length of the cross-link."""
         lengthinit = 10.0
         self.lengthissampled = True
         lengthminnuis = 0.0000001
@@ -101,9 +103,8 @@ class _NuisancesBase(object):
         lengthmax = 30.0
         lengthtrans = 0.2
         length = IMP.pmi.tools.SetupNuisance(self.m, lengthinit,
-                                                    lengthminnuis,
-                                                    lengthmaxnuis,
-                                                    lengthissampled).get_particle()
+                                             lengthminnuis, lengthmaxnuis,
+                                             lengthissampled).get_particle()
         self.rslen.add_restraint(
             IMP.isd.UniformPrior(
                 self.m,
@@ -113,8 +114,8 @@ class _NuisancesBase(object):
                 lengthmin))
 
     def create_sigma(self, resolution):
-        ''' a nuisance on the structural uncertainty '''
-        if isinstance(resolution,str):
+        """Create a nuisance on the structural uncertainty."""
+        if isinstance(resolution, str):
             sigmainit = 2.0
         else:
             sigmainit = resolution + 2.0
@@ -124,8 +125,9 @@ class _NuisancesBase(object):
         sigmamin = 0.01
         sigmamax = 100.0
         sigmatrans = 0.5
-        sigma = IMP.pmi.tools.SetupNuisance(self.m, sigmainit,
-                                                 sigmaminnuis, sigmamaxnuis, self.sigmaissampled).get_particle()
+        sigma = IMP.pmi.tools.SetupNuisance(self.m, sigmainit, sigmaminnuis,
+                                            sigmamaxnuis, self.sigmaissampled
+                                            ).get_particle()
         self.sigma_dictionary[resolution] = (
             sigma,
             sigmatrans,
@@ -140,13 +142,14 @@ class _NuisancesBase(object):
         # self.rssig.add_restraint(IMP.isd.JeffreysRestraint(self.sigma))
 
     def get_sigma(self, resolution):
-        if not resolution in self.sigma_dictionary:
+        """Get the nuisance on structural uncertainty."""
+        if resolution not in self.sigma_dictionary:
             self.create_sigma(resolution)
         return self.sigma_dictionary[resolution]
 
     def create_psi(self, value):
-        ''' a nuisance on the inconsistency '''
-        if isinstance(value,str):
+        """Create a nuisance on the inconsistency."""
+        if isinstance(value, str):
             psiinit = 0.5
         else:
             psiinit = value
@@ -157,8 +160,8 @@ class _NuisancesBase(object):
         psimax = 0.49
         psitrans = 0.1
         psi = IMP.pmi.tools.SetupNuisance(self.m, psiinit,
-                                               psiminnuis, psimaxnuis,
-                                               self.psiissampled).get_particle()
+                                          psiminnuis, psimaxnuis,
+                                          self.psiissampled).get_particle()
         self.psi_dictionary[value] = (
             psi,
             psitrans,
@@ -173,6 +176,7 @@ class _NuisancesBase(object):
         self.rspsi.add_restraint(IMP.isd.JeffreysRestraint(self.m, psi))
 
     def get_psi(self, value):
-        if not value in self.psi_dictionary:
+        """Get the nuisance on the inconsistency."""
+        if value not in self.psi_dictionary:
             self.create_psi(value)
         return self.psi_dictionary[value]

@@ -104,7 +104,8 @@ class _NuisancesBase(object):
         lengthtrans = 0.2
         length = IMP.pmi.tools.SetupNuisance(self.m, lengthinit,
                                              lengthminnuis, lengthmaxnuis,
-                                             lengthissampled).get_particle()
+                                             self.lengthissampled
+                                             ).get_particle()
         self.rslen.add_restraint(
             IMP.isd.UniformPrior(
                 self.m,

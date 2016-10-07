@@ -22,7 +22,7 @@ class RestraintBase(object):
         @param rname The name of the primary restraint set that is wrapped.
         """
         self.m = m
-        self.label = None
+        self.label = ""
         self.weight = 1.
         if rname is None:
             rname = self.__class__.__name__
@@ -73,16 +73,20 @@ class RestraintBase(object):
         score = self.evaluate()
         output["_TotalScore"] = str(score)
 
-        suffix = "_Score"
-        if self.label is not None:
-            suffix += "_" + str(self.label)
-
+        suffix = "_Score" + self._get_label_suffix()
         for rs in self.restraint_sets:
             out_name = rs.get_name() + suffix
             output[out_name] = str(
                 self.weight * rs.unprotected_evaluate(None))
 
         return output
+
+    def _get_label_suffix(self):
+        """Get suffix containing restraint label."""
+        if not self.label:
+            return ""
+        else:
+            return "_" + str(self.label)
 
 
 class _NuisancesBase(object):

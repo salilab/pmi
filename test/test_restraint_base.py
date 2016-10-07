@@ -7,7 +7,7 @@ import IMP.pmi.restraints
 import IMP.test
 
 
-class RestraintBaseTestCase(IMP.test.TestCase):
+class Tests(IMP.test.TestCase):
 
     def test_functions(self):
 
@@ -26,19 +26,19 @@ class RestraintBaseTestCase(IMP.test.TestCase):
         p2 = IMP.Particle(m)
         IMP.core.XYZ.setup_particle(p2)
         r = DistanceRestraint(p1, p2, 0., 1.)
-        self.assertEquals(r.evaluate(), 0.0)
+        self.assertAlmostEqual(r.evaluate(), 0.0, delta=1e-6)
         output = r.get_output()
-        self.assertEquals(output["DistanceRestraint_Score"], str(0.0))
-        self.assertEquals(output["_TotalScore"], str(0.0))
+        self.assertEqual(output["DistanceRestraint_Score"], str(0.0))
+        self.assertEqual(output["_TotalScore"], str(0.0))
         self.assertIsInstance(r.get_restraint_set(), IMP.RestraintSet)
 
         IMP.core.XYZ(p2).set_coordinates(IMP.algebra.Vector3D(0, 0, 10))
         r.set_weight(10.)
         r.set_label("Test")
-        self.assertEquals(r.evaluate(), 500)
+        self.assertAlmostEqual(r.evaluate(), 500, delta=1e-6)
         output = r.get_output()
-        self.assertEquals(output["DistanceRestraint_Score_Test"], str(500.0))
-        self.assertEquals(output["_TotalScore"], str(500.0))
+        self.assertEqual(output["DistanceRestraint_Score_Test"], str(500.0))
+        self.assertEqual(output["_TotalScore"], str(500.0))
         self.assertIsInstance(r.get_restraint_set(), IMP.RestraintSet)
 
 

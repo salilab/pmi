@@ -74,7 +74,7 @@ def log_evaluate(restraints):
     return score
 
 
-class DisulfideCrossLinkRestraint(IMP.test.TestCase):
+class Tests(IMP.test.TestCase):
     
     def test_restraint_probability_beads(self):
         m = IMP.Model()

@@ -75,7 +75,7 @@ def log_evaluate(restraints):
 
 
 class Tests(IMP.test.TestCase):
-    
+
     def test_restraint_probability_beads(self):
         m = IMP.Model()
         r = IMP.pmi.representation.Representation(m)
@@ -93,12 +93,12 @@ class Tests(IMP.test.TestCase):
             resolution=1,
             slope=0.01)
         xl.add_to_model()
-        
+
         p1=xl.xl["Particle1"]
         p2=xl.xl["Particle2"]
         sigma=xl.xl["Sigma"]
         psi=xl.xl["Psi"]
-        
+
         xyz1=IMP.core.XYZ(p1)
         xyz2=IMP.core.XYZ(p2)
 

@@ -50,7 +50,7 @@ class SAXSRestraint(IMP.pmi.restraints.RestraintBase):
         self.rs.add_restraint(self.restraint)
 
 
-class SAXSISDRestraint(object):
+class SAXSISDRestraint(IMP.pmi.restraints.RestraintBase):
 
     import IMP.saxs
     import IMP.isd

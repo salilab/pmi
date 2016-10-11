@@ -29,18 +29,16 @@ class RestraintBase(object):
         self.m = m
         self.restraint_sets = []
         self._label_is_set = False
-        self._weight_is_set = False
-        self.weight = 1.
+        self.weight = weight
         self._label = None
         self._label_suffix = ""
+        self.set_label(label)
 
         if not name:
             self.name = self.__class__.__name__
         else:
             self.name = str(name)
 
-        self.set_weight(weight)
-        self.set_label(label)
         self.rs = self._create_restraint_set(name=None)
 
     def set_label(self, label):
@@ -65,31 +63,24 @@ class RestraintBase(object):
         """Set the weight to apply to all internal restraints.
         @param weight Weight
         """
-        if self._weight_is_set:
-            raise ValueError("Weight has already been set.")
-        if weight != 1.:
-            self._weight_is_set = True
-            self.weight = weight
-            for rs in self.restraint_sets:
-                rs.set_weight(self.weight)
+        self.weight = weight
+        for rs in self.restraint_sets:
+            rs.set_weight(self.weight)
 
     def add_to_model(self):
         """Add the restraint to the model."""
         self._label_is_set = True
-        self._weight_is_set = True
         for rs in self.restraint_sets:
             IMP.pmi.tools.add_restraint_to_model(self.m, rs)
 
     def evaluate(self):
         """Evaluate the score of the restraint."""
         self._label_is_set = True
-        self._weight_is_set = True
         return self.weight * self.rs.unprotected_evaluate(None)
 
     def get_restraint_set(self):
         """Get the primary restraint set."""
         self._label_is_set = True
-        self._weight_is_set = True
         return self.rs
 
     def get_restraint(self):
@@ -99,7 +90,6 @@ class RestraintBase(object):
     def get_restraint_for_rmf(self):
         """Get the restraint for visualization in an RMF file."""
         self._label_is_set = True
-        self._weight_is_set = True
         return self.rs
 
     def get_particles_to_sample(self):

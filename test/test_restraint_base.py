@@ -50,61 +50,51 @@ class Tests(IMP.test.TestCase):
         self.assertEqual(output["DistanceRestraint2_Score_Test"], str(500.0))
         self.assertEqual(output["_TotalScore"], str(500.0))
 
-    def test_set_label_weight_after_init_raises_error(self):
+        r.set_weight(1.)
+        output = r.get_output()
+        self.assertEqual(output["DistanceRestraint2_Score_Test"], str(50.0))
+        self.assertEqual(output["_TotalScore"], str(50.0))
+
+    def test_set_label_after_init_raises_error(self):
         m = IMP.Model()
         p1 = IMP.Particle(m)
         IMP.core.XYZ.setup_particle(p1)
         p2 = IMP.Particle(m)
         IMP.core.XYZ.setup_particle(p2)
 
-        r = DistanceRestraint(p1, p2, 0., 1., label="Test", weight=2.)
+        r = DistanceRestraint(p1, p2, 0., 1., label="Test")
         with self.assertRaises(ValueError):
             r.set_label("Test2")
-        with self.assertRaises(ValueError):
-            r.set_weight(3.)
 
         r = DistanceRestraint(p1, p2, 0., 1.)
         r.set_label("Test")
-        r.set_weight(2.)
         with self.assertRaises(ValueError):
             r.set_label("Test2")
-        with self.assertRaises(ValueError):
-            r.set_weight(3.)
 
         r = DistanceRestraint(p1, p2, 0., 1.)
         r.get_output()
         with self.assertRaises(ValueError):
             r.set_label("Test")
-        with self.assertRaises(ValueError):
-            r.set_weight(2.)
 
         r = DistanceRestraint(p1, p2, 0., 1.)
         r.evaluate()
         with self.assertRaises(ValueError):
             r.set_label("Test")
-        with self.assertRaises(ValueError):
-            r.set_weight(2.)
 
         r = DistanceRestraint(p1, p2, 0., 1.)
         r.add_to_model()
         with self.assertRaises(ValueError):
             r.set_label("Test")
-        with self.assertRaises(ValueError):
-            r.set_weight(2.)
 
         r = DistanceRestraint(p1, p2, 0., 1.)
         r.get_restraint_set()
         with self.assertRaises(ValueError):
             r.set_label("Test")
-        with self.assertRaises(ValueError):
-            r.set_weight(2.)
 
         r = DistanceRestraint(p1, p2, 0., 1.)
         r.get_restraint_for_rmf()
         with self.assertRaises(ValueError):
             r.set_label("Test")
-        with self.assertRaises(ValueError):
-            r.set_weight(2.)
 
         r = DistanceRestraint(p1, p2, 0., 1.)
         r.get_particles_to_sample()

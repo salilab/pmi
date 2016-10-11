@@ -123,6 +123,54 @@ class RestraintBase(object):
         return rs
 
 
+class _RestraintNuisanceMixin(object):
+
+    """Mix-in to add nuisance particle creation functionality to restraint.
+
+    This class must only be inherited if also inheriting
+    IMP.pmi.restraints.RestraintBase.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(_RestraintNuisanceMixin, self).__init__(*args, **kwargs)
+        self.sampled_nuisances = {}
+        self.nuisances = {}
+
+    def _create_nuisance(self, init_val, min_val, max_val, max_trans, name,
+                         is_sampled=False):
+        """Create nuisance particle.
+        @param init_val Initial value of nuisance
+        @param min_val Minimum value of nuisance
+        @param max_val Maximum value of nuisance
+        @param max_trans Maximum move to apply to nuisance
+        @param is_sampled Nuisance is a sampled particle
+        \see IMP.pmi.tools.SetupNuisance
+        """
+        nuis = IMP.pmi.tools.SetupNuisance(
+            self.m, init_val, min_val, max_val,
+            isoptimized=is_sampled).get_particle()
+        nuis_name = self.name + "_" + name
+        nuis.set_name(nuis_name)
+        self.nuisances[nuis_name] = nuis
+        if is_sampled:
+            self.sampled_nuisances[nuis_name] = (nuis, max_trans)
+        return nuis
+
+    def get_particles_to_sample(self):
+        """Get any created particles which should be sampled."""
+        ps = super(_RestraintNuisanceMixin, self).get_particles_to_sample()
+        for name, (nuis, max_trans) in self.sampled_nuisances.iteritems():
+            ps["Nuisances_" + name + self._label_suffix] = ([nuis], max_trans)
+        return ps
+
+    def get_output(self):
+        """Get outputs to write to stat files."""
+        output = super(_RestraintNuisanceMixin, self).get_output()
+        for nuis_name, nuis in self.nuisances.iteritems():
+            output[nuis_name + self._label_suffix] = str(nuis.get_scale())
+        return output
+
+
 class _NuisancesBase(object):
 
     """This base class is used to provide nuisance setup and interface

@@ -16,42 +16,80 @@ class RestraintBase(object):
 
     """Base class for PMI restraints, which wrap `IMP.Restraint`(s)."""
 
-    def __init__(self, m, rname=None):
+    def __init__(self, m, name=None, label=None, weight=1.):
         """Constructor.
         @param m The model object
-        @param rname The name of the primary restraint set that is wrapped.
+        @param name The name of the primary restraint set that is wrapped.
+                    This is used for outputs and particle/restraint names
+                    and should be set by the child class.
+        @param label A unique label to be used in outputs and
+                     particle/restraint names.
+        @param weight The weight to apply to all internal restraints.
         """
         self.m = m
-        self.label = ""
+        self.restraint_sets = []
+        self._label_is_set = False
+        self._weight_is_set = False
         self.weight = 1.
-        if rname is None:
-            rname = self.__class__.__name__
-        self.rs = IMP.RestraintSet(self.m, rname)
-        self.restraint_sets = [self.rs]
+        self._label = None
+        self._label_suffix = ""
 
-    def set_weight(self, weight):
-        """Set the weight of the restraint.
-        @param weight Restraint weight
-        """
-        self.weight = weight
-        self.rs.set_weight(weight)
+        if not name:
+            self.name = self.__class__.__name__
+        else:
+            self.name = str(name)
+
+        self.set_weight(weight)
+        self.set_label(label)
+        self.rs = self._create_restraint_set(name=None)
 
     def set_label(self, label):
-        """Set the label used in outputs.
+        """Set the unique label used in outputs and particle/restraint names.
         @param label Label
         """
-        self.label = label
+        if self._label_is_set:
+            raise ValueError("Label has already been set.")
+        if not label:
+            self._label = ""
+            self._label_suffix = ""
+        else:
+            self._label = str(label)
+            self._label_suffix = "_" + self._label
+            self._label_is_set = True
+
+    @property
+    def label(self):
+        return self._label
+
+    def set_weight(self, weight):
+        """Set the weight to apply to all internal restraints.
+        @param weight Weight
+        """
+        if self._weight_is_set:
+            raise ValueError("Weight has already been set.")
+        if weight != 1.:
+            self._weight_is_set = True
+            self.weight = weight
+            for rs in self.restraint_sets:
+                rs.set_weight(self.weight)
 
     def add_to_model(self):
         """Add the restraint to the model."""
-        IMP.pmi.tools.add_restraint_to_model(self.m, self.rs)
+        self._label_is_set = True
+        self._weight_is_set = True
+        for rs in self.restraint_sets:
+            IMP.pmi.tools.add_restraint_to_model(self.m, rs)
 
     def evaluate(self):
         """Evaluate the score of the restraint."""
+        self._label_is_set = True
+        self._weight_is_set = True
         return self.weight * self.rs.unprotected_evaluate(None)
 
     def get_restraint_set(self):
         """Get the primary restraint set."""
+        self._label_is_set = True
+        self._weight_is_set = True
         return self.rs
 
     def get_restraint(self):
@@ -60,33 +98,39 @@ class RestraintBase(object):
 
     def get_restraint_for_rmf(self):
         """Get the restraint for visualization in an RMF file."""
+        self._label_is_set = True
+        self._weight_is_set = True
         return self.rs
 
     def get_particles_to_sample(self):
         """Get any created particles which should be sampled."""
+        self._label_is_set = True
         return {}
 
     def get_output(self):
         """Get outputs to write to stat files."""
-        self.m.update()
         output = {}
+        self.m.update()
         score = self.evaluate()
         output["_TotalScore"] = str(score)
 
-        suffix = "_Score" + self._get_label_suffix()
+        suffix = "_Score" + self._label_suffix
         for rs in self.restraint_sets:
             out_name = rs.get_name() + suffix
             output[out_name] = str(
                 self.weight * rs.unprotected_evaluate(None))
-
         return output
 
-    def _get_label_suffix(self):
-        """Get suffix containing restraint label."""
-        if not self.label:
-            return ""
+    def _create_restraint_set(self, name=None):
+        """Create ``IMP.RestraintSet``."""
+        if not name:
+            name = self.name
         else:
-            return "_" + str(self.label)
+            name = self.name + "_" + str(name)
+        rs = IMP.RestraintSet(self.m, name)
+        rs.set_weight(self.weight)
+        self.restraint_sets.append(rs)
+        return rs
 
 
 class _NuisancesBase(object):

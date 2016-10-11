@@ -39,9 +39,7 @@ class SAXSRestraint(IMP.pmi.restraints.RestraintBase):
         hiers = IMP.pmi.tools.input_adaptor(input_objects, pmi_resolution=0,
                                             flatten=True)
         m = list(hiers)[0].get_model()
-        super(SAXSRestraint, self).__init__(m)
-        self.set_label(label)
-        self.set_weight(weight)
+        super(SAXSRestraint, self).__init__(m, label=label, weight=weight)
         self.profile = IMP.saxs.Profile(saxs_datafile)
 
         if ff_type == IMP.saxs.CA_ATOMS:
@@ -75,10 +73,10 @@ class SAXSISDRestraint(IMP.pmi.restraints.RestraintBase):
         print("Module isd2 not installed. Cannot use SAXSISDRestraint")
 
     def __init__(self, representation, profile, resolution=0, weight=1,
-                 ff_type=IMP.saxs.HEAVY_ATOMS):
+                 ff_type=IMP.saxs.HEAVY_ATOMS, label=None):
 
         m = representation.prot.get_model()
-        super(SAXSISDRestraint, self).__init__(m)
+        super(SAXSISDRestraint, self).__init__(m, label=label, weight=weight)
 
         self.taumaxtrans = 0.05
         self.prof = IMP.saxs.Profile(profile)
@@ -120,13 +118,11 @@ class SAXSISDRestraint(IMP.pmi.restraints.RestraintBase):
         self.saxs.add_scatterer(self.atoms, self.cov, ff_type)
 
         self.rs.add_restraint(self.saxs)
-        self.set_weight(weight)
 
         # self.saxs_stuff={'nuis':(sigma,gamma),'cov':cov,
         #        'exp':prof,'th':tmp}
 
-        self.rs2 = IMP.RestraintSet(self.m, 'SAXSISDRestraint_Prior')
-        self.restraint_sets.append(self.rs2)
+        self.rs2 = self._create_restraint_set('Prior')
         # jeffreys restraints for nuisances
         j1 = IMP.isd.JeffreysRestraint(self.m, self.sigma)
         self.rs2.add_restraint(j1)
@@ -209,10 +205,6 @@ class SAXSISDRestraint(IMP.pmi.restraints.RestraintBase):
             for i in line:
                 fl.write('%G ' % i)
             fl.write('\n')
-
-    def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.m, self.rs)
-        IMP.pmi.tools.add_restraint_to_model(self.m, self.rs2)
 
     def get_output(self):
         output = super(SAXSISDRestraint, self).get_output()

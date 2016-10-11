@@ -34,7 +34,8 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
                  slope=0.02,
                  label=None,
                  filelabel="None",
-                 attributes_for_label=None):
+                 attributes_for_label=None,
+                 weight=1.):
         """Constructor.
         @param representation DEPRECATED The IMP.pmi.representation.Representation
                 object that contain the molecular system
@@ -52,6 +53,7 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
         @param filelabel automatically generated file containing missing/included/excluded
                 cross-links will be labeled using this text
         @param attributes_for_label
+        @param weight Weight of restraint
         """
 
         use_pmi2 = True
@@ -67,9 +69,8 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
         else:
             raise Exception("You must pass either representation or root_hier")
 
-        rname = "CrossLinkingMassSpectrometryRestraint"
-        super(CrossLinkingMassSpectrometryRestraint, self).__init__(m, rname="%s_Data" % rname)
-        self.set_label(label)
+        super(CrossLinkingMassSpectrometryRestraint, self).__init__(
+            m, weight=weight, label=label)
 
         if CrossLinkDataBase is None:
             raise Exception("You must pass a CrossLinkDataBase")
@@ -84,10 +85,10 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
         exdb = open("excluded." + filelabel + ".xl.db", "w")
         midb = open("missing." + filelabel + ".xl.db", "w")
 
-        self.rspsi = IMP.RestraintSet(self.m, "%s_PriorPsi" % rname)
-        self.rssig = IMP.RestraintSet(self.m, "%s_PriorSig" % rname)
-        self.rslin = IMP.RestraintSet(self.m, "%s_Linear" % rname)
-        self.restraint_sets.extend([self.rspsi, self.rssig, self.rslin])
+        self.rs.set_name(self.rs.get_name() + "_Data")
+        self.rspsi = self._create_restraint_set("PriorPsi")
+        self.rssig = self._create_restraint_set("PriorSig")
+        self.rslin = self._create_restraint_set("Linear")
 
         # dummy linear restraint used for Chimera display
         self.linear = IMP.core.Linear(0, 0.0)
@@ -294,11 +295,6 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
         lw = IMP.isd.LogWrapper(restraints,1.0)
         self.rs.add_restraint(lw)
 
-    def add_to_model(self):
-        """ Add the restraint to the model so that it is evaluated """
-        for r in self.restraint_sets:
-            IMP.pmi.tools.add_restraint_to_model(self.m, r)
-
     def get_hierarchies(self):
         """ get the hierarchy """
         return self.prot
@@ -402,7 +398,6 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
         """ Get the output of the restraint to be used by the IMP.pmi.output object"""
         output = super(CrossLinkingMassSpectrometryRestraint, self).get_output()
 
-        suffix = self._get_label_suffix()
         for xl in self.xl_list:
 
             xl_label=xl["ShortLabel"]
@@ -420,29 +415,31 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
 
         for psiname in self.psi_dictionary:
             output["CrossLinkingMassSpectrometryRestraint_Psi_" +
-                    str(psiname) + suffix] = str(self.psi_dictionary[psiname][0].get_scale())
+                    str(psiname) + self._label_suffix] = str(
+                        self.psi_dictionary[psiname][0].get_scale())
 
         for sigmaname in self.sigma_dictionary:
             output["CrossLinkingMassSpectrometryRestraint_Sigma_" +
-                   str(sigmaname) + suffix] = str(self.sigma_dictionary[sigmaname][0].get_scale())
+                   str(sigmaname) + self._label_suffix] = str(
+                    self.sigma_dictionary[sigmaname][0].get_scale())
 
 
         return output
 
     def get_particles_to_sample(self):
         """ Get the particles to be sampled by the IMP.pmi.sampler object """
-        suffix = self._get_label_suffix()
         ps = {}
         if self.sigma_is_sampled:
             for sigmaname in self.sigma_dictionary:
-                ps["Nuisances_CrossLinkingMassSpectrometryRestraint_Sigma_" + str(sigmaname) + suffix] =\
+                ps["Nuisances_CrossLinkingMassSpectrometryRestraint_Sigma_" +
+                   str(sigmaname) + self._label_suffix] =\
                     ([self.sigma_dictionary[sigmaname][0]],
                      self.sigma_dictionary[sigmaname][1])
 
         if self.psi_is_sampled:
             for psiname in self.psi_dictionary:
                 ps["Nuisances_CrossLinkingMassSpectrometryRestraint_Psi_" +
-                    str(psiname) + suffix] =\
+                    str(psiname) + self._label_suffix] =\
                    ([self.psi_dictionary[psiname][0]], self.psi_dictionary[psiname][1])
 
         return ps
@@ -467,7 +464,8 @@ class AtomicCrossLinkMSRestraint(IMP.pmi.restraints.RestraintBase):
                  sigma_init=5.0,
                  psi_init = 0.01,
                  one_psi=True,
-                 filelabel=None):
+                 filelabel=None,
+                 weight=1.):
         """Constructor.
         Automatically creates one "sigma" per crosslinked residue and one "psis" per pair.
         Other nuisance options are available.
@@ -485,13 +483,16 @@ class AtomicCrossLinkMSRestraint(IMP.pmi.restraints.RestraintBase):
         @param one_psi    Use a single psi for all restraints (if False, creates one per XL)
         @param filelabel automatically generated file containing missing/included/excluded
                 cross-links will be labeled using this text
+        @param weight Weight of restraint
+
         """
 
         # basic params
         self.root = root_hier
         rname = "AtomicXLRestraint"
-        super(AtomicCrossLinkMSRestraint, self).__init__(self.root.get_model(), rname=rname)
-        self.set_label(label)
+        super(AtomicCrossLinkMSRestraint, self).__init__(
+            self.root.get_model(), name="AtomicXLRestraint", label=label,
+            weight=weight)
         self.xldb = xldb
         self.length = length
         self.sigma_is_sampled = nuisances_are_optimized
@@ -506,9 +507,9 @@ class AtomicCrossLinkMSRestraint(IMP.pmi.restraints.RestraintBase):
         elif nstates!=len(IMP.atom.get_by_type(self.root,IMP.atom.STATE_TYPE)):
             print("Warning: nstates is not the same as the number of states in root")
 
-        self.rs_psi = IMP.RestraintSet(self.m, "%s_psi" % rname)
-        self.rs_sig = IMP.RestraintSet(self.m, "%s_sigma" % rname)
-        self.rs_lin = IMP.RestraintSet(self.m, "%s_linear" % rname)
+        self.rs_psi = self._create_restraint_set("psi")
+        self.rs_sig = self._create_restraint_set("sigma")
+        self.rs_lin = self._create_restraint_set("linear")
 
         self.psi_dictionary = {}
         self.sigma_dictionary = {}
@@ -631,13 +632,11 @@ class AtomicCrossLinkMSRestraint(IMP.pmi.restraints.RestraintBase):
         if len(xlrs)==0:
             raise Exception("You didn't create any XL restraints")
         print('created',len(xlrs),'XL restraints')
+        rname = self.rs.get_name()
         self.rs=IMP.isd.LogWrapper(xlrs, self.weight)
         self.rs.set_name(rname)
-        self.restraint_sets = [self.rs, self.rs_psi, self.rs_sig]
-
-    def add_to_model(self):
-        for rs in self.restraint_sets:
-            IMP.pmi.tools.add_restraint_to_model(self.m, r)
+        self.rs.set_weight(self.weight)
+        self.restraint_sets = [self.rs] + self.restraint_sets[1:]
 
     def get_hierarchy(self):
         return self.prot
@@ -731,16 +730,16 @@ class AtomicCrossLinkMSRestraint(IMP.pmi.restraints.RestraintBase):
     def get_particles_to_sample(self):
         """ Get the particles to be sampled by the IMP.pmi.sampler object """
         ps = {}
-        suffix = self._get_label_suffix()
         if self.sigma_is_sampled:
             for sigmaname in self.sigma_dictionary:
-                ps["Nuisances_AtomicCrossLinkingMSRestraint_Sigma_" + str(sigmaname) + suffix] = \
+                ps["Nuisances_AtomicCrossLinkingMSRestraint_Sigma_" +
+                   str(sigmaname) + self._label_suffix] = \
                     ([self.sigma_dictionary[sigmaname][0]],
                      self.sigma_dictionary[sigmaname][1])
         if self.psi_is_sampled:
             for psiname in self.psi_dictionary:
                 ps["Nuisances_CrossLinkingMassSpectrometryRestraint_Psi_" +
-                    str(psiname) + suffix] =\
+                    str(psiname) + self._label_suffix] =\
                    ([self.psi_dictionary[psiname][0]], self.psi_dictionary[psiname][1])
         return ps
 

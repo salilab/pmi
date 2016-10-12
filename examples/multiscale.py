@@ -16,6 +16,10 @@ import IMP.pmi.restraints.stereochemistry
 import sys
 
 IMP.setup_from_argv(sys.argv, "Representation at multiple scales")
+if IMP.get_is_quick_test():
+    print("This example is too slow to test in debug mode - run without")
+    print("internal tests enabled, or without the --run-quick-test flag")
+    sys.exit(0)
 
 ###################### SYSTEM SETUP #####################
 # Read sequences etc

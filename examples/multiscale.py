@@ -2,6 +2,7 @@
 """This script shows how to represent a system at multiple scales and do basic sampling.
 """
 
+from __future__ import print_function
 import IMP
 import RMF
 import IMP.atom

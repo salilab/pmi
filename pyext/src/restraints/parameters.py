@@ -1,9 +1,8 @@
-#!/usr/bin/env python
+"""@namespace IMP.pmi.restraints.parameters
+Restraints for parameters.
+"""
+
 import IMP
-import IMP.core
-import IMP.algebra
-import IMP.atom
-import IMP.container
 import IMP.isd
 import IMP.pmi.tools
 import IMP.pmi.restraints
@@ -11,7 +10,17 @@ import IMP.pmi.restraints
 
 class WeightRestraint(IMP.pmi.restraints.RestraintBase):
 
+    """Wrapper for an ``IMP.isd.WeightRestraint``"""
+
     def __init__(self, w, lower, upper, kappa, label=None, weight=1.):
+        """Create restraint on weight parameter.
+        @param w ``IMP.isd.Weight`` particle
+        @param lower Lower bound on weight restraint
+        @param upper Upper bound on weight restraint
+        @param kappa Strength of restraint
+        @param label A unique label to be used in outputs
+        @param weight The weight to apply to all internal restraints
+        """
         self.w = w
         m = self.w.get_model()
         super(WeightRestraint, self).__init__(m, label=label, weight=weight)
@@ -28,7 +37,14 @@ class WeightRestraint(IMP.pmi.restraints.RestraintBase):
 
 class JeffreysPrior(IMP.pmi.restraints.RestraintBase):
 
+    """Wrapper for ``IMP.isd.JeffreysRestraint``"""
+
     def __init__(self, nuisance, label=None, weight=1.):
+        """Create Jeffreys prior.
+        @param nuisance Nuisance parameter
+        @param label A unique label to be used in outputs
+        @param weight The weight to apply to all internal restraints
+        """
         m = nuisance.get_model()
         super(JeffreysPrior, self).__init__(m, label=label, weight=weight)
         jp = IMP.isd.JeffreysRestraint(self.m, nuisance)

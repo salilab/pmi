@@ -567,8 +567,8 @@ class BuildSystem(object):
                                                        color = domain.color)
                         these_domain_res[domain.get_unique_name()] = (
                             domain_atomic,domain_non_atomic)
-            self._domain_res.append(these_domain_res)
-            self._domains.append(these_domains)
+        self._domain_res.append(these_domain_res)
+        self._domains.append(these_domains)
         print('State',len(self.system.states),'added')
 
     def get_molecules(self):

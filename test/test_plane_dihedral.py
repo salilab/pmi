@@ -41,7 +41,7 @@ class Tests(IMP.test.TestCase):
             angle = random.uniform(-math.pi, math.pi)
             rf = _reference_frame_from_rot(1., angle)
             rb2.set_reference_frame(rf)
-            self.assertAlmostEqual(r.evaluate(), .5 * angle**2)
+            self.assertAlmostEqual(r.evaluate(), (1 - math.cos(angle)))
 
     def test_optimization(self):
         """Test that optimization of dimer produces target dihedrals."""
@@ -63,11 +63,11 @@ class Tests(IMP.test.TestCase):
             opt = IMP.core.SteepestDescent(m)
             opt.set_scoring_function(sf)
             opt.optimize(100)
-            self.assertAlmostEqual(r.evaluate(), 0, delta=1e-3)
+            self.assertAlmostEqual(r.evaluate(), 0, delta=1e-6)
             dihed1 = IMP.core.get_dihedral(ps1[1], ps1[0], ps2[0], ps2[1])
             dihed2 = IMP.core.get_dihedral(ps1[2], ps1[0], ps2[0], ps2[2])
-            self.assertAlmostEqual(dihed1, target_angle, delta=0.01)
-            self.assertAlmostEqual(dihed2, target_angle, delta=0.01)
+            self.assertAlmostEqual(dihed1, target_angle, delta=1e-3)
+            self.assertAlmostEqual(dihed2, target_angle, delta=1e-3)
 
     def test_optimization_string(self):
         """Test that optimization of long string produces target dihedrals."""
@@ -88,7 +88,7 @@ class Tests(IMP.test.TestCase):
         opt = IMP.core.SteepestDescent(m)
         opt.set_scoring_function(sf)
         opt.optimize(500)
-        self.assertAlmostEqual(r.evaluate(), 0., delta=1e-2)
+        self.assertAlmostEqual(r.evaluate(), 0., delta=1e-4)
 
 
 if __name__ == '__main__':

@@ -1773,6 +1773,22 @@ def get_rbs_and_beads(hiers):
             beads.append(p)
     return rbs_ordered,beads
 
+
+def get_densities(input_objects):
+    """Given a list of PMI objects, return all density hierarchies within
+    these objects.  The output of this function can be inputted into
+    things such as EM restraints.
+    """
+    stuff=input_adaptor(input_objects, flatten=True)
+    densities=[]
+    try:
+        for i in iter(stuff):
+            densities.append(IMP.atom.Selection(i,representation_type=IMP.atom.DENSITIES).get_selected_particles())
+    except TypeError, te:
+        densities.append(IMP.atom.Selection(stuff,representation_type=IMP.atom.DENSITIES).get_selected_particles())
+
+    return [h for sublist in densities for h in sublist]
+
 def shuffle_configuration(objects,
                           max_translation=300., max_rotation=2.0 * pi,
                           avoidcollision_rb=True, avoidcollision_fb=False,

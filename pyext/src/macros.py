@@ -580,7 +580,7 @@ class BuildSystem(object):
     def get_molecule(self,molname,copy_index=0,state_index=0):
         return self.system.get_states()[state_index].get_molecules()[molname][copy_index]
 
-    def execute_macro(self):
+    def execute_macro(self, max_rb_trans=4.0, max_rb_rot=0.04, max_bead_trans=1.0, max_srb_trans=1.0):
         """Builds representations and sets up degrees of freedom"""
         print("BuildSystem: building representations")
         self.root_hier = self.system.build()
@@ -605,22 +605,22 @@ class BuildSystem(object):
                 all_res|=bead_res
                 self.dof.create_rigid_body(all_res,
                                            nonrigid_parts=bead_res,
-                                           max_trans=4.0,
-                                           nonrigid_max_trans=1.0)
+                                           max_trans=max_rb_trans,
+                                           nonrigid_max_trans=max_rb_rot)
 
             # if you have any BEAD domains not in an RB, set them as flexible beads
             for dname in self._domains[nstate]:
                 domain = self._domains[nstate][dname]
                 if domain.pdb_file=="BEADS" and dname not in domains_in_rbs:
                     self.dof.create_flexible_beads(
-                        self._domain_res[nstate][dname][1],max_trans=4.0)
+                        self._domain_res[nstate][dname][1],max_trans=max_bead_trans)
 
             # add super rigid bodies
             for srblist in srbs:
                 all_res = IMP.pmi.tools.OrderedSet()
                 for dname in srblist:
                     all_res|=self._domain_res[nstate][dname][0]
-                self.dof.create_super_rigid_body(all_res,max_trans=4.0)
+                self.dof.create_super_rigid_body(all_res,max_trans=max_srb_trans)
 
             # add chains of super rigid bodies
             for csrblist in csrbs:

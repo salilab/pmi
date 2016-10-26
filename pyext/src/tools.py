@@ -1780,6 +1780,7 @@ def shuffle_configuration(objects,
                           bounding_box=None,
                           excluded_rigid_bodies=[],
                           hierarchies_excluded_from_collision=[],
+                          hierarchies_included_in_collision=[],
                           verbose=False):
     """Shuffle particles. Used to restart the optimization.
     The configuration of the system is initialized by placing each
@@ -1799,6 +1800,7 @@ def shuffle_configuration(objects,
     @param bounding_box Only shuffle particles within this box. Defined by ((x1,y1,z1),(x2,y2,z2)).
     @param excluded_rigid_bodies Don't shuffle these rigid body objects
     @param hierarchies_excluded_from_collision Don't count collision with these bodies
+    @param hierarchies_included_in_collision Hierarchies that are not shuffled, but should be included in collision calculation (for fixed regions)
     @param verbose Give more output
     \note Best to only call this function after you've set up degrees of freedom
     For debugging purposes, returns: <shuffled indexes>, <collision avoided indexes>
@@ -1823,7 +1825,18 @@ def shuffle_configuration(objects,
     gcpf.set_distance(cutoff)
 
     # Add particles from excluded hierarchies to excluded list
-    collision_excluded_idxs = set([l.get_index() for h in hierarchies_excluded_from_collision \
+    collision_excluded_hierarchies = IMP.pmi.tools.input_adaptor(hierarchies_excluded_from_collision,
+                                              pmi_resolution='all',
+                                              flatten=True)
+
+    collision_included_hierarchies = IMP.pmi.tools.input_adaptor(hierarchies_included_in_collision,
+                                              pmi_resolution='all',
+                                              flatten=True)
+
+    collision_excluded_idxs = set([l.get_particle().get_index() for h in collision_excluded_hierarchies \
+                               for l in IMP.core.get_leaves(h)])
+
+    collision_included_idxs = set([l.get_particle().get_index() for h in collision_included_hierarchies \
                                for l in IMP.core.get_leaves(h)])
 
     # Excluded collision with Gaussians
@@ -1834,13 +1847,17 @@ def shuffle_configuration(objects,
         if IMP.core.Gaussian.get_is_setup(p):
             collision_excluded_idxs.add(p.get_particle_index())
 
+    print(len(all_idxs), len(collision_included_idxs), len(collision_excluded_idxs))
+
     if bounding_box is not None:
         ((x1, y1, z1), (x2, y2, z2)) = bounding_box
         ub = IMP.algebra.Vector3D(x1, y1, z1)
         lb = IMP.algebra.Vector3D(x2, y2, z2)
         bb = IMP.algebra.BoundingBox3D(ub, lb)
 
-    all_idxs = set(all_idxs) - collision_excluded_idxs
+    all_idxs = set(all_idxs) | collision_included_idxs
+    all_idxs = all_idxs - collision_excluded_idxs
+    print(len(all_idxs), len(collision_included_idxs), len(collision_excluded_idxs))
     debug = []
     print('shuffling', len(rigid_bodies), 'rigid bodies')
     for rb in rigid_bodies:
@@ -1850,6 +1867,7 @@ def shuffle_configuration(objects,
                 rb_idxs = set(rb.get_member_particle_indexes()) - \
                           collision_excluded_idxs
                 other_idxs = all_idxs - rb_idxs
+                print("----INOI", rb, len(other_idxs), len(rb_idxs))
                 if not other_idxs:
                     continue
 
@@ -1872,8 +1890,9 @@ def shuffle_configuration(objects,
                         max_translation,
                         max_rotation)
 
-                debug.append([rb,other_idxs if avoidcollision_rb else set()])
+                debug.append([rb, other_idxs if avoidcollision_rb else set()])
                 IMP.core.transform(rb, transformation)
+                print("TSFM", rb)
 
                 # check collisions
                 if avoidcollision_rb:
@@ -1881,6 +1900,7 @@ def shuffle_configuration(objects,
                     npairs = len(gcpf.get_close_pairs(mdl,
                                                       list(other_idxs),
                                                       list(rb_idxs)))
+                    #print("NPAIRS:", npairs)
                     if npairs==0:
                         break
                     else:

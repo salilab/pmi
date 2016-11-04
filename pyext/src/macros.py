@@ -606,7 +606,8 @@ class BuildSystem(object):
                 self.dof.create_rigid_body(all_res,
                                            nonrigid_parts=bead_res,
                                            max_trans=max_rb_trans,
-                                           nonrigid_max_trans=max_rb_rot)
+                                           max_rot=max_rb_rot,
+                                           nonrigid_max_trans=max_bead_trans)
 
             # if you have any BEAD domains not in an RB, set them as flexible beads
             for dname in self._domains[nstate]:

@@ -111,6 +111,18 @@ class SetupWeight(object):
         return self.weight
 
 
+class SetupSurface(object):
+
+    def __init__(self, m, center, normal, isoptimized=True):
+        p = IMP.Particle(m)
+        self.surface = IMP.core.Surface.setup_particle(p, center, normal)
+        self.surface.set_coordinates_are_optimized(isoptimized)
+        self.surface.set_normal_is_optimized(isoptimized)
+
+    def get_particle(self):
+        return self.surface
+
+
 class ParticleToSampleFilter(object):
     def __init__(self, sampled_objects):
         self.sampled_objects=sampled_objects
@@ -147,7 +159,7 @@ class ParticleToSampleList(object):
         particle_type,
         particle_transformation,
             name):
-        if not particle_type in ["Rigid_Bodies", "Floppy_Bodies", "Nuisances", "X_coord", "Weights"]:
+        if not particle_type in ["Rigid_Bodies", "Floppy_Bodies", "Nuisances", "X_coord", "Weights", "Surfaces"]:
             raise TypeError("not the right particle type")
         else:
             self.dictionary_particle_type[particle] = particle_type
@@ -157,14 +169,21 @@ class ParticleToSampleList(object):
                         particle] = particle_transformation
                     self.dictionary_particle_name[particle] = name
                 else:
-                    raise TypeError("ParticleToSampleList: not the right transformation format for Rigid_Bodies, should be a tuple a floats")
+                    raise TypeError("ParticleToSampleList: not the right transformation format for Rigid_Bodies, should be a tuple of floats")
+            elif particle_type == "Surfaces":
+                if type(particle_transformation) == tuple and len(particle_transformation) == 3 and all(isinstance(x, float) for x in particle_transformation):
+                    self.dictionary_particle_transformation[
+                        particle] = particle_transformation
+                    self.dictionary_particle_name[particle] = name
+                else:
+                    raise TypeError("ParticleToSampleList: not the right transformation format for Surfaces, should be a tuple of floats")
             else:
                 if type(particle_transformation) == float:
                     self.dictionary_particle_transformation[
                         particle] = particle_transformation
                     self.dictionary_particle_name[particle] = name
                 else:
-                    raise TypeError("ParticleToSampleList: not the right transformation format sould be a float")
+                    raise TypeError("ParticleToSampleList: not the right transformation format, should be a float")
 
     def get_particles_to_sample(self):
         ps = {}

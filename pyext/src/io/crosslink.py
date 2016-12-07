@@ -56,6 +56,8 @@ class _CrossLinkDataBaseStandardKeys(object):
         self.type[self.redundancy_key]=int
         self.redundancy_list_key="RedundancyList"
         self.type[self.redundancy_key]=list
+        self.ambiguity_key="Ambiguity"
+        self.type[self.ambiguity_key]=int
         self.state_key="State"
         self.type[self.state_key]=int
         self.sigma1_key="Sigma1"
@@ -577,6 +579,7 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
     def update_cross_link_unique_sub_index(self):
         for k in self.data_base:
             for n,xl in enumerate(self.data_base[k]):
+                xl[self.ambiguity_key]=len(self.data_base[k])
                 xl[self.unique_sub_index_key]=n+1
                 xl[self.unique_sub_id_key]=k+"."+str(n+1)
 

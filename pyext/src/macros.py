@@ -603,14 +603,20 @@ class BuildSystem(object):
             # add rigid bodies
             domains_in_rbs = set()
             for rblist in rbs:
+                print("BuildSystem.execute_macro: -------- building rigid body %s" % (str(rblist)))
                 all_res = IMP.pmi.tools.OrderedSet()
                 bead_res = IMP.pmi.tools.OrderedSet()
                 for dname in rblist:
                     domain = self._domains[nstate][dname]
+                    print("BuildSystem.execute_macro: -------- adding %s" % (str(dname  )))
                     all_res|=self._domain_res[nstate][dname][0]
                     bead_res|=self._domain_res[nstate][dname][1]
                     domains_in_rbs.add(dname)
                 all_res|=bead_res
+                print("BuildSystem.execute_macro: -------- \
+creating rigid body with max_trans %s \
+max_rot %s non_rigid_max_trans %s" \
+                          % (str(max_rb_trans),str(max_rb_rot),str(max_bead_trans)))
                 self.dof.create_rigid_body(all_res,
                                            nonrigid_parts=bead_res,
                                            max_trans=max_rb_trans,

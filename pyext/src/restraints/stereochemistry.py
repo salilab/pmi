@@ -26,7 +26,8 @@ class ConnectivityRestraint(object):
                  scale=1.0,
                  disorderedlength=False,
                  upperharmonic=True,
-                 resolution=1):
+                 resolution=1,
+                 label="None"):
         """
         @param objects - a list of hierarchies, PMI TempResidues OR a single Molecule
         @param scale Scale the maximal distance between the beads by this factor when disorderedlength is False.
@@ -39,9 +40,10 @@ class ConnectivityRestraint(object):
         @param upperharmonic - This flag uses either harmonic (False)
                      or upperharmonic (True) in the intra-pair
                      connectivity restraint.
-        @parm resolution The resolution to connect things at - only used if you pass PMI objects
+        @param resolution - The resolution to connect things at - only used if you pass PMI objects
+        @param label - A string to identify this restraint in the output/stat file
         """
-        self.label = "None"
+        self.label = label
         self.weight = 1.0
 
         hiers = IMP.pmi.tools.input_adaptor(objects,resolution)

@@ -58,6 +58,7 @@ def get_structure(mdl,pdb_fn,chain_id,res_range=None,offset=0,model_num=None,ca_
 
     if res_range==[] or res_range is None:
         sel = IMP.atom.Selection(mh,chain=chain_id,atom_type=IMP.atom.AtomType('CA'))
+        sel_p = IMP.atom.Selection(mh,chain=chain_id,atom_type=IMP.atom.AT_P)
     else:
         start = res_range[0]
         end = res_range[1]
@@ -65,7 +66,14 @@ def get_structure(mdl,pdb_fn,chain_id,res_range=None,offset=0,model_num=None,ca_
             end = IMP.atom.Residue(mh.get_children()[0].get_children()[-1]).get_index()
         sel = IMP.atom.Selection(mh,chain=chain_id,residue_indexes=range(start,end+1),
                                  atom_type=IMP.atom.AtomType('CA'))
+        sel_p = IMP.atom.Selection(mh,chain=chain_id,residue_indexes=range(start,end+1),
+                                 atom_type=IMP.atom.AT_P)
     ret = []
+
+    if sel_p.get_selected_particles():
+        "WARNING: detected nucleotides. Selecting phosphorous instead of CA"
+        sel=sel_p
+
     for p in sel.get_selected_particles():
         res = IMP.atom.Residue(IMP.atom.Atom(p).get_parent())
         res.set_index(res.get_index() + offset)

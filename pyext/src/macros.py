@@ -479,7 +479,7 @@ class BuildSystem(object):
         self._readers.append(reader)
         these_domain_res = {}    #  key is unique name, value is (atomic res, nonatomicres)
         these_domains = {}       #  key is unique name, value is _Component
-        chain_ids = string.ascii_uppercase
+        chain_ids = string.ascii_uppercase+string.ascii_lowercase+'0123456789'
         numchain = 0
 
         ### setup representation
@@ -494,7 +494,6 @@ class BuildSystem(object):
                     chain_id = copy[0].chain
                 else:
                     chain_id = chain_ids[numchain]
-
                 if nc==0:
                     seq = IMP.pmi.topology.Sequences(copy[0].fasta_file)[copy[0].fasta_id]
                     print("BuildSystem.add_state: molecule %s sequence has %s residues" % (molname,len(seq)))

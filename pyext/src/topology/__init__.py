@@ -1033,14 +1033,20 @@ class TopologyReader(object):
         self.pdb_dir = pdb_dir
         self.fasta_dir = fasta_dir
         self.gmm_dir = gmm_dir
-        self.components = self.read(topology_file)
+        self._components = self.read(topology_file)
+
+    # Preserve old self.component_list for backwards compatibility
+    @IMP.deprecated_method("2.7",
+                       "Use 'get_components()' instead of 'component_list'.")
+    def __get_component_list(self): return self._components
+    component_list = property(__get_component_list)
 
     def write_topology_file(self,outfile):
         with open(outfile, "w") as f:
             f.write("|molecule_name|color|fasta_fn|fasta_id|pdb_fn|chain|"
                     "residue_range|pdb_offset|bead_size|em_residues_per_gaussian|"
                     "rigid_body|super_rigid_body|chain_of_super_rigid_bodies|\n")
-            for c in self.components:
+            for c in self._components:
                 output = c.get_str()+'\n'
                 f.write(output)
         return outfile
@@ -1049,11 +1055,11 @@ class TopologyReader(object):
         """ Return list of ComponentTopologies for selected components
         @param topology_list List of indices to return"""
         if topology_list == "all":
-            topologies = self.components
+            topologies = self._components
         else:
             topologies=[]
             for i in topology_list:
-                topologies.append(self.components[i])
+                topologies.append(self._components[i])
         return topologies
 
     def get_molecules(self):
@@ -1066,7 +1072,7 @@ class TopologyReader(object):
         is_topology = False
         linenum = 1
         if append==False:
-            self.components=[]
+            self._components=[]
 
         with open(topology_file) as infile:
             for line in infile:
@@ -1077,9 +1083,9 @@ class TopologyReader(object):
                     continue
                 if is_topology:
                     new_component = self._parse_line(line, linenum)
-                    self.components.append(new_component)
+                    self._components.append(new_component)
                     linenum += 1
-        return self.components
+        return self._components
 
     def _parse_line(self, component_line, linenum):
         """Parse a line of topology values and matches them to their key.
@@ -1237,7 +1243,7 @@ class TopologyReader(object):
     def set_gmm_dir(self,gmm_dir):
         """Change the GMM dir"""
         self.gmm_dir = gmm_dir
-        for c in self.components:
+        for c in self._components:
             c.gmm_file = os.path.join(self.gmm_dir,c.get_unique_name()+".txt")
             c.mrc_file = os.path.join(self.gmm_dir,c.get_unique_name()+".mrc")
             print('new gmm',c.gmm_file)
@@ -1245,14 +1251,14 @@ class TopologyReader(object):
     def set_pdb_dir(self,pdb_dir):
         """Change the PDB dir"""
         self.pdb_dir = pdb_dir
-        for c in self.components:
+        for c in self._components:
             if not c._orig_pdb_input in ("","None","IDEAL_HELIX","BEADS"):
                 c.pdb_file = os.path.join(self.pdb_dir,c._orig_pdb_input)
 
     def set_fasta_dir(self,fasta_dir):
         """Change the FASTA dir"""
         self.fasta_dir = fasta_dir
-        for c in self.components:
+        for c in self._components:
             c.fasta_file = os.path.join(self.fasta_dir,c._orig_fasta_file)
 
     def _is_int(self, s):
@@ -1266,7 +1272,7 @@ class TopologyReader(object):
     def get_rigid_bodies(self):
         """Return list of lists of rigid bodies (as domain name)"""
         rbl = defaultdict(list)
-        for c in self.components:
+        for c in self._components:
             if c.rigid_body:
                 rbl[c.rigid_body].append(c.get_unique_name())
         return rbl.values()
@@ -1274,7 +1280,7 @@ class TopologyReader(object):
     def get_super_rigid_bodies(self):
         """Return list of lists of super rigid bodies (as domain name)"""
         rbl = defaultdict(list)
-        for c in self.components:
+        for c in self._components:
             for rbnum in c.super_rigid_bodies:
                 rbl[rbnum].append(c.get_unique_name())
         return rbl.values()
@@ -1282,7 +1288,7 @@ class TopologyReader(object):
     def get_chains_of_super_rigid_bodies(self):
         """Return list of lists of chains of super rigid bodies (as domain name)"""
         rbl = defaultdict(list)
-        for c in self.components:
+        for c in self._components:
             for rbnum in c.chain_of_super_rigid_bodies:
                 rbl[rbnum].append(c.get_unique_name())
         return rbl.values()

@@ -21,12 +21,16 @@ class Tests(IMP.test.TestCase):
         """Test basic reading"""
         topology_file = self.get_input_file_name("topology_new.txt")
         t = IMP.pmi.topology.TopologyReader(topology_file)
-        c = t.get_components()
-        self.assertEqual(len(c),8)
-        self.assertEqual(c[0].molname,"Prot1")
-        self.assertEqual(c[1].molname,"Prot1")
-        self.assertEqual(c[1].copyname,"1")
-        self.assertEqual(c[5].get_unique_name(),"Prot2.1.1")
+        c1 = t.get_components()
+        with IMP.allow_deprecated():
+            # Test deprecated interface
+            c2 = t.component_list
+        for c in (c1, c2):
+            self.assertEqual(len(c),8)
+            self.assertEqual(c[0].molname,"Prot1")
+            self.assertEqual(c[1].molname,"Prot1")
+            self.assertEqual(c[1].copyname,"1")
+            self.assertEqual(c[5].get_unique_name(),"Prot2.1.1")
 
     def test_round_trip(self):
         """Test reading and writing"""
@@ -106,8 +110,8 @@ class Tests(IMP.test.TestCase):
                                             pdb_dir=input_dir,
                                             fasta_dir=input_dir,
                                             gmm_dir=input_dir)
-        self.assertEqual(t.components[0].pdb_file,
-                        os.path.join(input_dir,'prot.pdb'))
+        comps = t.get_components()
+        self.assertEqual(comps[0].pdb_file, os.path.join(input_dir,'prot.pdb'))
         rbs = t.get_rigid_bodies()
         srbs = t.get_super_rigid_bodies()
         csrbs = t.get_chains_of_super_rigid_bodies()

@@ -147,9 +147,18 @@ def build_ca_centers(mdl,residues):
         except:
             mass = IMP.atom.get_mass(IMP.atom.ResidueType("ALA"))
         calpha = IMP.atom.Selection(residue,atom_type=IMP.atom.AT_CA). \
-                 get_selected_particles()[0]
+                 get_selected_particles()
+        cp=IMP.atom.Selection(residue,atom_type=IMP.atom.AT_P). \
+                 get_selected_particles()
+
+        if len(calpha)==1:
+            central_atom=calpha[0]
+        elif len(cp)==1:
+            central_atom=cp[0]
+        else:
+            raise("build_ca_centers: weird selection (no Ca, no nucleotide P or ambiguous selection found)")
         radius = IMP.algebra.get_ball_radius_from_volume_3d(vol)
-        shape = IMP.algebra.Sphere3D(IMP.core.XYZ(calpha).get_coordinates(),radius)
+        shape = IMP.algebra.Sphere3D(IMP.core.XYZ(central_atom).get_coordinates(),radius)
         IMP.core.XYZR.setup_particle(rp1,shape)
         IMP.atom.Mass.setup_particle(rp1,mass)
         out_hiers.append(this_res)

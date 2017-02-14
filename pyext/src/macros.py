@@ -495,11 +495,15 @@ class BuildSystem(object):
                 else:
                     chain_id = chain_ids[numchain]
                 if nc==0:
+                    is_nucleic=False
+                    fasta_flag=copy[0].fasta_flag
+                    if fasta_flag == "RNA" or fasta_flag == "DNA": is_nucleic=True
+
                     seq = IMP.pmi.topology.Sequences(copy[0].fasta_file)[copy[0].fasta_id]
                     print("BuildSystem.add_state: molecule %s sequence has %s residues" % (molname,len(seq)))
                     orig_mol = state.create_molecule(molname,
                                                      seq,
-                                                     chain_id)
+                                                     chain_id,is_nucleic)
                     mol = orig_mol
                     numchain+=1
                 else:
@@ -631,10 +635,16 @@ max_rot %s non_rigid_max_trans %s" \
 
             # add super rigid bodies
             for srblist in srbs:
+                print("BuildSystem.execute_macro: -------- building super rigid body %s" % (str(srblist)))
                 all_res = IMP.pmi.tools.OrderedSet()
                 for dname in srblist:
+                    print("BuildSystem.execute_macro: -------- adding %s" % (str(dname  )))
                     all_res|=self._domain_res[nstate][dname][0]
                     all_res|=self._domain_res[nstate][dname][1]
+
+                print("BuildSystem.execute_macro: -------- \
+creating super rigid body with max_trans %s max_rot %s " \
+                % (str(max_srb_trans),str(max_srb_rot)))
                 self.dof.create_super_rigid_body(all_res,max_trans=max_srb_trans,max_rot=max_srb_rot)
 
             # add chains of super rigid bodies

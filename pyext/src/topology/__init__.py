@@ -185,7 +185,7 @@ class State(_SystemBase):
                 raise Exception("get_molecule() copy number is too high:",copy_num)
             return self.molecules[name][copy_num]
 
-    def create_molecule(self,name,sequence='',chain_id=''):
+    def create_molecule(self,name,sequence='',chain_id='',is_nucleic=None):
         """Create a new Molecule within this State
         @param name                the name of the molecule (string) it must not
                                    be already used
@@ -196,7 +196,7 @@ class State(_SystemBase):
         if name in self.molecules:
             raise Exception('Cannot use a molecule name already used')
 
-        mol = Molecule(self,name,sequence,chain_id,copy_num=0)
+        mol = Molecule(self,name,sequence,chain_id,copy_num=0,is_nucleic=is_nucleic)
         self.molecules[name].append(mol)
         return mol
 
@@ -231,7 +231,7 @@ class Molecule(_SystemBase):
     Resolutions and copies can be registered, but are only created when build() is called
     """
 
-    def __init__(self,state,name,sequence,chain_id,copy_num,mol_to_clone=None):
+    def __init__(self,state,name,sequence,chain_id,copy_num,mol_to_clone=None,is_nucleic=None):
         """The user should not call this directly; instead call State::create_molecule()
         @param state           The parent PMI State
         @param name            The name of the molecule (string)
@@ -248,6 +248,7 @@ class Molecule(_SystemBase):
         self.sequence = sequence
         self.built = False
         self.mol_to_clone = mol_to_clone
+        self.is_nucleic=is_nucleic
         self.representations = []  # list of stuff to build
         self._represented = IMP.pmi.tools.OrderedSet()   # residues with representation
         self.coord_finder = _FindCloseStructure() # helps you place beads by storing structure
@@ -261,7 +262,7 @@ class Molecule(_SystemBase):
         # create TempResidues from the sequence (if passed)
         self.residues=[]
         for ns,s in enumerate(sequence):
-            r = TempResidue(self,s,ns+1,ns)
+            r = TempResidue(self,s,ns+1,ns,is_nucleic)
             self.residues.append(r)
 
     def __repr__(self):
@@ -678,9 +679,17 @@ class _FindCloseStructure(object):
     def add_residues(self,residues):
         for r in residues:
             idx = IMP.atom.Residue(r).get_index()
-            ca = IMP.atom.Selection(r,atom_type=IMP.atom.AtomType("CA")).get_selected_particles()[0]
-            xyz = IMP.core.XYZ(ca).get_coordinates()
-            self.coords.append([idx,xyz])
+            ca = IMP.atom.Selection(r,atom_type=IMP.atom.AtomType("CA")).get_selected_particles()
+            p = IMP.atom.Selection(r,atom_type=IMP.atom.AtomType("P")).get_selected_particles()
+            if len(ca)==1:
+                xyz = IMP.core.XYZ(ca[0]).get_coordinates()
+                self.coords.append([idx,xyz])
+            elif len(p)==1:
+                xyz = IMP.core.XYZ(p[0]).get_coordinates()
+                self.coords.append([idx,xyz])
+            else:
+                raise("_FindCloseStructure: wrong selection")
+
         self.coords.sort(key=itemgetter(0))
     def find_nearest_coord(self,query):
         if self.coords==[]:
@@ -794,16 +803,35 @@ class PDBSequences(object):
             for r in rs:
                 dr=IMP.atom.Residue(r)
                 rid=dr.get_index()
-                olc=IMP.atom.get_one_letter_code(dr.get_residue_type())
+
                 isprotein=dr.get_is_protein()
+                isrna=dr.get_is_rna()
+                isdna=dr.get_is_dna()
                 if isprotein:
+                    olc=IMP.atom.get_one_letter_code(dr.get_residue_type())
+                    rids.append(rid)
+                    rids_olc_dict[rid]=olc
+                elif isdna:
+                    if dr.get_residue_type() == IMP.atom.DADE: olc="A"
+                    if dr.get_residue_type() == IMP.atom.DURA: olc="U"
+                    if dr.get_residue_type() == IMP.atom.DCYT: olc="C"
+                    if dr.get_residue_type() == IMP.atom.DGUA: olc="G"
+                    if dr.get_residue_type() == IMP.atom.DTHY: olc="T"
+                    rids.append(rid)
+                    rids_olc_dict[rid]=olc
+                elif isrna:
+                    if dr.get_residue_type() == IMP.atom.ADE: olc="A"
+                    if dr.get_residue_type() == IMP.atom.URA: olc="U"
+                    if dr.get_residue_type() == IMP.atom.CYT: olc="C"
+                    if dr.get_residue_type() == IMP.atom.GUA: olc="G"
+                    if dr.get_residue_type() == IMP.atom.THY: olc="T"
                     rids.append(rid)
                     rids_olc_dict[rid]=olc
             group_rids=self.group_indexes(rids)
             contiguous_sequences=IMP.pmi.tools.OrderedDict()
             for group in group_rids:
                 sequence_fragment=""
-                for i in range(group[0],group[1]):
+                for i in range(group[0],group[1]+1):
                     sequence_fragment+=rids_olc_dict[i]
                 contiguous_sequences[group]=sequence_fragment
             self.sequences[id]=contiguous_sequences
@@ -882,7 +910,7 @@ def fasta_pdb_alignments(fasta_sequences,pdb_sequences,show=False):
 class TempResidue(object):
     """Temporarily stores residue information, even without structure available."""
     # Consider implementing __hash__ so you can select.
-    def __init__(self,molecule,code,index,internal_index):
+    def __init__(self,molecule,code,index,internal_index,is_nucleic=None):
         """setup a TempResidue
         @param molecule PMI Molecule to which this residue belongs
         @param code     one-letter residue type code
@@ -891,7 +919,7 @@ class TempResidue(object):
         """
         #these attributes should be immutable
         self.molecule = molecule
-        self.rtype = IMP.pmi.tools.get_residue_type_from_one_letter_code(code)
+        self.rtype = IMP.pmi.tools.get_residue_type_from_one_letter_code(code,is_nucleic)
         self.pdb_index = index
         self.internal_index = internal_index
         self.copy_index = IMP.atom.Copy(self.molecule.hier).get_copy_index()
@@ -1079,7 +1107,11 @@ class TopologyReader(object):
         c.color = values[2]
         c._orig_fasta_file = values[3]
         c.fasta_file = values[3]
-        c.fasta_id  = values[4]
+        fasta_field = values[4].split(",")
+        c.fasta_id  = fasta_field[0]
+        c.fasta_flag = None
+        if len(fasta_field) > 1:
+            c.fasta_flag = fasta_field[1]
         c._orig_pdb_input = values[5]
         pdb_input = values[5]
         tmp_chain = values[6]
@@ -1281,6 +1313,7 @@ class _Component(object):
         self.fasta_file = None
         self._orig_fasta_file = None
         self.fasta_id = None
+        self.fasta_flag = None
         self.pdb_file = None
         self._orig_pdb_input = None
         self.chain = None

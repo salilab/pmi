@@ -423,6 +423,15 @@ class ReplicaExchange0(object):
             for p in self.representation._protocol_output:
                 p.add_replica_exchange(self)
 
+        if not self.test_mode:
+            print("closing production rmf files")
+            output.close_rmf(rmfname)
+            output.init_stat2(low_temp_stat_file,
+                              self.output_objects,
+                              extralabels=["rmf_file", "rmf_frame_index"])
+
+
+
 # ----------------------------------------------------------------------
 class BuildSystem(object):
     """A macro to build a IMP::pmi::topology::System based on a TopologyReader object.

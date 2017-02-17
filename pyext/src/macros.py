@@ -715,7 +715,7 @@ class BuildModel(object):
             print("WARNING: No chain of super rigid bodies inputted to build_model()")
         all_dnames = set([d for sublist in list_of_rigid_bodies+list_of_super_rigid_bodies\
                       +chain_of_super_rigid_bodies for d in sublist])
-        all_available = set([c.domain_name for c in component_topologies])
+        all_available = set([c._domain_name for c in component_topologies])
         if not all_dnames <= all_available:
             raise ValueError("All requested movers must reference domain "
                              "names in the component topologies")
@@ -727,8 +727,8 @@ class BuildModel(object):
         rigid_bodies={}
 
         for c in data:
-            comp_name         = c.name
-            hier_name         = c.domain_name
+            comp_name         = c.molname
+            hier_name         = c._domain_name
             color             = c.color
             fasta_file        = c.fasta_file
             fasta_id          = c.fasta_id

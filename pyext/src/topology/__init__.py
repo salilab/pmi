@@ -1070,6 +1070,7 @@ class TopologyReader(object):
         current topology and overwrite with new
         """
         is_topology = False
+        is_directories = False
         linenum = 1
         if append==False:
             self._components=[]
@@ -1080,6 +1081,7 @@ class TopologyReader(object):
                     continue
                 elif line.split('|')[1].strip() in ("molecule_name"):
                     is_topology=True
+                    is_directories = False
                     old_format = False
                     continue
                 elif line.split('|')[1] == "component_name":
@@ -1088,7 +1090,19 @@ class TopologyReader(object):
                           "|component_name|) is deprecated. Please switch to "
                           "the new-style format (using |molecule_name|)")
                     old_format = True
+                    is_directories = False
                     continue
+                elif line.split('|')[1] == "directories":
+                    print("WARNING: Setting directories in the topology file "
+                          "is deprecated. Please do so through the "
+                          "TopologyReader constructor. Note that new-style "
+                          "paths are relative to the current working "
+                          "directory, not the topology file")
+                    is_directories = True
+                elif is_directories:
+                    fields = line.split('|')
+                    setattr(self, fields[1],
+                            IMP.get_relative_path(topology_file, fields[2]))
                 if is_topology:
                     new_component = self._parse_line(line, linenum, old_format)
                     self._components.append(new_component)

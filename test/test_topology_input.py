@@ -24,6 +24,8 @@ class Tests(IMP.test.TestCase):
         c = t.get_components()
         self.assertEqual(len(c), 3)
         self.assertEqual(c[0].molname, "Prot1")
+        self.assertEqual(os.path.abspath(c[0].fasta_file),
+                         self.get_input_file_name("seqs.fasta"))
         self.assertEqual(c[1].molname, "Prot2")
         self.assertEqual(c[1]._domain_name, "Prot2A")
         self.assertEqual(c[1].get_unique_name(), "Prot2..0")

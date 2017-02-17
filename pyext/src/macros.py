@@ -729,7 +729,7 @@ class BuildModel(object):
         for c in data:
             comp_name         = c.molname
             hier_name         = c._domain_name
-            color             = c.color
+            color             = 0. # Can't use new-style string colors
             fasta_file        = c.fasta_file
             fasta_id          = c.fasta_id
             pdb_name          = c.pdb_file

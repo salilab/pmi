@@ -1080,14 +1080,22 @@ class TopologyReader(object):
                     continue
                 elif line.split('|')[1].strip() in ("molecule_name"):
                     is_topology=True
+                    old_format = False
+                    continue
+                elif line.split('|')[1] == "component_name":
+                    is_topology = True
+                    print("WARNING: old-style topology format (using "
+                          "|component_name|) is deprecated. Please switch to "
+                          "the new-style format (using |molecule_name|)")
+                    old_format = True
                     continue
                 if is_topology:
-                    new_component = self._parse_line(line, linenum)
+                    new_component = self._parse_line(line, linenum, old_format)
                     self._components.append(new_component)
                     linenum += 1
         return self._components
 
-    def _parse_line(self, component_line, linenum):
+    def _parse_line(self, component_line, linenum, old_format):
         """Parse a line of topology values and matches them to their key.
         Checks each value for correct syntax
         Returns a list of Component objects
@@ -1098,19 +1106,26 @@ class TopologyReader(object):
         errors = []
 
         ### Required fields
-        names = values[1].split('.')
-        if len(names)==1:
-            c.molname = names[0]
+        if old_format:
+            c.molname = values[1]
             c.copyname = ''
-        elif len(names)==2:
-            c.molname = names[0]
-            c.copyname = names[1]
+            c._domain_name = values[2]
+            c.color = 'blue'
         else:
-            c.molname = names[0]
-            c.copyname = names[1]
-            errors.append("Molecule name should be <molecule.copyID>")
-            errors.append("For component %s line %d " % (c.molname,linenum))
-        c.color = values[2]
+            names = values[1].split('.')
+            if len(names)==1:
+                c.molname = names[0]
+                c.copyname = ''
+            elif len(names)==2:
+                c.molname = names[0]
+                c.copyname = names[1]
+            else:
+                c.molname = names[0]
+                c.copyname = names[1]
+                errors.append("Molecule name should be <molecule.copyID>")
+                errors.append("For component %s line %d " % (c.molname,linenum))
+            c._domain_name = c.molname + '.' + c.copyname
+            c.color = values[2]
         c._orig_fasta_file = values[3]
         c.fasta_file = values[3]
         fasta_field = values[4].split(",")
@@ -1125,9 +1140,12 @@ class TopologyReader(object):
         offset = values[8]
         bead_size = values[9]
         emg = values[10]
-        rbs = values[11]
-        srbs = values[12]
-        csrbs = values[13]
+        if old_format:
+            rbs = srbs = csrbs = ''
+        else:
+            rbs = values[11]
+            srbs = values[12]
+            csrbs = values[13]
 
         if c.molname not in self.molecules:
             self.molecules[c.molname] = _TempMolecule(c)
@@ -1165,6 +1183,9 @@ class TopologyReader(object):
             c.residue_range = (int(rr.split(',')[0]), rr.split(',')[1])
             if c.residue_range[1] != 'END':
                 c.residue_range = (c.residue_range[0], int(c.residue_range[1]))
+            # Old format used -1 for the last residue
+            if old_format and c.residue_range[1] == -1:
+                c.residue_range = (c.residue_range[0], 'END')
         else:
             errors.append("Residue Range format for component %s line %d is not correct" % (c.molname, linenum))
             errors.append("Correct syntax is two comma separated integers:  |start_res, end_res|. end_res can also be END to select the last residue in the chain. |%s| was given." % rr)

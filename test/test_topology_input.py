@@ -17,6 +17,18 @@ def children_as_dict(h):
     return cdict
 
 class Tests(IMP.test.TestCase):
+    def test_old(self):
+        """Test reading of old-style topology file"""
+        topology_file = self.get_input_file_name("topology.txt")
+        t = IMP.pmi.topology.TopologyReader(topology_file)
+        c = t.get_components()
+        self.assertEqual(len(c), 3)
+        self.assertEqual(c[0].molname, "Prot1")
+        self.assertEqual(c[1].molname, "Prot2")
+        self.assertEqual(c[1]._domain_name, "Prot2A")
+        self.assertEqual(c[1].get_unique_name(), "Prot2..0")
+        self.assertEqual(c[2].get_unique_name(), "Prot2..1")
+
     def test_reading(self):
         """Test basic reading"""
         topology_file = self.get_input_file_name("topology_new.txt")
@@ -30,6 +42,8 @@ class Tests(IMP.test.TestCase):
             self.assertEqual(c[0].molname,"Prot1")
             self.assertEqual(c[1].molname,"Prot1")
             self.assertEqual(c[1].copyname,"1")
+            self.assertEqual(c[2].get_unique_name(),"Prot2..0")
+            self.assertEqual(c[3].get_unique_name(),"Prot2..1")
             self.assertEqual(c[5].get_unique_name(),"Prot2.1.1")
 
     def test_round_trip(self):

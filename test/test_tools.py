@@ -260,6 +260,38 @@ class Tests(IMP.test.TestCase):
         self.assertEqualUnordered(testSystem, compareAll)
         self.assertEqualUnordered(testState, compareAll)
 
+    def test_Segments(self):
+        s=IMP.pmi.tools.Segments(1)
+        self.assertEqual(s.segs,[[1]])
+        s=IMP.pmi.tools.Segments([1])
+        self.assertEqual(s.segs,[[1]])
+        s=IMP.pmi.tools.Segments([1,1])
+        self.assertEqual(s.segs,[[1]])
+        s=IMP.pmi.tools.Segments([1,2])
+        self.assertEqual(s.segs,[[1,2]])
+        s=IMP.pmi.tools.Segments([1,2,3])
+        self.assertEqual(s.segs,[[1,2,3]])
+        s=IMP.pmi.tools.Segments([1,2,3,5])
+        self.assertEqual(s.segs,[[1,2,3],[5]])
+        s.add(6)
+        self.assertEqual(s.segs,[[1,2,3],[5,6]])
+        s.add(0)
+        self.assertEqual(s.segs,[[0,1,2,3],[5,6]])
+        s.add(3)
+        self.assertEqual(s.segs,[[0,1,2,3],[5,6]])
+        s.add(4)
+        self.assertEqual(s.segs,[[0,1,2,3,4,5,6]])
+        s.add([-3,-4])
+        self.assertEqual(s.segs,[[-4,-3],[0,1,2,3,4,5,6]])
+        s.remove(2)
+        self.assertEqual(s.segs,[[-4,-3],[0,1],[3,4,5,6]])
+        s.remove(5)
+        self.assertEqual(s.segs,[[-4,-3],[0,1],[3,4],[6]])
+        s.remove(5)
+        self.assertEqual(s.segs,[[-4,-3],[0,1],[3,4],[6]])
+        s.add(-1)
+        self.assertEqual(s.segs,[[-4,-3],[-1,0,1],[3,4],[6]])
+
     def assertEqualUnordered(self, a, b):
         """Compare two unordered lists; i.e. each list must have the
            same elements, but possibly in a different order"""

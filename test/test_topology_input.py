@@ -81,7 +81,7 @@ class Tests(IMP.test.TestCase):
         except ImportError:
             self.skipTest("no matplotlib package")
         mdl = IMP.Model()
-        tfile = self.get_input_file_name('topology_beads.txt')
+        tfile = self.get_input_file_name('topology_new.txt')
         input_dir = os.path.dirname(tfile)
         t = IMP.pmi.topology.TopologyReader(tfile,
                                             pdb_dir=input_dir,
@@ -89,7 +89,8 @@ class Tests(IMP.test.TestCase):
                                             gmm_dir=input_dir)
         bs = IMP.pmi.macros.BuildSystem(mdl)
         bs.add_state(t)
-        IMP.pmi.plotting.topology.draw_component_composition(bs)
+        root_hier, dof = bs.execute_macro()
+        IMP.pmi.plotting.topology.draw_component_composition(dof)
 
 
     def test_set_movers(self):

@@ -203,7 +203,7 @@ def draw_component_composition(DegreesOfFreedom, max=1000, draw_pdb_names=False)
     import IMP.pmi.tools
 
     #first build the movers dictionary
-    movers_mols_res={}
+    movers_mols_res=IMP.pmi.tools.OrderedDict()
     for mv in DegreesOfFreedom.movers_particles_map:
         hs=DegreesOfFreedom.movers_particles_map[mv]
         res=[]
@@ -221,13 +221,13 @@ def draw_component_composition(DegreesOfFreedom, max=1000, draw_pdb_names=False)
                     is_molecule=IMP.atom.Molecule.get_is_setup(hp)
                 name=IMP.atom.Molecule(hp).get_name()+"."+str(IMP.atom.Copy(hp).get_copy_index())
                 if not mv in movers_mols_res:
-                    movers_mols_res[mv]={name:IMP.pmi.tools.Segments(res)}
+                    movers_mols_res[mv]=IMP.pmi.tools.OrderedDict()
+                    movers_mols_res[mv][name]=IMP.pmi.tools.Segments(res)
                 else:
                     if not name in movers_mols_res[mv]:
                         movers_mols_res[mv][name]=IMP.pmi.tools.Segments(res)
                     else:
                         movers_mols_res[mv][name].add(res)
-
     # then get all movers by type
     fb_movers=[]
     rb_movers=[]
@@ -254,6 +254,7 @@ def draw_component_composition(DegreesOfFreedom, max=1000, draw_pdb_names=False)
     elements={}
     c=IMP.pmi.tools.Colors()
     colors=c.get_list_distant_colors()
+    colors=["blue", "red", "green", "pink", "cyan", "purple", "magenta", "orange", "grey", "brown", "gold", "khaki", "olive drab", "deep blue sky"]
     mvrb_color={}
     for mv in movers_mols_res:
         mvtype=None
@@ -308,7 +309,7 @@ def draw_component_composition(DegreesOfFreedom, max=1000, draw_pdb_names=False)
                     if l[3] == "pdb":
                         colors.append("#99CCFF")
                     if l[3] == "bead":
-                        colors.append("#FFFF99")
+                        colors.append("white")
                     if l[3] == "helix":
                         colors.append("#33CCCC")
                     if l[3] != "end":
@@ -317,7 +318,7 @@ def draw_component_composition(DegreesOfFreedom, max=1000, draw_pdb_names=False)
                     if l[3] == "pdb":
                         colors.append(l[4])
                     if l[3] == "bead":
-                        colors.append("#FFFF99")
+                        colors.append("white")
                     if l[3] == "helix":
                         colors.append("#33CCCC")
                     if l[3] != "end":
@@ -403,9 +404,9 @@ def draw_component_composition(DegreesOfFreedom, max=1000, draw_pdb_names=False)
         # cb2.set_label(k)
 
         pyplot.savefig(
-            k + "structure.pdf",
-            dpi=150,
-            transparent="True",
-            bbox_extra_artists=(extra_artists),
-            bbox_inches='tight')
+            k + "structure.pdf")
+            #transparent="True")
+            #dpi=150,
+            #bbox_extra_artists=(extra_artists),
+            #bbox_inches='tight')
         #pyplot.show()

@@ -1270,6 +1270,8 @@ class Segments(object):
                     self.segs.append(s[i+1:])
         for n in range(len(self.segs)):
             self.segs[n].sort()
+            if len(self.segs[n])==0:
+                del self.segs[n]
         self.segs.sort(key=lambda tup: tup[0])
 
     def get_flatten(self):

@@ -38,7 +38,7 @@ class DegreesOfFreedom(object):
         self.nuisances = []
         self._rb2mov = {}   # Keys are the RigidBody objects, values are list of movers
         # the following is needed to keep track of disabled movers
-        self.movers_particles_map={}
+        self.movers_particles_map=IMP.pmi.tools.OrderedDict()
         self.movers_rb_map={}
         self.movers_xyz_map={}
         self.disabled_movers=[]

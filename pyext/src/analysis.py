@@ -998,7 +998,7 @@ class GetRMSD(object):
            @param label label that will be used when parsing the stat file
         """
 
-     rmf_fh = RMF.open_rmf_file_read_only(rmf_file_name)
+        rmf_fh = RMF.open_rmf_file_read_only(rmf_file_name)
         hh = IMP.rmf.create_hierarchies(rmf_fh, hier.get_model())
         self.rmf_state = hh[0].get_children()[rmf_state_index]
         self.current_state = hier.get_children()[rmf_state_index]

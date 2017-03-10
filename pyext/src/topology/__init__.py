@@ -1072,7 +1072,7 @@ class TopologyReader(object):
             for line in infile:
                 if line.lstrip()=="" or line[0]=="#":
                     continue
-                elif line.split('|')[1] in ("molecule_name"):
+                elif line.split('|')[1].strip() in ("molecule_name"):
                     is_topology=True
                     continue
                 if is_topology:

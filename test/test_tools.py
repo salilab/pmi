@@ -57,6 +57,59 @@ class Tests(IMP.test.TestCase):
         for r in r2[2:]:
             self.assertFalse(r[1])
 
+    def test_shuffle_box(self):
+        """Test shuffling rbs, fbs with bounding box"""
+        mdl = IMP.Model()
+        s = IMP.pmi.topology.System(mdl)
+        seqs = IMP.pmi.topology.Sequences(self.get_input_file_name('chainA.fasta'))
+        st1 = s.create_state()
+        mol = st1.create_molecule("GCP2_YEAST",sequence=seqs["GCP2_YEAST"][:100],chain_id='A')
+        atomic_res = mol.add_structure(self.get_input_file_name('chainA.pdb'),
+                                       chain_id='A',
+                                       res_range=(1,100))
+        mol.add_representation(mol.get_atomic_residues(),resolutions=[10])
+        mol.add_representation(mol.get_non_atomic_residues(), resolutions=[10])
+
+        mol2 = mol.create_clone('B')
+
+        mol3 = st1.create_molecule("GCP2_YEAST_BEADS",sequence=seqs["GCP2_YEAST"][:100],chain_id='C')
+        mol3.add_representation(mol3.get_non_atomic_residues(), resolutions=[10])
+        
+        hier = s.build()
+
+        dof = IMP.pmi.dof.DegreesOfFreedom(mdl)
+        mv,rb1 = dof.create_rigid_body(mol, nonrigid_parts=mol.get_non_atomic_residues())
+        mv,rb2 = dof.create_rigid_body(mol2, nonrigid_parts=mol2.get_non_atomic_residues())
+        results = IMP.pmi.tools.shuffle_configuration(hier,
+                                                      bounding_box=((100,100,100),(200,200,200)))
+
+        rbs_trans_after={}
+        fbs_position_after={}
+
+        rbs,fbs = IMP.pmi.tools.get_rbs_and_beads([hier])
+        
+        for rb in rbs:
+            coor_rb = IMP.core.XYZ(rb).get_coordinates()
+            self.assertTrue(100.0 <coor_rb[0]< 200.0)
+            self.assertTrue(100.0 <coor_rb[1]< 200.0)
+            self.assertTrue(100.0 <coor_rb[2]< 200.0)
+    
+        for fb in fbs:
+            if IMP.core.NonRigidMember.get_is_setup(fb):
+                coor_fb=IMP.algebra.Vector3D([fb.get_value(IMP.FloatKey(4)),
+                                               fb.get_value(IMP.FloatKey(5)),
+                                               fb.get_value(IMP.FloatKey(6))])
+                self.assertTrue(100.0 <coor_fb[0]< 200.0)
+                self.assertTrue(100.0 <coor_fb[1]< 200.0)
+                self.assertTrue(100.0 <coor_fb[2]< 200.0)
+                
+            else:
+                coor_fb=IMP.core.XYZ(fb).get_coordinates()
+                self.assertTrue(100.0 <coor_fb[0]< 200.0)
+                self.assertTrue(100.0 <coor_fb[1]< 200.0)
+                self.assertTrue(100.0 <coor_fb[2]< 200.0)
+                
+
     def test_shuffle_deep(self):
         """Test moving rbs, fbs"""
         mdl = IMP.Model()

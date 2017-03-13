@@ -2001,11 +2001,15 @@ def shuffle_configuration(objects,
                 # local transform
                 if bounding_box:
                     translation = IMP.algebra.get_random_vector_in(bb)
+                    # First move to origin 
+                    transformation_orig = IMP.algebra.Transformation3D(IMP.algebra.get_identity_rotation_3d(),
+                                                                       -IMP.core.XYZ(rb).get_coordinates())
+                    IMP.core.transform(rb, transformation_orig)
                     old_coord = IMP.core.XYZ(rb).get_coordinates()
                     rotation = IMP.algebra.get_random_rotation_3d()
-                    transformation = IMP.algebra.Transformation3D(
-                        rotation,
-                        translation-old_coord)
+                    transformation = IMP.algebra.Transformation3D(rotation,
+                                                                  translation)
+                    
                 else:
                     transformation = IMP.algebra.get_random_local_transformation(
                         rbxyz,
@@ -2047,27 +2051,37 @@ def shuffle_configuration(objects,
         # iterate, trying to avoid collisions
         niter = 0
         while niter < niterations:
-            fbxyz = IMP.core.XYZ(fb).get_coordinates()
             if bounding_box:
                 translation = IMP.algebra.get_random_vector_in(bb)
-                transformation = IMP.algebra.Transformation3D(translation-fbxyz)
+                transformation = IMP.algebra.Transformation3D(translation)
             else:
-                transformation = IMP.algebra.get_random_local_transformation(
-                    fbxyz,
-                    max_translation,
-                    max_rotation)
+                fbxyz = IMP.core.XYZ(fb).get_coordinates()
+                transformation = IMP.algebra.get_random_local_transformation(fbxyz,
+                                                                             max_translation,
+                                                                             max_rotation)
 
             # For gaussians, treat this fb as an rb
-
             if IMP.core.NonRigidMember.get_is_setup(fb):
                 xyz=[fb.get_value(IMP.FloatKey(4)), fb.get_value(IMP.FloatKey(5)), fb.get_value(IMP.FloatKey(6))]
                 xyz_transformed=transformation.get_transformed(xyz)
-                fb.set_value(IMP.FloatKey(4),xyz_transformed[0])
-                fb.set_value(IMP.FloatKey(5),xyz_transformed[1])
-                fb.set_value(IMP.FloatKey(6),xyz_transformed[2])
-                debug.append([xyz,other_idxs if avoidcollision_fb else set()])
+                if bounding_box:
+                    # Translate to origin
+                    fb.set_value(IMP.FloatKey(4),xyz_transformed[0]-xyz[0])
+                    fb.set_value(IMP.FloatKey(5),xyz_transformed[1]-xyz[1])
+                    fb.set_value(IMP.FloatKey(6),xyz_transformed[2]-xyz[2])
+                    debug.append([xyz,other_idxs if avoidcollision_fb else set()])
+                    xyz2=[fb.get_value(IMP.FloatKey(4)), fb.get_value(IMP.FloatKey(5)), fb.get_value(IMP.FloatKey(6))]
+                else:
+                    fb.set_value(IMP.FloatKey(4),xyz_transformed[0])
+                    fb.set_value(IMP.FloatKey(5),xyz_transformed[1])
+                    fb.set_value(IMP.FloatKey(6),xyz_transformed[2])
+                    debug.append([xyz,other_idxs if avoidcollision_fb else set()])
             else:
-                d = IMP.core.XYZ(fb)
+                d =IMP.core.XYZ(fb)
+                if bounding_box:
+                    # Translate to origin first
+                    IMP.core.transform(d, -d.get_coordinates())
+                    d =IMP.core.XYZ(fb)
                 debug.append([d,other_idxs if avoidcollision_fb else set()])
                 IMP.core.transform(d, transformation)
 

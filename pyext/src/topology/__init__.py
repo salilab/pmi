@@ -1398,3 +1398,8 @@ class _Component(object):
                              self._l2s(self.super_rigid_bodies),
                              self._l2s(self.chain_of_super_rigid_bodies)])+'|'
         return a
+
+    # Preserve old self.name for backwards compatibility
+    @IMP.deprecated_method("2.7", "Use 'molname' instead of 'name'.")
+    def __get_name(self): return self.molname
+    name = property(__get_name)

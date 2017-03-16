@@ -30,7 +30,7 @@ class Tests(IMP.test.TestCase):
         with IMP.allow_deprecated():
             # Test deprecated interface
             self.assertEqual(c[1].name, "Prot2")
-        self.assertEqual(c[1]._domain_name, "Prot2A")
+            self.assertEqual(c[1].domain_name, "Prot2A")
         self.assertEqual(c[1].get_unique_name(), "Prot2..0")
         self.assertEqual(c[2].get_unique_name(), "Prot2..1")
 

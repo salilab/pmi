@@ -1403,3 +1403,9 @@ class _Component(object):
     @IMP.deprecated_method("2.7", "Use 'molname' instead of 'name'.")
     def __get_name(self): return self.molname
     name = property(__get_name)
+
+    # Preserve old self.domain_name for backwards compatibility
+    @IMP.deprecated_method("2.7",
+                           "Use 'get_unique_name()' instead of 'domain_name'.")
+    def __get_domain_name(self): return self._domain_name
+    domain_name = property(__get_domain_name)

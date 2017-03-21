@@ -559,7 +559,8 @@ class _ExternalReferenceDumper(_Dumper):
         self._locations.append(location)
         return location
 
-    def finalize(self):
+    def finalize_after_datasets(self):
+        """Note that this must happen *after* DatasetDumper.finalize()"""
         # Keep only locations that don't point into databases (these are
         # handled elsewhere)
         self._locations = [x for x in self._locations
@@ -614,8 +615,6 @@ class _DatasetDumper(_Dumper):
     def add(self, dataset):
         """Add a new dataset.
            Note that ids are assigned later."""
-        # Register the dataset's location
-        self.simo.extref_dump.add(dataset.location)
         self._datasets.append(dataset)
         return dataset
 
@@ -624,6 +623,9 @@ class _DatasetDumper(_Dumper):
         # Assign IDs to all datasets
         self._dataset_by_id = []
         for d in self._flatten_dataset(self._datasets):
+            # Register location (need to do that now rather than in add() in
+            # order to properly handle _RestraintDataset)
+            self.simo.extref_dump.add(d.location)
             assign_id(d, seen_datasets, self._dataset_by_id)
 
         # Make sure that all datasets are listed, even if they weren't used
@@ -640,6 +642,8 @@ class _DatasetDumper(_Dumper):
                 seen_group_ids[ids] = g
             else:
                 g.id = seen_group_ids[ids].id
+        # Finalize external references (must happen after dataset finalize)
+        self.simo.extref_dump.finalize_after_datasets()
 
     def _flatten_dataset(self, d):
         if isinstance(d, list):

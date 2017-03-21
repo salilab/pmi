@@ -17,8 +17,11 @@ class EmptyObject(object):
 
 def make_dataset_dumper():
     """Make an empty DatasetDumper object."""
+    class MockExtRef(IMP.pmi.mmcif._ExternalReferenceDumper):
+        def finalize_after_datasets(self):
+            pass
     simo = EmptyObject()
-    simo.extref_dump = IMP.pmi.mmcif._ExternalReferenceDumper(simo)
+    simo.extref_dump = MockExtRef(simo)
     return IMP.pmi.mmcif._DatasetDumper(simo), simo
 
 class Tests(IMP.test.TestCase):
@@ -477,7 +480,7 @@ _ihm_related_datasets.data_type_primary
         # DatabaseLocations should be ignored
         l = IMP.pmi.metadata.PDBLocation('1abc', '1.0', 'test details')
         dump.add(l)
-        dump.finalize()
+        dump.finalize_after_datasets()
         fh = StringIO()
         w = IMP.pmi.mmcif._CifWriter(fh)
         dump.dump(w)

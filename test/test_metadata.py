@@ -36,8 +36,15 @@ class Tests(IMP.test.TestCase):
             local = IMP.pmi.metadata.LocalFileLocation(
                                 os.path.relpath(os.path.join(tmpdir, 'bar')))
             f = s.get_path(local)
-            self.assertEqual(f.doi, '10.5281/zenodo.46266')
+            self.assertEqual(f.repo.doi, '10.5281/zenodo.46266')
             self.assertEqual(f.path, 'bar')
+
+    def test_repository_no_checkout(self):
+        """Test metadata.Repository with no checkout"""
+        r = IMP.pmi.metadata.Repository(doi='10.5281/zenodo.46266')
+        f = IMP.pmi.metadata.RepositoryFileLocation(repo=r, path='foo')
+        self.assertEqual(f.repo.doi, '10.5281/zenodo.46266')
+        self.assertEqual(f.path, 'foo')
 
     def test_repr_add(self):
         """Test Representation.add_metadata()"""
@@ -89,16 +96,18 @@ class Tests(IMP.test.TestCase):
 
     def test_repo_file_location(self):
         """Test RepositoryFileLocation class"""
-        d = IMP.pmi.metadata.RepositoryFileLocation('mydoi', 'mypath',
+        r = IMP.pmi.metadata.Repository(doi='mydoi')
+        d = IMP.pmi.metadata.RepositoryFileLocation(repo=r, path='mypath',
                                                     details='bar')
-        self.assertEqual(d.doi, 'mydoi')
+        self.assertEqual(d.repo.doi, 'mydoi')
         self.assertEqual(d.path, 'mypath')
         self.assertEqual(d.details, 'bar')
-        d2 = IMP.pmi.metadata.RepositoryFileLocation('mydoi', 'mypath')
+        d2 = IMP.pmi.metadata.RepositoryFileLocation(r, 'mypath')
         self.assertEqual(d, d2)
-        d3 = IMP.pmi.metadata.RepositoryFileLocation('mydoi', 'otherpath')
+        d3 = IMP.pmi.metadata.RepositoryFileLocation(r, 'otherpath')
         self.assertNotEqual(d, d3)
-        d4 = IMP.pmi.metadata.RepositoryFileLocation('otherdoi', 'mypath')
+        r2 = IMP.pmi.metadata.Repository(doi='otherdoi')
+        d4 = IMP.pmi.metadata.RepositoryFileLocation(r2, 'mypath')
         self.assertNotEqual(d, d4)
 
     def test_local_file_location(self):

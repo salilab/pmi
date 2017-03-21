@@ -177,19 +177,19 @@ class RepositoryFileLocation(Location):
 
        @see Repository"""
 
-    _eq_keys = Location._eq_keys + ['doi', 'path']
+    _eq_keys = Location._eq_keys + ['repo', 'path']
 
-    def __init__(self, doi, path, details=None):
+    def __init__(self, repo, path, details=None):
         """Constructor.
-           @param doi the Digital Object Identifer for the repository.
+           @param repo a Repository object that describes the repository.
            @param path the location of the file or directory in the repository.
         """
         super(RepositoryFileLocation, self).__init__(details)
-        self.doi, self.path = doi, path
+        self.repo, self.path = repo, path
 
 class Repository(Metadata):
     """A repository containing modeling files.
-       This can be used if the PMI script plus inputs files are part of a
+       This can be used if the PMI script plus input files are part of a
        repository, which has been archived somewhere with a DOI.
        This will be used to construct permanent references to files
        used in this modeling, even if they haven't been uploaded to
@@ -197,18 +197,30 @@ class Repository(Metadata):
 
        @see RepositoryFile."""
 
-    def __init__(self, doi, root):
+    # Two repositories compare equal if their DOIs are the same
+    def __eq__(self, other):
+        return self.doi == other.doi
+    def __hash__(self):
+        return hash(self.doi)
+
+    def __init__(self, doi, root=None):
         """Constructor.
-           @param doi the Digital Object Identifer for the repository.
+           @param doi the Digital Object Identifier for the repository.
            @param root the relative path to the top-level directory
-                  of the repository from the working directory of the script.
+                  of the repository from the working directory of the script,
+                  or None if files in this repository aren't checked out.
         """
+        # todo: DOI should be optional (could also use URL, local path)
         self.doi = doi
-        # Store absolute path in case the working directory changes later
-        self._root = os.path.abspath(root)
+        if root:
+            # Store absolute path in case the working directory changes later
+            self._root = os.path.abspath(root)
 
     def get_path(self, local):
-        """Map a LocalFileLocation to a file in this repository."""
-        return RepositoryFileLocation(self.doi,
+        """Map a LocalFileLocation to a file in this repository.
+           This only works if `root` was given to the constructor."""
+        # todo: raise an exception if local path starts with .. (i.e. path
+        # is outside the repository)
+        return RepositoryFileLocation(self,
                                       os.path.relpath(local.path, self._root),
                                       details=local.details)

@@ -1197,6 +1197,15 @@ class _PDBHelix(object):
         self.length = int(line[71:76])
 
 
+class _MSESeqDif(object):
+    """Track an MSE -> MET mutation in the starting model sequence"""
+    comp_id = 'MET'
+    db_comp_id = 'MSE'
+    details = 'Conversion of modified residue MSE to MET'
+    def __init__(self, res, component):
+        self.res, self.component = res, component
+
+
 class _StartingModelDumper(_Dumper):
     def __init__(self, simo):
         super(_StartingModelDumper, self).__init__(simo)
@@ -1307,7 +1316,27 @@ class _StartingModelDumper(_Dumper):
 
     def dump(self, writer):
         self.dump_details(writer)
-        self.dump_coords(writer)
+        seq_dif = self.dump_coords(writer)
+        self.dump_seq_dif(writer, seq_dif)
+
+    def dump_seq_dif(self, writer, seq_dif):
+        ordinal = 1
+        with writer.loop("_ihm_starting_model_seq_dif",
+                     ["ordinal_id", "entity_id", "asym_id",
+                      "seq_id", "comp_id", "starting_model_ordinal_id",
+                      "db_entity_id", "db_asym_id", "db_seq_id", "db_comp_id",
+                      "details"]) as l:
+            for sd in seq_dif:
+                chain_id = self.simo.get_chain_for_component(
+                                    sd.component, self.output)
+                entity = self.simo.entities[sd.component]
+                # todo: determine starting_model_ordinal_id
+                l.write(ordinal_id=ordinal, entity_id=entity.id,
+                        asym_id=chain_id, seq_id=sd.res.get_index(),
+                        comp_id=sd.comp_id, db_entity_id=entity.id,
+                        db_asym_id=chain_id, db_seq_id=sd.res.get_index(),
+                        db_comp_id=sd.db_comp_id, details=sd.details)
+                ordinal += 1
 
     def dump_details(self, writer):
         writer.write_comment("""IMP will attempt to identify which input models
@@ -1347,6 +1376,7 @@ modeling. These may need to be added manually below.""")
                     ordinal += 1
 
     def dump_coords(self, writer):
+        seq_dif = []
         ordinal = 1
         with writer.loop("_ihm_starting_model_coord",
                      ["starting_model_id", "group_PDB", "id", "type_symbol",
@@ -1371,11 +1401,11 @@ modeling. These may need to be added manually below.""")
                         res = IMP.atom.get_residue(atom)
                         res_name = res.get_residue_type().get_string()
                         # MSE in the original PDB is automatically mutated
-                        # by IMP to MET, so reflect that in the output.
-                        # todo: also add to the notes for starting_model_details
-                        # that the sequence was changed
+                        # by IMP to MET, so reflect that in the output,
+                        # and pass back to populate the seq_dif category.
                         if res_name == 'MSE':
                             res_name = 'MET'
+                            seq_dif.append(_MSESeqDif(res, f.component))
                         chain_id = self.simo.get_chain_for_component(
                                             f.component, self.output)
                         entity = self.simo.entities[f.component]
@@ -1390,6 +1420,7 @@ modeling. These may need to be added manually below.""")
                                 B_iso_or_equiv=atom.get_temperature_factor(),
                                 ordinal_id=ordinal)
                         ordinal += 1
+        return seq_dif
 
 class _StructConfDumper(_Dumper):
     def all_rigid_fragments(self):

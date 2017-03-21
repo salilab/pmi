@@ -921,5 +921,40 @@ _ihm_2dem_class_average_restraint.details
             self.assertEqual(loc.repo.doi, 'foo')
             self.assertEqual(loc.path, 'bar')
 
+    def test_seq_dif(self):
+        """Test StartingModelDumper.dump_seq_dif"""
+        class DummyEntity(object):
+            id = 4
+        class DummyPO(object):
+            def get_chain_for_component(self, comp, output):
+                return 'H'
+            entities = {'nup84': DummyEntity()}
+        class DummyRes(object):
+            def get_index(self):
+                return 42
+
+        po = DummyPO()
+        d = IMP.pmi.mmcif._StartingModelDumper(po)
+        fh = StringIO()
+        w = IMP.pmi.mmcif._CifWriter(fh)
+        d.dump_seq_dif(w, [IMP.pmi.mmcif._MSESeqDif(DummyRes(), 'nup84')])
+        out = fh.getvalue()
+        self.assertEqual(out, """#
+loop_
+_ihm_starting_model_seq_dif.ordinal_id
+_ihm_starting_model_seq_dif.entity_id
+_ihm_starting_model_seq_dif.asym_id
+_ihm_starting_model_seq_dif.seq_id
+_ihm_starting_model_seq_dif.comp_id
+_ihm_starting_model_seq_dif.starting_model_ordinal_id
+_ihm_starting_model_seq_dif.db_entity_id
+_ihm_starting_model_seq_dif.db_asym_id
+_ihm_starting_model_seq_dif.db_seq_id
+_ihm_starting_model_seq_dif.db_comp_id
+_ihm_starting_model_seq_dif.details
+1 4 H 42 MET . 4 H 42 MSE 'Conversion of modified residue MSE to MET'
+#
+""")
+
 if __name__ == '__main__':
     IMP.test.main()

@@ -27,6 +27,16 @@ import os
 import textwrap
 import weakref
 
+def assign_id(obj, seen_objs, obj_by_id):
+    """Assign a unique ID to obj, and track all ids in obj_by_id."""
+    if obj not in seen_objs:
+        if not hasattr(obj, 'id'):
+            obj_by_id.append(obj)
+            obj.id = len(obj_by_id)
+        seen_objs[obj] = obj.id
+    else:
+        obj.id = seen_objs[obj]
+
 class _LineWriter(object):
     def __init__(self, writer, line_len=80):
         self.writer = writer
@@ -531,6 +541,64 @@ class _DatasetGroup(object):
         self._datasets = final_datasets.keys()
 
 
+class _ExternalReferenceDumper(_Dumper):
+    """Output information on externally referenced files
+       (i.e. anything that refers to a Location that isn't
+       a DatabaseLocation)."""
+
+    class _LocalFiles(object):
+        doi = _CifWriter.omitted
+
+    def __init__(self, simo):
+        super(_ExternalReferenceDumper, self).__init__(simo)
+        self._locations = []
+
+    def add(self, location):
+        """Add a new location.
+           Note that ids are assigned later."""
+        self._locations.append(location)
+        return location
+
+    def finalize(self):
+        # Keep only locations that don't point into databases (these are
+        # handled elsewhere)
+        self._locations = [x for x in self._locations
+                       if not isinstance(x, IMP.pmi.metadata.DatabaseLocation)]
+        # Assign IDs to all locations and repos (including the None repo, which
+        # is for local files)
+        seen_locations = {}
+        seen_repos = {}
+        self._location_by_id = []
+        self._repo_by_id = []
+        # Special dummy repo for repo=None (local files)
+        self._local_files = self._LocalFiles()
+        for l in self._locations:
+            # Update location to point to parent repository, if any
+            self.simo._update_location(l)
+            # Assign a unique ID to the location
+            assign_id(l, seen_locations, self._location_by_id)
+            # Assign a unique ID to the repository
+            assign_id(l.repo or self._local_files, seen_repos, self._repo_by_id)
+
+    def dump(self, writer):
+        self.dump_repos(writer)
+        self.dump_locations(writer)
+
+    def dump_repos(self, writer):
+        # todo: fill in non-DOI fields
+        with writer.loop("_ihm_external_reference_info",
+                         ["reference_id", "reference"]) as l:
+            for repo in self._repo_by_id:
+                l.write(reference_id=repo.id, reference=repo.doi)
+
+    def dump_locations(self, writer):
+        with writer.loop("_ihm_external_files",
+                         ["id", "reference_id", "file_path"]) as l:
+            for loc in self._location_by_id:
+                repo = loc.repo or self._local_files
+                l.write(id=loc.id, reference_id=repo.id, file_path=loc.path)
+
+
 class _DatasetDumper(_Dumper):
     def __init__(self, simo):
         super(_DatasetDumper, self).__init__(simo)
@@ -546,6 +614,8 @@ class _DatasetDumper(_Dumper):
     def add(self, dataset):
         """Add a new dataset.
            Note that ids are assigned later."""
+        # Register the dataset's location
+        self.simo.extref_dump.add(dataset.location)
         self._datasets.append(dataset)
         return dataset
 
@@ -554,16 +624,7 @@ class _DatasetDumper(_Dumper):
         # Assign IDs to all datasets
         self._dataset_by_id = []
         for d in self._flatten_dataset(self._datasets):
-            # Map any local files to repository locations
-            if isinstance(d.location, IMP.pmi.metadata.LocalFileLocation):
-                d.location = self.simo._get_repository_location(d.location)
-            if d not in seen_datasets:
-                if not hasattr(d, 'id'):
-                    self._dataset_by_id.append(d)
-                    d.id = len(self._dataset_by_id)
-                seen_datasets[d] = d.id
-            else:
-                d.id = seen_datasets[d]
+            assign_id(d, seen_datasets, self._dataset_by_id)
 
         # Make sure that all datasets are listed, even if they weren't used
         all_group = self.get_all_group(True)
@@ -651,15 +712,12 @@ class _DatasetDumper(_Dumper):
 
     def dump_other(self, datasets, writer):
         ordinal = 1
-        with writer.loop("_ihm_dataset_other",
+        with writer.loop("_ihm_dataset_external_reference",
                          ["id", "dataset_list_id", "data_type",
-                          "doi", "content_filename", "details"]) as l:
+                          "file_id"]) as l:
             for d in datasets:
                 l.write(id=ordinal, dataset_list_id=d.id,
-                        data_type=d._data_type, doi=d.location.doi,
-                        content_filename=d.location.path,
-                        details=d.location.details if d.location.details
-                                else _CifWriter.omitted)
+                        data_type=d._data_type, file_id=d.location.id)
                 ordinal += 1
 
 
@@ -1197,7 +1255,7 @@ class _StartingModelDumper(_Dumper):
         # Attempt to identity PDB file vs. comparative model
         fh = open(pdbname)
         first_line = fh.readline()
-        local_file = IMP.pmi.metadata.LocalFileLocation(pdbname)
+        local_file = IMP.pmi.metadata.FileLocation(pdbname)
         file_dataset = self.simo.get_file_dataset(pdbname)
         if first_line.startswith('HEADER'):
             version, details, metadata = self._parse_pdb(fh, first_line)
@@ -1469,8 +1527,9 @@ class _ReplicaExchangeAnalysisEnsemble(_Ensemble):
     def load_localization_density(self, mdl, component):
         fname = self.get_localization_density_file(component)
         if os.path.exists(fname):
-            local_file = IMP.pmi.metadata.LocalFileLocation(fname)
+            local_file = IMP.pmi.metadata.FileLocation(fname)
             self.localization_density[component] = local_file
+            self.extref_dump.add(local_file)
 
     def load_all_models(self, simo):
         stat_fname = self.postproc.get_stat_file(self.cluster_num)
@@ -1566,7 +1625,7 @@ class _DensityDumper(_Dumper):
                     chain_id = self.simo.get_chain_for_component(comp,
                                                                  self.output)
                     l.write(id=ordinal, entity_id=entity.id,
-                            file_id=density.file_id,
+                            file_id=density.id,
                             seq_id_begin=1, seq_id_end=lenseq,
                             asym_id=chain_id)
                     ordinal += 1
@@ -1648,6 +1707,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.em2d_dump = _EM2DDumper(self)
         self.em3d_dump = _EM3DDumper(self)
         self.model_prot_dump = _ModelProtocolDumper(self)
+        self.extref_dump = _ExternalReferenceDumper(self)
         self.dataset_dump = _DatasetDumper(self)
         self.starting_model_dump = _StartingModelDumper(self)
         self.assembly_dump = _AssemblyDumper(self)
@@ -1681,7 +1741,8 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                          _EntityPolyDumper(self), _EntityPolySeqDumper(self),
                          _StructAsymDumper(self),
                          self.assembly_dump,
-                         self.model_repr_dump, self.dataset_dump,
+                         self.model_repr_dump, self.extref_dump,
+                         self.dataset_dump,
                          self.cross_link_dump,
                          self.em2d_dump, self.em3d_dump,
                          self.starting_model_dump,
@@ -1822,9 +1883,8 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                                    self.model_prot_dump.get_last_protocol(),
                                    self.modeled_assembly, group)
 
-    def _get_repository_location(self, local_file):
-        """Get the repository location for a given LocalFileLocation."""
+    def _update_location(self, fileloc):
+        """Update FileLocation to point to a parent repository, if any"""
         for m in self._metadata:
             if isinstance(m, IMP.pmi.metadata.Repository):
-                return m.get_path(local_file)
-        raise ValueError("Could not determine a DOI for %s" % local_file.path)
+                m.update_in_repo(fileloc)

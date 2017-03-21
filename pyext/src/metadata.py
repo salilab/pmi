@@ -155,37 +155,28 @@ class MassIVELocation(DatabaseLocation):
     def __init__(self, db_code, version=None, details=None):
         DatabaseLocation.__init__(self, 'MASSIVE', db_code, version, details)
 
-class LocalFileLocation(Location):
-    """An individual file or directory on the local filesystem."""
-
-    _eq_keys = Location._eq_keys + ['path']
-
-    def __init__(self, path, details=None):
-        """Constructor.
-           @param path the location of the file or directory.
-        """
-        super(LocalFileLocation, self).__init__(details)
-        if not os.path.exists(path):
-            raise ValueError("%s does not exist" % path)
-        # Store absolute path in case the working directory changes later
-        self.path = os.path.abspath(path)
-
-class RepositoryFileLocation(Location):
-    """An individual file or directory in a repository.
-       A repository in this context is simply a collection of files -
-       it does not have to be under version control (git, svn, etc.)
-
-       @see Repository"""
+class FileLocation(Location):
+    """An individual file or directory.
+       This may be in a repository (if `repo` is not None) or only on the
+       local disk (if `repo` is None)."""
 
     _eq_keys = Location._eq_keys + ['repo', 'path']
 
-    def __init__(self, repo, path, details=None):
+    def __init__(self, path, repo=None, details=None):
         """Constructor.
-           @param repo a Repository object that describes the repository.
-           @param path the location of the file or directory in the repository.
+           @param path the location of the file or directory.
+           @param repo a Repository object that describes the repository
+                  containing the file (if any).
         """
-        super(RepositoryFileLocation, self).__init__(details)
-        self.repo, self.path = repo, path
+        super(FileLocation, self).__init__(details)
+        self.repo = repo
+        if repo:
+            self.path = path
+        else:
+            if not os.path.exists(path):
+                raise ValueError("%s does not exist" % path)
+            # Store absolute path in case the working directory changes later
+            self.path = os.path.abspath(path)
 
 class Repository(Metadata):
     """A repository containing modeling files.
@@ -193,9 +184,9 @@ class Repository(Metadata):
        repository, which has been archived somewhere with a DOI.
        This will be used to construct permanent references to files
        used in this modeling, even if they haven't been uploaded to
-       a database such as PDB or EMDB (by creating a RepositoryFile object).
+       a database such as PDB or EMDB.
 
-       @see RepositoryFile."""
+       @see FileLocation."""
 
     # Two repositories compare equal if their DOIs are the same
     def __eq__(self, other):
@@ -216,11 +207,11 @@ class Repository(Metadata):
             # Store absolute path in case the working directory changes later
             self._root = os.path.abspath(root)
 
-    def get_path(self, local):
-        """Map a LocalFileLocation to a file in this repository.
-           This only works if `root` was given to the constructor."""
-        # todo: raise an exception if local path starts with .. (i.e. path
-        # is outside the repository)
-        return RepositoryFileLocation(self,
-                                      os.path.relpath(local.path, self._root),
-                                      details=local.details)
+    def update_in_repo(self, fileloc):
+        """If the given FileLocation maps to somewhere within this repository,
+           update it to reflect that."""
+        if not fileloc.repo:
+            relpath = os.path.relpath(fileloc.path, self._root)
+            if not relpath.startswith('..'):
+                fileloc.repo = self
+                fileloc.path = relpath

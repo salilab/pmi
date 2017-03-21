@@ -1469,16 +1469,8 @@ class _ReplicaExchangeAnalysisEnsemble(_Ensemble):
     def load_localization_density(self, mdl, component):
         fname = self.get_localization_density_file(component)
         if os.path.exists(fname):
-            dmap = IMP.em.read_map(fname, IMP.em.MRCReaderWriter())
-            pts = IMP.isd.sample_points_from_density(dmap, 1000000)
-            dmap.set_was_used(True)
-            density_ps = []
-            ncenters = 50 # todo: make configurable or scale with # of residues
-            score, akaikescore = IMP.isd.gmm_tools.fit_gmm_to_points(
-                                             pts, ncenters, mdl, density_ps)
-            # todo: verify score isn't terrible; if it is try repeating with
-            # more centers
-            self.localization_density[component] = density_ps
+            local_file = IMP.pmi.metadata.LocalFileLocation(fname)
+            self.localization_density[component] = local_file
 
     def load_all_models(self, simo):
         stat_fname = self.postproc.get_stat_file(self.cluster_num)
@@ -1556,47 +1548,28 @@ class _DensityDumper(_Dumper):
     def add(self, ensemble):
         self.ensembles.append(ensemble)
 
-    def get_gmm(self, ensemble, component):
-        return ensemble.localization_density.get(component, [])
+    def get_density(self, ensemble, component):
+        return ensemble.localization_density.get(component, None)
 
     def dump(self, writer):
-        with writer.loop("_ihm_gaussian_obj_ensemble",
-                         ["ordinal_id", "entity_id", "seq_id_begin",
-                          "seq_id_end", "asym_id", "mean_Cartn_x",
-                          "mean_Cartn_y", "mean_Cartn_z", "weight",
-                          "covariance_matrix[1][1]", "covariance_matrix[1][2]",
-                          "covariance_matrix[1][3]", "covariance_matrix[2][1]",
-                          "covariance_matrix[2][2]", "covariance_matrix[2][3]",
-                          "covariance_matrix[3][1]", "covariance_matrix[3][2]",
-                          "covariance_matrix[3][3]", "ensemble_id"]) as l:
+        with writer.loop("_ihm_localization_density_files",
+                         ["id", "file_id", "ensemble_id", "entity_id",
+                          "asym_id", "seq_id_begin", "seq_id_end"]) as l:
             ordinal = 1
             for ensemble in self.ensembles:
                 for comp in self.simo.all_modeled_components:
+                    density = self.get_density(ensemble, comp)
+                    if not density:
+                        continue
                     entity = self.simo.entities[comp]
                     lenseq = len(entity.sequence)
                     chain_id = self.simo.get_chain_for_component(comp,
                                                                  self.output)
-                    for g in self.get_gmm(ensemble, comp):
-                        shape = IMP.core.Gaussian(g).get_gaussian()
-                        weight = IMP.atom.Mass(g).get_mass()
-                        mean = shape.get_center()
-                        cv = IMP.algebra.get_covariance(shape)
-
-                        l.write(ordinal_id=ordinal, entity_id=entity.id,
+                    l.write(id=ordinal, entity_id=entity.id,
+                            file_id=density.file_id,
                             seq_id_begin=1, seq_id_end=lenseq,
-                            asym_id=chain_id, mean_Cartn_x=mean[0],
-                            mean_Cartn_y=mean[1], mean_Cartn_z=mean[2],
-                            weight=weight, ensemble_id=ensemble.id,
-                            covariance_matrix11=cv[0][0],
-                            covariance_matrix12=cv[0][1],
-                            covariance_matrix13=cv[0][2],
-                            covariance_matrix21=cv[1][0],
-                            covariance_matrix22=cv[1][1],
-                            covariance_matrix23=cv[1][2],
-                            covariance_matrix31=cv[2][0],
-                            covariance_matrix32=cv[2][1],
-                            covariance_matrix33=cv[2][2])
-                        ordinal += 1
+                            asym_id=chain_id)
+                    ordinal += 1
 
 class _Entity(object):
     """Represent a CIF entity (a chain with a unique sequence)"""

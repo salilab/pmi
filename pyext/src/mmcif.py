@@ -1528,12 +1528,12 @@ class _ReplicaExchangeAnalysisEnsemble(_Ensemble):
                             'cluster.%d' % self.cluster_num,
                             '%s.mrc' % component)
 
-    def load_localization_density(self, mdl, component):
+    def load_localization_density(self, mdl, component, extref_dump):
         fname = self.get_localization_density_file(component)
         if os.path.exists(fname):
             local_file = IMP.pmi.metadata.FileLocation(fname)
             self.localization_density[component] = local_file
-            self.extref_dump.add(local_file)
+            extref_dump.add(local_file)
 
     def load_all_models(self, simo):
         stat_fname = self.postproc.get_stat_file(self.cluster_num)
@@ -1855,7 +1855,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
             self.density_dump.add(e)
             # Add localization density info if available
             for c in self.all_modeled_components:
-                e.load_localization_density(self.m, c)
+                e.load_localization_density(self.m, c, self.extref_dump)
             for stats in e.load_all_models(self):
                 m = self.add_model(group)
                 m.stats = stats

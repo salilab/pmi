@@ -574,6 +574,8 @@ class _ExternalReferenceDumper(_Dumper):
         reference = _CifWriter.omitted
         refers_to = 'Other'
         associated_url = _CifWriter.omitted
+        def _get_full_path(self, path):
+            return path
 
     class _Repository(object):
         reference_provider = _CifWriter.omitted
@@ -590,6 +592,8 @@ class _ExternalReferenceDumper(_Dumper):
                 self.associated_url = repo.url
                 if repo.url.endswith(".zip"):
                     self.refers_to = 'Archive'
+                else:
+                    self.refers_to = 'File'
 
     def __init__(self, simo):
         super(_ExternalReferenceDumper, self).__init__(simo)
@@ -646,7 +650,8 @@ class _ExternalReferenceDumper(_Dumper):
                          ["id", "reference_id", "file_path"]) as l:
             for loc in self._location_by_id:
                 repo = loc.repo or self._local_files
-                l.write(id=loc.id, reference_id=repo.id, file_path=loc.path)
+                l.write(id=loc.id, reference_id=repo.id,
+                        file_path=repo._get_full_path(loc.path))
 
 
 class _DatasetDumper(_Dumper):

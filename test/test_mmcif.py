@@ -491,6 +491,8 @@ _ihm_related_datasets.data_type_primary
         repo2 = IMP.pmi.metadata.Repository(doi="10.5281/zenodo.46266",
                                             url='nup84-v1.0.zip',
                                             top_directory='foo/bar')
+        repo3 = IMP.pmi.metadata.Repository(doi="10.5281/zenodo.58025",
+                                            url='foo.spd')
         l = IMP.pmi.metadata.FileLocation(repo=repo1, path='bar')
         dump.add(l)
         # Duplicates should be ignored
@@ -501,6 +503,9 @@ _ihm_related_datasets.data_type_primary
         dump.add(l)
         # Different repository
         l = IMP.pmi.metadata.FileLocation(repo=repo2, path='baz')
+        dump.add(l)
+        # Repository containing a single file (not an archive)
+        l = IMP.pmi.metadata.FileLocation(repo=repo3, path='foo.spd')
         dump.add(l)
         with IMP.test.temporary_directory() as tmpdir:
             bar = os.path.join(tmpdir, 'bar')
@@ -528,7 +533,8 @@ _ihm_external_reference_info.refers_to
 _ihm_external_reference_info.associated_url
 1 . DOI foo Other .
 2 Zenodo DOI 10.5281/zenodo.46266 Archive nup84-v1.0.zip
-3 . 'Supplementary Files' . Other .
+3 Zenodo DOI 10.5281/zenodo.58025 File foo.spd
+4 . 'Supplementary Files' . Other .
 #
 #
 loop_
@@ -537,8 +543,9 @@ _ihm_external_files.reference_id
 _ihm_external_files.file_path
 1 1 bar
 2 1 baz
-3 2 baz
-4 3 %s
+3 2 foo/bar/baz
+4 3 foo.spd
+5 4 %s
 #
 """ % absbar)
 

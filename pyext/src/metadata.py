@@ -231,3 +231,7 @@ class Repository(Metadata):
             if not relpath.startswith('..'):
                 fileloc.repo = self
                 fileloc.path = relpath
+
+    def _get_full_path(self, path):
+        """Prefix the given path with our top-level directory"""
+        return os.path.join(self.top_directory or "", path)

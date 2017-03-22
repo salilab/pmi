@@ -2001,7 +2001,7 @@ def shuffle_configuration(objects,
                 # local transform
                 if bounding_box:
                     translation = IMP.algebra.get_random_vector_in(bb)
-                    # First move to origin 
+                    # First move to origin
                     transformation_orig = IMP.algebra.Transformation3D(IMP.algebra.get_identity_rotation_3d(),
                                                                        -IMP.core.XYZ(rb).get_coordinates())
                     IMP.core.transform(rb, transformation_orig)
@@ -2009,7 +2009,7 @@ def shuffle_configuration(objects,
                     rotation = IMP.algebra.get_random_rotation_3d()
                     transformation = IMP.algebra.Transformation3D(rotation,
                                                                   translation)
-                    
+
                 else:
                     transformation = IMP.algebra.get_random_local_transformation(
                         rbxyz,

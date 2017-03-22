@@ -488,7 +488,9 @@ _ihm_related_datasets.data_type_primary
         simo.add_protocol_output(po)
         dump = IMP.pmi.mmcif._ExternalReferenceDumper(po)
         repo1 = IMP.pmi.metadata.Repository(doi="foo")
-        repo2 = IMP.pmi.metadata.Repository(doi="bar")
+        repo2 = IMP.pmi.metadata.Repository(doi="10.5281/zenodo.46266",
+                                            url='nup84-v1.0.zip',
+                                            top_directory='foo/bar')
         l = IMP.pmi.metadata.FileLocation(repo=repo1, path='bar')
         dump.add(l)
         # Duplicates should be ignored
@@ -519,10 +521,14 @@ _ihm_related_datasets.data_type_primary
         self.assertEqual(out, """#
 loop_
 _ihm_external_reference_info.reference_id
+_ihm_external_reference_info.reference_provider
+_ihm_external_reference_info.reference_type
 _ihm_external_reference_info.reference
-1 foo
-2 bar
-3 .
+_ihm_external_reference_info.refers_to
+_ihm_external_reference_info.associated_url
+1 . DOI foo Other .
+2 Zenodo DOI 10.5281/zenodo.46266 Archive nup84-v1.0.zip
+3 . 'Supplementary Files' . Other .
 #
 #
 loop_

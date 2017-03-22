@@ -608,7 +608,7 @@ def get_terminal_residue(representation, hier, terminus="C", resolution=1):
     '''
     Get the particle of the terminal residue at the GIVEN resolution
     (NOTE: not the closest resolution!).
-    To get the terminal residue at the closes resolution use:
+    To get the terminal residue at the closest resolution use:
     particles=IMP.pmi.tools.select_by_tuple(representation,molecule_name)
     particles[0] and particles[-1] will be the first and last particles
     corresponding to the two termini.

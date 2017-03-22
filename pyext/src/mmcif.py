@@ -1410,6 +1410,7 @@ modeling. These may need to be added manually below.""")
                 for f in model.fragments:
                     sel = IMP.atom.Selection(f.starting_hier,
                                residue_indexes=list(range(f.start, f.end + 1)))
+                    last_res_index = None
                     for a in sel.get_selected_particles():
                         coord = IMP.core.XYZ(a).get_coordinates()
                         atom = IMP.atom.Atom(a)
@@ -1427,7 +1428,11 @@ modeling. These may need to be added manually below.""")
                         # and pass back to populate the seq_dif category.
                         if res_name == 'MSE':
                             res_name = 'MET'
-                            seq_dif.append(_MSESeqDif(res, f.component))
+                            # Only add one seq_dif record per residue
+                            ind = res.get_index()
+                            if ind != last_res_index:
+                                last_res_index = ind
+                                seq_dif.append(_MSESeqDif(res, f.component))
                         chain_id = self.simo.get_chain_for_component(
                                             f.component, self.output)
                         entity = self.simo.entities[f.component]

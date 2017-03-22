@@ -42,6 +42,37 @@ class Tests(IMP.test.TestCase):
         self.assertEqual(out[-3],
                          "3 test 'test code' 1 program http://salilab.org")
 
+    def test_workflow(self):
+        """Test WorkflowDumper"""
+        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
+            def flush(self):
+                pass
+        m = IMP.Model()
+        simo = IMP.pmi.representation.Representation(m)
+        po = DummyPO(None)
+        simo.add_protocol_output(po)
+
+        r = IMP.pmi.metadata.Repository(doi="bar")
+        l = IMP.pmi.metadata.FileLocation(repo=r, path='bar')
+        s = IMP.pmi.metadata.PythonScript(location=l, description='foo')
+        simo.add_metadata(s)
+
+        d = IMP.pmi.mmcif._WorkflowDumper(po)
+        fh = StringIO()
+        w = IMP.pmi.mmcif._CifWriter(fh)
+        d.finalize_metadata()
+        po.extref_dump.finalize_after_datasets()
+        d.dump(w)
+        self.assertEqual(fh.getvalue(), """#
+loop_
+_ihm_modeling_workflow_files.file_id
+_ihm_modeling_workflow_files.scripting_language
+_ihm_modeling_workflow_files.description
+1 Python 'The main integrative modeling script'
+2 Python foo
+#
+""")
+
     def test_file_dataset(self):
         """Test get/set_file_dataset methods"""
         m = IMP.Model()

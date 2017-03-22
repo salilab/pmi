@@ -169,6 +169,9 @@ class _Dumper(object):
     def finalize(self):
         pass
 
+    def finalize_metadata(self):
+        pass
+
 
 class _EntryDumper(_Dumper):
     def dump(self, writer):
@@ -269,6 +272,25 @@ class _CitationDumper(_Dumper):
                 for a in c.authors:
                     l.write(citation_id=n+1, name=a, ordinal=ordinal)
                     ordinal += 1
+
+class _WorkflowDumper(_Dumper):
+    def finalize_metadata(self):
+        """Register locations for any metadata and add the main script"""
+        loc = IMP.pmi.metadata.FileLocation(path=self.simo._main_script)
+        main_script = IMP.pmi.metadata.PythonScript(loc,
+                               "The main integrative modeling script")
+        self._workflow = [main_script] \
+                         + [m for m in self.simo._metadata
+                            if isinstance(m, IMP.pmi.metadata.PythonScript)]
+        for w in self._workflow:
+            self.simo.extref_dump.add(w.location)
+
+    def dump(self, writer):
+        with writer.loop("_ihm_modeling_workflow_files",
+                         ["file_id", "scripting_language", "description"]) as l:
+            for w in self._workflow:
+                l.write(file_id=w.location.id, scripting_language='Python',
+                        description=w.description)
 
 
 class _EntityDumper(_Dumper):
@@ -1729,6 +1751,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
     output as mmCIF.
     """
     def __init__(self, fh):
+        self._main_script = os.path.abspath(sys.argv[0])
         self._cif_writer = _CifWriter(fh)
         self.entities = _EntityMapper()
         self.chains = {}
@@ -1775,6 +1798,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                          _EntityDumper(self),
                          _EntityPolyDumper(self), _EntityPolySeqDumper(self),
                          _StructAsymDumper(self),
+                         _WorkflowDumper(self),
                          self.assembly_dump,
                          self.model_repr_dump, self.extref_dump,
                          self.dataset_dump,
@@ -1818,6 +1842,8 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.entities.add(name, seq)
 
     def flush(self):
+        for dumper in self._dumpers:
+            dumper.finalize_metadata()
         for dumper in self._dumpers:
             dumper.finalize()
         for dumper in self._dumpers:

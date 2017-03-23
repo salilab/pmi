@@ -648,11 +648,12 @@ class _ExternalReferenceDumper(_Dumper):
 
     def dump_locations(self, writer):
         with writer.loop("_ihm_external_files",
-                         ["id", "reference_id", "file_path"]) as l:
+                         ["id", "reference_id", "file_path", "details"]) as l:
             for loc in self._location_by_id:
                 repo = loc.repo or self._local_files
                 l.write(id=loc.id, reference_id=repo.id,
-                        file_path=repo._get_full_path(loc.path))
+                        file_path=repo._get_full_path(loc.path),
+                        details=loc.details or _CifWriter.omitted)
 
 
 class _DatasetDumper(_Dumper):

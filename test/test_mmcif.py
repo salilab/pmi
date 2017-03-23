@@ -505,7 +505,8 @@ _ihm_related_datasets.data_type_primary
         l = IMP.pmi.metadata.FileLocation(repo=repo2, path='baz')
         dump.add(l)
         # Repository containing a single file (not an archive)
-        l = IMP.pmi.metadata.FileLocation(repo=repo3, path='foo.spd')
+        l = IMP.pmi.metadata.FileLocation(repo=repo3, path='foo.spd',
+                                          details='EM micrographs')
         dump.add(l)
         with IMP.test.temporary_directory() as tmpdir:
             bar = os.path.join(tmpdir, 'bar')
@@ -541,11 +542,12 @@ loop_
 _ihm_external_files.id
 _ihm_external_files.reference_id
 _ihm_external_files.file_path
-1 1 bar
-2 1 baz
-3 2 foo/bar/baz
-4 3 foo.spd
-5 4 %s
+_ihm_external_files.details
+1 1 bar .
+2 1 baz .
+3 2 foo/bar/baz .
+4 3 foo.spd 'EM micrographs'
+5 4 %s .
 #
 """ % absbar)
 

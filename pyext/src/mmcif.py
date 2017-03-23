@@ -273,26 +273,6 @@ class _CitationDumper(_Dumper):
                     l.write(citation_id=n+1, name=a, ordinal=ordinal)
                     ordinal += 1
 
-class _WorkflowDumper(_Dumper):
-    def finalize_metadata(self):
-        """Register locations for any metadata and add the main script"""
-        loc = IMP.pmi.metadata.FileLocation(path=self.simo._main_script)
-        main_script = IMP.pmi.metadata.PythonScript(loc,
-                               "The main integrative modeling script")
-        self._workflow = [main_script] \
-                         + [m for m in self.simo._metadata
-                            if isinstance(m, IMP.pmi.metadata.PythonScript)]
-        for w in self._workflow:
-            self.simo.extref_dump.add(w.location)
-
-    def dump(self, writer):
-        with writer.loop("_ihm_modeling_workflow_files",
-                         ["file_id", "scripting_language", "description"]) as l:
-            for w in self._workflow:
-                l.write(file_id=w.location.id, scripting_language='Python',
-                        description=w.description)
-
-
 class _EntityDumper(_Dumper):
     # todo: we currently only support amino acid sequences here (and
     # then only standard amino acids; need to add support for MSE etc.)
@@ -563,10 +543,30 @@ class _DatasetGroup(object):
         self._datasets = final_datasets.keys()
 
 
+class _ExternalReference(object):
+    """A single externally-referenced file"""
+    def __init__(self, location, content_type):
+        self.location, self.content_type = location, content_type
+
+    # Pass id through to location
+    def __set_id(self, i):
+        self.location.id = i
+    id = property(lambda x: x.location.id, __set_id)
+
+    def __eq__(self, other):
+        return self.location == other.location
+    def __hash__(self):
+        return hash(self.location)
+
+
 class _ExternalReferenceDumper(_Dumper):
     """Output information on externally referenced files
        (i.e. anything that refers to a Location that isn't
        a DatabaseLocation)."""
+
+    INPUT_DATA = "Input data or restraints"
+    MODELING_OUTPUT = "Modeling or post-processing output"
+    WORKFLOW = "Modeling workflow or script"
 
     class _LocalFiles(object):
         reference_provider = _CifWriter.omitted
@@ -597,40 +597,52 @@ class _ExternalReferenceDumper(_Dumper):
 
     def __init__(self, simo):
         super(_ExternalReferenceDumper, self).__init__(simo)
-        self._locations = []
+        self._refs = []
 
-    def add(self, location):
+    def add(self, location, content_type):
         """Add a new location.
            Note that ids are assigned later."""
-        self._locations.append(location)
+        self._refs.append(_ExternalReference(location, content_type))
         return location
+
+    def finalize_metadata(self):
+        """Register locations for any metadata and add the main script"""
+        loc = IMP.pmi.metadata.FileLocation(path=self.simo._main_script,
+                               details="The main integrative modeling script")
+        main_script = IMP.pmi.metadata.PythonScript(loc)
+        self._workflow = [main_script] \
+                         + [m for m in self.simo._metadata
+                            if isinstance(m, IMP.pmi.metadata.PythonScript)]
+        for w in self._workflow:
+            self.add(w.location, self.WORKFLOW)
 
     def finalize_after_datasets(self):
         """Note that this must happen *after* DatasetDumper.finalize()"""
         # Keep only locations that don't point into databases (these are
         # handled elsewhere)
-        self._locations = [x for x in self._locations
-                       if not isinstance(x, IMP.pmi.metadata.DatabaseLocation)]
+        self._refs = [x for x in self._refs
+                      if not isinstance(x.location,
+                                        IMP.pmi.metadata.DatabaseLocation)]
         # Assign IDs to all locations and repos (including the None repo, which
         # is for local files)
-        seen_locations = {}
+        seen_refs = {}
         seen_repos = {}
-        self._location_by_id = []
+        self._ref_by_id = []
         self._repo_by_id = []
         # Special dummy repo for repo=None (local files)
         self._local_files = self._LocalFiles()
-        for l in self._locations:
+        for r in self._refs:
             # Update location to point to parent repository, if any
-            self.simo._update_location(l)
-            # Assign a unique ID to the location
-            _assign_id(l, seen_locations, self._location_by_id)
+            self.simo._update_location(r.location)
+            # Assign a unique ID to the reference
+            _assign_id(r, seen_refs, self._ref_by_id)
             # Assign a unique ID to the repository
-            _assign_id(l.repo or self._local_files, seen_repos,
+            _assign_id(r.location.repo or self._local_files, seen_repos,
                        self._repo_by_id)
 
     def dump(self, writer):
         self.dump_repos(writer)
-        self.dump_locations(writer)
+        self.dump_refs(writer)
 
     def dump_repos(self, writer):
         def map_repo(r):
@@ -646,13 +658,16 @@ class _ExternalReferenceDumper(_Dumper):
                         reference=repo.reference, refers_to=repo.refers_to,
                         associated_url=repo.associated_url)
 
-    def dump_locations(self, writer):
+    def dump_refs(self, writer):
         with writer.loop("_ihm_external_files",
-                         ["id", "reference_id", "file_path", "details"]) as l:
-            for loc in self._location_by_id:
+                         ["id", "reference_id", "file_path", "content_type",
+                          "details"]) as l:
+            for r in self._ref_by_id:
+                loc = r.location
                 repo = loc.repo or self._local_files
                 l.write(id=loc.id, reference_id=repo.id,
                         file_path=repo._get_full_path(loc.path),
+                        content_type=r.content_type,
                         details=loc.details or _CifWriter.omitted)
 
 
@@ -681,7 +696,8 @@ class _DatasetDumper(_Dumper):
         for d in self._flatten_dataset(self._datasets):
             # Register location (need to do that now rather than in add() in
             # order to properly handle _RestraintDataset)
-            self.simo.extref_dump.add(d.location)
+            self.simo.extref_dump.add(d.location,
+                                      _ExternalReferenceDumper.INPUT_DATA)
             _assign_id(d, seen_datasets, self._dataset_by_id)
 
         # Make sure that all datasets are listed, even if they weren't used
@@ -1625,7 +1641,8 @@ class _ReplicaExchangeAnalysisEnsemble(_Ensemble):
         if os.path.exists(fname):
             local_file = IMP.pmi.metadata.FileLocation(fname)
             self.localization_density[component] = local_file
-            extref_dump.add(local_file)
+            extref_dump.add(local_file,
+                            _ExternalReferenceDumper.MODELING_OUTPUT)
 
     def load_all_models(self, simo):
         stat_fname = self.postproc.get_stat_file(self.cluster_num)
@@ -1837,7 +1854,6 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                          _EntityDumper(self),
                          _EntityPolyDumper(self), _EntityPolySeqDumper(self),
                          _StructAsymDumper(self),
-                         _WorkflowDumper(self),
                          self.assembly_dump,
                          self.model_repr_dump, self.extref_dump,
                          self.dataset_dump,

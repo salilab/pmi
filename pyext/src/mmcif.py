@@ -27,7 +27,7 @@ import os
 import textwrap
 import weakref
 
-def assign_id(obj, seen_objs, obj_by_id):
+def _assign_id(obj, seen_objs, obj_by_id):
     """Assign a unique ID to obj, and track all ids in obj_by_id."""
     if obj not in seen_objs:
         if not hasattr(obj, 'id'):
@@ -325,7 +325,7 @@ class _EntityPolyDumper(_Dumper):
                 # Split into lines to get tidier CIF output
                 seq = "\n".join(seq[i:i+70] for i in range(0, len(seq), 70))
                 name = entity.first_component
-                chain_id = self.simo.get_chain_for_component(name, self.output)
+                chain_id = self.simo._get_chain_for_component(name, self.output)
                 l.write(entity_id=entity.id, type='polypeptide(L)',
                         nstd_linkage='no', nstd_monomer='no',
                         pdbx_strand_id=chain_id,
@@ -373,7 +373,7 @@ class _StructAsymDumper(_Dumper):
                          ["id", "entity_id", "details"]) as l:
             for comp in self.simo.all_modeled_components:
                 entity = self.simo.entities[comp]
-                chain_id = self.simo.get_chain_for_component(comp, self.output)
+                chain_id = self.simo._get_chain_for_component(comp, self.output)
                 l.write(id=chain_id,
                         entity_id=entity.id,
                         details=comp)
@@ -461,7 +461,7 @@ class _ModelRepresentationDumper(_Dumper):
                           "model_mode", "model_granularity",
                           "model_object_count"]) as l:
             for comp, fragments in self.fragments.items():
-                chain_id = self.simo.get_chain_for_component(comp, self.output)
+                chain_id = self.simo._get_chain_for_component(comp, self.output)
                 for f in fragments:
                     entity = self.simo.entities[f.component]
                     starting_model_id = _CifWriter.omitted
@@ -623,9 +623,10 @@ class _ExternalReferenceDumper(_Dumper):
             # Update location to point to parent repository, if any
             self.simo._update_location(l)
             # Assign a unique ID to the location
-            assign_id(l, seen_locations, self._location_by_id)
+            _assign_id(l, seen_locations, self._location_by_id)
             # Assign a unique ID to the repository
-            assign_id(l.repo or self._local_files, seen_repos, self._repo_by_id)
+            _assign_id(l.repo or self._local_files, seen_repos,
+                       self._repo_by_id)
 
     def dump(self, writer):
         self.dump_repos(writer)
@@ -680,7 +681,7 @@ class _DatasetDumper(_Dumper):
             # Register location (need to do that now rather than in add() in
             # order to properly handle _RestraintDataset)
             self.simo.extref_dump.add(d.location)
-            assign_id(d, seen_datasets, self._dataset_by_id)
+            _assign_id(d, seen_datasets, self._dataset_by_id)
 
         # Make sure that all datasets are listed, even if they weren't used
         all_group = self.get_all_group(True)
@@ -1043,8 +1044,8 @@ class _AssemblyDumper(_Dumper):
                 for comp in a:
                     entity = self.simo.entities[comp]
                     seq = self.simo.sequence_dict[comp]
-                    chain_id = self.simo.get_chain_for_component(comp,
-                                                                 self.output)
+                    chain_id = self.simo._get_chain_for_component(comp,
+                                                                  self.output)
                     l.write(ordinal_id=ordinal, assembly_id=a.id,
                             entity_description=entity.description,
                             entity_id=entity.id,
@@ -1381,7 +1382,7 @@ class _StartingModelDumper(_Dumper):
                       "db_entity_id", "db_asym_id", "db_seq_id", "db_comp_id",
                       "details"]) as l:
             for sd in seq_dif:
-                chain_id = self.simo.get_chain_for_component(
+                chain_id = self.simo._get_chain_for_component(
                                     sd.component, self.output)
                 entity = self.simo.entities[sd.component]
                 # todo: determine starting_model_ordinal_id
@@ -1410,8 +1411,8 @@ modeling. These may need to be added manually below.""")
             for model in self.all_models():
                 f = model.fragments[0]
                 entity = self.simo.entities[f.component]
-                chain_id = self.simo.get_chain_for_component(f.component,
-                                                             self.output)
+                chain_id = self.simo._get_chain_for_component(f.component,
+                                                              self.output)
                 for source in model.sources:
                     seq_id_begin, seq_id_end = source.get_seq_id_range(model)
                     l.write(ordinal_id=ordinal,
@@ -1465,7 +1466,7 @@ modeling. These may need to be added manually below.""")
                             if ind != last_res_index:
                                 last_res_index = ind
                                 seq_dif.append(_MSESeqDif(res, f.component))
-                        chain_id = self.simo.get_chain_for_component(
+                        chain_id = self.simo._get_chain_for_component(
                                             f.component, self.output)
                         entity = self.simo.entities[f.component]
                         l.write(starting_model_id=model.name,
@@ -1716,8 +1717,8 @@ class _DensityDumper(_Dumper):
                         continue
                     entity = self.simo.entities[comp]
                     lenseq = len(entity.sequence)
-                    chain_id = self.simo.get_chain_for_component(comp,
-                                                                 self.output)
+                    chain_id = self.simo._get_chain_for_component(comp,
+                                                                  self.output)
                     l.write(id=ordinal, entity_id=entity.id,
                             file_id=density.id,
                             seq_id_begin=1, seq_id_end=lenseq,
@@ -1850,7 +1851,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
     def get_file_dataset(self, fname):
         return self._file_dataset.get(os.path.abspath(fname), None)
 
-    def get_chain_for_component(self, name, output):
+    def _get_chain_for_component(self, name, output):
         """Get the chain ID for a component, if any."""
         # todo: handle multiple copies
         if name in self.chains:
@@ -1895,7 +1896,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         b = _BeadsFragment(self.m, name, start, end, num, hier)
         self.model_repr_dump.add_fragment(b)
 
-    def get_restraint_dataset(self, r, num=None, allow_duplicates=False):
+    def _get_restraint_dataset(self, r, num=None, allow_duplicates=False):
         """Get a wrapper object for the dataset used by this restraint.
            This is needed because the restraint's dataset may be changed
            in the PMI script before we get to use it."""
@@ -1904,7 +1905,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         return rs
 
     def get_cross_link_group(self, r):
-        return _CrossLinkGroup(r, self.get_restraint_dataset(r))
+        return _CrossLinkGroup(r, self._get_restraint_dataset(r))
 
     def add_experimental_cross_link(self, r1, c1, r2, c2, length, group):
         if c1 not in self._all_components or c2 not in self._all_components:
@@ -1961,14 +1962,14 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
 
     def add_em2d_restraint(self, r, i, resolution, pixel_size,
                            image_resolution, projection_number):
-        d = self.get_restraint_dataset(r, i)
+        d = self._get_restraint_dataset(r, i)
         self.em2d_dump.add(_EM2DRestraint(d, resolution, pixel_size,
                                           image_resolution, projection_number))
 
     def add_em3d_restraint(self, target_ps, densities, r):
         # A 3DEM restraint's dataset ID uniquely defines the restraint, so
         # we need to allow duplicates
-        d = self.get_restraint_dataset(r, allow_duplicates=True)
+        d = self._get_restraint_dataset(r, allow_duplicates=True)
         self.em3d_dump.add(_EM3DRestraint(self, d, target_ps, densities))
 
     def add_model(self, group=None):

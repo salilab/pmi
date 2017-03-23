@@ -970,7 +970,7 @@ _ihm_2dem_class_average_restraint.details
         class DummyEntity(object):
             id = 4
         class DummyPO(object):
-            def get_chain_for_component(self, comp, output):
+            def _get_chain_for_component(self, comp, output):
                 return 'H'
             entities = {'nup84': DummyEntity()}
         class DummyRes(object):

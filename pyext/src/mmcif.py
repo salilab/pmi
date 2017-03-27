@@ -1737,7 +1737,8 @@ class _DensityDumper(_Dumper):
                     lenseq = len(entity.sequence)
                     chain_id = self.simo._get_chain_for_component(comp,
                                                                   self.output)
-                    l.write(id=ordinal, entity_id=entity.id,
+                    l.write(id=ordinal, ensemble_id=ensemble.id,
+                            entity_id=entity.id,
                             file_id=density.id,
                             seq_id_begin=1, seq_id_end=lenseq,
                             asym_id=chain_id)

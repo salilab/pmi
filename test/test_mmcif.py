@@ -810,7 +810,7 @@ _ihm_localization_density_files.entity_id
 _ihm_localization_density_files.asym_id
 _ihm_localization_density_files.seq_id_begin
 _ihm_localization_density_files.seq_id_end
-1 97 . 1 A 1 4
+1 97 42 1 A 1 4
 #
 """)
 

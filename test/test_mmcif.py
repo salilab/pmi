@@ -560,11 +560,11 @@ _ihm_external_files.content_type
 _ihm_external_files.details
 1 1 bar 'Input data or restraints' .
 2 1 baz 'Input data or restraints' .
-3 2 foo/bar/baz 'Modeling or post-processing output' .
+3 2 foo/bar%sbaz 'Modeling or post-processing output' .
 4 3 foo.spd 'Input data or restraints' 'EM micrographs'
 5 4 %s 'Modeling workflow or script' .
 #
-""" % absbar)
+""" % (os.path.sep, absbar))
 
     def test_model_dumper_sphere(self):
         """Test ModelDumper sphere_obj output"""

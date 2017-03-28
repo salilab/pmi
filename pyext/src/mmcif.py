@@ -1483,6 +1483,7 @@ modeling. These may need to be added manually below.""")
                       starting_model_source=source.source,
                       starting_model_db_name=source.db_name,
                       starting_model_db_code=source.db_code,
+                      starting_model_sequence_offset=f.offset,
                       dataset_list_id=model.dataset.id)
                     ordinal += 1
 

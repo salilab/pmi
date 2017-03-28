@@ -1282,8 +1282,9 @@ class _MSESeqDif(object):
     comp_id = 'MET'
     db_comp_id = 'MSE'
     details = 'Conversion of modified residue MSE to MET'
-    def __init__(self, res, component, source_id):
-        self.res, self.component, self.source_id = res, component, source_id
+    def __init__(self, res, component, source, offset):
+        self.res, self.component, self.source = res, component, source
+        self.offset = offset
 
 
 class _StartingModelDumper(_Dumper):
@@ -1419,9 +1420,10 @@ class _StartingModelDumper(_Dumper):
                 l.write(ordinal_id=ordinal, entity_id=entity.id,
                         asym_id=chain_id, seq_id=sd.res.get_index(),
                         comp_id=sd.comp_id, db_entity_id=entity.id,
-                        db_asym_id=chain_id, db_seq_id=sd.res.get_index(),
+                        db_asym_id=sd.source.chain_id,
+                        db_seq_id=sd.res.get_index() - sd.offset,
                         db_comp_id=sd.db_comp_id,
-                        starting_model_ordinal_id=sd.source_id,
+                        starting_model_ordinal_id=sd.source.id,
                         details=sd.details)
                 ordinal += 1
 
@@ -1529,7 +1531,8 @@ modeling. These may need to be added manually below.""")
                                 # the sequence)
                                 assert(len(model.sources), 1)
                                 seq_dif.append(_MSESeqDif(res, f.component,
-                                                          model.sources[0].id))
+                                                          model.sources[0],
+                                                          f.offset))
                         chain_id = self.simo._get_chain_for_component(
                                             f.component, self.output)
                         entity = self.simo.entities[f.component]

@@ -1282,8 +1282,8 @@ class _MSESeqDif(object):
     comp_id = 'MET'
     db_comp_id = 'MSE'
     details = 'Conversion of modified residue MSE to MET'
-    def __init__(self, res, component):
-        self.res, self.component = res, component
+    def __init__(self, res, component, source_id):
+        self.res, self.component, self.source_id = res, component, source_id
 
 
 class _StartingModelDumper(_Dumper):
@@ -1416,12 +1416,13 @@ class _StartingModelDumper(_Dumper):
                 chain_id = self.simo._get_chain_for_component(
                                     sd.component, self.output)
                 entity = self.simo.entities[sd.component]
-                # todo: determine starting_model_ordinal_id
                 l.write(ordinal_id=ordinal, entity_id=entity.id,
                         asym_id=chain_id, seq_id=sd.res.get_index(),
                         comp_id=sd.comp_id, db_entity_id=entity.id,
                         db_asym_id=chain_id, db_seq_id=sd.res.get_index(),
-                        db_comp_id=sd.db_comp_id, details=sd.details)
+                        db_comp_id=sd.db_comp_id,
+                        starting_model_ordinal_id=sd.source_id,
+                        details=sd.details)
                 ordinal += 1
 
     def dump_comparative(self, writer):
@@ -1522,7 +1523,13 @@ modeling. These may need to be added manually below.""")
                             ind = res.get_index()
                             if ind != last_res_index:
                                 last_res_index = ind
-                                seq_dif.append(_MSESeqDif(res, f.component))
+                                # This should only happen when we're using
+                                # a crystal structure as the source (a
+                                # comparative model would use MET in
+                                # the sequence)
+                                assert(len(model.sources), 1)
+                                seq_dif.append(_MSESeqDif(res, f.component,
+                                                          model.sources[0].id))
                         chain_id = self.simo._get_chain_for_component(
                                             f.component, self.output)
                         entity = self.simo.entities[f.component]

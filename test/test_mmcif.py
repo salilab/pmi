@@ -998,7 +998,7 @@ _ihm_2dem_class_average_restraint.details
         d = IMP.pmi.mmcif._StartingModelDumper(po)
         fh = StringIO()
         w = IMP.pmi.mmcif._CifWriter(fh)
-        d.dump_seq_dif(w, [IMP.pmi.mmcif._MSESeqDif(DummyRes(), 'nup84')])
+        d.dump_seq_dif(w, [IMP.pmi.mmcif._MSESeqDif(DummyRes(), 'nup84', 39)])
         out = fh.getvalue()
         self.assertEqual(out, """#
 loop_
@@ -1013,7 +1013,7 @@ _ihm_starting_model_seq_dif.db_asym_id
 _ihm_starting_model_seq_dif.db_seq_id
 _ihm_starting_model_seq_dif.db_comp_id
 _ihm_starting_model_seq_dif.details
-1 4 H 42 MET . 4 H 42 MSE 'Conversion of modified residue MSE to MET'
+1 4 H 42 MET 39 4 H 42 MSE 'Conversion of modified residue MSE to MET'
 #
 """)
 

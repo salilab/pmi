@@ -483,17 +483,25 @@ class _PDBSource(object):
 class _TemplateSource(object):
     """A PDB file used as a template for a comparative starting model"""
     source = 'comparative model'
-    db_name = 'PDB'
+    db_name = db_code = _CifWriter.omitted
+    tm_db_name = 'PDB'
+    # Right now assume all alignments are Modeller alignments, which uses
+    # the length of the shorter sequence as the denominator for sequence
+    # identity
+    sequence_identity_denominator = 1
 
-    def __init__(self, code, seq_id_begin, seq_id_end, seq_id,
-                 model):
+    def __init__(self, tm_code, tm_seq_id_begin, tm_seq_id_end, seq_id_begin,
+                 chain_id, seq_id_end, seq_id, model):
         # Assume a code of 1abcX refers to a real PDB structure
-        if len(code) == 5:
-            self.db_code = code[:4].upper()
-            self.chain_id = code[4]
+        if len(tm_code) == 5:
+            self.tm_db_code = tm_code[:4].upper()
+            self.tm_chain_id = tm_code[4]
         else:
-            self.db_code = self.chain_id = _CifWriter.unknown
+            self.tm_db_code = self.tm_chain_id = _CifWriter.unknown
         self.sequence_identity = seq_id
+        self.tm_seq_id_begin = tm_seq_id_begin
+        self.tm_seq_id_end = tm_seq_id_end
+        self.chain_id = chain_id
         self._seq_id_begin, self._seq_id_end = seq_id_begin, seq_id_end
 
     def get_seq_id_range(self, model):
@@ -1308,8 +1316,9 @@ class _StartingModelDumper(_Dumper):
 
     def get_templates(self, pdbname, model):
         templates = []
-        tmpre = re.compile('REMARK   6 TEMPLATE: (\S+) .* '
-                           'MODELS (\S+):\S+ \- (\S+):\S+ AT (\S+)%')
+        tmpre = re.compile('REMARK   6 TEMPLATE: '
+                           '(\S+) (\S+):\S+ \- (\S+):\S+ '
+                           'MODELS (\S+):(\S+) \- (\S+):\S+ AT (\S+)%')
 
         with open(pdbname) as fh:
             for line in fh:
@@ -1320,7 +1329,11 @@ class _StartingModelDumper(_Dumper):
                     templates.append(_TemplateSource(m.group(1),
                                                      int(m.group(2)),
                                                      int(m.group(3)),
-                                                     m.group(4), model))
+                                                     int(m.group(4)),
+                                                     m.group(5),
+                                                     int(m.group(6)),
+                                                     m.group(7), model))
+
         # Sort by starting residue, then ending residue
         return sorted(templates, key=lambda x: (x._seq_id_begin, x._seq_id_end))
 
@@ -1388,6 +1401,7 @@ class _StartingModelDumper(_Dumper):
 
     def dump(self, writer):
         self.dump_details(writer)
+        self.dump_comparative(writer)
         seq_dif = self.dump_coords(writer)
         self.dump_seq_dif(writer, seq_dif)
 
@@ -1410,6 +1424,31 @@ class _StartingModelDumper(_Dumper):
                         db_comp_id=sd.db_comp_id, details=sd.details)
                 ordinal += 1
 
+    def dump_comparative(self, writer):
+        """Dump details on comparative models. Must be called after
+           dump_details() since it uses IDs assigned there."""
+        with writer.loop("_ihm_starting_comparative_models",
+                     ["starting_model_ordinal_id", "starting_model_id",
+                      "template_db_name", "template_db_code",
+                      "template_db_auth_asym_id", "template_db_seq_begin",
+                      "template_db_seq_end", "template_sequence_identity",
+                      "template_sequence_identity_denominator",
+                      "alignment_file_id"]) as l:
+            ordinal = 1
+            for model in self.all_models():
+                for template in [s for s in model.sources
+                                 if isinstance(s, _TemplateSource)]:
+                    denom = template.sequence_identity_denominator
+                    l.write(starting_model_ordinal_id=template.id,
+                      starting_model_id=model.name,
+                      template_db_name=template.tm_db_name,
+                      template_db_code=template.tm_db_code,
+                      template_db_auth_asym_id=template.tm_chain_id,
+                      template_db_seq_begin=template.tm_seq_id_begin,
+                      template_db_seq_end=template.tm_seq_id_end,
+                      template_sequence_identity=template.sequence_identity,
+                      template_sequence_identity_denominator=denom)
+
     def dump_details(self, writer):
         writer.write_comment("""IMP will attempt to identify which input models
 are crystal structures and which are comparative models, but does not always
@@ -1421,7 +1460,7 @@ modeling. These may need to be added manually below.""")
                       "seq_id_end", "starting_model_source",
                       "starting_model_db_name", "starting_model_db_code",
                       "starting_model_auth_asym_id",
-                      "starting_model_sequence_identity",
+                      "starting_model_sequence_offset",
                       "starting_model_id",
                       "dataset_list_id"]) as l:
             ordinal = 1
@@ -1432,6 +1471,7 @@ modeling. These may need to be added manually below.""")
                                                               self.output)
                 for source in model.sources:
                     seq_id_begin, seq_id_end = source.get_seq_id_range(model)
+                    source.id = ordinal
                     l.write(ordinal_id=ordinal,
                       entity_id=entity.id,
                       entity_description=entity.description,
@@ -1443,7 +1483,6 @@ modeling. These may need to be added manually below.""")
                       starting_model_source=source.source,
                       starting_model_db_name=source.db_name,
                       starting_model_db_code=source.db_code,
-                      starting_model_sequence_identity=source.sequence_identity,
                       dataset_list_id=model.dataset.id)
                     ordinal += 1
 

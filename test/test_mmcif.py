@@ -53,7 +53,9 @@ class Tests(IMP.test.TestCase):
         simo.add_protocol_output(po)
 
         r = IMP.pmi.metadata.Repository(doi="bar")
-        l = IMP.pmi.metadata.FileLocation(repo=r, path='bar', details='foo')
+        l = IMP.pmi.metadata.FileLocation(repo=r,
+                                          path=os.path.join('bar', 'baz'),
+                                          details='foo')
         s = IMP.pmi.metadata.PythonScript(location=l)
         simo.add_metadata(s)
 
@@ -83,7 +85,7 @@ _ihm_external_files.content_type
 _ihm_external_files.details
 1 1 test_mmcif.py 'Modeling workflow or script'
 'The main integrative modeling script'
-2 2 bar 'Modeling workflow or script' foo
+2 2 bar/baz 'Modeling workflow or script' foo
 #
 """)
 
@@ -503,8 +505,8 @@ _ihm_related_datasets.data_type_primary
         dump = IMP.pmi.mmcif._ExternalReferenceDumper(po)
         repo1 = IMP.pmi.metadata.Repository(doi="foo")
         repo2 = IMP.pmi.metadata.Repository(doi="10.5281/zenodo.46266",
-                                            url='nup84-v1.0.zip',
-                                            top_directory='foo/bar')
+                                     url='nup84-v1.0.zip',
+                                     top_directory=os.path.join('foo', 'bar'))
         repo3 = IMP.pmi.metadata.Repository(doi="10.5281/zenodo.58025",
                                             url='foo.spd')
         l = IMP.pmi.metadata.FileLocation(repo=repo1, path='bar')
@@ -558,11 +560,11 @@ _ihm_external_files.content_type
 _ihm_external_files.details
 1 1 bar 'Input data or restraints' .
 2 1 baz 'Input data or restraints' .
-3 2 foo/bar%sbaz 'Modeling or post-processing output' .
+3 2 foo/bar/baz 'Modeling or post-processing output' .
 4 3 foo.spd 'Input data or restraints' 'EM micrographs'
 5 4 %s 'Modeling workflow or script' .
 #
-""" % (os.path.sep, bar))
+""" % bar)
         os.unlink(bar)
 
     def test_model_dumper_sphere(self):

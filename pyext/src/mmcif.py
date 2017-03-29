@@ -677,10 +677,19 @@ class _ExternalReferenceDumper(_Dumper):
             for r in self._ref_by_id:
                 loc = r.location
                 repo = loc.repo or self._local_files
+                file_path=self._posix_path(repo._get_full_path(loc.path))
                 l.write(id=loc.id, reference_id=repo.id,
-                        file_path=repo._get_full_path(loc.path),
+                        file_path=file_path,
                         content_type=r.content_type,
                         details=loc.details or _CifWriter.omitted)
+
+    # On Windows systems, convert native paths to POSIX-like (/-separated) paths
+    if os.sep == '/':
+        def _posix_path(self, path):
+            return path
+    else:
+        def _posix_path(self, path):
+            return path.replace(os.sep, '/')
 
 
 class _DatasetDumper(_Dumper):

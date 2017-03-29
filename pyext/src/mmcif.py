@@ -1122,6 +1122,7 @@ class _Model(object):
         self.spheres = [t for t in particle_infos_for_pdb if t[1] is None]
         self.atoms = [t for t in particle_infos_for_pdb if t[1] is not None]
         self.rmsf = {}
+        self.name = _CifWriter.omitted
 
     def parse_rmsf_file(self, fname, component):
         self.rmsf[component] = rmsf = {}
@@ -1163,11 +1164,12 @@ class _ModelDumper(_Dumper):
         ordinal = 1
         with writer.loop("_ihm_model_list",
                          ["ordinal_id", "model_id", "model_group_id",
-                          "model_group_name", "assembly_id",
+                          "model_name", "model_group_name", "assembly_id",
                           "protocol_id"]) as l:
             for model in self.models:
                 l.write(ordinal_id=ordinal, model_id=model.id,
                         model_group_id=model.group.id,
+                        model_name=model.name,
                         model_group_name=model.group.name,
                         assembly_id=model.assembly.id,
                         protocol_id=model.protocol.id)
@@ -2075,6 +2077,9 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                 e.load_localization_density(self.m, c, self.extref_dump)
             for stats in e.load_all_models(self):
                 m = self.add_model(group)
+                # Since we currently only deposit 1 model, it is the
+                # best scoring one
+                m.name = 'Best scoring model'
                 m.stats = stats
                 # Don't alter original RMF coordinates
                 m.geometric_center = [0,0,0]

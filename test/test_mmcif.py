@@ -601,10 +601,11 @@ loop_
 _ihm_model_list.ordinal_id
 _ihm_model_list.model_id
 _ihm_model_list.model_group_id
+_ihm_model_list.model_name
 _ihm_model_list.model_group_name
 _ihm_model_list.assembly_id
 _ihm_model_list.protocol_id
-1 1 7 'all models' 42 93
+1 1 7 . 'all models' 42 93
 #
 #
 loop_
@@ -651,6 +652,7 @@ _ihm_sphere_obj_site.model_id
         group.id = 7
         model = d.add(simo.prot, protocol, assembly, group)
         self.assertEqual(model.id, 1)
+        model.name = 'foo'
         model.parse_rmsf_file(self.get_input_file_name('test.nup84.rmsf'),
                               'Nup84')
         self.assertAlmostEqual(model.get_rmsf('Nup84', (1,)), 4.5, delta=1e-4)
@@ -664,10 +666,11 @@ loop_
 _ihm_model_list.ordinal_id
 _ihm_model_list.model_id
 _ihm_model_list.model_group_id
+_ihm_model_list.model_name
 _ihm_model_list.model_group_name
 _ihm_model_list.assembly_id
 _ihm_model_list.protocol_id
-1 1 7 'all models' 42 93
+1 1 7 foo 'all models' 42 93
 #
 #
 loop_

@@ -1529,7 +1529,7 @@ modeling. These may need to be added manually below.""")
                                 # a crystal structure as the source (a
                                 # comparative model would use MET in
                                 # the sequence)
-                                assert(len(model.sources), 1)
+                                assert(len(model.sources) == 1)
                                 seq_dif.append(_MSESeqDif(res, f.component,
                                                           model.sources[0],
                                                           f.offset))

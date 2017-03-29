@@ -49,6 +49,8 @@ class Tests(IMP.test.TestCase):
                 pass
         m = IMP.Model()
         simo = IMP.pmi.representation.Representation(m)
+        root = os.path.dirname(sys.argv[0]) or '.'
+        simo.add_metadata(IMP.pmi.metadata.Repository(doi="foo", root=root))
         po = DummyPO(None)
         simo.add_protocol_output(po)
 
@@ -73,7 +75,7 @@ _ihm_external_reference_info.reference_type
 _ihm_external_reference_info.reference
 _ihm_external_reference_info.refers_to
 _ihm_external_reference_info.associated_url
-1 . 'Supplementary Files' . Other .
+1 . DOI foo Other .
 2 . DOI bar Other .
 #
 #

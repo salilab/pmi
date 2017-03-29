@@ -81,11 +81,11 @@ _ihm_external_files.reference_id
 _ihm_external_files.file_path
 _ihm_external_files.content_type
 _ihm_external_files.details
-1 1 %s 'Modeling workflow or script'
+1 1 test_mmcif.py 'Modeling workflow or script'
 'The main integrative modeling script'
 2 2 bar 'Modeling workflow or script' foo
 #
-""" % os.path.abspath(sys.argv[0]))
+""")
 
     def test_file_dataset(self):
         """Test get/set_file_dataset methods"""
@@ -522,14 +522,12 @@ _ihm_related_datasets.data_type_primary
         l = IMP.pmi.metadata.FileLocation(repo=repo3, path='foo.spd',
                                           details='EM micrographs')
         dump.add(l, IMP.pmi.mmcif._ExternalReferenceDumper.INPUT_DATA)
-        with IMP.test.temporary_directory() as tmpdir:
-            bar = os.path.join(tmpdir, 'bar')
-            absbar = os.path.abspath(bar)
-            with open(bar, 'w') as f:
-                f.write("")
-            # Local file
-            l = IMP.pmi.metadata.FileLocation(bar)
-            dump.add(l, IMP.pmi.mmcif._ExternalReferenceDumper.WORKFLOW)
+        bar = 'test_mmcif_extref.tmp'
+        with open(bar, 'w') as f:
+            f.write("")
+        # Local file
+        l = IMP.pmi.metadata.FileLocation(bar)
+        dump.add(l, IMP.pmi.mmcif._ExternalReferenceDumper.WORKFLOW)
         # DatabaseLocations should be ignored
         l = IMP.pmi.metadata.PDBLocation('1abc', '1.0', 'test details')
         dump.add(l, IMP.pmi.mmcif._ExternalReferenceDumper.WORKFLOW)
@@ -564,7 +562,8 @@ _ihm_external_files.details
 4 3 foo.spd 'Input data or restraints' 'EM micrographs'
 5 4 %s 'Modeling workflow or script' .
 #
-""" % (os.path.sep, absbar))
+""" % (os.path.sep, bar))
+        os.unlink(bar)
 
     def test_model_dumper_sphere(self):
         """Test ModelDumper sphere_obj output"""

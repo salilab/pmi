@@ -582,8 +582,12 @@ class _ExternalReferenceDumper(_Dumper):
         reference = _CifWriter.omitted
         refers_to = 'Other'
         associated_url = _CifWriter.omitted
+
+        def __init__(self, top_directory):
+            self.top_directory = top_directory
+
         def _get_full_path(self, path):
-            return path
+            return os.path.relpath(path, start=self.top_directory)
 
     class _Repository(object):
         reference_provider = _CifWriter.omitted
@@ -638,7 +642,7 @@ class _ExternalReferenceDumper(_Dumper):
         self._ref_by_id = []
         self._repo_by_id = []
         # Special dummy repo for repo=None (local files)
-        self._local_files = self._LocalFiles()
+        self._local_files = self._LocalFiles(self.simo._working_directory)
         for r in self._refs:
             # Update location to point to parent repository, if any
             self.simo._update_location(r.location)
@@ -1889,6 +1893,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
     """
     def __init__(self, fh):
         self._main_script = os.path.abspath(sys.argv[0])
+        self._working_directory = os.getcwd()
         self._cif_writer = _CifWriter(fh)
         self.entities = _EntityMapper()
         self.chains = {}

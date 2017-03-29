@@ -1016,12 +1016,11 @@ _ihm_starting_model_seq_dif.asym_id
 _ihm_starting_model_seq_dif.seq_id
 _ihm_starting_model_seq_dif.comp_id
 _ihm_starting_model_seq_dif.starting_model_ordinal_id
-_ihm_starting_model_seq_dif.db_entity_id
 _ihm_starting_model_seq_dif.db_asym_id
 _ihm_starting_model_seq_dif.db_seq_id
 _ihm_starting_model_seq_dif.db_comp_id
 _ihm_starting_model_seq_dif.details
-1 4 H 42 MET 39 4 X 40 MSE 'Conversion of modified residue MSE to MET'
+1 4 H 42 MET 39 X 40 MSE 'Conversion of modified residue MSE to MET'
 #
 """)
 

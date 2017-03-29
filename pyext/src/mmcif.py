@@ -1426,7 +1426,7 @@ class _StartingModelDumper(_Dumper):
         with writer.loop("_ihm_starting_model_seq_dif",
                      ["ordinal_id", "entity_id", "asym_id",
                       "seq_id", "comp_id", "starting_model_ordinal_id",
-                      "db_entity_id", "db_asym_id", "db_seq_id", "db_comp_id",
+                      "db_asym_id", "db_seq_id", "db_comp_id",
                       "details"]) as l:
             for sd in seq_dif:
                 chain_id = self.simo._get_chain_for_component(
@@ -1434,7 +1434,7 @@ class _StartingModelDumper(_Dumper):
                 entity = self.simo.entities[sd.component]
                 l.write(ordinal_id=ordinal, entity_id=entity.id,
                         asym_id=chain_id, seq_id=sd.res.get_index(),
-                        comp_id=sd.comp_id, db_entity_id=entity.id,
+                        comp_id=sd.comp_id,
                         db_asym_id=sd.source.chain_id,
                         db_seq_id=sd.res.get_index() - sd.offset,
                         db_comp_id=sd.db_comp_id,

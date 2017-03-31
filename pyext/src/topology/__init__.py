@@ -1139,7 +1139,11 @@ class TopologyReader(object):
                 errors.append("Molecule name should be <molecule.copyID>")
                 errors.append("For component %s line %d " % (c.molname,linenum))
             c._domain_name = c.molname + '.' + c.copyname
-            c.color = values[2]
+            colorfields = values[2].split(',')
+            if len(colorfields)==3:
+                c.color = [float(x) for x in colorfields]
+            else:
+                c.color = values[2]
         c._orig_fasta_file = values[3]
         c.fasta_file = values[3]
         fasta_field = values[4].split(",")

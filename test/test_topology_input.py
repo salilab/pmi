@@ -206,9 +206,9 @@ class Tests(IMP.test.TestCase):
                                   resolution=1).get_selected_particles()
 
         color=IMP.display.Colored(sel5[0]).get_color()
-        self.assertEqual(color.get_red(), 0.1)
-        self.assertEqual(color.get_green(), 0.2)
-        self.assertEqual(color.get_blue(), 0.3)
+        self.assertAlmostEqual(color.get_red(), 0.1, delta=1e-6)
+        self.assertAlmostEqual(color.get_green(), 0.2, delta=1e-6)
+        self.assertAlmostEqual(color.get_blue(), 0.3, delta=1e-6)
         self.assertEqual(len(sel4_1),10)
         self.assertEqual(len(sel4_10),1)
         self.assertEqual(len(sel4_D),2)

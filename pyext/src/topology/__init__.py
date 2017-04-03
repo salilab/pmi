@@ -1394,7 +1394,10 @@ class _Component(object):
             chain = ' '
         else:
             chain = self.chain
-        a= '|'+'|'.join([name,self.color,self._orig_fasta_file,self.fasta_id,
+        color=self.color
+        if isinstance(color, list):
+            color=','.join([str(x) for x in color])
+        a= '|'+'|'.join([name,color,self._orig_fasta_file,self.fasta_id,
                          self._orig_pdb_input,chain,self._l2s(list(res_range)),
                              str(self.pdb_offset),str(self.bead_size),
                              str(self.em_residues_per_gaussian),

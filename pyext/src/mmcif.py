@@ -778,31 +778,26 @@ class _DatasetDumper(_Dumper):
         ordinal = 1
         with writer.loop("_ihm_related_datasets",
                          ["ordinal_id", "dataset_list_id_derived",
-                          "data_type_derived", "dataset_list_id_primary",
-                          "data_type_primary"]) as l:
+                          "dataset_list_id_primary"]) as l:
             for derived in self._dataset_by_id:
                 for parent in sorted(derived._parents.keys(),
                                      key=lambda d: d.id):
                     l.write(ordinal_id=ordinal,
                             dataset_list_id_derived=derived.id,
-                            data_type_derived=derived._data_type,
-                            dataset_list_id_primary=parent.id,
-                            data_type_primary=parent._data_type)
+                            dataset_list_id_primary=parent.id)
                     ordinal += 1
 
     def dump_rel_dbs(self, datasets, writer):
         ordinal = 1
         with writer.loop("_ihm_dataset_related_db_reference",
                          ["id", "dataset_list_id", "db_name",
-                          "accession_code", "version", "data_type",
-                          "details"]) as l:
+                          "accession_code", "version", "details"]) as l:
             for d in datasets:
                 l.write(id=ordinal, dataset_list_id=d.id,
                         db_name=d.location.db_name,
                         accession_code=d.location.access_code,
                         version=d.location.version if d.location.version
                                 else _CifWriter.omitted,
-                        data_type=d._data_type,
                         details=d.location.details if d.location.details
                                 else _CifWriter.omitted)
                 ordinal += 1
@@ -810,11 +805,9 @@ class _DatasetDumper(_Dumper):
     def dump_other(self, datasets, writer):
         ordinal = 1
         with writer.loop("_ihm_dataset_external_reference",
-                         ["id", "dataset_list_id", "data_type",
-                          "file_id"]) as l:
+                         ["id", "dataset_list_id", "file_id"]) as l:
             for d in datasets:
-                l.write(id=ordinal, dataset_list_id=d.id,
-                        data_type=d._data_type, file_id=d.location.id)
+                l.write(id=ordinal, dataset_list_id=d.id, file_id=d.location.id)
                 ordinal += 1
 
 
@@ -1476,7 +1469,6 @@ modeling. These may need to be added manually below.""")
                      ["ordinal_id", "entity_id", "entity_description",
                       "asym_id", "seq_id_begin",
                       "seq_id_end", "starting_model_source",
-                      "starting_model_db_name", "starting_model_db_code",
                       "starting_model_auth_asym_id",
                       "starting_model_sequence_offset",
                       "starting_model_id",
@@ -1499,8 +1491,6 @@ modeling. These may need to be added manually below.""")
                       starting_model_auth_asym_id=source.chain_id,
                       starting_model_id=model.name,
                       starting_model_source=source.source,
-                      starting_model_db_name=source.db_name,
-                      starting_model_db_code=source.db_code,
                       starting_model_sequence_offset=f.offset,
                       dataset_list_id=model.dataset.id)
                     ordinal += 1

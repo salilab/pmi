@@ -484,7 +484,7 @@ class _TemplateSource(object):
     """A PDB file used as a template for a comparative starting model"""
     source = 'comparative model'
     db_name = db_code = _CifWriter.omitted
-    tm_db_name = 'PDB'
+    tm_dataset = None
     # Right now assume all alignments are Modeller alignments, which uses
     # the length of the shorter sequence as the denominator for sequence
     # identity
@@ -1342,6 +1342,15 @@ class _StartingModelDumper(_Dumper):
                                                      m.group(5),
                                                      int(m.group(6)),
                                                      m.group(7), model))
+        # Add datasets for templates
+        for t in templates:
+            # todo: handle templates that aren't in PDB
+            if t.tm_db_code:
+                l = IMP.pmi.metadata.PDBLocation(t.tm_db_code)
+                d = IMP.pmi.metadata.PDBDataset(l)
+                d = self.simo.dataset_dump.add(d)
+                t.tm_dataset = d
+                model.dataset.add_primary(d)
 
         # Sort by starting residue, then ending residue
         return sorted(templates, key=lambda x: (x._seq_id_begin, x._seq_id_end))
@@ -1378,6 +1387,7 @@ class _StartingModelDumper(_Dumper):
             d = IMP.pmi.metadata.ComparativeModelDataset(local_file)
             model.dataset = self.simo.dataset_dump.add(file_dataset or d)
             templates = self.get_templates(pdbname, model)
+
             if templates:
                 return templates
             else:
@@ -1440,10 +1450,10 @@ class _StartingModelDumper(_Dumper):
            dump_details() since it uses IDs assigned there."""
         with writer.loop("_ihm_starting_comparative_models",
                      ["starting_model_ordinal_id", "starting_model_id",
-                      "template_db_name", "template_db_code",
                       "template_auth_asym_id", "template_seq_begin",
                       "template_seq_end", "template_sequence_identity",
                       "template_sequence_identity_denominator",
+                      "template_dataset_list_id",
                       "alignment_file_id"]) as l:
             ordinal = 1
             for model in self.all_models():
@@ -1452,13 +1462,14 @@ class _StartingModelDumper(_Dumper):
                     denom = template.sequence_identity_denominator
                     l.write(starting_model_ordinal_id=template.id,
                       starting_model_id=model.name,
-                      template_db_name=template.tm_db_name,
-                      template_db_code=template.tm_db_code,
                       template_auth_asym_id=template.tm_chain_id,
                       template_seq_begin=template.tm_seq_id_begin,
                       template_seq_end=template.tm_seq_id_end,
                       template_sequence_identity=template.sequence_identity,
-                      template_sequence_identity_denominator=denom)
+                      template_sequence_identity_denominator=denom,
+                      template_dataset_list_id=template.tm_dataset.id
+                                               if template.tm_dataset
+                                               else _CifWriter.unknown)
 
     def dump_details(self, writer):
         writer.write_comment("""IMP will attempt to identify which input models

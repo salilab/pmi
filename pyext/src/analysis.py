@@ -1399,7 +1399,7 @@ class GetContactMap(object):
                         np.log(mtr),
                         interpolation='nearest',
                         vmin=0.,
-                        vmax=log(NewM.max()))
+                        vmax=log(mtr.max()))
                     ax.set_xticks([])
                     ax.set_yticks([])
                 if skip_xl == 0:

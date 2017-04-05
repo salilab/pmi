@@ -1337,7 +1337,7 @@ class GetContactMap(object):
                                 xl2 = pl2
                             mtr[xl2 - 1, xl1 - 1] = 100
                     else:
-                        raise RuntimeError('WTF!')
+                        print('No cross links between: ', pn1, pn2)
                     Matrices_xl[(pn1, pn2)] = mtr
 
         # expand the matrix to individual residues

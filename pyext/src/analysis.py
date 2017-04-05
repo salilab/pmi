@@ -1396,7 +1396,7 @@ class GetContactMap(object):
                         mtr = Matrices[(C[x2], C[x1])].T
                     #cax = ax.imshow(log(NewM[s1:r1,s2:r2] / 1.), interpolation='nearest', vmin=0., vmax=log(NewM.max()))
                     cax = ax.imshow(
-                        log(mtr),
+                        np.log(mtr),
                         interpolation='nearest',
                         vmin=0.,
                         vmax=log(NewM.max()))

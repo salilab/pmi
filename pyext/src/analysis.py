@@ -1296,7 +1296,7 @@ class GetContactMap(object):
                     self.XL[t1].append((int(d[2]) + 1, int(d[3]) + 1))
                     self.XL[t2].append((int(d[3]) + 1, int(d[2]) + 1))
 
-    def dist_matrix(self, skip_cmap=0, skip_xl=1):
+    def dist_matrix(self, skip_cmap=0, skip_xl=1, outname=None):
         K = self.namelist
         M = self.contactmap
         C, R = [], []
@@ -1395,7 +1395,7 @@ class GetContactMap(object):
                 R.append(R[-1] + cl)
 
         # start plotting
-        if filename:
+        if outname:
             # Don't require a display
             import matplotlib as mpl
             mpl.use('Agg')
@@ -1451,7 +1451,10 @@ class GetContactMap(object):
                 cnt += 1
                 if x2 == 0:
                     ax.set_ylabel(C[x1], rotation=90)
-        plt.show()
+        if outname:
+            plt.savefig(outname + ".pdf", dpi=300, transparent="False")
+        else:
+            plt.show()
 
 
 # ------------------------------------------------------------------

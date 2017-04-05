@@ -1186,41 +1186,9 @@ class GetContactMap(object):
             for p in particles_dictionary[name]:
                 print(p.get_name())
                 residue_indexes += IMP.pmi.tools.get_residue_indexes(p)
-                #residue_indexes.add( )
 
             if len(residue_indexes) != 0:
                 self.protnames.append(name)
-                for res in range(min(residue_indexes), max(residue_indexes) + 1):
-                    d = IMP.core.XYZR(p)
-                    new_name = name + ":" + str(res)
-                    if name not in self.resmap:
-                        self.resmap[name] = {}
-                    if res not in self.resmap:
-                        self.resmap[name][res] = {}
-
-                    self.resmap[name][res] = new_name
-                    namelist.append(new_name)
-
-                    crd = np.array([d.get_x(), d.get_y(), d.get_z()])
-                    coords.append(crd)
-                    radii.append(d.get_radius())
-
-        coords = np.array(coords)
-        radii = np.array(radii)
-
-        if len(self.namelist) == 0:
-            self.namelist = namelist
-            self.contactmap = np.zeros((len(coords), len(coords)))
-
-        distances = cdist(coords, coords)
-        distances = (distances - radii).T - radii
-        distances = distances <= self.distance
-
-        print(coords)
-        print(radii)
-        print(distances)
-
-        self.contactmap += distances
 
     def get_subunit_coords(self, frame, align=0):
         from scipy.spatial.distance import cdist

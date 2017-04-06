@@ -726,6 +726,8 @@ class ProcessOutput(object):
                 for k in kkeys:
                     self.invstat2_dict.update({stat2_dict[k]: k})
             else:
+                print("WARNING: statfile v1 is deprecated. "
+                      "Please convert to statfile v2")
                 self.isstat1 = True
                 self.klist.sort()
 

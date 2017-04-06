@@ -2130,6 +2130,6 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
 
     def _update_location(self, fileloc):
         """Update FileLocation to point to a parent repository, if any"""
-        for m in self._metadata:
-            if isinstance(m, IMP.pmi.metadata.Repository):
-                m.update_in_repo(fileloc)
+        all_repos = [m for m in self._metadata
+                     if isinstance(m, IMP.pmi.metadata.Repository)]
+        IMP.pmi.metadata.Repository.update_in_repos(fileloc, all_repos)

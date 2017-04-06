@@ -10,6 +10,7 @@ import IMP.pmi
 import IMP.pmi.tools
 import os
 import sys
+import ast
 import RMF
 import numpy as np
 import operator
@@ -529,7 +530,7 @@ class Output(object):
 
         passed=True
         for l in flstat:
-            test_dict = eval(l)
+            test_dict = ast.literal_eval(l)
         for k in test_dict:
             if k in output:
                 old_value = str(test_dict[k])
@@ -707,7 +708,7 @@ class ProcessOutput(object):
 
         # get the keys from the first line
         for line in f.readlines():
-            d = eval(line)
+            d = ast.literal_eval(line)
             self.klist = list(d.keys())
             # check if it is a stat2 file
             if "STAT2HEADER" in self.klist:
@@ -772,7 +773,7 @@ class ProcessOutput(object):
             #if line_number % 1000 == 0:
             #    print "ProcessOutput.get_fields: read line %s from file %s" % (str(line_number), self.filename)
             try:
-                d = eval(line)
+                d = ast.literal_eval(line)
             except:
                 print("# Warning: skipped line number " + str(line_number) + " not a valid line")
                 continue

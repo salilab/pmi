@@ -735,6 +735,13 @@ class ProcessOutput(object):
             print("WARNING: statfile v1 is deprecated.  Please convert to statfile v2")
             self.isstat1 = True
             self.klist.sort()
+            # For v1, no need to map from ids to field names, so just make
+            # a dumb one-to-one mapping so as not to confuse v2 code
+            self.dict = {}
+            self.inv_dict = {}
+            for k in self.klist:
+                self.dict[k] = k
+                self.inv_dict[k] = k
         
 
         f.close()

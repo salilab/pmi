@@ -710,7 +710,8 @@ class ProcessOutput(object):
         line = f.readline()
 
         #Store these keys in a dictionary. Example pair: {109 :'Total_Score'}
-        self.dict = self.parse_line(line)
+        self.dict = self.parse_line(line, header=True)
+        #self.dict = ast.literal_eval(line)
 
         self.klist = list(self.dict.keys())
 
@@ -735,21 +736,35 @@ class ProcessOutput(object):
             print("WARNING: statfile v1 is deprecated.  Please convert to statfile v2")
             self.isstat1 = True
             self.klist.sort()
+            # For v1, no need to map from ids to field names, so just make
+            # a dumb one-to-one mapping so as not to confuse v2 code
+            self.dict = {}
+            self.inv_dict = {}
+            for k in self.klist:
+                self.dict[k] = k
+                self.inv_dict[k] = k
         
 
         f.close()
 
 
-    def parse_line(self, line):
+    def parse_line(self, line, header=False):
         # Parses a line and returns a dictionary of key:value pairs
         # {key:value, key:value, key:"{v1, v2, v3}", key:value}
         d={} # output dictionary 
+
+        if header:
+            # Assume that STAT2HEADER_ENVIRON is the last keyword
+            if "STAT2HEADER_ENVIRON" in line:
+                d['STAT2HEADER_ENVIRON']=line.split(", \'STAT2HEADER_ENVIRON\':")[1]
+                line=line.split(", \'STAT2HEADER_ENVIRON\'")[0]
+
         # First, remove outer braces and split via double quotes to isolate multi-component values.
         split=line.strip()[1:-1].split("\"")
         
         if len(split)==1:
             fields = split[0].split(",")   # split via commas to get key:value pair
-            for h in fields[0:-1]: 
+            for h in fields: 
                 if h != "":  # For some reason, there is occasionally an empty field. Ignoring these seems to work.
 
                     # Split fields into key and value elements
@@ -766,31 +781,45 @@ class ProcessOutput(object):
             return d
 
 
-        for i in range(0,len(split)-1,2):
+        for i in range(0,len(split),2):
             # Each even number of split is a string of "key:value, key:value, key:value"
             fd = split[i]
             fields = fd.split(",")   # split via commas to get key:value pair
             for h in fields[0:-1]: 
                 if h != "":  # For some reason, there is occasionally an empty field. Ignoring these seems to work.
+                    #print(h, h.split(": "))
 
-                    # Split fields into key and value elements
-                    kv = h.split(":")
+                    # Fields are separated by ': '
+                    kv = h.split(": ")
 
                     # If the key (field 0) is an integer, keep it an integer.
                     try:
-                        k = int(kv[0].replace(",","").strip())
+                        k = int(kv[0].replace(",","").replace(":","").strip())
                     except:
                         k = kv[0].replace("\'","").strip()
 
                     v = kv[1].replace("\'","").strip() # the value is encased in single quote characters, so remove these
                     d[k] = v
-            # The last field contains the key for the multi-component value in split[i+1]
-            d[fields[-1].split(":")[0].replace("\'","").strip()] = split[i+1]
+
+            # If there is a last field contains the key for the multi-component value in split[i+1]
+            if i < len(split)-1:
+                d[fields[-1].split(":")[0].replace("\'","").strip()] = split[i+1]
+            else:
+                kv = fields[-1].split(": ")
+                try:
+                    k = int(kv[0].replace(",","").replace(":","").strip())
+                except:
+                    k = kv[0].replace("\'","").strip()
+
+                v = kv[1].replace("\'","").strip() # the value is encased in single quote characters, so remove these
+                d[k] = v
 
         return d
 
 
     def get_keys(self):
+        """ Returns a list of the string keys that are included in this dictionary
+        """
         self.klist = [k[1]
                     for k in sorted(self.dict.items(), key=operator.itemgetter(1))]
         return self.klist
@@ -899,6 +928,7 @@ class ProcessOutput(object):
 
         for line in f.readlines():
             append=True
+            #fields = ast.literal_eval(line)
             fields = self.parse_line(line)
 
             # Loop over all criteria.  If one fails, the whole line fails and do not append it.
@@ -925,9 +955,10 @@ class ProcessOutput(object):
     def does_line_pass_criteria(self, fields, c):
         # Given a stat file line (as a dictionary) and a criteria tuple, decide whether 
         # the criteria is passed (return True) or not (return False)
-        
+        #print(c)
         key = c[0]
         if key not in self.get_keys():
+            print(key, self.get_keys())
             raise Exception('ERROR: IMP.pmi.output.ProcessOutput.does_line_pass_criteria() - Key %s is not in this stat file' % (key))  
 
         # Try to cast value string as int, float or, if not, keep it as a string

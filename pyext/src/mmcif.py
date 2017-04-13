@@ -1384,20 +1384,24 @@ class _StartingModelDumper(_Dumper):
         elif first_line.startswith('EXPDTA    THEORETICAL MODEL, MODELLER'):
             self.simo.software_dump.set_modeller_used(
                                         *first_line[38:].split(' ', 1))
-            d = IMP.pmi.metadata.ComparativeModelDataset(local_file)
-            model.dataset = self.simo.dataset_dump.add(file_dataset or d)
-            templates = self.get_templates(pdbname, model)
-
-            if templates:
-                return templates
-            else:
-                return [_UnknownSource(model, chain)]
+            return self.handle_comparative_model(local_file, file_dataset,
+                                                 pdbname, model, chain)
         else:
             # todo: extract Modeller-like template info for Phyre models;
             # revisit assumption that all such unknown source PDBs are
             # comparative models
-            d = IMP.pmi.metadata.ComparativeModelDataset(local_file)
-            model.dataset = self.simo.dataset_dump.add(file_dataset or d)
+            return self.handle_comparative_model(local_file, file_dataset,
+                                                 pdbname, model, chain)
+
+    def handle_comparative_model(self, local_file, file_dataset, pdbname,
+                                 model, chain):
+        d = IMP.pmi.metadata.ComparativeModelDataset(local_file)
+        model.dataset = self.simo.dataset_dump.add(file_dataset or d)
+        templates = self.get_templates(pdbname, model)
+
+        if templates:
+            return templates
+        else:
             return [_UnknownSource(model, chain)]
 
     def assign_model_details(self):

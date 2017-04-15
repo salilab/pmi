@@ -22,6 +22,7 @@ from IMP.pmi.tools import OrderedDict
 import IMP.pmi.output
 import IMP.pmi.metadata
 import re
+import ast
 import sys
 import os
 import textwrap
@@ -1750,7 +1751,7 @@ class _ReplicaExchangeAnalysisEnsemble(_Ensemble):
         stat_fname = self.postproc.get_stat_file(self.cluster_num)
         model_num = 0
         with open(stat_fname) as fh:
-            stats = eval(fh.readline())
+            stats = ast.literal_eval(fh.readline())
             # Correct path
             rmf_file = os.path.join(os.path.dirname(stat_fname),
                                     "%d.rmf3" % model_num)

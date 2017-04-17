@@ -1378,6 +1378,16 @@ class _StartingModelDumper(_Dumper):
         return (first_line[50:59].strip(),
                 details if details else _CifWriter.unknown, metadata)
 
+    def _parse_details(self, fh):
+        """Extract TITLE records from a PDB file"""
+        details = ''
+        for line in fh:
+            if line.startswith('TITLE'):
+                details += line[10:].rstrip()
+            elif line.startswith('ATOM'):
+                break
+        return details
+
     def get_sources(self, model, pdbname, chain):
         # Attempt to identity PDB file vs. comparative model
         fh = open(pdbname)
@@ -1392,6 +1402,30 @@ class _StartingModelDumper(_Dumper):
             d = IMP.pmi.metadata.PDBDataset(l)
             model.dataset = self.simo.dataset_dump.add(file_dataset or d)
             return [source]
+        elif first_line.startswith('EXPDTA    DERIVED FROM PDB:'):
+            # Model derived from a PDB structure; treat as a local experimental
+            # model with the official PDB as a parent
+            local_file.details = self._parse_details(fh)
+            db_code = first_line[27:].strip()
+            d = IMP.pmi.metadata.PDBDataset(local_file)
+            pdb_loc = IMP.pmi.metadata.PDBLocation(db_code)
+            parent = IMP.pmi.metadata.PDBDataset(pdb_loc)
+            d.add_parent(parent)
+            model.dataset = self.simo.dataset_dump.add(file_dataset or d)
+            return [_UnknownSource(model, chain)]
+        elif first_line.startswith('EXPDTA    DERIVED FROM COMPARATIVE '
+                                   'MODEL, DOI:'):
+            # Model derived from a comparative model; link back to the original
+            # model as a parent
+            local_file.details = self._parse_details(fh)
+            d = IMP.pmi.metadata.ComparativeModelDataset(local_file)
+            repo = IMP.pmi.metadata.Repository(doi=first_line[46:].strip())
+            # todo: better specify an unknown path
+            orig_loc = IMP.pmi.metadata.FileLocation(repo=repo, path='.')
+            parent = IMP.pmi.metadata.ComparativeModelDataset(orig_loc)
+            d.add_parent(parent)
+            model.dataset = self.simo.dataset_dump.add(file_dataset or d)
+            return [_UnknownSource(model, chain)]
         elif first_line.startswith('EXPDTA    THEORETICAL MODEL, MODELLER'):
             self.simo.software_dump.set_modeller_used(
                                         *first_line[38:].split(' ', 1))

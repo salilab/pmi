@@ -52,6 +52,11 @@ class Tests(IMP.test.TestCase):
         root = os.path.dirname(sys.argv[0]) or '.'
         simo.add_metadata(IMP.pmi.metadata.Repository(doi="foo", root=root))
         po = DummyPO(None)
+        # Usually main_script is populated from sys.argv[0], which is usually
+        # the name of the modeling script. But if we run the tests with nose,
+        # it will be 'nosetests' instead. So make sure it's reliably the name
+        # of the test script:
+        po._main_script = __file__
         simo.add_protocol_output(po)
 
         r = IMP.pmi.metadata.Repository(doi="bar")

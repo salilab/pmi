@@ -1544,12 +1544,11 @@ are crystal structures and which are comparative models, but does not always
 have sufficient information to deduce all of the templates used for comparative
 modeling. These may need to be added manually below.""")
         with writer.loop("_ihm_starting_model_details",
-                     ["entity_id", "entity_description",
+                     ["starting_model_id", "entity_id", "entity_description",
                       "asym_id", "seq_id_begin",
                       "seq_id_end", "starting_model_source",
                       "starting_model_auth_asym_id",
                       "starting_model_sequence_offset",
-                      "starting_model_id",
                       "dataset_list_id"]) as l:
             for model in self.all_models():
                 f = model.fragments[0]

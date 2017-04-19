@@ -1305,8 +1305,9 @@ class _MSESeqDif(object):
     comp_id = 'MET'
     db_comp_id = 'MSE'
     details = 'Conversion of modified residue MSE to MET'
-    def __init__(self, res, component, source, offset):
+    def __init__(self, res, component, source, model, offset):
         self.res, self.component, self.source = res, component, source
+        self.model = model
         self.offset = offset
 
 
@@ -1486,7 +1487,7 @@ class _StartingModelDumper(_Dumper):
         ordinal = 1
         with writer.loop("_ihm_starting_model_seq_dif",
                      ["ordinal_id", "entity_id", "asym_id",
-                      "seq_id", "comp_id", "starting_model_ordinal_id",
+                      "seq_id", "comp_id", "starting_model_id",
                       "db_asym_id", "db_seq_id", "db_comp_id",
                       "details"]) as l:
             for sd in seq_dif:
@@ -1499,7 +1500,7 @@ class _StartingModelDumper(_Dumper):
                         db_asym_id=sd.source.chain_id,
                         db_seq_id=sd.res.get_index() - sd.offset,
                         db_comp_id=sd.db_comp_id,
-                        starting_model_ordinal_id=sd.source.id,
+                        starting_model_id=sd.model.name,
                         details=sd.details)
                 ordinal += 1
 
@@ -1507,9 +1508,12 @@ class _StartingModelDumper(_Dumper):
         """Dump details on comparative models. Must be called after
            dump_details() since it uses IDs assigned there."""
         with writer.loop("_ihm_starting_comparative_models",
-                     ["starting_model_ordinal_id", "starting_model_id",
-                      "template_auth_asym_id", "template_seq_begin",
-                      "template_seq_end", "template_sequence_identity",
+                     ["ordinal_id", "starting_model_id",
+                      "starting_model_auth_asym_id",
+                      "starting_model_seq_id_begin",
+                      "starting_model_seq_id_end",
+                      "template_auth_asym_id", "template_seq_id_begin",
+                      "template_seq_id_end", "template_sequence_identity",
                       "template_sequence_identity_denominator",
                       "template_dataset_list_id",
                       "alignment_file_id"]) as l:
@@ -1517,17 +1521,22 @@ class _StartingModelDumper(_Dumper):
             for model in self.all_models():
                 for template in [s for s in model.sources
                                  if isinstance(s, _TemplateSource)]:
+                    seq_id_begin, seq_id_end = template.get_seq_id_range(model)
                     denom = template.sequence_identity_denominator
-                    l.write(starting_model_ordinal_id=template.id,
+                    l.write(ordinal_id=ordinal,
                       starting_model_id=model.name,
+                      starting_model_auth_asym_id=template.chain_id,
+                      starting_model_seq_id_begin=seq_id_begin,
+                      starting_model_seq_id_end=seq_id_end,
                       template_auth_asym_id=template.tm_chain_id,
-                      template_seq_begin=template.tm_seq_id_begin,
-                      template_seq_end=template.tm_seq_id_end,
+                      template_seq_id_begin=template.tm_seq_id_begin,
+                      template_seq_id_end=template.tm_seq_id_end,
                       template_sequence_identity=template.sequence_identity,
                       template_sequence_identity_denominator=denom,
                       template_dataset_list_id=template.tm_dataset.id
                                                if template.tm_dataset
                                                else _CifWriter.unknown)
+                    ordinal += 1
 
     def dump_details(self, writer):
         writer.write_comment("""IMP will attempt to identify which input models
@@ -1535,21 +1544,18 @@ are crystal structures and which are comparative models, but does not always
 have sufficient information to deduce all of the templates used for comparative
 modeling. These may need to be added manually below.""")
         with writer.loop("_ihm_starting_model_details",
-                     ["ordinal_id", "entity_id", "entity_description",
+                     ["entity_id", "entity_description",
                       "asym_id", "seq_id_begin",
                       "seq_id_end", "starting_model_source",
                       "starting_model_auth_asym_id",
                       "starting_model_sequence_offset",
                       "starting_model_id",
                       "dataset_list_id"]) as l:
-            ordinal = 1
             for model in self.all_models():
                 f = model.fragments[0]
                 entity = self.simo.entities[f.component]
                 chain_id = self.simo._get_chain_for_component(f.component,
                                                               self.output)
-                for source in model.sources:
-                    source.id = ordinal
                 source0 = model.sources[0]
                 # Where there are multiple sources (to date, this can only
                 # mean multiple templates for a comparative model) consolidate
@@ -1559,8 +1565,7 @@ modeling. These may need to be added manually below.""")
                     this_begin, this_end = source.get_seq_id_range(model)
                     seq_id_begin = min(seq_id_begin, this_begin)
                     seq_id_end = max(seq_id_end, this_end)
-                l.write(ordinal_id=ordinal,
-                      entity_id=entity.id,
+                l.write(entity_id=entity.id,
                       entity_description=entity.description,
                       asym_id=chain_id,
                       seq_id_begin=seq_id_begin,
@@ -1570,7 +1575,6 @@ modeling. These may need to be added manually below.""")
                       starting_model_source=source0.source,
                       starting_model_sequence_offset=f.offset,
                       dataset_list_id=model.dataset.id)
-                ordinal += 1
 
     def dump_coords(self, writer):
         seq_dif = []
@@ -1614,7 +1618,7 @@ modeling. These may need to be added manually below.""")
                                 assert(len(model.sources) == 1)
                                 seq_dif.append(_MSESeqDif(res, f.component,
                                                           model.sources[0],
-                                                          f.offset))
+                                                          model, f.offset))
                         chain_id = self.simo._get_chain_for_component(
                                             f.component, self.output)
                         entity = self.simo.entities[f.component]

@@ -1018,15 +1018,17 @@ _ihm_2dem_class_average_restraint.details
             def get_index(self):
                 return 42
         class DummySource(object):
-            id = 39
             chain_id = 'X'
+        class DummyModel(object):
+            name = 'dummy-m1'
 
         po = DummyPO()
         d = IMP.pmi.mmcif._StartingModelDumper(po)
         fh = StringIO()
         w = IMP.pmi.mmcif._CifWriter(fh)
         d.dump_seq_dif(w, [IMP.pmi.mmcif._MSESeqDif(DummyRes(), 'nup84',
-                                                    DummySource(), 2)])
+                                                    DummySource(),
+                                                    DummyModel(), 2)])
         out = fh.getvalue()
         self.assertEqual(out, """#
 loop_
@@ -1035,12 +1037,12 @@ _ihm_starting_model_seq_dif.entity_id
 _ihm_starting_model_seq_dif.asym_id
 _ihm_starting_model_seq_dif.seq_id
 _ihm_starting_model_seq_dif.comp_id
-_ihm_starting_model_seq_dif.starting_model_ordinal_id
+_ihm_starting_model_seq_dif.starting_model_id
 _ihm_starting_model_seq_dif.db_asym_id
 _ihm_starting_model_seq_dif.db_seq_id
 _ihm_starting_model_seq_dif.db_comp_id
 _ihm_starting_model_seq_dif.details
-1 4 H 42 MET 39 X 40 MSE 'Conversion of modified residue MSE to MET'
+1 4 H 42 MET dummy-m1 X 40 MSE 'Conversion of modified residue MSE to MET'
 #
 """)
 

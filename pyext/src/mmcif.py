@@ -732,8 +732,6 @@ class _DatasetDumper(_Dumper):
                                       _ExternalReferenceDumper.INPUT_DATA)
             _assign_id(d, seen_datasets, self._dataset_by_id)
 
-        # Make sure that all datasets are listed, even if they weren't used
-        all_group = self.get_all_group(True)
         # Assign IDs to all groups and remove duplicates
         seen_group_ids = {}
         self._dataset_group_by_id = []
@@ -764,17 +762,13 @@ class _DatasetDumper(_Dumper):
             yield d
 
     def dump(self, writer):
-        ordinal = 1
         with writer.loop("_ihm_dataset_list",
-                         ["ordinal_id", "id", "group_id", "data_type",
-                          "database_hosted"]) as l:
-            for g in self._dataset_group_by_id:
-                for d in g._datasets:
-                    l.write(ordinal_id=ordinal, id=d.id, group_id=g.id,
-                            data_type=d._data_type,
-                            database_hosted=isinstance(d.location,
-                                            IMP.pmi.metadata.DatabaseLocation))
-                    ordinal += 1
+                         ["id", "data_type", "database_hosted"]) as l:
+            for d in self._dataset_by_id:
+                l.write(id=d.id, data_type=d._data_type,
+                        database_hosted=isinstance(d.location,
+                                        IMP.pmi.metadata.DatabaseLocation))
+        self.dump_groups(writer)
         self.dump_other((d for d in self._dataset_by_id
                          if not isinstance(d.location,
                                             IMP.pmi.metadata.DatabaseLocation)),
@@ -784,6 +778,16 @@ class _DatasetDumper(_Dumper):
                                             IMP.pmi.metadata.DatabaseLocation)),
                           writer)
         self.dump_related(writer)
+
+    def dump_groups(self, writer):
+        ordinal = 1
+        with writer.loop("_ihm_dataset_group",
+                         ["ordinal_id", "group_id", "dataset_list_id"]) as l:
+            for g in self._dataset_group_by_id:
+                for d in g._datasets:
+                    l.write(ordinal_id=ordinal, group_id=g.id,
+                            dataset_list_id=d.id)
+                    ordinal += 1
 
     def dump_related(self, writer):
         ordinal = 1

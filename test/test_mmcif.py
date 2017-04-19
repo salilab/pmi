@@ -449,6 +449,14 @@ _citation_author.ordinal
         l = IMP.pmi.metadata.FileLocation(repo='foo', path='bar')
         l.id = 97
         pds = dump.add(IMP.pmi.metadata.CXMSDataset(l))
+        # group1 contains just the first dataset
+        group1 = dump.get_all_group()
+        l = IMP.pmi.metadata.FileLocation(repo='foo2', path='bar2')
+        l.id = 98
+        pds = dump.add(IMP.pmi.metadata.CXMSDataset(l))
+        # group2 contains the first two datasets
+        group2 = dump.get_all_group()
+        # last dataset is in no group
         l = IMP.pmi.metadata.PDBLocation('1abc', '1.0', 'test details')
         ds = dump.add(IMP.pmi.metadata.PDBDataset(l))
         ds.add_primary(pds)
@@ -461,13 +469,21 @@ _citation_author.ordinal
         out = fh.getvalue()
         self.assertEqual(out, """#
 loop_
-_ihm_dataset_list.ordinal_id
 _ihm_dataset_list.id
-_ihm_dataset_list.group_id
 _ihm_dataset_list.data_type
 _ihm_dataset_list.database_hosted
-1 1 1 'CX-MS data' NO
-2 2 1 'Experimental model' YES
+1 'CX-MS data' NO
+2 'CX-MS data' NO
+3 'Experimental model' YES
+#
+#
+loop_
+_ihm_dataset_group.ordinal_id
+_ihm_dataset_group.group_id
+_ihm_dataset_group.dataset_list_id
+1 1 1
+2 2 1
+3 2 2
 #
 #
 loop_
@@ -475,6 +491,7 @@ _ihm_dataset_external_reference.id
 _ihm_dataset_external_reference.dataset_list_id
 _ihm_dataset_external_reference.file_id
 1 1 97
+2 2 98
 #
 #
 loop_
@@ -484,14 +501,14 @@ _ihm_dataset_related_db_reference.db_name
 _ihm_dataset_related_db_reference.accession_code
 _ihm_dataset_related_db_reference.version
 _ihm_dataset_related_db_reference.details
-1 2 PDB 1abc 1.0 'test details'
+1 3 PDB 1abc 1.0 'test details'
 #
 #
 loop_
 _ihm_related_datasets.ordinal_id
 _ihm_related_datasets.dataset_list_id_derived
 _ihm_related_datasets.dataset_list_id_primary
-1 2 1
+1 3 2
 #
 """)
 

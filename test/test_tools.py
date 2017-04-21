@@ -92,7 +92,7 @@ class Tests(IMP.test.TestCase):
 
         mol3 = st1.create_molecule("GCP2_YEAST_BEADS",sequence=seqs["GCP2_YEAST"][:100],chain_id='C')
         mol3.add_representation(mol3.get_non_atomic_residues(), resolutions=[10])
-        
+
         hier = s.build()
 
         dof = IMP.pmi.dof.DegreesOfFreedom(mdl)
@@ -105,13 +105,13 @@ class Tests(IMP.test.TestCase):
         fbs_position_after={}
 
         rbs,fbs = IMP.pmi.tools.get_rbs_and_beads([hier])
-        
+
         for rb in rbs:
             coor_rb = IMP.core.XYZ(rb).get_coordinates()
             self.assertTrue(100.0 <coor_rb[0]< 200.0)
             self.assertTrue(100.0 <coor_rb[1]< 200.0)
             self.assertTrue(100.0 <coor_rb[2]< 200.0)
-    
+
         for fb in fbs:
             if IMP.core.NonRigidMember.get_is_setup(fb):
                 coor_fb=IMP.algebra.Vector3D([fb.get_value(IMP.FloatKey(4)),
@@ -120,13 +120,13 @@ class Tests(IMP.test.TestCase):
                 self.assertTrue(100.0 <coor_fb[0]< 200.0)
                 self.assertTrue(100.0 <coor_fb[1]< 200.0)
                 self.assertTrue(100.0 <coor_fb[2]< 200.0)
-                
+
             else:
                 coor_fb=IMP.core.XYZ(fb).get_coordinates()
                 self.assertTrue(100.0 <coor_fb[0]< 200.0)
                 self.assertTrue(100.0 <coor_fb[1]< 200.0)
                 self.assertTrue(100.0 <coor_fb[2]< 200.0)
-                
+
 
     def test_shuffle_deep(self):
         """Test moving rbs, fbs"""

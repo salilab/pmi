@@ -56,9 +56,14 @@ def get_restraint_set(model):
     return IMP.RestraintSet.get_from(model.get_data(mk))
 
 class Stopwatch(object):
+    """Collect timing information.
+       Add an instance of this class to outputobjects to get timing information
+       in a stat file."""
 
     def __init__(self, isdelta=True):
-
+        """Constructor.
+           @param isdelta if True (the default) then report the time since the
+                  last use of this class; if False, report cumulative time."""
         self.starttime = time.clock()
         self.label = "None"
         self.isdelta = isdelta
@@ -70,16 +75,12 @@ class Stopwatch(object):
         output = {}
         if self.isdelta:
             newtime = time.clock()
-            output[
-                "Stopwatch_" +
-                self.label +
-                "_delta_seconds"] = str(
-                newtime -
-                self.starttime)
+            output["Stopwatch_" + self.label + "_delta_seconds"] \
+                    = str(newtime - self.starttime)
             self.starttime = newtime
         else:
-            output["Stopwatch_" + self.label +
-                   "_elapsed_seconds"] = str(time.clock() - self.starttime)
+            output["Stopwatch_" + self.label + "_elapsed_seconds"] \
+                    = str(time.clock() - self.starttime)
         return output
 
 

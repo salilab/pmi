@@ -125,6 +125,8 @@ class SetupSurface(object):
         return self.surface
 
 
+@IMP.deprecated_object(2.8,
+        "If you use this class please let the PMI developers know.")
 class ParticleToSampleFilter(object):
     def __init__(self, sampled_objects):
         self.sampled_objects=sampled_objects

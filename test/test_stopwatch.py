@@ -1,4 +1,5 @@
 from __future__ import print_function
+import time
 import IMP.test
 import IMP.pmi.tools
 
@@ -17,8 +18,11 @@ class Tests(IMP.test.TestCase):
         """Test Stopwatch without delta"""
         s = IMP.pmi.tools.Stopwatch(isdelta=False)
 
-        times = [float(s.get_output()['Stopwatch_None_elapsed_seconds'])
-                 for _ in range(50)]
+        times = []
+        for i in range(5):
+            o = s.get_output()
+            times.append(float(o['Stopwatch_None_elapsed_seconds']))
+            time.sleep(0.01)
         # times should be cumulative
         self.assertGreater(times[-1], times[0])
 

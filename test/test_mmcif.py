@@ -283,6 +283,38 @@ auth4 4
 #
 """)
 
+    def test_entity_dumper(self):
+        """Test EntityDumper"""
+        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
+            def flush(self):
+                pass
+
+        m = IMP.Model()
+        simo = IMP.pmi.representation.Representation(m)
+        po = DummyPO(None)
+        simo.add_protocol_output(po)
+        po.add_component_sequence('foo', 'ACGT')
+        po.add_component_sequence('bar', 'ACGT')
+        po.add_component_sequence('baz', 'ACC')
+        d = IMP.pmi.mmcif._EntityDumper(po)
+        fh = StringIO()
+        w = IMP.pmi.mmcif._CifWriter(fh)
+        d.dump(w)
+        out = fh.getvalue()
+        self.assertEqual(out, """#
+loop_
+_entity.id
+_entity.type
+_entity.src_method
+_entity.pdbx_description
+_entity.formula_weight
+_entity.pdbx_number_of_molecules
+_entity.details
+1 polymer man foo ? 1 ?
+2 polymer man baz ? 1 ?
+#
+""")
+
     def test_citation(self):
         """Test CitationDumper"""
         s = IMP.pmi.metadata.Citation(

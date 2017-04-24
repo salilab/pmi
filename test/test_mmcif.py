@@ -251,6 +251,38 @@ C 2 baz
         out = fh.getvalue()
         self.assertEqual(out, "data_imp_model\n_entry.id imp_model\n")
 
+    def test_audit_author(self):
+        """Test AuditAuthorDumper"""
+        m = IMP.Model()
+        r = IMP.pmi.representation.Representation(m)
+
+        s = IMP.pmi.metadata.Citation(pmid='25161197', title='foo',
+              journal="Mol Cell Proteomics", volume=13, page_range=(2927,2943),
+              year=2014, authors=['auth1', 'auth2', 'auth3'], doi='doi1')
+        r.add_metadata(s)
+        s = IMP.pmi.metadata.Citation(pmid='45161197', title='bar',
+              journal="Mol Cell Proteomics", volume=13, page_range=(2927,2943),
+              year=2014, authors=['auth2', 'auth4'], doi='doi2')
+        r.add_metadata(s)
+
+        d = IMP.pmi.mmcif._AuditAuthorDumper(r)
+        fh = StringIO()
+        w = IMP.pmi.mmcif._CifWriter(fh)
+        d.dump(w)
+        out = fh.getvalue()
+        # auth2 is repeated in the input; we should see it only once in the
+        # output
+        self.assertEqual(out,"""#
+loop_
+_audit_author.name
+_audit_author.pdbx_ordinal
+auth1 1
+auth2 2
+auth3 3
+auth4 4
+#
+""")
+
     def test_citation(self):
         """Test CitationDumper"""
         s = IMP.pmi.metadata.Citation(

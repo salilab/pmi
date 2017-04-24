@@ -347,6 +347,40 @@ _entity_poly.pdbx_seq_one_letter_code_can
 #
 """)
 
+    def test_entity_poly_seq_dumper(self):
+        """Test EntityPolySeqDumper"""
+        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
+            def flush(self):
+                pass
+
+        m = IMP.Model()
+        simo = IMP.pmi.representation.Representation(m)
+        po = DummyPO(None)
+        simo.add_protocol_output(po)
+        po.add_component_sequence('foo', 'ACGT')
+        po.add_component_sequence('bar', 'ACGT')
+        po.add_component_sequence('baz', 'ACC')
+        d = IMP.pmi.mmcif._EntityPolySeqDumper(po)
+        fh = StringIO()
+        w = IMP.pmi.mmcif._CifWriter(fh)
+        d.dump(w)
+        out = fh.getvalue()
+        self.assertEqual(out, """#
+loop_
+_entity_poly_seq.entity_id
+_entity_poly_seq.num
+_entity_poly_seq.mon_id
+_entity_poly_seq.hetero
+1 1 ALA .
+1 2 CYS .
+1 3 GLY .
+1 4 THR .
+2 1 ALA .
+2 2 CYS .
+2 3 CYS .
+#
+""")
+
     def test_citation(self):
         """Test CitationDumper"""
         s = IMP.pmi.metadata.Citation(

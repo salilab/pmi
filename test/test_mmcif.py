@@ -211,6 +211,20 @@ C 2 baz
 #
 """)
 
+    def test_entry(self):
+        """Test EntryDumper"""
+        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
+            def flush(self):
+                pass
+
+        po = DummyPO(EmptyObject())
+        d = IMP.pmi.mmcif._EntryDumper(po)
+        fh = StringIO()
+        w = IMP.pmi.mmcif._CifWriter(fh)
+        d.dump(w)
+        out = fh.getvalue()
+        self.assertEqual(out, "data_imp_model\n_entry.id imp_model\n")
+
     def test_citation(self):
         """Test CitationDumper"""
         s = IMP.pmi.metadata.Citation(

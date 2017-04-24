@@ -315,6 +315,38 @@ _entity.details
 #
 """)
 
+    def test_entity_poly_dumper(self):
+        """Test EntityPolyDumper"""
+        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
+            def flush(self):
+                pass
+
+        m = IMP.Model()
+        simo = IMP.pmi.representation.Representation(m)
+        po = DummyPO(None)
+        simo.add_protocol_output(po)
+        po.add_component_sequence('foo', 'ACGT')
+        po.add_component_sequence('bar', 'ACGT')
+        po.add_component_sequence('baz', 'ACC')
+        d = IMP.pmi.mmcif._EntityPolyDumper(po)
+        fh = StringIO()
+        w = IMP.pmi.mmcif._CifWriter(fh)
+        d.dump(w)
+        out = fh.getvalue()
+        self.assertEqual(out, """#
+loop_
+_entity_poly.entity_id
+_entity_poly.type
+_entity_poly.nstd_linkage
+_entity_poly.nstd_monomer
+_entity_poly.pdbx_strand_id
+_entity_poly.pdbx_seq_one_letter_code
+_entity_poly.pdbx_seq_one_letter_code_can
+1 polypeptide(L) no no . ACGT ACGT
+2 polypeptide(L) no no . ACC ACC
+#
+""")
+
     def test_citation(self):
         """Test CitationDumper"""
         s = IMP.pmi.metadata.Citation(

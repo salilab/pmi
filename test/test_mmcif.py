@@ -34,6 +34,7 @@ class Tests(IMP.test.TestCase):
         m = IMP.Model()
         r = IMP.pmi.representation.Representation(m)
         r.add_metadata(s)
+        r.add_metadata(IMP.pmi.metadata.Repository(doi="foo", root='.'))
         d = IMP.pmi.mmcif._SoftwareDumper(r)
         fh = StringIO()
         w = IMP.pmi.mmcif._CifWriter(fh)
@@ -41,6 +42,31 @@ class Tests(IMP.test.TestCase):
         out = fh.getvalue().split('\n')
         self.assertEqual(out[-3],
                          "3 test 'test code' 1 program http://salilab.org")
+
+    def test_software_modeller(self):
+        """Test SoftwareDumper.set_modeller_used"""
+        d = IMP.pmi.mmcif._SoftwareDumper(EmptyObject())
+        self.assertEqual(d.modeller_used, False)
+        d.set_modeller_used('9.18', '2018-01-01')
+        self.assertEqual(d.modeller_used, True)
+        self.assertEqual(len(d.software), 3)
+        self.assertEqual(d.software[-1].version, '9.18')
+        # Further calls should have no effect
+        d.set_modeller_used('9.0', 'xxx')
+        self.assertEqual(len(d.software), 3)
+        self.assertEqual(d.software[-1].version, '9.18')
+
+    def test_software_phyre2(self):
+        """Test SoftwareDumper.set_phyre2_used"""
+        d = IMP.pmi.mmcif._SoftwareDumper(EmptyObject())
+        self.assertEqual(d.phyre2_used, False)
+        d.set_phyre2_used()
+        self.assertEqual(d.phyre2_used, True)
+        self.assertEqual(len(d.software), 3)
+        self.assertEqual(d.software[-1].version, '2.0')
+        # Further calls should have no effect
+        d.set_phyre2_used()
+        self.assertEqual(len(d.software), 3)
 
     def test_workflow(self):
         """Test output of workflow files"""

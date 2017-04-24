@@ -184,24 +184,22 @@ class _EntryDumper(_Dumper):
 
 
 class _SoftwareDumper(_Dumper):
-    software = [
-       IMP.pmi.metadata.Software(
-             name="Integrative Modeling Platform (IMP)",
-             version=IMP.__version__,
-             classification="integrative model building",
-             description="integrative model building",
-             url='https://integrativemodeling.org'),
-       IMP.pmi.metadata.Software(
-            name="IMP PMI module",
-            version=IMP.pmi.__version__,
-            classification="integrative model building",
-            description="integrative model building",
-            url='https://integrativemodeling.org')
-       ]
-
     def __init__(self, simo):
         super(_SoftwareDumper, self).__init__(simo)
         self.modeller_used = self.phyre2_used = False
+        self.software = [
+           IMP.pmi.metadata.Software(
+                 name="Integrative Modeling Platform (IMP)",
+                 version=IMP.__version__,
+                 classification="integrative model building",
+                 description="integrative model building",
+                 url='https://integrativemodeling.org'),
+           IMP.pmi.metadata.Software(
+                name="IMP PMI module",
+                version=IMP.pmi.__version__,
+                classification="integrative model building",
+                description="integrative model building",
+                url='https://integrativemodeling.org') ]
 
     def set_modeller_used(self, version, date):
         if self.modeller_used:

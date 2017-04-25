@@ -1216,5 +1216,86 @@ _ihm_starting_model_seq_dif.details
 #
 """)
 
+    def test_beads_fragment(self):
+        """Test _BeadsFragment class"""
+        m = None
+        bf1 = IMP.pmi.mmcif._BeadsFragment(m, 'comp1', start=0,
+                                           end=10, num=2, hier=None)
+        bf2 = IMP.pmi.mmcif._BeadsFragment(m, 'comp1', start=11,
+                                           end=30, num=3, hier=None)
+        bf3 = IMP.pmi.mmcif._BeadsFragment(m, 'comp1', start=31,
+                                           end=50, num=4, hier=None)
+        self.assertFalse(bf1.combine(None))
+        self.assertFalse(bf1.combine(bf3))
+        self.assertTrue(bf1.combine(bf2))
+        self.assertEqual(bf1.start, 0)
+        self.assertEqual(bf1.end, 30)
+        self.assertEqual(bf1.num, 5)
+        self.assertTrue(bf1.combine(bf3))
+        self.assertEqual(bf1.start, 0)
+        self.assertEqual(bf1.end, 50)
+        self.assertEqual(bf1.num, 9)
+
+    def test_model_repr_dump_add_frag(self):
+        """Test ModelRepresentationDumper.add_fragment()"""
+        m = None
+        d = IMP.pmi.mmcif._ModelRepresentationDumper(EmptyObject())
+        b = IMP.pmi.mmcif._BeadsFragment(m, 'comp1', start=0,
+                                         end=10, num=2, hier=None)
+        d.add_fragment(b)
+        self.assertEqual(len(d.fragments['comp1']), 1)
+        frag = d.fragments['comp1'][0]
+        self.assertEqual(frag.start, 0)
+        self.assertEqual(frag.end, 10)
+
+        b = IMP.pmi.mmcif._BeadsFragment(m, 'comp1', start=11,
+                                         end=30, num=3, hier=None)
+        d.add_fragment(b)
+        self.assertEqual(len(d.fragments['comp1']), 1)
+        frag = d.fragments['comp1'][0]
+        self.assertEqual(frag.start, 0)
+        self.assertEqual(frag.end, 30)
+
+    def test_model_repr_dump(self):
+        """Test ModelRepresentationDumper"""
+        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
+            def flush(self):
+                pass
+        m = IMP.Model()
+        simo = IMP.pmi.representation.Representation(m)
+        po = DummyPO(None)
+        simo.add_protocol_output(po)
+        simo.create_component("Nup84", True)
+        simo.add_component_sequence("Nup84",
+                                    self.get_input_file_name("test.fasta"))
+        nup84 = simo.autobuild_model("Nup84",
+                                     self.get_input_file_name("test.nup84.pdb"),
+                                     "A")
+        fh = StringIO()
+        w = IMP.pmi.mmcif._CifWriter(fh)
+        # Need this to assign starting model details
+        po.starting_model_dump.finalize()
+        po.model_repr_dump.dump(w)
+        out = fh.getvalue()
+        self.assertEqual(out, """#
+loop_
+_ihm_model_representation.ordinal_id
+_ihm_model_representation.representation_id
+_ihm_model_representation.segment_id
+_ihm_model_representation.entity_id
+_ihm_model_representation.entity_description
+_ihm_model_representation.entity_asym_id
+_ihm_model_representation.seq_id_begin
+_ihm_model_representation.seq_id_end
+_ihm_model_representation.model_object_primitive
+_ihm_model_representation.starting_model_id
+_ihm_model_representation.model_mode
+_ihm_model_representation.model_granularity
+_ihm_model_representation.model_object_count
+1 1 1 1 Nup84 A 1 2 sphere Nup84-m1 flexible by-residue .
+2 1 2 1 Nup84 A 3 4 sphere . flexible by-feature 1
+#
+""")
+
 if __name__ == '__main__':
     IMP.test.main()

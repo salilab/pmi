@@ -1297,5 +1297,56 @@ _ihm_model_representation.model_object_count
 #
 """)
 
+    def test_pdb_source(self):
+        """Test PDBSource class"""
+        class DummyModel(object):
+            seq_id_begin = 1
+            seq_id_end = 100
+        m = DummyModel()
+        p = IMP.pmi.mmcif._PDBSource(m, '1abc', 'A', metadata=[])
+        self.assertEqual(p.source, 'experimental model')
+        self.assertEqual(p.get_seq_id_range(m), (1, 100))
+
+    def test_template_source_pdb(self):
+        """Test TemplateSource class, where template is from PDB"""
+        class DummyModel(object):
+            seq_id_begin = 10
+            seq_id_end = 100
+        m = DummyModel()
+        p = IMP.pmi.mmcif._TemplateSource(tm_code='1abcA', tm_seq_id_begin=30,
+                    tm_seq_id_end=90, seq_id_begin=1, chain_id='G',
+                    seq_id_end=90, seq_id=42., model=m)
+        self.assertEqual(p.source, 'comparative model')
+        self.assertEqual(p.tm_db_code, '1ABC')
+        self.assertEqual(p.tm_chain_id, 'A')
+        self.assertEqual(p.get_seq_id_range(m), (10, 90))
+
+    def test_template_source_unknown(self):
+        """Test TemplateSource class, where template is not in PDB"""
+        class DummyModel(object):
+            seq_id_begin = 10
+            seq_id_end = 100
+        m = DummyModel()
+        p = IMP.pmi.mmcif._TemplateSource(tm_code='foo', tm_seq_id_begin=30,
+                    tm_seq_id_end=90, seq_id_begin=1, chain_id='G',
+                    seq_id_end=90, seq_id=42., model=m)
+        self.assertEqual(p.source, 'comparative model')
+        self.assertEqual(p.tm_db_code, '?')
+        self.assertEqual(p.tm_chain_id, '?')
+        self.assertEqual(p.get_seq_id_range(m), (10, 90))
+
+    def test_unknown_source(self):
+        """Test UnknownSource class"""
+        class DummyDataset(object):
+            _data_type = 'Comparative model'
+        class DummyModel(object):
+            dataset = DummyDataset()
+            seq_id_begin = 10
+            seq_id_end = 100
+        m = DummyModel()
+        p = IMP.pmi.mmcif._UnknownSource(m, 'A')
+        self.assertEqual(p.source, 'comparative model')
+        self.assertEqual(p.get_seq_id_range(m), (10, 100))
+
 if __name__ == '__main__':
     IMP.test.main()

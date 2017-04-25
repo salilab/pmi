@@ -1163,6 +1163,23 @@ _ihm_modeling_protocol.time_ordered_flag
 #
 """)
 
+    def test_simple_postprocessing(self):
+        """Test add_simple_postprocessing"""
+        po = DummyPO(None)
+        pp = po._add_simple_postprocessing(10, 90)
+        self.assertEqual(pp.type, 'cluster')
+        self.assertEqual(pp.feature, 'RMSD')
+        self.assertEqual(pp.num_models_begin, 10)
+        self.assertEqual(pp.num_models_end, 90)
+
+    def test_simple_ensemble(self):
+        """Test add_simple_ensemble"""
+        po = DummyPO(None)
+        pp = None
+        e = po._add_simple_ensemble(pp, 'Ensemble 1', 5, 0.1, 1, {}, None)
+        self.assertEqual(e.num_models, 5)
+        self.assertEqual(e.num_deposit, 1)
+
     def test_density_dumper(self):
         """Test DensityDumper"""
         class DummyEnsemble(object):

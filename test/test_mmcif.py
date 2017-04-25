@@ -15,6 +15,10 @@ else:
 class EmptyObject(object):
     pass
 
+class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
+    def flush(self):
+        pass
+
 def make_dataset_dumper():
     """Make an empty DatasetDumper object."""
     class MockExtRef(IMP.pmi.mmcif._ExternalReferenceDumper):
@@ -70,9 +74,6 @@ class Tests(IMP.test.TestCase):
 
     def test_workflow(self):
         """Test output of workflow files"""
-        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
-            def flush(self):
-                pass
         m = IMP.Model()
         simo = IMP.pmi.representation.Representation(m)
         root = os.path.dirname(sys.argv[0]) or '.'
@@ -135,9 +136,6 @@ _ihm_external_files.details
 
     def test_assembly_dumper_get_subassembly(self):
         """Test AssemblyDumper.get_subassembly()"""
-        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
-            def flush(self):
-                pass
         po = DummyPO(EmptyObject())
         d = IMP.pmi.mmcif._AssemblyDumper(po)
         complete = IMP.pmi.mmcif._Assembly(['a', 'b', 'c'])
@@ -151,9 +149,6 @@ _ihm_external_files.details
 
     def test_assembly_all_modeled(self):
         """Test AssemblyDumper, all components modeled"""
-        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
-            def flush(self):
-                pass
         po = DummyPO(EmptyObject())
         d = IMP.pmi.mmcif._AssemblyDumper(po)
         for c, seq in (("foo", "AAA"), ("bar", "AAA"), ("baz", "AA")):
@@ -184,9 +179,6 @@ _ihm_struct_assembly.seq_id_end
 
     def test_assembly_subset_modeled(self):
         """Test AssemblyDumper, subset of components modeled"""
-        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
-            def flush(self):
-                pass
         po = DummyPO(EmptyObject())
         for c, seq, modeled in (("foo", "AAA", True), ("bar", "AA", False)):
             po.create_component(c, modeled)
@@ -213,9 +205,6 @@ _ihm_struct_assembly.seq_id_end
 
     def test_struct_asym(self):
         """Test StructAsymDumper"""
-        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
-            def flush(self):
-                pass
         po = DummyPO(EmptyObject())
         d = IMP.pmi.mmcif._StructAsymDumper(po)
         for c, seq in (("foo", "AAA"), ("bar", "AAA"), ("baz", "AA")):
@@ -239,10 +228,6 @@ C 2 baz
 
     def test_entry(self):
         """Test EntryDumper"""
-        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
-            def flush(self):
-                pass
-
         po = DummyPO(EmptyObject())
         d = IMP.pmi.mmcif._EntryDumper(po)
         fh = StringIO()
@@ -285,10 +270,6 @@ auth4 4
 
     def test_entity_dumper(self):
         """Test EntityDumper"""
-        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
-            def flush(self):
-                pass
-
         m = IMP.Model()
         simo = IMP.pmi.representation.Representation(m)
         po = DummyPO(None)
@@ -317,10 +298,6 @@ _entity.details
 
     def test_entity_poly_dumper(self):
         """Test EntityPolyDumper"""
-        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
-            def flush(self):
-                pass
-
         m = IMP.Model()
         simo = IMP.pmi.representation.Representation(m)
         po = DummyPO(None)
@@ -349,10 +326,6 @@ _entity_poly.pdbx_seq_one_letter_code_can
 
     def test_entity_poly_seq_dumper(self):
         """Test EntityPolySeqDumper"""
-        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
-            def flush(self):
-                pass
-
         m = IMP.Model()
         simo = IMP.pmi.representation.Representation(m)
         po = DummyPO(None)
@@ -684,10 +657,6 @@ _ihm_related_datasets.dataset_list_id_primary
 
     def test_external_reference_dumper_dump(self):
         """Test ExternalReferenceDumper.dump()"""
-        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
-            def flush(self):
-                pass
-
         m = IMP.Model()
         simo = IMP.pmi.representation.Representation(m)
         po = DummyPO(None)
@@ -759,10 +728,6 @@ _ihm_external_files.details
 
     def test_model_dumper_sphere(self):
         """Test ModelDumper sphere_obj output"""
-        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
-            def flush(self):
-                pass
-
         m = IMP.Model()
         simo = IMP.pmi.representation.Representation(m)
         po = DummyPO(None)
@@ -820,10 +785,6 @@ _ihm_sphere_obj_site.model_id
 
     def test_model_dumper_atom(self):
         """Test ModelDumper atom_site output"""
-        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
-            def flush(self):
-                pass
-
         m = IMP.Model()
         simo = IMP.pmi.representation.Representation(m)
         po = DummyPO(None)
@@ -894,10 +855,6 @@ _ihm_sphere_obj_site.model_id
 
     def test_model_dumper_sphere_rmsf(self):
         """Test ModelDumper sphere_obj output with RMSF"""
-        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
-            def flush(self):
-                pass
-
         m = IMP.Model()
         simo = IMP.pmi.representation.Representation(m)
         po = DummyPO(None)
@@ -959,10 +916,6 @@ _ihm_sphere_obj_site.model_id
 
     def test_starting_model_dumper(self):
         """Test StartingModelDumper"""
-        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
-            def flush(self):
-                pass
-
         m = IMP.Model()
         simo = IMP.pmi.representation.Representation(m)
         po = DummyPO(None)
@@ -1020,10 +973,6 @@ Nup84-m1 ATOM 2 C CA GLU 1 A 2 -8.986 11.688 -5.817 91.820 2
 """)
 
     def get_dumper_sources(self, pdbname):
-        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
-            def flush(self):
-                pass
-
         m = IMP.Model()
         simo = IMP.pmi.representation.Representation(m)
         po = DummyPO(None)
@@ -1140,10 +1089,6 @@ Nup84-m1 ATOM 2 C CA GLU 1 A 2 -8.986 11.688 -5.817 91.820 2
 
     def test_chem_comp_dumper(self):
         """Test ChemCompDumper"""
-        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
-            def flush(self):
-                pass
-
         po = DummyPO(None)
         po.create_component("Nup84", True)
         po.add_component_sequence("Nup84", "MELS")
@@ -1170,10 +1115,6 @@ CYS 'L-peptide linking'
 
     def test_protocol_dumper(self):
         """Test ModelProtocolDumper output"""
-        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
-            def flush(self):
-                pass
-
         m = IMP.Model()
         simo = IMP.pmi.representation.Representation(m)
         po = DummyPO(None)
@@ -1224,10 +1165,6 @@ _ihm_modeling_protocol.time_ordered_flag
 
     def test_density_dumper(self):
         """Test DensityDumper"""
-        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
-            def flush(self):
-                pass
-
         class DummyEnsemble(object):
             pass
 
@@ -1356,9 +1293,6 @@ _ihm_localization_density_files.seq_id_end
 
     def test_em2d_dumper(self):
         """Test EM2DDumper class"""
-        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
-            def flush(self):
-                pass
         class DummyRestraint(object):
             pass
         pr = DummyRestraint()
@@ -1399,9 +1333,6 @@ _ihm_2dem_class_average_restraint.details
 
     def test_em3d_dumper(self):
         """Test EM3DDumper class"""
-        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
-            def flush(self):
-                pass
         m = IMP.Model()
         simo = IMP.pmi.representation.Representation(m)
         po = DummyPO(None)
@@ -1451,9 +1382,6 @@ _ihm_3dem_restraint.cross_correlation_coefficient
 
     def test_update_location(self):
         """Test update_location() method"""
-        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
-            def flush(self):
-                pass
         m = IMP.Model()
         simo = IMP.pmi.representation.Representation(m)
         po = DummyPO(None)
@@ -1565,9 +1493,6 @@ _ihm_starting_model_seq_dif.details
 
     def test_model_repr_dump(self):
         """Test ModelRepresentationDumper"""
-        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
-            def flush(self):
-                pass
         m = IMP.Model()
         simo = IMP.pmi.representation.Representation(m)
         po = DummyPO(None)

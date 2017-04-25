@@ -1019,7 +1019,7 @@ Nup84-m1 ATOM 2 C CA GLU 1 A 2 -8.986 11.688 -5.817 91.820 2
 #
 """)
 
-    def get_test_sources(self, pdbname):
+    def get_dumper_sources(self, pdbname):
         class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
             def flush(self):
                 pass
@@ -1038,7 +1038,7 @@ Nup84-m1 ATOM 2 C CA GLU 1 A 2 -8.986 11.688 -5.817 91.820 2
     def test_get_sources_official_pdb(self):
         """Test get_sources() when given an official PDB"""
         pdbname = self.get_input_file_name('official.pdb')
-        m, model, sources = self.get_test_sources(pdbname)
+        m, model, sources = self.get_dumper_sources(pdbname)
         (s, ) = sources
         self.assertEqual(s.db_code, '2HBJ')
         self.assertEqual(s.chain_id, 'A')
@@ -1054,7 +1054,7 @@ Nup84-m1 ATOM 2 C CA GLU 1 A 2 -8.986 11.688 -5.817 91.820 2
     def test_get_sources_derived_pdb(self):
         """Test get_sources() when given a file derived from a PDB"""
         pdbname = self.get_input_file_name('derived_pdb.pdb')
-        m, model, sources = self.get_test_sources(pdbname)
+        m, model, sources = self.get_dumper_sources(pdbname)
         (s, ) = sources
         self.assertEqual(s.db_code, '?')
         self.assertEqual(s.chain_id, 'A')
@@ -1075,7 +1075,7 @@ Nup84-m1 ATOM 2 C CA GLU 1 A 2 -8.986 11.688 -5.817 91.820 2
     def test_get_sources_derived_model(self):
         """Test get_sources() when given a file derived from a model"""
         pdbname = self.get_input_file_name('derived_model.pdb')
-        m, model, sources = self.get_test_sources(pdbname)
+        m, model, sources = self.get_dumper_sources(pdbname)
         (s, ) = sources
         self.assertEqual(s.db_code, '?')
         self.assertEqual(s.chain_id, 'A')
@@ -1096,7 +1096,7 @@ Nup84-m1 ATOM 2 C CA GLU 1 A 2 -8.986 11.688 -5.817 91.820 2
     def test_get_sources_modeller(self):
         """Test get_sources() when given a Modeller model"""
         pdbname = self.get_input_file_name('modeller_model.pdb')
-        m, model, sources = self.get_test_sources(pdbname)
+        m, model, sources = self.get_dumper_sources(pdbname)
         s1, s2 = sources
         self.assertEqual(s1.db_code, '.')
         self.assertEqual(s1.chain_id, 'A')
@@ -1121,7 +1121,7 @@ Nup84-m1 ATOM 2 C CA GLU 1 A 2 -8.986 11.688 -5.817 91.820 2
     def test_get_sources_phyre2(self):
         """Test get_sources() when given a Phyre2 model"""
         pdbname = self.get_input_file_name('phyre2_model.pdb')
-        m, model, sources = self.get_test_sources(pdbname)
+        m, model, sources = self.get_dumper_sources(pdbname)
         (s,) = sources
         self.assertEqual(s.db_code, '.')
         self.assertEqual(s.chain_id, 'A')

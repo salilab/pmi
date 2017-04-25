@@ -818,6 +818,80 @@ _ihm_sphere_obj_site.model_id
 #
 """)
 
+    def test_model_dumper_atom(self):
+        """Test ModelDumper atom_site output"""
+        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
+            def flush(self):
+                pass
+
+        m = IMP.Model()
+        simo = IMP.pmi.representation.Representation(m)
+        po = DummyPO(None)
+        simo.add_protocol_output(po)
+        simo.create_component("Nup84", True)
+        simo.add_component_sequence("Nup84",
+                                    self.get_input_file_name("test.fasta"))
+        nup84 = simo.autobuild_model("Nup84",
+                                     self.get_input_file_name("test.nup84.pdb"),
+                                     "A", resolutions=[0])
+
+        d = IMP.pmi.mmcif._ModelDumper(po)
+        assembly = IMP.pmi.mmcif._Assembly()
+        assembly.id = 42
+        protocol = IMP.pmi.mmcif._Protocol()
+        protocol.id = 93
+        group = IMP.pmi.mmcif._ModelGroup("all models")
+        group.id = 7
+        model = d.add(simo.prot, protocol, assembly, group)
+        self.assertEqual(model.id, 1)
+        self.assertEqual(model.get_rmsf('Nup84', (1,)), '.')
+        fh = StringIO()
+        w = IMP.pmi.mmcif._CifWriter(fh)
+        d.dump(w)
+        out = fh.getvalue()
+        self.assertEqual(out, """#
+loop_
+_ihm_model_list.ordinal_id
+_ihm_model_list.model_id
+_ihm_model_list.model_group_id
+_ihm_model_list.model_name
+_ihm_model_list.model_group_name
+_ihm_model_list.assembly_id
+_ihm_model_list.protocol_id
+1 1 7 . 'all models' 42 93
+#
+#
+loop_
+_atom_site.id
+_atom_site.label_atom_id
+_atom_site.label_comp_id
+_atom_site.label_seq_id
+_atom_site.label_asym_id
+_atom_site.Cartn_x
+_atom_site.Cartn_y
+_atom_site.Cartn_z
+_atom_site.label_entity_id
+_atom_site.model_id
+1 CA MET 1 A 0.000 0.000 0.000 1 1
+2 CA GLU 2 A 0.000 0.000 0.000 1 1
+#
+#
+loop_
+_ihm_sphere_obj_site.ordinal_id
+_ihm_sphere_obj_site.entity_id
+_ihm_sphere_obj_site.seq_id_begin
+_ihm_sphere_obj_site.seq_id_end
+_ihm_sphere_obj_site.asym_id
+_ihm_sphere_obj_site.Cartn_x
+_ihm_sphere_obj_site.Cartn_y
+_ihm_sphere_obj_site.Cartn_z
+_ihm_sphere_obj_site.object_radius
+_ihm_sphere_obj_site.rmsf
+_ihm_sphere_obj_site.model_id
+1 1 3 4 A 0.000 0.000 0.000 3.504 . 1
+#
+""")
+
     def test_model_dumper_sphere_rmsf(self):
         """Test ModelDumper sphere_obj output with RMSF"""
         class DummyPO(IMP.pmi.mmcif.ProtocolOutput):

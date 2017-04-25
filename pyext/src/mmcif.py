@@ -1116,7 +1116,7 @@ class _Model(object):
         self.protocol = protocol
         self.assembly = assembly
         self.stats = None
-        o = IMP.pmi.output.Output()
+        o = IMP.pmi.output.Output(atomistic=True)
         name = 'cif-output'
         o.dictionary_pdbs[name] = prot
         o._init_dictchain(name, prot)

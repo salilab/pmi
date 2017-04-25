@@ -1357,7 +1357,7 @@ class _StartingModelDumper(_Dumper):
                 d = IMP.pmi.metadata.PDBDataset(l)
                 d = self.simo.dataset_dump.add(d)
                 t.tm_dataset = d
-                model.dataset.add_primary(d)
+                model.dataset.add_parent(d)
 
         # Sort by starting residue, then ending residue
         return sorted(templates, key=lambda x: (x._seq_id_begin, x._seq_id_end))

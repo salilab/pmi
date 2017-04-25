@@ -1019,6 +1019,125 @@ Nup84-m1 ATOM 2 C CA GLU 1 A 2 -8.986 11.688 -5.817 91.820 2
 #
 """)
 
+    def get_test_sources(self, pdbname):
+        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
+            def flush(self):
+                pass
+
+        m = IMP.Model()
+        simo = IMP.pmi.representation.Representation(m)
+        po = DummyPO(None)
+        simo.add_protocol_output(po)
+        chain = 'A'
+        fragment = IMP.pmi.mmcif._PDBFragment(m, "mypdb", 1, 10, 0, pdbname,
+                                              chain, None)
+        model = IMP.pmi.mmcif._StartingModel(fragment)
+        sources = po.starting_model_dump.get_sources(model, pdbname, chain)
+        return m, model, sources
+
+    def test_get_sources_official_pdb(self):
+        """Test get_sources() when given an official PDB"""
+        pdbname = self.get_input_file_name('official.pdb')
+        m, model, sources = self.get_test_sources(pdbname)
+        (s, ) = sources
+        self.assertEqual(s.db_code, '2HBJ')
+        self.assertEqual(s.chain_id, 'A')
+        self.assertEqual(model.dataset._data_type, 'Experimental model')
+        self.assertEqual(model.dataset.location.db_name, 'PDB')
+        self.assertEqual(model.dataset.location.access_code, '2HBJ')
+        self.assertEqual(model.dataset.location.version, '14-JUN-06')
+        self.assertEqual(model.dataset.location.details,
+                         'STRUCTURE OF THE YEAST NUCLEAR EXOSOME COMPONENT, '
+                         'RRP6P, REVEALS AN INTERPLAY BETWEEN THE ACTIVE '
+                         'SITE AND THE HRDC DOMAIN')
+
+    def test_get_sources_derived_pdb(self):
+        """Test get_sources() when given a file derived from a PDB"""
+        pdbname = self.get_input_file_name('derived_pdb.pdb')
+        m, model, sources = self.get_test_sources(pdbname)
+        (s, ) = sources
+        self.assertEqual(s.db_code, '?')
+        self.assertEqual(s.chain_id, 'A')
+        self.assertEqual(model.dataset._data_type, 'Experimental model')
+        self.assertEqual(model.dataset.location.path, pdbname)
+        self.assertEqual(model.dataset.location.repo, None)
+        self.assertEqual(model.dataset.location.details,
+                         'MED7C AND MED21 STRUCTURES FROM PDB ENTRY 1YKH, '
+                         'ROTATED AND TRANSLATED TO ALIGN WITH THE '
+                         'MED4-MED9 MODEL')
+        (parent,) = model.dataset._parents
+        self.assertEqual(parent._data_type, 'Experimental model')
+        self.assertEqual(parent.location.db_name, 'PDB')
+        self.assertEqual(parent.location.access_code, '1YKH')
+        self.assertEqual(parent.location.version, None)
+        self.assertEqual(parent.location.details, None)
+
+    def test_get_sources_derived_model(self):
+        """Test get_sources() when given a file derived from a model"""
+        pdbname = self.get_input_file_name('derived_model.pdb')
+        m, model, sources = self.get_test_sources(pdbname)
+        (s, ) = sources
+        self.assertEqual(s.db_code, '?')
+        self.assertEqual(s.chain_id, 'A')
+        self.assertEqual(model.dataset._data_type, 'Comparative model')
+        self.assertEqual(model.dataset.location.path, pdbname)
+        self.assertEqual(model.dataset.location.repo, None)
+        self.assertEqual(model.dataset.location.details,
+                         'MED4 AND MED9 STRUCTURE TAKEN FROM LARIVIERE '
+                         'ET AL, NUCLEIC ACIDS RESEARCH. 2013;41:9266-9273. '
+                         'DOI: 10.1093/nar/gkt704. THE MED10 STRUCTURE ALSO '
+                         'PROPOSED IN THAT WORK IS NOT USED IN THIS STUDY.')
+        (parent,) = model.dataset._parents
+        self.assertEqual(parent._data_type, 'Comparative model')
+        self.assertEqual(parent.location.path, '.')
+        self.assertEqual(parent.location.repo.doi, '10.1093/nar/gkt704')
+        self.assertEqual(parent.location.details, None)
+
+    def test_get_sources_modeller(self):
+        """Test get_sources() when given a Modeller model"""
+        pdbname = self.get_input_file_name('modeller_model.pdb')
+        m, model, sources = self.get_test_sources(pdbname)
+        s1, s2 = sources
+        self.assertEqual(s1.db_code, '.')
+        self.assertEqual(s1.chain_id, 'A')
+        self.assertEqual(s1.tm_db_code, '3JRO')
+        self.assertEqual(s1.tm_chain_id, 'C')
+        self.assertEqual(s2.db_code, '.')
+        self.assertEqual(s2.chain_id, 'A')
+        self.assertEqual(s2.tm_db_code, '3F3F')
+        self.assertEqual(s2.tm_chain_id, 'G')
+        self.assertEqual(model.dataset._data_type, 'Comparative model')
+        self.assertEqual(model.dataset.location.path, pdbname)
+        self.assertEqual(model.dataset.location.repo, None)
+        self.assertEqual(model.dataset.location.details, None)
+        p1, p2 = model.dataset._parents
+        self.assertEqual(p1._data_type, 'Experimental model')
+        self.assertEqual(p1.location.db_name, 'PDB')
+        self.assertEqual(p1.location.access_code, '3JRO')
+        self.assertEqual(p1.location.version, None)
+        self.assertEqual(p1.location.details, None)
+        self.assertEqual(p2.location.access_code, '3F3F')
+
+    def test_get_sources_phyre2(self):
+        """Test get_sources() when given a Phyre2 model"""
+        pdbname = self.get_input_file_name('phyre2_model.pdb')
+        m, model, sources = self.get_test_sources(pdbname)
+        (s,) = sources
+        self.assertEqual(s.db_code, '.')
+        self.assertEqual(s.chain_id, 'A')
+        self.assertEqual(s.tm_db_code, '4BZK')
+        self.assertEqual(s.tm_chain_id, 'A')
+        self.assertEqual(model.dataset._data_type, 'Comparative model')
+        self.assertEqual(model.dataset.location.path, pdbname)
+        self.assertEqual(model.dataset.location.repo, None)
+        self.assertEqual(model.dataset.location.details, None)
+        (p,) = model.dataset._parents
+        self.assertEqual(p._data_type, 'Experimental model')
+        self.assertEqual(p.location.db_name, 'PDB')
+        self.assertEqual(p.location.access_code, '4BZK')
+        self.assertEqual(p.location.version, None)
+        self.assertEqual(p.location.details, None)
+
     def test_chem_comp_dumper(self):
         """Test ChemCompDumper"""
         class DummyPO(IMP.pmi.mmcif.ProtocolOutput):

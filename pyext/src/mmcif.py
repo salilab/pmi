@@ -538,25 +538,18 @@ class _UnknownSource(object):
 
 class _DatasetGroup(object):
     """A group of datasets"""
-    def __init__(self, datasets, include_primaries):
+    def __init__(self, datasets):
         self._datasets = list(datasets)
-        self.include_primaries = include_primaries
 
     def finalize(self):
         """Get final datasets for each restraint and remove duplicates"""
         final_datasets = OrderedDict()
-        def add_parents(d):
-            for p in d._parents.keys():
-                final_datasets[p] = None
-                add_parents(p)
         for ds in self._datasets:
             if isinstance(ds, _RestraintDataset):
                 d = ds.dataset
             else:
                 d = ds
             final_datasets[d] = None
-            if self.include_primaries:
-                add_parents(d)
         self._datasets = final_datasets.keys()
 
 
@@ -707,9 +700,9 @@ class _DatasetDumper(_Dumper):
         self._datasets = []
         self._dataset_groups = []
 
-    def get_all_group(self, include_primaries=False):
+    def get_all_group(self):
         """Get a _DatasetGroup encompassing all datasets so far"""
-        g = _DatasetGroup(self._datasets, include_primaries)
+        g = _DatasetGroup(self._datasets)
         self._dataset_groups.append(g)
         return g
 

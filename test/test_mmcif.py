@@ -1142,6 +1142,58 @@ _ihm_2dem_class_average_restraint.details
 #
 """)
 
+    def test_em3d_dumper(self):
+        """Test EM3DDumper class"""
+        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
+            def flush(self):
+                pass
+        m = IMP.Model()
+        simo = IMP.pmi.representation.Representation(m)
+        po = DummyPO(None)
+        simo.add_protocol_output(po)
+        simo.create_component("Nup84", True)
+        simo.add_component_sequence("Nup84",
+                                    self.get_input_file_name("test.fasta"))
+        nup84 = simo.autobuild_model("Nup84",
+                                     self.get_input_file_name("test.nup84.pdb"),
+                                     "A")
+        class DummyRestraint(object):
+            pass
+        class DummyProtocol(object):
+            pass
+        pr = DummyRestraint()
+        rd = IMP.pmi.mmcif._RestraintDataset(pr, num=None,
+                                             allow_duplicates=True)
+        r = IMP.pmi.mmcif._EM3DRestraint(po, rd, target_ps=[None, None],
+                                         densities=[])
+
+        l = IMP.pmi.metadata.FileLocation(repo='foo', path='bar')
+        d = IMP.pmi.metadata.EM2DClassDataset(l)
+        d.id = 4
+        pr.dataset = d
+
+        po.model_prot_dump.add(DummyProtocol())
+        po.add_model()
+        po.add_model()
+        po.em3d_dump.add(r)
+        fh = StringIO()
+        w = IMP.pmi.mmcif._CifWriter(fh)
+        po.em3d_dump.dump(w)
+        out = fh.getvalue()
+        self.assertEqual(out, """#
+loop_
+_ihm_3dem_restraint.ordinal_id
+_ihm_3dem_restraint.dataset_list_id
+_ihm_3dem_restraint.fitting_method
+_ihm_3dem_restraint.struct_assembly_id
+_ihm_3dem_restraint.number_of_gaussians
+_ihm_3dem_restraint.model_id
+_ihm_3dem_restraint.cross_correlation_coefficient
+1 4 'Gaussian mixture models' 2 2 1 .
+2 4 'Gaussian mixture models' 2 2 2 .
+#
+""")
+
     def test_update_location(self):
         """Test update_location() method"""
         class DummyPO(IMP.pmi.mmcif.ProtocolOutput):

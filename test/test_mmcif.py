@@ -957,6 +957,68 @@ _ihm_sphere_obj_site.model_id
 #
 """)
 
+    def test_starting_model_dumper(self):
+        """Test StartingModelDumper"""
+        class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
+            def flush(self):
+                pass
+
+        m = IMP.Model()
+        simo = IMP.pmi.representation.Representation(m)
+        po = DummyPO(None)
+        simo.add_protocol_output(po)
+        simo.create_component("Nup84", True)
+        simo.add_component_sequence("Nup84",
+                                    self.get_input_file_name("test.fasta"))
+        nup84 = simo.autobuild_model("Nup84",
+                                     self.get_input_file_name("test.nup84.pdb"),
+                                     "A")
+        fh = StringIO()
+        w = IMP.pmi.mmcif._CifWriter(fh)
+        po.dataset_dump.finalize()
+        po.starting_model_dump.finalize()
+        po.starting_model_dump.dump(w)
+        out = fh.getvalue()
+        self.assertEqual(out,
+"""# IMP will attempt to identify which input models are crystal structures and
+# which are comparative models, but does not always have sufficient information
+# to deduce all of the templates used for comparative modeling. These may need
+# to be added manually below.
+#
+loop_
+_ihm_starting_model_details.starting_model_id
+_ihm_starting_model_details.entity_id
+_ihm_starting_model_details.entity_description
+_ihm_starting_model_details.asym_id
+_ihm_starting_model_details.seq_id_begin
+_ihm_starting_model_details.seq_id_end
+_ihm_starting_model_details.starting_model_source
+_ihm_starting_model_details.starting_model_auth_asym_id
+_ihm_starting_model_details.starting_model_sequence_offset
+_ihm_starting_model_details.dataset_list_id
+Nup84-m1 1 Nup84 A 1 2 'comparative model' A 0 1
+#
+#
+loop_
+_ihm_starting_model_coord.starting_model_id
+_ihm_starting_model_coord.group_PDB
+_ihm_starting_model_coord.id
+_ihm_starting_model_coord.type_symbol
+_ihm_starting_model_coord.atom_id
+_ihm_starting_model_coord.comp_id
+_ihm_starting_model_coord.entity_id
+_ihm_starting_model_coord.asym_id
+_ihm_starting_model_coord.seq_id
+_ihm_starting_model_coord.Cartn_x
+_ihm_starting_model_coord.Cartn_y
+_ihm_starting_model_coord.Cartn_z
+_ihm_starting_model_coord.B_iso_or_equiv
+_ihm_starting_model_coord.ordinal_id
+Nup84-m1 ATOM 1 C CA MET 1 A 1 -8.986 11.688 -5.817 91.820 1
+Nup84-m1 ATOM 2 C CA GLU 1 A 2 -8.986 11.688 -5.817 91.820 2
+#
+""")
+
     def test_chem_comp_dumper(self):
         """Test ChemCompDumper"""
         class DummyPO(IMP.pmi.mmcif.ProtocolOutput):

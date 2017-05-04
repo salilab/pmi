@@ -1332,6 +1332,8 @@ class _StartingModelDumper(_Dumper):
 
     def get_templates(self, pdbname, model):
         templates = []
+        alnfile = None
+        alnfilere = re.compile('REMARK   6 ALIGNMENT: (\S+)')
         tmpre = re.compile('REMARK   6 TEMPLATE: '
                            '(\S+) (\S+):\S+ \- (\S+):\S+ '
                            'MODELS (\S+):(\S+) \- (\S+):\S+ AT (\S+)%')
@@ -1340,6 +1342,10 @@ class _StartingModelDumper(_Dumper):
             for line in fh:
                 if line.startswith('ATOM'): # Read only the header
                     break
+                m = alnfilere.match(line)
+                if m:
+                    # Path to alignment is relative to that of the PDB file
+                    alnfile = IMP.get_relative_path(pdbname, m.group(1))
                 m = tmpre.match(line)
                 if m:
                     templates.append(_TemplateSource(m.group(1),
@@ -1360,7 +1366,9 @@ class _StartingModelDumper(_Dumper):
                 model.dataset.add_parent(d)
 
         # Sort by starting residue, then ending residue
-        return sorted(templates, key=lambda x: (x._seq_id_begin, x._seq_id_end))
+        return(sorted(templates,
+                      key=lambda x: (x._seq_id_begin, x._seq_id_end)),
+               alnfile)
 
     def _parse_pdb(self, fh, first_line):
         """Extract information from an official PDB"""
@@ -1443,7 +1451,11 @@ class _StartingModelDumper(_Dumper):
                                  model, chain):
         d = IMP.pmi.metadata.ComparativeModelDataset(local_file)
         model.dataset = self.simo.dataset_dump.add(file_dataset or d)
-        templates = self.get_templates(pdbname, model)
+        templates, alnfile = self.get_templates(pdbname, model)
+        if alnfile:
+            model.alignment_file = IMP.pmi.metadata.FileLocation(alnfile)
+            self.simo.extref_dump.add(model.alignment_file,
+                                      _ExternalReferenceDumper.INPUT_DATA)
 
         if templates:
             return templates
@@ -1526,7 +1538,10 @@ class _StartingModelDumper(_Dumper):
                       template_sequence_identity_denominator=denom,
                       template_dataset_list_id=template.tm_dataset.id
                                                if template.tm_dataset
-                                               else _CifWriter.unknown)
+                                               else _CifWriter.unknown,
+                      alignment_file_id=model.alignment_file.id
+                                        if hasattr(model, 'alignment_file')
+                                        else _CifWriter.unknown)
                     ordinal += 1
 
     def dump_details(self, writer):

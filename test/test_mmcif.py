@@ -1043,8 +1043,18 @@ Nup84-m1 ATOM 2 C CA GLU 1 A 2 -8.986 11.688 -5.817 91.820 2
         self.assertEqual(parent.location.details, None)
 
     def test_get_sources_modeller(self):
-        """Test get_sources() when given a Modeller model"""
+        """Test get_sources() when given a Modeller model with alignment"""
         pdbname = self.get_input_file_name('modeller_model.pdb')
+        m, model, sources = self.check_modeller_model(pdbname)
+        self.assertEqual(model.alignment_file.path,
+                         self.get_input_file_name('modeller_model.ali'))
+
+    def test_get_sources_modeller_no_aln(self):
+        """Test get_sources() when given a Modeller model with no alignment"""
+        pdbname = self.get_input_file_name('modeller_model_no_aln.pdb')
+        m, model, sources = self.check_modeller_model(pdbname)
+
+    def check_modeller_model(self, pdbname):
         m, model, sources = self.get_dumper_sources(pdbname)
         s1, s2 = sources
         self.assertEqual(s1.db_code, '.')
@@ -1066,6 +1076,7 @@ Nup84-m1 ATOM 2 C CA GLU 1 A 2 -8.986 11.688 -5.817 91.820 2
         self.assertEqual(p1.location.version, None)
         self.assertEqual(p1.location.details, None)
         self.assertEqual(p2.location.access_code, '3F3F')
+        return m, model, sources
 
     def test_get_sources_phyre2(self):
         """Test get_sources() when given a Phyre2 model"""

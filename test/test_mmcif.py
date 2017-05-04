@@ -1187,7 +1187,8 @@ _ihm_modeling_protocol.time_ordered_flag
 
         densities = {'Nup84': "foo.mrc"}
         pp = None
-        e = po._add_simple_ensemble(pp, 'Ensemble 1', 5, 0.1, 1, {}, densities)
+        e = po._add_simple_ensemble(pp, 'Ensemble 1', 5, 0.1, 1, densities,
+                                    None)
         self.assertEqual(e.num_models, 5)
         self.assertEqual(e.num_deposit, 1)
 

@@ -1261,6 +1261,81 @@ _ihm_localization_density_files.seq_id_end
 #
 """)
 
+    def test_cross_link_dumper(self):
+        """Test the CrossLinkDumper"""
+        class DummyDataset(object):
+            pass
+        class DummyRestraint(object):
+            label = 'foo'
+        m = IMP.Model()
+        simo = IMP.pmi.representation.Representation(m)
+        po = DummyPO(None)
+        simo.add_protocol_output(po)
+        simo.create_component("Nup84", True)
+        simo.add_component_sequence("Nup84",
+                                    self.get_input_file_name("test.fasta"))
+        nup84 = simo.autobuild_model("Nup84",
+                                     self.get_input_file_name("test.nup84.pdb"),
+                                     "A")
+        r = DummyRestraint()
+        r.dataset = DummyDataset()
+        r.dataset.id = 42
+        xl_group = po.get_cross_link_group(r)
+        ex_xl = po.add_experimental_cross_link(1, 'Nup84',
+                                               2, 'Nup84', 42.0, xl_group)
+        # Non-modeled component should be ignored
+        nm_ex_xl = po.add_experimental_cross_link(1, 'Nup85',
+                                                  2, 'Nup84', 42.0, xl_group)
+        self.assertEqual(nm_ex_xl, None)
+        rs = nup84[0].get_children()
+        sigma1 = IMP.isd.Scale.setup_particle(IMP.Particle(m), 1.0)
+        sigma2 = IMP.isd.Scale.setup_particle(IMP.Particle(m), 0.5)
+        psi = IMP.isd.Scale.setup_particle(IMP.Particle(m), 0.8)
+        po.add_cross_link(ex_xl, rs[0], rs[1], sigma1, sigma2, psi)
+
+        fh = StringIO()
+        w = IMP.pmi.mmcif._CifWriter(fh)
+        po.cross_link_dump.dump(w)
+        out = fh.getvalue()
+        self.assertEqual(out, """#
+loop_
+_ihm_cross_link_list.id
+_ihm_cross_link_list.group_id
+_ihm_cross_link_list.entity_description_1
+_ihm_cross_link_list.entity_id_1
+_ihm_cross_link_list.seq_id_1
+_ihm_cross_link_list.comp_id_1
+_ihm_cross_link_list.entity_description_2
+_ihm_cross_link_list.entity_id_2
+_ihm_cross_link_list.seq_id_2
+_ihm_cross_link_list.comp_id_2
+_ihm_cross_link_list.type
+_ihm_cross_link_list.dataset_list_id
+1 1 Nup84 1 1 MET Nup84 1 2 GLU foo 42
+#
+#
+loop_
+_ihm_cross_link_restraint.id
+_ihm_cross_link_restraint.group_id
+_ihm_cross_link_restraint.entity_id_1
+_ihm_cross_link_restraint.asym_id_1
+_ihm_cross_link_restraint.seq_id_1
+_ihm_cross_link_restraint.comp_id_1
+_ihm_cross_link_restraint.entity_id_2
+_ihm_cross_link_restraint.asym_id_2
+_ihm_cross_link_restraint.seq_id_2
+_ihm_cross_link_restraint.comp_id_2
+_ihm_cross_link_restraint.type
+_ihm_cross_link_restraint.conditional_crosslink_flag
+_ihm_cross_link_restraint.model_granularity
+_ihm_cross_link_restraint.distance_threshold
+_ihm_cross_link_restraint.psi
+_ihm_cross_link_restraint.sigma_1
+_ihm_cross_link_restraint.sigma_2
+1 1 1 A 1 MET 1 A 2 GLU foo ALL by-residue 42.000 0.800 1.000 0.500
+#
+""")
+
     def test_restraint_dataset(self):
         """Test RestraintDataset class"""
         class DummyRestraint(object):

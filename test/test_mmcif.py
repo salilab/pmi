@@ -1180,6 +1180,38 @@ _ihm_modeling_protocol.time_ordered_flag
         self.assertEqual(e.num_models, 5)
         self.assertEqual(e.num_deposit, 1)
 
+    def test_ensemble_dumper(self):
+        """Test EnsembleDumper"""
+        class DummyPostProcess(object):
+            pass
+        m = IMP.Model()
+        simo = IMP.pmi.representation.Representation(m)
+        po = DummyPO(None)
+        simo.add_protocol_output(po)
+
+        pp = DummyPostProcess()
+        pp.id = 99
+        e = po._add_simple_ensemble(pp, 'Ensemble 1', 5, 0.1, 1, {}, None)
+        fh = StringIO()
+        w = IMP.pmi.mmcif._CifWriter(fh)
+        po.ensemble_dump.dump(w)
+        out = fh.getvalue()
+        self.assertEqual(out, """#
+loop_
+_ihm_ensemble_info.ensemble_id
+_ihm_ensemble_info.ensemble_name
+_ihm_ensemble_info.post_process_id
+_ihm_ensemble_info.model_group_id
+_ihm_ensemble_info.ensemble_clustering_method
+_ihm_ensemble_info.ensemble_clustering_feature
+_ihm_ensemble_info.num_ensemble_models
+_ihm_ensemble_info.num_ensemble_models_deposited
+_ihm_ensemble_info.ensemble_precision_value
+_ihm_ensemble_info.ensemble_file_id
+1 'Ensemble 1' 99 1 . dRMSD 5 1 0.100 .
+#
+""")
+
     def test_density_dumper(self):
         """Test DensityDumper"""
         class DummyEnsemble(object):

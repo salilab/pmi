@@ -1174,9 +1174,20 @@ _ihm_modeling_protocol.time_ordered_flag
 
     def test_simple_ensemble(self):
         """Test add_simple_ensemble"""
+        m = IMP.Model()
+        simo = IMP.pmi.representation.Representation(m)
         po = DummyPO(None)
+        simo.add_protocol_output(po)
+        simo.create_component("Nup84", True)
+        simo.add_component_sequence("Nup84",
+                                    self.get_input_file_name("test.fasta"))
+        simo.create_component("Nup85", True)
+        simo.add_component_sequence("Nup85",
+                                    self.get_input_file_name("test.fasta"))
+
+        densities = {'Nup84': "foo.mrc"}
         pp = None
-        e = po._add_simple_ensemble(pp, 'Ensemble 1', 5, 0.1, 1, {}, None)
+        e = po._add_simple_ensemble(pp, 'Ensemble 1', 5, 0.1, 1, {}, densities)
         self.assertEqual(e.num_models, 5)
         self.assertEqual(e.num_deposit, 1)
 

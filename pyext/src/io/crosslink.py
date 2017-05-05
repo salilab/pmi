@@ -446,7 +446,6 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
             self.cldbkc =    None
             self.list_parser=None
             self.converter = None
-        self.set_name("New_Database_"+str(id(self)))
         self._update()
 
     def _update(self):

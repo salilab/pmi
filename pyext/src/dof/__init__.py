@@ -113,6 +113,7 @@ class DegreesOfFreedom(object):
         rb_movers.append(rb_mover)
         self.movers_particles_map[rb_mover]=[]
         self.movers_rb_map[rb_mover]=[rb]
+        rb_mover.set_was_used(True)
         for h in hiers:
             self.movers_particles_map[rb_mover]+=IMP.atom.get_leaves(h)
         ### setup nonrigid parts
@@ -139,6 +140,7 @@ class DegreesOfFreedom(object):
                     self.fb_movers.append(fbmv)
                     self.movers_particles_map[fbmv]=IMP.atom.get_leaves(h)
                     self.movers_xyz_map[fbmv]=IMP.atom.get_leaves(h)
+                    fbmv.set_was_used(True)
                     rb_movers.append(fbmv)
 
         self.movers += rb_movers # probably need to store more info
@@ -213,11 +215,13 @@ class DegreesOfFreedom(object):
         if chain_min_length is None and chain_max_length is None:
             mv = self._setup_srb(srb_groups,max_trans,max_rot,axis)
             if mv:
+                mv.set_was_used(True)
                 srb_movers.append(mv)
         elif chain_min_length is not None and chain_max_length is not None:
             for hs in IMP.pmi.tools.sublist_iterator(srb_groups, chain_min_length, chain_max_length):
                 mv = self._setup_srb(hs,max_trans,max_rot,axis)
                 if mv:
+                    mv.set_was_used(True)
                     srb_movers.append(mv)
         else:
             raise Exception("DegreesOfFreedom: SetupSuperRigidBody: if you want chain, specify min AND max")
@@ -279,6 +283,7 @@ class DegreesOfFreedom(object):
             self.flexible_beads.append(h)
             fbmv=IMP.core.BallMover(p.get_model(), p, max_trans)
             fb_movers.append(fbmv)
+            fbmv.set_was_used(True)
             self.fb_movers.append(fbmv)
             self.movers_particles_map[fbmv]=IMP.atom.get_leaves(h)
             self.movers_xyz_map[fbmv]=IMP.atom.get_leaves(h)

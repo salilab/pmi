@@ -488,14 +488,21 @@ class DegreesOfFreedom(object):
         fixed_xyz=set()
         if mover_types is None: mover_types=[]
 
-        for key in self.movers_particles_map:
-            for h in hierarchies:
-                if h in self.movers_particles_map[key] and (type(key) in mover_types or not mover_types):
-                    tmp_set.add(key)
-                    if key in self.movers_rb_map:
-                        fixed_rb|=set(self.movers_rb_map[key])
-                    if key in self.movers_xyz_map:
-                        fixed_xyz|=set(self.movers_xyz_map[key])
+        inv_map = {}
+        for mv, ps in self.movers_particles_map.iteritems():
+            for p in ps:
+                if p in inv_map: inv_map[p].append(mv)
+                else: inv_map[p]=[mv]
+
+        for h in hierarchies:
+            if h in inv_map:
+                for mv in inv_map[h]:
+                    if (type(mv) in mover_types or not mover_types):
+                        tmp_set.add(mv)
+                        if mv in self.movers_rb_map:
+                            fixed_rb|=set(self.movers_rb_map[mv])
+                        if mv in self.movers_xyz_map:
+                            fixed_xyz|=set(self.movers_xyz_map[mv])
         print("Fixing %s movers" %(str(len(list(tmp_set)))))
         self.disabled_movers+=list(tmp_set)
         return list(fixed_xyz),list(fixed_rb)

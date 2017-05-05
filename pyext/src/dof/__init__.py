@@ -78,6 +78,7 @@ class DegreesOfFreedom(object):
 
         # First, is this already a rigid body?
         if type(rigid_parts) is IMP.core.RigidBody:
+            print("WARNING: Rigid Body Already Setup")
             rb = rigid_parts
             model=rb.get_model()
             if name is not None:
@@ -91,7 +92,17 @@ class DegreesOfFreedom(object):
             if not hiers:
                 print("WARNING: No hierarchies were passed to create_rigid_body()")
                 return []
-            rb = IMP.atom.create_rigid_body(hiers)
+
+            #we need to use the following constructor because the IMP.core.create_rigid_body seems
+            #to construct an arbitrary reference frame, which will be different for all copies.
+            #therefore, symmetry won't work all the time
+            tr=IMP.algebra.Transformation3D(IMP.algebra.get_identity_rotation_3d(),IMP.core.XYZ(hiers[0].get_particle()).get_coordinates())
+            rf = IMP.algebra.ReferenceFrame3D(tr)
+            rbp=IMP.Particle(hiers[0].get_model())
+            rb=IMP.core.RigidBody.setup_particle(rbp,rf)
+            for h in hiers:
+                rb.add_member(h.get_particle())
+
         self.rigid_bodies.append(rb)
         rb.set_coordinates_are_optimized(True)
         rb_mover = IMP.core.RigidBodyMover(rb.get_model(), rb, max_trans,
@@ -321,7 +332,8 @@ class DegreesOfFreedom(object):
                            references,
                            clones,
                            transform,
-                           resolution='all'):
+                           resolution='all',
+                           type="AXIAL"):
         """Create a symmetry constraint. Checks:
         same number of particles
         disable ANY movers involving symmetry copies
@@ -335,6 +347,7 @@ class DegreesOfFreedom(object):
         @param resolution Only used if you pass PMI objects.
                If you have a multires system, assuming each are rigid
                bodies you probably only need one resolution.
+        @param type of symmetry. Implemented = AXIAL, RIGID_BODY
         """
 
         # get all RBs and particles
@@ -353,24 +366,62 @@ class DegreesOfFreedom(object):
         #for ref,clone in zip(ref_rbs+ref_beads,clones_rbs+clones_beads):
         #    print(clone.get_particle().get_index(),ref.get_particle().get_index())
         #    IMP.core.Reference.setup_particle(clone.get_particle(),ref.get_particle())
-        for ref,clone in zip(href,hclones):
-            IMP.core.Reference.setup_particle(clone.get_particle(),ref.get_particle())
+        for ref,clone in zip(ref_rbs,clones_rbs):
+            IMP.core.Reference.setup_particle(clone,ref)
 
-        sm = IMP.core.TransformationSymmetry(transform.get_inverse())
+        for ref,clone in zip(ref_beads,clones_beads):
+            IMP.core.Reference.setup_particle(clone,ref)
+
+        # removing movers involved in clones
+        self.disable_movers(hclones)
+
+        if type=="AXIAL":
+            sm = IMP.core.TransformationSymmetry(transform)
+
+
+        if type=="RIGID_BODY":
+            p=IMP.Particle(self.mdl)
+            p.set_name("RigidBody_Symmetry")
+            rb=IMP.core.RigidBody.setup_particle(p,IMP.algebra.ReferenceFrame3D(transform))
+            for cp in [(10,0,0),(0,10,0),(0,0,10)]:
+                p=IMP.Particle(self.mdl)
+                IMP.core.XYZ.setup_particle(p,cp)
+                rb.add_member(p)
+            sm = IMP.core.TransformationSymmetry(rb.get_particle_index())
+            self.rigid_bodies.append(rb)
+            rb.set_coordinates_are_optimized(True)
+            rb_mover_tr = IMP.core.RigidBodyMover(rb.get_model(), rb.get_particle_index(), 0.0, 1.0)
+            rb_mover_rt = IMP.core.RigidBodyMover(rb.get_model(), rb.get_particle_index(), 10.0, 0.0)
+
+            rb_mover_tr.set_name("RigidBody_Symmetry_Mover_Translate")
+            rb_mover_rt.set_name("RigidBody_Symmetry_Mover_Rotate")
+            print('Created rigid body symmetry restraint')
+            self.movers_particles_map[rb_mover_tr]=[]
+            self.movers_particles_map[rb_mover_rt]=[]
+            self.movers_rb_map[rb_mover_tr]=[rb]
+            self.movers_rb_map[rb_mover_rt]=[rb]
+            for h in hclones:
+                self.movers_particles_map[rb_mover_tr]+=IMP.atom.get_leaves(h)
+                self.movers_particles_map[rb_mover_rt]+=IMP.atom.get_leaves(h)
+            self.movers.append(rb_mover_tr) # probably need to store more info
+            self.movers.append(rb_mover_rt) # probably need to store more info
+            self._rb2mov[rb] = [rb_mover_tr,rb_mover_rt] #dictionary relating rb to movers
+            #self._rb2mov[rb] = [rb_mover_tr] #dictionary relating rb to movers
+
         lsc = IMP.container.ListSingletonContainer(
-            self.mdl,[p.get_particle().get_index() for p in hclones])
+            self.mdl,[p.get_particle().get_index() for p in clones_rbs+clones_beads])
         c = IMP.container.SingletonsConstraint(sm, None, lsc)
         self.mdl.add_score_state(c)
         print('Created symmetry restraint for',len(ref_rbs),'rigid bodies and',
               len(ref_beads),'flexible beads')
 
-        # removing movers involved in clones
+
         #sym_movers = []
 
         #sym_movers = [m for cl in clones_rbs for m in self._rb2mov[cl]]
         #self.movers = [m for m in self.movers if m not in sym_movers]
         self.mdl.update()
-        self.disable_movers(hclones)
+
 
     def __repr__(self):
         # would like something fancy like this:

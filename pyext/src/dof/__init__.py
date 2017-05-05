@@ -495,7 +495,7 @@ class DegreesOfFreedom(object):
         if mover_types is None: mover_types=[]
 
         inv_map = {}
-        for mv, ps in self.movers_particles_map.iteritems():
+        for mv, ps in self.movers_particles_map.items():
             for p in ps:
                 if p in inv_map: inv_map[p].append(mv)
                 else: inv_map[p]=[mv]

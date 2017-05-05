@@ -300,6 +300,7 @@ class DegreesOfFreedom(object):
                                   step_size)
         if name is not None:
             mv.set_name(name)
+        mv.set_was_used(True)
         self.nuisances.append(nuisance_p)
         self.movers.append(mv)
         return [mv]

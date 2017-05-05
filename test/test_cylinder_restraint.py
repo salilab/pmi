@@ -35,7 +35,8 @@ class Tests(IMP.test.TestCase):
 
         cr=IMP.pmi.restraints.basic.CylinderRestraint(mdl,mol[:100],10,20)
         cr.set_was_used(True)
-        self.assertAlmostEqual(cr.unprotected_evaluate(None),97.8378602841374)
+        self.assertAlmostEqual(cr.unprotected_evaluate(None),
+                               97.8378602841374, delta=1e-5)
         cr.add_to_model()
         self.assertEqual(len(cr.do_get_inputs()),12)
         cr.get_output()

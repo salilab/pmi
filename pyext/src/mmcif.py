@@ -503,10 +503,14 @@ class _TemplateSource(object):
                  chain_id, seq_id_end, seq_id, model):
         # Assume a code of 1abcX refers to a real PDB structure
         if len(tm_code) == 5:
+            self._orig_tm_code = None
             self.tm_db_code = tm_code[:4].upper()
             self.tm_chain_id = tm_code[4]
         else:
-            self.tm_db_code = self.tm_chain_id = _CifWriter.unknown
+            # Otherwise, will need to look up in TEMPLATE PATH remarks
+            self._orig_tm_code = tm_code
+            self.tm_db_code = _CifWriter.omitted
+            self.tm_chain_id = tm_code[-1]
         self.sequence_identity = seq_id
         self.tm_seq_id_begin = tm_seq_id_begin
         self.tm_seq_id_end = tm_seq_id_end
@@ -1331,9 +1335,11 @@ class _StartingModelDumper(_Dumper):
             models[-1].fragments.append(fragment)
 
     def get_templates(self, pdbname, model):
+        template_path_map = {}
         templates = []
         alnfile = None
         alnfilere = re.compile('REMARK   6 ALIGNMENT: (\S+)')
+        tmppathre = re.compile('REMARK   6 TEMPLATE PATH (\S+) (\S+)')
         tmpre = re.compile('REMARK   6 TEMPLATE: '
                            '(\S+) (\S+):\S+ \- (\S+):\S+ '
                            'MODELS (\S+):(\S+) \- (\S+):\S+ AT (\S+)%')
@@ -1342,6 +1348,10 @@ class _StartingModelDumper(_Dumper):
             for line in fh:
                 if line.startswith('ATOM'): # Read only the header
                     break
+                m = tmppathre.match(line)
+                if m:
+                    template_path_map[m.group(1)] = \
+                              IMP.get_relative_path(pdbname, m.group(2))
                 m = alnfilere.match(line)
                 if m:
                     # Path to alignment is relative to that of the PDB file
@@ -1357,13 +1367,15 @@ class _StartingModelDumper(_Dumper):
                                                      m.group(7), model))
         # Add datasets for templates
         for t in templates:
-            # todo: handle templates that aren't in PDB
-            if t.tm_db_code:
+            if t._orig_tm_code:
+                fname = template_path_map[t._orig_tm_code]
+                l = IMP.pmi.metadata.FileLocation(fname)
+            else:
                 l = IMP.pmi.metadata.PDBLocation(t.tm_db_code)
-                d = IMP.pmi.metadata.PDBDataset(l)
-                d = self.simo.dataset_dump.add(d)
-                t.tm_dataset = d
-                model.dataset.add_parent(d)
+            d = IMP.pmi.metadata.PDBDataset(l)
+            d = self.simo.dataset_dump.add(d)
+            t.tm_dataset = d
+            model.dataset.add_parent(d)
 
         # Sort by starting residue, then ending residue
         return(sorted(templates,

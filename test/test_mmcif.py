@@ -1078,6 +1078,21 @@ Nup84-m1 ATOM 2 C CA GLU 1 A 2 -8.986 11.688 -5.817 91.820 2
         self.assertEqual(p2.location.access_code, '3F3F')
         return m, model, sources
 
+    def test_get_sources_modeller_local(self):
+        """Test get_sources() when given a Modeller model with local template"""
+        pdbname = self.get_input_file_name('modeller_model_local.pdb')
+        m, model, sources = self.get_dumper_sources(pdbname)
+        s1, = sources
+        self.assertEqual(s1.db_code, '.')
+        self.assertEqual(s1.chain_id, 'A')
+        self.assertEqual(s1.tm_db_code, '.')
+        self.assertEqual(s1.tm_chain_id, 'C')
+        p1, = model.dataset._parents
+        self.assertEqual(p1._data_type, 'Experimental model')
+        self.assertEqual(p1.location.details, None)
+        self.assertEqual(p1.location.path,
+                         self.get_input_file_name('15133C.pdb'))
+
     def test_get_sources_phyre2(self):
         """Test get_sources() when given a Phyre2 model"""
         pdbname = self.get_input_file_name('phyre2_model.pdb')
@@ -1706,12 +1721,12 @@ _ihm_model_representation.model_object_count
             seq_id_begin = 10
             seq_id_end = 100
         m = DummyModel()
-        p = IMP.pmi.mmcif._TemplateSource(tm_code='foo', tm_seq_id_begin=30,
+        p = IMP.pmi.mmcif._TemplateSource(tm_code='fooA', tm_seq_id_begin=30,
                     tm_seq_id_end=90, seq_id_begin=1, chain_id='G',
                     seq_id_end=90, seq_id=42., model=m)
         self.assertEqual(p.source, 'comparative model')
-        self.assertEqual(p.tm_db_code, '?')
-        self.assertEqual(p.tm_chain_id, '?')
+        self.assertEqual(p.tm_db_code, '.')
+        self.assertEqual(p.tm_chain_id, 'A')
         self.assertEqual(p.get_seq_id_range(m), (10, 90))
 
     def test_unknown_source(self):

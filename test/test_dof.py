@@ -589,6 +589,7 @@ class Tests(IMP.test.TestCase):
         gem_xtal = IMP.pmi.restraints.em.GaussianEMRestraint(densities,
                                                  self.get_input_file_name('prot_gmm.txt'),
                                                  target_is_rigid_body=True)
+        gem_xtal.get_restraint_set().set_was_used(True)
 
         em_rb = gem_xtal.get_rigid_body()
         em_rb.set_coordinates_are_optimized(False)

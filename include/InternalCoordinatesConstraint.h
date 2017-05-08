@@ -8,6 +8,7 @@
 #ifndef IMPPMI_PMI_SINGLETON_MODIFIER_H
 #define IMPPMI_PMI_SINGLETON_MODIFIER_H
 
+#include <IMP/pmi/pmi_config.h>
 #include <IMP/SingletonModifier.h>
 #include <IMP/singleton_macros.h>
 

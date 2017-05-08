@@ -5,8 +5,8 @@
  *  Copyright 2007-2016 IMP Inventors. All rights reserved.
  */
 
-#ifndef IMPPMI_PMI_SINGLETON_MODIFIER_H
-#define IMPPMI_PMI_SINGLETON_MODIFIER_H
+#ifndef IMPPMI_INTERNAL_COORDINATES_CONSTRAINT_H
+#define IMPPMI_INTERNAL_COORDINATES_CONSTRAINT_H
 
 #include <IMP/pmi/pmi_config.h>
 #include <IMP/SingletonModifier.h>
@@ -46,4 +46,4 @@ class IMPPMIEXPORT InternalCoordinatesConstraint : public SingletonModifier {
 
 IMPPMI_END_NAMESPACE
 
-#endif /* IMPPMI_PMI_SINGLETON_MODIFIER_H */
+#endif /* IMPPMI_INTERNAL_COORDINATES_CONSTRAINT_H */

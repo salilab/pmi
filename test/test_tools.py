@@ -476,6 +476,7 @@ class Tests(IMP.test.TestCase):
         for i in range(10):
             p=IMP.Particle(mdl)
             h=IMP.atom.Hierarchy.setup_particle(p)
+            IMP.atom.Mass.setup_particle(p,1.0)
             xyzr=IMP.core.XYZR.setup_particle(p)
             xyzr.set_coordinates((0,0,0))
             xyzr.set_radius(1.0)

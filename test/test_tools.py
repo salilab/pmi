@@ -453,7 +453,14 @@ class Tests(IMP.test.TestCase):
         self.assertEqual(sys_pmi,sys_hiers)
 
         # nothing changes to hierarchy
-        tH = [IMP.atom.Hierarchy(IMP.Particle(mdl))]
+        p=IMP.Particle(mdl)
+        h=IMP.atom.Hierarchy.setup_particle(p)
+        IMP.atom.Mass.setup_particle(p,1.0)
+        xyzr=IMP.core.XYZR.setup_particle(p)
+        xyzr.set_coordinates((0,0,0))
+        xyzr.set_radius(1.0)
+        tH = [h]
+
         testH = IMP.pmi.tools.input_adaptor(tH)
         self.assertEqual(testH,[tH])
 

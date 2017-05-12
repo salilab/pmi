@@ -1609,7 +1609,7 @@ def input_adaptor(stuff,
     # check that it is a hierarchy homogenously:
     try:
         is_hierarchy=all(IMP.atom.Hierarchy.get_is_setup(s) for s in stuff)
-    except:
+    except NotImplementedError:
         is_hierarchy=False
     # get the other types homogenously
     is_system=all(isinstance(s, IMP.pmi.topology.System) for s in stuff)

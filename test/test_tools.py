@@ -269,18 +269,18 @@ class Tests(IMP.test.TestCase):
         leaves+=dens
         ps = IMP.pmi.tools.select_at_all_resolutions(mol.get_hierarchy())
         inds1=sorted(list(set([p.get_index() for p in leaves])))
-        inds2=sorted([p.get_index() for p in ps])
+        inds2=sorted(p.get_index() for p in ps)
         self.assertEqual(inds1,inds2)
 
         #check densities
         dens_test=IMP.pmi.tools.get_densities(hier)
-        inds1=sorted([p.get_index() for p in dens])
-        inds2=sorted([p.get_index() for p in dens_test])
+        inds1=sorted(p.get_index() for p in dens)
+        inds2=sorted(p.get_index() for p in dens_test)
         self.assertEqual(inds1,inds2)
 
         dens_test=IMP.pmi.tools.get_densities([mol])
-        inds1=sorted([p.get_index() for p in dens])
-        inds2=sorted([p.get_index() for p in dens_test])
+        inds1=sorted(p.get_index() for p in dens)
+        inds2=sorted(p.get_index() for p in dens_test)
         self.assertEqual(inds1,inds2)
 
         os.unlink('testselect.txt')
@@ -312,27 +312,27 @@ class Tests(IMP.test.TestCase):
         ind3=m3.hier.get_particle_index()
 
         mols=IMP.pmi.tools.get_molecules(hier)
-        inds=sorted([p.get_particle_index() for p in mols])
+        inds=sorted(p.get_particle_index() for p in mols)
         self.assertEqual(inds,[ind1,ind2,ind3])
 
         mols=IMP.pmi.tools.get_molecules([m1,m2,m3])
-        inds=sorted([p.get_particle_index() for p in mols])
+        inds=sorted(p.get_particle_index() for p in mols)
         self.assertEqual(inds,[ind1,ind2,ind3])
 
         mols=IMP.pmi.tools.get_molecules([m1,m2])
-        inds=sorted([p.get_particle_index() for p in mols])
+        inds=sorted(p.get_particle_index() for p in mols)
         self.assertEqual(inds,[ind1,ind2])
 
         mols=IMP.pmi.tools.get_molecules(IMP.atom.get_leaves(m1.hier))
-        inds=sorted([p.get_particle_index() for p in mols])
+        inds=sorted(p.get_particle_index() for p in mols)
         self.assertEqual(inds,[ind1])
 
         mols=IMP.pmi.tools.get_molecules(IMP.atom.get_leaves(hier))
-        inds=sorted([p.get_particle_index() for p in mols])
+        inds=sorted(p.get_particle_index() for p in mols)
         self.assertEqual(inds,[ind1,ind2,ind3])
 
         mols=IMP.pmi.tools.get_molecules([IMP.atom.get_leaves(m1.hier)[0],IMP.atom.get_leaves(m3.hier)[1]])
-        inds=sorted([p.get_particle_index() for p in mols])
+        inds=sorted(p.get_particle_index() for p in mols)
         self.assertEqual(inds,[ind1,ind3])
 
     def test_select_at_all_resolutions_no_density(self):
@@ -360,7 +360,7 @@ class Tests(IMP.test.TestCase):
 
         ps = IMP.pmi.tools.select_at_all_resolutions(mol.get_hierarchy())
         inds1=sorted(list(set([p.get_index() for p in leaves])))
-        inds2=sorted([p.get_index() for p in ps])
+        inds2=sorted(p.get_index() for p in ps)
         self.assertEqual(inds1,inds2)
 
 

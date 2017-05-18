@@ -777,9 +777,9 @@ _ihm_sphere_obj_site.Cartn_z
 _ihm_sphere_obj_site.object_radius
 _ihm_sphere_obj_site.rmsf
 _ihm_sphere_obj_site.model_id
-1 1 1 1 A 0.000 0.000 0.000 3.068 . 1
-2 1 2 2 A 0.000 0.000 0.000 2.997 . 1
-3 1 3 4 A 0.000 0.000 0.000 3.504 . 1
+1 1 1 1 A -8.986 11.688 -5.817 3.068 . 1
+2 1 2 2 A -8.986 11.688 -5.817 2.997 . 1
+3 1 3 4 A -8.986 11.688 -5.817 3.504 . 1
 #
 """)
 
@@ -833,8 +833,8 @@ _atom_site.Cartn_y
 _atom_site.Cartn_z
 _atom_site.label_entity_id
 _atom_site.model_id
-1 CA MET 1 A 0.000 0.000 0.000 1 1
-2 CA GLU 2 A 0.000 0.000 0.000 1 1
+1 CA MET 1 A -8.986 11.688 -5.817 1 1
+2 CA GLU 2 A -8.986 11.688 -5.817 1 1
 #
 #
 loop_
@@ -849,7 +849,7 @@ _ihm_sphere_obj_site.Cartn_z
 _ihm_sphere_obj_site.object_radius
 _ihm_sphere_obj_site.rmsf
 _ihm_sphere_obj_site.model_id
-1 1 3 4 A 0.000 0.000 0.000 3.504 . 1
+1 1 3 4 A -8.986 11.688 -5.817 3.504 . 1
 #
 """)
 
@@ -908,9 +908,9 @@ _ihm_sphere_obj_site.Cartn_z
 _ihm_sphere_obj_site.object_radius
 _ihm_sphere_obj_site.rmsf
 _ihm_sphere_obj_site.model_id
-1 1 1 1 A 0.000 0.000 0.000 3.068 4.500 1
-2 1 2 2 A 0.000 0.000 0.000 2.997 3.500 1
-3 1 3 4 A 0.000 0.000 0.000 3.504 5.500 1
+1 1 1 1 A -8.986 11.688 -5.817 3.068 4.500 1
+2 1 2 2 A -8.986 11.688 -5.817 2.997 3.500 1
+3 1 3 4 A -8.986 11.688 -5.817 3.504 5.500 1
 #
 """)
 

@@ -1036,7 +1036,10 @@ class _EM2DDumper(_Dumper):
                 for r in self.restraints:
                     trans = r.get_transformation(m)
                     rot = trans.get_rotation()
-                    rm = [rot.get_rotation_matrix_row(i) for i in range(3)]
+                    # mmCIF writer usually outputs floats to 3 decimal places,
+                    # but we need more precision for rotation matrices
+                    rm = [["%.6f" % e for e in rot.get_rotation_matrix_row(i)]
+                          for i in range(3)]
                     t = trans.get_translation()
                     ccc = r.get_cross_correlation(m)
                     l.write(ordinal_id=ordinal, restraint_id=r.id,

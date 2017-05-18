@@ -1538,8 +1538,8 @@ _ihm_2dem_class_average_fitting.rot_matrix[3][3]
 _ihm_2dem_class_average_fitting.tr_vector[1]
 _ihm_2dem_class_average_fitting.tr_vector[2]
 _ihm_2dem_class_average_fitting.tr_vector[3]
-1 1 1 0.873 -0.407 -0.910 -0.087 0.379 -0.255 0.889 -0.831 0.329 0.449 304.187
-219.586 0.000
+1 1 1 0.873 -0.406503 -0.909500 -0.086975 0.379444 -0.254653 0.889480 -0.831131
+0.328574 0.448622 304.187 219.586 0.000
 #
 """)
 

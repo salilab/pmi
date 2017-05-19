@@ -1771,6 +1771,46 @@ _ihm_model_representation.model_object_count
 #
 """)
 
+    def test_model_repr_dump_rigid(self):
+        """Test ModelRepresentationDumper with rigid bodies"""
+        m = IMP.Model()
+        simo = IMP.pmi.representation.Representation(m)
+        po = DummyPO(None)
+        simo.add_protocol_output(po)
+        simo.create_component("Nup84", True)
+        simo.add_component_sequence("Nup84",
+                                    self.get_input_file_name("test.fasta"))
+        nup84 = simo.autobuild_model("Nup84",
+                                     self.get_input_file_name("test.nup84.pdb"),
+                                     "A")
+        simo.set_rigid_body_from_hierarchies(nup84)
+        simo.set_floppy_bodies()
+        fh = StringIO()
+        w = IMP.pmi.mmcif._CifWriter(fh)
+        # Need this to assign starting model details
+        po.starting_model_dump.finalize()
+        po.model_repr_dump.dump(w)
+        out = fh.getvalue()
+        self.assertEqual(out, """#
+loop_
+_ihm_model_representation.ordinal_id
+_ihm_model_representation.representation_id
+_ihm_model_representation.segment_id
+_ihm_model_representation.entity_id
+_ihm_model_representation.entity_description
+_ihm_model_representation.entity_asym_id
+_ihm_model_representation.seq_id_begin
+_ihm_model_representation.seq_id_end
+_ihm_model_representation.model_object_primitive
+_ihm_model_representation.starting_model_id
+_ihm_model_representation.model_mode
+_ihm_model_representation.model_granularity
+_ihm_model_representation.model_object_count
+1 1 1 1 Nup84 A 1 2 sphere Nup84-m1 rigid by-residue .
+2 1 2 1 Nup84 A 3 4 sphere . flexible by-feature 1
+#
+""")
+
     def test_pdb_source(self):
         """Test PDBSource class"""
         class DummyModel(object):

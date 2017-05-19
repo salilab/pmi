@@ -1487,6 +1487,10 @@ _ihm_cross_link_restraint.sigma_2
         d = IMP.pmi.metadata.EM2DClassDataset(l)
         d.add_primary(dp)
         pr.dataset = d
+        # Random other dataset that isn't micrographs
+        l = IMP.pmi.metadata.FileLocation(repo='foo', path='bar')
+        oth = IMP.pmi.metadata.EM2DClassDataset(l)
+        d.add_parent(oth)
         self.assertEqual(r.get_num_raw_micrographs(), 50)
 
     def test_em2d_dumper(self):

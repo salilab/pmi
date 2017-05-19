@@ -1307,6 +1307,9 @@ _ihm_modeling_post_process.num_models_end
 
     def test_rex_ensemble(self):
         """Test ReplicaExchangeAnalysisEnsemble"""
+        class DummyModel(object):
+            def parse_rmsf_file(self, fname, comp):
+                self.comp = comp
         class DummyRepresentation(object):
             def set_coordinates_from_rmf(self, comp, fname, frame,
                                          force_rigid_update):
@@ -1328,6 +1331,9 @@ _ihm_modeling_post_process.num_models_end
             # Mock localization density file
             with open(os.path.join(subdir, 'Nup84.mrc'), 'w') as fh:
                 pass
+            # Mock RMSF file
+            with open(os.path.join(subdir, 'rmsf.Nup84.dat'), 'w') as fh:
+                pass
             pp = IMP.pmi.mmcif._ReplicaExchangeAnalysisPostProcess(d, 45)
             mg = None
             e = IMP.pmi.mmcif._ReplicaExchangeAnalysisEnsemble(pp, 0, mg, 1)
@@ -1341,6 +1347,12 @@ _ihm_modeling_post_process.num_models_end
             self.assertEqual(e.get_rmsf_file('Nup84'),
                              os.path.join(tmpdir, 'cluster.0',
                                           'rmsf.Nup84.dat'))
+            # RMSF that doesn't exist
+            e.load_rmsf(None, 'normsf')
+            # RMSF that does exist
+            dm = DummyModel()
+            e.load_rmsf(dm, 'Nup84')
+            self.assertEqual(dm.comp, 'Nup84')
             self.assertEqual(e.get_localization_density_file('Nup84'),
                              os.path.join(tmpdir, 'cluster.0', 'Nup84.mrc'))
             self.assertEqual(list(e.localization_density.keys()), [])

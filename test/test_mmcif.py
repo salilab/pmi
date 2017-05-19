@@ -2052,11 +2052,14 @@ _ihm_model_representation.model_object_count
         w = IMP.pmi.mmcif._CifWriter(fh)
         po.starting_model_dump.finalize()
         d.dump(w)
-        out = fh.getvalue()
-        self.assertEqual(out,
-"""_struct_conf_type.id HELX_P
+        out = fh.getvalue().split('\n')
+        # Account for the fact that _struct_conf_type items do not have a
+        # guaranteed order (they are stored in a dict), by sorting them
+        out = sorted(out[:3]) + out[3:]
+        self.assertEqual("\n".join(out),
+"""_struct_conf_type.criteria ?
+_struct_conf_type.id HELX_P
 _struct_conf_type.reference ?
-_struct_conf_type.criteria ?
 #
 loop_
 _struct_conf.id

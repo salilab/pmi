@@ -54,6 +54,12 @@ class Tests(IMP.test.TestCase):
         self.assertEqual(obj3.id, 'foo')
         self.assertEqual(obj_by_id, [obj1a, obj2])
 
+    def test_dumper(self):
+        """Test _Dumper base class"""
+        d = IMP.pmi.mmcif._Dumper(EmptyObject())
+        d.finalize()
+        d.finalize_metadata()
+
     def test_software(self):
         """Test SoftwareDumper"""
         s = IMP.pmi.metadata.Software(name='test', classification='test code',

@@ -2033,5 +2033,43 @@ _ihm_model_representation.model_object_count
         po.flush()
         self.assertEqual(dump.actions, ['fm', 'f', 'd'])
 
+    def test_struct_conf_dumper(self):
+        """Test StructConfDumper"""
+        m = IMP.Model()
+        simo = IMP.pmi.representation.Representation(m)
+        po = DummyPO(None)
+        simo.add_protocol_output(po)
+        simo.create_component("Nup84", True)
+        simo.add_component_sequence("Nup84",
+                                    self.get_input_file_name("test.fasta"))
+        nup84 = simo.autobuild_model("Nup84",
+                         self.get_input_file_name("test.nup84.helix.pdb"), "A")
+        simo.set_rigid_body_from_hierarchies(nup84)
+        simo.set_floppy_bodies()
+        d = IMP.pmi.mmcif._StructConfDumper(po)
+
+        fh = StringIO()
+        w = IMP.pmi.mmcif._CifWriter(fh)
+        po.starting_model_dump.finalize()
+        d.dump(w)
+        out = fh.getvalue()
+        self.assertEqual(out,
+"""_struct_conf_type.id HELX_P
+_struct_conf_type.reference ?
+_struct_conf_type.criteria ?
+#
+loop_
+_struct_conf.id
+_struct_conf.conf_type_id
+_struct_conf.beg_label_comp_id
+_struct_conf.beg_label_asym_id
+_struct_conf.beg_label_seq_id
+_struct_conf.end_label_comp_id
+_struct_conf.end_label_asym_id
+_struct_conf.end_label_seq_id
+HELX_P1 HELX_P MET A 1 GLU A 2
+#
+""")
+
 if __name__ == '__main__':
     IMP.test.main()

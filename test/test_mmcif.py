@@ -1900,5 +1900,22 @@ _ihm_model_representation.model_object_count
         self.assertEqual(p.source, 'comparative model')
         self.assertEqual(p.get_seq_id_range(m), (10, 100))
 
+    def test_flush(self):
+        """Test ProtocolOutput.flush()"""
+        class DummyDumper(IMP.pmi.mmcif._Dumper):
+            def __init__(self):
+                self.actions = []
+            def finalize_metadata(self):
+                self.actions.append('fm')
+            def finalize(self):
+                self.actions.append('f')
+            def dump(self, cw):
+                self.actions.append('d')
+        dump = DummyDumper()
+        po = IMP.pmi.mmcif.ProtocolOutput(None)
+        po._dumpers = [dump]
+        po.flush()
+        self.assertEqual(dump.actions, ['fm', 'f', 'd'])
+
 if __name__ == '__main__':
     IMP.test.main()

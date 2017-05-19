@@ -1286,6 +1286,25 @@ _ihm_modeling_post_process.num_models_end
         self.assertEqual(e.num_models, 5)
         self.assertEqual(e.num_deposit, 1)
 
+    def test_rex_postproces(self):
+        """Test ReplicaExchangeAnalysisPostProcess"""
+        class DummyRex(object):
+            _number_of_clusters = 2
+        d = DummyRex()
+        with IMP.test.temporary_directory() as tmpdir:
+            d._outputdir = tmpdir
+            for i in range(d._number_of_clusters):
+                subdir = os.path.join(tmpdir, 'cluster.%d' % i)
+                os.mkdir(subdir)
+                with open(os.path.join(subdir, 'stat.out'), 'w') as fh:
+                    # 1 model for first cluster, 2 for second cluster
+                    for line in range(i + 1):
+                        fh.write('#\n')
+            pp = IMP.pmi.mmcif._ReplicaExchangeAnalysisPostProcess(d, 45)
+        self.assertEqual(pp.rex, d)
+        self.assertEqual(pp.num_models_begin, 45)
+        self.assertEqual(pp.num_models_end, 3)
+
     def test_ensemble_dumper(self):
         """Test EnsembleDumper"""
         class DummyPostProcess(object):

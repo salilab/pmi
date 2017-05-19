@@ -1366,6 +1366,30 @@ All kmeans_weight_500_2/cluster.0/ centroid index 49
             stats = list(e.load_all_models(ds))
             self.assertEqual(stats, [{'modelnum': 0}])
 
+    def test_add_rex(self):
+        """Test add_replica_exchange_analysis"""
+        class DummyProtocol(object):
+            pass
+        class DummyRex(object):
+            _number_of_clusters = 1
+        m = IMP.Model()
+        simo = IMP.pmi.representation.Representation(m)
+        po = DummyPO(None)
+        simo.add_protocol_output(po)
+        with IMP.test.temporary_directory() as tmpdir:
+            rex = DummyRex()
+            rex._outputdir = tmpdir
+            subdir = os.path.join(tmpdir, 'cluster.0')
+            os.mkdir(subdir)
+            # Two models
+            with open(os.path.join(subdir, 'stat.out'), 'w') as fh:
+                fh.write("{'modelnum': 0}\n")
+                fh.write("{'modelnum': 1}\n")
+            prot = DummyProtocol()
+            prot.num_models_end = 10
+            po.model_prot_dump.add(prot)
+            po.add_replica_exchange_analysis(rex)
+
     def test_ensemble_dumper(self):
         """Test EnsembleDumper"""
         class DummyPostProcess(object):

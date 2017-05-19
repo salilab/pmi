@@ -1305,6 +1305,67 @@ _ihm_modeling_post_process.num_models_end
         self.assertEqual(pp.num_models_begin, 45)
         self.assertEqual(pp.num_models_end, 3)
 
+    def test_rex_ensemble(self):
+        """Test ReplicaExchangeAnalysisEnsemble"""
+        class DummyRepresentation(object):
+            def set_coordinates_from_rmf(self, comp, fname, frame,
+                                         force_rigid_update):
+                pass
+        class DummySimo(object):
+            all_modeled_components = ['Nup84', 'Nup85']
+        class DummyRex(object):
+            _number_of_clusters = 1
+        extref_dump = IMP.pmi.mmcif._ExternalReferenceDumper(EmptyObject())
+        with IMP.test.temporary_directory() as tmpdir:
+            d = DummyRex()
+            d._outputdir = tmpdir
+            subdir = os.path.join(tmpdir, 'cluster.0')
+            os.mkdir(subdir)
+            # Two models
+            with open(os.path.join(subdir, 'stat.out'), 'w') as fh:
+                fh.write("{'modelnum': 0}\n")
+                fh.write("{'modelnum': 1}\n")
+            # Mock localization density file
+            with open(os.path.join(subdir, 'Nup84.mrc'), 'w') as fh:
+                pass
+            pp = IMP.pmi.mmcif._ReplicaExchangeAnalysisPostProcess(d, 45)
+            mg = None
+            e = IMP.pmi.mmcif._ReplicaExchangeAnalysisEnsemble(pp, 0, mg, 1)
+            self.assertEqual(e.cluster_num, 0)
+            self.assertEqual(e.postproc, pp)
+            self.assertEqual(e.num_deposit, 1)
+            self.assertEqual(e.localization_density, {})
+            self.assertEqual(e.num_models, 2)
+            self.assertEqual(e.feature, 'RMSD')
+            self.assertEqual(e.name, 'Cluster 1')
+            self.assertEqual(e.get_rmsf_file('Nup84'),
+                             os.path.join(tmpdir, 'cluster.0',
+                                          'rmsf.Nup84.dat'))
+            self.assertEqual(e.get_localization_density_file('Nup84'),
+                             os.path.join(tmpdir, 'cluster.0', 'Nup84.mrc'))
+            self.assertEqual(list(e.localization_density.keys()), [])
+            # Density that doesn't exist
+            e.load_localization_density(None, 'noden', extref_dump)
+            self.assertEqual(list(e.localization_density.keys()), [])
+            # Density that does exist
+            e.load_localization_density(None, 'Nup84', extref_dump)
+            self.assertEqual(e.localization_density['Nup84'].path,
+                             os.path.join(tmpdir, 'cluster.0', 'Nup84.mrc'))
+            # No precision available
+            self.assertEqual(e._get_precision(), '?')
+            self.assertEqual(e.precision, '?')
+            # Make precision available
+            with open(os.path.join(tmpdir, 'precision.0.0.out'), 'w') as fh:
+                fh.write("""
+All kmeans_weight_500_2/cluster.0/ average centroid distance 24.3744728893
+All kmeans_weight_500_2/cluster.0/ centroid index 49
+""")
+            self.assertAlmostEqual(e._get_precision(), 24.374, delta=1e-3)
+            ds = DummySimo()
+            ds._representation = DummyRepresentation()
+            stats = list(e.load_all_models(ds))
+            self.assertEqual(stats, [{'modelnum': 0}])
+
     def test_ensemble_dumper(self):
         """Test EnsembleDumper"""
         class DummyPostProcess(object):

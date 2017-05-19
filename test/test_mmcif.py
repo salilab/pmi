@@ -1248,6 +1248,23 @@ _ihm_modeling_protocol.time_ordered_flag
         self.assertEqual(pp.feature, 'RMSD')
         self.assertEqual(pp.num_models_begin, 10)
         self.assertEqual(pp.num_models_end, 90)
+        fh = StringIO()
+        w = IMP.pmi.mmcif._CifWriter(fh)
+        po.post_process_dump.dump(w)
+        out = fh.getvalue()
+        self.assertEqual(out, """#
+loop_
+_ihm_modeling_post_process.id
+_ihm_modeling_post_process.protocol_id
+_ihm_modeling_post_process.analysis_id
+_ihm_modeling_post_process.step_id
+_ihm_modeling_post_process.type
+_ihm_modeling_post_process.feature
+_ihm_modeling_post_process.num_models_begin
+_ihm_modeling_post_process.num_models_end
+1 1 1 1 cluster RMSD 10 90
+#
+""")
 
     def test_simple_ensemble(self):
         """Test add_simple_ensemble"""

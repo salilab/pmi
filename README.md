@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/salilab/pmi.svg?branch=develop)](https://travis-ci.org/salilab/pmi)
 [![codecov](https://codecov.io/gh/salilab/pmi/branch/develop/graph/badge.svg)](https://codecov.io/gh/salilab/pmi)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/114da59eb5354e1aa4701717a400d7ba)](https://www.codacy.com/app/benmwebb/allosmod?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=salilab/allosmod&amp;utm_campaign=Badge_Grade)
 
 This module contains a variety of high-level Python
 classes to simplify the construction of a modeling protocol in IMP. One recent

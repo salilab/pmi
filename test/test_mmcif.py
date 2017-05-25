@@ -519,6 +519,26 @@ _citation_author.ordinal
         self.assertEqual(a[1].description, 'bar')
         self.assertEqual(a[1].sequence, 'SELM')
 
+    def test_dataset_group_finalize(self):
+        """Test DatasetGroup.finalize()"""
+        class DummyRestraint(object):
+            pass
+        l = IMP.pmi.metadata.FileLocation(repo='foo', path='baz')
+        ds1 = IMP.pmi.metadata.EM2DClassDataset(l)
+        # Duplicate dataset
+        ds2 = IMP.pmi.metadata.EM2DClassDataset(l)
+        # Restraint dataset
+        r = DummyRestraint()
+        l = IMP.pmi.metadata.FileLocation(repo='foo', path='bar')
+        ds3 = IMP.pmi.metadata.EM2DClassDataset(l)
+        r.dataset = ds3
+        rds = IMP.pmi.mmcif._RestraintDataset(r, None, False)
+        dg = IMP.pmi.mmcif._DatasetGroup([ds1, ds2, rds])
+        dg.finalize()
+        # ds2 should be ignored (duplicate of ds1) and rds should have been
+        # replaced by the real underlying dataset, ds3
+        self.assertEqual(dg._datasets, [ds1, ds3])
+
     def test_dataset_dumper_all_group(self):
         """Test DatasetDumper.get_all_group()"""
         dump, simo = make_dataset_dumper()

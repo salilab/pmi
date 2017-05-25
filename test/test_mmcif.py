@@ -537,7 +537,7 @@ _citation_author.ordinal
         dg.finalize()
         # ds2 should be ignored (duplicate of ds1) and rds should have been
         # replaced by the real underlying dataset, ds3
-        self.assertEqual(dg._datasets, [ds1, ds3])
+        self.assertEqual(list(dg._datasets), [ds1, ds3])
 
     def test_dataset_dumper_all_group(self):
         """Test DatasetDumper.get_all_group()"""

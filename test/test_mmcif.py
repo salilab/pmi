@@ -649,11 +649,17 @@ _citation_author.ordinal
         pds = dump.add(IMP.pmi.metadata.CXMSDataset(l))
         # group2 contains the first two datasets
         group2 = dump.get_all_group()
-        # last dataset is in no group
+        # last dataset is in no group and is wrapped by RestraintDataset
+        class DummyRestraint(object):
+            pass
+        dr = DummyRestraint()
         l = IMP.pmi.metadata.PDBLocation('1abc', '1.0', 'test details')
-        ds = dump.add(IMP.pmi.metadata.PDBDataset(l))
-        ds.add_primary(pds)
-        self.assertEqual(ds.location.access_code, '1abc')
+        dr.dataset = IMP.pmi.metadata.PDBDataset(l)
+        dr.dataset.add_primary(pds)
+        rd = IMP.pmi.mmcif._RestraintDataset(dr, num=None,
+                                             allow_duplicates=False)
+        ds = dump.add(rd)
+        self.assertEqual(ds.dataset.location.access_code, '1abc')
 
         fh = StringIO()
         w = IMP.pmi.mmcif._CifWriter(fh)

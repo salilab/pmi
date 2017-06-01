@@ -566,6 +566,7 @@ class _ExternalReference(object):
     def __set_id(self, i):
         self.location.id = i
     id = property(lambda x: x.location.id, __set_id)
+    file_size = property(lambda x: x.location.file_size)
 
     def __eq__(self, other):
         return self.location == other.location
@@ -679,14 +680,19 @@ class _ExternalReferenceDumper(_Dumper):
     def dump_refs(self, writer):
         with writer.loop("_ihm_external_files",
                          ["id", "reference_id", "file_path", "content_type",
-                          "details"]) as l:
+                          "file_size_bytes", "details"]) as l:
             for r in self._ref_by_id:
                 loc = r.location
                 repo = loc.repo or self._local_files
                 file_path=self._posix_path(repo._get_full_path(loc.path))
+                if r.file_size is None:
+                    file_size = _CifWriter.omitted
+                else:
+                    file_size = r.file_size
                 l.write(id=loc.id, reference_id=repo.id,
                         file_path=file_path,
                         content_type=r.content_type,
+                        file_size_bytes=file_size,
                         details=loc.details or _CifWriter.omitted)
 
     # On Windows systems, convert native paths to POSIX-like (/-separated) paths

@@ -114,6 +114,7 @@ class Tests(IMP.test.TestCase):
         # it will be 'nosetests' instead. So make sure it's reliably the name
         # of the test script:
         po._main_script = __file__
+        file_size = os.stat(__file__).st_size
         simo.add_protocol_output(po)
 
         r = IMP.pmi.metadata.Repository(doi="bar")
@@ -146,12 +147,13 @@ _ihm_external_files.id
 _ihm_external_files.reference_id
 _ihm_external_files.file_path
 _ihm_external_files.content_type
+_ihm_external_files.file_size_bytes
 _ihm_external_files.details
-1 1 test_mmcif.py 'Modeling workflow or script'
+1 1 test_mmcif.py 'Modeling workflow or script' %d
 'The main integrative modeling script'
-2 2 bar/baz 'Modeling workflow or script' foo
+2 2 bar/baz 'Modeling workflow or script' . foo
 #
-""")
+""" % file_size)
 
     def test_file_dataset(self):
         """Test get/set_file_dataset methods"""
@@ -741,7 +743,7 @@ _ihm_related_datasets.dataset_list_id_primary
         dump.add(l, IMP.pmi.mmcif._ExternalReferenceDumper.INPUT_DATA)
         bar = 'test_mmcif_extref.tmp'
         with open(bar, 'w') as f:
-            f.write("")
+            f.write("abcd")
         # Local file
         l = IMP.pmi.metadata.FileLocation(bar)
         dump.add(l, IMP.pmi.mmcif._ExternalReferenceDumper.WORKFLOW)
@@ -772,12 +774,13 @@ _ihm_external_files.id
 _ihm_external_files.reference_id
 _ihm_external_files.file_path
 _ihm_external_files.content_type
+_ihm_external_files.file_size_bytes
 _ihm_external_files.details
-1 1 bar 'Input data or restraints' .
-2 1 baz 'Input data or restraints' .
-3 2 foo/bar/baz 'Modeling or post-processing output' .
-4 3 foo.spd 'Input data or restraints' 'EM micrographs'
-5 4 %s 'Modeling workflow or script' .
+1 1 bar 'Input data or restraints' . .
+2 1 baz 'Input data or restraints' . .
+3 2 foo/bar/baz 'Modeling or post-processing output' . .
+4 3 foo.spd 'Input data or restraints' . 'EM micrographs'
+5 4 %s 'Modeling workflow or script' 4 .
 #
 """ % bar)
         os.unlink(bar)

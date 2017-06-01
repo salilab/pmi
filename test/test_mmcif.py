@@ -1771,13 +1771,13 @@ _ihm_2dem_class_average_fitting.tr_vector[3]
                                      self.get_input_file_name("test.nup84.pdb"),
                                      "A")
         class DummyRestraint(object):
-            pass
+            label = 'foo'
         class DummyProtocol(object):
             pass
         pr = DummyRestraint()
         rd = IMP.pmi.mmcif._RestraintDataset(pr, num=None,
                                              allow_duplicates=True)
-        r = IMP.pmi.mmcif._EM3DRestraint(po, rd, target_ps=[None, None],
+        r = IMP.pmi.mmcif._EM3DRestraint(po, rd, pr, target_ps=[None, None],
                                          densities=[])
 
         l = IMP.pmi.metadata.FileLocation(repo='foo', path='bar')
@@ -1786,8 +1786,10 @@ _ihm_2dem_class_average_fitting.tr_vector[3]
         pr.dataset = d
 
         po.model_prot_dump.add(DummyProtocol())
-        po.add_model()
-        po.add_model()
+        m = po.add_model()
+        m.stats = {'GaussianEMRestraint_foo_CCC': 0.1}
+        m = po.add_model()
+        m.stats = {'GaussianEMRestraint_foo_CCC': 0.2}
         po.em3d_dump.add(r)
         fh = StringIO()
         w = IMP.pmi.mmcif._CifWriter(fh)
@@ -1802,8 +1804,8 @@ _ihm_3dem_restraint.struct_assembly_id
 _ihm_3dem_restraint.number_of_gaussians
 _ihm_3dem_restraint.model_id
 _ihm_3dem_restraint.cross_correlation_coefficient
-1 4 'Gaussian mixture models' 2 2 1 .
-2 4 'Gaussian mixture models' 2 2 2 .
+1 4 'Gaussian mixture models' 2 2 1 0.100
+2 4 'Gaussian mixture models' 2 2 2 0.200
 #
 """)
 

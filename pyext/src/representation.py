@@ -197,10 +197,6 @@ class Representation(object):
         p._file_datasets.append(self._file_dataset)
         state.m = self.m
         state.prot = self.prot
-        # todo: move these to the state object, since they may differ for
-        # each state
-        # Ugly, but we need to be able to call set_coordinates_from_rmf().
-        p._representation = weakref.proxy(self)
     protocol_output = property(lambda self:
                                [x[0] for x in self._protocol_output])
 

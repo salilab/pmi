@@ -1898,7 +1898,7 @@ class _ReplicaExchangeAnalysisEnsemble(_Ensemble):
             extref_dump.add(local_file,
                             _ExternalReferenceDumper.MODELING_OUTPUT)
 
-    def load_all_models(self, simo):
+    def load_all_models(self, simo, state):
         stat_fname = self.postproc.get_stat_file(self.cluster_num)
         model_num = 0
         with open(stat_fname) as fh:
@@ -1908,7 +1908,7 @@ class _ReplicaExchangeAnalysisEnsemble(_Ensemble):
                                     "%d.rmf3" % model_num)
             for c in simo.all_modeled_components:
                 # todo: this only works with PMI 1
-                simo._representation.set_coordinates_from_rmf(c, rmf_file, 0,
+                state._pmi_object.set_coordinates_from_rmf(c, rmf_file, 0,
                                                        force_rigid_update=True)
             # todo: fill in other data from stat file, e.g. crosslink phi/psi
             yield stats
@@ -2331,7 +2331,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
             # Add localization density info if available
             for c in self.all_modeled_components:
                 e.load_localization_density(state.m, c, self.extref_dump)
-            for stats in e.load_all_models(self):
+            for stats in e.load_all_models(self, state):
                 m = self.add_model(group)
                 # Since we currently only deposit 1 model, it is the
                 # best scoring one

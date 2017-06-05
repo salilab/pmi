@@ -1412,6 +1412,8 @@ _ihm_modeling_post_process.num_models_end
                 pass
         class DummySimo(object):
             all_modeled_components = ['Nup84', 'Nup85']
+        class DummyState(object):
+            pass
         class DummyRex(object):
             _number_of_clusters = 1
         extref_dump = IMP.pmi.mmcif._ExternalReferenceDumper(EmptyObject())
@@ -1470,8 +1472,9 @@ All kmeans_weight_500_2/cluster.0/ centroid index 49
 """)
             self.assertAlmostEqual(e._get_precision(), 24.374, delta=1e-3)
             ds = DummySimo()
-            ds._representation = DummyRepresentation()
-            stats = list(e.load_all_models(ds))
+            state = DummyState()
+            state._pmi_object = DummyRepresentation()
+            stats = list(e.load_all_models(ds, state))
             self.assertEqual(stats, [{'modelnum': 0}])
 
     def test_add_rex(self):

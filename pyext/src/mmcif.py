@@ -28,6 +28,7 @@ import os
 import textwrap
 import weakref
 import operator
+import itertools
 
 def _assign_id(obj, seen_objs, obj_by_id):
     """Assign a unique ID to obj, and track all ids in obj_by_id."""
@@ -2105,6 +2106,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
     output as mmCIF.
     """
     def __init__(self, fh):
+        self._each_metadata = [] # list of metadata for each representation
         self._file_datasets = []
         self._main_script = os.path.abspath(sys.argv[0])
         self._states = {}
@@ -2349,3 +2351,6 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         all_repos = [m for m in self._metadata
                      if isinstance(m, IMP.pmi.metadata.Repository)]
         IMP.pmi.metadata.Repository.update_in_repos(fileloc, all_repos)
+
+    _metadata = property(lambda self:
+                         itertools.chain.from_iterable(self._each_metadata))

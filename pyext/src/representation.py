@@ -192,7 +192,7 @@ class Representation(object):
            @param p an instance of IMP.pmi.output.ProtocolOutput or a subclass.
         """
         self._protocol_output.append((p, p._add_state(self)))
-        p._metadata = self._metadata
+        p._each_metadata.append(self._metadata)
         p._file_datasets.append(self._file_dataset)
         # todo: move these to the state object, since they may differ for
         # each state

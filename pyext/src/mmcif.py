@@ -375,13 +375,14 @@ class _PDBFragment(object):
     primitive = 'sphere'
     granularity = 'by-residue'
     num = _CifWriter.omitted
-    def __init__(self, m, component, start, end, offset, pdbname, chain, hier):
+    def __init__(self, state, component, start, end, offset, pdbname,
+                 chain, hier):
         self.component, self.start, self.end, self.offset, self.pdbname \
               = component, start, end, offset, pdbname
-        self.chain, self.hier = chain, hier
+        self.state, self.chain, self.hier = state, chain, hier
         sel = IMP.atom.NonWaterNonHydrogenPDBSelector() \
               & IMP.atom.ChainPDBSelector(chain)
-        self.starting_hier = IMP.atom.read_pdb(pdbname, m, sel)
+        self.starting_hier = IMP.atom.read_pdb(pdbname, state.m, sel)
 
     def combine(self, other):
         pass
@@ -391,9 +392,9 @@ class _BeadsFragment(object):
     primitive = 'sphere'
     granularity = 'by-feature'
     chain = None
-    def __init__(self, m, component, start, end, num, hier):
-        self.component, self.start, self.end, self.num, self.hier \
-              = component, start, end, num, hier
+    def __init__(self, state, component, start, end, num, hier):
+        self.state, self.component, self.start, self.end, self.num, self.hier \
+              = state, component, start, end, num, hier
 
     def combine(self, other):
         # todo: don't combine if one fragment is rigid and the other flexible
@@ -842,10 +843,18 @@ class _ExperimentalCrossLink(object):
         self.length, self.group = length, group
 
 class _CrossLink(object):
-    def __init__(self, ex_xl, p1, p2, sigma1, sigma2, psi):
+    def __init__(self, state, ex_xl, p1, p2, sigma1, sigma2, psi):
+        self.state = state
         self.ex_xl, self.sigma1, self.sigma2 = ex_xl, sigma1, sigma2
         self.p1, self.p2 = p1, p2
         self.psi = psi
+
+def get_asym_mapper_for_state(state, asym_map):
+    asym = asym_map.get(state, None)
+    if asym is None:
+        asym = _AsymIDMapper(state.prot)
+        asym_map[state] = asym
+    return asym
 
 class _CrossLinkDumper(_Dumper):
     def __init__(self, simo):
@@ -901,7 +910,7 @@ class _CrossLinkDumper(_Dumper):
             return 'by-feature'
 
     def dump_restraint(self, writer):
-        asym = _AsymIDMapper(self.simo.prot)
+        asym_states = {} # AsymIDMapper for each state
         with writer.loop("_ihm_cross_link_restraint",
                          ["id", "group_id", "entity_id_1", "asym_id_1",
                           "seq_id_1", "comp_id_1",
@@ -910,6 +919,7 @@ class _CrossLinkDumper(_Dumper):
                           "model_granularity", "distance_threshold",
                           "psi", "sigma_1", "sigma_2"]) as l:
             for xl in self.cross_links:
+                asym = get_asym_mapper_for_state(xl.state, asym_states)
                 entity1 = self.simo.entities[xl.ex_xl.c1]
                 entity2 = self.simo.entities[xl.ex_xl.c2]
                 seq1 = entity1.sequence
@@ -1066,15 +1076,16 @@ class _EM2DDumper(_Dumper):
 class _EM3DRestraint(object):
     fitting_method = 'Gaussian mixture models'
 
-    def __init__(self, simo, rdataset, pmi_restraint, target_ps, densities):
+    def __init__(self, simo, state, rdataset, pmi_restraint, target_ps,
+                 densities):
         self.pmi_restraint = pmi_restraint
         self.rdataset = rdataset
         self.number_of_gaussians = len(target_ps)
-        self.assembly = self.get_assembly(densities, simo)
+        self.assembly = self.get_assembly(densities, simo, state)
 
-    def get_assembly(self, densities, simo):
+    def get_assembly(self, densities, simo, state):
         """Get the Assembly that this restraint acts on"""
-        cm = _ComponentMapper(simo.prot)
+        cm = _ComponentMapper(state.prot)
         components = {}
         for d in densities:
             components[cm[d]] = None
@@ -1179,7 +1190,8 @@ class _ReplicaExchangeProtocol(_Protocol):
 
 class _ModelGroup(object):
     """Group sets of models"""
-    def __init__(self, name):
+    def __init__(self, state, name):
+        self.state = state
         self.name = name
 
 class _Model(object):
@@ -1733,12 +1745,13 @@ modeling. These may need to be added manually below.""")
 class _StructConfDumper(_Dumper):
     def all_rigid_fragments(self):
         """Yield all rigid model representation fragments"""
-        asym = _AsymIDMapper(self.simo.prot)
+        asym_states = {}
         model_repr = self.simo.model_repr_dump
         for comp, fragments in model_repr.fragments.items():
             for f in fragments:
                 if hasattr(f, 'pdbname') \
                    and model_repr.get_model_mode(f) == 'rigid':
+                    asym = get_asym_mapper_for_state(f.state, asym_states)
                     yield (f, model_repr.starting_model[comp, f.pdbname],
                            asym[f.hier])
 
@@ -2219,13 +2232,15 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         for dumper in self._dumpers:
             dumper.dump(self._cif_writer)
 
-    def add_pdb_element(self, name, start, end, offset, pdbname, chain, hier):
-        p = _PDBFragment(self.m, name, start, end, offset, pdbname, chain, hier)
+    def add_pdb_element(self, state, name, start, end, offset, pdbname,
+                        chain, hier):
+        p = _PDBFragment(state, name, start, end, offset, pdbname, chain,
+                         hier)
         self.model_repr_dump.add_fragment(p)
         self.starting_model_dump.add_pdb_fragment(p)
 
-    def add_bead_element(self, name, start, end, num, hier):
-        b = _BeadsFragment(self.m, name, start, end, num, hier)
+    def add_bead_element(self, state, name, start, end, num, hier):
+        b = _BeadsFragment(state, name, start, end, num, hier)
         self.model_repr_dump.add_fragment(b)
 
     def _get_restraint_dataset(self, r, num=None, allow_duplicates=False):
@@ -2250,8 +2265,9 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.cross_link_dump.add_experimental(xl)
         return xl
 
-    def add_cross_link(self, ex_xl, p1, p2, sigma1, sigma2, psi):
-        self.cross_link_dump.add(_CrossLink(ex_xl, p1, p2, sigma1, sigma2, psi))
+    def add_cross_link(self, state, ex_xl, p1, p2, sigma1, sigma2, psi):
+        self.cross_link_dump.add(_CrossLink(state, ex_xl, p1, p2, sigma1,
+                                            sigma2, psi))
 
     def add_replica_exchange(self, rex):
         # todo: allow for metadata to say how many replicas were used in the
@@ -2270,12 +2286,12 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.post_process_dump.add(pp)
         return pp
 
-    def _add_simple_ensemble(self, pp, name, num_models, drmsd,
+    def _add_simple_ensemble(self, state, pp, name, num_models, drmsd,
                              num_models_deposited, localization_densities,
                              ensemble_file):
         """Add an ensemble generated by ad hoc methods (not using PMI).
            This is currently only used by the Nup84 system."""
-        group = self.add_model_group(_ModelGroup(name))
+        group = self.add_model_group(_ModelGroup(state, name))
         self.extref_dump.add(ensemble_file,
                              _ExternalReferenceDumper.MODELING_OUTPUT)
         e = _SimpleEnsemble(pp, group, num_models, drmsd, num_models_deposited,
@@ -2285,7 +2301,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         for c in self.all_modeled_components:
             den = localization_densities.get(c, None)
             if den:
-                e.load_localization_density(self.m, c, den, self.extref_dump)
+                e.load_localization_density(state.m, c, den, self.extref_dump)
         return e
 
     def set_ensemble_file(self, i, location):
@@ -2296,7 +2312,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                              _ExternalReferenceDumper.MODELING_OUTPUT)
         self.ensemble_dump.ensembles[i].file = location
 
-    def add_replica_exchange_analysis(self, rex):
+    def add_replica_exchange_analysis(self, state, rex):
         # todo: add prefilter as an additional postprocess step (complication:
         # we don't know how many models it filtered)
         # todo: postpone rmsf/density localization extraction until after
@@ -2306,14 +2322,15 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         pp = _ReplicaExchangeAnalysisPostProcess(rex, num_models)
         self.post_process_dump.add(pp)
         for i in range(rex._number_of_clusters):
-            group = self.add_model_group(_ModelGroup('Cluster %d' % (i + 1)))
+            group = self.add_model_group(_ModelGroup(state,
+                                                     'Cluster %d' % (i + 1)))
             # todo: make # of models to deposit configurable somewhere
             e = _ReplicaExchangeAnalysisEnsemble(pp, i, group, 1)
             self.ensemble_dump.add(e)
             self.density_dump.add(e)
             # Add localization density info if available
             for c in self.all_modeled_components:
-                e.load_localization_density(self.m, c, self.extref_dump)
+                e.load_localization_density(state.m, c, self.extref_dump)
             for stats in e.load_all_models(self):
                 m = self.add_model(group)
                 # Since we currently only deposit 1 model, it is the
@@ -2330,19 +2347,15 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.em2d_dump.add(_EM2DRestraint(d, r, i, resolution, pixel_size,
                                           image_resolution, projection_number))
 
-    def add_em3d_restraint(self, target_ps, densities, r):
+    def add_em3d_restraint(self, state, target_ps, densities, r):
         # A 3DEM restraint's dataset ID uniquely defines the restraint, so
         # we need to allow duplicates
         d = self._get_restraint_dataset(r, allow_duplicates=True)
-        self.em3d_dump.add(_EM3DRestraint(self, d, r, target_ps, densities))
+        self.em3d_dump.add(_EM3DRestraint(self, state, d, r, target_ps,
+                                          densities))
 
-    def add_model(self, group=None):
-        if group is None:
-            if self.default_model_group is None:
-                self.default_model_group \
-                         = self.add_model_group(_ModelGroup("All models"))
-            group = self.default_model_group
-        return self.model_dump.add(self.prot,
+    def add_model(self, group):
+        return self.model_dump.add(group.state.prot,
                                    self.model_prot_dump.get_last_protocol(),
                                    self.modeled_assembly, group)
 

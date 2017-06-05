@@ -127,7 +127,8 @@ class GaussianEMRestraint(object):
 
         if representation:
             for p, state in representation._protocol_output:
-                p.add_em3d_restraint(self.target_ps, self.densities, self)
+                p.add_em3d_restraint(state, self.target_ps, self.densities,
+                                     self)
 
         # setup model GMM
         self.model_ps = []

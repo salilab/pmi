@@ -28,6 +28,10 @@ def make_dataset_dumper():
     simo.extref_dump = MockExtRef(simo)
     return IMP.pmi.mmcif._DatasetDumper(simo), simo
 
+def get_all_models_group(simo, po):
+    state = simo._protocol_output[0][1]
+    return po.add_model_group(IMP.pmi.mmcif._ModelGroup(state, "All models"))
+
 class Tests(IMP.test.TestCase):
 
     def test_assign_id(self):
@@ -849,6 +853,7 @@ _ihm_external_files.details
         simo = IMP.pmi.representation.Representation(m)
         po = DummyPO(None)
         simo.add_protocol_output(po)
+        state = simo._protocol_output[0][1]
         simo.create_component("Nup84", True)
         simo.add_component_sequence("Nup84",
                                     self.get_input_file_name("test.fasta"))
@@ -861,7 +866,7 @@ _ihm_external_files.details
         assembly.id = 42
         protocol = IMP.pmi.mmcif._Protocol()
         protocol.id = 93
-        group = IMP.pmi.mmcif._ModelGroup("all models")
+        group = IMP.pmi.mmcif._ModelGroup(state, "all models")
         group.id = 7
         model = d.add(simo.prot, protocol, assembly, group)
         self.assertEqual(model.id, 1)
@@ -906,6 +911,7 @@ _ihm_sphere_obj_site.model_id
         simo = IMP.pmi.representation.Representation(m)
         po = DummyPO(None)
         simo.add_protocol_output(po)
+        state = simo._protocol_output[0][1]
         simo.create_component("Nup84", True)
         simo.add_component_sequence("Nup84",
                                     self.get_input_file_name("test.fasta"))
@@ -918,7 +924,7 @@ _ihm_sphere_obj_site.model_id
         assembly.id = 42
         protocol = IMP.pmi.mmcif._Protocol()
         protocol.id = 93
-        group = IMP.pmi.mmcif._ModelGroup("all models")
+        group = IMP.pmi.mmcif._ModelGroup(state, "all models")
         group.id = 7
         model = d.add(simo.prot, protocol, assembly, group)
         self.assertEqual(model.id, 1)
@@ -976,6 +982,7 @@ _ihm_sphere_obj_site.model_id
         simo = IMP.pmi.representation.Representation(m)
         po = DummyPO(None)
         simo.add_protocol_output(po)
+        state = simo._protocol_output[0][1]
         simo.create_component("Nup84", True)
         simo.add_component_sequence("Nup84",
                                     self.get_input_file_name("test.fasta"))
@@ -988,7 +995,7 @@ _ihm_sphere_obj_site.model_id
         assembly.id = 42
         protocol = IMP.pmi.mmcif._Protocol()
         protocol.id = 93
-        group = IMP.pmi.mmcif._ModelGroup("all models")
+        group = IMP.pmi.mmcif._ModelGroup(state, "all models")
         group.id = 7
         model = d.add(simo.prot, protocol, assembly, group)
         self.assertEqual(model.id, 1)
@@ -1111,9 +1118,10 @@ Nup84-m1 ATOM 2 C CA GLU 1 A 2 -8.986 11.688 -5.817 91.820 2
         simo = IMP.pmi.representation.Representation(m)
         po = DummyPO(None)
         simo.add_protocol_output(po)
+        state = simo._protocol_output[0][1]
         chain = 'A'
-        fragment = IMP.pmi.mmcif._PDBFragment(m, "mypdb", 1, 10, 0, pdbname,
-                                              chain, None)
+        fragment = IMP.pmi.mmcif._PDBFragment(state, "mypdb", 1, 10, 0,
+                                              pdbname, chain, None)
         model = IMP.pmi.mmcif._StartingModel(fragment)
         sources = po.starting_model_dump.get_sources(model, pdbname, chain)
         return m, model, sources
@@ -1368,7 +1376,8 @@ _ihm_modeling_post_process.num_models_end
 
         densities = {'Nup84': "foo.mrc"}
         pp = None
-        e = po._add_simple_ensemble(pp, 'Ensemble 1', 5, 0.1, 1, densities,
+        e = po._add_simple_ensemble(simo._protocol_output[0][1],
+                                    pp, 'Ensemble 1', 5, 0.1, 1, densities,
                                     None)
         self.assertEqual(e.num_models, 5)
         self.assertEqual(e.num_deposit, 1)
@@ -1487,7 +1496,7 @@ All kmeans_weight_500_2/cluster.0/ centroid index 49
             prot = DummyProtocol()
             prot.num_models_end = 10
             po.model_prot_dump.add(prot)
-            po.add_replica_exchange_analysis(rex)
+            po.add_replica_exchange_analysis(simo._protocol_output[0][1], rex)
 
     def test_ensemble_dumper(self):
         """Test EnsembleDumper"""
@@ -1500,8 +1509,11 @@ All kmeans_weight_500_2/cluster.0/ centroid index 49
 
         pp = DummyPostProcess()
         pp.id = 99
-        e1 = po._add_simple_ensemble(pp, 'Ensemble 1', 5, 0.1, 1, {}, None)
-        e2 = po._add_simple_ensemble(pp, 'Ensemble 2', 5, 0.1, 1, {}, None)
+        state = simo._protocol_output[0][1]
+        e1 = po._add_simple_ensemble(state, pp, 'Ensemble 1', 5, 0.1, 1,
+                                     {}, None)
+        e2 = po._add_simple_ensemble(state, pp, 'Ensemble 2', 5, 0.1, 1,
+                                     {}, None)
         loc = IMP.pmi.metadata.FileLocation(repo='foo', path='bar')
         po.set_ensemble_file(1, loc)
         loc.id = 42
@@ -1573,6 +1585,7 @@ _ihm_localization_density_files.seq_id_end
         simo = IMP.pmi.representation.Representation(m)
         po = DummyPO(None)
         simo.add_protocol_output(po)
+        state = simo._protocol_output[0][1]
         simo.create_component("Nup84", True)
         simo.add_component_sequence("Nup84",
                                     self.get_input_file_name("test.fasta"))
@@ -1593,7 +1606,7 @@ _ihm_localization_density_files.seq_id_end
         sigma1 = IMP.isd.Scale.setup_particle(IMP.Particle(m), 1.0)
         sigma2 = IMP.isd.Scale.setup_particle(IMP.Particle(m), 0.5)
         psi = IMP.isd.Scale.setup_particle(IMP.Particle(m), 0.8)
-        po.add_cross_link(ex_xl, rs[0], rs[1], sigma1, sigma2, psi)
+        po.add_cross_link(state, ex_xl, rs[0], rs[1], sigma1, sigma2, psi)
 
         fh = StringIO()
         w = IMP.pmi.mmcif._CifWriter(fh)
@@ -1767,7 +1780,8 @@ _ihm_cross_link_restraint.sigma_2
         d.add_primary(dp)
         pr.dataset = d
         po.model_prot_dump.add(DummyProtocol())
-        m = po.add_model()
+        group = get_all_models_group(simo, po)
+        m = po.add_model(group)
         prefix = 'ElectronMicroscopy2D_foo_Image1_'
         m.stats = {prefix + 'CCC': '0.872880665234',
                    prefix + 'Translation0': '304.187464117',
@@ -1825,6 +1839,7 @@ _ihm_2dem_class_average_fitting.tr_vector[3]
         simo = IMP.pmi.representation.Representation(m)
         po = DummyPO(None)
         simo.add_protocol_output(po)
+        state = simo._protocol_output[0][1]
         simo.create_component("Nup84", True)
         simo.add_component_sequence("Nup84",
                                     self.get_input_file_name("test.fasta"))
@@ -1838,8 +1853,8 @@ _ihm_2dem_class_average_fitting.tr_vector[3]
         pr = DummyRestraint()
         rd = IMP.pmi.mmcif._RestraintDataset(pr, num=None,
                                              allow_duplicates=True)
-        r = IMP.pmi.mmcif._EM3DRestraint(po, rd, pr, target_ps=[None, None],
-                                         densities=[])
+        r = IMP.pmi.mmcif._EM3DRestraint(po, state, rd, pr,
+                                         target_ps=[None, None], densities=[])
 
         l = IMP.pmi.metadata.FileLocation(repo='foo', path='bar')
         d = IMP.pmi.metadata.EM2DClassDataset(l)
@@ -1847,9 +1862,10 @@ _ihm_2dem_class_average_fitting.tr_vector[3]
         pr.dataset = d
 
         po.model_prot_dump.add(DummyProtocol())
-        m = po.add_model()
+        group = get_all_models_group(simo, po)
+        m = po.add_model(group)
         m.stats = {'GaussianEMRestraint_foo_CCC': 0.1}
-        m = po.add_model()
+        m = po.add_model(group)
         m.stats = {'GaussianEMRestraint_foo_CCC': 0.2}
         po.em3d_dump.add(r)
         fh = StringIO()

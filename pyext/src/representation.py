@@ -191,13 +191,14 @@ class Representation(object):
         """Capture details of the modeling protocol.
            @param p an instance of IMP.pmi.output.ProtocolOutput or a subclass.
         """
-        self._protocol_output.append((p, p._add_state(self)))
+        state = p._add_state(self)
+        self._protocol_output.append((p, state))
         p._each_metadata.append(self._metadata)
         p._file_datasets.append(self._file_dataset)
+        state.m = self.m
+        state.prot = self.prot
         # todo: move these to the state object, since they may differ for
         # each state
-        p.m = self.m
-        p.prot = self.prot
         # Ugly, but we need to be able to call set_coordinates_from_rmf().
         p._representation = weakref.proxy(self)
     protocol_output = property(lambda self:
@@ -480,7 +481,7 @@ class Representation(object):
                                       resolutions, isnucleicacid, c0, protein_h, "pdb", color)
         outhiers += hiers
         for p, state in self._protocol_output:
-            p.add_pdb_element(name, start, end, offset, pdbname, chain,
+            p.add_pdb_element(state, name, start, end, offset, pdbname, chain,
                               hiers[0])
 
         if show:
@@ -658,7 +659,8 @@ class Representation(object):
             outhiers += [h]
 
         for p, state in self._protocol_output:
-            p.add_bead_element(name, ds[0][0], ds[-1][1], len(ds), outhiers[0])
+            p.add_bead_element(state, name, ds[0][0], ds[-1][1], len(ds),
+                               outhiers[0])
 
         return outhiers
 

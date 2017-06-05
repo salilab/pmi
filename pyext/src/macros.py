@@ -1568,8 +1568,8 @@ class AnalysisReplicaExchange0(object):
         """
         self._outputdir = outputdir
         self._number_of_clusters = number_of_clusters
-        for p in self._protocol_output:
-            p.add_replica_exchange_analysis(self)
+        for p, state in self._protocol_output:
+            p.add_replica_exchange_analysis(state, self)
 
         if self.test_mode:
             return

@@ -1718,7 +1718,7 @@ class ISDCrossLinkMS(IMP.pmi.restraints._NuisancesBase):
                                               details="Crosslinks")
             self.dataset = IMP.pmi.metadata.CXMSDataset(l)
 
-        xl_groups = [p[0].get_cross_link_group(self)
+        xl_groups = [p.get_cross_link_group(self)
                      for p, state in representations[0]._protocol_output]
 
         # isd_map is a dictionary/map that is used to determine the psi

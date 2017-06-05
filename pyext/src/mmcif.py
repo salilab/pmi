@@ -27,6 +27,7 @@ import sys
 import os
 import textwrap
 import weakref
+import operator
 
 def _assign_id(obj, seen_objs, obj_by_id):
     """Assign a unique ID to obj, and track all ids in obj_by_id."""
@@ -2009,6 +2010,26 @@ class _DensityDumper(_Dumper):
                             asym_id=chain_id)
                     ordinal += 1
 
+
+class _MultiStateDumper(_Dumper):
+    """Output information on multiple states"""
+
+    def dump(self, writer):
+        states = sorted(self.simo._states.keys(),
+                        key=operator.attrgetter('id'))
+        # Nothing to do for single state modeling
+        if len(states) <= 1:
+            return
+        with writer.loop("_ihm_multi_state_modeling",
+                         ["ordinal_id", "state_id", "state_group_id",
+                          "population_fraction", "state_type", "state_name",
+                          "model_group_id", "experiment_type", "details"]) as l:
+            ordinal = 1
+            for state in states:
+                l.write(ordinal_id=ordinal, state_id=state.id)
+                ordinal += 1
+
+
 class _Entity(object):
     """Represent a CIF entity (a chain with a unique sequence)"""
     def __init__(self, seq, first_component):
@@ -2062,6 +2083,17 @@ class _RestraintDataset(object):
     dataset = property(__get_dataset)
 
 
+class _State(object):
+    """Representation of a single state in the system."""
+
+    def __init__(self, pmi_object):
+        # Point to the PMI object for this state. Use a weak reference
+        # since the state object typically points to us too, so we need
+        # to break the reference cycle. In PMI1 this will be a
+        # Representation object.
+        self._pmi_object = weakref.proxy(pmi_object)
+
+
 class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
     """Class to encode a modeling protocol as mmCIF.
 
@@ -2074,6 +2106,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
     """
     def __init__(self, fh):
         self._main_script = os.path.abspath(sys.argv[0])
+        self._states = {}
         self._working_directory = os.getcwd()
         self._cif_writer = _CifWriter(fh)
         self.entities = _EntityMapper()
@@ -2131,7 +2164,15 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                          # todo: detect atomic models and emit struct_conf
                          #_StructConfDumper(self),
                          self.model_prot_dump, self.post_process_dump,
-                         self.ensemble_dump, self.density_dump, self.model_dump]
+                         self.ensemble_dump, self.density_dump, self.model_dump,
+                         _MultiStateDumper(self)]
+
+    def _add_state(self, state):
+        """Create a new state and return a pointer to it."""
+        s = _State(state)
+        self._states[s] = None
+        s.id = len(self._states)
+        return s
 
     def get_file_dataset(self, fname):
         return self._file_dataset.get(os.path.abspath(fname), None)

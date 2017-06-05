@@ -425,7 +425,7 @@ class ReplicaExchange0(object):
                 output.write_stat2(replica_stat_file)
             rex.swap_temp(i, score)
         if self.representation:
-            for p in self.representation._protocol_output:
+            for p, state in self.representation._protocol_output:
                 p.add_replica_exchange(self)
 
         if not self.test_mode:

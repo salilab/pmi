@@ -102,6 +102,45 @@ class Tests(IMP.test.TestCase):
         d.set_phyre2_used()
         self.assertEqual(len(d.software), 3)
 
+    def test_single_state(self):
+        """Test MultiStateDumper with a single state"""
+        class DummyState(object):
+            pass
+        po = DummyPO(None)
+        po._add_state(DummyState())
+        d = IMP.pmi.mmcif._MultiStateDumper(po)
+        fh = StringIO()
+        w = IMP.pmi.mmcif._CifWriter(fh)
+        d.dump(w)
+        self.assertEqual(fh.getvalue(), "")
+
+    def test_multi_state(self):
+        """Test MultiStateDumper with multiple states"""
+        class DummyState(object):
+            pass
+        po = DummyPO(None)
+        po._add_state(DummyState())
+        po._add_state(DummyState())
+        d = IMP.pmi.mmcif._MultiStateDumper(po)
+        fh = StringIO()
+        w = IMP.pmi.mmcif._CifWriter(fh)
+        d.dump(w)
+        self.assertEqual(fh.getvalue(), """#
+loop_
+_ihm_multi_state_modeling.ordinal_id
+_ihm_multi_state_modeling.state_id
+_ihm_multi_state_modeling.state_group_id
+_ihm_multi_state_modeling.population_fraction
+_ihm_multi_state_modeling.state_type
+_ihm_multi_state_modeling.state_name
+_ihm_multi_state_modeling.model_group_id
+_ihm_multi_state_modeling.experiment_type
+_ihm_multi_state_modeling.details
+1 1 . . . . . . .
+2 2 . . . . . . .
+#
+""")
+
     def test_workflow(self):
         """Test output of workflow files"""
         m = IMP.Model()

@@ -192,10 +192,10 @@ class Representation(object):
            @param p an instance of IMP.pmi.output.ProtocolOutput or a subclass.
         """
         self._protocol_output.append((p, p._add_state(self)))
+        p._metadata = self._metadata
+        p._file_datasets.append(self._file_dataset)
         # todo: move these to the state object, since they may differ for
         # each state
-        p._metadata = self._metadata
-        p._file_dataset = self._file_dataset
         p.m = self.m
         p.prot = self.prot
         # Ugly, but we need to be able to call set_coordinates_from_rmf().

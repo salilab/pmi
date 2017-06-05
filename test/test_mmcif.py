@@ -196,14 +196,33 @@ _ihm_external_files.details
 
     def test_file_dataset(self):
         """Test get/set_file_dataset methods"""
-        m = IMP.Model()
-        r = IMP.pmi.representation.Representation(m)
-        l = IMP.pmi.metadata.FileLocation(repo='foo', path='baz')
-        d = IMP.pmi.metadata.EM2DClassDataset(l)
-        r.set_file_dataset('foo', d)
-        self.assertEqual(r.get_file_dataset('foo'), d)
-        self.assertEqual(r._file_dataset, {os.path.abspath('foo'): d})
-        self.assertEqual(r.get_file_dataset('foobar'), None)
+        # Note that a ProtocolOutput can combine file datasets from multiple
+        # Representation objects
+        po = DummyPO(EmptyObject())
+
+        m1 = IMP.Model()
+        r1 = IMP.pmi.representation.Representation(m1)
+        l1 = IMP.pmi.metadata.FileLocation(repo='foo', path='baz')
+        d1 = IMP.pmi.metadata.EM2DClassDataset(l1)
+        r1.add_protocol_output(po)
+        r1.set_file_dataset('foo', d1)
+
+        m2 = IMP.Model()
+        r2 = IMP.pmi.representation.Representation(m2)
+        l2 = IMP.pmi.metadata.FileLocation(repo='bar', path='baz')
+        d2 = IMP.pmi.metadata.EM2DClassDataset(l2)
+        r2.add_protocol_output(po)
+        r2.set_file_dataset('bar', d2)
+
+        self.assertEqual(r1.get_file_dataset('foo'), d1)
+        self.assertEqual(r2.get_file_dataset('bar'), d2)
+        self.assertEqual(po.get_file_dataset('foo'), d1)
+        self.assertEqual(po.get_file_dataset('bar'), d2)
+        self.assertEqual(r1._file_dataset, {os.path.abspath('foo'): d1})
+        self.assertEqual(r2._file_dataset, {os.path.abspath('bar'): d2})
+        self.assertEqual(r1.get_file_dataset('foobar'), None)
+        self.assertEqual(r2.get_file_dataset('foobar'), None)
+        self.assertEqual(po.get_file_dataset('foobar'), None)
 
     def test_assembly_dumper_get_subassembly(self):
         """Test AssemblyDumper.get_subassembly()"""

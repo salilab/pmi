@@ -2105,6 +2105,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
     output as mmCIF.
     """
     def __init__(self, fh):
+        self._file_datasets = []
         self._main_script = os.path.abspath(sys.argv[0])
         self._states = {}
         self._working_directory = os.getcwd()
@@ -2175,7 +2176,10 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         return s
 
     def get_file_dataset(self, fname):
-        return self._file_dataset.get(os.path.abspath(fname), None)
+        for d in self._file_datasets:
+            fd = d.get(os.path.abspath(fname), None)
+            if fd:
+                return fd
 
     def _get_chain_for_component(self, name, output):
         """Get the chain ID for a component, if any."""

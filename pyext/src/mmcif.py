@@ -2224,10 +2224,10 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
             state.all_modeled_components.append(name)
             if new_comp:
                 self.chains[name] = len(self.chains)
+                self.all_modeled_components.append(name)
             state.modeled_assembly.append(name)
         if new_comp:
             self.complete_assembly.append(name)
-            self.all_modeled_components.append(name)
 
     def add_component_sequence(self, name, seq):
         if name in self.sequence_dict:

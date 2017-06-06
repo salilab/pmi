@@ -229,7 +229,7 @@ class _SoftwareDumper(_Dumper):
         with writer.loop("_software",
                          ["pdbx_ordinal", "name", "classification", "version",
                           "type", "location"]) as l:
-            for m in self.software + self.simo._metadata:
+            for m in itertools.chain(self.software, self.simo._metadata):
                 if isinstance(m, IMP.pmi.metadata.Software):
                     l.write(pdbx_ordinal=ordinal, name=m.name,
                             classification=m.classification, version=m.version,

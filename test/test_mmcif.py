@@ -1401,8 +1401,7 @@ _ihm_modeling_post_process.num_models_end
 
         densities = {'Nup84': "foo.mrc"}
         pp = None
-        e = po._add_simple_ensemble(simo._protocol_output[0][1],
-                                    pp, 'Ensemble 1', 5, 0.1, 1, densities,
+        e = po._add_simple_ensemble(pp, 'Ensemble 1', 5, 0.1, 1, densities,
                                     None)
         self.assertEqual(e.num_models, 5)
         self.assertEqual(e.num_deposit, 1)
@@ -1537,10 +1536,9 @@ All kmeans_weight_500_2/cluster.0/ centroid index 49
 
         pp = DummyPostProcess()
         pp.id = 99
-        state = simo._protocol_output[0][1]
-        e1 = po._add_simple_ensemble(state, pp, 'Ensemble 1', 5, 0.1, 1,
+        e1 = po._add_simple_ensemble(pp, 'Ensemble 1', 5, 0.1, 1,
                                      {}, None)
-        e2 = po._add_simple_ensemble(state, pp, 'Ensemble 2', 5, 0.1, 1,
+        e2 = po._add_simple_ensemble(pp, 'Ensemble 2', 5, 0.1, 1,
                                      {}, None)
         loc = IMP.pmi.metadata.FileLocation(repo='foo', path='bar')
         po.set_ensemble_file(1, loc)

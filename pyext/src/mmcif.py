@@ -979,8 +979,9 @@ class _CrossLinkDumper(_Dumper):
                         ordinal += 1
 
 class _EM2DRestraint(object):
-    def __init__(self, rdataset, pmi_restraint, image_number, resolution,
+    def __init__(self, state, rdataset, pmi_restraint, image_number, resolution,
                  pixel_size, image_resolution, projection_number):
+        self.state = state
         self.pmi_restraint, self.image_number = pmi_restraint, image_number
         self.rdataset, self.resolution = rdataset, resolution
         self.pixel_size, self.image_resolution = pixel_size, image_resolution
@@ -1041,7 +1042,9 @@ class _EM2DDumper(_Dumper):
                         pixel_size_height=r.pixel_size,
                         image_resolution=r.image_resolution,
                         number_of_projections=r.projection_number,
-                        struct_assembly_id=self.simo.modeled_assembly.id,
+                        # todo: check that the assembly is the same for each
+                        # state
+                        struct_assembly_id=r.state.modeled_assembly.id,
                         image_segment_flag=False)
 
     def dump_fitting(self, writer):
@@ -1129,7 +1132,10 @@ class _EM3DDumper(_Dumper):
 class _Assembly(list):
     """A collection of components. Currently simply implemented as a list of
        the component names. These must be in creation order."""
-    pass
+    def __hash__(self):
+        # allow putting assemblies in a dict. 'list' isn't hashable
+        # but 'tuple' is
+        return hash(tuple(self))
 
 class _AssemblyDumper(_Dumper):
     def __init__(self, simo):
@@ -1139,21 +1145,22 @@ class _AssemblyDumper(_Dumper):
 
     def add(self, a):
         """Add a new assembly. The first such assembly is assumed to contain
-           all components."""
+           all components. Duplicate assemblies will be pruned at the end."""
         self.assemblies.append(a)
-        a.id = len(self.assemblies)
         return a
 
     def get_subassembly(self, compdict):
-        """Get an _Assembly consisting of the given components. Should only
-           be called after all components are created."""
+        """Get an _Assembly consisting of the given components."""
         # Put components in creation order
         newa = _Assembly(c for c in self.assemblies[0] if c in compdict)
+        return self.add(newa)
+
+    def finalize(self):
+        seen_assemblies = {}
+        # Assign IDs to all assemblies
+        self._assembly_by_id = []
         for a in self.assemblies:
-            if newa == a: # Note that .id is ignored by ==
-                return a
-        else:
-            return self.add(newa)
+            _assign_id(a, seen_assemblies, self._assembly_by_id)
 
     def dump(self, writer):
         ordinal = 1
@@ -1161,7 +1168,7 @@ class _AssemblyDumper(_Dumper):
                          ["ordinal_id", "assembly_id", "entity_description",
                           "entity_id", "asym_id", "seq_id_begin",
                           "seq_id_end"]) as l:
-            for a in self.assemblies:
+            for a in self._assembly_by_id:
                 for comp in a:
                     entity = self.simo.entities[comp]
                     seq = self.simo.sequence_dict[comp]
@@ -1180,7 +1187,8 @@ class _Protocol(object):
     pass
 
 class _ReplicaExchangeProtocol(_Protocol):
-    def __init__(self, rex):
+    def __init__(self, state, rex):
+        self.modeled_assembly = state.modeled_assembly
         self.step_name = 'Sampling'
         if rex.monte_carlo_sample_objects is not None:
             self.step_method = 'Replica exchange monte carlo'
@@ -1354,7 +1362,7 @@ class _ModelProtocolDumper(_Dumper):
                 l.write(ordinal_id=ordinal, protocol_id=p.id,
                         step_id=p.step_id, step_method=p.step_method,
                         step_name=p.step_name,
-                        struct_assembly_id=self.simo.modeled_assembly.id,
+                        struct_assembly_id=p.modeled_assembly.id,
                         dataset_group_id=p.dataset_group.id,
                         num_models_begin=num_models_begin,
                         num_models_end=p.num_models_end,
@@ -1906,7 +1914,7 @@ class _ReplicaExchangeAnalysisEnsemble(_Ensemble):
             # Correct path
             rmf_file = os.path.join(os.path.dirname(stat_fname),
                                     "%d.rmf3" % model_num)
-            for c in simo.all_modeled_components:
+            for c in state.all_modeled_components:
                 # todo: this only works with PMI 1
                 state._pmi_object.set_coordinates_from_rmf(c, rmf_file, 0,
                                                        force_rigid_update=True)
@@ -2100,12 +2108,19 @@ class _RestraintDataset(object):
 class _State(object):
     """Representation of a single state in the system."""
 
-    def __init__(self, pmi_object):
+    def __init__(self, pmi_object, po):
         # Point to the PMI object for this state. Use a weak reference
         # since the state object typically points to us too, so we need
         # to break the reference cycle. In PMI1 this will be a
         # Representation object.
         self._pmi_object = weakref.proxy(pmi_object)
+
+        # The assembly of all components modeled by IMP in this state.
+        # This may be smaller than the complete assembly.
+        self.modeled_assembly = _Assembly()
+        po.assembly_dump.add(self.modeled_assembly)
+
+        self.all_modeled_components = []
 
 
 class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
@@ -2128,10 +2143,10 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.entities = _EntityMapper()
         self.chains = {}
         self._all_components = {}
+        self.all_modeled_components = []
         self.model_groups = []
         self.default_model_group = None
         self.sequence_dict = {}
-        self.all_modeled_components = []
         self.model_repr_dump = _ModelRepresentationDumper(self)
         self.cross_link_dump = _CrossLinkDumper(self)
         self.em2d_dump = _EM2DDumper(self)
@@ -2145,10 +2160,6 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         # The assembly of all known components.
         self.complete_assembly = _Assembly()
         self.assembly_dump.add(self.complete_assembly)
-
-        # The assembly of all components modeled by IMP
-        # This may be smaller than the complete assembly.
-        self.modeled_assembly = self.complete_assembly
 
         self.model_dump = _ModelDumper(self)
         self.model_repr_dump.starting_model \
@@ -2185,7 +2196,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
 
     def _add_state(self, state):
         """Create a new state and return a pointer to it."""
-        s = _State(state)
+        s = _State(state, self)
         self._states[s] = None
         s.id = len(self._states)
         return s
@@ -2206,23 +2217,25 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
             # A non-modeled component doesn't have a chain ID
             return _CifWriter.omitted
 
-    def create_component(self, name, modeled):
+    def create_component(self, state, name, modeled):
+        new_comp = name not in self._all_components
         self._all_components[name] = None
         if modeled:
+            state.all_modeled_components.append(name)
+            if new_comp:
+                self.chains[name] = len(self.chains)
+            state.modeled_assembly.append(name)
+        if new_comp:
+            self.complete_assembly.append(name)
             self.all_modeled_components.append(name)
-            self.chains[name] = len(self.chains)
-            if self.modeled_assembly is not self.complete_assembly:
-                self.modeled_assembly.append(name)
-        elif self.complete_assembly is self.modeled_assembly:
-            # If this component is not modeled, we need to start tracking
-            # the complete and modeled assemblies separately
-            self.modeled_assembly = _Assembly(self.complete_assembly)
-            self.assembly_dump.add(self.modeled_assembly)
-        self.complete_assembly.append(name)
 
     def add_component_sequence(self, name, seq):
-        self.sequence_dict[name] = seq
-        self.entities.add(name, seq)
+        if name in self.sequence_dict:
+            if self.sequence_dict[name] != seq:
+                raise ValueError("Sequence mismatch for component %s" % name)
+        else:
+            self.sequence_dict[name] = seq
+            self.entities.add(name, seq)
 
     def flush(self):
         for dumper in self._dumpers:
@@ -2269,12 +2282,12 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.cross_link_dump.add(_CrossLink(state, ex_xl, p1, p2, sigma1,
                                             sigma2, psi))
 
-    def add_replica_exchange(self, rex):
+    def add_replica_exchange(self, state, rex):
         # todo: allow for metadata to say how many replicas were used in the
         # actual experiment, and how many independent runs were carried out
         # (use these as multipliers to get the correct total number of
         # output models)
-        self.model_prot_dump.add(_ReplicaExchangeProtocol(rex))
+        self.model_prot_dump.add(_ReplicaExchangeProtocol(state, rex))
 
     def add_model_group(self, group):
         self.model_groups.append(group)
@@ -2298,7 +2311,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                             ensemble_file)
         self.ensemble_dump.add(e)
         self.density_dump.add(e)
-        for c in self.all_modeled_components:
+        for c in state.all_modeled_components:
             den = localization_densities.get(c, None)
             if den:
                 e.load_localization_density(state.m, c, den, self.extref_dump)
@@ -2329,7 +2342,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
             self.ensemble_dump.add(e)
             self.density_dump.add(e)
             # Add localization density info if available
-            for c in self.all_modeled_components:
+            for c in state.all_modeled_components:
                 e.load_localization_density(state.m, c, self.extref_dump)
             for stats in e.load_all_models(self, state):
                 m = self.add_model(group)
@@ -2338,14 +2351,15 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                 m.name = 'Best scoring model'
                 m.stats = stats
                 # Add RMSF info if available
-                for c in self.all_modeled_components:
+                for c in state.all_modeled_components:
                     e.load_rmsf(m, c)
 
-    def add_em2d_restraint(self, r, i, resolution, pixel_size,
+    def add_em2d_restraint(self, state, r, i, resolution, pixel_size,
                            image_resolution, projection_number):
         d = self._get_restraint_dataset(r, i)
-        self.em2d_dump.add(_EM2DRestraint(d, r, i, resolution, pixel_size,
-                                          image_resolution, projection_number))
+        self.em2d_dump.add(_EM2DRestraint(state, d, r, i, resolution,
+                                          pixel_size, image_resolution,
+                                          projection_number))
 
     def add_em3d_restraint(self, state, target_ps, densities, r):
         # A 3DEM restraint's dataset ID uniquely defines the restraint, so
@@ -2357,7 +2371,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
     def add_model(self, group):
         return self.model_dump.add(group.state.prot,
                                    self.model_prot_dump.get_last_protocol(),
-                                   self.modeled_assembly, group)
+                                   group.state.modeled_assembly, group)
 
     def _update_location(self, fileloc):
         """Update FileLocation to point to a parent repository, if any"""

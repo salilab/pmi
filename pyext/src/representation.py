@@ -213,7 +213,7 @@ class Representation(object):
         self.color_dict[name] = color
         self.elements[name] = []
         for p, state in self._protocol_output:
-            p.create_component(name, True)
+            p.create_component(state, name, True)
 
     def create_non_modeled_component(self, name):
         """Create a component that isn't used in the modeling.
@@ -224,7 +224,7 @@ class Representation(object):
            can then be correctly resolved later."""
         self.elements[name] = []
         for p, state in self._protocol_output:
-            p.create_component(name, False)
+            p.create_component(state, name, False)
 
     # Deprecation warning
 

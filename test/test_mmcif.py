@@ -234,25 +234,43 @@ _ihm_external_files.details
         d = IMP.pmi.mmcif._AssemblyDumper(po)
         complete = IMP.pmi.mmcif._Assembly(['a', 'b', 'c'])
         d.add(complete)
+        x1 = d.get_subassembly({'a':None, 'b':None})
+        x2 = d.get_subassembly({'a':None, 'b':None, 'c':None})
+        d.finalize() # assign IDs to all assemblies
         self.assertEqual(complete.id, 1)
-        x = d.get_subassembly({'a':None, 'b':None})
-        self.assertEqual(x.id, 2)
-        self.assertEqual(x, ['a', 'b'])
-        x = d.get_subassembly({'a':None, 'b':None, 'c':None})
-        self.assertEqual(x.id, 1)
+        self.assertEqual(x1.id, 2)
+        self.assertEqual(x1, ['a', 'b'])
+        self.assertEqual(x2.id, 1)
+
+    def test_create_component_repeat(self):
+        """Test repeated calls to create_component()"""
+        po = DummyPO(EmptyObject())
+        state = po._add_state(EmptyObject())
+        po.create_component(state, "foo", True)
+        po.add_component_sequence("foo", "CCC")
+
+        # Repeated call is OK
+        po.create_component(state, "foo", True)
+
+        # Repeated creation of sequence is OK if it's the same
+        po.add_component_sequence("foo", "CCC")
+        # Not OK if it differs
+        self.assertRaises(ValueError, po.add_component_sequence, "foo", "AAA")
 
     def test_assembly_all_modeled(self):
         """Test AssemblyDumper, all components modeled"""
         po = DummyPO(EmptyObject())
+        state = po._add_state(EmptyObject())
         d = IMP.pmi.mmcif._AssemblyDumper(po)
         for c, seq in (("foo", "AAA"), ("bar", "AAA"), ("baz", "AA")):
-            po.create_component(c, True)
+            po.create_component(state, c, True)
             po.add_component_sequence(c, seq)
         d.add(IMP.pmi.mmcif._Assembly(["foo", "bar"]))
         d.add(IMP.pmi.mmcif._Assembly(["bar", "baz"]))
 
         fh = StringIO()
         w = IMP.pmi.mmcif._CifWriter(fh)
+        d.finalize()
         d.dump(w)
         out = fh.getvalue()
         self.assertEqual(out, """#
@@ -274,12 +292,14 @@ _ihm_struct_assembly.seq_id_end
     def test_assembly_subset_modeled(self):
         """Test AssemblyDumper, subset of components modeled"""
         po = DummyPO(EmptyObject())
+        state = po._add_state(EmptyObject())
         for c, seq, modeled in (("foo", "AAA", True), ("bar", "AA", False)):
-            po.create_component(c, modeled)
+            po.create_component(state, c, modeled)
             po.add_component_sequence(c, seq)
 
         fh = StringIO()
         w = IMP.pmi.mmcif._CifWriter(fh)
+        po.assembly_dump.finalize() # assign IDs
         po.assembly_dump.dump(w)
         out = fh.getvalue()
         self.assertEqual(out, """#
@@ -300,9 +320,12 @@ _ihm_struct_assembly.seq_id_end
     def test_struct_asym(self):
         """Test StructAsymDumper"""
         po = DummyPO(EmptyObject())
+        state1 = po._add_state(EmptyObject())
+        state2 = po._add_state(EmptyObject())
         d = IMP.pmi.mmcif._StructAsymDumper(po)
-        for c, seq in (("foo", "AAA"), ("bar", "AAA"), ("baz", "AA")):
-            po.create_component(c, True)
+        for state, c, seq in ((state1, "foo", "AAA"), (state2, "bar", "AAA"),
+                              (state1, "baz", "AA")):
+            po.create_component(state, c, True)
             po.add_component_sequence(c, seq)
 
         fh = StringIO()
@@ -1262,9 +1285,10 @@ Nup84-m1 ATOM 2 C CA GLU 1 A 2 -8.986 11.688 -5.817 91.820 2
     def test_chem_comp_dumper(self):
         """Test ChemCompDumper"""
         po = DummyPO(None)
-        po.create_component("Nup84", True)
+        state = po._add_state(EmptyObject())
+        po.create_component(state, "Nup84", True)
         po.add_component_sequence("Nup84", "MELS")
-        po.create_component("Nup85", True)
+        po.create_component(state, "Nup85", True)
         po.add_component_sequence("Nup85", "MC")
 
         d = IMP.pmi.mmcif._ChemCompDumper(po)
@@ -1311,6 +1335,7 @@ CYS 'L-peptide linking'
         mc2.execute_macro()
         fh = StringIO()
         w = IMP.pmi.mmcif._CifWriter(fh)
+        po.assembly_dump.finalize() # Assign IDs to assemblies
         po.dataset_dump.finalize() # Assign IDs to datasets
         po.model_prot_dump.dump(w)
         out = fh.getvalue()
@@ -1413,7 +1438,7 @@ _ihm_modeling_post_process.num_models_end
         class DummySimo(object):
             all_modeled_components = ['Nup84', 'Nup85']
         class DummyState(object):
-            pass
+            all_modeled_components = ['Nup84', 'Nup85']
         class DummyRex(object):
             _number_of_clusters = 1
         extref_dump = IMP.pmi.mmcif._ExternalReferenceDumper(EmptyObject())
@@ -1715,10 +1740,13 @@ _ihm_cross_link_restraint.sigma_2
         """Test EM2DRestraint class, no raw micrographs"""
         class DummyRestraint(object):
             pass
+        class DummyState(object):
+            pass
         pr = DummyRestraint()
+        state = DummyState()
         rd = IMP.pmi.mmcif._RestraintDataset(pr, num=None,
                                              allow_duplicates=False)
-        r = IMP.pmi.mmcif._EM2DRestraint(rd, pr, 0,
+        r = IMP.pmi.mmcif._EM2DRestraint(state, rd, pr, 0,
                                          resolution=10.0, pixel_size=4.2,
                                          image_resolution=1.0,
                                          projection_number=200)
@@ -1732,10 +1760,13 @@ _ihm_cross_link_restraint.sigma_2
         """Test EM2DRestraint class, with raw micrographs"""
         class DummyRestraint(object):
             pass
+        class DummyState(object):
+            pass
         pr = DummyRestraint()
+        state = DummyState()
         rd = IMP.pmi.mmcif._RestraintDataset(pr, num=None,
                                              allow_duplicates=False)
-        r = IMP.pmi.mmcif._EM2DRestraint(rd, pr, 0,
+        r = IMP.pmi.mmcif._EM2DRestraint(state, rd, pr, 0,
                                          resolution=10.0, pixel_size=4.2,
                                          image_resolution=1.0,
                                          projection_number=200)
@@ -1757,6 +1788,7 @@ _ihm_cross_link_restraint.sigma_2
         simo = IMP.pmi.representation.Representation(m)
         po = DummyPO(None)
         simo.add_protocol_output(po)
+        state = simo._protocol_output[0][1]
         simo.create_component("Nup84", True)
         simo.add_component_sequence("Nup84",
                                     self.get_input_file_name("test.fasta"))
@@ -1771,7 +1803,7 @@ _ihm_cross_link_restraint.sigma_2
         pr = DummyRestraint()
         rd = IMP.pmi.mmcif._RestraintDataset(pr, num=None,
                                              allow_duplicates=False)
-        r = IMP.pmi.mmcif._EM2DRestraint(rd, pr, 0,
+        r = IMP.pmi.mmcif._EM2DRestraint(state, rd, pr, 0,
                                          resolution=10.0, pixel_size=4.2,
                                          image_resolution=1.0,
                                          projection_number=200)
@@ -1797,6 +1829,7 @@ _ihm_cross_link_restraint.sigma_2
         po.em2d_dump.add(r)
         fh = StringIO()
         w = IMP.pmi.mmcif._CifWriter(fh)
+        po.assembly_dump.finalize() # assign assembly IDs
         po.em2d_dump.dump(w)
         out = fh.getvalue()
         self.assertEqual(out, """#
@@ -1873,6 +1906,7 @@ _ihm_2dem_class_average_fitting.tr_vector[3]
         po.em3d_dump.add(r)
         fh = StringIO()
         w = IMP.pmi.mmcif._CifWriter(fh)
+        po.assembly_dump.finalize() # Assign IDs to assemblies
         po.em3d_dump.dump(w)
         out = fh.getvalue()
         self.assertEqual(out, """#

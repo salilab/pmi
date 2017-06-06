@@ -65,7 +65,7 @@ class ElectronMicroscopy2D(object):
         if representation:
             for p, state in representation._protocol_output:
                 for i in range(len(self.datasets)):
-                    p.add_em2d_restraint(self, i, resolution, pixel_size,
+                    p.add_em2d_restraint(state, self, i, resolution, pixel_size,
                                          image_resolution, projection_number)
 
         # PMI1/2 selection

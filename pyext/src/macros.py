@@ -426,7 +426,7 @@ class ReplicaExchange0(object):
             rex.swap_temp(i, score)
         if self.representation:
             for p, state in self.representation._protocol_output:
-                p.add_replica_exchange(self)
+                p.add_replica_exchange(state, self)
 
         if not self.test_mode:
             print("closing production rmf files")

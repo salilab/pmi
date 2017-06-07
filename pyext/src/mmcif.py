@@ -2042,15 +2042,17 @@ class _MultiStateDumper(_Dumper):
         # Nothing to do for single state modeling
         if len(states) <= 1:
             return
+        # Sort all model groups first by state, then by their own ID
+        groups = sorted(self.simo.model_groups,
+                        key=lambda g: (g.state.id, g.id))
         with writer.loop("_ihm_multi_state_modeling",
                          ["ordinal_id", "state_id", "state_group_id",
                           "population_fraction", "state_type", "state_name",
                           "model_group_id", "experiment_type", "details"]) as l:
-            ordinal = 1
-            for state in states:
-                l.write(ordinal_id=ordinal, state_id=state.id,
-                        state_group_id=state.id)
-                ordinal += 1
+            for n, group in enumerate(groups):
+                l.write(ordinal_id=n+1, state_id=group.state.id,
+                        state_group_id=group.state.id,
+                        model_group_id=group.id)
 
 
 class _Entity(object):

@@ -123,8 +123,11 @@ class Tests(IMP.test.TestCase):
         class DummyState(object):
             pass
         po = DummyPO(None)
-        po._add_state(DummyState())
-        po._add_state(DummyState())
+        state1 = po._add_state(DummyState())
+        po.add_model_group(IMP.pmi.mmcif._ModelGroup(state1, "group 1"))
+        po.add_model_group(IMP.pmi.mmcif._ModelGroup(state1, "group 2"))
+        state2 = po._add_state(DummyState())
+        po.add_model_group(IMP.pmi.mmcif._ModelGroup(state2, "group 3"))
         d = IMP.pmi.mmcif._MultiStateDumper(po)
         fh = StringIO()
         w = IMP.pmi.mmcif._CifWriter(fh)
@@ -140,8 +143,9 @@ _ihm_multi_state_modeling.state_name
 _ihm_multi_state_modeling.model_group_id
 _ihm_multi_state_modeling.experiment_type
 _ihm_multi_state_modeling.details
-1 1 1 . . . . . .
-2 2 2 . . . . . .
+1 1 1 . . . 1 . .
+2 1 1 . . . 2 . .
+3 2 2 . . . 3 . .
 #
 """)
 

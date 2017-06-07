@@ -2048,7 +2048,8 @@ class _MultiStateDumper(_Dumper):
                           "model_group_id", "experiment_type", "details"]) as l:
             ordinal = 1
             for state in states:
-                l.write(ordinal_id=ordinal, state_id=state.id)
+                l.write(ordinal_id=ordinal, state_id=state.id,
+                        state_group_id=state.id)
                 ordinal += 1
 
 

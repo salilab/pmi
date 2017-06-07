@@ -140,8 +140,8 @@ _ihm_multi_state_modeling.state_name
 _ihm_multi_state_modeling.model_group_id
 _ihm_multi_state_modeling.experiment_type
 _ihm_multi_state_modeling.details
-1 1 . . . . . . .
-2 2 . . . . . . .
+1 1 1 . . . . . .
+2 2 2 . . . . . .
 #
 """)
 

@@ -90,6 +90,7 @@ class Representation(object):
                      restraint.
         """
 
+        self.state_name = None
         self._metadata = []
         self._file_dataset = {}
         self._protocol_output = []

@@ -2050,9 +2050,12 @@ class _MultiStateDumper(_Dumper):
                           "population_fraction", "state_type", "state_name",
                           "model_group_id", "experiment_type", "details"]) as l:
             for n, group in enumerate(groups):
-                l.write(ordinal_id=n+1, state_id=group.state.id,
-                        state_group_id=group.state.id,
-                        model_group_id=group.id)
+                state = group.state
+                l.write(ordinal_id=n+1, state_id=state.id,
+                        state_group_id=state.id,
+                        model_group_id=group.id,
+                        state_name=state.name if state.name
+                                   else _CifWriter.omitted)
 
 
 class _Entity(object):
@@ -2124,6 +2127,7 @@ class _State(object):
         po.assembly_dump.add(self.modeled_assembly)
 
         self.all_modeled_components = []
+    name = property(lambda self: self._pmi_object.state_name)
 
 
 class ProtocolOutput(IMP.pmi.output.ProtocolOutput):

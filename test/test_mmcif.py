@@ -120,13 +120,16 @@ class Tests(IMP.test.TestCase):
 
     def test_multi_state(self):
         """Test MultiStateDumper with multiple states"""
-        class DummyState(object):
-            pass
+        class DummyRepr(object):
+            def __init__(self, name):
+                self.state_name = name
         po = DummyPO(None)
-        state1 = po._add_state(DummyState())
+        r1 = DummyRepr(None)
+        state1 = po._add_state(r1)
         po.add_model_group(IMP.pmi.mmcif._ModelGroup(state1, "group 1"))
         po.add_model_group(IMP.pmi.mmcif._ModelGroup(state1, "group 2"))
-        state2 = po._add_state(DummyState())
+        r2 = DummyRepr('state2')
+        state2 = po._add_state(r2)
         po.add_model_group(IMP.pmi.mmcif._ModelGroup(state2, "group 3"))
         d = IMP.pmi.mmcif._MultiStateDumper(po)
         fh = StringIO()
@@ -145,7 +148,7 @@ _ihm_multi_state_modeling.experiment_type
 _ihm_multi_state_modeling.details
 1 1 1 . . . 1 . .
 2 1 1 . . . 2 . .
-3 2 2 . . . 3 . .
+3 2 2 . . state2 3 . .
 #
 """)
 

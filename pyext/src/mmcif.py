@@ -2142,6 +2142,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
     output as mmCIF.
     """
     def __init__(self, fh):
+        self._state_ensemble_offset = 0
         self._each_metadata = [] # list of metadata for each representation
         self._file_datasets = []
         self._main_script = os.path.abspath(sys.argv[0])
@@ -2204,6 +2205,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
 
     def _add_state(self, state):
         """Create a new state and return a pointer to it."""
+        self._state_ensemble_offset = len(self.ensemble_dump.ensembles)
         s = _State(state, self)
         self._states[s] = None
         s.id = len(self._states)
@@ -2339,7 +2341,9 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
            PDB file."""
         self.extref_dump.add(location,
                              _ExternalReferenceDumper.MODELING_OUTPUT)
-        self.ensemble_dump.ensembles[i].file = location
+        # Ensure that we point to an ensemble related to the current state
+        ind = i + self._state_ensemble_offset
+        self.ensemble_dump.ensembles[ind].file = location
 
     def add_replica_exchange_analysis(self, state, rex):
         # todo: add prefilter as an additional postprocess step (complication:

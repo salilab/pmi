@@ -1806,7 +1806,16 @@ class _StructConfDumper(_Dumper):
 
 class _PostProcess(object):
     """Base class for any post processing"""
-    pass
+    # Two postprocesses are equal if they're the same type and have the same
+    # attributes
+    _eq_keys = ['type', 'feature', 'num_models_begin', 'num_models_end']
+    def _eq_vals(self):
+        return tuple([self.__class__]
+                     + [getattr(self, x) for x in self._eq_keys])
+    def __eq__(self, other):
+        return self._eq_vals() == other._eq_vals()
+    def __hash__(self):
+        return hash(self._eq_vals())
 
 
 class _ReplicaExchangeAnalysisPostProcess(_PostProcess):
@@ -1846,7 +1855,12 @@ class _PostProcessDumper(_Dumper):
 
     def add(self, postproc):
         self.postprocs.append(postproc)
-        postproc.id = len(self.postprocs)
+
+    def finalize(self):
+        seen_pps = {}
+        self._pp_by_id = []
+        for p in self.postprocs:
+            _assign_id(p, seen_pps, self._pp_by_id)
 
     def dump(self, writer):
         with writer.loop("_ihm_modeling_post_process",
@@ -1855,7 +1869,7 @@ class _PostProcessDumper(_Dumper):
                           "num_models_end"]) as l:
             # todo: handle multiple protocols (e.g. sampling then refinement)
             # and multiple analyses
-            for p in self.postprocs:
+            for p in self._pp_by_id:
                 l.write(id=p.id, protocol_id=1, analysis_id=1, step_id=p.id,
                         type=p.type, feature=p.feature,
                         num_models_begin=p.num_models_begin,

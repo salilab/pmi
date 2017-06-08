@@ -1378,8 +1378,12 @@ _ihm_modeling_protocol.time_ordered_flag
         self.assertEqual(pp.feature, 'RMSD')
         self.assertEqual(pp.num_models_begin, 10)
         self.assertEqual(pp.num_models_end, 90)
+        # Duplicates should be ignored
+        po._add_simple_postprocessing(10, 90)
+        po._add_simple_postprocessing(12, 90)
         fh = StringIO()
         w = IMP.pmi.mmcif._CifWriter(fh)
+        po.post_process_dump.finalize()
         po.post_process_dump.dump(w)
         out = fh.getvalue()
         self.assertEqual(out, """#
@@ -1393,6 +1397,7 @@ _ihm_modeling_post_process.feature
 _ihm_modeling_post_process.num_models_begin
 _ihm_modeling_post_process.num_models_end
 1 1 1 1 cluster RMSD 10 90
+2 1 1 2 cluster RMSD 12 90
 #
 """)
 

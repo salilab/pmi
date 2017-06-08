@@ -418,16 +418,18 @@ class _StartingModel(object):
 class _ModelRepresentationDumper(_Dumper):
     def __init__(self, simo):
         super(_ModelRepresentationDumper, self).__init__(simo)
-        # dict of fragments, ordered by component name
+        # dict of fragments, ordered by component name and then state
         self.fragments = OrderedDict()
         self.output = IMP.pmi.output.Output()
 
-    def add_fragment(self, fragment):
+    def add_fragment(self, state, fragment):
         """Add a model fragment."""
         comp = fragment.component
         if comp not in self.fragments:
-            self.fragments[comp] = []
-        fragments = self.fragments[comp]
+            self.fragments[comp] = OrderedDict()
+        if state not in self.fragments[comp]:
+            self.fragments[comp][state] = []
+        fragments = self.fragments[comp][state]
         if len(fragments) == 0 or not fragments[-1].combine(fragment):
             fragments.append(fragment)
 
@@ -452,9 +454,12 @@ class _ModelRepresentationDumper(_Dumper):
                           "model_object_primitive", "starting_model_id",
                           "model_mode", "model_granularity",
                           "model_object_count"]) as l:
-            for comp, fragments in self.fragments.items():
+            for comp, statefrag in self.fragments.items():
+                # For now, assume that representation of the same-named
+                # component is the same in all states, so just take the first
+                first_state = list(statefrag.keys())[0]
                 chain_id = self.simo._get_chain_for_component(comp, self.output)
-                for f in fragments:
+                for f in statefrag[first_state]:
                     entity = self.simo.entities[f.component]
                     starting_model_id = _CifWriter.omitted
                     if hasattr(f, 'pdbname'):
@@ -1755,8 +1760,11 @@ class _StructConfDumper(_Dumper):
         """Yield all rigid model representation fragments"""
         asym_states = {}
         model_repr = self.simo.model_repr_dump
-        for comp, fragments in model_repr.fragments.items():
-            for f in fragments:
+        for comp, statefrag in model_repr.fragments.items():
+            # For now, assume that representation of the same-named
+            # component is the same in all states, so just take the first
+            first_state = list(statefrag.keys())[0]
+            for f in statefrag[first_state]:
                 if hasattr(f, 'pdbname') \
                    and model_repr.get_model_mode(f) == 'rigid':
                     asym = get_asym_mapper_for_state(f.state, asym_states)
@@ -2279,12 +2287,12 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                         chain, hier):
         p = _PDBFragment(state, name, start, end, offset, pdbname, chain,
                          hier)
-        self.model_repr_dump.add_fragment(p)
+        self.model_repr_dump.add_fragment(state, p)
         self.starting_model_dump.add_pdb_fragment(p)
 
     def add_bead_element(self, state, name, start, end, num, hier):
         b = _BeadsFragment(state, name, start, end, num, hier)
-        self.model_repr_dump.add_fragment(b)
+        self.model_repr_dump.add_fragment(state, b)
 
     def _get_restraint_dataset(self, r, num=None, allow_duplicates=False):
         """Get a wrapper object for the dataset used by this restraint.

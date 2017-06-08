@@ -31,6 +31,10 @@ class _Repo(object):
         """Return a path relative to the top of the repository"""
         return os.path.relpath(fname, self._root)
 
+class _StateInfo(object):
+    """Score state-specific information about this representation."""
+    name = None
+
 class Representation(object):
     # Authors: Peter Cimermancic, Riccardo Pellarin, Charles Greenberg
 
@@ -90,7 +94,7 @@ class Representation(object):
                      restraint.
         """
 
-        self.state_name = None
+        self.state = _StateInfo()
         self._metadata = []
         self._file_dataset = {}
         self._protocol_output = []

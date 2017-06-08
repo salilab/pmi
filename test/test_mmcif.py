@@ -12,8 +12,16 @@ if sys.version_info[0] >= 3:
 else:
     from io import BytesIO as StringIO
 
+class DummyState(object):
+    name = None
+
+class DummyRepr(object):
+    def __init__(self, name):
+        self.state = DummyState()
+        self.state.name = name
+
 class EmptyObject(object):
-    pass
+    state = DummyState()
 
 class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
     def flush(self):
@@ -108,10 +116,8 @@ class Tests(IMP.test.TestCase):
 
     def test_single_state(self):
         """Test MultiStateDumper with a single state"""
-        class DummyState(object):
-            pass
         po = DummyPO(None)
-        po._add_state(DummyState())
+        po._add_state(DummyRepr(None))
         d = IMP.pmi.mmcif._MultiStateDumper(po)
         fh = StringIO()
         w = IMP.pmi.mmcif._CifWriter(fh)
@@ -120,9 +126,6 @@ class Tests(IMP.test.TestCase):
 
     def test_multi_state(self):
         """Test MultiStateDumper with multiple states"""
-        class DummyRepr(object):
-            def __init__(self, name):
-                self.state_name = name
         po = DummyPO(None)
         r1 = DummyRepr(None)
         state1 = po._add_state(r1)

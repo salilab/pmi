@@ -2120,6 +2120,7 @@ class _State(object):
         # to break the reference cycle. In PMI1 this will be a
         # Representation object.
         self._pmi_object = weakref.proxy(pmi_object)
+        self._pmi_state = pmi_object.state
 
         # The assembly of all components modeled by IMP in this state.
         # This may be smaller than the complete assembly.
@@ -2127,7 +2128,7 @@ class _State(object):
         po.assembly_dump.add(self.modeled_assembly)
 
         self.all_modeled_components = []
-    name = property(lambda self: self._pmi_object.state_name)
+    name = property(lambda self: self._pmi_state.name)
 
 
 class ProtocolOutput(IMP.pmi.output.ProtocolOutput):

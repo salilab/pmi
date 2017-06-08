@@ -1567,7 +1567,7 @@ class AnalysisReplicaExchange0(object):
         @param write_pdb_with_centered_coordinates
         @param voxel_size                     Used for the density output
         """
-        self._outputdir = outputdir
+        self._outputdir = os.path.abspath(outputdir)
         self._number_of_clusters = number_of_clusters
         for p, state in self._protocol_output:
             p.add_replica_exchange_analysis(state, self)

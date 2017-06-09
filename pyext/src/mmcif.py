@@ -2125,6 +2125,8 @@ class _MultiStateDumper(_Dumper):
                         model_group_id=group.id,
                         state_name=state.long_name if state.long_name
                                    else _CifWriter.omitted,
+                        # No IMP models are currently single molecule
+                        experiment_type='Fraction of bulk',
                         details=state.get_prefixed_name(group.name))
 
 

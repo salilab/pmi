@@ -151,9 +151,9 @@ _ihm_multi_state_modeling.state_name
 _ihm_multi_state_modeling.model_group_id
 _ihm_multi_state_modeling.experiment_type
 _ihm_multi_state_modeling.details
-1 1 1 . . . 1 . 'Group 1'
-2 1 1 . . . 2 . 'Group 2'
-3 2 2 . . 'state2 long' 3 . 'state2 short group 3'
+1 1 1 . . . 1 'Fraction of bulk' 'Group 1'
+2 1 1 . . . 2 'Fraction of bulk' 'Group 2'
+3 2 2 . . 'state2 long' 3 'Fraction of bulk' 'state2 short group 3'
 #
 """)
 

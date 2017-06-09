@@ -1558,9 +1558,14 @@ _ihm_modeling_post_process.num_models_end
             e.load_localization_density(None, 'noden', extref_dump)
             self.assertEqual(list(e.localization_density.keys()), [])
             # Density that does exist
-            e.load_localization_density(None, 'Nup84', extref_dump)
+            po = DummyPO(None)
+            r = DummyRepr('dummy', 'none')
+            state = po._add_state(r)
+            e.load_localization_density(state, 'Nup84', extref_dump)
             self.assertEqual(e.localization_density['Nup84'].path,
                              os.path.join(tmpdir, 'cluster.0', 'Nup84.mrc'))
+            self.assertEqual(e.localization_density['Nup84'].details,
+                             'Localization density for Nup84 in state dummy')
             # No precision available
             self.assertEqual(e._get_precision(), '?')
             self.assertEqual(e.precision, '?')
@@ -2318,6 +2323,26 @@ _struct_conf.end_label_seq_id
 HELX_P1 HELX_P MET A 1 GLU A 2
 #
 """)
+
+    def test_state_prefix(self):
+        """Test _State.get_prefixed_name()"""
+        po = DummyPO(None)
+        r = DummyRepr('short', 'long')
+        state = po._add_state(r)
+        self.assertEqual(state.get_prefixed_name('foo'), 'short foo')
+        r = DummyRepr(None, None)
+        state = po._add_state(r)
+        self.assertEqual(state.get_prefixed_name('foo'), 'Foo')
+
+    def test_state_postfix(self):
+        """Test _State.get_postfixed_name()"""
+        po = DummyPO(None)
+        r = DummyRepr('short', 'long')
+        state = po._add_state(r)
+        self.assertEqual(state.get_postfixed_name('foo'), 'foo in state short')
+        r = DummyRepr(None, None)
+        state = po._add_state(r)
+        self.assertEqual(state.get_postfixed_name('foo'), 'foo')
 
 if __name__ == '__main__':
     IMP.test.main()

@@ -1964,11 +1964,12 @@ class _ReplicaExchangeAnalysisEnsemble(_Ensemble):
                             'cluster.%d' % self.cluster_num,
                             '%s.mrc' % component)
 
-    def load_localization_density(self, mdl, component, extref_dump):
+    def load_localization_density(self, state, component, extref_dump):
         fname = self.get_localization_density_file(component)
         if os.path.exists(fname):
+            details = "Localization density for %s" % component
             local_file = IMP.pmi.metadata.FileLocation(fname,
-                              details="Localization density for %s" % component)
+                              details=state.get_postfixed_name(details))
             self.localization_density[component] = local_file
             extref_dump.add(local_file,
                             _ExternalReferenceDumper.MODELING_OUTPUT)
@@ -2026,7 +2027,7 @@ class _SimpleEnsemble(_Ensemble):
         self.num_models = num_models
         self.precision = drmsd
 
-    def load_localization_density(self, mdl, component, local_file,
+    def load_localization_density(self, state, component, local_file,
                                   extref_dump):
         self.localization_density[component] = local_file
         extref_dump.add(local_file,
@@ -2206,7 +2207,14 @@ class _State(object):
         if self.short_name:
             return self.short_name + ' ' + name
         else:
-            return name.title()
+            return name.capitalize()
+
+    def get_postfixed_name(self, name):
+        """Postfix the given name with the state name, if available."""
+        if self.short_name:
+            return "%s in state %s" % (name, self.short_name)
+        else:
+            return name
 
     short_name = property(lambda self: self._pmi_state.short_name)
     long_name = property(lambda self: self._pmi_state.long_name)
@@ -2288,6 +2296,8 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         """Create a new state and return a pointer to it."""
         self._state_ensemble_offset = len(self.ensemble_dump.ensembles)
         s = _State(state, self)
+        if not self._states:
+            self._first_state = s
         self._states[s] = None
         s.id = len(self._states)
         self._last_state = s
@@ -2414,7 +2424,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         for c in state.all_modeled_components:
             den = localization_densities.get(c, None)
             if den:
-                e.load_localization_density(state.m, c, den, self.extref_dump)
+                e.load_localization_density(state, c, den, self.extref_dump)
         return e
 
     def set_ensemble_file(self, i, location):
@@ -2446,7 +2456,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
             self.density_dump.add(e)
             # Add localization density info if available
             for c in state.all_modeled_components:
-                e.load_localization_density(state.m, c, self.extref_dump)
+                e.load_localization_density(state, c, self.extref_dump)
             for stats in e.load_all_models(self, state):
                 m = self.add_model(group)
                 # Since we currently only deposit 1 model, it is the

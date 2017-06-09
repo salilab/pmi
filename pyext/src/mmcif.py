@@ -1901,19 +1901,30 @@ class _PostProcessDumper(_Dumper):
         self.postprocs = []
 
     def add(self, postproc):
+        protocol = postproc.protocol
         self.postprocs.append(postproc)
         postproc.id = len(self.postprocs)
+
+    def finalize(self):
+        # Assign step IDs per protocol
+        pp_by_protocol = {}
+        for p in self.postprocs:
+            protocol = p.protocol
+            if id(protocol) not in pp_by_protocol:
+                pp_by_protocol[id(protocol)] = []
+            by_prot = pp_by_protocol[id(protocol)]
+            by_prot.append(p)
+            p.step_id = len(by_prot)
 
     def dump(self, writer):
         with writer.loop("_ihm_modeling_post_process",
                          ["id", "protocol_id", "analysis_id", "step_id",
                           "type", "feature", "num_models_begin",
                           "num_models_end"]) as l:
-            # todo: handle multiple protocols (e.g. sampling then refinement)
-            # and multiple analyses
+            # todo: handle multiple analyses
             for p in self.postprocs:
                 l.write(id=p.id, protocol_id=p.protocol.id, analysis_id=1,
-                        step_id=p.id, type=p.type, feature=p.feature,
+                        step_id=p.step_id, type=p.type, feature=p.feature,
                         num_models_begin=p.num_models_begin,
                         num_models_end=p.num_models_end)
 

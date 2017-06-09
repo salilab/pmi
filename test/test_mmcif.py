@@ -1430,6 +1430,15 @@ _ihm_modeling_protocol.time_ordered_flag
         self.assertEqual(pp.num_models_begin, 10)
         self.assertEqual(pp.num_models_end, 90)
         po._add_simple_postprocessing(12, 90)
+
+        # Add protocol and postprocessing for a second state
+        po._add_state(DummyRepr(None))
+        p = DummyProtocolStep()
+        p.state = po._last_state
+        p.num_models_end = 10
+        po.model_prot_dump.add(p)
+        po._add_simple_postprocessing(20, 80)
+
         fh = StringIO()
         w = IMP.pmi.mmcif._CifWriter(fh)
         po.post_process_dump.finalize()
@@ -1447,6 +1456,7 @@ _ihm_modeling_post_process.num_models_begin
 _ihm_modeling_post_process.num_models_end
 1 1 1 1 cluster RMSD 10 90
 2 1 1 2 cluster RMSD 12 90
+3 2 1 1 cluster RMSD 20 80
 #
 """)
 

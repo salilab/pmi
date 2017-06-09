@@ -1639,6 +1639,11 @@ _ihm_localization_density_files.seq_id_end
         xl_group = po.get_cross_link_group(r)
         ex_xl = po.add_experimental_cross_link(1, 'Nup84',
                                                2, 'Nup84', 42.0, xl_group)
+        po.add_experimental_cross_link(1, 'Nup84',
+                                       3, 'Nup84', 42.0, xl_group)
+        # Duplicates should be ignored
+        po.add_experimental_cross_link(1, 'Nup84',
+                                       3, 'Nup84', 42.0, xl_group)
         # Non-modeled component should be ignored
         nm_ex_xl = po.add_experimental_cross_link(1, 'Nup85',
                                                   2, 'Nup84', 42.0, xl_group)
@@ -1668,6 +1673,7 @@ _ihm_cross_link_list.comp_id_2
 _ihm_cross_link_list.type
 _ihm_cross_link_list.dataset_list_id
 1 1 Nup84 1 1 MET Nup84 1 2 GLU foo 42
+2 2 Nup84 1 1 MET Nup84 1 3 LEU foo 42
 #
 #
 loop_

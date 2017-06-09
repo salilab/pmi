@@ -869,7 +869,6 @@ class _CrossLinkDumper(_Dumper):
 
     def add_experimental(self, cross_link):
         self.exp_cross_links.append(cross_link)
-        cross_link.id = len(self.exp_cross_links)
 
     def add(self, cross_link):
         self.cross_links.append(cross_link)
@@ -881,13 +880,21 @@ class _CrossLinkDumper(_Dumper):
         self.dump_results(writer)
 
     def dump_list(self, writer):
+        seen_cross_links = {}
         with writer.loop("_ihm_cross_link_list",
                          ["id", "group_id", "entity_description_1",
                           "entity_id_1", "seq_id_1", "comp_id_1",
                           "entity_description_2",
                           "entity_id_2", "seq_id_2", "comp_id_2", "type",
                           "dataset_list_id"]) as l:
+            xl_id = 0
             for xl in self.exp_cross_links:
+                # Skip identical cross links
+                sig = (xl.c1, xl.c2, xl.r1, xl.r2, xl.group.label)
+                if sig in seen_cross_links:
+                    xl.id = seen_cross_links[sig]
+                    continue
+                seen_cross_links[sig] = None
                 entity1 = self.simo.entities[xl.c1]
                 entity2 = self.simo.entities[xl.c2]
                 seq1 = entity1.sequence
@@ -895,6 +902,9 @@ class _CrossLinkDumper(_Dumper):
                 rt1 = IMP.atom.get_residue_type(seq1[xl.r1-1])
                 rt2 = IMP.atom.get_residue_type(seq2[xl.r2-1])
                 # todo: handle experimental ambiguity (group_id) properly
+                xl_id += 1
+                seen_cross_links[sig] = xl_id
+                xl.id = xl_id
                 l.write(id=xl.id, group_id=xl.id,
                         entity_description_1=entity1.description,
                         entity_id_1=entity1.id,

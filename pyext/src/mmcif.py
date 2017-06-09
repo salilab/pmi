@@ -1209,17 +1209,23 @@ class _AssemblyDumper(_Dumper):
                     ordinal += 1
 
 
-class _Protocol(object):
+class _Protocol(list):
+    """A modeling protocol. This can consist of multiple _ProtocolSteps."""
     pass
 
-class _ReplicaExchangeProtocol(_Protocol):
+class _ProtocolStep(object):
+    """A single step in a _Protocol."""
+    pass
+
+class _ReplicaExchangeProtocolStep(_ProtocolStep):
     def __init__(self, state, rex):
+        self.state = state
         self.modeled_assembly = state.modeled_assembly
-        self.step_name = 'Sampling'
+        self.name = 'Sampling'
         if rex.monte_carlo_sample_objects is not None:
-            self.step_method = 'Replica exchange monte carlo'
+            self.method = 'Replica exchange monte carlo'
         else:
-            self.step_method = 'Replica exchange molecular dynamics'
+            self.method = 'Replica exchange molecular dynamics'
         self.num_models_end = rex.vars["number_of_frames"]
 
 class _ModelGroup(object):
@@ -1360,19 +1366,29 @@ class _ModelDumper(_Dumper):
 class _ModelProtocolDumper(_Dumper):
     def __init__(self, simo):
         super(_ModelProtocolDumper, self).__init__(simo)
-        self.protocols = []
+        # Protocols by state
+        self.protocols = OrderedDict()
 
-    def add(self, protocol):
-        self.protocols.append(protocol)
-        # todo: support multiple protocols with multiple steps
-        protocol.id = 1
-        protocol.step_id = len(self.protocols)
+    def add(self, step):
+        state = step.state
+        if state not in self.protocols:
+            # Currently support only a single protocol per state
+            self.protocols[state] = _Protocol()
+            self.protocols[state].id = len(self.protocols)
+            step.num_models_begin = 0
+        else:
+            step.num_models_begin = self.protocols[state][-1].num_models_end
+        self.protocols[state].append(step)
+        # todo: support multiple protocols
+        step.id = len(self.protocols[state])
         # Assume that protocol uses all currently-defined datasets
-        protocol.dataset_group = self.simo.dataset_dump.get_all_group()
+        # todo: make this per-state
+        step.dataset_group = self.simo.dataset_dump.get_all_group()
 
-    def get_last_protocol(self):
+    def get_last_protocol(self, state):
         """Return the most recently-added _Protocol"""
-        return self.protocols[-1]
+        # For now, we only support a single protocol per state
+        return self.protocols[state]
 
     def dump(self, writer):
         ordinal = 1
@@ -1383,21 +1399,20 @@ class _ModelProtocolDumper(_Dumper):
                           "step_name", "step_method", "num_models_begin",
                           "num_models_end", "multi_scale_flag",
                           "multi_state_flag", "time_ordered_flag"]) as l:
-            num_models_begin = 0
-            for p in self.protocols:
-                l.write(ordinal_id=ordinal, protocol_id=p.id,
-                        step_id=p.step_id, step_method=p.step_method,
-                        step_name=p.step_name,
-                        struct_assembly_id=p.modeled_assembly.id,
-                        dataset_group_id=p.dataset_group.id,
-                        num_models_begin=num_models_begin,
-                        num_models_end=p.num_models_end,
-                        # todo: support multiple states, time ordered
-                        multi_state_flag=False, time_ordered_flag=False,
-                        # all PMI models are multi scale
-                        multi_scale_flag=True)
-                num_models_begin = p.num_models_end
-                ordinal += 1
+            for p in self.protocols.values():
+                for step in p:
+                    l.write(ordinal_id=ordinal, protocol_id=p.id,
+                            step_id=step.id, step_method=step.method,
+                            step_name=step.name,
+                            struct_assembly_id=step.modeled_assembly.id,
+                            dataset_group_id=step.dataset_group.id,
+                            num_models_begin=step.num_models_begin,
+                            num_models_end=step.num_models_end,
+                            # todo: support multiple states, time ordered
+                            multi_state_flag=False, time_ordered_flag=False,
+                            # all PMI models are multi scale
+                            multi_scale_flag=True)
+                    ordinal += 1
 
 
 class _PDBHelix(object):
@@ -1843,24 +1858,15 @@ class _StructConfDumper(_Dumper):
 
 class _PostProcess(object):
     """Base class for any post processing"""
-    # Two postprocesses are equal if they're the same type and have the same
-    # attributes
-    _eq_keys = ['type', 'feature', 'num_models_begin', 'num_models_end']
-    def _eq_vals(self):
-        return tuple([self.__class__]
-                     + [getattr(self, x) for x in self._eq_keys])
-    def __eq__(self, other):
-        return self._eq_vals() == other._eq_vals()
-    def __hash__(self):
-        return hash(self._eq_vals())
-
+    pass
 
 class _ReplicaExchangeAnalysisPostProcess(_PostProcess):
     """Post processing using AnalysisReplicaExchange0 macro"""
     type = 'cluster'
     feature = 'RMSD'
 
-    def __init__(self, rex, num_models_begin):
+    def __init__(self, protocol, rex, num_models_begin):
+        self.protocol = protocol
         self.rex = rex
         self.num_models_begin = num_models_begin
         self.num_models_end = 0
@@ -1881,7 +1887,8 @@ class _SimplePostProcess(_PostProcess):
     type = 'cluster'
     feature = 'RMSD'
 
-    def __init__(self, num_models_begin, num_models_end):
+    def __init__(self, protocol, num_models_begin, num_models_end):
+        self.protocol = protocol
         self.num_models_begin = num_models_begin
         self.num_models_end = num_models_end
 
@@ -1892,12 +1899,7 @@ class _PostProcessDumper(_Dumper):
 
     def add(self, postproc):
         self.postprocs.append(postproc)
-
-    def finalize(self):
-        seen_pps = {}
-        self._pp_by_id = []
-        for p in self.postprocs:
-            _assign_id(p, seen_pps, self._pp_by_id)
+        postproc.id = len(self.postprocs)
 
     def dump(self, writer):
         with writer.loop("_ihm_modeling_post_process",
@@ -1906,9 +1908,9 @@ class _PostProcessDumper(_Dumper):
                           "num_models_end"]) as l:
             # todo: handle multiple protocols (e.g. sampling then refinement)
             # and multiple analyses
-            for p in self._pp_by_id:
-                l.write(id=p.id, protocol_id=1, analysis_id=1, step_id=p.id,
-                        type=p.type, feature=p.feature,
+            for p in self.postprocs:
+                l.write(id=p.id, protocol_id=p.protocol.id, analysis_id=1,
+                        step_id=p.id, type=p.type, feature=p.feature,
                         num_models_begin=p.num_models_begin,
                         num_models_end=p.num_models_end)
 
@@ -2354,7 +2356,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         # actual experiment, and how many independent runs were carried out
         # (use these as multipliers to get the correct total number of
         # output models)
-        self.model_prot_dump.add(_ReplicaExchangeProtocol(state, rex))
+        self.model_prot_dump.add(_ReplicaExchangeProtocolStep(state, rex))
 
     def add_model_group(self, group):
         self.model_groups.append(group)
@@ -2362,7 +2364,10 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         return group
 
     def _add_simple_postprocessing(self, num_models_begin, num_models_end):
-        pp = _SimplePostProcess(num_models_begin, num_models_end)
+        # Always assumed that we're dealing with the last state
+        state = self._get_last_state()
+        protocol = self.model_prot_dump.get_last_protocol(state)
+        pp = _SimplePostProcess(protocol, num_models_begin, num_models_end)
         self.post_process_dump.add(pp)
         return pp
 
@@ -2402,8 +2407,9 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         # todo: postpone rmsf/density localization extraction until after
         # relevant methods are called (currently it is done from the
         # constructor)
-        num_models = self.model_prot_dump.get_last_protocol().num_models_end
-        pp = _ReplicaExchangeAnalysisPostProcess(rex, num_models)
+        protocol = self.model_prot_dump.get_last_protocol(state)
+        num_models = protocol[-1].num_models_end
+        pp = _ReplicaExchangeAnalysisPostProcess(protocol, rex, num_models)
         self.post_process_dump.add(pp)
         for i in range(rex._number_of_clusters):
             group = self.add_model_group(_ModelGroup(state,
@@ -2440,9 +2446,10 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                                           densities))
 
     def add_model(self, group):
-        return self.model_dump.add(group.state.prot,
-                                   self.model_prot_dump.get_last_protocol(),
-                                   group.state.modeled_assembly, group)
+        state = group.state
+        return self.model_dump.add(state.prot,
+                           self.model_prot_dump.get_last_protocol(state),
+                           state.modeled_assembly, group)
 
     def _update_location(self, fileloc):
         """Update FileLocation to point to a parent repository, if any"""

@@ -1407,14 +1407,18 @@ _ihm_modeling_protocol.time_ordered_flag
 
     def test_simple_postprocessing(self):
         """Test add_simple_postprocessing"""
+        class DummyProtocolStep(object):
+            pass
         po = DummyPO(None)
+        p = DummyProtocolStep()
+        p.state = po._get_last_state()
+        p.num_models_end = 10
+        po.model_prot_dump.add(p)
         pp = po._add_simple_postprocessing(10, 90)
         self.assertEqual(pp.type, 'cluster')
         self.assertEqual(pp.feature, 'RMSD')
         self.assertEqual(pp.num_models_begin, 10)
         self.assertEqual(pp.num_models_end, 90)
-        # Duplicates should be ignored
-        po._add_simple_postprocessing(10, 90)
         po._add_simple_postprocessing(12, 90)
         fh = StringIO()
         w = IMP.pmi.mmcif._CifWriter(fh)
@@ -1470,7 +1474,7 @@ _ihm_modeling_post_process.num_models_end
                     # 1 model for first cluster, 2 for second cluster
                     for line in range(i + 1):
                         fh.write('#\n')
-            pp = IMP.pmi.mmcif._ReplicaExchangeAnalysisPostProcess(d, 45)
+            pp = IMP.pmi.mmcif._ReplicaExchangeAnalysisPostProcess(None, d, 45)
         self.assertEqual(pp.rex, d)
         self.assertEqual(pp.num_models_begin, 45)
         self.assertEqual(pp.num_models_end, 3)
@@ -1506,7 +1510,7 @@ _ihm_modeling_post_process.num_models_end
             # Mock RMSF file
             with open(os.path.join(subdir, 'rmsf.Nup84.dat'), 'w') as fh:
                 pass
-            pp = IMP.pmi.mmcif._ReplicaExchangeAnalysisPostProcess(d, 45)
+            pp = IMP.pmi.mmcif._ReplicaExchangeAnalysisPostProcess(None, d, 45)
             mg = None
             e = IMP.pmi.mmcif._ReplicaExchangeAnalysisEnsemble(pp, 0, mg, 1)
             self.assertEqual(e.cluster_num, 0)
@@ -1553,7 +1557,7 @@ All kmeans_weight_500_2/cluster.0/ centroid index 49
 
     def test_add_rex(self):
         """Test add_replica_exchange_analysis"""
-        class DummyProtocol(object):
+        class DummyProtocolStep(object):
             pass
         class DummyRex(object):
             _number_of_clusters = 1
@@ -1570,7 +1574,8 @@ All kmeans_weight_500_2/cluster.0/ centroid index 49
             with open(os.path.join(subdir, 'stat.out'), 'w') as fh:
                 fh.write("{'modelnum': 0}\n")
                 fh.write("{'modelnum': 1}\n")
-            prot = DummyProtocol()
+            prot = DummyProtocolStep()
+            prot.state = po._get_last_state()
             prot.num_models_end = 10
             po.model_prot_dump.add(prot)
             po.add_replica_exchange_analysis(simo._protocol_output[0][1], rex)
@@ -1854,7 +1859,7 @@ _ihm_cross_link_restraint.sigma_2
 
         class DummyRestraint(object):
             label = 'foo'
-        class DummyProtocol(object):
+        class DummyProtocolStep(object):
             pass
         pr = DummyRestraint()
         rd = IMP.pmi.mmcif._RestraintDataset(pr, num=None,
@@ -1870,7 +1875,9 @@ _ihm_cross_link_restraint.sigma_2
         d.id = 4
         d.add_primary(dp)
         pr.dataset = d
-        po.model_prot_dump.add(DummyProtocol())
+        p = DummyProtocolStep()
+        p.state = po._get_last_state()
+        po.model_prot_dump.add(p)
         group = get_all_models_group(simo, po)
         m = po.add_model(group)
         prefix = 'ElectronMicroscopy2D_foo_Image1_'
@@ -1940,7 +1947,7 @@ _ihm_2dem_class_average_fitting.tr_vector[3]
                                      "A")
         class DummyRestraint(object):
             label = 'foo'
-        class DummyProtocol(object):
+        class DummyProtocolStep(object):
             pass
         pr = DummyRestraint()
         rd = IMP.pmi.mmcif._RestraintDataset(pr, num=None,
@@ -1953,7 +1960,9 @@ _ihm_2dem_class_average_fitting.tr_vector[3]
         d.id = 4
         pr.dataset = d
 
-        po.model_prot_dump.add(DummyProtocol())
+        p = DummyProtocolStep()
+        p.state = po._get_last_state()
+        po.model_prot_dump.add(p)
         group = get_all_models_group(simo, po)
         m = po.add_model(group)
         m.stats = {'GaussianEMRestraint_foo_CCC': 0.1}

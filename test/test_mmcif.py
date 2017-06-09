@@ -13,12 +13,14 @@ else:
     from io import BytesIO as StringIO
 
 class DummyState(object):
-    name = None
+    short_name = None
+    long_name = None
 
 class DummyRepr(object):
-    def __init__(self, name):
+    def __init__(self, short_name, long_name):
         self.state = DummyState()
-        self.state.name = name
+        self.state.short_name = short_name
+        self.state.long_name = long_name
 
 class EmptyObject(object):
     state = DummyState()
@@ -117,7 +119,7 @@ class Tests(IMP.test.TestCase):
     def test_single_state(self):
         """Test MultiStateDumper with a single state"""
         po = DummyPO(None)
-        po._add_state(DummyRepr(None))
+        po._add_state(DummyRepr(None, None))
         d = IMP.pmi.mmcif._MultiStateDumper(po)
         fh = StringIO()
         w = IMP.pmi.mmcif._CifWriter(fh)
@@ -127,11 +129,11 @@ class Tests(IMP.test.TestCase):
     def test_multi_state(self):
         """Test MultiStateDumper with multiple states"""
         po = DummyPO(None)
-        r1 = DummyRepr(None)
+        r1 = DummyRepr(None, None)
         state1 = po._add_state(r1)
         po.add_model_group(IMP.pmi.mmcif._ModelGroup(state1, "group 1"))
         po.add_model_group(IMP.pmi.mmcif._ModelGroup(state1, "group 2"))
-        r2 = DummyRepr('state2')
+        r2 = DummyRepr('state2 short', 'state2 long')
         state2 = po._add_state(r2)
         po.add_model_group(IMP.pmi.mmcif._ModelGroup(state2, "group 3"))
         d = IMP.pmi.mmcif._MultiStateDumper(po)
@@ -149,9 +151,9 @@ _ihm_multi_state_modeling.state_name
 _ihm_multi_state_modeling.model_group_id
 _ihm_multi_state_modeling.experiment_type
 _ihm_multi_state_modeling.details
-1 1 1 . . . 1 . .
-2 1 1 . . . 2 . .
-3 2 2 . . state2 3 . .
+1 1 1 . . . 1 . 'Group 1'
+2 1 1 . . . 2 . 'Group 2'
+3 2 2 . . 'state2 long' 3 . 'state2 short group 3'
 #
 """)
 
@@ -1419,7 +1421,7 @@ _ihm_modeling_protocol.time_ordered_flag
         class DummyProtocolStep(object):
             pass
         po = DummyPO(None)
-        po._add_state(DummyRepr(None))
+        po._add_state(DummyRepr(None, None))
         p = DummyProtocolStep()
         p.state = po._last_state
         p.num_models_end = 10
@@ -1432,7 +1434,7 @@ _ihm_modeling_protocol.time_ordered_flag
         po._add_simple_postprocessing(12, 90)
 
         # Add protocol and postprocessing for a second state
-        po._add_state(DummyRepr(None))
+        po._add_state(DummyRepr(None, None))
         p = DummyProtocolStep()
         p.state = po._last_state
         p.num_models_end = 10
@@ -1539,7 +1541,7 @@ _ihm_modeling_post_process.num_models_end
             self.assertEqual(e.localization_density, {})
             self.assertEqual(e.num_models, 2)
             self.assertEqual(e.feature, 'RMSD')
-            self.assertEqual(e.name, 'Cluster 1')
+            self.assertEqual(e.name, 'cluster 1')
             self.assertEqual(e.get_rmsf_file('Nup84'),
                              os.path.join(tmpdir, 'cluster.0',
                                           'rmsf.Nup84.dat'))

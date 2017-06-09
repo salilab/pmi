@@ -2008,7 +2008,7 @@ class _ReplicaExchangeAnalysisEnsemble(_Ensemble):
                     return float(m.group(1))
 
     feature = property(lambda self: self.postproc.feature)
-    name = property(lambda self: "Cluster %d" % (self.cluster_num + 1))
+    name = property(lambda self: "cluster %d" % (self.cluster_num + 1))
     precision = property(lambda self: self._get_precision())
 
 class _SimpleEnsemble(_Ensemble):
@@ -2054,7 +2054,9 @@ class _EnsembleDumper(_Dumper):
                           "ensemble_precision_value",
                           "ensemble_file_id"]) as l:
             for e in self.ensembles:
-                l.write(ensemble_id=e.id, ensemble_name=e.name,
+                state = e.model_group.state
+                l.write(ensemble_id=e.id,
+                        ensemble_name=state.get_prefixed_name(e.name),
                         post_process_id=e.postproc.id,
                         model_group_id=e.model_group.id,
                         ensemble_clustering_feature=e.feature,
@@ -2121,8 +2123,9 @@ class _MultiStateDumper(_Dumper):
                 l.write(ordinal_id=n+1, state_id=state.id,
                         state_group_id=state.id,
                         model_group_id=group.id,
-                        state_name=state.name if state.name
-                                   else _CifWriter.omitted)
+                        state_name=state.long_name if state.long_name
+                                   else _CifWriter.omitted,
+                        details=state.get_prefixed_name(group.name))
 
 
 class _Entity(object):
@@ -2195,7 +2198,16 @@ class _State(object):
         po.assembly_dump.add(self.modeled_assembly)
 
         self.all_modeled_components = []
-    name = property(lambda self: self._pmi_state.name)
+
+    def get_prefixed_name(self, name):
+        """Prefix the given name with the state name, if available."""
+        if self.short_name:
+            return self.short_name + ' ' + name
+        else:
+            return name.title()
+
+    short_name = property(lambda self: self._pmi_state.short_name)
+    long_name = property(lambda self: self._pmi_state.long_name)
 
 
 class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
@@ -2424,8 +2436,8 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         pp = _ReplicaExchangeAnalysisPostProcess(protocol, rex, num_models)
         self.post_process_dump.add(pp)
         for i in range(rex._number_of_clusters):
-            group = self.add_model_group(_ModelGroup(state,
-                                                     'Cluster %d' % (i + 1)))
+            name = state.get_prefixed_name('cluster %d' % (i + 1))
+            group = self.add_model_group(_ModelGroup(state, name))
             # todo: make # of models to deposit configurable somewhere
             e = _ReplicaExchangeAnalysisEnsemble(pp, i, group, 1)
             self.ensemble_dump.add(e)

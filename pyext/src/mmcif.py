@@ -1310,10 +1310,12 @@ class _ModelDumper(_Dumper):
                           "model_name", "model_group_name", "assembly_id",
                           "protocol_id"]) as l:
             for model in self.models:
+                state = model.group.state
+                group_name = state.get_prefixed_name(model.group.name)
                 l.write(ordinal_id=ordinal, model_id=model.id,
                         model_group_id=model.group.id,
                         model_name=model.name,
-                        model_group_name=model.group.name,
+                        model_group_name=group_name,
                         assembly_id=model.assembly.id,
                         protocol_id=model.protocol.id)
                 ordinal += 1

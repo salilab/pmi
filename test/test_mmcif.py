@@ -941,7 +941,7 @@ _ihm_model_list.model_name
 _ihm_model_list.model_group_name
 _ihm_model_list.assembly_id
 _ihm_model_list.protocol_id
-1 1 7 . 'all models' 42 93
+1 1 7 . 'All models' 42 93
 #
 #
 loop_
@@ -999,7 +999,7 @@ _ihm_model_list.model_name
 _ihm_model_list.model_group_name
 _ihm_model_list.assembly_id
 _ihm_model_list.protocol_id
-1 1 7 . 'all models' 42 93
+1 1 7 . 'All models' 42 93
 #
 #
 loop_
@@ -1074,7 +1074,7 @@ _ihm_model_list.model_name
 _ihm_model_list.model_group_name
 _ihm_model_list.assembly_id
 _ihm_model_list.protocol_id
-1 1 7 foo 'all models' 42 93
+1 1 7 foo 'All models' 42 93
 #
 #
 loop_

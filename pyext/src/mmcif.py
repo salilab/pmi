@@ -456,14 +456,14 @@ class _ModelRepresentationDumper(_Dumper):
             for comp, statefrag in self.fragments.items():
                 # For now, assume that representation of the same-named
                 # component is the same in all states, so just take the first
-                first_state = list(statefrag.keys())[0]
+                state = list(statefrag.keys())[0]
                 chain_id = self.simo._get_chain_for_component(comp, self.output)
-                for f in statefrag[first_state]:
+                for f in statefrag[state]:
                     entity = self.simo.entities[f.component]
                     starting_model_id = _CifWriter.omitted
                     if hasattr(f, 'pdbname'):
                         starting_model_id \
-                               = self.starting_model[comp, f.pdbname].name
+                             = self.starting_model[state, comp, f.pdbname].name
                     # todo: handle multiple representations
                     l.write(ordinal_id=ordinal_id,
                             representation_id=1,
@@ -1428,22 +1428,22 @@ class _MSESeqDif(object):
 class _StartingModelDumper(_Dumper):
     def __init__(self, simo):
         super(_StartingModelDumper, self).__init__(simo)
-        # dict of PDB fragments, ordered by component name
-        self.fragments = OrderedDict()
-        # dict of starting models (entire PDB files), collected from fragments
+        # dict of starting models (entire PDB files), collected from fragments,
+        # ordered by component name and state
         self.models = OrderedDict()
-        # mapping from component+pdbname to starting model
+        # mapping from state+component+pdbname to starting model
         self.starting_model = {}
         self.output = IMP.pmi.output.Output()
 
     def add_pdb_fragment(self, fragment):
         """Add a starting model PDB fragment."""
         comp = fragment.component
-        if comp not in self.fragments:
-            self.fragments[comp] = []
-            self.models[comp] = []
-        self.fragments[comp].append(fragment)
-        models = self.models[comp]
+        state = fragment.state
+        if comp not in self.models:
+            self.models[comp] = OrderedDict()
+        if state not in self.models[comp]:
+            self.models[comp][state] = []
+        models = self.models[comp][state]
         if len(models) == 0 \
            or models[-1].fragments[0].pdbname != fragment.pdbname:
             model = _StartingModel(fragment)
@@ -1599,18 +1599,25 @@ class _StartingModelDumper(_Dumper):
             return [_UnknownSource(model, chain)]
 
     def assign_model_details(self):
-        for comp, models in self.models.items():
-            for i, model in enumerate(models):
-                model.name = "%s-m%d" % (comp, i+1)
-                self.starting_model[comp, model.fragments[0].pdbname] = model
-                model.seq_id_begin = min(x.start + x.offset
-                                         for x in model.fragments)
-                model.seq_id_end = max(x.end + x.offset
-                                       for x in model.fragments)
+        for comp, states in self.models.items():
+            model_id = 0
+            for state in states:
+                for model in states[state]:
+                    model_id += 1
+                    model.name = "%s-m%d" % (comp, model_id)
+                    self.starting_model[state, comp,
+                                        model.fragments[0].pdbname] = model
+                    model.seq_id_begin = min(x.start + x.offset
+                                             for x in model.fragments)
+                    model.seq_id_end = max(x.end + x.offset
+                                           for x in model.fragments)
 
     def all_models(self):
-        for comp, models in self.models.items():
-            for model in models:
+        for comp, states in self.models.items():
+            # For now, assume that starting model of the same-named
+            # component is the same in all states, so just take the first
+            first_state = list(states.keys())[0]
+            for model in states[first_state]:
                 yield model
 
     def finalize(self):
@@ -1784,13 +1791,13 @@ class _StructConfDumper(_Dumper):
         for comp, statefrag in model_repr.fragments.items():
             # For now, assume that representation of the same-named
             # component is the same in all states, so just take the first
-            first_state = list(statefrag.keys())[0]
-            for f in statefrag[first_state]:
+            state = list(statefrag.keys())[0]
+            for f in statefrag[state]:
                 if hasattr(f, 'pdbname') \
                    and model_repr.get_model_mode(f) == 'rigid':
                     asym = get_asym_mapper_for_state(self.simo, f.state,
                                                      asym_states)
-                    yield (f, model_repr.starting_model[comp, f.pdbname],
+                    yield (f, model_repr.starting_model[state, comp, f.pdbname],
                            asym[f.hier])
 
     def all_helices(self):

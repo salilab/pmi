@@ -1087,8 +1087,8 @@ _ihm_sphere_obj_site.model_id
     def test_starting_model_dumper(self):
         """Test StartingModelDumper"""
         m = IMP.Model()
-        simo = IMP.pmi.representation.Representation(m)
         po = DummyPO(None)
+        simo = IMP.pmi.representation.Representation(m)
         simo.add_protocol_output(po)
         simo.create_component("Nup84", True)
         simo.add_component_sequence("Nup84",
@@ -1096,6 +1096,23 @@ _ihm_sphere_obj_site.model_id
         nup84 = simo.autobuild_model("Nup84",
                                      self.get_input_file_name("test.nup84.pdb"),
                                      "A")
+
+        # Test multiple states: components that are the same in both states
+        # (Nup84) should not be duplicated in the mmCIF output
+        simo2 = IMP.pmi.representation.Representation(m)
+        simo2.add_protocol_output(po)
+        simo2.create_component("Nup84", True)
+        simo2.add_component_sequence("Nup84",
+                                     self.get_input_file_name("test.fasta"))
+        simo2.autobuild_model("Nup84",
+                              self.get_input_file_name("test.nup84.pdb"), "A")
+        simo2.create_component("Nup85", True)
+        simo2.add_component_sequence("Nup85",
+                                     self.get_input_file_name("test.fasta"))
+        simo2.autobuild_model("Nup85",
+                              self.get_input_file_name("test.nup84.pdb"), "A")
+
+
         fh = StringIO()
         w = IMP.pmi.mmcif._CifWriter(fh)
         po.dataset_dump.finalize()
@@ -1120,6 +1137,7 @@ _ihm_starting_model_details.starting_model_auth_asym_id
 _ihm_starting_model_details.starting_model_sequence_offset
 _ihm_starting_model_details.dataset_list_id
 Nup84-m1 1 Nup84 A 33 2 'comparative model' A 0 3
+Nup85-m1 2 Nup85 B 33 2 'comparative model' A 0 3
 #
 #
 loop_
@@ -1137,6 +1155,8 @@ _ihm_starting_comparative_models.template_dataset_list_id
 _ihm_starting_comparative_models.alignment_file_id
 1 Nup84-m1 A 33 2 C 33 424 100.0 1 1 1
 2 Nup84-m1 A 429 2 G 482 551 10.0 1 2 1
+3 Nup85-m1 A 33 2 C 33 424 100.0 1 1 1
+4 Nup85-m1 A 429 2 G 482 551 10.0 1 2 1
 #
 #
 loop_
@@ -1156,6 +1176,8 @@ _ihm_starting_model_coord.B_iso_or_equiv
 _ihm_starting_model_coord.ordinal_id
 Nup84-m1 ATOM 1 C CA MET 1 A 1 -8.986 11.688 -5.817 91.820 1
 Nup84-m1 ATOM 2 C CA GLU 1 A 2 -8.986 11.688 -5.817 91.820 2
+Nup85-m1 ATOM 1 C CA MET 2 B 1 -8.986 11.688 -5.817 91.820 3
+Nup85-m1 ATOM 2 C CA GLU 2 B 2 -8.986 11.688 -5.817 91.820 4
 #
 """)
 

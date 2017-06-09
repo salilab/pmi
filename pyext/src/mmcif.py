@@ -1969,7 +1969,8 @@ class _ReplicaExchangeAnalysisEnsemble(_Ensemble):
     def load_localization_density(self, state, component, extref_dump):
         fname = self.get_localization_density_file(component)
         if os.path.exists(fname):
-            details = "Localization density for %s" % component
+            details = "Localization density for %s %s" \
+                      % (component, self.model_group.name)
             local_file = IMP.pmi.metadata.FileLocation(fname,
                               details=state.get_postfixed_name(details))
             self.localization_density[component] = local_file

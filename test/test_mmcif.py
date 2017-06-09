@@ -1516,6 +1516,8 @@ _ihm_modeling_post_process.num_models_end
             all_modeled_components = ['Nup84', 'Nup85']
         class DummyRex(object):
             _number_of_clusters = 1
+        class DummyGroup(object):
+            name = 'dgroup'
         extref_dump = IMP.pmi.mmcif._ExternalReferenceDumper(EmptyObject())
         with IMP.test.temporary_directory() as tmpdir:
             d = DummyRex()
@@ -1533,7 +1535,7 @@ _ihm_modeling_post_process.num_models_end
             with open(os.path.join(subdir, 'rmsf.Nup84.dat'), 'w') as fh:
                 pass
             pp = IMP.pmi.mmcif._ReplicaExchangeAnalysisPostProcess(None, d, 45)
-            mg = None
+            mg = DummyGroup()
             e = IMP.pmi.mmcif._ReplicaExchangeAnalysisEnsemble(pp, 0, mg, 1)
             self.assertEqual(e.cluster_num, 0)
             self.assertEqual(e.postproc, pp)
@@ -1565,7 +1567,7 @@ _ihm_modeling_post_process.num_models_end
             self.assertEqual(e.localization_density['Nup84'].path,
                              os.path.join(tmpdir, 'cluster.0', 'Nup84.mrc'))
             self.assertEqual(e.localization_density['Nup84'].details,
-                             'Localization density for Nup84 in state dummy')
+                         'Localization density for Nup84 dgroup in state dummy')
             # No precision available
             self.assertEqual(e._get_precision(), '?')
             self.assertEqual(e.precision, '?')

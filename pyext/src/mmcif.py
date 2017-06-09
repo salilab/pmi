@@ -138,18 +138,6 @@ def _get_by_residue(p):
        or a more coarse-grained object."""
     return IMP.atom.Residue.get_is_setup(p) or IMP.atom.Atom.get_is_setup(p)
 
-class _AsymIDMapper(object):
-    """Map a Particle to an asym_id (chain ID)"""
-    def __init__(self, prot):
-        self.o = IMP.pmi.output.Output()
-        self.prot = prot
-        self.name = 'cif-output'
-        self.o.dictionary_pdbs[self.name] = self.prot
-        self.o._init_dictchain(self.name, self.prot)
-
-    def __getitem__(self, p):
-        protname, is_a_bead = self.o.get_prot_name_from_particle(self.name, p)
-        return self.o.dictchain[self.name][protname]
 
 class _ComponentMapper(object):
     """Map a Particle to a component name"""
@@ -163,6 +151,17 @@ class _ComponentMapper(object):
     def __getitem__(self, p):
         protname, is_a_bead = self.o.get_prot_name_from_particle(self.name, p)
         return protname
+
+
+class _AsymIDMapper(object):
+    """Map a Particle to an asym_id (chain ID)"""
+    def __init__(self, simo, prot):
+        self.simo = simo
+        self._cm = _ComponentMapper(prot)
+
+    def __getitem__(self, p):
+        protname = self._cm[p]
+        return self.simo._get_chain_for_component(protname, self._cm.o)
 
 class _Dumper(object):
     """Base class for helpers to dump output to mmCIF"""
@@ -854,10 +853,10 @@ class _CrossLink(object):
         self.p1, self.p2 = p1, p2
         self.psi = psi
 
-def get_asym_mapper_for_state(state, asym_map):
+def get_asym_mapper_for_state(simo, state, asym_map):
     asym = asym_map.get(state, None)
     if asym is None:
-        asym = _AsymIDMapper(state.prot)
+        asym = _AsymIDMapper(simo, state.prot)
         asym_map[state] = asym
     return asym
 
@@ -934,7 +933,8 @@ class _CrossLinkDumper(_Dumper):
                           "model_granularity", "distance_threshold",
                           "psi", "sigma_1", "sigma_2"]) as l:
             for xl in self.cross_links:
-                asym = get_asym_mapper_for_state(xl.state, asym_states)
+                asym = get_asym_mapper_for_state(self.simo, xl.state,
+                                                 asym_states)
                 entity1 = self.simo.entities[xl.ex_xl.c1]
                 entity2 = self.simo.entities[xl.ex_xl.c2]
                 seq1 = entity1.sequence
@@ -1777,7 +1777,8 @@ class _StructConfDumper(_Dumper):
             for f in statefrag[first_state]:
                 if hasattr(f, 'pdbname') \
                    and model_repr.get_model_mode(f) == 'rigid':
-                    asym = get_asym_mapper_for_state(f.state, asym_states)
+                    asym = get_asym_mapper_for_state(self.simo, f.state,
+                                                     asym_states)
                     yield (f, model_repr.starting_model[comp, f.pdbname],
                            asym[f.hier])
 

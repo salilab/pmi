@@ -563,7 +563,9 @@ _citation_author.ordinal
     def test_asym_id_mapper(self):
         """Test AsymIDMapper class"""
         m = IMP.Model()
+        po = DummyPO(None)
         simo = IMP.pmi.representation.Representation(m)
+        simo.add_protocol_output(po)
         simo.create_component("Nup84", True)
         simo.add_component_sequence("Nup84",
                                     self.get_input_file_name("test.fasta"))
@@ -572,11 +574,22 @@ _citation_author.ordinal
                                     self.get_input_file_name("test.fasta"))
         h1 = simo.add_component_beads("Nup84", [(1,2), (3,4)])
         h2 = simo.add_component_beads("Nup85", [(1,2), (3,4)])
-        mapper = IMP.pmi.mmcif._AsymIDMapper(simo.prot)
+        mapper = IMP.pmi.mmcif._AsymIDMapper(po, simo.prot)
         self.assertEqual(mapper[h1[0]], 'A')
         self.assertEqual(mapper[h1[1]], 'A')
         self.assertEqual(mapper[h2[0]], 'B')
         self.assertEqual(mapper[h2[1]], 'B')
+        # Check handling of multiple states
+        simo2 = IMP.pmi.representation.Representation(m)
+        simo2.add_protocol_output(po)
+        simo2.create_component("Nup85", True)
+        simo2.add_component_sequence("Nup85",
+                                     self.get_input_file_name("test.fasta"))
+        h1 = simo2.add_component_beads("Nup85", [(1,2), (3,4)])
+        mapper = IMP.pmi.mmcif._AsymIDMapper(po, simo2.prot)
+        # First chain, but ID isn't "A" since it gets the same chain ID
+        # as the component in the first state (simo)
+        self.assertEqual(mapper[h1[0]], 'B')
 
     def test_component_mapper(self):
         """Test ComponentMapper class"""

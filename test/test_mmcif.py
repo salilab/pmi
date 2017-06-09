@@ -1652,8 +1652,8 @@ _ihm_localization_density_files.seq_id_end
         xl_group = po.get_cross_link_group(r)
         ex_xl = po.add_experimental_cross_link(1, 'Nup84',
                                                2, 'Nup84', 42.0, xl_group)
-        po.add_experimental_cross_link(1, 'Nup84',
-                                       3, 'Nup84', 42.0, xl_group)
+        ex_xl2 = po.add_experimental_cross_link(1, 'Nup84',
+                                                3, 'Nup84', 42.0, xl_group)
         # Duplicates should be ignored
         po.add_experimental_cross_link(1, 'Nup84',
                                        3, 'Nup84', 42.0, xl_group)
@@ -1665,6 +1665,8 @@ _ihm_localization_density_files.seq_id_end
         sigma1 = IMP.isd.Scale.setup_particle(IMP.Particle(m), 1.0)
         sigma2 = IMP.isd.Scale.setup_particle(IMP.Particle(m), 0.5)
         psi = IMP.isd.Scale.setup_particle(IMP.Particle(m), 0.8)
+        po.add_cross_link(state, ex_xl, rs[0], rs[1], sigma1, sigma2, psi)
+        # Duplicates should be ignored
         po.add_cross_link(state, ex_xl, rs[0], rs[1], sigma1, sigma2, psi)
 
         fh = StringIO()

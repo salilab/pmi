@@ -871,7 +871,6 @@ class _CrossLinkDumper(_Dumper):
 
     def add(self, cross_link):
         self.cross_links.append(cross_link)
-        cross_link.id = len(self.cross_links)
 
     def dump(self, writer):
         self.dump_list(writer)
@@ -893,7 +892,6 @@ class _CrossLinkDumper(_Dumper):
                 if sig in seen_cross_links:
                     xl.id = seen_cross_links[sig]
                     continue
-                seen_cross_links[sig] = None
                 entity1 = self.simo.entities[xl.c1]
                 entity2 = self.simo.entities[xl.c2]
                 seq1 = entity1.sequence
@@ -924,6 +922,7 @@ class _CrossLinkDumper(_Dumper):
             return 'by-feature'
 
     def dump_restraint(self, writer):
+        seen_cross_links = {}
         asym_states = {} # AsymIDMapper for each state
         with writer.loop("_ihm_cross_link_restraint",
                          ["id", "group_id", "entity_id_1", "asym_id_1",
@@ -932,6 +931,7 @@ class _CrossLinkDumper(_Dumper):
                           "type", "conditional_crosslink_flag",
                           "model_granularity", "distance_threshold",
                           "psi", "sigma_1", "sigma_2"]) as l:
+            xl_id = 0
             for xl in self.cross_links:
                 asym = get_asym_mapper_for_state(self.simo, xl.state,
                                                  asym_states)
@@ -941,14 +941,25 @@ class _CrossLinkDumper(_Dumper):
                 seq2 = entity2.sequence
                 rt1 = IMP.atom.get_residue_type(seq1[xl.ex_xl.r1-1])
                 rt2 = IMP.atom.get_residue_type(seq2[xl.ex_xl.r2-1])
+                asym1 = asym[xl.p1]
+                asym2 = asym[xl.p2]
+                # Skip identical cross links
+                sig = (asym1, xl.ex_xl.r1, asym2, xl.ex_xl.r2,
+                       xl.ex_xl.group.label)
+                if sig in seen_cross_links:
+                    xl.id = seen_cross_links[sig]
+                    continue
+                xl_id += 1
+                seen_cross_links[sig] = xl_id
+                xl.id = xl_id
                 l.write(id=xl.id,
                         group_id=xl.ex_xl.id,
                         entity_id_1=entity1.id,
-                        asym_id_1=asym[xl.p1],
+                        asym_id_1=asym1,
                         seq_id_1=xl.ex_xl.r1,
                         comp_id_1=rt1.get_string(),
                         entity_id_2=entity2.id,
-                        asym_id_2=asym[xl.p2],
+                        asym_id_2=asym2,
                         seq_id_2=xl.ex_xl.r2,
                         comp_id_2=rt2.get_string(),
                         type=xl.ex_xl.group.label,

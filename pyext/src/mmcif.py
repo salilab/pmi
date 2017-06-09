@@ -715,18 +715,22 @@ class _DatasetDumper(_Dumper):
     def __init__(self, simo):
         super(_DatasetDumper, self).__init__(simo)
         self._datasets = []
+        self._datasets_by_state = {}
         self._dataset_groups = []
 
-    def get_all_group(self):
-        """Get a _DatasetGroup encompassing all datasets so far"""
-        g = _DatasetGroup(self._datasets)
+    def get_all_group(self, state):
+        """Get a _DatasetGroup encompassing all datasets so far in this state"""
+        g = _DatasetGroup(self._datasets_by_state.get(state, []))
         self._dataset_groups.append(g)
         return g
 
-    def add(self, dataset):
+    def add(self, state, dataset):
         """Add a new dataset.
            Note that ids are assigned later."""
         self._datasets.append(dataset)
+        if state not in self._datasets_by_state:
+            self._datasets_by_state[state] = []
+        self._datasets_by_state[state].append(dataset)
         return dataset
 
     def finalize(self):
@@ -1382,8 +1386,7 @@ class _ModelProtocolDumper(_Dumper):
         # todo: support multiple protocols
         step.id = len(self.protocols[state])
         # Assume that protocol uses all currently-defined datasets
-        # todo: make this per-state
-        step.dataset_group = self.simo.dataset_dump.get_all_group()
+        step.dataset_group = self.simo.dataset_dump.get_all_group(state)
 
     def get_last_protocol(self, state):
         """Return the most recently-added _Protocol"""
@@ -1508,7 +1511,7 @@ class _StartingModelDumper(_Dumper):
             else:
                 l = IMP.pmi.metadata.PDBLocation(t.tm_db_code)
             d = IMP.pmi.metadata.PDBDataset(l)
-            d = self.simo.dataset_dump.add(d)
+            d = self.simo._add_dataset(d)
             t.tm_dataset = d
             model.dataset.add_parent(d)
 
@@ -1552,7 +1555,7 @@ class _StartingModelDumper(_Dumper):
                                 metadata)
             l = IMP.pmi.metadata.PDBLocation(source.db_code, version, details)
             d = IMP.pmi.metadata.PDBDataset(l)
-            model.dataset = self.simo.dataset_dump.add(file_dataset or d)
+            model.dataset = self.simo._add_dataset(file_dataset or d)
             return [source]
         elif first_line.startswith('EXPDTA    DERIVED FROM PDB:'):
             # Model derived from a PDB structure; treat as a local experimental
@@ -1563,7 +1566,7 @@ class _StartingModelDumper(_Dumper):
             pdb_loc = IMP.pmi.metadata.PDBLocation(db_code)
             parent = IMP.pmi.metadata.PDBDataset(pdb_loc)
             d.add_parent(parent)
-            model.dataset = self.simo.dataset_dump.add(file_dataset or d)
+            model.dataset = self.simo._add_dataset(file_dataset or d)
             return [_UnknownSource(model, chain)]
         elif first_line.startswith('EXPDTA    DERIVED FROM COMPARATIVE '
                                    'MODEL, DOI:'):
@@ -1577,7 +1580,7 @@ class _StartingModelDumper(_Dumper):
                               details="Starting comparative model structure")
             parent = IMP.pmi.metadata.ComparativeModelDataset(orig_loc)
             d.add_parent(parent)
-            model.dataset = self.simo.dataset_dump.add(file_dataset or d)
+            model.dataset = self.simo._add_dataset(file_dataset or d)
             return [_UnknownSource(model, chain)]
         elif first_line.startswith('EXPDTA    THEORETICAL MODEL, MODELLER'):
             self.simo.software_dump.set_modeller_used(
@@ -1599,7 +1602,7 @@ class _StartingModelDumper(_Dumper):
     def handle_comparative_model(self, local_file, file_dataset, pdbname,
                                  model, chain):
         d = IMP.pmi.metadata.ComparativeModelDataset(local_file)
-        model.dataset = self.simo.dataset_dump.add(file_dataset or d)
+        model.dataset = self.simo._add_dataset(file_dataset or d)
         templates, alnfile = self.get_templates(pdbname, model)
         if alnfile:
             model.alignment_file = IMP.pmi.metadata.FileLocation(alnfile,
@@ -2262,13 +2265,8 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         s = _State(state, self)
         self._states[s] = None
         s.id = len(self._states)
+        self._last_state = s
         return s
-
-    def _get_last_state(self):
-        state_id = len(self._states)
-        for state in self._states.keys():
-            if state.id == state_id:
-                return state
 
     def get_file_dataset(self, fname):
         for d in self._file_datasets:
@@ -2330,7 +2328,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
            This is needed because the restraint's dataset may be changed
            in the PMI script before we get to use it."""
         rs = _RestraintDataset(r, num, allow_duplicates)
-        self.dataset_dump.add(rs)
+        self._add_dataset(rs)
         return rs
 
     def get_cross_link_group(self, r):
@@ -2358,6 +2356,9 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         # output models)
         self.model_prot_dump.add(_ReplicaExchangeProtocolStep(state, rex))
 
+    def _add_dataset(self, dataset):
+        return self.dataset_dump.add(self._last_state, dataset)
+
     def add_model_group(self, group):
         self.model_groups.append(group)
         group.id = len(self.model_groups)
@@ -2365,7 +2366,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
 
     def _add_simple_postprocessing(self, num_models_begin, num_models_end):
         # Always assumed that we're dealing with the last state
-        state = self._get_last_state()
+        state = self._last_state
         protocol = self.model_prot_dump.get_last_protocol(state)
         pp = _SimplePostProcess(protocol, num_models_begin, num_models_end)
         self.post_process_dump.add(pp)
@@ -2377,7 +2378,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         """Add an ensemble generated by ad hoc methods (not using PMI).
            This is currently only used by the Nup84 system."""
         # Always assumed that we're dealing with the last state
-        state = self._get_last_state()
+        state = self._last_state
         group = self.add_model_group(_ModelGroup(state, name))
         self.extref_dump.add(ensemble_file,
                              _ExternalReferenceDumper.MODELING_OUTPUT)

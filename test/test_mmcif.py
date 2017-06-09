@@ -651,6 +651,8 @@ _citation_author.ordinal
 
     def test_dataset_dumper_all_group(self):
         """Test DatasetDumper.get_all_group()"""
+        state1 = 'state1'
+        state2 = 'state2'
         dump, simo = make_dataset_dumper()
         l = IMP.pmi.metadata.FileLocation(repo='foo', path='baz')
         ds1 = IMP.pmi.metadata.EM2DClassDataset(l)
@@ -659,15 +661,17 @@ _citation_author.ordinal
         l = IMP.pmi.metadata.PDBLocation('1abc', '1.0', 'test details')
         ds3 = IMP.pmi.metadata.PDBDataset(l)
 
-        g1 = dump.get_all_group()
+        g1 = dump.get_all_group(state1)
 
-        dump.add(ds1)
-        dump.add(ds2)
-        g2 = dump.get_all_group()
-        g3 = dump.get_all_group()
+        dump.add(state1, ds1)
+        dump.add(state1, ds2)
+        g2 = dump.get_all_group(state1)
+        g3 = dump.get_all_group(state1)
 
-        dump.add(ds3)
-        g4 = dump.get_all_group()
+        dump.add(state1, ds3)
+        g4 = dump.get_all_group(state1)
+        dump.add(state2, ds3)
+        g5 = dump.get_all_group(state2)
         dump.finalize() # Assign IDs
 
         self.assertEqual(g1.id, 1)
@@ -680,14 +684,17 @@ _citation_author.ordinal
         self.assertEqual(g4.id, 3)
         self.assertEqual(list(g4._datasets), [ds1, ds2, ds3])
 
+        self.assertEqual(g5.id, 4)
+        self.assertEqual(list(g5._datasets), [ds3])
+
     def test_dataset_dumper_duplicates_details(self):
         """DatasetDumper ignores duplicate datasets with differing details"""
         dump, simo = make_dataset_dumper()
         l = IMP.pmi.metadata.PDBLocation('1abc', '1.0', 'test details')
-        ds1 = dump.add(IMP.pmi.metadata.PDBDataset(l))
+        ds1 = dump.add('state', IMP.pmi.metadata.PDBDataset(l))
         # A duplicate dataset should be ignored even if details differ
         l = IMP.pmi.metadata.PDBLocation('1abc', '1.0', 'other details')
-        ds2 = dump.add(IMP.pmi.metadata.PDBDataset(l))
+        ds2 = dump.add('state', IMP.pmi.metadata.PDBDataset(l))
         dump.finalize() # Assign IDs
         self.assertEqual(ds1.id, 1)
         self.assertEqual(ds2.id, 1)
@@ -695,6 +702,7 @@ _citation_author.ordinal
 
     def test_dataset_dumper_duplicates_location(self):
         """DatasetDumper ignores duplicate dataset locations"""
+        state = 'state1'
         loc1 = IMP.pmi.metadata.DatabaseLocation("mydb", "abc", "1.0", "")
         loc2 = IMP.pmi.metadata.DatabaseLocation("mydb", "xyz", "1.0", "")
 
@@ -703,8 +711,8 @@ _citation_author.ordinal
         cx2 = IMP.pmi.metadata.CXMSDataset(loc1)
 
         dump, simo = make_dataset_dumper()
-        dump.add(cx1)
-        dump.add(cx2)
+        dump.add(state, cx1)
+        dump.add(state, cx2)
         dump.finalize() # Assign IDs
         self.assertEqual(cx1.id, 1)
         self.assertEqual(cx2.id, 1)
@@ -714,8 +722,8 @@ _citation_author.ordinal
         cx1 = IMP.pmi.metadata.CXMSDataset(loc1)
         cx2 = IMP.pmi.metadata.CXMSDataset(loc2)
         dump, simo = make_dataset_dumper()
-        dump.add(cx1)
-        dump.add(cx2)
+        dump.add(state, cx1)
+        dump.add(state, cx2)
         dump.finalize() # Assign IDs
         self.assertEqual(cx1.id, 1)
         self.assertEqual(cx2.id, 2)
@@ -725,8 +733,8 @@ _citation_author.ordinal
         cx2 = IMP.pmi.metadata.CXMSDataset(loc2)
         em2d = IMP.pmi.metadata.EM2DClassDataset(loc2)
         dump, simo = make_dataset_dumper()
-        dump.add(cx2)
-        dump.add(em2d)
+        dump.add(state, cx2)
+        dump.add(state, em2d)
         dump.finalize() # Assign IDs
         self.assertEqual(cx2.id, 1)
         self.assertEqual(em2d.id, 2)
@@ -739,8 +747,8 @@ _citation_author.ordinal
         em3d_1 = IMP.pmi.metadata.EMDensityDataset(emloc1)
         em3d_2 = IMP.pmi.metadata.EMDensityDataset(emloc2)
         dump, simo = make_dataset_dumper()
-        dump.add(em3d_1)
-        dump.add(em3d_2)
+        dump.add(state, em3d_1)
+        dump.add(state, em3d_2)
         dump.finalize() # Assign IDs
         self.assertEqual(em3d_1.id, 1)
         self.assertEqual(em3d_2.id, 2)
@@ -748,17 +756,18 @@ _citation_author.ordinal
 
     def test_dataset_dumper_dump(self):
         """Test DatasetDumper.dump()"""
+        state1 = 'state'
         dump, simo = make_dataset_dumper()
         l = IMP.pmi.metadata.FileLocation(repo='foo', path='bar')
         l.id = 97
-        pds = dump.add(IMP.pmi.metadata.CXMSDataset(l))
+        pds = dump.add(state1, IMP.pmi.metadata.CXMSDataset(l))
         # group1 contains just the first dataset
-        group1 = dump.get_all_group()
+        group1 = dump.get_all_group(state1)
         l = IMP.pmi.metadata.FileLocation(repo='foo2', path='bar2')
         l.id = 98
-        pds = dump.add(IMP.pmi.metadata.CXMSDataset(l))
+        pds = dump.add(state1, IMP.pmi.metadata.CXMSDataset(l))
         # group2 contains the first two datasets
-        group2 = dump.get_all_group()
+        group2 = dump.get_all_group(state1)
         # last dataset is in no group and is wrapped by RestraintDataset
         class DummyRestraint(object):
             pass
@@ -768,7 +777,7 @@ _citation_author.ordinal
         dr.dataset.add_primary(pds)
         rd = IMP.pmi.mmcif._RestraintDataset(dr, num=None,
                                              allow_duplicates=False)
-        ds = dump.add(rd)
+        ds = dump.add(state1, rd)
         self.assertEqual(ds.dataset.location.access_code, '1abc')
 
         fh = StringIO()
@@ -1410,8 +1419,9 @@ _ihm_modeling_protocol.time_ordered_flag
         class DummyProtocolStep(object):
             pass
         po = DummyPO(None)
+        po._add_state(DummyRepr(None))
         p = DummyProtocolStep()
-        p.state = po._get_last_state()
+        p.state = po._last_state
         p.num_models_end = 10
         po.model_prot_dump.add(p)
         pp = po._add_simple_postprocessing(10, 90)
@@ -1575,7 +1585,7 @@ All kmeans_weight_500_2/cluster.0/ centroid index 49
                 fh.write("{'modelnum': 0}\n")
                 fh.write("{'modelnum': 1}\n")
             prot = DummyProtocolStep()
-            prot.state = po._get_last_state()
+            prot.state = po._last_state
             prot.num_models_end = 10
             po.model_prot_dump.add(prot)
             po.add_replica_exchange_analysis(simo._protocol_output[0][1], rex)
@@ -1876,7 +1886,7 @@ _ihm_cross_link_restraint.sigma_2
         d.add_primary(dp)
         pr.dataset = d
         p = DummyProtocolStep()
-        p.state = po._get_last_state()
+        p.state = po._last_state
         po.model_prot_dump.add(p)
         group = get_all_models_group(simo, po)
         m = po.add_model(group)
@@ -1961,7 +1971,7 @@ _ihm_2dem_class_average_fitting.tr_vector[3]
         pr.dataset = d
 
         p = DummyProtocolStep()
-        p.state = po._get_last_state()
+        p.state = po._last_state
         po.model_prot_dump.add(p)
         group = get_all_models_group(simo, po)
         m = po.add_model(group)

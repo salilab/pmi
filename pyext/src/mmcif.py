@@ -1259,9 +1259,15 @@ class _Model(object):
         self.geometric_center = IMP.algebra.Vector3D(*self.geometric_center)
         self.entity_for_chain = {}
         self.comp_for_chain = {}
+        self.correct_chain_id = {}
         for protname, chain_id in o.dictchain[name].items():
             self.entity_for_chain[chain_id] = simo.entities[protname]
             self.comp_for_chain[chain_id] = protname
+            # When doing multi-state modeling, the chain ID returned here
+            # (assigned sequentially) might not be correct (states may have
+            # gaps in the chain IDs). Map it to the correct ID.
+            self.correct_chain_id[chain_id] = \
+                           simo._get_chain_for_component(protname, o)
         self.spheres = [t for t in particle_infos_for_pdb if t[1] is None]
         self.atoms = [t for t in particle_infos_for_pdb if t[1] is not None]
         self.rmsf = {}
@@ -1335,7 +1341,7 @@ class _ModelDumper(_Dumper):
                     pt = model.transform * xyz
                     l.write(id=ordinal, label_atom_id=atom_type.get_string(),
                             label_comp_id=residue_type.get_string(),
-                            label_asym_id=chain_id,
+                            label_asym_id=model.correct_chain_id[chain_id],
                             label_entity_id=model.entity_for_chain[chain_id].id,
                             label_seq_id=residue_index,
                             Cartn_x=pt[0], Cartn_y=pt[1], Cartn_z=pt[2],
@@ -1360,7 +1366,7 @@ class _ModelDumper(_Dumper):
                             entity_id=model.entity_for_chain[chain_id].id,
                             seq_id_begin = all_indexes[0],
                             seq_id_end = all_indexes[-1],
-                            asym_id=chain_id,
+                            asym_id=model.correct_chain_id[chain_id],
                             Cartn_x=pt[0], Cartn_y=pt[1], Cartn_z=pt[2],
                             object_radius=radius,
                             rmsf=model.get_rmsf(model.comp_for_chain[chain_id],

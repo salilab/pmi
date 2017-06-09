@@ -2438,8 +2438,8 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         pp = _ReplicaExchangeAnalysisPostProcess(protocol, rex, num_models)
         self.post_process_dump.add(pp)
         for i in range(rex._number_of_clusters):
-            name = state.get_prefixed_name('cluster %d' % (i + 1))
-            group = self.add_model_group(_ModelGroup(state, name))
+            group = self.add_model_group(_ModelGroup(state,
+                                                     'cluster %d' % (i + 1)))
             # todo: make # of models to deposit configurable somewhere
             e = _ReplicaExchangeAnalysisEnsemble(pp, i, group, 1)
             self.ensemble_dump.add(e)

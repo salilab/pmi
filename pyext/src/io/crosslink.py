@@ -896,7 +896,7 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
                         ys.append(float(xl[ykey]))
                     colors.append(float(xl[colorkey]))
                 except ValueError:
-                    print("Value error for cross-link %s" % (xl[self.unique_id_key]))
+                    print("CrossLinkDataBase.plot: Value error for cross-link %s" % (xl[self.unique_id_key]))
                     continue
 
             cs=[]
@@ -956,7 +956,7 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
                 try:
                     values_list.append(float(xl[valuekey]))
                 except ValueError:
-                    print("Value error for cross-link %s" % (xl[self.unique_id_key]))
+                    print("CrossLinkDataBase.plot: Value error for cross-link %s" % (xl[self.unique_id_key]))
                     continue
             IMP.pmi.output.plot_field_histogram(
                   filename, [values_list], valuename=valuename, bins=bins,
@@ -1006,6 +1006,94 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
             a.writerow(sorted_ids)
             a.writerows(data)
 
+
+class JaccardDistanceMatrix(object):
+    """This class allows to compute and plot the distance between datasets"""
+
+    def __init__(self,cldb_dictionary):
+        """Input a dictionary where keys are cldb names and values are cldbs"""
+        import scipy.spatial.distance
+        self.dbs=cldb_dictionary
+        self.keylist=self.dbs.keys()
+        self.distances=list()
+
+
+        for i,key1 in enumerate(self.keylist):
+            for key2 in self.keylist[i+1:]:
+                distance=self.get_distance(key1,key2)
+                self.distances.append(distance)
+
+        self.distances=scipy.spatial.distance.squareform(self.distances)
+
+    def get_distance(self,key1,key2):
+        return 1.0-self.jaccard_index(self.dbs[key1],self.dbs[key2])
+
+    def jaccard_index(self,CrossLinkDataBase1,CrossLinkDataBase2):
+        """Similarity index between two datasets
+        https://en.wikipedia.org/wiki/Jaccard_index"""
+
+        set1=set()
+        set2=set()
+        for xl1 in CrossLinkDataBase1:
+            a1f=_ProteinsResiduesArray(xl1)
+            a1b=a1f.get_inverted()
+            set1.add(a1f)
+            set1.add(a1b)
+        for xl2 in CrossLinkDataBase2:
+            a2f=_ProteinsResiduesArray(xl2)
+            a2b=a2f.get_inverted()
+            set2.add(a2f)
+            set2.add(a2b)
+        return float(len(set1&set2)/2)/(len(set1)/2+len(set2)/2-len(set1&set2)/2)
+
+    def plot_matrix(self,figurename="clustermatrix.pdf"):
+        import matplotlib as mpl
+        import numpy
+        mpl.use('Agg')
+        import matplotlib.pylab as pl
+        from scipy.cluster import hierarchy as hrc
+
+        raw_distance_matrix=self.distances
+        labels=self.keylist
+
+        fig = pl.figure()
+        #fig.autolayout=True
+
+        ax = fig.add_subplot(1,1,1)
+        dendrogram = hrc.dendrogram(
+            hrc.linkage(raw_distance_matrix),
+            color_threshold=7,
+            no_labels=True)
+        leaves_order = dendrogram['leaves']
+        ax.set_xlabel('Dataset')
+        ax.set_ylabel('Jaccard Distance')
+        pl.tight_layout()
+        pl.savefig("dendrogram."+figurename, dpi=300)
+        pl.close(fig)
+
+        fig = pl.figure()
+        #fig.autolayout=True
+
+        ax = fig.add_subplot(1,1,1)
+        cax = ax.imshow(
+            raw_distance_matrix[leaves_order,
+                                     :][:,
+                                        leaves_order],
+            interpolation='nearest')
+        cb = fig.colorbar(cax)
+        cb.set_label('Jaccard Distance')
+        ax.set_xlabel('Dataset')
+        ax.set_ylabel('Dataset')
+        ax.set_xticks(range(len(labels)))
+        ax.set_xticklabels(numpy.array(labels)[leaves_order], rotation='vertical')
+        ax.set_yticks(range(len(labels)))
+        ax.set_yticklabels(numpy.array(labels)[leaves_order], rotation='horizontal')
+        pl.tight_layout()
+        pl.savefig("matrix."+figurename, dpi=300)
+        pl.close(fig)
+
+
+
 class CrossLinkDataBaseFromStructure(object):
     '''
     This class generates a CrossLinkDataBase from a given structure
@@ -1051,7 +1139,7 @@ class CrossLinkDataBaseFromStructure(object):
 
         if self.mode=="pmi1":
             for protein in self.representation.sequence_dict.keys():
-                # we are saving a dictionary with protein name, residue number and random reactivity of the residue
+            # we are saving a dictionary with protein name, residue number and random reactivity of the residue
                 seq=self.representation.sequence_dict[protein]
                 residues=[i for i in range(1,len(seq)+1) if ((seq[i-1] in self.residue_types_1) or (seq[i-1] in self.residue_types_2))]
 
@@ -1083,7 +1171,7 @@ class CrossLinkDataBaseFromStructure(object):
             for state in self.system.get_states():
                 for moleculename,molecules in state.get_molecules().iteritems():
                     for molecule in molecules:
-                        # we are saving a dictionary with protein name, residue number and random reactivity of the residue
+                # we are saving a dictionary with protein name, residue number and random reactivity of the residue
                         seq=molecule.sequence
                         residues=[i for i in range(1,len(seq)+1) if ((seq[i-1] in self.residue_types_1) or (seq[i-1] in self.residue_types_2))]
 

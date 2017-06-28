@@ -443,6 +443,16 @@ class Tests(IMP.test.TestCase):
             if r[1]=='AAA':
                 self.assertEqual(r[3],records_2[n][3]+100)
 
+    def test_jaccard_distance(self):
+        cldb1=self.setup_cldb("xl_dataset_test.dat")
+        cldb2=self.setup_cldb("xl_dataset_test.dat")
+        cldb3=self.setup_cldb("xl_dataset_test.dat")
+        cldb3.offset_residue_index('AAA',100)
+
+        ddb={1:cldb1,2:cldb2,3:cldb3}
+        jdm=IMP.pmi.io.crosslink.JaccardDistanceMatrix(ddb)
+        self.assertEqual(jdm.get_distance(1,2),0.0)
+        self.assertEqual(jdm.get_distance(1,3),0.875)
 
 if __name__ == '__main__':
     IMP.test.main()

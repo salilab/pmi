@@ -1014,7 +1014,7 @@ class JaccardDistanceMatrix(object):
         """Input a dictionary where keys are cldb names and values are cldbs"""
         import scipy.spatial.distance
         self.dbs=cldb_dictionary
-        self.keylist=self.dbs.keys()
+        self.keylist=list(self.dbs.keys())
         self.distances=list()
 
 

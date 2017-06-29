@@ -11,16 +11,16 @@ import IMP.pmi.analysis
 class Tests(IMP.test.TestCase):
     def setUp(self):
         mdl = IMP.Model()
-	IMP.test.TestCase.setUp(self)
-	reader = IMP.pmi.topology.TopologyReader(self.get_input_file_name('1mda/1mda_topology.dat'),
-                                        	 pdb_dir =   self.get_input_file_name('1mda/'),
-                                        	 fasta_dir = self.get_input_file_name('1mda/'),
-                                        	 gmm_dir =   self.get_input_file_name('1mda/gmm'))
+        IMP.test.TestCase.setUp(self)
+        reader = IMP.pmi.topology.TopologyReader(self.get_input_file_name('1mda/1mda_topology.dat'),
+                                                 pdb_dir =   self.get_input_file_name('1mda/'),
+                                                 fasta_dir = self.get_input_file_name('1mda/'),
+                                                 gmm_dir =   self.get_input_file_name('1mda/gmm'))
 
-	bs = IMP.pmi.macros.BuildSystem(mdl)
-	bs.add_state(reader)
-	self.hier, self.dof = bs.execute_macro(max_rb_trans=4.0, max_rb_rot=0.4, max_bead_trans=4.0, max_srb_trans=4.0,max_srb_rot=0.4)
-	self.mols=IMP.pmi.tools.get_molecules(self.hier)
+        bs = IMP.pmi.macros.BuildSystem(mdl)
+        bs.add_state(reader)
+        self.hier, self.dof = bs.execute_macro(max_rb_trans=4.0, max_rb_rot=0.4, max_bead_trans=4.0, max_srb_trans=4.0,max_srb_rot=0.4)
+        self.mols=IMP.pmi.tools.get_molecules(self.hier)
 
     def test_rmsd_simple(self):
         """Test get_particle_infos_for_pdb_writing with no particles"""

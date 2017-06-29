@@ -529,7 +529,7 @@ class RMSD(object):
         total_N=0
         best_assignments=[]
         rmsd_dict={}
-        for molname, ref_mols in self.moldict1.iteritems():
+        for molname, ref_mols in self.moldict1.items():
             selref=IMP.atom.Selection(ref_mols,representation_type=IMP.atom.BALLS)
             rmsd=[]
             rmf_mols_list=[]
@@ -1128,7 +1128,7 @@ class GetRMSD(object):
     def get_output(self):
         total_rmsd = 0
         total_N = 0
-        for molname, rmf_mols in self.rmf_moldict.iteritems():
+        for molname, rmf_mols in self.rmf_moldict.items():
             sel_rmf = IMP.atom.Selection(
                 rmf_mols, representation_type=IMP.atom.BALLS)
             N = len(sel_rmf.get_selected_particle_indexes())

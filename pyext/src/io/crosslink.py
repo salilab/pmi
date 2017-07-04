@@ -4,7 +4,7 @@
    Utilities are also provided to help in the analysis of models that
    contain cross-links.
 """
-
+from __future__ import print_function
 import IMP
 import IMP.pmi
 import operator
@@ -706,10 +706,13 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
                 percentage_matched = round(100*cnt_matched/len(self),1)
                 percentage_matched_file = round(100 * cnt_matched_file / len(self), 1)
                 #if matched: print "Matched xlinks:", matched
-                if matched or non_matched: print "check_cross_link_consistency: Out of", len(self), "crosslinks", cnt_matched, "were matched to the fasta" \
-                                                " sequence.(" + str(percentage_matched) + "%).\n", cnt_matched_file, "were matched by using the crosslink file" \
-                                                " (" + str(percentage_matched_file) + "%)."
-                if non_matched: print "check_cross_link_consistency: Warning: Non matched xlinks:", [(prot_name, sorted(list(non_matched[prot_name]))) for prot_name in non_matched]
+                if matched or non_matched: print("check_cross_link_consistency: Out of %d crosslinks "
+                                                 "%d were matched to the fasta sequence (%f %%).\n "
+                                                 "%d were matched by using the crosslink file (%f %%)."%
+                                                 (len(self),cnt_matched,percentage_matched,cnt_matched_file,
+                                                  percentage_matched_file) )
+                if non_matched: print("check_cross_link_consistency: Warning: Non matched xlinks:",
+                                      [(prot_name, sorted(list(non_matched[prot_name]))) for prot_name in non_matched])
             return matched,non_matched
 
     def _match_xlinks(self, prot_name, res_index, aa_tuple):

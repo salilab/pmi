@@ -456,8 +456,8 @@ class Tests(IMP.test.TestCase):
 
         ddb={1:cldb1,2:cldb2,3:cldb3}
         jdm=IMP.pmi.io.crosslink.JaccardDistanceMatrix(ddb)
-        self.assertEqual(jdm.get_distance(1,2),0.0)
-        self.assertEqual(jdm.get_distance(1,3),0.875)
+        self.assertAlmostEqual(jdm.get_distance(1,2), 0.0, delta=1e-3)
+        self.assertAlmostEqual(jdm.get_distance(1,3), 0.875, delta=1e-3)
 
     def test_check_consistency(self):
         seqs = IMP.pmi.topology.Sequences(self.get_input_file_name("proteasome.fasta"))

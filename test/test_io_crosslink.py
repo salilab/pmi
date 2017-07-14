@@ -444,6 +444,11 @@ class Tests(IMP.test.TestCase):
                 self.assertEqual(r[3],records_2[n][3]+100)
 
     def test_jaccard_distance(self):
+        try:
+            import scipy.spatial
+        except ImportError:
+            self.skipTest("no scipy spatial")
+
         cldb1=self.setup_cldb("xl_dataset_test.dat")
         cldb2=self.setup_cldb("xl_dataset_test.dat")
         cldb3=self.setup_cldb("xl_dataset_test.dat")

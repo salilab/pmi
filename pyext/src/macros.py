@@ -425,7 +425,7 @@ class ReplicaExchange0(object):
 
             my_temp_index = int(rex.get_my_temp() * temp_index_factor)
 
-            if self.vars["save_coordinates_mode"] == "best_temperature":
+            if self.vars["save_coordinates_mode"] == "lowest_temperature":
                 save_frame=(min_temp_index == my_temp_index)
             elif self.vars["save_coordinates_mode"] == "25th_score":
                 score_perc=mpivs.get_percentile("score")

@@ -481,10 +481,11 @@ class BuildSystem(object):
 
     def add_state(self,
                   reader,
-                  keep_chain_id=False):
+                  keep_chain_id=False, fasta_name_map=None):
         """Add a state using the topology info in a IMP::pmi::topology::TopologyReader object.
         When you are done adding states, call execute_macro()
         @param reader The TopologyReader object
+        @param fasta_name_map dictionary for converting protein names found in the fasta file
         """
         state = self.system.create_state()
         self._readers.append(reader)
@@ -509,8 +510,7 @@ class BuildSystem(object):
                     is_nucleic=False
                     fasta_flag=copy[0].fasta_flag
                     if fasta_flag == "RNA" or fasta_flag == "DNA": is_nucleic=True
-
-                    seq = IMP.pmi.topology.Sequences(copy[0].fasta_file)[copy[0].fasta_id]
+                    seq = IMP.pmi.topology.Sequences(copy[0].fasta_file, fasta_name_map)[copy[0].fasta_id]
                     print("BuildSystem.add_state: molecule %s sequence has %s residues" % (molname,len(seq)))
                     orig_mol = state.create_molecule(molname,
                                                      seq,

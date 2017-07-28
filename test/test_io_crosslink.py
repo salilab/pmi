@@ -523,22 +523,13 @@ class Tests(IMP.test.TestCase):
     def test_map_crosslink_database(self):
         model=IMP.Model()
 
-        xlfile="""P1,P2,R1,R2
-        Prot2,Prot2,6,10
-        Prot1,Prot2,5,10
-        Prot2,Prot1,1,7""".replace("        ","")
-
-        with open('./input/tmp_cldb.csv', 'w') as tmp_file:
-            tmp_file.write(xlfile)
-
-
         cldbkc = IMP.pmi.io.crosslink.CrossLinkDataBaseKeywordsConverter()
         cldbkc.set_protein1_key("P1")
         cldbkc.set_protein2_key("P2")
         cldbkc.set_residue1_key("R1")
         cldbkc.set_residue2_key("R2")
         cldb = IMP.pmi.io.crosslink.CrossLinkDataBase(cldbkc)
-        cldb.create_set_from_file(self.get_input_file_name('tmp_cldb.csv'))
+        cldb.create_set_from_file(self.get_input_file_name("xl_dataset_test_io_crosslink_map.txt"))
 
         rmf_name=self.get_input_file_name("pmi2_sample_0/rmfs/0.rmf3")
         frame_index=9

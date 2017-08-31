@@ -146,7 +146,7 @@ class Tests(IMP.test.TestCase):
         import glob
 
         m=IMP.Model()
-        stat_name=self.get_input_file_name(["output_test/stat.1.out"])
+        stat_name=[self.get_input_file_name("output_test/stat.1.out")]
         stath=IMP.pmi.output.StatHierarchyHandler(m,stat_name)
 
         # test that it is indeed a hierarchy
@@ -191,7 +191,7 @@ class Tests(IMP.test.TestCase):
         stath[2]
         IMP.rmf.load_frame(rh, RMF.FrameID(2))
         self._check_coordinate_identity(lvs,lvsh)
-        scores, rmf_files, rmf_frame_indexes,features=self._get_info_from_stat_file(stat_name)
+        scores, rmf_files, rmf_frame_indexes,features=self._get_info_from_stat_file(stat_name[0])
 
         #test __iter__
         for n,o in enumerate(stath):
@@ -206,7 +206,7 @@ class Tests(IMP.test.TestCase):
         #test data getters functionality
         self.assertEqual(stath.get_scores(),scores)
         self.assertEqual(stath.get_rmf_names(),rmf_files)
-        self.assertEqual(stath.get_stat_files_names(),[stat_name]*len(stath))
+        self.assertEqual(stath.get_stat_files_names(),stat_name*len(stath))
         self.assertEqual(stath.get_rmf_indexes(),rmf_frame_indexes)
         self.assertEqual(sorted(stath.get_feature_names()),sorted(features.keys()))
         for k in features:

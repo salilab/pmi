@@ -286,7 +286,8 @@ def get_best_models(stat_files,
             for requested_key in feature_keys:
                 for file_k in file_keywords:
                     if requested_key in file_k:
-                        keywords.append(file_k)
+                        if file_k not in keywords:
+                            keywords.append(file_k)
 
         if prefiltervalue is None:
             fields = po.get_fields(keywords,

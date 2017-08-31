@@ -146,7 +146,7 @@ class Tests(IMP.test.TestCase):
         import glob
 
         m=IMP.Model()
-        stat_name=self.get_input_file_name("output_test/stat.1.out")
+        stat_name=self.get_input_file_name(["output_test/stat.1.out"])
         stath=IMP.pmi.output.StatHierarchyHandler(m,stat_name)
 
         # test that it is indeed a hierarchy

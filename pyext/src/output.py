@@ -8,6 +8,7 @@ import IMP.atom
 import IMP.core
 import IMP.pmi
 import IMP.pmi.tools
+import IMP.pmi.io
 import os
 import sys
 import ast
@@ -822,7 +823,171 @@ class ProcessOutput(object):
         f.close()
         return outdict
 
+class RMFHierarchyHandler(IMP.atom.Hierarchy):
+    """ class to allow more advanced handling of RMF files.
+    It is both a container and a IMP.atom.Hierarchy.
+     - it is iterable (while loading the corresponding frame)
+     - Item brackets [] load the corresponding frame
+     - slice create an iterator
+     - can relink to another RMF file
+     """
+    def __init__(self,model,rmf_file_name):
+        """
+        @param model: the IMP.Model()
+        @param rmf_file_name: str, path of the rmf file
+        """
+        self.model=model
+        self.rh_ref = RMF.open_rmf_file_read_only(rmf_file_name)
+        hs = IMP.rmf.create_hierarchies(self.rh_ref, self.model)
+        IMP.rmf.load_frame(self.rh_ref, RMF.FrameID(0))
+        self.root_hier_ref = hs[0]
+        IMP.atom.Hierarchy.__init__(self, self.root_hier_ref)
+        self.model.update()
 
+
+    def link_to_rmf(self,rmf_file_name):
+        """
+        Link to another RMF file
+        """
+        self.rh_ref = RMF.open_rmf_file_read_only(rmf_file_name)
+        IMP.rmf.link_hierarchies(self.rh_ref, [self])
+        IMP.rmf.load_frame(self.rh_ref, RMF.FrameID(0))
+        self.model.update()
+
+    def set_frame(self,index):
+        IMP.rmf.load_frame(self.rh_ref, RMF.FrameID(index))
+        self.model.update()
+
+    def get_number_of_frames(self):
+        return self.rh_ref.get_number_of_frames()
+
+    def __getitem__(self,int_slice_adaptor):
+        if type(int_slice_adaptor) is int:
+            self.set_frame(int_slice_adaptor)
+            return int_slice_adaptor
+        elif type(int_slice_adaptor) is slice:
+            return self.__iter__(int_slice_adaptor)
+        else:
+            raise TypeError("Unknown Type")
+
+    def __len__(self):
+        return self.get_number_of_frames()
+
+    def __iter__(self,slice_key=None):
+        if slice_key is None:
+            for nframe in range(len(self)):
+                yield self[nframe]
+        else:
+            for nframe in list(range(len(self)))[slice_key]:
+                yield self[nframe]
+
+
+
+class StatHierarchyHandler(RMFHierarchyHandler):
+    """ class to link stat files with several rmf files """
+    def __init__(self,model,stat_file):
+        self.stat_file=stat_file
+        self.model=model
+        self.data=None
+        self.current_rmf=None
+        self.is_setup=False
+        self.skip=1
+        self.set_stat_file(self.stat_file)
+
+
+    class Data(object):
+        def __init__(self,rmf_name=None,rmf_index=None,score=None,features=None):
+            self.rmf_name=rmf_name
+            self.rmf_index=rmf_index
+            self.score=score
+            self.features=features
+
+    def set_stat_file(self,stat_file):
+        scores,rmf_files,rmf_frame_indexes,features = self.get_info_from_stat_file(stat_file)
+        if len(set(rmf_files)) > 1:
+            raise ("Multiple RMF files found")
+        self.data=[]
+
+        if not rmf_files:
+            print("StatHierarchyHandler: Warning: Trying to set none as rmf_file, aborting")
+            return
+
+        for n,index in enumerate(rmf_frame_indexes):
+            featn_dict=dict([(k,features[k][n]) for k in features])
+            self.data.append(self.Data(rmf_files[n],index,scores[n],featn_dict))
+
+        if not self.is_setup:
+            RMFHierarchyHandler.__init__(self, self.model,rmf_files[0])
+            self.is_setup=True
+            self.current_rmf=rmf_files[0]
+
+        self.set_frame(0)
+
+    def set_frame(self,index):
+        nm=self.data[index].rmf_name
+        fidx=self.data[index].rmf_index
+
+        if nm != self.current_rmf:
+            self.link_to_rmf(nm)
+            self.current_rmf=nm
+
+        IMP.rmf.load_frame(self.rh_ref, RMF.FrameID(fidx))
+        self.model.update()
+
+    def __getitem__(self,int_slice_adaptor):
+        if type(int_slice_adaptor) is int:
+            self.set_frame(int_slice_adaptor)
+            return self.data[int_slice_adaptor]
+        elif type(int_slice_adaptor) is slice:
+            return self.__iter__(int_slice_adaptor)
+        else:
+            raise TypeError("Unknown Type")
+
+    def __len__(self):
+        return len(self.data)
+
+    def __iter__(self,slice_key=None):
+        if slice_key is None:
+            for i in range(len(self)):
+                yield self[i]
+        else:
+            for i in range(len(self))[slice_key]:
+                yield self[i]
+
+    def do_filter_by_score(self,maximum_score):
+        self.data=[d for d in self.data if d.score<maximum_score]
+
+    def get_scores(self):
+        return [d.score for d in self.data]
+
+    def get_feature_series(self,feature_name):
+        return [d.features[feature_name] for d in self.data]
+
+    def get_feature_names(self):
+        return self.data[0].features.keys()
+
+    def get_rmf_names(self):
+        return [d.rmf_name for d in self.data]
+
+    def get_rmf_indexes(self):
+        return [d.rmf_index for d in self.data]
+
+    def get_info_from_stat_file(self, stat_file):
+        po=ProcessOutput(stat_file)
+        fs=po.get_keys()
+        models = IMP.pmi.io.get_best_models([stat_file],
+                                            score_key="Total_Score",
+                                            feature_keys=fs,
+                                            rmf_file_key="rmf_file",
+                                            rmf_file_frame_key="rmf_frame_index",
+                                            prefiltervalue=None,
+                                            get_every=1)
+
+        scores = [float(y) for y in models[2]]
+        rmf_files = models[0]
+        rmf_frame_indexes = models[1]
+        features=models[3]
+        return scores, rmf_files, rmf_frame_indexes,features
 
 class CrossLinkIdentifierDatabase(object):
     def __init__(self):

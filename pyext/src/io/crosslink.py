@@ -1287,22 +1287,11 @@ class MapCrossLinkDataBaseOnStructure(object):
     '''
 
 
-    def __init__(self,model,CrossLinkDataBase,rmf_name_handler_adaptor):
+    def __init__(self,CrossLinkDataBase,rmf_or_stat_handler):
         self.CrossLinkDataBase=CrossLinkDataBase
-        if type(rmf_name_handler_adaptor) is str:
-            self.rh = RMF.open_rmf_file_read_only(rmf_name)
-            self.model=model
-            self.prots = IMP.rmf.create_hierarchies(rh, self.model)
-            IMP.rmf.load_frame(self.rh, RMF.FrameID(0))
-            self.compute_distances()
-            self.model.update()
-        elif type(rmf_name_handler_adaptor) is IMP.pmi.output.RMFHierarchyHandler or \
-                type(rmf_name_handler_adaptor) is IMP.pmi.output.StatHierarchyHandler:
-            self.prots=rmf_name_handler_adaptor
-            self.rh=rmf_name_handler_adaptor.rh_ref
-
-    def set_frame(self,index):
-        IMP.rmf.load_frame(self.rh, RMF.FrameID(index))
+        if type(rmf_or_stat_handler) is IMP.pmi.output.RMFHierarchyHandler or \
+                type(rmf_or_stat_handler) is IMP.pmi.output.StatHierarchyHandler:
+            self.prots=rmf_or_stat_handler
 
     def compute_distances(self):
         data=[]

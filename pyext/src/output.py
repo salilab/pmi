@@ -886,27 +886,30 @@ class RMFHierarchyHandler(IMP.atom.Hierarchy):
 class StatHierarchyHandler(RMFHierarchyHandler):
     """ class to link stat files with several rmf files """
     def __init__(self,model,stat_file):
-        self.stat_file=stat_file
         self.model=model
-        self.data=None
+        self.data=[]
         self.current_rmf=None
         self.is_setup=False
         self.skip=1
-        self.set_stat_file(self.stat_file)
+        if type(stat_file) is str:
+            self.add_stat_file(stat_file)
+        elif type(stat_file) is list:
+            for f in stat_file:
+                self.add_stat_file(f)
 
 
     class Data(object):
-        def __init__(self,rmf_name=None,rmf_index=None,score=None,features=None):
+        def __init__(self,stat_file=None,rmf_name=None,rmf_index=None,score=None,features=None):
             self.rmf_name=rmf_name
             self.rmf_index=rmf_index
             self.score=score
             self.features=features
+            self.stat_file=stat_file
 
-    def set_stat_file(self,stat_file):
+    def add_stat_file(self,stat_file):
         scores,rmf_files,rmf_frame_indexes,features = self.get_info_from_stat_file(stat_file)
         if len(set(rmf_files)) > 1:
             raise ("Multiple RMF files found")
-        self.data=[]
 
         if not rmf_files:
             print("StatHierarchyHandler: Warning: Trying to set none as rmf_file, aborting")
@@ -914,14 +917,14 @@ class StatHierarchyHandler(RMFHierarchyHandler):
 
         for n,index in enumerate(rmf_frame_indexes):
             featn_dict=dict([(k,features[k][n]) for k in features])
-            self.data.append(self.Data(rmf_files[n],index,scores[n],featn_dict))
+            self.data.append(self.Data(stat_file,rmf_files[n],index,scores[n],featn_dict))
 
         if not self.is_setup:
             RMFHierarchyHandler.__init__(self, self.model,rmf_files[0])
             self.is_setup=True
             self.current_rmf=rmf_files[0]
-
         self.set_frame(0)
+
 
     def set_frame(self,index):
         nm=self.data[index].rmf_name
@@ -968,6 +971,9 @@ class StatHierarchyHandler(RMFHierarchyHandler):
 
     def get_rmf_names(self):
         return [d.rmf_name for d in self.data]
+
+    def get_stat_files_names(self):
+        return [d.stat_file for d in self.data]
 
     def get_rmf_indexes(self):
         return [d.rmf_index for d in self.data]

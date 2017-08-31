@@ -206,6 +206,7 @@ class Tests(IMP.test.TestCase):
         #test data getters functionality
         self.assertEqual(stath.get_scores(),scores)
         self.assertEqual(stath.get_rmf_names(),rmf_files)
+        self.assertEqual(stath.get_stat_files_names(),[stat_name]*len(stath))
         self.assertEqual(stath.get_rmf_indexes(),rmf_frame_indexes)
         self.assertEqual(sorted(stath.get_feature_names()),sorted(features.keys()))
         for k in features:
@@ -229,13 +230,13 @@ class Tests(IMP.test.TestCase):
         #test multiple stat files with slicing
         stat_names=glob.glob(self.get_input_file_name("output_test/stat.0.out").replace("stat.0.out","stat.*.out"))
         for stat in stat_names:
-            stath.set_stat_file(stat)
-            for o in stath[2:-1:10]:
-                rh = RMF.open_rmf_file_read_only(o.rmf_name)
-                IMP.rmf.link_hierarchies(rh, [h])
-                IMP.rmf.load_frame(rh, RMF.FrameID(o.rmf_index))
-                m.update()
-                self._check_coordinate_identity(lvs,lvsh)
+            stath.add_stat_file(stat)
+        for o in stath[2:-1:10]:
+            rh = RMF.open_rmf_file_read_only(o.rmf_name)
+            IMP.rmf.link_hierarchies(rh, [h])
+            IMP.rmf.load_frame(rh, RMF.FrameID(o.rmf_index))
+            m.update()
+            self._check_coordinate_identity(lvs,lvsh)
 
 
 

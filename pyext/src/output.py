@@ -884,21 +884,37 @@ class RMFHierarchyHandler(IMP.atom.Hierarchy):
 
 
 class StatHierarchyHandler(RMFHierarchyHandler):
-    """ class to link stat files with several rmf files """
-    def __init__(self,model,stat_file):
-        self.model=model
-        self.data=[]
-        self.current_rmf=None
-        self.is_setup=False
-        self.skip=1
-        if type(stat_file) is str:
-            self.add_stat_file(stat_file)
-        elif type(stat_file) is list:
-            for f in stat_file:
-                self.add_stat_file(f)
+    """ class to link stat files to several rmf files """
+    def __init__(self,model=None,stat_file=None,number_best_scoring_models=None,StatHierarchyHandler=None):
+
+        if not StatHierarchyHandler is None:
+            #overrides all other arguments
+            #copy constructor: create a copy with different RMFHierarchyHandler
+            self.model=StatHierarchyHandler.model
+            self.data=StatHierarchyHandler.data
+            self.number_best_scoring_models=StatHierarchyHandler.number_best_scoring_models
+            self.is_setup=True
+            self.current_rmf=StatHierarchyHandler.current_rmf
+            self.score_threshold=StatHierarchyHandler.score_threshold
+            RMFHierarchyHandler.__init__(self, self.model,self.current_rmf)
+
+        else:
+            #standard constructor
+            self.model=model
+            self.data=[]
+            self.number_best_scoring_models=number_best_scoring_models
+            self.is_setup=None
+            self.current_rmf=None
+            self.score_threshold=None
+
+            if type(stat_file) is str:
+                self.add_stat_file(stat_file)
+            elif type(stat_file) is list:
+                for f in stat_file:
+                    self.add_stat_file(f)
 
 
-    class Data(object):
+    class DataEntry(object):
         def __init__(self,stat_file=None,rmf_name=None,rmf_index=None,score=None,features=None):
             self.rmf_name=rmf_name
             self.rmf_index=rmf_index
@@ -906,18 +922,32 @@ class StatHierarchyHandler(RMFHierarchyHandler):
             self.features=features
             self.stat_file=stat_file
 
+        def __repr__(self):
+            s= "StatHierarchyHandler.DataEntry\n"
+            s+="---- stat file %s \n"%(self.stat_file)
+            s+="---- rmf file %s \n"%(self.rmf_name)
+            s+="---- rmf index %s \n"%(str(self.rmf_index))
+            s+="---- score %s \n"%(str(self.score))
+            s+="---- number of features %s \n"%(str(len(self.features.keys())))
+            return s
+
     def add_stat_file(self,stat_file):
-        scores,rmf_files,rmf_frame_indexes,features = self.get_info_from_stat_file(stat_file)
+        scores,rmf_files,rmf_frame_indexes,features = self.get_info_from_stat_file(stat_file, self.score_threshold)
         if len(set(rmf_files)) > 1:
             raise ("Multiple RMF files found")
 
         if not rmf_files:
-            print("StatHierarchyHandler: Warning: Trying to set none as rmf_file, aborting")
+            print("StatHierarchyHandler: Error: Trying to set none as rmf_file (probably empty stat file), aborting")
             return
 
         for n,index in enumerate(rmf_frame_indexes):
             featn_dict=dict([(k,features[k][n]) for k in features])
-            self.data.append(self.Data(stat_file,rmf_files[n],index,scores[n],featn_dict))
+            self.data.append(self.DataEntry(stat_file,rmf_files[n],index,scores[n],featn_dict))
+
+        if self.number_best_scoring_models:
+            scores=self.get_scores()
+            max_score=sorted(scores)[0:min(len(self),self.number_best_scoring_models)][-1]
+            self.do_filter_by_score(max_score)
 
         if not self.is_setup:
             RMFHierarchyHandler.__init__(self, self.model,rmf_files[0])
@@ -958,7 +988,7 @@ class StatHierarchyHandler(RMFHierarchyHandler):
                 yield self[i]
 
     def do_filter_by_score(self,maximum_score):
-        self.data=[d for d in self.data if d.score<maximum_score]
+        self.data=[d for d in self.data if d.score<=maximum_score]
 
     def get_scores(self):
         return [d.score for d in self.data]
@@ -978,7 +1008,7 @@ class StatHierarchyHandler(RMFHierarchyHandler):
     def get_rmf_indexes(self):
         return [d.rmf_index for d in self.data]
 
-    def get_info_from_stat_file(self, stat_file):
+    def get_info_from_stat_file(self, stat_file, score_threshold=None):
         po=ProcessOutput(stat_file)
         fs=po.get_keys()
         models = IMP.pmi.io.get_best_models([stat_file],
@@ -986,7 +1016,7 @@ class StatHierarchyHandler(RMFHierarchyHandler):
                                             feature_keys=fs,
                                             rmf_file_key="rmf_file",
                                             rmf_file_frame_key="rmf_frame_index",
-                                            prefiltervalue=None,
+                                            prefiltervalue=score_threshold,
                                             get_every=1)
 
         scores = [float(y) for y in models[2]]

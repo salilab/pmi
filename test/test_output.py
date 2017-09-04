@@ -238,6 +238,29 @@ class Tests(IMP.test.TestCase):
             m.update()
             self._check_coordinate_identity(lvs,lvsh)
 
+        #test multiple stat files with filter
+        stath=IMP.pmi.output.StatHierarchyHandler(m,stat_names,10)
+        lvs=IMP.atom.get_leaves(stath)
+        self.assertEqual(10,len(stath))
+        for o in stath:
+            rh = RMF.open_rmf_file_read_only(o.rmf_name)
+            IMP.rmf.link_hierarchies(rh, [h])
+            IMP.rmf.load_frame(rh, RMF.FrameID(o.rmf_index))
+            m.update()
+            self._check_coordinate_identity(lvs,lvsh)
+
+        #test copy constructor
+        stathcopy=IMP.pmi.output.StatHierarchyHandler(StatHierarchyHandler=stath)
+        lvsh=IMP.atom.get_leaves(stathcopy)
+        self.assertEqual(stath.get_scores(),stathcopy.get_scores())
+        self.assertEqual(stath.get_rmf_names(),stathcopy.get_rmf_names())
+        self.assertEqual(stath.get_stat_files_names(),stathcopy.get_stat_files_names())
+        self.assertEqual(stath.get_rmf_indexes(),stathcopy.get_rmf_indexes())
+        self.assertEqual(sorted(stath.get_feature_names()),sorted(stathcopy.get_feature_names()))
+        for o,ocopy in zip(stath,stathcopy):
+            self._check_coordinate_identity(lvs,lvsh)
+            for n,p in enumerate(lvs):
+                self.assertNotEqual(p.get_particle_index(),lvsh[n].get_particle_index())
 
 
 if __name__ == '__main__':

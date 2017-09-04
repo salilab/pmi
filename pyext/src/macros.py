@@ -2052,3 +2052,77 @@ class AnalysisReplicaExchange0(object):
         objects = pickle.load(inputf)
         inputf.close()
         return objects
+
+class AnalysisReplicaExchange(object):
+
+    def __init__(self,model,
+                 stat_files,
+                 best_models=None):
+
+        self.model=model
+        stath0=IMP.pmi.output.StatHierarchyHandler(model,stat_files,best_models)
+        stath1=IMP.pmi.output.StatHierarchyHandler(StatHierarchyHandler=stath0)
+
+        self.rbs1, self.beads1 = IMP.pmi.tools.get_rbs_and_beads(IMP.pmi.tools.select_at_all_resolutions(stath1))
+        self.rbs0, self.beads0 = IMP.pmi.tools.get_rbs_and_beads(IMP.pmi.tools.select_at_all_resolutions(stath0))
+
+        self.sel0=IMP.atom.Selection(stath0)
+        self.sel1=IMP.atom.Selection(stath1)
+
+        self.clusters=[]
+
+
+        for n1,s1 in enumerate(stath1):
+            assigned={}
+            for c in self.clusters:
+
+                members=c.members
+                for n0 in members:
+
+                    if n0 != n1:
+                        s0=stath0[n0]
+                        self.align()
+                        rmsd=self.rmsd()
+                        print(n1,n0,rmsd)
+                        if rmsd<10:
+                            assigned[rmsd]=(n0,c)
+
+            if len(assigned) == 0:
+                c=self.Cluster(n1)
+                self.clusters.append(c)
+            else:
+                minrmsd=min(assigned.keys())
+                n0,c=assigned[minrmsd]
+                c.add_member(n1)
+
+        o=IMP.pmi.output.Output()
+        d0=stath0[self.clusters[0].members[0]]
+        for n,c in enumerate(self.clusters):
+            o.init_rmf(str(n)+".rmf3", [stath1])
+            for n0 in c.members:
+                d1=stath1[n0]
+                self.align()
+                o.write_rmf(str(n)+".rmf3")
+            o.close_rmf(str(n)+".rmf3")
+
+    def align(self):
+        tr = IMP.atom.get_transformation_aligning_first_to_second(self.sel1, self.sel0)
+
+        for rb in self.rbs1:
+            IMP.core.transform(rb, tr)
+
+        for bead in self.beads1:
+            IMP.core.transform(IMP.core.XYZ(bead), tr)
+
+        self.model.update()
+
+    def rmsd(self):
+        return IMP.atom.get_rmsd(self.sel1, self.sel0)
+
+    class Cluster(object):
+
+        def __init__(self,index):
+            self.members=[index]
+
+        def add_member(self,index):
+            self.members.append(index)

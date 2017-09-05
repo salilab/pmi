@@ -8,7 +8,7 @@ class Tests(IMP.test.TestCase):
 
     def test_analysis_replica_exchange(self):
         model=IMP.Model()
-        sts=glob.glob(self.get_input_file_name("output_test/stat.0.out").replace(".0.",".*."))
+        sts=sorted(glob.glob(self.get_input_file_name("output_test/stat.0.out").replace(".0.",".*.")))
         are=IMP.pmi.macros.AnalysisReplicaExchange(model,sts,10)
 
         are.set_alignment_selection(molecule="Rpb4")
@@ -18,7 +18,7 @@ class Tests(IMP.test.TestCase):
 
         dcr={"Rpb4":["Rpb4"],"Rpb7":["Rpb7"],"All":["Rpb4","Rpb7"]}
 
-        self.assertEqual(len(are),5)
+        self.assertEqual(len(are),4)
 
         for cluster in are:
             print(cluster)

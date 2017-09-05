@@ -8,9 +8,8 @@ class Tests(IMP.test.TestCase):
 
     def test_analysis_replica_exchange(self):
         model=IMP.Model()
-        sts=glob.glob(self.get_input_file_name("output_test/stat.0.out").replace(".0.",".*."))
+        sts=sorted(glob.glob(self.get_input_file_name("output_test/stat.0.out").replace(".0.",".*.")))
         are=IMP.pmi.macros.AnalysisReplicaExchange(model,sts,10)
-
         are.set_alignment_selection(molecule="Rpb4")
         are.cluster(20)
 
@@ -21,11 +20,26 @@ class Tests(IMP.test.TestCase):
         self.assertEqual(len(are),5)
 
         for cluster in are:
-            print(cluster)
             are.save_coordinates(cluster)
             are.save_densities(cluster,dcr)
+            are.precision(cluster)
+
+            for mol in ["Rpb4","Rpb7"]:
+                rmsf=are.rmsf(cluster,mol)
+                rs=[]
+                rmsfs=[]
+                for r in rmsf:
+                    rs.append(r)
+                    rmsfs.append(rmsf[r])
+                IMP.pmi.output.plot_xy_data(rs,rmsfs,out_fn=mol+"."+str(cluster.cluster_id)+".rmsf.pdf")
+
+            print(cluster)
             for member in cluster:
                 print(member)
+
+        for c1 in are:
+            for c2 in are:
+                print(c1.cluster_id,c2.cluster_id,are.bipartite_precision(c1,c2))
 
 
 

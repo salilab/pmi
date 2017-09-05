@@ -2071,6 +2071,7 @@ class AnalysisReplicaExchange(object):
         self.sel1_rmsd=IMP.atom.Selection(self.stath1)
         self.sel0_alignment=IMP.atom.Selection(self.stath0)
         self.sel1_alignment=IMP.atom.Selection(self.stath1)
+        self.clusters=[]
 
     def set_rmsd_selection(self,**kwargs):
         self.sel0_rmsd=IMP.atom.Selection(self.stath0,**kwargs)
@@ -2079,9 +2080,10 @@ class AnalysisReplicaExchange(object):
     def set_alignment_selection(self,**kwargs):
         self.sel0_alignment=IMP.atom.Selection(self.stath0,**kwargs)
         self.sel1_alignment=IMP.atom.Selection(self.stath1,**kwargs)
-        self.clusters=[]
 
-    def cluster(self,rmsd_cutoff=10):
+
+    def cluster(self,rmsd_cutoff=10,alignment=True):
+        self.alignment=alignment
 
         for n1,d1 in enumerate(self.stath1):
             assigned={}
@@ -2092,7 +2094,7 @@ class AnalysisReplicaExchange(object):
 
                     if n0 != n1:
                         d0=self.stath0[n0]
-                        self.align()
+                        if self.alignment: self.align()
                         rmsd=self.rmsd()
                         if rmsd<=rmsd_cutoff:
                             assigned[rmsd]=(n0,c)
@@ -2105,30 +2107,102 @@ class AnalysisReplicaExchange(object):
                 n0,c=assigned[minrmsd]
                 c.add_member(n1,d1)
 
-    def set_alignment_type(self,alignment,cluster):
-        if alignment=="Absolute":
+    def set_alignment_type(self,alignment_type,cluster):
+        if alignment_type=="Absolute":
             d0=self.stath0[self.clusters[0].members[0]]
-        elif alignmet=="Relative":
+        elif alignment_type=="Relative":
             d0=self.stath0[cluster.members[0]]
 
-    def save_coordinates(self,cluster,alignment="Absolute"):
-        self.set_alignment_type(alignment,cluster)
+
+    def save_coordinates(self,cluster,alignment_type="Absolute"):
+        if self.alignment: self.set_alignment_type(alignment_type,cluster)
         o=IMP.pmi.output.Output()
         rmf_name=str(cluster.cluster_id)+".rmf3"
         o.init_rmf(rmf_name, [self.stath1])
         for n0 in cluster.members:
             d1=self.stath1[n0]
-            self.align()
+            if self.alignment: self.align()
             o.write_rmf(rmf_name)
         o.close_rmf(rmf_name)
 
+    def precision(self,cluster):
+        npairs=0
+        rmsd=0.0
+        precision=None
+        for n0 in cluster.members:
+            d0=self.stath0[n0]
+            for n1 in cluster.members:
+                if n0!=n1:
+                    d1=self.stath0[n1]
+                    if self.alignment: self.align()
+                    rmsd+=self.rmsd()
+                    npairs+=1
+        if npairs>0:
+            precision=rmsd/npairs
+        cluster.precision=precision
+        return precision
+
+    def rmsf(self,cluster,molecule,copy_index=0,state_index=0):
+        rmsf=IMP.pmi.tools.OrderedDict()
+
+        #assumes that residue indexes are identical for stath0 and stath1
+        s0=IMP.atom.Selection(self.stath0,molecule=molecule,resolution=1,
+                              copy_index=copy_index,state_index=state_index)
+        ps0=s0.get_selected_particles()
+        #get the residue indexes
+        residue_indexes=list(IMP.pmi.tools.OrderedSet([IMP.pmi.tools.get_residue_indexes(p)[0] for p in ps0]))
+
+        #get the corresponding particles
+        ps0=[]
+        ps1=[]
+        for r in residue_indexes:
+            s0=IMP.atom.Selection(self.stath0,molecule=molecule,residue_index=r,resolution=1,
+                                  copy_index=copy_index,state_index=state_index)
+            s1=IMP.atom.Selection(self.stath1,molecule=molecule,residue_index=r,resolution=1,
+                                  copy_index=copy_index,state_index=state_index)
+            ps0.append(s0.get_selected_particles()[0])
+            ps1.append(s1.get_selected_particles()[0])
+
+        npairs=0
+        for n0 in cluster.members:
+            d0=self.stath0[n0]
+            for n1 in cluster.members:
+                if n0!=n1:
+                    d1=self.stath0[n1]
+                    if self.alignment: self.align()
+                    for n,(p0,p1) in enumerate(zip(ps0,ps1)):
+                        r=residue_indexes[n]
+                        d0=IMP.core.XYZ(p0)
+                        d1=IMP.core.XYZ(p1)
+                        if r in rmsf:
+                            rmsf[r]+=IMP.core.get_distance(d0,d1)
+                        else:
+                            rmsf[r]=IMP.core.get_distance(d0,d1)
+                    npairs+=1
+        for r in rmsf:
+            rmsf[r]/=npairs
+        return rmsf
+
+    def bipartite_precision(self,cluster1,cluster2):
+        npairs=0
+        rmsd=0.0
+        for n0 in cluster1.members:
+            d0=self.stath0[n0]
+            for n1 in cluster2.members:
+                d1=self.stath1[n1]
+                if self.alignment: self.align()
+                rmsd+=self.rmsd()
+                npairs+=1
+        precision=rmsd/npairs
+        return precision
+
     def save_densities(self,cluster,density_custom_ranges,voxel_size=5,alignment="Absolute"):
-        self.set_alignment_type(alignment,cluster)
+        if self.alignment: self.set_alignment_type(alignment,cluster)
         dens = IMP.pmi.analysis.GetModelDensity(density_custom_ranges,
                                                 voxel=voxel_size)
         for n0 in cluster.members:
             d1=self.stath1[n0]
-            self.align()
+            if self.alignment: self.align()
             dens.add_subunits_density(self.stath1)
         dens.write_mrc(path="./",suffix=str(cluster.cluster_id))
         del dens
@@ -2152,15 +2226,23 @@ class AnalysisReplicaExchange(object):
         def __init__(self,index,cid=None,data=None):
             self.cluster_id=cid
             self.members=[index]
+            self.precision=None
             self.members_data={index:data}
+            self.average_score=self.compute_score()
 
         def add_member(self,index,data=None):
             self.members.append(index)
             self.members_data[index]=data
+            self.average_score=self.compute_score()
+
+        def compute_score(self):
+            return sum([d.score for d in self])/len(self)
 
         def __repr__(self):
             s= "AnalysisReplicaExchange.Cluster\n"
             s+="---- cluster_id %s \n"%str(self.cluster_id)
+            s+="---- precision %s \n"%str(self.precision)
+            s+="---- average score %s \n"%str(self.average_score)
             s+="---- number of members %s \n"%str(len(self.members))
             return s
 

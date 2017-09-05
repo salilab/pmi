@@ -2066,7 +2066,6 @@ class AnalysisReplicaExchange(object):
 
         self.rbs1, self.beads1 = IMP.pmi.tools.get_rbs_and_beads(IMP.pmi.tools.select_at_all_resolutions(self.stath1))
         self.rbs0, self.beads0 = IMP.pmi.tools.get_rbs_and_beads(IMP.pmi.tools.select_at_all_resolutions(self.stath0))
-
         self.sel0_rmsd=IMP.atom.Selection(self.stath0)
         self.sel1_rmsd=IMP.atom.Selection(self.stath1)
         self.sel0_alignment=IMP.atom.Selection(self.stath0)
@@ -2085,6 +2084,7 @@ class AnalysisReplicaExchange(object):
 
         for n1,d1 in enumerate(self.stath1):
             assigned={}
+            clusters_found = []
             for c in self.clusters:
 
                 members=c.members
@@ -2209,3 +2209,14 @@ class AnalysisReplicaExchange(object):
         else:
             for i in range(len(self))[slice_key]:
                 yield self[i]
+
+    def get_moldict(state):
+        class entry:
+            def __init__(self, mol):
+                self.mol = mol
+                self.sel = IMP.atom.Selection(self.mol)
+        moldict=defaultdict(list)
+        for mol in state.get_children():
+            name=mol.get_name()
+            moldict[name].append(entry(mol))
+        return moldict

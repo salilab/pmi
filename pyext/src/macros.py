@@ -2108,7 +2108,7 @@ class AnalysisReplicaExchange(object):
     def set_alignment_type(self,alignment,cluster):
         if alignment=="Absolute":
             d0=self.stath0[self.clusters[0].members[0]]
-        elif alignmet=="Relative":
+        elif alignment=="Relative":
             d0=self.stath0[cluster.members[0]]
 
     def save_coordinates(self,cluster,alignment="Absolute"):
@@ -2209,14 +2209,3 @@ class AnalysisReplicaExchange(object):
         else:
             for i in range(len(self))[slice_key]:
                 yield self[i]
-
-    def get_moldict(state):
-        class entry:
-            def __init__(self, mol):
-                self.mol = mol
-                self.sel = IMP.atom.Selection(self.mol)
-        moldict=defaultdict(list)
-        for mol in state.get_children():
-            name=mol.get_name()
-            moldict[name].append(entry(mol))
-        return moldict

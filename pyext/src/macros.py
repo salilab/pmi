@@ -2060,19 +2060,30 @@ class AnalysisReplicaExchange(object):
                  best_models=None):
 
         self.model=model
-        stath0=IMP.pmi.output.StatHierarchyHandler(model,stat_files,best_models)
-        stath1=IMP.pmi.output.StatHierarchyHandler(StatHierarchyHandler=stath0)
+        self.best_models=best_models
+        self.stath0=IMP.pmi.output.StatHierarchyHandler(model,stat_files,self.best_models)
+        self.stath1=IMP.pmi.output.StatHierarchyHandler(StatHierarchyHandler=self.stath0)
 
-        self.rbs1, self.beads1 = IMP.pmi.tools.get_rbs_and_beads(IMP.pmi.tools.select_at_all_resolutions(stath1))
-        self.rbs0, self.beads0 = IMP.pmi.tools.get_rbs_and_beads(IMP.pmi.tools.select_at_all_resolutions(stath0))
+        self.rbs1, self.beads1 = IMP.pmi.tools.get_rbs_and_beads(IMP.pmi.tools.select_at_all_resolutions(self.stath1))
+        self.rbs0, self.beads0 = IMP.pmi.tools.get_rbs_and_beads(IMP.pmi.tools.select_at_all_resolutions(self.stath0))
 
-        self.sel0=IMP.atom.Selection(stath0)
-        self.sel1=IMP.atom.Selection(stath1)
+        self.sel0_rmsd=IMP.atom.Selection(self.stath0)
+        self.sel1_rmsd=IMP.atom.Selection(self.stath1)
+        self.sel0_alignment=IMP.atom.Selection(self.stath0)
+        self.sel1_alignment=IMP.atom.Selection(self.stath1)
 
+    def set_rmsd_selection(self,**kwargs):
+        self.sel0_rmsd=IMP.atom.Selection(self.stath0,**kwargs)
+        self.sel1_rmsd=IMP.atom.Selection(self.stath1,**kwargs)
+
+    def set_alignment_selection(self,**kwargs):
+        self.sel0_alignment=IMP.atom.Selection(self.stath0,**kwargs)
+        self.sel1_alignment=IMP.atom.Selection(self.stath1,**kwargs)
         self.clusters=[]
 
+    def cluster(self,rmsd_cutoff=10):
 
-        for n1,s1 in enumerate(stath1):
+        for n1,d1 in enumerate(self.stath1):
             assigned={}
             for c in self.clusters:
 
@@ -2080,33 +2091,50 @@ class AnalysisReplicaExchange(object):
                 for n0 in members:
 
                     if n0 != n1:
-                        s0=stath0[n0]
+                        d0=self.stath0[n0]
                         self.align()
                         rmsd=self.rmsd()
-                        print(n1,n0,rmsd)
-                        if rmsd<10:
+                        if rmsd<=rmsd_cutoff:
                             assigned[rmsd]=(n0,c)
 
             if len(assigned) == 0:
-                c=self.Cluster(n1)
+                c=self.Cluster(n1,len(self.clusters),d1)
                 self.clusters.append(c)
             else:
                 minrmsd=min(assigned.keys())
                 n0,c=assigned[minrmsd]
-                c.add_member(n1)
+                c.add_member(n1,d1)
 
+    def set_alignment_type(self,alignment,cluster):
+        if alignment=="Absolute":
+            d0=self.stath0[self.clusters[0].members[0]]
+        elif alignmet=="Relative":
+            d0=self.stath0[cluster.members[0]]
+
+    def save_coordinates(self,cluster,alignment="Absolute"):
+        self.set_alignment_type(alignment,cluster)
         o=IMP.pmi.output.Output()
-        d0=stath0[self.clusters[0].members[0]]
-        for n,c in enumerate(self.clusters):
-            o.init_rmf(str(n)+".rmf3", [stath1])
-            for n0 in c.members:
-                d1=stath1[n0]
-                self.align()
-                o.write_rmf(str(n)+".rmf3")
-            o.close_rmf(str(n)+".rmf3")
+        rmf_name=str(cluster.cluster_id)+".rmf3"
+        o.init_rmf(rmf_name, [self.stath1])
+        for n0 in cluster.members:
+            d1=self.stath1[n0]
+            self.align()
+            o.write_rmf(rmf_name)
+        o.close_rmf(rmf_name)
+
+    def save_densities(self,cluster,density_custom_ranges,voxel_size=5,alignment="Absolute"):
+        self.set_alignment_type(alignment,cluster)
+        dens = IMP.pmi.analysis.GetModelDensity(density_custom_ranges,
+                                                voxel=voxel_size)
+        for n0 in cluster.members:
+            d1=self.stath1[n0]
+            self.align()
+            dens.add_subunits_density(self.stath1)
+        dens.write_mrc(path="./",suffix=str(cluster.cluster_id))
+        del dens
 
     def align(self):
-        tr = IMP.atom.get_transformation_aligning_first_to_second(self.sel1, self.sel0)
+        tr = IMP.atom.get_transformation_aligning_first_to_second(self.sel1_alignment, self.sel0_alignment)
 
         for rb in self.rbs1:
             IMP.core.transform(rb, tr)
@@ -2116,13 +2144,68 @@ class AnalysisReplicaExchange(object):
 
         self.model.update()
 
-    def rmsd(self):
-        return IMP.atom.get_rmsd(self.sel1, self.sel0)
+    def rmsd(self,metric=IMP.atom.get_rmsd):
+        return metric(self.sel1_rmsd, self.sel0_rmsd)
 
     class Cluster(object):
 
-        def __init__(self,index):
+        def __init__(self,index,cid=None,data=None):
+            self.cluster_id=cid
             self.members=[index]
+            self.members_data={index:data}
 
-        def add_member(self,index):
+        def add_member(self,index,data=None):
             self.members.append(index)
+            self.members_data[index]=data
+
+        def __repr__(self):
+            s= "AnalysisReplicaExchange.Cluster\n"
+            s+="---- cluster_id %s \n"%str(self.cluster_id)
+            s+="---- number of members %s \n"%str(len(self.members))
+            return s
+
+        def __getitem__(self,int_slice_adaptor):
+            if type(int_slice_adaptor) is int:
+                index=self.members[int_slice_adaptor]
+                return self.members_data[index]
+            elif type(int_slice_adaptor) is slice:
+                return self.__iter__(int_slice_adaptor)
+            else:
+                raise TypeError("Unknown Type")
+
+        def __len__(self):
+            return len(self.members)
+
+        def __iter__(self,slice_key=None):
+            if slice_key is None:
+                for i in range(len(self)):
+                    yield self[i]
+            else:
+                for i in range(len(self))[slice_key]:
+                    yield self[i]
+
+
+    def __repr__(self):
+        s= "AnalysisReplicaExchange\n"
+        s+="---- number of clusters %s \n"%str(len(self.clusters))
+        s+="---- number of models %s \n"%str(self.best_models)
+        return s
+
+    def __getitem__(self,int_slice_adaptor):
+        if type(int_slice_adaptor) is int:
+            return self.clusters[int_slice_adaptor]
+        elif type(int_slice_adaptor) is slice:
+            return self.__iter__(int_slice_adaptor)
+        else:
+            raise TypeError("Unknown Type")
+
+    def __len__(self):
+        return len(self.clusters)
+
+    def __iter__(self,slice_key=None):
+        if slice_key is None:
+            for i in range(len(self)):
+                yield self[i]
+        else:
+            for i in range(len(self))[slice_key]:
+                yield self[i]

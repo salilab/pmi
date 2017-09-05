@@ -20,6 +20,8 @@ from operator import itemgetter
 from collections import defaultdict
 import numpy as np
 import string
+import itertools
+import math
 
 class ReplicaExchange0(object):
     """A macro to help setup and run replica exchange.
@@ -2064,14 +2066,17 @@ class AnalysisReplicaExchange(object):
         self.stath0=IMP.pmi.output.StatHierarchyHandler(model,stat_files,self.best_models)
         self.stath1=IMP.pmi.output.StatHierarchyHandler(StatHierarchyHandler=self.stath0)
 
+        self.seldict0=IMP.pmi.tools.get_selections_dictionary(self.stath0.get_children()[0])
+        self.seldict1=IMP.pmi.tools.get_selections_dictionary(self.stath1.get_children()[0])
+
         self.rbs1, self.beads1 = IMP.pmi.tools.get_rbs_and_beads(IMP.pmi.tools.select_at_all_resolutions(self.stath1))
         self.rbs0, self.beads0 = IMP.pmi.tools.get_rbs_and_beads(IMP.pmi.tools.select_at_all_resolutions(self.stath0))
-
         self.sel0_rmsd=IMP.atom.Selection(self.stath0)
         self.sel1_rmsd=IMP.atom.Selection(self.stath1)
         self.sel0_alignment=IMP.atom.Selection(self.stath0)
         self.sel1_alignment=IMP.atom.Selection(self.stath1)
         self.clusters=[]
+        self.pairwise_rmsd={}
 
     def set_rmsd_selection(self,**kwargs):
         self.sel0_rmsd=IMP.atom.Selection(self.stath0,**kwargs)
@@ -2089,15 +2094,16 @@ class AnalysisReplicaExchange(object):
             assigned={}
             for c in self.clusters:
 
-                members=c.members
-                for n0 in members:
+                for n0 in c.members:
+                    d0=self.stath0[n0]
 
-                    if n0 != n1:
-                        d0=self.stath0[n0]
-                        if self.alignment: self.align()
-                        rmsd=self.rmsd()
-                        if rmsd<=rmsd_cutoff:
-                            assigned[rmsd]=(n0,c)
+                    if self.alignment: self.align()
+
+                    rmsd=self.rmsd()
+                    self.pairwise_rmsd[(n0,n1)]=rmsd
+
+                    if rmsd<=rmsd_cutoff:
+                        assigned[rmsd]=(n0,c)
 
             if len(assigned) == 0:
                 c=self.Cluster(n1,len(self.clusters),d1)
@@ -2106,6 +2112,28 @@ class AnalysisReplicaExchange(object):
                 minrmsd=min(assigned.keys())
                 n0,c=assigned[minrmsd]
                 c.add_member(n1,d1)
+
+    def compute_cluster_center(self,cluster):
+        member_distance=defaultdict(float)
+
+        for n0 in cluster.members:
+            for n1 in cluster.members:
+                if n0!=n1:
+                    if not (n0,n1) in self.pairwise_rmsd:
+                        d0=self.stath0[n0]
+                        d1=self.stath1[n1]
+                        if self.alignment: self.align()
+                        tmp_rmsd=self.rmsd()
+                        self.pairwise_rmsd[(n0,n1)]=tmp_rmsd
+                        rmsd+=tmp_rmsd
+                    else:
+                        rmsd=self.pairwise_rmsd[(n0,n1)]
+                    member_distance[n0]+=rmsd
+
+        if len(member_distance)>0:
+            cluster.center_index=min(member_distance, key=member_distance.get)
+        else:
+            cluster.center_index=cluster.members[0]
 
     def set_alignment_type(self,alignment_type,cluster):
         if alignment_type=="Absolute":
@@ -2129,17 +2157,42 @@ class AnalysisReplicaExchange(object):
         npairs=0
         rmsd=0.0
         precision=None
+
+        if not cluster.center_index is None:
+            members1=[cluster.center_index]
+        else:
+            members1=cluster.members
+
         for n0 in cluster.members:
-            d0=self.stath0[n0]
-            for n1 in cluster.members:
+            for n1 in members1:
                 if n0!=n1:
-                    d1=self.stath0[n1]
-                    if self.alignment: self.align()
-                    rmsd+=self.rmsd()
-                    npairs+=1
+                    if not (n0,n1) in self.pairwise_rmsd:
+                        d0=self.stath0[n0]
+                        d1=self.stath1[n1]
+                        if self.alignment: self.align()
+                        tmp_rmsd=self.rmsd()
+                        self.pairwise_rmsd[(n0,n1)]=tmp_rmsd
+                        rmsd+=tmp_rmsd
+                        npairs+=1
+                    else:
+                        rmsd+=self.pairwise_rmsd[(n0,n1)]
+
         if npairs>0:
             precision=rmsd/npairs
         cluster.precision=precision
+        return precision
+
+    def bipartite_precision(self,cluster1,cluster2):
+        npairs=0
+        rmsd=0.0
+        for n0 in cluster1.members:
+            d0=self.stath0[n0]
+            for n1 in cluster2.members:
+                d1=self.stath1[n1]
+                if self.alignment: self.align()
+                rmsd+=self.rmsd()
+                npairs+=1
+        precision=rmsd/npairs
         return precision
 
     def rmsf(self,cluster,molecule,copy_index=0,state_index=0):
@@ -2163,10 +2216,15 @@ class AnalysisReplicaExchange(object):
             ps0.append(s0.get_selected_particles()[0])
             ps1.append(s1.get_selected_particles()[0])
 
+        if not cluster.center_index is None:
+            members1=[cluster.center_index]
+        else:
+            members1=cluster.members
+
         npairs=0
         for n0 in cluster.members:
             d0=self.stath0[n0]
-            for n1 in cluster.members:
+            for n1 in members1:
                 if n0!=n1:
                     d1=self.stath0[n1]
                     if self.alignment: self.align()
@@ -2182,19 +2240,6 @@ class AnalysisReplicaExchange(object):
         for r in rmsf:
             rmsf[r]/=npairs
         return rmsf
-
-    def bipartite_precision(self,cluster1,cluster2):
-        npairs=0
-        rmsd=0.0
-        for n0 in cluster1.members:
-            d0=self.stath0[n0]
-            for n1 in cluster2.members:
-                d1=self.stath1[n1]
-                if self.alignment: self.align()
-                rmsd+=self.rmsd()
-                npairs+=1
-        precision=rmsd/npairs
-        return precision
 
     def save_densities(self,cluster,density_custom_ranges,voxel_size=5,alignment="Absolute"):
         if self.alignment: self.set_alignment_type(alignment,cluster)
@@ -2219,7 +2264,27 @@ class AnalysisReplicaExchange(object):
         self.model.update()
 
     def rmsd(self,metric=IMP.atom.get_rmsd):
-        return metric(self.sel1_rmsd, self.sel0_rmsd)
+        '''
+        Computes the RMSD. Resolves ambiguous pairs assignments
+        '''
+        total_rmsd=0.0
+        total_N=0
+        for molname, sels0 in self.seldict0.iteritems():
+            rmsd2s = {}
+            for sels in itertools.permutations(sels0):
+                rmsd2=0
+                for sel0, sel1 in zip(sels, self.seldict1[molname]):
+                    r=metric(sel0, sel1)
+                    rmsd2+=r*r
+                rmsd2s[sels]=rmsd2
+            sels_best_order = min(rmsd2s, key=rmsd2s.get)
+            best_rmsd2 = rmsd2s[sels_best_order]
+            Ncoords = len(sels_best_order[0].get_selected_particles())
+            Ncopies = len(sels_best_order)
+            total_rmsd += Ncoords*best_rmsd2
+            total_N += Ncoords*Ncopies
+        total_rmsd = math.sqrt(total_rmsd/total_N)
+        return total_rmsd
 
     class Cluster(object):
 
@@ -2227,6 +2292,7 @@ class AnalysisReplicaExchange(object):
             self.cluster_id=cid
             self.members=[index]
             self.precision=None
+            self.center_index=None
             self.members_data={index:data}
             self.average_score=self.compute_score()
 
@@ -2244,6 +2310,7 @@ class AnalysisReplicaExchange(object):
             s+="---- precision %s \n"%str(self.precision)
             s+="---- average score %s \n"%str(self.average_score)
             s+="---- number of members %s \n"%str(len(self.members))
+            s+="---- center index %s \n"%str(self.center_index)
             return s
 
         def __getitem__(self,int_slice_adaptor):
@@ -2266,6 +2333,12 @@ class AnalysisReplicaExchange(object):
                 for i in range(len(self))[slice_key]:
                     yield self[i]
 
+        def __add__(self, other):
+            self.members+=other.members
+            self.members_data.update(other.members_data)
+            self.average_score=self.compute_score()
+            self.precision=None
+            self.center_index=None
 
     def __repr__(self):
         s= "AnalysisReplicaExchange\n"

@@ -1886,6 +1886,21 @@ def get_molecules(input_objects):
             h=h.get_parent()
     return list(molecules)
 
+def get_molecules_dictionary(input_objects):
+    moldict=defaultdict(list)
+    for mol in IMP.pmi.tools.get_molecules(input_objects):
+        name=mol.get_name()
+        moldict[name].append(mol)
+    return moldict
+
+def get_selections_dictionary(input_objects):
+    moldict=IMP.pmi.tools.get_molecules_dictionary(input_objects)
+    seldict=defaultdict(list)
+    for name, mols in moldict.iteritems():
+        for m in mols:
+            seldict[name].append(IMP.atom.Selection(m))
+    return seldict
+
 def get_densities(input_objects):
     """Given a list of PMI objects, returns all density hierarchies within
     these objects.  The output of this function can be inputted into

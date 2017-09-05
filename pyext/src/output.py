@@ -895,6 +895,7 @@ class StatHierarchyHandler(RMFHierarchyHandler):
             self.number_best_scoring_models=StatHierarchyHandler.number_best_scoring_models
             self.is_setup=True
             self.current_rmf=StatHierarchyHandler.current_rmf
+            self.current_frame=StatHierarchyHandler.current_frame
             self.score_threshold=StatHierarchyHandler.score_threshold
             RMFHierarchyHandler.__init__(self, self.model,self.current_rmf)
 
@@ -905,6 +906,7 @@ class StatHierarchyHandler(RMFHierarchyHandler):
             self.number_best_scoring_models=number_best_scoring_models
             self.is_setup=None
             self.current_rmf=None
+            self.current_frame=None
             self.score_threshold=None
 
             if type(stat_file) is str:
@@ -963,9 +965,12 @@ class StatHierarchyHandler(RMFHierarchyHandler):
         if nm != self.current_rmf:
             self.link_to_rmf(nm)
             self.current_rmf=nm
+            self.current_frame=None
 
-        IMP.rmf.load_frame(self.rh_ref, RMF.FrameID(fidx))
-        self.model.update()
+        if fidx!=self.current_frame:
+            IMP.rmf.load_frame(self.rh_ref, RMF.FrameID(fidx))
+            self.current_frame=fidx
+            self.model.update()
 
     def __getitem__(self,int_slice_adaptor):
         if type(int_slice_adaptor) is int:

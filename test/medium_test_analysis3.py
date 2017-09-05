@@ -17,11 +17,12 @@ class Tests(IMP.test.TestCase):
 
         dcr={"Rpb4":["Rpb4"],"Rpb7":["Rpb7"],"All":["Rpb4","Rpb7"]}
 
-        self.assertEqual(len(are),5)
+        self.assertEqual(len(are),4)
 
         for cluster in are:
             are.save_coordinates(cluster)
             are.save_densities(cluster,dcr)
+            are.compute_cluster_center(cluster)
             are.precision(cluster)
 
             for mol in ["Rpb4","Rpb7"]:
@@ -34,8 +35,8 @@ class Tests(IMP.test.TestCase):
                 IMP.pmi.output.plot_xy_data(rs,rmsfs,out_fn=mol+"."+str(cluster.cluster_id)+".rmsf.pdf")
 
             print(cluster)
-            for member in cluster:
-                print(member)
+            #for member in cluster:
+            #    print(member)
 
         for c1 in are:
             for c2 in are:

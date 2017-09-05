@@ -20,6 +20,8 @@ from operator import itemgetter
 from collections import defaultdict
 import numpy as np
 import string
+import itertools
+import math
 
 class ReplicaExchange0(object):
     """A macro to help setup and run replica exchange.
@@ -2064,6 +2066,9 @@ class AnalysisReplicaExchange(object):
         self.stath0=IMP.pmi.output.StatHierarchyHandler(model,stat_files,self.best_models)
         self.stath1=IMP.pmi.output.StatHierarchyHandler(StatHierarchyHandler=self.stath0)
 
+        self.seldict0=IMP.pmi.tools.get_selections_dictionary(self.stath0.get_children()[0])
+        self.seldict1=IMP.pmi.tools.get_selections_dictionary(self.stath1.get_children()[0])
+
         self.rbs1, self.beads1 = IMP.pmi.tools.get_rbs_and_beads(IMP.pmi.tools.select_at_all_resolutions(self.stath1))
         self.rbs0, self.beads0 = IMP.pmi.tools.get_rbs_and_beads(IMP.pmi.tools.select_at_all_resolutions(self.stath0))
         self.sel0_rmsd=IMP.atom.Selection(self.stath0)
@@ -2084,7 +2089,6 @@ class AnalysisReplicaExchange(object):
 
         for n1,d1 in enumerate(self.stath1):
             assigned={}
-            clusters_found = []
             for c in self.clusters:
 
                 members=c.members
@@ -2145,7 +2149,27 @@ class AnalysisReplicaExchange(object):
         self.model.update()
 
     def rmsd(self,metric=IMP.atom.get_rmsd):
-        return metric(self.sel1_rmsd, self.sel0_rmsd)
+        '''
+        Computes the RMSD. Resolves ambiguous pairs assignments
+        '''
+        total_rmsd=0.0
+        total_N=0
+        for molname, sels0 in self.seldict0.iteritems():
+            rmsd2s = {}
+            for sels in itertools.permutations(sels0):
+                rmsd2=0
+                for sel0, sel1 in zip(sels, self.seldict1[molname]):
+                    r=metric(sel0, sel1)
+                    rmsd2+=r*r
+                rmsd2s[sels]=rmsd2
+            sels_best_order = min(rmsd2s, key=rmsd2s.get)
+            best_rmsd2 = rmsd2s[sels_best_order]
+            Ncoords = len(sels_best_order[0].get_selected_particles())
+            Ncopies = len(sels_best_order)
+            total_rmsd += Ncoords*best_rmsd2
+            total_N += Ncoords*Ncopies
+        total_rmsd = math.sqrt(total_rmsd/total_N)
+        return total_rmsd
 
     class Cluster(object):
 
@@ -2183,6 +2207,10 @@ class AnalysisReplicaExchange(object):
             else:
                 for i in range(len(self))[slice_key]:
                     yield self[i]
+
+        def __add__(self, other):
+            self.members+=other.members
+            self.members_data.update(other.members_data)
 
 
     def __repr__(self):

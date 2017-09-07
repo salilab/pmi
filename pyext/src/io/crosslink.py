@@ -1490,7 +1490,7 @@ class CrossLinkDataBaseFromStructure(object):
 
         if self.mode=="pmi2":
             for state in self.system.get_states():
-                for moleculename,molecules in state.get_molecules().iteritems():
+                for moleculename,molecules in state.get_molecules().items():
                     for molecule in molecules:
                 # we are saving a dictionary with protein name, residue number and random reactivity of the residue
                         seq=molecule.sequence

@@ -1896,7 +1896,7 @@ def get_molecules_dictionary(input_objects):
 def get_selections_dictionary(input_objects):
     moldict=IMP.pmi.tools.get_molecules_dictionary(input_objects)
     seldict=defaultdict(list)
-    for name, mols in moldict.iteritems():
+    for name, mols in moldict.items():
         for m in mols:
             seldict[name].append(IMP.atom.Selection(m))
     return seldict

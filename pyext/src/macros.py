@@ -2269,7 +2269,7 @@ class AnalysisReplicaExchange(object):
         '''
         total_rmsd=0.0
         total_N=0
-        for molname, sels0 in self.seldict0.iteritems():
+        for molname, sels0 in self.seldict0.items():
             rmsd2s = {}
             for sels in itertools.permutations(sels0):
                 rmsd2=0

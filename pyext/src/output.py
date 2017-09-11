@@ -851,8 +851,7 @@ class RMFHierarchyHandler(IMP.atom.Hierarchy):
         """
         self.rh_ref = RMF.open_rmf_file_read_only(rmf_file_name)
         IMP.rmf.link_hierarchies(self.rh_ref, [self])
-        IMP.rmf.load_frame(self.rh_ref, RMF.FrameID(0))
-        self.model.update()
+        RMFHierarchyHandler.set_frame(self,0)
 
     def set_frame(self,index):
         IMP.rmf.load_frame(self.rh_ref, RMF.FrameID(index))
@@ -968,9 +967,8 @@ class StatHierarchyHandler(RMFHierarchyHandler):
             self.current_frame=None
 
         if fidx!=self.current_frame:
-            IMP.rmf.load_frame(self.rh_ref, RMF.FrameID(fidx))
+            RMFHierarchyHandler.set_frame(self, fidx)
             self.current_frame=fidx
-            self.model.update()
 
     def __getitem__(self,int_slice_adaptor):
         if type(int_slice_adaptor) is int:

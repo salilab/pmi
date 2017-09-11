@@ -854,7 +854,10 @@ class RMFHierarchyHandler(IMP.atom.Hierarchy):
         RMFHierarchyHandler.set_frame(self,0)
 
     def set_frame(self,index):
-        IMP.rmf.load_frame(self.rh_ref, RMF.FrameID(index))
+        try:
+            IMP.rmf.load_frame(self.rh_ref, RMF.FrameID(index))
+        except:
+            print("skipping frame %s:%d\n"%(self.current_rmf, index))
         self.model.update()
 
     def get_number_of_frames(self):

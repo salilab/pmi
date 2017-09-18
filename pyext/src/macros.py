@@ -2087,6 +2087,9 @@ class AnalysisReplicaExchange(object):
         self.sel0_alignment=IMP.atom.Selection(self.stath0,**kwargs)
         self.sel1_alignment=IMP.atom.Selection(self.stath1,**kwargs)
 
+    def get_molecule(self, hier, name, copy):
+        s=IMP.atom.Selection(hier, molecule=name, copy_index=copy)
+        return IMP.pmi.tools.get_molecules(s.get_selected_particles()[0])[0]
 
     def cluster(self, rmsd_cutoff=10, alignment=True):
         self.alignment=alignment
@@ -2229,14 +2232,47 @@ class AnalysisReplicaExchange(object):
             rmsf[r]/=npairs
         return rmsf
 
+    def apply_molecular_assignments(self, n0, n1):
+        d0=self.stath0[n0]
+        d1=self.stath1[n1]
+        _, molecular_assignment = self.rmsd()
+        for (m0, c0), (m1,c1) in molecular_assignment.iteritems():
+            mol0 = self.get_molecule(self.stath0, m0, c0)
+            mol1 = self.get_molecule(self.stath1, m1, c1)
+            cik0=IMP.atom.Copy(mol0).get_copy_index_key()
+            p1=IMP.atom.Copy(mol1).get_particle()
+            p1.set_value(cik0,c0)
+
+    def undo_apply_molecular_assignments(self, n0, n1):
+        d0=self.stath0[n0]
+        d1=self.stath1[n1]
+        _, molecular_assignment = self.rmsd()
+        for (m0, c0), (m1,c1) in molecular_assignment.iteritems():
+            mol0 = self.get_molecule(self.stath0, m0, c0)
+            mol1 = self.get_molecule(self.stath1, m1, c1)
+            cik0=IMP.atom.Copy(mol0).get_copy_index_key()
+            p1=IMP.atom.Copy(mol1).get_particle()
+            p1.set_value(cik0,c1)
+
+
     def save_densities(self,cluster,density_custom_ranges,voxel_size=5,alignment="Absolute"):
         if self.alignment: self.set_alignment_type(alignment,cluster)
         dens = IMP.pmi.analysis.GetModelDensity(density_custom_ranges,
                                                 voxel=voxel_size)
-        for n0 in cluster.members:
-            d1=self.stath1[n0]
+
+        if cluster.center_index:
+            n0=cluster.center_index
+        else:
+            n0=cluster.members[0]
+
+        for n1 in cluster.members:
+            if n0 != n1:
+                self.apply_molecular_assignments(n0,n1)
+            d1=self.stath1[n1]
             if self.alignment: self.align()
             dens.add_subunits_density(self.stath1)
+            if n0 != n1:
+                self.undo_apply_molecular_assignments(n0,n1)
         dens.write_mrc(path="./",suffix=str(cluster.cluster_id))
         del dens
 

@@ -2077,6 +2077,7 @@ class AnalysisReplicaExchange(object):
         self.sel1_alignment=IMP.atom.Selection(self.stath1)
         self.clusters=[]
         self.pairwise_rmsd={}
+        self.pairwise_molecular_assignment={}
 
     def set_rmsd_selection(self,**kwargs):
         self.sel0_rmsd=IMP.atom.Selection(self.stath0,**kwargs)
@@ -2092,6 +2093,7 @@ class AnalysisReplicaExchange(object):
 
         for n1,d1 in enumerate(self.stath1):
             assigned={}
+            print(n1)
             for c in self.clusters:
 
                 for n0 in c.members:
@@ -2099,11 +2101,13 @@ class AnalysisReplicaExchange(object):
 
                     if self.alignment: self.align()
 
-                    rmsd=self.rmsd()
+                    rmsd, molecular_assignment=self.rmsd()
                     self.pairwise_rmsd[(n0,n1)]=rmsd
+                    self.pairwise_molecular_assignment[(n0,n1)]=molecular_assignment
 
                     if rmsd<=rmsd_cutoff:
                         assigned[rmsd]=(n0,c)
+                        break
 
             if len(assigned) == 0:
                 c=self.Cluster(n1,len(self.clusters),d1)
@@ -2123,8 +2127,9 @@ class AnalysisReplicaExchange(object):
                         d0=self.stath0[n0]
                         d1=self.stath1[n1]
                         if self.alignment: self.align()
-                        tmp_rmsd=self.rmsd()
+                        tmp_rmsd, tmp_pairwise_molecular_assignment=self.rmsd()
                         self.pairwise_rmsd[(n0,n1)]=tmp_rmsd
+                        self.pairwise_molecular_assignment[(n0,n1)]=tmp_pairwise_molecular_assignment
                         rmsd+=tmp_rmsd
                     else:
                         rmsd=self.pairwise_rmsd[(n0,n1)]
@@ -2190,7 +2195,8 @@ class AnalysisReplicaExchange(object):
             for n1 in cluster2.members:
                 d1=self.stath1[n1]
                 if self.alignment: self.align()
-                rmsd+=self.rmsd()
+                tmp_rmsd, tmp_pairwise_molecular_assignment=self.rmsd()
+                rmsd+=tmp_rmsd
                 npairs+=1
         precision=rmsd/npairs
         return precision
@@ -2206,15 +2212,9 @@ class AnalysisReplicaExchange(object):
         residue_indexes=list(IMP.pmi.tools.OrderedSet([IMP.pmi.tools.get_residue_indexes(p)[0] for p in ps0]))
 
         #get the corresponding particles
-        ps0=[]
-        ps1=[]
-        for r in residue_indexes:
-            s0=IMP.atom.Selection(self.stath0,molecule=molecule,residue_index=r,resolution=1,
-                                  copy_index=copy_index,state_index=state_index)
-            s1=IMP.atom.Selection(self.stath1,molecule=molecule,residue_index=r,resolution=1,
-                                  copy_index=copy_index,state_index=state_index)
-            ps0.append(s0.get_selected_particles()[0])
-            ps1.append(s1.get_selected_particles()[0])
+        s0=IMP.atom.Selection(self.stath0,molecule=molecule,residue_indexes=residue_indexes,resolution=1,
+                              copy_index=copy_index,state_index=state_index)
+        ps0 = s0.get_selected_particles()
 
         if not cluster.center_index is None:
             members1=[cluster.center_index]
@@ -2226,6 +2226,11 @@ class AnalysisReplicaExchange(object):
             d0=self.stath0[n0]
             for n1 in members1:
                 if n0!=n1:
+                    m1,c1 = self.pairwise_molecular_assignment[(n0,n1)][(molecule, copy_index)]
+                    s1=IMP.atom.Selection(self.stath0,molecule=m1,residue_indexes=residue_indexes,resolution=1,
+                                          copy_index=c1,state_index=state_index)
+                    ps1 = s1.get_selected_particles()
+
                     d1=self.stath0[n1]
                     if self.alignment: self.align()
                     for n,(p0,p1) in enumerate(zip(ps0,ps1)):
@@ -2269,6 +2274,8 @@ class AnalysisReplicaExchange(object):
         '''
         total_rmsd=0.0
         total_N=0
+        # this is a dictionary which keys are the molecule names, and values are the list of IMP.atom.Selection for all molecules that share the molecule name
+        seldict_best_order={}
         for molname, sels0 in self.seldict0.items():
             rmsd2s = {}
             for sels in itertools.permutations(sels0):
@@ -2278,13 +2285,23 @@ class AnalysisReplicaExchange(object):
                     rmsd2+=r*r
                 rmsd2s[sels]=rmsd2
             sels_best_order = min(rmsd2s, key=rmsd2s.get)
+            seldict_best_order[molname]=sels_best_order
             best_rmsd2 = rmsd2s[sels_best_order]
             Ncoords = len(sels_best_order[0].get_selected_particles())
             Ncopies = len(sels_best_order)
             total_rmsd += Ncoords*best_rmsd2
             total_N += Ncoords*Ncopies
         total_rmsd = math.sqrt(total_rmsd/total_N)
-        return total_rmsd
+        molecular_assignment={}
+        for molname, sels in seldict_best_order.iteritems():
+            for sel0, sel1 in zip(sels, self.seldict1[molname]):
+                p0 = sel0.get_selected_particles()[0]
+                p1 = sel1.get_selected_particles()[0]
+                m0,m1 = IMP.pmi.tools.get_molecules([p0,p1])
+                c0 = IMP.atom.Copy(m0).get_copy_index()
+                c1 = IMP.atom.Copy(m1).get_copy_index()
+                molecular_assignment[(molname,c0)]=(molname,c1)
+        return total_rmsd, molecular_assignment
 
     class Cluster(object):
 

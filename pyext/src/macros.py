@@ -2088,7 +2088,7 @@ class AnalysisReplicaExchange(object):
         self.sel1_alignment=IMP.atom.Selection(self.stath1,**kwargs)
 
 
-    def cluster(self,rmsd_cutoff=10,alignment=True):
+    def cluster(self, rmsd_cutoff=10, alignment=True):
         self.alignment=alignment
 
         for n1,d1 in enumerate(self.stath1):
@@ -2102,8 +2102,6 @@ class AnalysisReplicaExchange(object):
                     if self.alignment: self.align()
 
                     rmsd, molecular_assignment=self.rmsd()
-                    self.pairwise_rmsd[(n0,n1)]=rmsd
-                    self.pairwise_molecular_assignment[(n0,n1)]=molecular_assignment
 
                     if rmsd<=rmsd_cutoff:
                         assigned[rmsd]=(n0,c)
@@ -2123,16 +2121,7 @@ class AnalysisReplicaExchange(object):
         for n0 in cluster.members:
             for n1 in cluster.members:
                 if n0!=n1:
-                    if not (n0,n1) in self.pairwise_rmsd:
-                        d0=self.stath0[n0]
-                        d1=self.stath1[n1]
-                        if self.alignment: self.align()
-                        tmp_rmsd, tmp_pairwise_molecular_assignment=self.rmsd()
-                        self.pairwise_rmsd[(n0,n1)]=tmp_rmsd
-                        self.pairwise_molecular_assignment[(n0,n1)]=tmp_pairwise_molecular_assignment
-                        rmsd+=tmp_rmsd
-                    else:
-                        rmsd=self.pairwise_rmsd[(n0,n1)]
+                    rmsd, _ = self.rmsd()
                     member_distance[n0]+=rmsd
 
         if len(member_distance)>0:
@@ -2169,18 +2158,12 @@ class AnalysisReplicaExchange(object):
             members1=cluster.members
 
         for n0 in cluster.members:
+            d0=self.stath0[n0]
             for n1 in members1:
                 if n0!=n1:
-                    if not (n0,n1) in self.pairwise_rmsd:
-                        d0=self.stath0[n0]
-                        d1=self.stath1[n1]
-                        if self.alignment: self.align()
-                        tmp_rmsd=self.rmsd()
-                        self.pairwise_rmsd[(n0,n1)]=tmp_rmsd
-                        rmsd+=tmp_rmsd
-                        npairs+=1
-                    else:
-                        rmsd+=self.pairwise_rmsd[(n0,n1)]
+                    d1=self.stath1[n1]
+                    tmp_rmsd, _ = self.rmsd()
+                    rmsd+=tmp_rmsd
 
         if npairs>0:
             precision=rmsd/npairs
@@ -2272,6 +2255,13 @@ class AnalysisReplicaExchange(object):
         '''
         Computes the RMSD. Resolves ambiguous pairs assignments
         '''
+        # here we memoize the rmsd and molecular assignment so that it's not done multiple times
+        n0=self.stath0.current_index
+        n1=self.stath1.current_index
+        if ((n0,n1) in self.pairwise_rmsd) and ((n0,n1) in self.pairwise_molecular_assignment):
+            return self.pairwise_rmsd[(n0,n1)], self.pairwise_molecular_assignment[(n0,n1)]
+
+        #if it's not yet memoized
         total_rmsd=0.0
         total_N=0
         # this is a dictionary which keys are the molecule names, and values are the list of IMP.atom.Selection for all molecules that share the molecule name
@@ -2292,6 +2282,7 @@ class AnalysisReplicaExchange(object):
             total_rmsd += Ncoords*best_rmsd2
             total_N += Ncoords*Ncopies
         total_rmsd = math.sqrt(total_rmsd/total_N)
+
         molecular_assignment={}
         for molname, sels in seldict_best_order.iteritems():
             for sel0, sel1 in zip(sels, self.seldict1[molname]):
@@ -2301,6 +2292,9 @@ class AnalysisReplicaExchange(object):
                 c0 = IMP.atom.Copy(m0).get_copy_index()
                 c1 = IMP.atom.Copy(m1).get_copy_index()
                 molecular_assignment[(molname,c0)]=(molname,c1)
+
+        self.pairwise_rmsd[(n0,n1)]=total_rmsd
+        self.pairwise_molecular_assignment[(n0,n1)]=molecular_assignment
         return total_rmsd, molecular_assignment
 
     class Cluster(object):

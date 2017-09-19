@@ -2322,7 +2322,7 @@ class AnalysisReplicaExchange(object):
         total_rmsd = math.sqrt(total_rmsd/total_N)
 
         molecular_assignment={}
-        for molname, sels in seldict_best_order.iteritems():
+        for molname, sels in seldict_best_order.items():
             for sel0, sel1 in zip(sels, self.seldict1[molname]):
                 p0 = sel0.get_selected_particles()[0]
                 p1 = sel1.get_selected_particles()[0]

@@ -2238,7 +2238,7 @@ class AnalysisReplicaExchange(object):
         d0=self.stath0[n0]
         d1=self.stath1[n1]
         _, molecular_assignment = self.rmsd()
-        for (m0, c0), (m1,c1) in molecular_assignment.iteritems():
+        for (m0, c0), (m1,c1) in molecular_assignment.items():
             mol0 = self.get_molecule(self.stath0, m0, c0)
             mol1 = self.get_molecule(self.stath1, m1, c1)
             cik0=IMP.atom.Copy(mol0).get_copy_index_key()
@@ -2249,7 +2249,7 @@ class AnalysisReplicaExchange(object):
         d0=self.stath0[n0]
         d1=self.stath1[n1]
         _, molecular_assignment = self.rmsd()
-        for (m0, c0), (m1,c1) in molecular_assignment.iteritems():
+        for (m0, c0), (m1,c1) in molecular_assignment.items():
             mol0 = self.get_molecule(self.stath0, m0, c0)
             mol1 = self.get_molecule(self.stath1, m1, c1)
             cik0=IMP.atom.Copy(mol0).get_copy_index_key()

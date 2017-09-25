@@ -2122,9 +2122,9 @@ class AnalysisReplicaExchange(object):
         member_distance=defaultdict(float)
 
         for n0 in cluster.members:
-            d0=stath0[n0]
+            d0=self.stath0[n0]
             for n1 in cluster.members:
-                d1=stath1[n1]
+                d1=self.stath1[n1]
                 if n0!=n1:
                     rmsd, _ = self.rmsd()
                     member_distance[n0]+=rmsd

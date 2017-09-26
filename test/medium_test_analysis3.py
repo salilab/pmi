@@ -11,8 +11,8 @@ class Tests(IMP.test.TestCase):
         sts=sorted(glob.glob(self.get_input_file_name("output_test/stat.0.out").replace(".0.",".*.")))
         are=IMP.pmi.macros.AnalysisReplicaExchange(model,sts,10)
         are.set_alignment_selection(molecule="Rpb4")
+        are.save_data()
         are.cluster(20)
-
         print(are)
 
         dcr={"Rpb4":["Rpb4"],"Rpb7":["Rpb7"],"All":["Rpb4","Rpb7"]}
@@ -43,6 +43,8 @@ class Tests(IMP.test.TestCase):
                 print(c1.cluster_id,c2.cluster_id,are.bipartite_precision(c1,c2))
 
         are.apply_molecular_assignments(0,1)
+        are.save_clusters()
+
 
 if __name__ == '__main__':
     IMP.test.main()

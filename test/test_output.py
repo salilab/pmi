@@ -71,6 +71,15 @@ class Tests(IMP.test.TestCase):
             d2=IMP.core.XYZ(ps2[n])
             self.assertEqual(IMP.core.get_distance(d1,d2),0)
 
+    def _check_data_indentity(self,d1,d2):
+        self.assertEqual(d1.rmf_name,d2.rmf_name)
+        self.assertEqual(d1.rmf_index,d2.rmf_index)
+        self.assertEqual(d1.score,d2.score)
+        self.assertEqual(d1.stat_file,d2.stat_file)
+        for k in d1.features:
+            self.assertEqual(d1.features[k], d2.features[k])
+
+
     def _get_info_from_stat_file(self, stat_file):
         po=IMP.pmi.output.ProcessOutput(stat_file)
         fs=po.get_keys()
@@ -261,6 +270,17 @@ class Tests(IMP.test.TestCase):
             self._check_coordinate_identity(lvs,lvsh)
             for n,p in enumerate(lvs):
                 self.assertNotEqual(p.get_particle_index(),lvsh[n].get_particle_index())
+
+        #test save data
+        stath.save_data('data.pkl')
+
+        #test read data
+        stath_read=IMP.pmi.output.StatHierarchyHandler(m,'data.pkl')
+        lvs_read=IMP.atom.get_leaves(stath_read)
+
+        for n,d  in enumerate(stath):
+            self._check_data_indentity(d,stath_read[n])
+            self._check_coordinate_identity(lvs, lvs_read)
 
 
 if __name__ == '__main__':

@@ -919,48 +919,52 @@ class StatHierarchyHandler(RMFHierarchyHandler):
                 for f in stat_file:
                     self.add_stat_file(f)
 
-
-    class DataEntry(object):
-        def __init__(self,stat_file=None,rmf_name=None,rmf_index=None,score=None,features=None):
-            self.rmf_name=rmf_name
-            self.rmf_index=rmf_index
-            self.score=score
-            self.features=features
-            self.stat_file=stat_file
-
-        def __repr__(self):
-            s= "StatHierarchyHandler.DataEntry\n"
-            s+="---- stat file %s \n"%(self.stat_file)
-            s+="---- rmf file %s \n"%(self.rmf_name)
-            s+="---- rmf index %s \n"%(str(self.rmf_index))
-            s+="---- score %s \n"%(str(self.score))
-            s+="---- number of features %s \n"%(str(len(self.features.keys())))
-            return s
-
     def add_stat_file(self,stat_file):
-        scores,rmf_files,rmf_frame_indexes,features = self.get_info_from_stat_file(stat_file, self.score_threshold)
-        if len(set(rmf_files)) > 1:
-            raise ("Multiple RMF files found")
+        import cPickle
 
-        if not rmf_files:
-            print("StatHierarchyHandler: Error: Trying to set none as rmf_file (probably empty stat file), aborting")
-            return
+        try:
+            '''check that it is not a pickle file with saved data from a previous calculation'''
+            self.load_data(stat_file)
 
-        for n,index in enumerate(rmf_frame_indexes):
-            featn_dict=dict([(k,features[k][n]) for k in features])
-            self.data.append(self.DataEntry(stat_file,rmf_files[n],index,scores[n],featn_dict))
+            if self.number_best_scoring_models:
+                scores = self.get_scores()
+                max_score = sorted(scores)[0:min(len(self), self.number_best_scoring_models)][-1]
+                self.do_filter_by_score(max_score)
 
-        if self.number_best_scoring_models:
-            scores=self.get_scores()
-            max_score=sorted(scores)[0:min(len(self),self.number_best_scoring_models)][-1]
-            self.do_filter_by_score(max_score)
+        except cPickle.UnpicklingError:
+            '''alternatively read the ascii stat files'''
+            scores,rmf_files,rmf_frame_indexes,features = self.get_info_from_stat_file(stat_file, self.score_threshold)
+            if len(set(rmf_files)) > 1:
+                raise ("Multiple RMF files found")
+
+            if not rmf_files:
+                print("StatHierarchyHandler: Error: Trying to set none as rmf_file (probably empty stat file), aborting")
+                return
+
+            for n,index in enumerate(rmf_frame_indexes):
+                featn_dict=dict([(k,features[k][n]) for k in features])
+                self.data.append(IMP.pmi.output.DataEntry(stat_file,rmf_files[n],index,scores[n],featn_dict))
+
+            if self.number_best_scoring_models:
+                scores=self.get_scores()
+                max_score=sorted(scores)[0:min(len(self),self.number_best_scoring_models)][-1]
+                self.do_filter_by_score(max_score)
 
         if not self.is_setup:
-            RMFHierarchyHandler.__init__(self, self.model,rmf_files[0])
+            RMFHierarchyHandler.__init__(self, self.model,self.get_rmf_names()[0])
             self.is_setup=True
-            self.current_rmf=rmf_files[0]
+            self.current_rmf=self.get_rmf_names()[0]
         self.set_frame(0)
 
+    def save_data(self,filename='data.pkl'):
+        import cPickle
+        fl=open(filename,'wb')
+        cPickle.dump(self.data,fl)
+
+    def load_data(self,filename='data.pkl'):
+        import cPickle
+        fl=open(filename,'rb')
+        self.data=cPickle.load(fl)
 
     def set_frame(self,index):
         nm=self.data[index].rmf_name
@@ -1034,6 +1038,80 @@ class StatHierarchyHandler(RMFHierarchyHandler):
         rmf_frame_indexes = models[1]
         features=models[3]
         return scores, rmf_files, rmf_frame_indexes,features
+
+
+class DataEntry(object):
+    def __init__(self,stat_file=None,rmf_name=None,rmf_index=None,score=None,features=None):
+        self.rmf_name=rmf_name
+        self.rmf_index=rmf_index
+        self.score=score
+        self.features=features
+        self.stat_file=stat_file
+
+    def __repr__(self):
+        s= "IMP.pmi.output.DataEntry\n"
+        s+="---- stat file %s \n"%(self.stat_file)
+        s+="---- rmf file %s \n"%(self.rmf_name)
+        s+="---- rmf index %s \n"%(str(self.rmf_index))
+        s+="---- score %s \n"%(str(self.score))
+        s+="---- number of features %s \n"%(str(len(self.features.keys())))
+        return s
+
+
+class Cluster(object):
+    def __init__(self,index,cid=None,data=None):
+        self.cluster_id=cid
+        self.members=[index]
+        self.precision=None
+        self.center_index=None
+        self.members_data={index:data}
+        self.average_score=self.compute_score()
+
+    def add_member(self,index,data=None):
+        self.members.append(index)
+        self.members_data[index]=data
+        self.average_score=self.compute_score()
+
+    def compute_score(self):
+        return sum([d.score for d in self])/len(self)
+
+    def __repr__(self):
+        s= "IMP.pmi.output.Cluster\n"
+        s+="---- cluster_id %s \n"%str(self.cluster_id)
+        s+="---- precision %s \n"%str(self.precision)
+        s+="---- average score %s \n"%str(self.average_score)
+        s+="---- number of members %s \n"%str(len(self.members))
+        s+="---- center index %s \n"%str(self.center_index)
+        return s
+
+    def __getitem__(self,int_slice_adaptor):
+        if type(int_slice_adaptor) is int:
+            index=self.members[int_slice_adaptor]
+            return self.members_data[index]
+        elif type(int_slice_adaptor) is slice:
+            return self.__iter__(int_slice_adaptor)
+        else:
+            raise TypeError("Unknown Type")
+
+    def __len__(self):
+        return len(self.members)
+
+    def __iter__(self,slice_key=None):
+        if slice_key is None:
+            for i in range(len(self)):
+                yield self[i]
+        else:
+            for i in range(len(self))[slice_key]:
+                yield self[i]
+
+    def __add__(self, other):
+        self.members+=other.members
+        self.members_data.update(other.members_data)
+        self.average_score=self.compute_score()
+        self.precision=None
+        self.center_index=None
+
+
 
 class CrossLinkIdentifierDatabase(object):
     def __init__(self):

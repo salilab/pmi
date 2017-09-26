@@ -2108,15 +2108,31 @@ class AnalysisReplicaExchange(object):
 
                     if rmsd<=rmsd_cutoff:
                         assigned[rmsd]=(n0,c)
-                        break
 
             if len(assigned) == 0:
-                c=self.Cluster(n1,len(self.clusters),d1)
+                c=IMP.pmi.output.Cluster(n1,len(self.clusters),d1)
                 self.clusters.append(c)
             else:
                 minrmsd=min(assigned.keys())
                 n0,c=assigned[minrmsd]
                 c.add_member(n1,d1)
+
+    def save_data(self,filename='data.pkl'):
+        self.stath0.save_data('data.pkl')
+
+    def load_data(self,filename='data.pkl'):
+        self.stath0.load_data('data.pkl')
+        self.stath1.load_data('data.pkl')
+
+    def save_clusters(self,filename='clusters.pkl'):
+        import cPickle
+        fl=open(filename,'wb')
+        cPickle.dump(self.clusters,fl)
+
+    def load_clusters(self,filename='clusters.pkl'):
+        import cPickle
+        fl=open(filename,'rb')
+        self.clusters=cPickle.load(fl)
 
     def compute_cluster_center(self,cluster):
         member_distance=defaultdict(float)
@@ -2268,6 +2284,7 @@ class AnalysisReplicaExchange(object):
         for n1 in cluster.members:
             if n0 != n1:
                 self.apply_molecular_assignments(n0,n1)
+            print(n1)
             d1=self.stath1[n1]
             if self.alignment: self.align()
             dens.add_subunits_density(self.stath1)
@@ -2332,60 +2349,6 @@ class AnalysisReplicaExchange(object):
         self.pairwise_rmsd[(n0,n1)]=total_rmsd
         self.pairwise_molecular_assignment[(n0,n1)]=molecular_assignment
         return total_rmsd, molecular_assignment
-
-    class Cluster(object):
-
-        def __init__(self,index,cid=None,data=None):
-            self.cluster_id=cid
-            self.members=[index]
-            self.precision=None
-            self.center_index=None
-            self.members_data={index:data}
-            self.average_score=self.compute_score()
-
-        def add_member(self,index,data=None):
-            self.members.append(index)
-            self.members_data[index]=data
-            self.average_score=self.compute_score()
-
-        def compute_score(self):
-            return sum([d.score for d in self])/len(self)
-
-        def __repr__(self):
-            s= "AnalysisReplicaExchange.Cluster\n"
-            s+="---- cluster_id %s \n"%str(self.cluster_id)
-            s+="---- precision %s \n"%str(self.precision)
-            s+="---- average score %s \n"%str(self.average_score)
-            s+="---- number of members %s \n"%str(len(self.members))
-            s+="---- center index %s \n"%str(self.center_index)
-            return s
-
-        def __getitem__(self,int_slice_adaptor):
-            if type(int_slice_adaptor) is int:
-                index=self.members[int_slice_adaptor]
-                return self.members_data[index]
-            elif type(int_slice_adaptor) is slice:
-                return self.__iter__(int_slice_adaptor)
-            else:
-                raise TypeError("Unknown Type")
-
-        def __len__(self):
-            return len(self.members)
-
-        def __iter__(self,slice_key=None):
-            if slice_key is None:
-                for i in range(len(self)):
-                    yield self[i]
-            else:
-                for i in range(len(self))[slice_key]:
-                    yield self[i]
-
-        def __add__(self, other):
-            self.members+=other.members
-            self.members_data.update(other.members_data)
-            self.average_score=self.compute_score()
-            self.precision=None
-            self.center_index=None
 
     def __repr__(self):
         s= "AnalysisReplicaExchange\n"

@@ -2138,7 +2138,9 @@ class AnalysisReplicaExchange(object):
         member_distance=defaultdict(float)
 
         for n0 in cluster.members:
+            d0=self.stath0[n0]
             for n1 in cluster.members:
+                d1=self.stath1[n1]
                 if n0!=n1:
                     rmsd, _ = self.rmsd()
                     member_distance[n0]+=rmsd
@@ -2252,7 +2254,7 @@ class AnalysisReplicaExchange(object):
         d0=self.stath0[n0]
         d1=self.stath1[n1]
         _, molecular_assignment = self.rmsd()
-        for (m0, c0), (m1,c1) in molecular_assignment.iteritems():
+        for (m0, c0), (m1,c1) in molecular_assignment.items():
             mol0 = self.get_molecule(self.stath0, m0, c0)
             mol1 = self.get_molecule(self.stath1, m1, c1)
             cik0=IMP.atom.Copy(mol0).get_copy_index_key()
@@ -2263,7 +2265,7 @@ class AnalysisReplicaExchange(object):
         d0=self.stath0[n0]
         d1=self.stath1[n1]
         _, molecular_assignment = self.rmsd()
-        for (m0, c0), (m1,c1) in molecular_assignment.iteritems():
+        for (m0, c0), (m1,c1) in molecular_assignment.items():
             mol0 = self.get_molecule(self.stath0, m0, c0)
             mol1 = self.get_molecule(self.stath1, m1, c1)
             cik0=IMP.atom.Copy(mol0).get_copy_index_key()
@@ -2337,7 +2339,7 @@ class AnalysisReplicaExchange(object):
         total_rmsd = math.sqrt(total_rmsd/total_N)
 
         molecular_assignment={}
-        for molname, sels in seldict_best_order.iteritems():
+        for molname, sels in seldict_best_order.items():
             for sel0, sel1 in zip(sels, self.seldict1[molname]):
                 p0 = sel0.get_selected_particles()[0]
                 p1 = sel1.get_selected_particles()[0]

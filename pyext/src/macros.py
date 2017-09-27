@@ -2125,14 +2125,20 @@ class AnalysisReplicaExchange(object):
         self.stath1.load_data('data.pkl')
 
     def save_clusters(self,filename='clusters.pkl'):
-        import cPickle
+        try:
+            import cPickle as pickle
+        except ImportError:
+            import pickle
         fl=open(filename,'wb')
-        cPickle.dump(self.clusters,fl)
+        pickle.dump(self.clusters,fl)
 
     def load_clusters(self,filename='clusters.pkl'):
-        import cPickle
+        try:
+            import cPickle as pickle
+        except ImportError:
+            import pickle
         fl=open(filename,'rb')
-        self.clusters=cPickle.load(fl)
+        self.clusters=pickle.load(fl)
 
     def compute_cluster_center(self,cluster):
         member_distance=defaultdict(float)

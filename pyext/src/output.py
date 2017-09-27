@@ -957,14 +957,20 @@ class StatHierarchyHandler(RMFHierarchyHandler):
         self.set_frame(0)
 
     def save_data(self,filename='data.pkl'):
-        import cPickle
+        try:
+            import cPickle as pickle
+        except ImportError:
+            import pickle
         fl=open(filename,'wb')
-        cPickle.dump(self.data,fl)
+        pickle.dump(self.data,fl)
 
     def load_data(self,filename='data.pkl'):
-        import cPickle
+        try:
+            import cPickle as pickle
+        except ImportError:
+            import pickle
         fl=open(filename,'rb')
-        self.data=cPickle.load(fl)
+        self.data=pickle.load(fl)
 
     def set_frame(self,index):
         nm=self.data[index].rmf_name

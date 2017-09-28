@@ -2289,7 +2289,6 @@ class AnalysisReplicaExchange(object):
         for n1 in cluster.members:
             if n0 != n1:
                 self.apply_molecular_assignments(n0,n1)
-            print(n1)
             d1=self.stath1[n1]
             if self.alignment: self.align()
             dens.add_subunits_density(self.stath1)
@@ -2361,8 +2360,9 @@ class AnalysisReplicaExchange(object):
         import matplotlib.pyplot as plt
         import matplotlib.cm as cm
         from scipy.spatial.distance import cdist
+        import IMP.pmi.topology
 
-        mols=IMP.pmi.tools.get_molecules(IMP.atom.get_leaves(self.stath0))
+        mols=IMP.pmi.tools.get_molecules(IMP.atom.get_leaves(self.stath1))
         mol_names=dict([(mol,mol.get_name()) for mol in mols])
         mols_rindexes=dict([(mol,range(1,IMP.pmi.tools.get_residue_indexes(mol)[-1]+1)) for mol in mols])
         total_len = sum(len(mols_rindexes[mol]) for mol in mols)
@@ -2378,6 +2378,7 @@ class AnalysisReplicaExchange(object):
 
             if n0 != n1:
                 self.apply_molecular_assignments(n0,n1)
+
             d1=self.stath1[n1]
 
             prev_stop = 0
@@ -2413,6 +2414,9 @@ class AnalysisReplicaExchange(object):
             if n0 != n1:
                 self.undo_apply_molecular_assignments(n0,n1)
 
+        contact_freqs =1.0/len(cluster)*contact_freqs
+        av_dist_map=1.0/len(cluster)*contact_freqs
+
         fig = plt.figure(figsize=(100, 100))
         ax = fig.add_subplot(111)
         ax.set_xticks([])
@@ -2427,15 +2431,17 @@ class AnalysisReplicaExchange(object):
         #        print("to provide cbar labels, give 3 fields (first=first input file, last=last input) in oppose order of input contact maps")
         #        exit()
         # set the list of proteins on the x axis
-        prot_listx = mols
-        prot_listx.sort()
+        sorted_tuple=sorted([(IMP.pmi.topology.PMIMoleculeHierarchy(mol).get_extended_name(),mol) for mol in mols])
+        prot_list=zip(*sorted_tuple)[1]
+        print(prot_list)
+
+        prot_listx = prot_list
         nresx = gap_between_components + \
             sum([len(mols_rindexes[mol])
                 + gap_between_components for mol in prot_listx])
 
         # set the list of proteins on the y axis
-        prot_listy = mols
-        prot_listy.sort()
+        prot_listy = prot_list
         nresy = gap_between_components + \
             sum([len(mols_rindexes[mol])
                 + gap_between_components for mol in prot_listy])
@@ -2478,7 +2484,7 @@ class AnalysisReplicaExchange(object):
                 ax.plot([res, res], [resy, endy], linestyle='-',color='gray', lw=0.4)
                 ax.plot([end, end], [resy, endy], linestyle='-',color='gray', lw=0.4)
             xticks.append((float(res) + float(end)) / 2)
-            xlabels.append(prot.get_name())
+            xlabels.append(IMP.pmi.topology.PMIMoleculeHierarchy(prot).get_extended_name())
 
         yticks = []
         ylabels = []
@@ -2491,7 +2497,7 @@ class AnalysisReplicaExchange(object):
                 ax.plot([resx, endx], [res, res], linestyle='-',color='gray', lw=0.4)
                 ax.plot([resx, endx], [end, end], linestyle='-',color='gray', lw=0.4)
             yticks.append((float(res) + float(end)) / 2)
-            ylabels.append(prot.get_name())
+            ylabels.append(IMP.pmi.topology.PMIMoleculeHierarchy(prot).get_extended_name())
 
         # plot the contact map
 

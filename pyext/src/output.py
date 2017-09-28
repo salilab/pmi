@@ -920,7 +920,10 @@ class StatHierarchyHandler(RMFHierarchyHandler):
                     self.add_stat_file(f)
 
     def add_stat_file(self,stat_file):
-        import cPickle
+        try:
+            import cPickle as pickle
+        except ImportError:
+            import pickle
 
         try:
             '''check that it is not a pickle file with saved data from a previous calculation'''
@@ -931,7 +934,7 @@ class StatHierarchyHandler(RMFHierarchyHandler):
                 max_score = sorted(scores)[0:min(len(self), self.number_best_scoring_models)][-1]
                 self.do_filter_by_score(max_score)
 
-        except cPickle.UnpicklingError:
+        except pickle.UnpicklingError:
             '''alternatively read the ascii stat files'''
             scores,rmf_files,rmf_frame_indexes,features = self.get_info_from_stat_file(stat_file, self.score_threshold)
             if len(set(rmf_files)) > 1:

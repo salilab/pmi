@@ -37,6 +37,7 @@ class Tests(IMP.test.TestCase):
             print(cluster)
             #for member in cluster:
             #    print(member)
+            are.contact_map(cluster)
 
         for c1 in are:
             for c2 in are:

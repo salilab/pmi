@@ -2078,6 +2078,7 @@ class AnalysisReplicaExchange(object):
         self.clusters=[]
         self.pairwise_rmsd={}
         self.pairwise_molecular_assignment={}
+        self.alignment=True
 
     def set_rmsd_selection(self,**kwargs):
         self.sel0_rmsd=IMP.atom.Selection(self.stath0,**kwargs)
@@ -2096,16 +2097,11 @@ class AnalysisReplicaExchange(object):
 
         for n1,d1 in enumerate(self.stath1):
             assigned={}
-            print(n1)
             for c in self.clusters:
-
                 for n0 in c.members:
                     d0=self.stath0[n0]
-
                     if self.alignment: self.align()
-
                     rmsd, molecular_assignment=self.rmsd()
-
                     if rmsd<=rmsd_cutoff:
                         assigned[rmsd]=(n0,c)
 
@@ -2357,6 +2353,185 @@ class AnalysisReplicaExchange(object):
         self.pairwise_rmsd[(n0,n1)]=total_rmsd
         self.pairwise_molecular_assignment[(n0,n1)]=molecular_assignment
         return total_rmsd, molecular_assignment
+
+
+    def contact_map(self,cluster,contact_threshold=15):
+        import numpy as np
+        import matplotlib.pyplot as plt
+        import matplotlib.cm as cm
+        from scipy.spatial.distance import cdist
+
+        mols=IMP.pmi.tools.get_molecules(IMP.atom.get_leaves(self.stath0))
+        mol_names=dict([(mol,mol.get_name()) for mol in mols])
+        mols_rindexes=dict([(mol,range(1,IMP.pmi.tools.get_residue_indexes(mol)[-1]+1)) for mol in mols])
+        total_len = sum(len(mols_rindexes[mol]) for mol in mols)
+        coords = np.ones((total_len,3)) * 1e6 #default to coords "very far away"
+        index_dict={}
+
+        if cluster.center_index:
+            n0=cluster.center_index
+        else:
+            n0=cluster.members[0]
+
+        for ncl,n1 in enumerate(cluster.members):
+
+            if n0 != n1:
+                self.apply_molecular_assignments(n0,n1)
+            d1=self.stath1[n1]
+
+            prev_stop = 0
+
+            for mol in mols:
+                mol_name=mol_names[mol]
+                rindexes = mols_rindexes[mol]
+                index_dict[mol] = range(prev_stop, prev_stop + len(rindexes))
+
+
+                for rnum in rindexes:
+                    sel = IMP.atom.Selection(mol, residue_index=rnum, resolution=1)
+                    selpart = sel.get_selected_particles()
+                    if len(selpart) == 0: continue
+                    selpart = selpart[0]
+                    try:
+                        coords[rnum + prev_stop - 1, :] = IMP.core.XYZ(selpart).get_coordinates()
+                    except IndexError:
+                        print("Error: exceed max size", prev_stop, total_len, cname, rnum)
+                        exit()
+                prev_stop += len(rindexes)
+            dists = cdist(coords, coords)
+            binary_dists = np.where((dists <= contact_threshold) & (dists >= 1.0), 1.0, 0.0)
+            if ncl==0:
+                dist_maps = [dists]
+                av_dist_map = dists
+                contact_freqs = binary_dists
+            else:
+                dist_maps.append(dists)
+                av_dist_map += dists
+                contact_freqs += binary_dists
+
+            if n0 != n1:
+                self.undo_apply_molecular_assignments(n0,n1)
+
+        fig = plt.figure(figsize=(100, 100))
+        ax = fig.add_subplot(111)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        gap_between_components=50
+        colormap = cm.Blues
+        colornorm=None
+
+
+        #if cbar_labels is not None:
+        #    if len(cbar_labels)!=4:
+        #        print("to provide cbar labels, give 3 fields (first=first input file, last=last input) in oppose order of input contact maps")
+        #        exit()
+        # set the list of proteins on the x axis
+        prot_listx = mols
+        prot_listx.sort()
+        nresx = gap_between_components + \
+            sum([len(mols_rindexes[mol])
+                + gap_between_components for mol in prot_listx])
+
+        # set the list of proteins on the y axis
+        prot_listy = mols
+        prot_listy.sort()
+        nresy = gap_between_components + \
+            sum([len(mols_rindexes[mol])
+                + gap_between_components for mol in prot_listy])
+
+        # this is the residue offset for each protein
+        resoffsetx = {}
+        resendx = {}
+        res = gap_between_components
+        for mol in prot_listx:
+            resoffsetx[mol] = res
+            res += len(mols_rindexes[mol])
+            resendx[mol] = res
+            res += gap_between_components
+
+        resoffsety = {}
+        resendy = {}
+        res = gap_between_components
+        for mol in prot_listy:
+            resoffsety[mol] = res
+            res += len(mols_rindexes[mol])
+            resendy[mol] = res
+            res += gap_between_components
+
+        resoffsetdiagonal = {}
+        res = gap_between_components
+        for mol in IMP.pmi.tools.OrderedSet(prot_listx + prot_listy):
+            resoffsetdiagonal[mol] = res
+            res += len(mols_rindexes[mol])
+            res += gap_between_components
+
+        # plot protein boundaries
+        xticks = []
+        xlabels = []
+        for n, prot in enumerate(prot_listx):
+            res = resoffsetx[prot]
+            end = resendx[prot]
+            for proty in prot_listy:
+                resy = resoffsety[proty]
+                endy = resendy[proty]
+                ax.plot([res, res], [resy, endy], linestyle='-',color='gray', lw=0.4)
+                ax.plot([end, end], [resy, endy], linestyle='-',color='gray', lw=0.4)
+            xticks.append((float(res) + float(end)) / 2)
+            xlabels.append(prot.get_name())
+
+        yticks = []
+        ylabels = []
+        for n, prot in enumerate(prot_listy):
+            res = resoffsety[prot]
+            end = resendy[prot]
+            for protx in prot_listx:
+                resx = resoffsetx[protx]
+                endx = resendx[protx]
+                ax.plot([resx, endx], [res, res], linestyle='-',color='gray', lw=0.4)
+                ax.plot([resx, endx], [end, end], linestyle='-',color='gray', lw=0.4)
+            yticks.append((float(res) + float(end)) / 2)
+            ylabels.append(prot.get_name())
+
+        # plot the contact map
+
+        tmp_array = np.zeros((nresx, nresy))
+        for px in prot_listx:
+            for py in prot_listy:
+                resx = resoffsetx[px]
+                lengx = resendx[px] - 1
+                resy = resoffsety[py]
+                lengy = resendy[py] - 1
+                indexes_x = index_dict[px]
+                minx = min(indexes_x)
+                maxx = max(indexes_x)
+                indexes_y = index_dict[py]
+                miny = min(indexes_y)
+                maxy = max(indexes_y)
+                tmp_array[resx:lengx,resy:lengy] = contact_freqs[minx:maxx,miny:maxy]
+
+        cax = ax.imshow(tmp_array,
+                  cmap=colormap,
+                  norm=colornorm,
+                  origin='lower',
+                  alpha=0.6,
+                  interpolation='nearest')
+
+        ax.set_xticks(xticks)
+        ax.set_xticklabels(xlabels, rotation=90)
+        ax.set_yticks(yticks)
+        ax.set_yticklabels(ylabels)
+        plt.setp(ax.get_xticklabels(), fontsize=6)
+        plt.setp(ax.get_yticklabels(), fontsize=6)
+
+        # display and write to file
+        fig.set_size_inches(0.002 * nresx, 0.002 * nresy)
+        [i.set_linewidth(2.0) for i in ax.spines.itervalues()]
+        #if cbar_labels is not None:
+        #    cbar = fig.colorbar(cax, ticks=[0.5,1.5,2.5,3.5])
+        #    cbar.ax.set_yticklabels(cbar_labels)# vertically oriented colorbar
+
+        plt.savefig("contact_map."+str(cluster.cluster_id)+".pdf", dpi=300,transparent="False")
+
 
     def __repr__(self):
         s= "AnalysisReplicaExchange\n"

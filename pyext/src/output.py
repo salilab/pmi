@@ -1050,6 +1050,9 @@ class StatHierarchyHandler(RMFHierarchyHandler):
 
 
 class DataEntry(object):
+    '''
+    A class to store data associated to a model
+    '''
     def __init__(self,stat_file=None,rmf_name=None,rmf_index=None,score=None,features=None):
         self.rmf_name=rmf_name
         self.rmf_index=rmf_index
@@ -1068,6 +1071,9 @@ class DataEntry(object):
 
 
 class Cluster(object):
+    '''
+    A container for models organized into clusters
+    '''
     def __init__(self,index,cid=None,data=None):
         self.cluster_id=cid
         self.members=[index]

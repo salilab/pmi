@@ -1403,6 +1403,7 @@ data = [("Rpb1",     pdbfile,   "A",     0.00000000,  (fastafile,    0)),
 
 # ----------------------------------------------------------------------
 
+@IMP.deprecated_object("2.8", "Use AnalysisReplicaExchange instead")
 class AnalysisReplicaExchange0(object):
     """A macro for running all the basic operations of analysis.
     Includes clustering, precision analysis, and making ensemble density maps.

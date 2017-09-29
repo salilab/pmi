@@ -2432,7 +2432,7 @@ class AnalysisReplicaExchange(object):
         #        exit()
         # set the list of proteins on the x axis
         sorted_tuple=sorted([(IMP.pmi.topology.PMIMoleculeHierarchy(mol).get_extended_name(),mol) for mol in mols])
-        prot_list=zip(*sorted_tuple)[1]
+        prot_list=list(zip(*sorted_tuple))[1]
 
         prot_listx = prot_list
         nresx = gap_between_components + \

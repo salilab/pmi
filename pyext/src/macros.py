@@ -2115,11 +2115,11 @@ class AnalysisReplicaExchange(object):
                 c.add_member(n1,d1)
 
     def save_data(self,filename='data.pkl'):
-        self.stath0.save_data('data.pkl')
+        self.stath0.save_data(filename)
 
     def load_data(self,filename='data.pkl'):
-        self.stath0.load_data('data.pkl')
-        self.stath1.load_data('data.pkl')
+        self.stath0.load_data(filename)
+        self.stath1.load_data(filename)
 
     def save_clusters(self,filename='clusters.pkl'):
         try:

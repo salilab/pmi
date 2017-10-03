@@ -2378,7 +2378,7 @@ class AnalysisReplicaExchange(object):
         return total_rmsd, molecular_assignment
 
 
-    def contact_map(self,cluster,contact_threshold=15):
+    def contact_map(self,cluster,contact_threshold=15, prefix='./'):
         import numpy as np
         import matplotlib.pyplot as plt
         import matplotlib.cm as cm
@@ -2393,17 +2393,17 @@ class AnalysisReplicaExchange(object):
         index_dict={}
 
         # here we should set_reference instead
-        print("here we should set_reference instead")
-        if cluster.center_index:
-            n0=cluster.center_index
-        else:
-            n0=cluster.members[0]
+        #print("here we should set_reference instead")
+        #if cluster.center_index:
+        #    n0=cluster.center_index
+        #else:
+        #    n0=cluster.members[0]
 
         for ncl,n1 in enumerate(cluster.members):
 
             self.apply_molecular_assignments(n1)
 
-            d1=self.stath1[n1]
+            #d1=self.stath1[n1]
 
             prev_stop = 0
 
@@ -2559,7 +2559,7 @@ class AnalysisReplicaExchange(object):
         #    cbar = fig.colorbar(cax, ticks=[0.5,1.5,2.5,3.5])
         #    cbar.ax.set_yticklabels(cbar_labels)# vertically oriented colorbar
 
-        plt.savefig("contact_map."+str(cluster.cluster_id)+".pdf", dpi=300,transparent="False")
+        plt.savefig(prefix+"/contact_map."+str(cluster.cluster_id)+".pdf", dpi=300,transparent="False")
 
 
     def __repr__(self):

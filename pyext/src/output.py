@@ -1074,13 +1074,12 @@ class Cluster(object):
     '''
     A container for models organized into clusters
     '''
-    def __init__(self,index,cid=None,data=None):
+    def __init__(self,cid=None):
         self.cluster_id=cid
-        self.members=[index]
+        self.members=[]
         self.precision=None
         self.center_index=None
-        self.members_data={index:data}
-        self.average_score=self.compute_score()
+        self.members_data={}
 
     def add_member(self,index,data=None):
         self.members.append(index)

@@ -43,7 +43,7 @@ class Tests(IMP.test.TestCase):
             for c2 in are:
                 print(c1.cluster_id,c2.cluster_id,are.bipartite_precision(c1,c2))
 
-        are.apply_molecular_assignments(0,1)
+        are.apply_molecular_assignments(1)
         are.save_clusters()
 
 

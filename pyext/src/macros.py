@@ -2093,9 +2093,10 @@ class AnalysisReplicaExchange(object):
         s=IMP.atom.Selection(hier, molecule=name, copy_index=copy)
         return IMP.pmi.tools.get_molecules(s.get_selected_particles()[0])[0]
 
-    def cluster(self, rmsd_cutoff=10, alignment=True):
+    def cluster(self, rmsd_cutoff=10, alignment=True, stop_at_first_found=False):
         self.alignment=alignment
 
+        self.clusters = []
         for n1,d1 in enumerate(self.stath1):
             assigned={}
             for c in self.clusters:
@@ -2105,21 +2106,45 @@ class AnalysisReplicaExchange(object):
                     rmsd, molecular_assignment=self.rmsd()
                     if rmsd<=rmsd_cutoff:
                         assigned[rmsd]=(n0,c)
+                        if stop_at_first_found:
+                            break
 
             if len(assigned) == 0:
-                c=IMP.pmi.output.Cluster(n1,len(self.clusters),d1)
+                c=IMP.pmi.output.Cluster(len(self.clusters))
+                c.add_member(n1,d1)
                 self.clusters.append(c)
             else:
                 minrmsd=min(assigned.keys())
                 n0,c=assigned[minrmsd]
                 c.add_member(n1,d1)
 
+    def set_cluster_assignments(self, cluster_ids):
+        if len(cluster_ids)!=len(self.stath0):
+            raise ValueError('cluster ids has to be same length as number of frames')
+
+        self.clusters=[]
+        for i in sorted(list(set(cluster_ids))):
+            self.clusters.append(IMP.pmi.output.Cluster(i))
+        for i, (idx, d) in enumerate(zip(cluster_ids, self.stath0)):
+            self.clusters[idx].add_member(i,d)
+
+    def get_cluster_data(self, cluster):
+        data=[]
+        for m in cluster:
+            data.append(m)
+        return data
+
     def save_data(self,filename='data.pkl'):
         self.stath0.save_data(filename)
+
+    def set_data(self,data):
+        self.stath0.data=data
+        self.stath1.data=data
 
     def load_data(self,filename='data.pkl'):
         self.stath0.load_data(filename)
         self.stath1.load_data(filename)
+        self.best_models=len(self.stath0)
 
     def save_clusters(self,filename='clusters.pkl'):
         try:
@@ -2153,22 +2178,29 @@ class AnalysisReplicaExchange(object):
         else:
             cluster.center_index=cluster.members[0]
 
-    def set_alignment_type(self,alignment_type,cluster):
-        if alignment_type=="Absolute":
-            d0=self.stath0[self.clusters[0].members[0]]
-        elif alignment_type=="Relative":
-            d0=self.stath0[cluster.members[0]]
+    def set_reference(self,reference,cluster):
+
+        if reference=="Absolute":
+            d0=self.stath0[0]
+        elif reference=="Relative":
+            if cluster.center_index:
+                n0=cluster.center_index
+            else:
+                n0=cluster.members[0]
+            d0=self.stath0[n0]
 
 
-    def save_coordinates(self,cluster,alignment_type="Absolute"):
-        if self.alignment: self.set_alignment_type(alignment_type,cluster)
+    def save_coordinates(self,cluster,reference="Absolute", prefix="./"):
+        if self.alignment: self.set_reference(reference,cluster)
         o=IMP.pmi.output.Output()
-        rmf_name=str(cluster.cluster_id)+".rmf3"
+        rmf_name=prefix+'/'+str(cluster.cluster_id)+".rmf3"
         o.init_rmf(rmf_name, [self.stath1])
-        for n0 in cluster.members:
-            d1=self.stath1[n0]
+        for n1 in cluster.members:
+            self.apply_molecular_assignments(n1)
+            d1=self.stath1[n1]
             if self.alignment: self.align()
             o.write_rmf(rmf_name)
+            self.undo_apply_molecular_assignments(n1)
         o.close_rmf(rmf_name)
 
     def precision(self,cluster):
@@ -2253,8 +2285,7 @@ class AnalysisReplicaExchange(object):
             rmsf[r]/=npairs
         return rmsf
 
-    def apply_molecular_assignments(self, n0, n1):
-        d0=self.stath0[n0]
+    def apply_molecular_assignments(self, n1):
         d1=self.stath1[n1]
         _, molecular_assignment = self.rmsd()
         for (m0, c0), (m1,c1) in molecular_assignment.items():
@@ -2264,8 +2295,7 @@ class AnalysisReplicaExchange(object):
             p1=IMP.atom.Copy(mol1).get_particle()
             p1.set_value(cik0,c0)
 
-    def undo_apply_molecular_assignments(self, n0, n1):
-        d0=self.stath0[n0]
+    def undo_apply_molecular_assignments(self, n1):
         d1=self.stath1[n1]
         _, molecular_assignment = self.rmsd()
         for (m0, c0), (m1,c1) in molecular_assignment.items():
@@ -2276,25 +2306,18 @@ class AnalysisReplicaExchange(object):
             p1.set_value(cik0,c1)
 
 
-    def save_densities(self,cluster,density_custom_ranges,voxel_size=5,alignment="Absolute"):
-        if self.alignment: self.set_alignment_type(alignment,cluster)
+    def save_densities(self,cluster,density_custom_ranges,voxel_size=5,alignment="Absolute", prefix="./"):
+        if self.alignment: self.set_reference(alignment,cluster)
         dens = IMP.pmi.analysis.GetModelDensity(density_custom_ranges,
                                                 voxel=voxel_size)
 
-        if cluster.center_index:
-            n0=cluster.center_index
-        else:
-            n0=cluster.members[0]
-
         for n1 in cluster.members:
-            if n0 != n1:
-                self.apply_molecular_assignments(n0,n1)
+            self.apply_molecular_assignments(n1)
             d1=self.stath1[n1]
             if self.alignment: self.align()
             dens.add_subunits_density(self.stath1)
-            if n0 != n1:
-                self.undo_apply_molecular_assignments(n0,n1)
-        dens.write_mrc(path="./",suffix=str(cluster.cluster_id))
+            self.undo_apply_molecular_assignments(n1)
+        dens.write_mrc(path=prefix+'/',suffix=str(cluster.cluster_id))
         del dens
 
     def align(self):
@@ -2369,6 +2392,8 @@ class AnalysisReplicaExchange(object):
         coords = np.ones((total_len,3)) * 1e6 #default to coords "very far away"
         index_dict={}
 
+        # here we should set_reference instead
+        print("here we should set_reference instead")
         if cluster.center_index:
             n0=cluster.center_index
         else:
@@ -2376,8 +2401,7 @@ class AnalysisReplicaExchange(object):
 
         for ncl,n1 in enumerate(cluster.members):
 
-            if n0 != n1:
-                self.apply_molecular_assignments(n0,n1)
+            self.apply_molecular_assignments(n1)
 
             d1=self.stath1[n1]
 
@@ -2411,8 +2435,7 @@ class AnalysisReplicaExchange(object):
                 av_dist_map += dists
                 contact_freqs += binary_dists
 
-            if n0 != n1:
-                self.undo_apply_molecular_assignments(n0,n1)
+            self.undo_apply_molecular_assignments(n1)
 
         contact_freqs =1.0/len(cluster)*contact_freqs
         av_dist_map=1.0/len(cluster)*contact_freqs

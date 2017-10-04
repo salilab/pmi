@@ -2067,9 +2067,6 @@ class AnalysisReplicaExchange(object):
         self.stath0=IMP.pmi.output.StatHierarchyHandler(model,stat_files,self.best_models)
         self.stath1=IMP.pmi.output.StatHierarchyHandler(StatHierarchyHandler=self.stath0)
 
-        self.seldict0=IMP.pmi.tools.get_selections_dictionary(IMP.atom.get_leaves(self.stath0.get_children()))
-        self.seldict1=IMP.pmi.tools.get_selections_dictionary(IMP.atom.get_leaves(self.stath0.get_children()))
-
         self.rbs1, self.beads1 = IMP.pmi.tools.get_rbs_and_beads(IMP.pmi.tools.select_at_all_resolutions(self.stath1))
         self.rbs0, self.beads0 = IMP.pmi.tools.get_rbs_and_beads(IMP.pmi.tools.select_at_all_resolutions(self.stath0))
         self.sel0_rmsd=IMP.atom.Selection(self.stath0)
@@ -2080,16 +2077,20 @@ class AnalysisReplicaExchange(object):
         self.pairwise_rmsd={}
         self.pairwise_molecular_assignment={}
         self.alignment=True
+        self.update_seldicts()
 
     def set_rmsd_selection(self,**kwargs):
         self.sel0_rmsd=IMP.atom.Selection(self.stath0,**kwargs)
         self.sel1_rmsd=IMP.atom.Selection(self.stath1,**kwargs)
-        self.seldict0=IMP.pmi.tools.get_selections_dictionary(self.sel0_rmsd.get_selected_particles())
-        self.seldict1=IMP.pmi.tools.get_selections_dictionary(self.sel1_rmsd.get_selected_particles())
+        self.update_seldicts()
 
     def set_alignment_selection(self,**kwargs):
         self.sel0_alignment=IMP.atom.Selection(self.stath0,**kwargs)
         self.sel1_alignment=IMP.atom.Selection(self.stath1,**kwargs)
+
+    def update_seldicts(self):
+        self.seldict0=IMP.pmi.tools.get_selections_dictionary(self.sel0_rmsd.get_selected_particles())
+        self.seldict1=IMP.pmi.tools.get_selections_dictionary(self.sel1_rmsd.get_selected_particles())
 
     def get_molecule(self, hier, name, copy):
         s=IMP.atom.Selection(hier, molecule=name, copy_index=copy)
@@ -2308,8 +2309,8 @@ class AnalysisReplicaExchange(object):
             p1.set_value(cik0,c1)
 
 
-    def save_densities(self,cluster,density_custom_ranges,voxel_size=5,alignment="Absolute", prefix="./"):
-        if self.alignment: self.set_reference(alignment,cluster)
+    def save_densities(self,cluster,density_custom_ranges,voxel_size=5,reference="Absolute", prefix="./"):
+        if self.alignment: self.set_reference(reference,cluster)
         dens = IMP.pmi.analysis.GetModelDensity(density_custom_ranges,
                                                 voxel=voxel_size)
 
@@ -2380,7 +2381,8 @@ class AnalysisReplicaExchange(object):
         return total_rmsd, molecular_assignment
 
 
-    def contact_map(self,cluster,contact_threshold=15, prefix='./'):
+    def contact_map(self,cluster,contact_threshold=15, prefix='./',reference="Absolute"):
+        if self.alignment: self.set_reference(reference,cluster)
         import numpy as np
         import matplotlib.pyplot as plt
         import matplotlib.cm as cm
@@ -2393,13 +2395,6 @@ class AnalysisReplicaExchange(object):
         total_len = sum(len(mols_rindexes[mol]) for mol in mols)
         coords = np.ones((total_len,3)) * 1e6 #default to coords "very far away"
         index_dict={}
-
-        # here we should set_reference instead
-        #print("here we should set_reference instead")
-        #if cluster.center_index:
-        #    n0=cluster.center_index
-        #else:
-        #    n0=cluster.members[0]
 
         for ncl,n1 in enumerate(cluster.members):
 

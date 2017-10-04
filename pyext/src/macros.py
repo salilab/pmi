@@ -2067,8 +2067,8 @@ class AnalysisReplicaExchange(object):
         self.stath0=IMP.pmi.output.StatHierarchyHandler(model,stat_files,self.best_models)
         self.stath1=IMP.pmi.output.StatHierarchyHandler(StatHierarchyHandler=self.stath0)
 
-        self.seldict0=IMP.pmi.tools.get_selections_dictionary(self.stath0.get_children()[0])
-        self.seldict1=IMP.pmi.tools.get_selections_dictionary(self.stath1.get_children()[0])
+        self.seldict0=IMP.pmi.tools.get_selections_dictionary(IMP.atom.get_leaves(self.stath0.get_children()))
+        self.seldict1=IMP.pmi.tools.get_selections_dictionary(IMP.atom.get_leaves(self.stath0.get_children()))
 
         self.rbs1, self.beads1 = IMP.pmi.tools.get_rbs_and_beads(IMP.pmi.tools.select_at_all_resolutions(self.stath1))
         self.rbs0, self.beads0 = IMP.pmi.tools.get_rbs_and_beads(IMP.pmi.tools.select_at_all_resolutions(self.stath0))
@@ -2084,6 +2084,8 @@ class AnalysisReplicaExchange(object):
     def set_rmsd_selection(self,**kwargs):
         self.sel0_rmsd=IMP.atom.Selection(self.stath0,**kwargs)
         self.sel1_rmsd=IMP.atom.Selection(self.stath1,**kwargs)
+        self.seldict0=IMP.pmi.tools.get_selections_dictionary(self.sel0_rmsd.get_selected_particles())
+        self.seldict1=IMP.pmi.tools.get_selections_dictionary(self.sel1_rmsd.get_selected_particles())
 
     def set_alignment_selection(self,**kwargs):
         self.sel0_alignment=IMP.atom.Selection(self.stath0,**kwargs)

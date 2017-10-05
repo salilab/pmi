@@ -1145,6 +1145,8 @@ class TopologyReader(object):
             colorfields = values[2].split(',')
             if len(colorfields)==3:
                 c.color = [float(x) for x in colorfields]
+                if any([x>1 for x in c.color]):
+                    c.color=[x/255 for x in c.color]
             else:
                 c.color = values[2]
         c._orig_fasta_file = values[3]

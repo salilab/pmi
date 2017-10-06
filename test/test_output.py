@@ -283,5 +283,44 @@ class Tests(IMP.test.TestCase):
             self._check_coordinate_identity(lvs, lvs_read)
 
 
+    def test_StatHierarchyHandler_rmf_based(self):
+        import ntpath
+        import glob
+
+        m=IMP.Model()
+        stat_name=[self.get_input_file_name("output_test_rmf/rmfs/0.rmf3")]
+        stath=IMP.pmi.output.StatHierarchyHandler(m,stat_name)
+
+        # test that it is indeed a hierarchy
+        self.assertEqual(348,len(IMP.atom.get_leaves(stath)))
+        s0=stath.get_children()[0]
+        mols=s0.get_children()
+        self.assertEqual(2,len(mols))
+        names=[mol.get_name() for mol in mols]
+        self.assertEqual(names[0],'Rpb4')
+        self.assertEqual(names[1],'Rpb7')
+        lvs=IMP.atom.get_leaves(stath)
+
+        #test internal data
+        s1=stath[1].score
+        r1=stath[1].rmf_name
+        i1=stath[1].rmf_index
+        s0=stath[0].score
+        r0=stath[0].rmf_name
+        i0=stath[0].rmf_index
+
+        self.assertEqual(ntpath.basename(r1),"0.rmf3")
+        self.assertEqual(ntpath.basename(r0),"0.rmf3")
+        self.assertEqual(i1,1)
+        self.assertEqual(i0,0)
+
+        #test multiple stat files with filter
+        stat_names=glob.glob(self.get_input_file_name("output_test_rmf/rmfs/0.rmf3").replace("0.rmf3","*.rmf3"))
+        stath=IMP.pmi.output.StatHierarchyHandler(m,stat_names,5)
+
+        lvs=IMP.atom.get_leaves(stath)
+        self.assertEqual(798,len(stath))
+
+
 if __name__ == '__main__':
     IMP.test.main()

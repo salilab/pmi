@@ -36,6 +36,7 @@ class ReplicaExchange0(object):
                  monte_carlo_sample_objects=None,
                  molecular_dynamics_sample_objects=None,
                  output_objects=[],
+                 rmf_output_objects=None,
                  crosslink_restraints=None,
                  monte_carlo_temperature=1.0,
                  simulated_annealing=False,
@@ -82,7 +83,11 @@ class ReplicaExchange0(object):
            @param molecular_dynamics_sample_objects Objects for MD sampling
                   For PMI2: just pass flat list of particles
            @param output_objects A list of structural objects and restraints
-                  that will be included in output (statistics files). Any object
+                  that will be included in output (ie, statistics "stat" files). Any object
+                  that provides a get_output() method can be used here. If None is passed
+                  the macro will not write stat files.
+           @param rmf_output_objects A list of structural objects and restraints
+                  that will be included in rmf. Any object
                   that provides a get_output() method can be used here.
            @param crosslink_restraints List of cross-link restraints that will
                   be included in output RMF files (for visualization).
@@ -127,6 +132,7 @@ class ReplicaExchange0(object):
 
         ### add check hierarchy is multistate
         self.output_objects = output_objects
+        self.rmf_output_objects=rmf_output_objects
         self.representation = representation
         if representation:
             if type(representation) == list:
@@ -139,7 +145,10 @@ class ReplicaExchange0(object):
                 self.vars["number_of_states"] = 1
         elif root_hier and type(root_hier) == IMP.atom.Hierarchy and root_hier.get_name()=='System':
             self.pmi2 = True
-            self.output_objects.append(IMP.pmi.io.TotalScoreOutput(self.model))
+            if self.output_objects is not None:
+                self.output_objects.append(IMP.pmi.io.TotalScoreOutput(self.model))
+            if self.rmf_output_objects is not None:
+                self.rmf_output_objects.append(IMP.pmi.io.TotalScoreOutput(self.model))
             self.root_hier = root_hier
             states = IMP.atom.get_by_type(root_hier,IMP.atom.STATE_TYPE)
             self.vars["number_of_states"] = len(states)
@@ -240,7 +249,10 @@ class ReplicaExchange0(object):
                 sampler_mc.set_simulated_annealing(tmin,tmax,nfmin,nfmax)
             if self.vars["self_adaptive"]:
                 sampler_mc.set_self_adaptive(isselfadaptive=self.vars["self_adaptive"])
-            self.output_objects.append(sampler_mc)
+            if self.output_objects is not None:
+                self.output_objects.append(sampler_mc)
+            if self.rmf_output_objects is not None:
+                self.rmf_output_objects.append(sampler_mc)
             samplers.append(sampler_mc)
 
 
@@ -256,7 +268,10 @@ class ReplicaExchange0(object):
                 nfmin=self.vars["simulated_annealing_minimum_temperature_nframes"]
                 nfmax=self.vars["simulated_annealing_maximum_temperature_nframes"]
                 sampler_md.set_simulated_annealing(tmin,tmax,nfmin,nfmax)
-            self.output_objects.append(sampler_md)
+            if self.output_objects is not None:
+                self.output_objects.append(sampler_md)
+            if self.rmf_output_objects is not None:
+                self.rmf_output_objects.append(sampler_md)
             samplers.append(sampler_md)
 # -------------------------------------------------------------------------
 
@@ -271,8 +286,10 @@ class ReplicaExchange0(object):
         self.replica_exchange_object = rex.rem
 
         myindex = rex.get_my_index()
-        self.output_objects.append(rex)
-
+        if self.output_objects is not None:
+            self.output_objects.append(rex)
+        if self.rmf_output_objects is not None:
+            self.rmf_output_objects.append(rex)
         # must reset the minimum temperature due to the
         # different binary length of rem.get_my_parameter double and python
         # float
@@ -314,16 +331,25 @@ class ReplicaExchange0(object):
 # -------------------------------------------------------------------------
 
         sw = IMP.pmi.tools.Stopwatch()
-        self.output_objects.append(sw)
+        if self.output_objects is not None:
+            self.output_objects.append(sw)
+        if self.rmf_output_objects is not None:
+            self.rmf_output_objects.append(sw)
 
         print("Setting up stat file")
         output = IMP.pmi.output.Output(atomistic=self.vars["atomistic"])
         low_temp_stat_file = globaldir + \
             self.vars["stat_file_name_suffix"] + "." + str(myindex) + ".out"
         if not self.test_mode:
-            output.init_stat2(low_temp_stat_file,
+            if self.output_objects is not None:
+                output.init_stat2(low_temp_stat_file,
                               self.output_objects,
                               extralabels=["rmf_file", "rmf_frame_index"])
+        else:
+            print("Stat file writing is disabled")
+
+        if self.rmf_output_objects is not None:
+            print("Stat info being written in the rmf file")
 
         print("Setting up replica stat file")
         replica_stat_file = globaldir + \
@@ -377,7 +403,7 @@ class ReplicaExchange0(object):
             print("Setting up and writing initial rmf coordinate file")
             init_suffix = globaldir + self.vars["initial_rmf_name_suffix"]
             output.init_rmf(init_suffix + "." + str(myindex) + ".rmf3",
-                            output_hierarchies)
+                            output_hierarchies,listofobjects=self.rmf_output_objects)
             if self.crosslink_restraints:
                 output.add_restraints_to_rmf(
                     init_suffix + "." + str(myindex) + ".rmf3",
@@ -395,7 +421,8 @@ class ReplicaExchange0(object):
         if not self.test_mode:
             print("Setting up production rmf files")
             rmfname = rmf_dir + "/" + str(myindex) + ".rmf3"
-            output.init_rmf(rmfname, output_hierarchies, geometries=self.vars["geometries"])
+            output.init_rmf(rmfname, output_hierarchies, geometries=self.vars["geometries"],
+                            listofobjects = self.rmf_output_objects)
 
             if self.crosslink_restraints:
                 output.add_restraints_to_rmf(rmfname, self.crosslink_restraints)
@@ -453,7 +480,8 @@ class ReplicaExchange0(object):
                     else:
                         output.set_output_entry("rmf_file", rmfname)
                         output.set_output_entry("rmf_frame_index", '-1')
-                    output.write_stat2(low_temp_stat_file)
+                    if self.output_objects is not None:
+                        output.write_stat2(low_temp_stat_file)
                 ntimes_at_low_temp += 1
 
             if not self.test_mode:

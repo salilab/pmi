@@ -267,8 +267,9 @@ def get_best_models(stat_files,
     score_list=[]                 # best scores
     feature_keyword_list_dict=defaultdict(list)  # best values of the feature keys
     for sf in stat_files:
-        root_directory_of_stat_file = os.path.dirname(os.path.abspath(sf)) #os.path.dirname(os.path.dirname(os.path.abspath(sf)))
-        #print(sf,os.path.abspath(sf),os.path.dirname(os.path.abspath(sf)),os.path.dirname(os.path.dirname(os.path.abspath(sf))))
+        root_directory_of_stat_file = os.path.dirname(os.path.abspath(sf))
+        if sf[-4:]=='rmf3':
+            root_directory_of_stat_file = os.path.dirname(os.path.abspath(root_directory_of_stat_file))
         print("getting data from file %s" % sf)
         po = IMP.pmi.output.ProcessOutput(sf)
 

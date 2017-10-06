@@ -391,14 +391,48 @@ class Output(object):
                 "self.best_score_list=" + str(self.best_score_list))
             best_score_file.close()
 
-    def init_rmf(self, name, hierarchies, rs=None, geometries=None):
+    def init_rmf(self, name, hierarchies, rs=None, geometries=None, listofobjects=None):
+        """
+        This function initialize an RMF file
+
+        @param name          the name of the RMF file
+        @param hierarchies   the hiearchies to be included (it is a list)
+        @param rs            optional, the restraint sets (it is a list)
+        @param geometries    optional, the geometries (it is a list)
+        @param listofobjects optional, the list of objects for the stat (it is a list)
+        """
         rh = RMF.create_rmf_file(name)
         IMP.rmf.add_hierarchies(rh, hierarchies)
+        cat=None
+        outputkey_rmfkey=None
+
         if rs is not None:
             IMP.rmf.add_restraints(rh,rs)
         if geometries is not None:
             IMP.rmf.add_geometries(rh,geometries)
-        self.dictionary_rmfs[name] = rh
+        if listofobjects is not None:
+            cat = rh.get_category("stat")
+            outputkey_rmfkey={}
+            for l in listofobjects:
+                if not "get_output" in dir(l):
+                    raise ValueError("Output: object %s doesn't have get_output() method" % str(l))
+                output=l.get_output()
+                for outputkey in output:
+                    rmftag=RMF.string_tag
+                    if type(output[outputkey]) is float:
+                        rmftag=RMF.float_tag
+                    elif type(output[outputkey]) is int:
+                        rmftag=RMF.int_tag
+                    elif type(output[outputkey]) is str:
+                        rmftag = RMF.string_tag
+                    else:
+                        rmftag = RMF.string_tag
+                    rmfkey=rh.get_key(cat, outputkey, rmftag)
+                    outputkey_rmfkey[outputkey]=rmfkey
+            outputkey_rmfkey["rmf_file"]=rh.get_key(cat, "rmf_file", RMF.string_tag)
+            outputkey_rmfkey["rmf_frame_index"]=rh.get_key(cat, "rmf_frame_index", RMF.int_tag)
+
+        self.dictionary_rmfs[name] = (rh,cat,outputkey_rmfkey,listofobjects)
 
     def add_restraints_to_rmf(self, name, objectlist):
         flatobjectlist=_flatten(objectlist)
@@ -408,13 +442,13 @@ class Output(object):
             except:
                 rs = o.get_restraint()
             IMP.rmf.add_restraints(
-                self.dictionary_rmfs[name],
+                self.dictionary_rmfs[name][0],
                 rs.get_restraints())
 
     def add_geometries_to_rmf(self, name, objectlist):
         for o in objectlist:
             geos = o.get_geometries()
-            IMP.rmf.add_geometries(self.dictionary_rmfs[name], geos)
+            IMP.rmf.add_geometries(self.dictionary_rmfs[name][0], geos)
 
     def add_particle_pair_from_restraints_to_rmf(self, name, objectlist):
         for o in objectlist:
@@ -422,19 +456,37 @@ class Output(object):
             pps = o.get_particle_pairs()
             for pp in pps:
                 IMP.rmf.add_geometry(
-                    self.dictionary_rmfs[name],
+                    self.dictionary_rmfs[name][0],
                     IMP.core.EdgePairGeometry(pp))
 
     def write_rmf(self, name):
-        IMP.rmf.save_frame(self.dictionary_rmfs[name])
-        self.dictionary_rmfs[name].flush()
+        IMP.rmf.save_frame(self.dictionary_rmfs[name][0])
+        if self.dictionary_rmfs[name][1] is not None:
+            cat=self.dictionary_rmfs[name][1]
+            outputkey_rmfkey=self.dictionary_rmfs[name][2]
+            listofobjects=self.dictionary_rmfs[name][3]
+            for l in listofobjects:
+                output=l.get_output()
+                for outputkey in output:
+                    rmfkey=outputkey_rmfkey[outputkey]
+                    try:
+                        self.dictionary_rmfs[name][0].get_root_node().set_value(rmfkey,output[outputkey])
+                    except NotImplementedError:
+                        continue
+            rmfkey = outputkey_rmfkey["rmf_file"]
+            self.dictionary_rmfs[name][0].get_root_node().set_value(rmfkey, name)
+            rmfkey = outputkey_rmfkey["rmf_frame_index"]
+            nframes=self.dictionary_rmfs[name][0].get_number_of_frames()
+            self.dictionary_rmfs[name][0].get_root_node().set_value(rmfkey, nframes-1)
+        self.dictionary_rmfs[name][0].flush()
 
     def close_rmf(self, name):
-        del self.dictionary_rmfs[name]
+        rh = self.dictionary_rmfs[name][0]
+        del rh
 
     def write_rmfs(self):
-        for rmf in self.dictionary_rmfs.keys():
-            self.write_rmf(rmf)
+        for rmfinfo in self.dictionary_rmfs.keys():
+            self.write_rmf(rmfinfo[0])
 
     def init_stat(self, name, listofobjects):
         if self.ascii:
@@ -695,11 +747,12 @@ class Output(object):
 
 
 class ProcessOutput(object):
-    """A class for reading stat files"""
+    """A class for reading stat files (either rmf or ascii v1 and v2)"""
     def __init__(self, filename):
         self.filename = filename
         self.isstat1 = False
         self.isstat2 = False
+        self.isrmf = False
 
         # open the file
         if not self.filename is None:
@@ -707,37 +760,52 @@ class ProcessOutput(object):
         else:
             raise ValueError("No file name provided. Use -h for help")
 
-        # get the keys from the first line
-        for line in f.readlines():
-            d = ast.literal_eval(line)
-            self.klist = list(d.keys())
-            # check if it is a stat2 file
-            if "STAT2HEADER" in self.klist:
-                self.isstat2 = True
-                for k in self.klist:
-                    if "STAT2HEADER" in str(k):
-                        # if print_header: print k, d[k]
-                        del d[k]
-                stat2_dict = d
-                # get the list of keys sorted by value
-                kkeys = [k[0]
-                         for k in sorted(stat2_dict.items(), key=operator.itemgetter(1))]
-                self.klist = [k[1]
-                              for k in sorted(stat2_dict.items(), key=operator.itemgetter(1))]
-                self.invstat2_dict = {}
-                for k in kkeys:
-                    self.invstat2_dict.update({stat2_dict[k]: k})
-            else:
-                IMP.handle_use_deprecated("statfile v1 is deprecated. "
-                                          "Please convert to statfile v2.\n")
-                self.isstat1 = True
-                self.klist.sort()
+        try:
+            #let's see if that is an rmf file
+            rh = RMF.open_rmf_file_read_only(self.filename)
+            self.isrmf=True
+            cat=rh.get_category('stat')
+            rmf_klist=rh.get_keys(cat)
+            self.rmf_names_keys=dict([(rh.get_name(k),k) for k in rmf_klist])
+            del rh
 
-            break
-        f.close()
+        except IOError:
+            # try with an ascii stat file
+            # get the keys from the first line
+            for line in f.readlines():
+                d = ast.literal_eval(line)
+                self.klist = list(d.keys())
+                # check if it is a stat2 file
+                if "STAT2HEADER" in self.klist:
+                    self.isstat2 = True
+                    for k in self.klist:
+                        if "STAT2HEADER" in str(k):
+                            # if print_header: print k, d[k]
+                            del d[k]
+                    stat2_dict = d
+                    # get the list of keys sorted by value
+                    kkeys = [k[0]
+                             for k in sorted(stat2_dict.items(), key=operator.itemgetter(1))]
+                    self.klist = [k[1]
+                                  for k in sorted(stat2_dict.items(), key=operator.itemgetter(1))]
+                    self.invstat2_dict = {}
+                    for k in kkeys:
+                        self.invstat2_dict.update({stat2_dict[k]: k})
+                else:
+                    IMP.handle_use_deprecated("statfile v1 is deprecated. "
+                                              "Please convert to statfile v2.\n")
+                    self.isstat1 = True
+                    self.klist.sort()
+
+                break
+            f.close()
+
 
     def get_keys(self):
-        return self.klist
+        if self.isrmf:
+            return sorted(self.rmf_names_keys.keys())
+        else:
+            return self.klist
 
     def show_keys(self, ncolumns=2, truncate=65):
         IMP.pmi.tools.print_multicolumn(self.get_keys(), ncolumns, truncate)
@@ -764,64 +832,90 @@ class ProcessOutput(object):
             outdict[field] = []
 
         # print fields values
-        f = open(self.filename, "r")
-        line_number = 0
-
-        for line in f.readlines():
-            if not filterout is None:
-                if filterout in line:
-                    continue
-            line_number += 1
-
-            if line_number % get_every != 0:
-                continue
-            #if line_number % 1000 == 0:
-            #    print "ProcessOutput.get_fields: read line %s from file %s" % (str(line_number), self.filename)
-            try:
-                d = ast.literal_eval(line)
-            except:
-                print("# Warning: skipped line number " + str(line_number) + " not a valid line")
-                continue
-
-            if self.isstat1:
+        if self.isrmf:
+            rh = RMF.open_rmf_file_read_only(self.filename)
+            nframes=rh.get_number_of_frames()
+            for i in range(nframes):
 
                 if not filtertuple is None:
                     keytobefiltered = filtertuple[0]
                     relationship = filtertuple[1]
                     value = filtertuple[2]
-                    if relationship == "<":
-                        if float(d[keytobefiltered]) >= value:
-                            continue
-                    if relationship == ">":
-                        if float(d[keytobefiltered]) <= value:
-                            continue
-                    if relationship == "==":
-                        if float(d[keytobefiltered]) != value:
-                            continue
-                [outdict[field].append(d[field]) for field in fields]
+                    datavalue=rh.get_root_node().get_value(self.rmf_names_keys[keytobefiltered])
+                    if self.isfiltered(datavalue,relationship,value): continue
 
-            elif self.isstat2:
-                if line_number == 1:
+                IMP.rmf.load_frame(rh, RMF.FrameID(i))
+
+
+                for field in fields:
+                    outdict[field].append(rh.get_root_node().get_value(self.rmf_names_keys[field]))
+
+        else:
+            f = open(self.filename, "r")
+            line_number = 0
+
+            for line in f.readlines():
+                if not filterout is None:
+                    if filterout in line:
+                        continue
+                line_number += 1
+
+                if line_number % get_every != 0:
+                    continue
+                #if line_number % 1000 == 0:
+                #    print "ProcessOutput.get_fields: read line %s from file %s" % (str(line_number), self.filename)
+                try:
+                    d = ast.literal_eval(line)
+                except:
+                    print("# Warning: skipped line number " + str(line_number) + " not a valid line")
                     continue
 
-                if not filtertuple is None:
-                    keytobefiltered = filtertuple[0]
-                    relationship = filtertuple[1]
-                    value = filtertuple[2]
-                    if relationship == "<":
-                        if float(d[self.invstat2_dict[keytobefiltered]]) >= value:
-                            continue
-                    if relationship == ">":
-                        if float(d[self.invstat2_dict[keytobefiltered]]) <= value:
-                            continue
-                    if relationship == "==":
-                        if float(d[self.invstat2_dict[keytobefiltered]]) != value:
-                            continue
+                if self.isstat1:
 
-                [outdict[field].append(d[self.invstat2_dict[field]])
-                 for field in fields]
-        f.close()
+                    if not filtertuple is None:
+                        keytobefiltered = filtertuple[0]
+                        relationship = filtertuple[1]
+                        value = filtertuple[2]
+                        datavalue=d[keytobefiltered]
+                        if self.isfiltered(datavalue, relationship, value): continue
+
+                    [outdict[field].append(d[field]) for field in fields]
+
+                elif self.isstat2:
+                    if line_number == 1:
+                        continue
+
+                    if not filtertuple is None:
+                        keytobefiltered = filtertuple[0]
+                        relationship = filtertuple[1]
+                        value = filtertuple[2]
+                        datavalue=d[self.invstat2_dict[keytobefiltered]]
+                        if self.isfiltered(datavalue, relationship, value): continue
+
+                    [outdict[field].append(d[self.invstat2_dict[field]]) for field in fields]
+
+            f.close()
+
         return outdict
+
+    def isfiltered(self,datavalue,relationship,refvalue):
+        dofilter=False
+        try:
+            fdatavalue=float(datavalue)
+        except ValueError:
+            raise ValueError("ProcessOutput.filter: datavalue cannot be converted into a float")
+
+        if relationship == "<":
+            if float(datavalue) >= refvalue:
+                dofilter=True
+        if relationship == ">":
+            if float(datavalue) <= refvalue:
+                dofilter=True
+        if relationship == "==":
+            if float(datavalue) != refvalue:
+                dofilter=True
+        return dofilter
+
 
 class RMFHierarchyHandler(IMP.atom.Hierarchy):
     """ class to allow more advanced handling of RMF files.
@@ -1041,6 +1135,8 @@ class StatHierarchyHandler(RMFHierarchyHandler):
                                             rmf_file_frame_key="rmf_frame_index",
                                             prefiltervalue=score_threshold,
                                             get_every=1)
+
+
 
         scores = [float(y) for y in models[2]]
         rmf_files = models[0]

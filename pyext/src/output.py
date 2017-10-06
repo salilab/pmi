@@ -482,6 +482,7 @@ class Output(object):
 
     def close_rmf(self, name):
         rh = self.dictionary_rmfs[name][0]
+        del self.dictionary_rmfs[name]
         del rh
 
     def write_rmfs(self):

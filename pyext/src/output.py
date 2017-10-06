@@ -837,16 +837,13 @@ class ProcessOutput(object):
             rh = RMF.open_rmf_file_read_only(self.filename)
             nframes=rh.get_number_of_frames()
             for i in range(nframes):
-
+                IMP.rmf.load_frame(rh, RMF.FrameID(i))
                 if not filtertuple is None:
                     keytobefiltered = filtertuple[0]
                     relationship = filtertuple[1]
                     value = filtertuple[2]
                     datavalue=rh.get_root_node().get_value(self.rmf_names_keys[keytobefiltered])
                     if self.isfiltered(datavalue,relationship,value): continue
-
-                IMP.rmf.load_frame(rh, RMF.FrameID(i))
-
 
                 for field in fields:
                     outdict[field].append(rh.get_root_node().get_value(self.rmf_names_keys[field]))

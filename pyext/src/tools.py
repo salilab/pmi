@@ -1052,9 +1052,11 @@ def get_residue_indexes(hier):
     elif IMP.atom.Molecule.get_is_setup(hier):
         resind_tmp=IMP.pmi.tools.OrderedSet()
         for lv in IMP.atom.get_leaves(hier):
-            for ind in get_residue_indexes(lv):
-                resind_tmp.add(ind)
-            resind=list(resind_tmp)
+            if IMP.atom.Fragment.get_is_setup(lv) or \
+               IMP.atom.Residue.get_is_setup(lv) or \
+               IMP.atom.Atom.get_is_setup(lv):
+                for ind in get_residue_indexes(lv): resind_tmp.add(ind)
+        resind=list(resind_tmp)
     else:
         resind = []
     return resind
@@ -1254,6 +1256,13 @@ class Segments(object):
     def get_flatten(self):
         ''' Returns a flatten list '''
         return [item for sublist in self.segs for item in sublist]
+
+    def __repr__(self):
+        ret_tmp="["
+        for seg in self.segs:
+            ret_tmp+=str(seg[0])+"-"+str(seg[-1])+","
+        ret=ret_tmp[:-1]+"]"
+        return ret
 
 
 

@@ -2248,9 +2248,11 @@ class AnalysisReplicaExchange(object):
             d0=self.stath0[n0]
             for n1 in members1:
                 if n0!=n1:
+                    self.apply_molecular_assignments(n1)
                     d1=self.stath1[n1]
                     tmp_rmsd, _ = self.rmsd()
                     rmsd+=tmp_rmsd
+                    self.undo_apply_molecular_assignments(n1)
 
         if npairs>0:
             precision=rmsd/npairs

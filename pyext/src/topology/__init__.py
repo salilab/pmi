@@ -1458,7 +1458,7 @@ class PMIMoleculeHierarchy(IMP.atom.Molecule):
         return IMP.atom.Chain(self).get_id()
 
     def __repr__(self):
-        s='Hello '
+        s='PMIMoleculeHierarchy '
         s+=self.get_name()
         s+=" "+"Copy  "+str(IMP.atom.Copy(self).get_copy_index())
         s+=" "+"State "+str(self.get_state_index())

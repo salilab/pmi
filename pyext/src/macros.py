@@ -2088,7 +2088,8 @@ class AnalysisReplicaExchange(object):
 
     def __init__(self,model,
                  stat_files,
-                 best_models=None):
+                 best_models=None,
+                 alignment=True):
 
         self.model=model
         self.best_models=best_models
@@ -2104,7 +2105,7 @@ class AnalysisReplicaExchange(object):
         self.clusters=[]
         self.pairwise_rmsd={}
         self.pairwise_molecular_assignment={}
-        self.alignment=True
+        self.alignment=alignment
         self.update_seldicts()
 
     def set_rmsd_selection(self,**kwargs):
@@ -2124,8 +2125,7 @@ class AnalysisReplicaExchange(object):
         s=IMP.atom.Selection(hier, molecule=name, copy_index=copy)
         return IMP.pmi.tools.get_molecules(s.get_selected_particles()[0])[0]
 
-    def cluster(self, rmsd_cutoff=10, alignment=True, stop_at_first_found=False):
-        self.alignment=alignment
+    def cluster(self, rmsd_cutoff=10, stop_at_first_found=False):
 
         self.clusters = []
         for n1,d1 in enumerate(self.stath1):

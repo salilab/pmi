@@ -2192,7 +2192,8 @@ class AnalysisReplicaExchange(object):
             if self.alignment: self.align()
             rmsd, molecular_assignment = self.rmsd()
             if rmsd <= rmsd_cutoff:
-                clusters_copy.remove(c1)
+                if c1 in self.clusters:
+                    clusters_copy.remove(c1)
                 c0+=c1
         self.clusters=clusters_copy
         self.update_clusters()
@@ -2384,16 +2385,17 @@ class AnalysisReplicaExchange(object):
             members1=cluster.members
 
         npairs=0
-        for n0 in cluster.members:
+        for n0 in members1:
             d0=self.stath0[n0]
-            for n1 in members1:
+            for n1 in cluster.members:
                 if n0!=n1:
-                    m1,c1 = self.pairwise_molecular_assignment[(n0,n1)][(molecule, copy_index)]
-                    s1=IMP.atom.Selection(self.stath0,molecule=m1,residue_indexes=residue_indexes,resolution=1,
-                                          copy_index=c1,state_index=state_index)
+                    self.apply_molecular_assignments(n1)
+
+                    s1=IMP.atom.Selection(self.stath1,molecule=molecule,residue_indexes=residue_indexes,resolution=1,
+                                          copy_index=copy_index,state_index=state_index)
                     ps1 = s1.get_selected_particles()
 
-                    d1=self.stath0[n1]
+                    d1=self.stath1[n1]
                     if self.alignment: self.align()
                     for n,(p0,p1) in enumerate(zip(ps0,ps1)):
                         r=residue_indexes[n]
@@ -2404,6 +2406,7 @@ class AnalysisReplicaExchange(object):
                         else:
                             rmsf[r]=IMP.core.get_distance(d0,d1)
                     npairs+=1
+                    self.undo_apply_molecular_assignments(n1)
         for r in rmsf:
             rmsf[r]/=npairs
         return rmsf
@@ -2610,7 +2613,7 @@ class AnalysisReplicaExchange(object):
         """
         Update the cluster id numbers
         """
-        for n,c in self.clusters:
+        for n,c in enumerate(self.clusters):
             c.cluster_id=n
 
     def get_molecule(self, hier, name, copy):

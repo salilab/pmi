@@ -19,6 +19,17 @@ class MockREX(IMP.pmi.macros.ReplicaExchange0):
 
 class Tests(IMP.test.TestCase):
 
+    def test_add_provenance_none(self):
+        """Test adding replica exchange provenance, no MD or MC"""
+        m = IMP.Model()
+        h = IMP.atom.Hierarchy.setup_particle(IMP.Particle(m))
+        r = MockREX(m)
+        r.is_multi_state = False
+        r.root_hier = h
+        r._add_provenance(sampler_md=None, sampler_mc=None)
+        # No provenance should have been added, since no sampling is done
+        self.assertFalse(IMP.core.Provenanced.get_is_setup(h))
+
     def test_add_provenance_md(self):
         """Test adding replica exchange provenance, single state MD"""
         m = IMP.Model()

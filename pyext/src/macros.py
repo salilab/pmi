@@ -246,6 +246,9 @@ class ReplicaExchange0(object):
         if sampler_mc:
             method = "Hybrid MD/MC" if sampler_md else "Monte Carlo"
             iterations += self.vars["monte_carlo_steps"]
+        # If no sampling is actually done, no provenance to write
+        if iterations == 0 or self.vars["number_of_frames"] == 0:
+            return
         iterations *= self.vars["num_sample_rounds"]
 
         p = IMP.core.SampleProvenance.setup_particle(

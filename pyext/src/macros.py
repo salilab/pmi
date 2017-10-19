@@ -2122,6 +2122,8 @@ class AnalysisReplicaExchange(object):
         self.pairwise_molecular_assignment={}
         self.alignment=alignment
         self.update_seldicts()
+        self.molcopydict0=IMP.pmi.tools.get_molecules_dictionary_by_copy(IMP.atom.get_leaves(self.stath0))
+        self.molcopydict1=IMP.pmi.tools.get_molecules_dictionary_by_copy(IMP.atom.get_leaves(self.stath1))
 
     def set_rmsd_selection(self,**kwargs):
         """
@@ -2306,8 +2308,8 @@ class AnalysisReplicaExchange(object):
         rmf_name=prefix+'/'+str(cluster.cluster_id)+".rmf3"
         o.init_rmf(rmf_name, [self.stath1])
         for n1 in cluster.members:
-            self.apply_molecular_assignments(n1)
             d1=self.stath1[n1]
+            self.apply_molecular_assignments(n1)
             if self.alignment: self.align()
             o.write_rmf(rmf_name)
             self.undo_apply_molecular_assignments(n1)
@@ -2330,8 +2332,8 @@ class AnalysisReplicaExchange(object):
             d0=self.stath0[n0]
             for n1 in cluster.members:
                 if n0!=n1:
-                    self.apply_molecular_assignments(n1)
                     d1=self.stath1[n1]
+                    self.apply_molecular_assignments(n1)
                     tmp_rmsd, _ = self.rmsd()
                     rmsd+=tmp_rmsd
                     self.undo_apply_molecular_assignments(n1)
@@ -2417,8 +2419,8 @@ class AnalysisReplicaExchange(object):
                                                 voxel=voxel_size)
 
         for n1 in cluster.members:
-            self.apply_molecular_assignments(n1)
             d1=self.stath1[n1]
+            self.apply_molecular_assignments(n1)
             if self.alignment: self.align()
             dens.add_subunits_density(self.stath1)
             self.undo_apply_molecular_assignments(n1)
@@ -2442,9 +2444,9 @@ class AnalysisReplicaExchange(object):
 
         for ncl,n1 in enumerate(cluster.members):
 
+            d1=self.stath1[n1]
             self.apply_molecular_assignments(n1)
 
-            #d1=self.stath1[n1]
 
             prev_stop = 0
 
@@ -2707,8 +2709,8 @@ class AnalysisReplicaExchange(object):
         d1=self.stath1[n1]
         _, molecular_assignment = self.rmsd()
         for (m0, c0), (m1,c1) in molecular_assignment.items():
-            mol0 = self.get_molecule(self.stath0, m0, c0)
-            mol1 = self.get_molecule(self.stath1, m1, c1)
+            mol0 = self.molcopydict0[m0][c0]
+            mol1 = self.molcopydict1[m1][c1]
             cik0=IMP.atom.Copy(mol0).get_copy_index_key()
             p1=IMP.atom.Copy(mol1).get_particle()
             p1.set_value(cik0,c0)
@@ -2719,9 +2721,10 @@ class AnalysisReplicaExchange(object):
         """
         d1=self.stath1[n1]
         _, molecular_assignment = self.rmsd()
+        mols_newcopys = []
         for (m0, c0), (m1,c1) in molecular_assignment.items():
-            mol0 = self.get_molecule(self.stath0, m0, c0)
-            mol1 = self.get_molecule(self.stath1, m1, c1)
+            mol0 = self.molcopydict0[m0][c0]
+            mol1 = self.molcopydict1[m1][c1]
             cik0=IMP.atom.Copy(mol0).get_copy_index_key()
             p1=IMP.atom.Copy(mol1).get_particle()
             p1.set_value(cik0,c1)

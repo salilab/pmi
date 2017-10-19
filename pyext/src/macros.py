@@ -231,6 +231,31 @@ class ReplicaExchange0(object):
     def get_replica_exchange_object(self):
         return self.replica_exchange_object
 
+    def _add_provenance(self, sampler_md, sampler_mc):
+        """Record details about the sampling in the IMP Hierarchies"""
+        if not self.is_multi_state or self.pmi2:
+            output_hierarchies = [self.root_hier]
+        else:
+            output_hierarchies = self.root_hiers
+        pi = self.model.add_particle("sampling")
+
+        iterations = 0
+        if sampler_md:
+            method = "Molecular Dynamics"
+            iterations += self.vars["molecular_dynamics_steps"]
+        if sampler_mc:
+            method = "Hybrid MD/MC" if sampler_md else "Monte Carlo"
+            iterations += self.vars["monte_carlo_steps"]
+        iterations *= self.vars["num_sample_rounds"]
+
+        p = IMP.core.SampleProvenance.setup_particle(
+                self.model, pi, method, self.vars["number_of_frames"],
+                iterations)
+        p.set_number_of_replicas(
+                self.replica_exchange_object.get_number_of_replicas())
+        for h in output_hierarchies:
+            IMP.core.add_provenance(self.model, h, p)
+
     def execute_macro(self):
         temp_index_factor = 100000.0
         samplers=[]
@@ -417,6 +442,8 @@ class ReplicaExchange0(object):
             mpivs=IMP.pmi.samplers.MPI_values(self.replica_exchange_object)
 
 #----------------------------------------------
+
+        self._add_provenance(sampler_md, sampler_mc)
 
         if not self.test_mode:
             print("Setting up production rmf files")

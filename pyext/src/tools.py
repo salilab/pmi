@@ -1908,6 +1908,14 @@ def get_molecules_dictionary(input_objects):
         moldict[name].append(mol)
     return moldict
 
+def get_molecules_dictionary_by_copy(input_objects):
+    moldict=defaultdict(dict)
+    for mol in IMP.pmi.tools.get_molecules(input_objects):
+        name=mol.get_name()
+        c=IMP.atom.Copy(mol).get_copy_index()
+        moldict[name][c]=mol
+    return moldict
+
 def get_selections_dictionary(input_objects):
     moldict=IMP.pmi.tools.get_molecules_dictionary(input_objects)
     seldict=defaultdict(list)

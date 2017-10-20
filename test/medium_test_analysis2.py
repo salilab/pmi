@@ -86,7 +86,8 @@ class Tests(IMP.test.TestCase):
                                                         distancemax=15)
         dr.add_to_model()
 
-        rex = IMP.pmi.macros.ReplicaExchange0(mdl,
+        with IMP.allow_deprecated():
+            rex = IMP.pmi.macros.ReplicaExchange0(mdl,
                                               root_hier=hier,
                                               output_objects=[dr],
                                               monte_carlo_sample_objects=dof.get_movers(),
@@ -100,7 +101,8 @@ class Tests(IMP.test.TestCase):
         for rb in dof.rigid_bodies:
             IMP.core.transform(rb,trans)
 
-        rex2 = IMP.pmi.macros.ReplicaExchange0(mdl,
+        with IMP.allow_deprecated():
+            rex2 = IMP.pmi.macros.ReplicaExchange0(mdl,
                                                root_hier=hier,
                                                output_objects=[dr],
                                                monte_carlo_sample_objects=dof.get_movers(),
@@ -142,7 +144,8 @@ class Tests(IMP.test.TestCase):
                                                         distancemax=15)
         dr.add_to_model()
 
-        rex = IMP.pmi.macros.ReplicaExchange0(mdl,
+        with IMP.allow_deprecated():
+            rex = IMP.pmi.macros.ReplicaExchange0(mdl,
                                               root_hier=hier,
                                               output_objects=[dr],
                                               monte_carlo_sample_objects=dof.get_movers(),
@@ -180,7 +183,8 @@ class Tests(IMP.test.TestCase):
         ps0 = IMP.atom.Selection(hier,molecule='Prot1',copy_index=0).get_selected_particles()
         ps1 = IMP.atom.Selection(hier,molecule='Prot1',copy_index=1).get_selected_particles()
 
-        rex = IMP.pmi.macros.ReplicaExchange0(mdl,
+        with IMP.allow_deprecated():
+            rex = IMP.pmi.macros.ReplicaExchange0(mdl,
                                               root_hier=hier,
                                               monte_carlo_sample_objects=dof.get_movers(),
                                               number_of_frames=1,
@@ -196,7 +200,8 @@ class Tests(IMP.test.TestCase):
         IMP.core.transform(rb2,trans.get_inverse())
         IMP.core.transform(rb1,trans)
 
-        rex2 = IMP.pmi.macros.ReplicaExchange0(mdl,
+        with IMP.allow_deprecated():
+            rex2 = IMP.pmi.macros.ReplicaExchange0(mdl,
                                                root_hier=hier,
                                                monte_carlo_sample_objects=dof.get_movers(),
                                                number_of_frames=1,
@@ -258,11 +263,12 @@ class Tests(IMP.test.TestCase):
                       "Prot2":"Prot2"}
         density_ranges = {"Prot1":["Prot1"],
                           "Prot2":["Prot2"]}
-        am = IMP.pmi.macros.AnalysisReplicaExchange0(
-            mdl,
-            merge_directories=[self.get_input_file_name("pmi2_sample_0/"),
-                               self.get_input_file_name("pmi2_sample_1/")],
-            global_output_directory="./")
+        with IMP.allow_deprecated():
+            am = IMP.pmi.macros.AnalysisReplicaExchange0(
+                mdl,
+                merge_directories=[self.get_input_file_name("pmi2_sample_0/"),
+                                   self.get_input_file_name("pmi2_sample_1/")],
+                global_output_directory="./")
 
         with IMP.test.temporary_directory() as out_dir:
             am.clustering(score_key="Total_Score",
@@ -453,11 +459,12 @@ class Tests(IMP.test.TestCase):
         #alignment_comp = {"Prot1..0":(1,-1,"Prot1",0),"Prot1..1":(1,-1,"Prot1",1)}
         #rmsd_comp = {"Prot1..0":(1,-1,"Prot1",0),"Prot1..1":(1,-1,"Prot1",1)}
 
-        am = IMP.pmi.macros.AnalysisReplicaExchange0(
-            mdl,
-            merge_directories=[self.get_input_file_name("pmi2_copies_0/"),
-                               self.get_input_file_name("pmi2_copies_1/")],
-            global_output_directory="./")
+        with IMP.allow_deprecated():
+            am = IMP.pmi.macros.AnalysisReplicaExchange0(
+                mdl,
+                merge_directories=[self.get_input_file_name("pmi2_copies_0/"),
+                                   self.get_input_file_name("pmi2_copies_1/")],
+                global_output_directory="./")
 
         with IMP.test.temporary_directory() as out_dir:
             am.clustering(feature_keys=["Total_Score"],

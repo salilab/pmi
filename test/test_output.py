@@ -65,6 +65,16 @@ class Tests(IMP.test.TestCase):
         vals = po.get_fields(["AtomicXLRestraint"])["AtomicXLRestraint"]
         self.assertAlmostEqual(numpy.average(numpy.array(vals).astype(numpy.float)), 10.1270600392)
 
+        # Test filters and statistics
+        stats = IMP.pmi.output.OutputStatistics()
+        vals = po.get_fields(["AtomicXLRestraint"], get_every=3,
+                             filtertuple=("AtomicXLRestraint", "<", 10.0),
+                             statistics=stats)
+        self.assertEqual(stats.total, 16)
+        self.assertEqual(stats.passed_filterout, 16)
+        self.assertEqual(stats.passed_get_every, 5)
+        self.assertEqual(stats.passed_filtertuple, 3)
+
     def _check_coordinate_identity(self,ps1,ps2):
         for n,p in enumerate(ps1):
             d1=IMP.core.XYZ(p)

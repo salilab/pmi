@@ -1662,6 +1662,8 @@ class AnalysisReplicaExchange0(object):
         @param write_pdb_with_centered_coordinates
         @param voxel_size                     Used for the density output
         """
+        # Track provenance information to be added to each output model
+        prov = []
         self._outputdir = os.path.abspath(outputdir)
         self._number_of_clusters = number_of_clusters
         for p, state in self._protocol_output:
@@ -1700,7 +1702,7 @@ class AnalysisReplicaExchange0(object):
                                                      rmf_file_key,
                                                      rmf_file_frame_key,
                                                      prefiltervalue,
-                                                     get_every)
+                                                     get_every, provenance=prov)
             rmf_file_list=best_models[0]
             rmf_file_frame_list=best_models[1]
             score_list=best_models[2]
@@ -1743,6 +1745,9 @@ class AnalysisReplicaExchange0(object):
             best_score_rmf_tuples = sorted(score_rmf_tuples,
                                            key=lambda x: float(x[0]))[:number_of_best_scoring_models]
             best_score_rmf_tuples=[t+(n,) for n,t in enumerate(best_score_rmf_tuples)]
+            # Note in the provenance info that we only kept best-scoring models
+            prov.append(IMP.pmi.io.FilterProvenance("Best scoring",
+                               0, number_of_best_scoring_models))
             # sort the feature scores in the same way
             best_score_feature_keyword_list_dict = defaultdict(list)
             for tpl in best_score_rmf_tuples:
@@ -1986,6 +1991,9 @@ class AnalysisReplicaExchange0(object):
                 print("cluster %s " % str(n))
                 print("cluster label %s " % str(cl))
                 print(self.cluster_obj.get_cluster_label_names(cl))
+                cluster_size = len(self.cluster_obj.get_cluster_label_names(cl))
+                cluster_prov = prov + \
+                               [IMP.pmi.io.ClusterProvenance(cluster_size)]
 
                 # first initialize the Density class if requested
                 if density_custom_ranges:
@@ -2042,6 +2050,8 @@ class AnalysisReplicaExchange0(object):
                         prot = states[state_number]
                     else:
                         prot = prots[state_number]
+                    if k==0:
+                        IMP.pmi.io.add_provenance(cluster_prov, (prot,))
 
                     # transform clusters onto first
                     if k > 0:

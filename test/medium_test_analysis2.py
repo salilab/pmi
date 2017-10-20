@@ -352,6 +352,9 @@ class Tests(IMP.test.TestCase):
             rhC = RMF.open_rmf_file_read_only(os.path.join(cl0,'0.rmf3'))
             protC = IMP.rmf.create_hierarchies(rhC,mdl)[0]
             self.assertTrue(IMP.pmi.get_is_canonical(protC))
+            # Provenance information should be attached to the state,
+            # which is one level down (under the System)
+            self.check_provenance(protC.get_children()[0])
 
             # check density
             bbox1 = IMP.algebra.BoundingBox3D(c_prot01)
@@ -360,6 +363,37 @@ class Tests(IMP.test.TestCase):
             dmap2 = IMP.em.read_map(os.path.join(cl0,'Prot2.mrc'))
             self.assertTrue(IMP.em.get_bounding_box(dmap1).get_contains(bbox1))
             self.assertTrue(IMP.em.get_bounding_box(dmap2).get_contains(bbox2))
+
+    def check_provenance(self, h):
+        """Make sure that appropriate provenance information was added to
+           the cluster"""
+        prov = list(self.get_all_provenance(h))
+        self.assertEqual(len(prov), 3)
+        self.assertIsInstance(prov[0], IMP.core.ClusterProvenance)
+        self.assertEqual(prov[0].get_number_of_members(), 10)
+
+        self.assertIsInstance(prov[1], IMP.core.FilterProvenance)
+        self.assertEqual(prov[1].get_method(), 'Best scoring')
+        self.assertEqual(prov[1].get_number_of_frames(), 20)
+        self.assertAlmostEqual(prov[1].get_threshold(), 0., delta=1e-6)
+
+        self.assertIsInstance(prov[2], IMP.core.CombineProvenance)
+        self.assertEqual(prov[2].get_number_of_frames(), 20)
+        self.assertEqual(prov[2].get_number_of_runs(), 2)
+
+    def get_all_provenance(self, h):
+        def get_subclass(p):
+            for c in (IMP.core.StructureProvenance, IMP.core.SampleProvenance,
+                      IMP.core.CombineProvenance, IMP.core.FilterProvenance,
+                      IMP.core.ClusterProvenance):
+                if c.get_is_setup(p):
+                    return c(p)
+            raise TypeError("Unknown provenance type", p)
+        if IMP.core.Provenanced.get_is_setup(h):
+            prov = IMP.core.Provenanced(h).get_provenance()
+            while prov:
+                yield get_subclass(prov)
+                prov = prov.get_previous()
 
     def test_precision(self):
         """Test correct calcluation of precision and RMSF"""

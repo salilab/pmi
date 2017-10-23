@@ -2687,7 +2687,7 @@ class AnalysisReplicaExchange(object):
         # before merging, clusters are spheres of radius rmsd_cutoff centered on the 1st element
         # here we only try to merge clusters whose centers are closer than 2*rmsd_cutoff
         to_merge = []
-        for c0, c1 in itertools.ifilter(lambda x: len(x[0].members)>1, itertools.combinations(self.clusters, 2)):
+        for c0, c1 in filter(lambda x: len(x[0].members)>1, itertools.combinations(self.clusters, 2)):
             n0, n1 = [c.members[0] for c in (c0,c1)]
             d0 = self.stath0[n0]
             d1 = self.stath1[n1]
@@ -2699,7 +2699,7 @@ class AnalysisReplicaExchange(object):
             self.merge(c0,c)
 
         #keep only full clusters
-        self.clusters = [c for c in itertools.ifilter(lambda x: len(x.members)>0, self.clusters)]
+        self.clusters = [c for c in filter(lambda x: len(x.members)>0, self.clusters)]
 
 
     def have_close_members(self, c0, c1, rmsd_cutoff, metric):

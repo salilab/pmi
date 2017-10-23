@@ -2187,7 +2187,7 @@ class AnalysisReplicaExchange(object):
     ######################
 
 
-    def cluster(self, rmsd_cutoff=10, stop_at_first_found=False):
+    def cluster(self, rmsd_cutoff=10, stop_at_first_found=False, metric=IMP.atom.get_rmsd):
         """
         Cluster the models based on RMSD.
         @param rmsd_cutoff Float the distance cutoff in Angstrom
@@ -2201,7 +2201,7 @@ class AnalysisReplicaExchange(object):
                 for n0 in c.members:
                     d0=self.stath0[n0]
                     if self.alignment: self.align()
-                    rmsd, molecular_assignment=self.rmsd()
+                    rmsd, molecular_assignment=self.rmsd(metric=metric)
                     if rmsd<=rmsd_cutoff:
                         assigned[rmsd]=(n0,c)
                         if stop_at_first_found:

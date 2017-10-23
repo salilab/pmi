@@ -2200,7 +2200,6 @@ class AnalysisReplicaExchange(object):
             for c in self.clusters:
                 for n0 in c.members:
                     d0=self.stath0[n0]
-                    if self.alignment: self.align()
                     rmsd, molecular_assignment=self.rmsd(metric=metric)
                     if rmsd<=rmsd_cutoff:
                         assigned[rmsd]=(n0,c)
@@ -2231,7 +2230,6 @@ class AnalysisReplicaExchange(object):
                 self.compute_cluster_center(c1)
             d0=self.stath0[c0.center_index]
             d1=self.stath1[c1.center_index]
-            if self.alignment: self.align()
             rmsd, molecular_assignment = self.rmsd()
             if rmsd <= rmsd_cutoff:
                 if c1 in self.clusters:
@@ -2330,7 +2328,6 @@ class AnalysisReplicaExchange(object):
         for n0,n1 in itertools.combinations(cluster.members,2):
             d0=self.stath0[n0]
             d1 = self.stath1[n1]
-            if self.alignment: self.align()
             rmsd, _ = self.rmsd()
             member_distance[n0]+=rmsd
 
@@ -2394,7 +2391,6 @@ class AnalysisReplicaExchange(object):
             d0=self.stath0[n0]
             for n1 in cluster2.members:
                 d1=self.stath1[n1]
-                if self.alignment: self.align()
                 tmp_rmsd, tmp_pairwise_molecular_assignment=self.rmsd()
                 rmsd+=tmp_rmsd
                 npairs+=1
@@ -2690,6 +2686,8 @@ class AnalysisReplicaExchange(object):
         if ((n0,n1) in self.pairwise_rmsd) and ((n0,n1) in self.pairwise_molecular_assignment):
             return self.pairwise_rmsd[(n0,n1)], self.pairwise_molecular_assignment[(n0,n1)]
 
+        if self.alignment:
+            self.align()
         #if it's not yet memoized
         total_rmsd=0.0
         total_N=0

@@ -2214,7 +2214,6 @@ class AnalysisReplicaExchange(object):
                 self.compute_cluster_center(c1)
             d0=self.stath0[c0.center_index]
             d1=self.stath1[c1.center_index]
-            if self.alignment: self.align()
             rmsd, molecular_assignment = self.rmsd()
             if rmsd <= rmsd_cutoff:
                 if c1 in self.clusters:
@@ -2751,6 +2750,8 @@ class AnalysisReplicaExchange(object):
         if ((n0,n1) in self.pairwise_rmsd) and ((n0,n1) in self.pairwise_molecular_assignment):
             return self.pairwise_rmsd[(n0,n1)], self.pairwise_molecular_assignment[(n0,n1)]
 
+        if self.alignment:
+            self.align()
         #if it's not yet memoized
         total_rmsd=0.0
         total_N=0
@@ -2776,59 +2777,9 @@ class AnalysisReplicaExchange(object):
         total_rmsd = math.sqrt(total_rmsd/total_N)
 
         self.pairwise_rmsd[(n0,n1)]=total_rmsd
+        self.pairwise_molecular_assignment[(n0,n1)]=molecular_assignment
         self.pairwise_rmsd[(n1,n0)]=total_rmsd
-        self.pairwise_molecular_assignment[(n0,n1)]=molecular_assignment
         self.pairwise_molecular_assignment[(n1,n0)]=molecular_assignment
-        self.num_rmsd_computed+=1
-        return total_rmsd, molecular_assignment
-
-
-    def rmsd(self,metric=IMP.atom.get_rmsd):
-        '''
-        Computes the RMSD. Resolves ambiguous pairs assignments
-        '''
-        # here we memoize the rmsd and molecular assignment so that it's not done multiple times
-        n0=self.stath0.current_index
-        n1=self.stath1.current_index
-        if ((n0,n1) in self.pairwise_rmsd) and ((n0,n1) in self.pairwise_molecular_assignment):
-            return self.pairwise_rmsd[(n0,n1)], self.pairwise_molecular_assignment[(n0,n1)]
-
-        if self.alignment:
-            self.align()
-        #if it's not yet memoized
-        total_rmsd=0.0
-        total_N=0
-        # this is a dictionary which keys are the molecule names, and values are the list of IMP.atom.Selection for all molecules that share the molecule name
-        seldict_best_order={}
-        for molname, sels0 in self.seldict0.items():
-            rmsd2s = {}
-            for sels in itertools.permutations(sels0):
-                rmsd2=0
-                for sel0, sel1 in zip(sels, self.seldict1[molname]):
-                    r=metric(sel0, sel1)
-                    rmsd2+=r*r
-                rmsd2s[sels]=rmsd2
-            sels_best_order = min(rmsd2s, key=rmsd2s.get)
-            seldict_best_order[molname]=sels_best_order
-            best_rmsd2 = rmsd2s[sels_best_order]
-            Ncoords = len(sels_best_order[0].get_selected_particles())
-            Ncopies = len(sels_best_order)
-            total_rmsd += Ncoords*best_rmsd2
-            total_N += Ncoords*Ncopies
-        total_rmsd = math.sqrt(total_rmsd/total_N)
-
-        molecular_assignment={}
-        for molname, sels in seldict_best_order.items():
-            for sel0, sel1 in zip(sels, self.seldict1[molname]):
-                p0 = sel0.get_selected_particles()[0]
-                p1 = sel1.get_selected_particles()[0]
-                m0,m1 = IMP.pmi.tools.get_molecules([p0,p1])
-                c0 = IMP.atom.Copy(m0).get_copy_index()
-                c1 = IMP.atom.Copy(m1).get_copy_index()
-                molecular_assignment[(molname,c0)]=(molname,c1)
-
-        self.pairwise_rmsd[(n0,n1)]=total_rmsd
-        self.pairwise_molecular_assignment[(n0,n1)]=molecular_assignment
         return total_rmsd, molecular_assignment
 
     def set_reference(self,reference,cluster):

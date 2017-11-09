@@ -367,7 +367,7 @@ class Tests(IMP.test.TestCase):
     def check_provenance(self, h):
         """Make sure that appropriate provenance information was added to
            the cluster"""
-        prov = list(self.get_all_provenance(h))
+        prov = list(IMP.core.get_all_provenance(h))
         self.assertEqual(len(prov), 3)
         self.assertIsInstance(prov[0], IMP.core.ClusterProvenance)
         self.assertEqual(prov[0].get_number_of_members(), 10)
@@ -380,20 +380,6 @@ class Tests(IMP.test.TestCase):
         self.assertIsInstance(prov[2], IMP.core.CombineProvenance)
         self.assertEqual(prov[2].get_number_of_frames(), 20)
         self.assertEqual(prov[2].get_number_of_runs(), 2)
-
-    def get_all_provenance(self, h):
-        def get_subclass(p):
-            for c in (IMP.core.StructureProvenance, IMP.core.SampleProvenance,
-                      IMP.core.CombineProvenance, IMP.core.FilterProvenance,
-                      IMP.core.ClusterProvenance):
-                if c.get_is_setup(p):
-                    return c(p)
-            raise TypeError("Unknown provenance type", p)
-        if IMP.core.Provenanced.get_is_setup(h):
-            prov = IMP.core.Provenanced(h).get_provenance()
-            while prov:
-                yield get_subclass(prov)
-                prov = prov.get_previous()
 
     def test_precision(self):
         """Test correct calcluation of precision and RMSF"""

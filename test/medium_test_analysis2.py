@@ -368,7 +368,7 @@ class Tests(IMP.test.TestCase):
         """Make sure that appropriate provenance information was added to
            the cluster"""
         prov = list(IMP.core.get_all_provenance(h))
-        self.assertEqual(len(prov), 3)
+        self.assertEqual(len(prov), 4)
         self.assertIsInstance(prov[0], IMP.core.ClusterProvenance)
         self.assertEqual(prov[0].get_number_of_members(), 10)
 
@@ -380,6 +380,8 @@ class Tests(IMP.test.TestCase):
         self.assertIsInstance(prov[2], IMP.core.CombineProvenance)
         self.assertEqual(prov[2].get_number_of_frames(), 20)
         self.assertEqual(prov[2].get_number_of_runs(), 2)
+
+        self.assertIsInstance(prov[3], IMP.core.ScriptProvenance)
 
     def test_precision(self):
         """Test correct calcluation of precision and RMSF"""

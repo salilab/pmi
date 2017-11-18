@@ -80,7 +80,7 @@ class SAXSRestraint(IMP.pmi.restraints.RestraintBase):
                 hiers, resolution=0).get_selected_particles()
             self.profile = IMP.saxs.Profile(saxs_datafile, False, maxq)
         else:
-            raise Exception("SAXSRestraint: Must provide an IMP.saxs atom type: CA_ATOMS, HEAVY_ATOMS or ALL_ATOMS")
+            raise Exception("SAXSRestraint: Must provide an IMP.saxs atom type: RESIDUES, CA_ATOMS, HEAVY_ATOMS or ALL_ATOMS")
 
         if len(self.particles) == 0:
             raise Exception("SAXSRestraint: There are no selected particles")

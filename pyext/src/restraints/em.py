@@ -359,6 +359,9 @@ class GaussianEMRestraint(object):
         else:
             raise Exception("Can only add a density to a PMI State object or IMP.atom.Hierarchy. You passed a", type(inp))
 
+    def get_restraint(self):
+        return self.rs
+
     def get_restraint_set(self):
         return self.rs
 

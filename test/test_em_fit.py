@@ -46,6 +46,10 @@ class TestGaussianEMRestraint(IMP.test.TestCase):
                                                         target_fn=self.get_input_file_name('prot_gmm.txt'),
                                                         target_is_rigid_body=True)
         self.assertEqual(gem.get_restraint(), gem.rs)
+        info = gem.gaussianEM_restraint.get_static_info()
+        info.set_was_used(True)
+        self.assertEqual(info.get_number_of_filename(), 1)
+        self.assertEqual(info.get_filename_key(0), 'filename')
 
         gem.get_restraint_set().set_was_used(True)
         gem.add_to_model()

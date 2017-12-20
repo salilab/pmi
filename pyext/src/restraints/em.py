@@ -174,6 +174,8 @@ class GaussianEMRestraint(object):
             cutoff_dist_model_data,
             slope,
             update_model, backbone_slope, local)
+        if target_fn != '':
+            self.gaussianEM_restraint.set_density_filename(target_fn)
 
         print('done EM setup')
         self.rs = IMP.RestraintSet(self.m, 'GaussianEMRestraint')

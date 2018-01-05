@@ -27,7 +27,7 @@ class _RMFRestraints(object):
     """All restraints that are written out to the RMF file"""
     def __init__(self, model, user_restraints):
         self._rmf_rs = IMP.pmi.tools.get_restraint_set(model, rmf=True)
-        self._user_restraints = user_restraints
+        self._user_restraints = user_restraints if user_restraints else []
 
     def __len__(self):
         return (len(self._user_restraints)

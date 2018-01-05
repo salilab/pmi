@@ -10,9 +10,10 @@ class Tests(IMP.test.TestCase):
                 self.r = r
             get_restraint = lambda self: self.r
         m = IMP.Model()
-        rs = IMP.pmi.macros._RMFRestraints(m, [])
-        self.assertFalse(rs)
-        self.assertEqual(len(rs), 0)
+        for ur in ([], None):
+            rs = IMP.pmi.macros._RMFRestraints(m, ur)
+            self.assertFalse(rs)
+            self.assertEqual(len(rs), 0)
 
         r1 = IMP.RestraintSet(m)
         IMP.pmi.tools.add_restraint_to_model(m, r1, add_to_rmf=True)

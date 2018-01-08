@@ -1206,6 +1206,10 @@ class Representation(object):
                 xyz = IMP.core.XYZ(prmf).get_coordinates()
                 IMP.core.XYZ(prepr).set_coordinates(xyz)
 
+        # Destroy temporary hierarchies from RMF file
+        for prot in prots:
+            IMP.atom.destroy(prot)
+
 
     def check_root(self, name, protein_h, resolution):
         '''

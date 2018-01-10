@@ -156,7 +156,7 @@ class _ComponentMapper(object):
         self.prot = prot
         self.name = 'cif-output'
         self.o.dictionary_pdbs[self.name] = self.prot
-        self.o._init_dictchain(self.name, self.prot)
+        self.o._init_dictchain(self.name, self.prot, multichar_chain=True)
 
     def __getitem__(self, p):
         protname, is_a_bead = self.o.get_prot_name_from_particle(self.name, p)
@@ -1267,7 +1267,7 @@ class _Model(object):
         o = IMP.pmi.output.Output(atomistic=True)
         name = 'cif-output'
         o.dictionary_pdbs[name] = prot
-        o._init_dictchain(name, prot)
+        o._init_dictchain(name, prot, multichar_chain=True)
         (particle_infos_for_pdb,
          self.geometric_center) = o.get_particle_infos_for_pdb_writing(name)
         self.geometric_center = IMP.algebra.Vector3D(*self.geometric_center)

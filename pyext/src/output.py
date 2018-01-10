@@ -94,7 +94,7 @@ class Output(object):
     def get_stat_names(self):
         return list(self.dictionary_stats.keys())
 
-    def _init_dictchain(self, name, prot):
+    def _init_dictchain(self, name, prot, multichar_chain=False):
         self.dictchain[name] = {}
         self.use_pmi2 = False
 
@@ -106,8 +106,9 @@ class Output(object):
                 chid = IMP.atom.Chain(mol).get_id()
                 self.dictchain[name][IMP.pmi.get_molecule_name_and_copy(mol)] = chid
         else:
+            chainids = self.multi_chainids if multichar_chain else self.chainids
             for n, i in enumerate(self.dictionary_pdbs[name].get_children()):
-                self.dictchain[name][i.get_name()] = self.chainids[n]
+                self.dictchain[name][i.get_name()] = chainids
 
     def init_pdb(self, name, prot):
         """Init PDB Writing.

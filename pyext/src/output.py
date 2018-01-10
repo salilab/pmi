@@ -15,10 +15,27 @@ import ast
 import RMF
 import numpy as np
 import operator
+import string
 try:
     import cPickle as pickle
 except ImportError:
     import pickle
+
+class _ChainIDs(object):
+    """Map indices to multi-character chain IDs.
+       We label the first 26 chains A-Z, then we move to two-letter
+       chain IDs: AA through AZ, then BA through BZ, through to ZZ.
+       This continues with longer chain IDs."""
+    def __getitem__(self, ind):
+        chars = string.uppercase
+        lc = len(chars)
+        ids = []
+        while ind >= lc:
+            ids.append(chars[ind % lc])
+            ind = ind // lc - 1
+        ids.append(chars[ind])
+        return "".join(reversed(ids))
+
 
 class ProtocolOutput(object):
     """Base class for capturing a modeling protocol.
@@ -59,7 +76,10 @@ class Output(object):
         self.ascii = ascii
         self.initoutput = {}
         self.residuetypekey = IMP.StringKey("ResidueName")
+        # 1-character chain IDs, suitable for PDB output
         self.chainids = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+        # Multi-character chain IDs, suitable for mmCIF output
+        self.multi_chainids = _ChainIDs()
         self.dictchain = {}  # keys are molecule names, values are chain ids
         self.particle_infos_for_pdb = {}
         self.atomistic=atomistic

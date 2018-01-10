@@ -2341,7 +2341,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         # todo: handle multiple copies
         if name in self.chains:
             chain = self.chains[name]
-            return output.chainids[chain]
+            return output.multi_chainids[chain]
         else:
             # A non-modeled component doesn't have a chain ID
             return _CifWriter.omitted

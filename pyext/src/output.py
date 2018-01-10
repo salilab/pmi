@@ -27,7 +27,7 @@ class _ChainIDs(object):
        chain IDs: AA through AZ, then BA through BZ, through to ZZ.
        This continues with longer chain IDs."""
     def __getitem__(self, ind):
-        chars = string.uppercase
+        chars = string.ascii_uppercase
         lc = len(chars)
         ids = []
         while ind >= lc:

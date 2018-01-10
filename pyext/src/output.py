@@ -108,7 +108,7 @@ class Output(object):
         else:
             chainids = self.multi_chainids if multichar_chain else self.chainids
             for n, i in enumerate(self.dictionary_pdbs[name].get_children()):
-                self.dictchain[name][i.get_name()] = chainids
+                self.dictchain[name][i.get_name()] = chainids[n]
 
     def init_pdb(self, name, prot):
         """Init PDB Writing.

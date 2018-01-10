@@ -303,7 +303,7 @@ class _EntityDumper(_Dumper):
                           "details"]) as l:
             for entity in self.simo.entities.get_all():
                 l.write(id=entity.id, type='polymer', src_method='man',
-                        pdbx_description=entity.first_component,
+                        pdbx_description=entity.description,
                         formula_weight=writer.unknown,
                         pdbx_number_of_molecules=1, details=writer.unknown)
 
@@ -324,7 +324,7 @@ class _EntityPolyDumper(_Dumper):
                 seq = entity.sequence
                 # Split into lines to get tidier CIF output
                 seq = "\n".join(seq[i:i+70] for i in range(0, len(seq), 70))
-                name = entity.first_component
+                name = entity.description
                 chain_id = self.simo._get_chain_for_component(name, self.output)
                 l.write(entity_id=entity.id, type='polypeptide(L)',
                         nstd_linkage='no', nstd_monomer='no',
@@ -2163,8 +2163,12 @@ class _Entity(object):
     def __init__(self, seq, first_component):
         self.sequence = seq
         self.first_component = first_component
-        # Use the name of the first component as the description
-        self.description = first_component
+    # Use the name of the first component, stripped of any copy number,
+    # as the description of the entity
+    def __get_description(self):
+        # Strip out anything after a @ or .
+        return self.first_component.split("@")[0].split(".")[0]
+    description = property(__get_description)
 
 class _EntityMapper(dict):
     """Handle mapping from IMP components to CIF entities.

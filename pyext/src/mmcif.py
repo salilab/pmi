@@ -1137,8 +1137,9 @@ class _EM3DRestraint(object):
     def get_cross_correlation(self, model):
         """Get the cross correlation coefficient between the model
            and the map"""
-        return float(model.stats['GaussianEMRestraint_%s_CCC'
-                                 % self.pmi_restraint.label])
+        if model.stats is not None:
+            return float(model.stats['GaussianEMRestraint_%s_CCC'
+                                     % self.pmi_restraint.label])
 
 
 class _EM3DDumper(_Dumper):
@@ -1166,7 +1167,8 @@ class _EM3DDumper(_Dumper):
                             struct_assembly_id=r.assembly.id,
                             number_of_gaussians=r.number_of_gaussians,
                             model_id=model.id,
-                            cross_correlation_coefficient=ccc)
+                            cross_correlation_coefficient=ccc if ccc is not None
+                                                        else _CifWriter.omitted)
                     ordinal += 1
 
 class _Assembly(list):

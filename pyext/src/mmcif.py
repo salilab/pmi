@@ -2448,8 +2448,9 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         # Always assumed that we're dealing with the last state
         state = self._last_state
         group = self.add_model_group(_ModelGroup(state, name))
-        self.extref_dump.add(ensemble_file,
-                             _ExternalReferenceDumper.MODELING_OUTPUT)
+        if ensemble_file:
+            self.extref_dump.add(ensemble_file,
+                                 _ExternalReferenceDumper.MODELING_OUTPUT)
         e = _SimpleEnsemble(pp, group, num_models, drmsd, num_models_deposited,
                             ensemble_file)
         self.ensemble_dump.add(e)

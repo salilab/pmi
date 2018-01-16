@@ -79,17 +79,23 @@ class Tests(IMP.test.TestCase):
         s = IMP.pmi.metadata.Software(name='test', classification='test code',
                                       description='Some test program',
                                       version=1, url='http://salilab.org')
+        s2 = IMP.pmi.metadata.Software(name='foo', classification='test code',
+                                       description='Some test program',
+                                       url='http://salilab.org')
         m = IMP.Model()
         r = IMP.pmi.representation.Representation(m)
         r.add_metadata(s)
+        r.add_metadata(s2)
         r.add_metadata(IMP.pmi.metadata.Repository(doi="foo", root='.'))
         d = IMP.pmi.mmcif._SoftwareDumper(r)
         fh = StringIO()
         w = IMP.pmi.mmcif._CifWriter(fh)
         d.dump(w)
         out = fh.getvalue().split('\n')
-        self.assertEqual(out[-3],
+        self.assertEqual(out[-4],
                          "3 test 'test code' 1 program http://salilab.org")
+        self.assertEqual(out[-3],
+                         "4 foo 'test code' ? program http://salilab.org")
 
     def test_software_modeller(self):
         """Test SoftwareDumper.set_modeller_used"""

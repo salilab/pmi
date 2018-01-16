@@ -241,7 +241,9 @@ class _SoftwareDumper(_Dumper):
             for m in itertools.chain(self.software, self.simo._metadata):
                 if isinstance(m, IMP.pmi.metadata.Software):
                     l.write(pdbx_ordinal=ordinal, name=m.name,
-                            classification=m.classification, version=m.version,
+                            classification=m.classification,
+                            version=m.version if m.version
+                                              else _CifWriter.unknown,
                             type=m.type, location=m.url)
                     ordinal += 1
 

@@ -1262,8 +1262,8 @@ Nup85-m1 ATOM 2 C CA GLU 2 B 2 -8.986 11.688 -5.817 91.820 4
         self.assertEqual(parent.location.version, None)
         self.assertEqual(parent.location.details, None)
 
-    def test_get_sources_derived_model(self):
-        """Test get_sources() when given a file derived from a model"""
+    def test_get_sources_derived_comp_model(self):
+        """Test get_sources() given a file derived from a comparative model"""
         pdbname = self.get_input_file_name('derived_model.pdb')
         m, model, sources = self.get_dumper_sources(pdbname)
         (s, ) = sources
@@ -1283,6 +1283,26 @@ Nup85-m1 ATOM 2 C CA GLU 2 B 2 -8.986 11.688 -5.817 91.820 4
         self.assertEqual(parent.location.repo.doi, '10.1093/nar/gkt704')
         self.assertEqual(parent.location.details,
                          'Starting comparative model structure')
+
+    def test_get_sources_derived_int_model(self):
+        """Test get_sources() given a file derived from an integrative model"""
+        pdbname = self.get_input_file_name('derived_int_model.pdb')
+        m, model, sources = self.get_dumper_sources(pdbname)
+        (s, ) = sources
+        self.assertEqual(s.db_code, '?')
+        self.assertEqual(s.chain_id, 'A')
+        self.assertEqual(model.dataset._data_type, 'Integrative model')
+        self.assertEqual(model.dataset.location.path, pdbname)
+        self.assertEqual(model.dataset.location.repo, None)
+        self.assertEqual(model.dataset.location.details,
+                         'POM152 STRUCTURE TAKEN FROM UPLA ET AL, STRUCTURE '
+                         '25(3) 434-445. DOI: 10.1016/j.str.2017.01.006.')
+        (parent,) = model.dataset._parents
+        self.assertEqual(parent._data_type, 'Integrative model')
+        self.assertEqual(parent.location.path, '.')
+        self.assertEqual(parent.location.repo.doi, '10.1016/j.str.2017.01.006')
+        self.assertEqual(parent.location.details,
+                         'Starting integrative model structure')
 
     def test_get_sources_modeller(self):
         """Test get_sources() when given a Modeller model with alignment"""

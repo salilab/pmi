@@ -1289,6 +1289,7 @@ class _Chain(object):
         else:
             self.atoms.append((xyz, atom_type, residue_type, residue_index,
                                all_indexes, radius))
+    orig_comp = property(lambda self: self.comp)
 
 class _TransformedChain(object):
     """Represent a chain that is a transformed version of another"""
@@ -1311,7 +1312,7 @@ class _TransformedChain(object):
     atoms = property(__get_atoms)
 
     entity = property(lambda self: self.orig_chain.entity)
-    comp = property(lambda self: self.orig_chain.comp)
+    orig_comp = property(lambda self: self.orig_chain.comp)
 
 
 class _Model(object):
@@ -1347,7 +1348,9 @@ class _Model(object):
             orig_chain = chain_for_comp.get(tc.original, None)
             if orig_chain:
                 chain_id = simo._get_chain_for_component(tc.name, self.output)
-                yield _TransformedChain(orig_chain, chain_id, tc.transform)
+                c = _TransformedChain(orig_chain, chain_id, tc.transform)
+                c.comp = tc.name
+                yield c
 
     def _make_spheres_atoms(self, particle_infos_for_pdb, o, name, simo):
         entity_for_chain = {}
@@ -1475,7 +1478,8 @@ class _ModelDumper(_Dumper):
                                 asym_id=chain.chain_id,
                                 Cartn_x=pt[0], Cartn_y=pt[1], Cartn_z=pt[2],
                                 object_radius=radius,
-                                rmsf=model.get_rmsf(chain.comp, all_indexes),
+                                rmsf=model.get_rmsf(chain.orig_comp,
+                                                    all_indexes),
                                 model_id=model.id)
                         ordinal += 1
 

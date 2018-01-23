@@ -1190,13 +1190,52 @@ class _EM3DDumper(_Dumper):
                                                         else _CifWriter.omitted)
                     ordinal += 1
 
+class _AssemblyComponent(object):
+    """A single component (or part of a component) in an _Assembly"""
+    def __init__(self, component, seqrange=None):
+        self.component, self._seqrange = component, seqrange
+
+    def get_seq_range(self, simo):
+        """Get the sequence range. Defaults to the entire sequence."""
+        if self._seqrange:
+            return self._seqrange
+        else:
+            seq = simo.sequence_dict[self.component]
+            return (1, len(seq))
+
+    def __hash__(self):
+        return hash((self.component, self._seqrange))
+    def __eq__(self, other):
+        return (self.component, self._seqrange) \
+                == (other.component, other._seqrange)
+
+
 class _Assembly(list):
     """A collection of components. Currently simply implemented as a list of
-       the component names. These must be in creation order."""
+       _AssemblyComponent objects. These must be in creation order."""
+
+    def __init__(self, elements=()):
+        def fix_element(e):
+            if isinstance(e, _AssemblyComponent):
+                return e
+            else:
+                return _AssemblyComponent(e)
+        super(_Assembly, self).__init__(fix_element(e) for e in elements)
+
     def __hash__(self):
         # allow putting assemblies in a dict. 'list' isn't hashable
         # but 'tuple' is
         return hash(tuple(self))
+
+    def __contains__(self, item):
+        for ac in self:
+            if ac.component == item:
+                return True
+        return False
+
+    def append(self, component, seqrange=None):
+        super(_Assembly, self).append(_AssemblyComponent(component, seqrange))
+
 
 class _AssemblyDumper(_Dumper):
     def __init__(self, simo):
@@ -1213,7 +1252,14 @@ class _AssemblyDumper(_Dumper):
     def get_subassembly(self, compdict):
         """Get an _Assembly consisting of the given components."""
         # Put components in creation order
-        newa = _Assembly(c for c in self.assemblies[0] if c in compdict)
+        ac_from_name = {}
+        for c in compdict:
+            if isinstance(c, _AssemblyComponent):
+                ac_from_name[c.component] = c
+            else:
+                ac_from_name[c] = c
+        newa = _Assembly(ac_from_name[ac.component] for ac in self.assemblies[0]
+                         if ac.component in ac_from_name)
         return self.add(newa)
 
     def finalize(self):
@@ -1231,9 +1277,10 @@ class _AssemblyDumper(_Dumper):
                           "entity_id", "asym_id", "seq_id_begin",
                           "seq_id_end"]) as l:
             for a in self._assembly_by_id:
-                for comp in a:
+                for ac in a:
+                    comp = ac.component
+                    seqrange = ac.get_seq_range(self.simo)
                     entity = self.simo.entities[comp]
-                    seq = self.simo.sequence_dict[comp]
                     chain_id = self.simo._get_chain_for_component(comp,
                                                                   self.output)
                     l.write(ordinal_id=ordinal, assembly_id=a.id,
@@ -1243,8 +1290,8 @@ class _AssemblyDumper(_Dumper):
                             entity_description=entity.description,
                             entity_id=entity.id,
                             asym_id=chain_id,
-                            seq_id_begin=1,
-                            seq_id_end=len(seq))
+                            seq_id_begin=seqrange[0],
+                            seq_id_end=seqrange[1])
                     ordinal += 1
 
 

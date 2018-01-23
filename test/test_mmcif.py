@@ -254,11 +254,16 @@ _ihm_external_files.details
         d.add(complete)
         x1 = d.get_subassembly({'a':None, 'b':None})
         x2 = d.get_subassembly({'a':None, 'b':None, 'c':None})
+        x3 = d.get_subassembly({IMP.pmi.mmcif._AssemblyComponent('a',
+                                                                 (10,20)):None})
         d.finalize() # assign IDs to all assemblies
         self.assertEqual(complete.id, 1)
         self.assertEqual(x1.id, 2)
-        self.assertEqual(x1, ['a', 'b'])
+        self.assertEqual([ac.component for ac in x1], ['a', 'b'])
         self.assertEqual(x2.id, 1)
+        self.assertEqual(x3.id, 3)
+        self.assertEqual([ac.component for ac in x3], ['a'])
+        self.assertEqual([ac._seqrange for ac in x3], [(10,20)])
 
     def test_create_component_repeat(self):
         """Test repeated calls to create_component()"""
@@ -285,6 +290,7 @@ _ihm_external_files.details
             po.add_component_sequence(c, seq)
         d.add(IMP.pmi.mmcif._Assembly(["foo", "bar"]))
         d.add(IMP.pmi.mmcif._Assembly(["bar", "baz"]))
+        d.get_subassembly({IMP.pmi.mmcif._AssemblyComponent('foo', (2,3)):None})
 
         fh = StringIO()
         w = IMP.pmi.mmcif._CifWriter(fh)
@@ -305,6 +311,7 @@ _ihm_struct_assembly.seq_id_end
 2 1 1 foo 1 B 1 3
 3 2 2 foo 1 B 1 3
 4 2 2 baz 2 C 1 2
+5 3 3 foo 1 A 2 3
 #
 """)
 

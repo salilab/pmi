@@ -302,16 +302,17 @@ loop_
 _ihm_struct_assembly.ordinal_id
 _ihm_struct_assembly.assembly_id
 _ihm_struct_assembly.parent_assembly_id
+_ihm_struct_assembly.assembly_description
 _ihm_struct_assembly.entity_description
 _ihm_struct_assembly.entity_id
 _ihm_struct_assembly.asym_id
 _ihm_struct_assembly.seq_id_begin
 _ihm_struct_assembly.seq_id_end
-1 1 1 foo 1 A 1 3
-2 1 1 foo 1 B 1 3
-3 2 2 foo 1 B 1 3
-4 2 2 baz 2 C 1 2
-5 3 3 foo 1 A 2 3
+1 1 1 . foo 1 A 1 3
+2 1 1 . foo 1 B 1 3
+3 2 2 . foo 1 B 1 3
+4 2 2 . baz 2 C 1 2
+5 3 3 Subassembly foo 1 A 2 3
 #
 """)
 
@@ -333,14 +334,15 @@ loop_
 _ihm_struct_assembly.ordinal_id
 _ihm_struct_assembly.assembly_id
 _ihm_struct_assembly.parent_assembly_id
+_ihm_struct_assembly.assembly_description
 _ihm_struct_assembly.entity_description
 _ihm_struct_assembly.entity_id
 _ihm_struct_assembly.asym_id
 _ihm_struct_assembly.seq_id_begin
 _ihm_struct_assembly.seq_id_end
-1 1 1 foo 1 A 1 3
-2 1 1 bar 2 . 1 2
-3 2 2 foo 1 A 1 3
+1 1 1 'All known components' foo 1 A 1 3
+2 1 1 'All known components' bar 2 . 1 2
+3 2 2 'All components modeled by IMP' foo 1 A 1 3
 #
 """)
 

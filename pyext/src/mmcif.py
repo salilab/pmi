@@ -1151,7 +1151,8 @@ class _EM3DRestraint(object):
         components = {}
         for d in densities:
             components[cm[d]] = None
-        return simo.assembly_dump.get_subassembly(components)
+        return simo.assembly_dump.get_subassembly(components,
+                              description="All components that fit the EM map")
 
     def get_cross_correlation(self, model):
         """Get the cross correlation coefficient between the model
@@ -1215,6 +1216,7 @@ class _Assembly(list):
        _AssemblyComponent objects. These must be in creation order."""
 
     def __init__(self, elements=()):
+        self.description = None
         def fix_element(e):
             if isinstance(e, _AssemblyComponent):
                 return e
@@ -1249,7 +1251,7 @@ class _AssemblyDumper(_Dumper):
         self.assemblies.append(a)
         return a
 
-    def get_subassembly(self, compdict):
+    def get_subassembly(self, compdict, description="Subassembly"):
         """Get an _Assembly consisting of the given components."""
         # Put components in creation order
         ac_from_name = {}
@@ -1260,6 +1262,7 @@ class _AssemblyDumper(_Dumper):
                 ac_from_name[c] = c
         newa = _Assembly(ac_from_name[ac.component] for ac in self.assemblies[0]
                          if ac.component in ac_from_name)
+        newa.description = description
         return self.add(newa)
 
     def finalize(self):
@@ -1273,6 +1276,7 @@ class _AssemblyDumper(_Dumper):
         ordinal = 1
         with writer.loop("_ihm_struct_assembly",
                          ["ordinal_id", "assembly_id", "parent_assembly_id",
+                          "assembly_description",
                           "entity_description",
                           "entity_id", "asym_id", "seq_id_begin",
                           "seq_id_end"]) as l:
@@ -1287,6 +1291,9 @@ class _AssemblyDumper(_Dumper):
                             # Currently all assemblies are not hierarchical,
                             # so each assembly is a self-parent
                             parent_assembly_id=a.id,
+                            assembly_description=a.description
+                                                 if a.description
+                                                 else _CifWriter.omitted,
                             entity_description=entity.description,
                             entity_id=entity.id,
                             asym_id=chain_id,
@@ -2387,6 +2394,7 @@ class _State(object):
         # The assembly of all components modeled by IMP in this state.
         # This may be smaller than the complete assembly.
         self.modeled_assembly = _Assembly()
+        self.modeled_assembly.description = "All components modeled by IMP"
         po.assembly_dump.add(self.modeled_assembly)
 
         self.all_modeled_components = []
@@ -2447,6 +2455,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
 
         # The assembly of all known components.
         self.complete_assembly = _Assembly()
+        self.complete_assembly.description = "All known components"
         self.assembly_dump.add(self.complete_assembly)
 
         self.model_dump = _ModelDumper(self)

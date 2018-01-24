@@ -254,8 +254,7 @@ _ihm_external_files.details
         d.add(complete)
         x1 = d.get_subassembly({'a':None, 'b':None})
         x2 = d.get_subassembly({'a':None, 'b':None, 'c':None})
-        x3 = d.get_subassembly({IMP.pmi.mmcif._AssemblyComponent('a',
-                                                                 (10,20)):None})
+        x3 = d.get_subassembly({'a':(10,20)})
         d.finalize() # assign IDs to all assemblies
         self.assertEqual(complete.id, 1)
         self.assertEqual(x1.id, 2)
@@ -290,7 +289,7 @@ _ihm_external_files.details
             po.add_component_sequence(c, seq)
         d.add(IMP.pmi.mmcif._Assembly(["foo", "bar"]))
         d.add(IMP.pmi.mmcif._Assembly(["bar", "baz"]))
-        d.get_subassembly({IMP.pmi.mmcif._AssemblyComponent('foo', (2,3)):None})
+        d.get_subassembly({'foo':(2,3)})
 
         fh = StringIO()
         w = IMP.pmi.mmcif._CifWriter(fh)

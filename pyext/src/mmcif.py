@@ -1150,7 +1150,7 @@ class _EM3DRestraint(object):
         cm = _ComponentMapper(state.prot)
         components = {}
         for d in densities:
-            components[cm[d]] = None
+            components[cm[d]] = None # None == all residues in this component
         return simo.assembly_dump.get_subassembly(components,
                               description="All components that fit the EM map")
 
@@ -1194,6 +1194,7 @@ class _EM3DDumper(_Dumper):
 class _AssemblyComponent(object):
     """A single component (or part of a component) in an _Assembly"""
     def __init__(self, component, seqrange=None):
+        # todo: support multiple sequence ranges
         self.component, self._seqrange = component, seqrange
 
     def get_seq_range(self, simo):
@@ -1252,14 +1253,14 @@ class _AssemblyDumper(_Dumper):
         return a
 
     def get_subassembly(self, compdict, description="Subassembly"):
-        """Get an _Assembly consisting of the given components."""
+        """Get an _Assembly consisting of the given components.
+           `compdict` is a dictionary of the components to add, where keys
+           are the component names and values are the sequence ranges (or
+           None to use all residues in the component)."""
         # Put components in creation order
         ac_from_name = {}
         for c in compdict:
-            if isinstance(c, _AssemblyComponent):
-                ac_from_name[c.component] = c
-            else:
-                ac_from_name[c] = c
+            ac_from_name[c] = _AssemblyComponent(c, seqrange=compdict[c])
         newa = _Assembly(ac_from_name[ac.component] for ac in self.assemblies[0]
                          if ac.component in ac_from_name)
         newa.description = description

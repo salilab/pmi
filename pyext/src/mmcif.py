@@ -1337,6 +1337,16 @@ class _ReplicaExchangeProtocolStep(_ProtocolStep):
             self.method = 'Replica exchange molecular dynamics'
         self.num_models_end = rex.vars["number_of_frames"]
 
+
+class _SimpleProtocolStep(_ProtocolStep):
+    def __init__(self, state, num_models_end, method):
+        self.state = state
+        self.modeled_assembly = state.modeled_assembly
+        self.name = 'Sampling'
+        self.method = method
+        self.num_models_end = num_models_end
+
+
 class _ModelGroup(object):
     """Group sets of models"""
     def __init__(self, state, name):
@@ -2650,6 +2660,12 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         # (use these as multipliers to get the correct total number of
         # output models)
         self.model_prot_dump.add(_ReplicaExchangeProtocolStep(state, rex))
+
+    def _add_simple_dynamics(self, num_models_end, method):
+        # Always assumed that we're dealing with the last state
+        state = self._last_state
+        self.model_prot_dump.add(_SimpleProtocolStep(state, num_models_end,
+                                                     method))
 
     def _add_dataset(self, dataset):
         return self.dataset_dump.add(self._last_state, dataset)

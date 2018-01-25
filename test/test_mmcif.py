@@ -1499,6 +1499,12 @@ _ihm_modeling_protocol.ordered_flag
 #
 """)
 
+    def test_add_simple_dynamics(self):
+        """Test add_simple_dynamics()"""
+        po = DummyPO(None)
+        po._add_state(EmptyObject())
+        po._add_simple_dynamics(100, "Brownian dynamics")
+
     def test_simple_postprocessing(self):
         """Test add_simple_postprocessing"""
         class DummyProtocolStep(object):

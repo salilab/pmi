@@ -429,18 +429,21 @@ class _StartingModel(object):
 class _ModelRepresentationDumper(_Dumper):
     def __init__(self, simo):
         super(_ModelRepresentationDumper, self).__init__(simo)
-        # dict of fragments, ordered by component name and then state
+        # dict of fragments, ordered by representation, then component name,
+        # then state
         self.fragments = OrderedDict()
         self.output = IMP.pmi.output.Output()
 
-    def add_fragment(self, state, fragment):
+    def add_fragment(self, state, representation, fragment):
         """Add a model fragment."""
         comp = fragment.component
-        if comp not in self.fragments:
-            self.fragments[comp] = OrderedDict()
-        if state not in self.fragments[comp]:
-            self.fragments[comp][state] = []
-        fragments = self.fragments[comp][state]
+        if representation not in self.fragments:
+            self.fragments[representation] = OrderedDict()
+        if comp not in self.fragments[representation]:
+            self.fragments[representation][comp] = OrderedDict()
+        if state not in self.fragments[representation][comp]:
+            self.fragments[representation][comp][state] = []
+        fragments = self.fragments[representation][comp][state]
         if len(fragments) == 0 or not fragments[-1].combine(fragment):
             fragments.append(fragment)
 
@@ -461,11 +464,13 @@ class _ModelRepresentationDumper(_Dumper):
             if tc.original not in trans_orig:
                 trans_orig[tc.original] = []
             trans_orig[tc.original].append(tc.name)
-        for comp, statefrag in self.fragments.items():
-            yield comp, comp, statefrag
-        for orig, statefrag in self.fragments.items():
-            for comp in trans_orig.get(orig, []):
-                yield comp, orig, statefrag
+        for representation, compdict in self.fragments.items():
+            for comp, statefrag in compdict.items():
+                yield representation, comp, comp, statefrag
+        for representation, compdict in self.fragments.items():
+            for orig, statefrag in compdict.items():
+                for comp in trans_orig.get(orig, []):
+                    yield representation, comp, orig, statefrag
 
     def dump(self, writer):
         ordinal_id = 1
@@ -478,7 +483,7 @@ class _ModelRepresentationDumper(_Dumper):
                           "model_object_primitive", "starting_model_id",
                           "model_mode", "model_granularity",
                           "model_object_count"]) as l:
-            for comp, orig, statefrag in self._all_fragments():
+            for representation, comp, orig, statefrag in self._all_fragments():
                 # For now, assume that representation of the same-named
                 # component is the same in all states, so just take the first
                 state = list(statefrag.keys())[0]
@@ -489,9 +494,8 @@ class _ModelRepresentationDumper(_Dumper):
                     if hasattr(f, 'pdbname'):
                         starting_model_id \
                              = self.starting_model[state, orig, f.pdbname].name
-                    # todo: handle multiple representations
                     l.write(ordinal_id=ordinal_id,
-                            representation_id=1,
+                            representation_id=representation.id,
                             segment_id=segment_id,
                             entity_id=entity.id,
                             entity_description=entity.description,
@@ -1382,7 +1386,7 @@ class _TransformedChain(object):
 
 
 class _Model(object):
-    def __init__(self, prot, simo, protocol, assembly, group):
+    def __init__(self, prot, simo, protocol, assembly, representation, group):
         # Transformation from IMP coordinates into mmCIF coordinate system.
         # Normally we pass through coordinates unchanged, but in some cases
         # we may want to translate them (e.g. Nup84, where the deposited PDB
@@ -1392,6 +1396,7 @@ class _Model(object):
         # The _Protocol which produced this model
         self.protocol = protocol
         self.assembly = assembly
+        self.representation = representation
         self.stats = None
         o = self.output = IMP.pmi.output.Output(atomistic=True)
         name = 'cif-output'
@@ -1468,8 +1473,8 @@ class _ModelDumper(_Dumper):
         super(_ModelDumper, self).__init__(simo)
         self.models = []
 
-    def add(self, prot, protocol, assembly, group):
-        m = _Model(prot, self.simo, protocol, assembly, group)
+    def add(self, prot, protocol, assembly, representation, group):
+        m = _Model(prot, self.simo, protocol, assembly, representation, group)
         self.models.append(m)
         m.id = len(self.models)
         return m
@@ -1488,14 +1493,13 @@ class _ModelDumper(_Dumper):
             for model in self.models:
                 state = model.group.state
                 group_name = state.get_prefixed_name(model.group.name)
-                # todo: handle multiple representations
                 l.write(ordinal_id=ordinal, model_id=model.id,
                         model_group_id=model.group.id,
                         model_name=model.name,
                         model_group_name=group_name,
                         assembly_id=model.assembly.id,
                         protocol_id=model.protocol.id,
-                        representation_id=1)
+                        representation_id=model.representation.id)
                 ordinal += 1
 
     def dump_atoms(self, writer):
@@ -2005,17 +2009,19 @@ class _StructConfDumper(_Dumper):
         """Yield all rigid model representation fragments"""
         asym_states = {}
         model_repr = self.simo.model_repr_dump
-        for comp, statefrag in model_repr.fragments.items():
-            # For now, assume that representation of the same-named
-            # component is the same in all states, so just take the first
-            state = list(statefrag.keys())[0]
-            for f in statefrag[state]:
-                if hasattr(f, 'pdbname') \
-                   and model_repr.get_model_mode(f) == 'rigid':
-                    asym = get_asym_mapper_for_state(self.simo, f.state,
-                                                     asym_states)
-                    yield (f, model_repr.starting_model[state, comp, f.pdbname],
-                           asym[f.hier])
+        for representation, compdict in model_repr.fragments.items():
+            for comp, statefrag in compdict.items():
+                # For now, assume that representation of the same-named
+                # component is the same in all states, so just take the first
+                state = list(statefrag.keys())[0]
+                for f in statefrag[state]:
+                    if hasattr(f, 'pdbname') \
+                       and model_repr.get_model_mode(f) == 'rigid':
+                        asym = get_asym_mapper_for_state(self.simo, f.state,
+                                                         asym_states)
+                        yield (f, model_repr.starting_model[state, comp,
+                                                            f.pdbname],
+                               asym[f.hier])
 
     def all_helices(self):
         """Yield all helices that overlap with rigid model fragments"""
@@ -2430,6 +2436,12 @@ class _State(object):
     long_name = property(lambda self: self._pmi_state.long_name)
 
 
+class _Representation(object):
+    """A complete model representation"""
+    def __init__(self, name):
+        self.name = name
+
+
 class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
     """Class to encode a modeling protocol as mmCIF.
 
@@ -2448,6 +2460,8 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self._states = {}
         self._working_directory = os.getcwd()
         self._cif_writer = _CifWriter(fh)
+        self._representations = []
+        self.create_representation("Default representation")
         self.entities = _EntityMapper()
         self.chains = {}
         self._all_components = {}
@@ -2504,6 +2518,14 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                          self.model_prot_dump, self.post_process_dump,
                          self.ensemble_dump, self.density_dump, self.model_dump,
                          _MultiStateDumper(self)]
+
+    def create_representation(self, name):
+        """Create a new Representation and return it. This can be
+           passed to add_model(), add_bead_element() or add_pdb_element()."""
+        r = _Representation(name)
+        self._representations.append(r)
+        r.id = len(self._representations)
+        return r
 
     def _add_state(self, state):
         """Create a new state and return a pointer to it."""
@@ -2571,15 +2593,20 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
             dumper.dump(self._cif_writer)
 
     def add_pdb_element(self, state, name, start, end, offset, pdbname,
-                        chain, hier):
+                        chain, hier, representation=None):
+        if representation is None:
+            representation = self._representations[0]
         p = _PDBFragment(state, name, start, end, offset, pdbname, chain,
                          hier)
-        self.model_repr_dump.add_fragment(state, p)
+        self.model_repr_dump.add_fragment(state, representation, p)
         self.starting_model_dump.add_pdb_fragment(p)
 
-    def add_bead_element(self, state, name, start, end, num, hier):
+    def add_bead_element(self, state, name, start, end, num, hier,
+                         representation=None):
+        if representation is None:
+            representation = self._representations[0]
         b = _BeadsFragment(state, name, start, end, num, hier)
-        self.model_repr_dump.add_fragment(state, b)
+        self.model_repr_dump.add_fragment(state, representation, b)
 
     def _get_restraint_dataset(self, r, num=None, allow_duplicates=False):
         """Get a wrapper object for the dataset used by this restraint.
@@ -2705,11 +2732,14 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.em3d_dump.add(_EM3DRestraint(self, state, d, r, target_ps,
                                           densities))
 
-    def add_model(self, group):
+    def add_model(self, group, assembly=None, representation=None):
+        if representation is None:
+            representation = self._representations[0]
         state = group.state
         return self.model_dump.add(state.prot,
                            self.model_prot_dump.get_last_protocol(state),
-                           state.modeled_assembly, group)
+                           assembly if assembly else state.modeled_assembly,
+                           representation, group)
 
     def _update_location(self, fileloc):
         """Update FileLocation to point to a parent repository, if any"""

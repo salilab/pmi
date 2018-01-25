@@ -971,11 +971,13 @@ _ihm_external_files.details
         d = IMP.pmi.mmcif._ModelDumper(po)
         assembly = IMP.pmi.mmcif._Assembly()
         assembly.id = 42
+        representation = IMP.pmi.mmcif._Representation(name="test rep")
+        representation.id = 99
         protocol = IMP.pmi.mmcif._Protocol()
         protocol.id = 93
         group = IMP.pmi.mmcif._ModelGroup(state, "all models")
         group.id = 7
-        model = d.add(simo.prot, protocol, assembly, group)
+        model = d.add(simo.prot, protocol, assembly, representation, group)
         self.assertEqual(model.id, 1)
         self.assertEqual(model.get_rmsf('Nup84', (1,)), '.')
         fh = StringIO()
@@ -992,7 +994,7 @@ _ihm_model_list.model_group_name
 _ihm_model_list.assembly_id
 _ihm_model_list.protocol_id
 _ihm_model_list.representation_id
-1 1 7 . 'All models' 42 93 1
+1 1 7 . 'All models' 42 93 99
 #
 #
 loop_
@@ -1033,11 +1035,13 @@ _ihm_sphere_obj_site.model_id
         d = IMP.pmi.mmcif._ModelDumper(po)
         assembly = IMP.pmi.mmcif._Assembly()
         assembly.id = 42
+        representation = IMP.pmi.mmcif._Representation(name="test rep")
+        representation.id = 99
         protocol = IMP.pmi.mmcif._Protocol()
         protocol.id = 93
         group = IMP.pmi.mmcif._ModelGroup(state, "all models")
         group.id = 7
-        model = d.add(simo.prot, protocol, assembly, group)
+        model = d.add(simo.prot, protocol, assembly, representation, group)
         self.assertEqual(model.id, 1)
         self.assertEqual(model.get_rmsf('Nup84', (1,)), '.')
         fh = StringIO()
@@ -1054,7 +1058,7 @@ _ihm_model_list.model_group_name
 _ihm_model_list.assembly_id
 _ihm_model_list.protocol_id
 _ihm_model_list.representation_id
-1 1 7 . 'All models' 42 93 1
+1 1 7 . 'All models' 42 93 99
 #
 #
 loop_
@@ -1105,11 +1109,13 @@ _ihm_sphere_obj_site.model_id
         d = IMP.pmi.mmcif._ModelDumper(po)
         assembly = IMP.pmi.mmcif._Assembly()
         assembly.id = 42
+        representation = IMP.pmi.mmcif._Representation(name="test rep")
+        representation.id = 99
         protocol = IMP.pmi.mmcif._Protocol()
         protocol.id = 93
         group = IMP.pmi.mmcif._ModelGroup(state, "all models")
         group.id = 7
-        model = d.add(simo.prot, protocol, assembly, group)
+        model = d.add(simo.prot, protocol, assembly, representation, group)
         self.assertEqual(model.id, 1)
         model.name = 'foo'
         model.parse_rmsf_file(self.get_input_file_name('test.nup84.rmsf'),
@@ -1130,7 +1136,7 @@ _ihm_model_list.model_group_name
 _ihm_model_list.assembly_id
 _ihm_model_list.protocol_id
 _ihm_model_list.representation_id
-1 1 7 foo 'All models' 42 93 1
+1 1 7 foo 'All models' 42 93 99
 #
 #
 loop_
@@ -2190,29 +2196,30 @@ _ihm_starting_model_seq_dif.details
         m = None
         state1 = 'state1'
         state2 = 'state2'
+        rep1 = 'rep1'
         d = IMP.pmi.mmcif._ModelRepresentationDumper(EmptyObject())
         b = IMP.pmi.mmcif._BeadsFragment(m, 'comp1', start=0,
                                          end=10, num=2, hier=None)
-        d.add_fragment(state1, b)
-        self.assertEqual(len(d.fragments['comp1']), 1)
-        self.assertEqual(len(d.fragments['comp1'][state1]), 1)
-        frag = d.fragments['comp1'][state1][0]
+        d.add_fragment(state1, rep1, b)
+        self.assertEqual(len(d.fragments['rep1']['comp1']), 1)
+        self.assertEqual(len(d.fragments['rep1']['comp1'][state1]), 1)
+        frag = d.fragments['rep1']['comp1'][state1][0]
         self.assertEqual(frag.start, 0)
         self.assertEqual(frag.end, 10)
 
         b = IMP.pmi.mmcif._BeadsFragment(m, 'comp1', start=11,
                                          end=30, num=3, hier=None)
-        d.add_fragment(state1, b)
-        self.assertEqual(len(d.fragments['comp1']), 1)
-        self.assertEqual(len(d.fragments['comp1'][state1]), 1)
-        frag = d.fragments['comp1'][state1][0]
+        d.add_fragment(state1, rep1, b)
+        self.assertEqual(len(d.fragments['rep1']['comp1']), 1)
+        self.assertEqual(len(d.fragments['rep1']['comp1'][state1]), 1)
+        frag = d.fragments['rep1']['comp1'][state1][0]
         self.assertEqual(frag.start, 0)
         self.assertEqual(frag.end, 30)
 
-        d.add_fragment(state2, b)
-        self.assertEqual(len(d.fragments['comp1']), 2)
-        self.assertEqual(len(d.fragments['comp1'][state2]), 1)
-        frag = d.fragments['comp1'][state2][0]
+        d.add_fragment(state2, rep1, b)
+        self.assertEqual(len(d.fragments['rep1']['comp1']), 2)
+        self.assertEqual(len(d.fragments['rep1']['comp1'][state2]), 1)
+        frag = d.fragments['rep1']['comp1'][state2][0]
         self.assertEqual(frag.start, 11)
         self.assertEqual(frag.end, 30)
 

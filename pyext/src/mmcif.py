@@ -1567,28 +1567,37 @@ class _ModelDumper(_Dumper):
 class _ModelProtocolDumper(_Dumper):
     def __init__(self, simo):
         super(_ModelProtocolDumper, self).__init__(simo)
-        # Protocols by state
+        # Lists of Protocols by state
         self.protocols = OrderedDict()
+        self._protocol_id = 1
 
-    def add(self, step):
+    def add_protocol(self, state):
+        """Add a new Protocol"""
+        if state not in self.protocols:
+            self.protocols[state] = []
+        p = _Protocol()
+        self.protocols[state].append(p)
+        p.id = self._protocol_id # IDs must be unique across states
+        self._protocol_id += 1
+
+    def add_step(self, step):
+        """Add a ProtocolStep to the last Protocol"""
         state = step.state
         if state not in self.protocols:
-            # Currently support only a single protocol per state
-            self.protocols[state] = _Protocol()
-            self.protocols[state].id = len(self.protocols)
+            self.add_protocol(state)
+        protocol = self.get_last_protocol(state)
+        if len(protocol) == 0:
             step.num_models_begin = 0
         else:
-            step.num_models_begin = self.protocols[state][-1].num_models_end
-        self.protocols[state].append(step)
-        # todo: support multiple protocols
-        step.id = len(self.protocols[state])
+            step.num_models_begin = protocol[-1].num_models_end
+        protocol.append(step)
+        step.id = len(protocol)
         # Assume that protocol uses all currently-defined datasets
         step.dataset_group = self.simo.dataset_dump.get_all_group(state)
 
     def get_last_protocol(self, state):
         """Return the most recently-added _Protocol"""
-        # For now, we only support a single protocol per state
-        return self.protocols[state]
+        return self.protocols[state][-1]
 
     def dump(self, writer):
         ordinal = 1
@@ -1599,20 +1608,21 @@ class _ModelProtocolDumper(_Dumper):
                           "step_name", "step_method", "num_models_begin",
                           "num_models_end", "multi_scale_flag",
                           "multi_state_flag", "ordered_flag"]) as l:
-            for p in self.protocols.values():
-                for step in p:
-                    l.write(ordinal_id=ordinal, protocol_id=p.id,
-                            step_id=step.id, step_method=step.method,
-                            step_name=step.name,
-                            struct_assembly_id=step.modeled_assembly.id,
-                            dataset_group_id=step.dataset_group.id,
-                            num_models_begin=step.num_models_begin,
-                            num_models_end=step.num_models_end,
-                            # todo: support multiple states, time ordered
-                            multi_state_flag=False, ordered_flag=False,
-                            # all PMI models are multi scale
-                            multi_scale_flag=True)
-                    ordinal += 1
+            for ps in self.protocols.values():
+                for p in ps:
+                    for step in p:
+                        l.write(ordinal_id=ordinal, protocol_id=p.id,
+                                step_id=step.id, step_method=step.method,
+                                step_name=step.name,
+                                struct_assembly_id=step.modeled_assembly.id,
+                                dataset_group_id=step.dataset_group.id,
+                                num_models_begin=step.num_models_begin,
+                                num_models_end=step.num_models_end,
+                                # todo: support multiple states, time ordered
+                                multi_state_flag=False, ordered_flag=False,
+                                # all PMI models are multi scale
+                                multi_scale_flag=True)
+                        ordinal += 1
 
 
 class _PDBHelix(object):
@@ -2661,13 +2671,18 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         # actual experiment, and how many independent runs were carried out
         # (use these as multipliers to get the correct total number of
         # output models)
-        self.model_prot_dump.add(_ReplicaExchangeProtocolStep(state, rex))
+        self.model_prot_dump.add_step(_ReplicaExchangeProtocolStep(state, rex))
 
     def _add_simple_dynamics(self, num_models_end, method):
         # Always assumed that we're dealing with the last state
         state = self._last_state
-        self.model_prot_dump.add(_SimpleProtocolStep(state, num_models_end,
-                                                     method))
+        self.model_prot_dump.add_step(_SimpleProtocolStep(state, num_models_end,
+                                                          method))
+
+    def _add_protocol(self):
+        # Always assumed that we're dealing with the last state
+        state = self._last_state
+        self.model_prot_dump.add_protocol(state)
 
     def _add_dataset(self, dataset):
         return self.dataset_dump.add(self._last_state, dataset)

@@ -2100,6 +2100,16 @@ class _SimplePostProcess(_PostProcess):
         self.num_models_begin = num_models_begin
         self.num_models_end = num_models_end
 
+
+class _NoPostProcess(_PostProcess):
+    """No post processing"""
+    type = 'none'
+    feature = 'none'
+
+    def __init__(self, protocol, num_models):
+        self.protocol = protocol
+        self.num_models_begin = self.num_models_end = num_models
+
 class _PostProcessDumper(_Dumper):
     def __init__(self, simo):
         super(_PostProcessDumper, self).__init__(simo)
@@ -2654,6 +2664,14 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         state = self._last_state
         protocol = self.model_prot_dump.get_last_protocol(state)
         pp = _SimplePostProcess(protocol, num_models_begin, num_models_end)
+        self.post_process_dump.add(pp)
+        return pp
+
+    def _add_no_postprocessing(self, num_models):
+        # Always assumed that we're dealing with the last state
+        state = self._last_state
+        protocol = self.model_prot_dump.get_last_protocol(state)
+        pp = _NoPostProcess(protocol, num_models)
         self.post_process_dump.add(pp)
         return pp
 

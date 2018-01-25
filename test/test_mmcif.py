@@ -1545,6 +1545,41 @@ _ihm_modeling_post_process.num_models_end
 #
 """)
 
+    def test_no_postprocessing(self):
+        """Test add_no_postprocessing"""
+        class DummyProtocolStep(object):
+            pass
+        po = DummyPO(None)
+        po._add_state(DummyRepr(None, None))
+        p = DummyProtocolStep()
+        p.state = po._last_state
+        p.num_models_end = 10
+        po.model_prot_dump.add(p)
+        pp = po._add_no_postprocessing(10)
+        self.assertEqual(pp.type, 'none')
+        self.assertEqual(pp.feature, 'none')
+        self.assertEqual(pp.num_models_begin, 10)
+        self.assertEqual(pp.num_models_end, 10)
+
+        fh = StringIO()
+        w = IMP.pmi.mmcif._CifWriter(fh)
+        po.post_process_dump.finalize()
+        po.post_process_dump.dump(w)
+        out = fh.getvalue()
+        self.assertEqual(out, """#
+loop_
+_ihm_modeling_post_process.id
+_ihm_modeling_post_process.protocol_id
+_ihm_modeling_post_process.analysis_id
+_ihm_modeling_post_process.step_id
+_ihm_modeling_post_process.type
+_ihm_modeling_post_process.feature
+_ihm_modeling_post_process.num_models_begin
+_ihm_modeling_post_process.num_models_end
+1 1 1 1 none none 10 10
+#
+""")
+
     def test_simple_ensemble(self):
         """Test add_simple_ensemble"""
         m = IMP.Model()

@@ -2464,6 +2464,8 @@ HELX_P1 HELX_P MET A 1 GLU A 2
         r = DummyRepr(None, None)
         state = po._add_state(r)
         self.assertEqual(state.get_prefixed_name('foo'), 'Foo')
+        self.assertEqual(state.get_prefixed_name('FOO'), 'FOO')
+        self.assertEqual(state.get_prefixed_name(''), '')
 
     def test_state_postfix(self):
         """Test _State.get_postfixed_name()"""

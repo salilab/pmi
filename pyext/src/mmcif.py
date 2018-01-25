@@ -2443,7 +2443,9 @@ class _State(object):
         if self.short_name:
             return self.short_name + ' ' + name
         else:
-            return name.capitalize()
+            # Can't use capitalize() since that un-capitalizes everything
+            # but the first letter
+            return name[0].upper() + name[1:] if name else ''
 
     def get_postfixed_name(self, name):
         """Postfix the given name with the state name, if available."""

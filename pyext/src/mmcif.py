@@ -1152,6 +1152,7 @@ class _EM3DRestraint(object):
         for d in densities:
             components[cm[d]] = None # None == all residues in this component
         return simo.assembly_dump.get_subassembly(components,
+                              name="EM subassembly",
                               description="All components that fit the EM map")
 
     def get_cross_correlation(self, model):
@@ -1217,6 +1218,7 @@ class _Assembly(list):
        _AssemblyComponent objects. These must be in creation order."""
 
     def __init__(self, elements=()):
+        self.name = None
         self.description = None
         def fix_element(e):
             if isinstance(e, _AssemblyComponent):
@@ -1252,7 +1254,8 @@ class _AssemblyDumper(_Dumper):
         self.assemblies.append(a)
         return a
 
-    def get_subassembly(self, compdict, description="Subassembly"):
+    def get_subassembly(self, compdict, name="Subassembly",
+                        description="Subassembly"):
         """Get an _Assembly consisting of the given components.
            `compdict` is a dictionary of the components to add, where keys
            are the component names and values are the sequence ranges (or
@@ -1263,6 +1266,7 @@ class _AssemblyDumper(_Dumper):
             ac_from_name[c] = _AssemblyComponent(c, seqrange=compdict[c])
         newa = _Assembly(ac_from_name[ac.component] for ac in self.assemblies[0]
                          if ac.component in ac_from_name)
+        newa.name = name
         newa.description = description
         return self.add(newa)
 
@@ -1273,11 +1277,21 @@ class _AssemblyDumper(_Dumper):
         for a in self.assemblies:
             _assign_id(a, seen_assemblies, self._assembly_by_id)
 
+    def dump_details(self, writer):
+        with writer.loop("_ihm_struct_assembly_details",
+                         ["assembly_id", "assembly_name",
+                          "assembly_description"]) as l:
+            for a in self._assembly_by_id:
+                l.write(assembly_id=a.id,
+                        assembly_name=a.name if a.name else _CifWriter.omitted,
+                        assembly_description=a.description if a.description
+                                             else _CifWriter.omitted)
+
     def dump(self, writer):
+        self.dump_details(writer)
         ordinal = 1
         with writer.loop("_ihm_struct_assembly",
                          ["ordinal_id", "assembly_id", "parent_assembly_id",
-                          "assembly_description",
                           "entity_description",
                           "entity_id", "asym_id", "seq_id_begin",
                           "seq_id_end"]) as l:
@@ -1292,9 +1306,6 @@ class _AssemblyDumper(_Dumper):
                             # Currently all assemblies are not hierarchical,
                             # so each assembly is a self-parent
                             parent_assembly_id=a.id,
-                            assembly_description=a.description
-                                                 if a.description
-                                                 else _CifWriter.omitted,
                             entity_description=entity.description,
                             entity_id=entity.id,
                             asym_id=chain_id,
@@ -2395,6 +2406,7 @@ class _State(object):
         # The assembly of all components modeled by IMP in this state.
         # This may be smaller than the complete assembly.
         self.modeled_assembly = _Assembly()
+        self.modeled_assembly.name = "Modeled assembly"
         self.modeled_assembly.description = "All components modeled by IMP"
         po.assembly_dump.add(self.modeled_assembly)
 
@@ -2456,6 +2468,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
 
         # The assembly of all known components.
         self.complete_assembly = _Assembly()
+        self.complete_assembly.name = "Complete assembly"
         self.complete_assembly.description = "All known components"
         self.assembly_dump.add(self.complete_assembly)
 

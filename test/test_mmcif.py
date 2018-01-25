@@ -252,12 +252,15 @@ _ihm_external_files.details
         d = IMP.pmi.mmcif._AssemblyDumper(po)
         complete = IMP.pmi.mmcif._Assembly(['a', 'b', 'c'])
         d.add(complete)
-        x1 = d.get_subassembly({'a':None, 'b':None})
+        x1 = d.get_subassembly({'a':None, 'b':None}, name="foo",
+                               description="bar")
         x2 = d.get_subassembly({'a':None, 'b':None, 'c':None})
         x3 = d.get_subassembly({'a':(10,20)})
         d.finalize() # assign IDs to all assemblies
         self.assertEqual(complete.id, 1)
         self.assertEqual(x1.id, 2)
+        self.assertEqual(x1.name, "foo")
+        self.assertEqual(x1.description, "bar")
         self.assertEqual([ac.component for ac in x1], ['a', 'b'])
         self.assertEqual(x2.id, 1)
         self.assertEqual(x3.id, 3)
@@ -298,20 +301,28 @@ _ihm_external_files.details
         out = fh.getvalue()
         self.assertEqual(out, """#
 loop_
+_ihm_struct_assembly_details.assembly_id
+_ihm_struct_assembly_details.assembly_name
+_ihm_struct_assembly_details.assembly_description
+1 . .
+2 . .
+3 Subassembly Subassembly
+#
+#
+loop_
 _ihm_struct_assembly.ordinal_id
 _ihm_struct_assembly.assembly_id
 _ihm_struct_assembly.parent_assembly_id
-_ihm_struct_assembly.assembly_description
 _ihm_struct_assembly.entity_description
 _ihm_struct_assembly.entity_id
 _ihm_struct_assembly.asym_id
 _ihm_struct_assembly.seq_id_begin
 _ihm_struct_assembly.seq_id_end
-1 1 1 . foo 1 A 1 3
-2 1 1 . foo 1 B 1 3
-3 2 2 . foo 1 B 1 3
-4 2 2 . baz 2 C 1 2
-5 3 3 Subassembly foo 1 A 2 3
+1 1 1 foo 1 A 1 3
+2 1 1 foo 1 B 1 3
+3 2 2 foo 1 B 1 3
+4 2 2 baz 2 C 1 2
+5 3 3 foo 1 A 2 3
 #
 """)
 
@@ -330,18 +341,25 @@ _ihm_struct_assembly.seq_id_end
         out = fh.getvalue()
         self.assertEqual(out, """#
 loop_
+_ihm_struct_assembly_details.assembly_id
+_ihm_struct_assembly_details.assembly_name
+_ihm_struct_assembly_details.assembly_description
+1 'Complete assembly' 'All known components'
+2 'Modeled assembly' 'All components modeled by IMP'
+#
+#
+loop_
 _ihm_struct_assembly.ordinal_id
 _ihm_struct_assembly.assembly_id
 _ihm_struct_assembly.parent_assembly_id
-_ihm_struct_assembly.assembly_description
 _ihm_struct_assembly.entity_description
 _ihm_struct_assembly.entity_id
 _ihm_struct_assembly.asym_id
 _ihm_struct_assembly.seq_id_begin
 _ihm_struct_assembly.seq_id_end
-1 1 1 'All known components' foo 1 A 1 3
-2 1 1 'All known components' bar 2 . 1 2
-3 2 2 'All components modeled by IMP' foo 1 A 1 3
+1 1 1 foo 1 A 1 3
+2 1 1 bar 2 . 1 2
+3 2 2 foo 1 A 1 3
 #
 """)
 

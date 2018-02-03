@@ -194,6 +194,12 @@ class _EntryDumper(_Dumper):
             l.write(id=entry_id)
 
 
+class _CommentDumper(_Dumper):
+    def dump(self, writer):
+        for comment in self.simo._comments:
+            writer.write_comment(comment)
+
+
 class _SoftwareDumper(_Dumper):
     def __init__(self, simo):
         super(_SoftwareDumper, self).__init__(simo)
@@ -2519,6 +2525,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
 
         # Coordinates to exclude
         self._exclude_coords = {}
+        self._comments = []
 
         self.model_repr_dump = _ModelRepresentationDumper(self)
         self.cross_link_dump = _CrossLinkDumper(self)
@@ -2539,6 +2546,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.model_dump = _ModelDumper(self)
         self.model_repr_dump.starting_model \
                     = self.starting_model_dump.starting_model
+        self.comment_dump = _CommentDumper(self)
         self.software_dump = _SoftwareDumper(self)
         self.post_process_dump = _PostProcessDumper(self)
         self.ensemble_dump = _EnsembleDumper(self)
@@ -2551,6 +2559,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.em2d_dump.models = self.model_dump.models
 
         self._dumpers = [_EntryDumper(self), # should always be first
+                         self.comment_dump,
                          _AuditAuthorDumper(self),
                          self.software_dump, _CitationDumper(self),
                          _ChemCompDumper(self),
@@ -2589,6 +2598,10 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         if component not in self._exclude_coords:
             self._exclude_coords[component] = []
         self._exclude_coords[component].append(seqrange)
+
+    def add_comment(self, comment):
+        """Add a comment to the mmCIF file"""
+        self._comments.append(comment)
 
     def _is_excluded(self, component, start, end):
         """Return True iff this chunk of sequence should be excluded"""

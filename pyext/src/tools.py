@@ -2125,19 +2125,16 @@ def shuffle_configuration(objects,
 
             # For gaussians, treat this fb as an rb
             if IMP.core.NonRigidMember.get_is_setup(fb):
-                xyz=[fb.get_value(IMP.FloatKey(4)), fb.get_value(IMP.FloatKey(5)), fb.get_value(IMP.FloatKey(6))]
+                xyz = IMP.core.NonRigidMember(fb).get_internal_coordinates()
                 xyz_transformed=transformation.get_transformed(xyz)
                 if bounding_box:
                     # Translate to origin
-                    fb.set_value(IMP.FloatKey(4),xyz_transformed[0]-xyz[0])
-                    fb.set_value(IMP.FloatKey(5),xyz_transformed[1]-xyz[1])
-                    fb.set_value(IMP.FloatKey(6),xyz_transformed[2]-xyz[2])
+                    IMP.core.NonRigidMember(fb).set_internal_coordinates(
+                                                   xyz_transformed-xyz)
                     debug.append([xyz,other_idxs if avoidcollision_fb else set()])
-                    xyz2=[fb.get_value(IMP.FloatKey(4)), fb.get_value(IMP.FloatKey(5)), fb.get_value(IMP.FloatKey(6))]
                 else:
-                    fb.set_value(IMP.FloatKey(4),xyz_transformed[0])
-                    fb.set_value(IMP.FloatKey(5),xyz_transformed[1])
-                    fb.set_value(IMP.FloatKey(6),xyz_transformed[2])
+                    IMP.core.NonRigidMember(fb).set_internal_coordinates(
+                                                   xyz_transformed)
                     debug.append([xyz,other_idxs if avoidcollision_fb else set()])
             else:
                 d =IMP.core.XYZ(fb)

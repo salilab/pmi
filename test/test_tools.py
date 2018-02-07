@@ -141,9 +141,7 @@ class Tests(IMP.test.TestCase):
 
         for fb in fbs:
             if IMP.core.NonRigidMember.get_is_setup(fb):
-                coor_fb=IMP.algebra.Vector3D([fb.get_value(IMP.FloatKey(4)),
-                                               fb.get_value(IMP.FloatKey(5)),
-                                               fb.get_value(IMP.FloatKey(6))])
+                coor_fb = IMP.core.NonRigidMember(fb).get_internal_coordinates()
                 self.assertTrue(100.0 <coor_fb[0]< 200.0)
                 self.assertTrue(100.0 <coor_fb[1]< 200.0)
                 self.assertTrue(100.0 <coor_fb[2]< 200.0)
@@ -194,10 +192,8 @@ class Tests(IMP.test.TestCase):
 
         for fb in fbs:
             if IMP.core.NonRigidMember.get_is_setup(fb):
-                fbs_position_before[fb]=IMP.algebra.Vector3D(
-                    [fb.get_value(IMP.FloatKey(4)),
-                    fb.get_value(IMP.FloatKey(5)),
-                    fb.get_value(IMP.FloatKey(6))])
+                fbs_position_before[fb] = \
+                        IMP.core.NonRigidMember(fb).get_internal_coordinates()
             else:
                 fbs_position_before[fb]=IMP.core.XYZ(fb).get_coordinates()
 
@@ -208,10 +204,8 @@ class Tests(IMP.test.TestCase):
 
         for fb in fbs:
             if IMP.core.NonRigidMember.get_is_setup(fb):
-                fbs_position_after[fb]=IMP.algebra.Vector3D(
-                    [fb.get_value(IMP.FloatKey(4)),
-                    fb.get_value(IMP.FloatKey(5)),
-                    fb.get_value(IMP.FloatKey(6))])
+                fbs_position_after[fb] = \
+                        IMP.core.NonRigidMember(fb).get_internal_coordinates()
             else:
                 fbs_position_after[fb]=IMP.core.XYZ(fb).get_coordinates()
 

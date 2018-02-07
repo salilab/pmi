@@ -1974,9 +1974,11 @@ def shuffle_configuration(objects,
                           return_debug=False):
     """Shuffle particles. Used to restart the optimization.
     The configuration of the system is initialized by placing each
-    rigid body and each bead randomly in a box with a side of
-    max_translation angstroms, and far enough from each other to
-    prevent any steric clashes. The rigid bodies are also randomly rotated.
+    rigid body and each bead randomly in a box. If `bounding_box` is
+    specified, the particles are placed inside this box; otherwise, each
+    particle is displaced by up to max_translation angstroms, and randomly
+    rotated. Effort is made to place particles far enough from each other to
+    prevent any steric clashes.
     @param objects Can be one of the following inputs:
                IMP Hierarchy, PMI System/State/Molecule/TempResidue, or a list/set of them
     @param max_translation Max translation (rbs and flexible beads)

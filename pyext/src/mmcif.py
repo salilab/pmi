@@ -1064,10 +1064,11 @@ class _EM2DRestraint(object):
 
     def get_transformation(self, model):
         """Get the transformation that places the model on the image"""
+        stats = model.em2d_stats or model.stats
         prefix = 'ElectronMicroscopy2D_%s_Image%d' % (self.pmi_restraint.label,
                                                       self.image_number + 1)
-        r = [float(model.stats[prefix + '_Rotation%d' % i]) for i in range(4)]
-        t = [float(model.stats[prefix + '_Translation%d' % i])
+        r = [float(stats[prefix + '_Rotation%d' % i]) for i in range(4)]
+        t = [float(stats[prefix + '_Translation%d' % i])
              for i in range(3)]
         # If the model coordinates are transformed, need to back transform
         # them first
@@ -1077,7 +1078,8 @@ class _EM2DRestraint(object):
     def get_cross_correlation(self, model):
         """Get the cross correlation coefficient between the model projection
            and the image"""
-        return float(model.stats['ElectronMicroscopy2D_%s_Image%d_CCC'
+        stats = model.em2d_stats or model.stats
+        return float(stats['ElectronMicroscopy2D_%s_Image%d_CCC'
                                  % (self.pmi_restraint.label,
                                     self.image_number + 1)])
 
@@ -1429,6 +1431,7 @@ class _Model(object):
         self.protocol = protocol
         self.assembly = assembly
         self.representation = representation
+        self.em2d_stats = None
         self.stats = None
         o = self.output = IMP.pmi.output.Output(atomistic=True)
         name = 'cif-output'

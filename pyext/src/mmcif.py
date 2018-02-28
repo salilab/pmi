@@ -1043,6 +1043,7 @@ class _CrossLinkDumper(_Dumper):
                          ["ordinal_id", "restraint_id", "model_id",
                           "psi", "sigma_1", "sigma_2"]) as l:
             for model in self.models:
+                if not model._is_restrained: continue
                 for g in all_groups.keys():
                     self._set_psi_sigma(model, g)
                 for xl in self.cross_links:
@@ -1134,6 +1135,7 @@ class _EM2DDumper(_Dumper):
                  "rot_matrix[2][3]", "rot_matrix[3][3]", "tr_vector[1]",
                  "tr_vector[2]", "tr_vector[3]"]) as l:
             for m in self.models:
+                if not m._is_restrained: continue
                 for r in self.restraints:
                     trans = r.get_transformation(m)
                     rot = trans.get_rotation()
@@ -1198,6 +1200,7 @@ class _EM3DDumper(_Dumper):
                           "number_of_gaussians", "model_id",
                           "cross_correlation_coefficient"]) as l:
             for model in self.models:
+                if not model._is_restrained: continue
                 for r in self.restraints:
                     ccc = r.get_cross_correlation(model)
                     l.write(ordinal_id=ordinal,
@@ -1433,6 +1436,8 @@ class _Model(object):
         self.representation = representation
         self.em2d_stats = None
         self.stats = None
+        # True iff restraints act on this model
+        self._is_restrained = True
         o = self.output = IMP.pmi.output.Output(atomistic=True)
         name = 'cif-output'
         o.dictionary_pdbs[name] = prot

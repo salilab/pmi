@@ -8,6 +8,7 @@ import sys
 import os
 import io
 import ihm.format
+import ihm.location
 if sys.version_info[0] >= 3:
     from io import StringIO
 else:
@@ -87,7 +88,7 @@ class Tests(IMP.test.TestCase):
         r = IMP.pmi.representation.Representation(m)
         r.add_metadata(s)
         r.add_metadata(s2)
-        r.add_metadata(IMP.pmi.metadata.Repository(doi="foo", root='.'))
+        r.add_metadata(ihm.location.Repository(doi="foo", root='.'))
         d = IMP.pmi.mmcif._SoftwareDumper(r)
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
@@ -182,7 +183,7 @@ _ihm_multi_state_modeling.details
         m = IMP.Model()
         simo = IMP.pmi.representation.Representation(m)
         root = os.path.dirname(sys.argv[0]) or '.'
-        simo.add_metadata(IMP.pmi.metadata.Repository(doi="foo", root=root))
+        simo.add_metadata(ihm.location.Repository(doi="foo", root=root))
         po = DummyPO(None)
         # Usually main_script is populated from sys.argv[0], which is usually
         # the name of the modeling script. But if we run the tests with nose,
@@ -192,14 +193,14 @@ _ihm_multi_state_modeling.details
         file_size = os.stat(__file__).st_size
         simo.add_protocol_output(po)
 
-        r = IMP.pmi.metadata.Repository(doi="bar")
-        l = IMP.pmi.metadata.FileLocation(repo=r,
+        r = ihm.location.Repository(doi="bar")
+        l = ihm.location.WorkflowFileLocation(repo=r,
                                           path=os.path.join('bar', 'baz'),
                                           details='foo')
         s = IMP.pmi.metadata.PythonScript(location=l)
         simo.add_metadata(s)
 
-        l = IMP.pmi.metadata.FileLocation(repo=r,
+        l = ihm.location.VisualizationFileLocation(repo=r,
                                           path=os.path.join('bar', 'test.cxc'),
                                           details='ChimeraX commands')
         s = IMP.pmi.metadata.ChimeraXCommandScript(location=l)
@@ -245,14 +246,14 @@ _ihm_external_files.details
 
         m1 = IMP.Model()
         r1 = IMP.pmi.representation.Representation(m1)
-        l1 = IMP.pmi.metadata.FileLocation(repo='foo', path='baz')
+        l1 = ihm.location.InputFileLocation(repo='foo', path='baz')
         d1 = IMP.pmi.metadata.EM2DClassDataset(l1)
         r1.add_protocol_output(po)
         r1.set_file_dataset('foo', d1)
 
         m2 = IMP.Model()
         r2 = IMP.pmi.representation.Representation(m2)
-        l2 = IMP.pmi.metadata.FileLocation(repo='bar', path='baz')
+        l2 = ihm.location.InputFileLocation(repo='bar', path='baz')
         d2 = IMP.pmi.metadata.EM2DClassDataset(l2)
         r2.add_protocol_output(po)
         r2.set_file_dataset('bar', d2)
@@ -690,13 +691,13 @@ _citation_author.ordinal
         """Test DatasetGroup.finalize()"""
         class DummyRestraint(object):
             pass
-        l = IMP.pmi.metadata.FileLocation(repo='foo', path='baz')
+        l = ihm.location.InputFileLocation(repo='foo', path='baz')
         ds1 = IMP.pmi.metadata.EM2DClassDataset(l)
         # Duplicate dataset
         ds2 = IMP.pmi.metadata.EM2DClassDataset(l)
         # Restraint dataset
         r = DummyRestraint()
-        l = IMP.pmi.metadata.FileLocation(repo='foo', path='bar')
+        l = ihm.location.InputFileLocation(repo='foo', path='bar')
         ds3 = IMP.pmi.metadata.EM2DClassDataset(l)
         r.dataset = ds3
         rds = IMP.pmi.mmcif._RestraintDataset(r, None, False)
@@ -711,11 +712,11 @@ _citation_author.ordinal
         state1 = 'state1'
         state2 = 'state2'
         dump, simo = make_dataset_dumper()
-        l = IMP.pmi.metadata.FileLocation(repo='foo', path='baz')
+        l = ihm.location.InputFileLocation(repo='foo', path='baz')
         ds1 = IMP.pmi.metadata.EM2DClassDataset(l)
-        l = IMP.pmi.metadata.FileLocation(repo='foo', path='bar')
+        l = ihm.location.InputFileLocation(repo='foo', path='bar')
         ds2 = IMP.pmi.metadata.CXMSDataset(l)
-        l = IMP.pmi.metadata.PDBLocation('1abc', '1.0', 'test details')
+        l = ihm.location.PDBLocation('1abc', '1.0', 'test details')
         ds3 = IMP.pmi.metadata.PDBDataset(l)
 
         g1 = dump.get_all_group(state1)
@@ -747,10 +748,10 @@ _citation_author.ordinal
     def test_dataset_dumper_duplicates_details(self):
         """DatasetDumper ignores duplicate datasets with differing details"""
         dump, simo = make_dataset_dumper()
-        l = IMP.pmi.metadata.PDBLocation('1abc', '1.0', 'test details')
+        l = ihm.location.PDBLocation('1abc', '1.0', 'test details')
         ds1 = dump.add('state', IMP.pmi.metadata.PDBDataset(l))
         # A duplicate dataset should be ignored even if details differ
-        l = IMP.pmi.metadata.PDBLocation('1abc', '1.0', 'other details')
+        l = ihm.location.PDBLocation('1abc', '1.0', 'other details')
         ds2 = dump.add('state', IMP.pmi.metadata.PDBDataset(l))
         dump.finalize() # Assign IDs
         self.assertEqual(ds1.id, 1)
@@ -760,8 +761,8 @@ _citation_author.ordinal
     def test_dataset_dumper_duplicates_location(self):
         """DatasetDumper ignores duplicate dataset locations"""
         state = 'state1'
-        loc1 = IMP.pmi.metadata.DatabaseLocation("mydb", "abc", "1.0", "")
-        loc2 = IMP.pmi.metadata.DatabaseLocation("mydb", "xyz", "1.0", "")
+        loc1 = ihm.location.DatabaseLocation("mydb", "abc", "1.0", "")
+        loc2 = ihm.location.DatabaseLocation("mydb", "xyz", "1.0", "")
 
         # Identical datasets in the same location aren't duplicated
         cx1 = IMP.pmi.metadata.CXMSDataset(loc1)
@@ -798,8 +799,8 @@ _citation_author.ordinal
         self.assertEqual(len(dump._dataset_by_id), 2)
 
         # Datasets can be duplicated if allow_duplicates=True
-        emloc1 = IMP.pmi.metadata.EMDBLocation("abc")
-        emloc2 = IMP.pmi.metadata.EMDBLocation("abc")
+        emloc1 = ihm.location.EMDBLocation("abc")
+        emloc2 = ihm.location.EMDBLocation("abc")
         emloc1._allow_duplicates = True
         em3d_1 = IMP.pmi.metadata.EMDensityDataset(emloc1)
         em3d_2 = IMP.pmi.metadata.EMDensityDataset(emloc2)
@@ -815,12 +816,12 @@ _citation_author.ordinal
         """Test DatasetDumper.dump()"""
         state1 = 'state'
         dump, simo = make_dataset_dumper()
-        l = IMP.pmi.metadata.FileLocation(repo='foo', path='bar')
+        l = ihm.location.InputFileLocation(repo='foo', path='bar')
         l.id = 97
         pds = dump.add(state1, IMP.pmi.metadata.CXMSDataset(l))
         # group1 contains just the first dataset
         group1 = dump.get_all_group(state1)
-        l = IMP.pmi.metadata.FileLocation(repo='foo2', path='bar2')
+        l = ihm.location.InputFileLocation(repo='foo2', path='bar2')
         l.id = 98
         pds = dump.add(state1, IMP.pmi.metadata.CXMSDataset(l))
         # group2 contains the first two datasets
@@ -829,7 +830,7 @@ _citation_author.ordinal
         class DummyRestraint(object):
             pass
         dr = DummyRestraint()
-        l = IMP.pmi.metadata.PDBLocation('1abc', '1.0', 'test details')
+        l = ihm.location.PDBLocation('1abc', '1.0', 'test details')
         dr.dataset = IMP.pmi.metadata.PDBDataset(l)
         dr.dataset.add_primary(pds)
         rd = IMP.pmi.mmcif._RestraintDataset(dr, num=None,
@@ -894,35 +895,35 @@ _ihm_related_datasets.dataset_list_id_primary
         po = DummyPO(None)
         simo.add_protocol_output(po)
         dump = IMP.pmi.mmcif._ExternalReferenceDumper(po)
-        repo1 = IMP.pmi.metadata.Repository(doi="foo")
-        repo2 = IMP.pmi.metadata.Repository(doi="10.5281/zenodo.46266",
+        repo1 = ihm.location.Repository(doi="foo")
+        repo2 = ihm.location.Repository(doi="10.5281/zenodo.46266",
                                      url='nup84-v1.0.zip',
                                      top_directory=os.path.join('foo', 'bar'))
-        repo3 = IMP.pmi.metadata.Repository(doi="10.5281/zenodo.58025",
-                                            url='foo.spd')
-        l = IMP.pmi.metadata.FileLocation(repo=repo1, path='bar')
+        repo3 = ihm.location.Repository(doi="10.5281/zenodo.58025",
+                                        url='foo.spd')
+        l = ihm.location.InputFileLocation(repo=repo1, path='bar')
         dump.add(l, IMP.pmi.mmcif._ExternalReferenceDumper.INPUT_DATA)
         # Duplicates should be ignored
-        l = IMP.pmi.metadata.FileLocation(repo=repo1, path='bar')
+        l = ihm.location.InputFileLocation(repo=repo1, path='bar')
         dump.add(l, IMP.pmi.mmcif._ExternalReferenceDumper.INPUT_DATA)
         # Different file, same repository
-        l = IMP.pmi.metadata.FileLocation(repo=repo1, path='baz')
+        l = ihm.location.InputFileLocation(repo=repo1, path='baz')
         dump.add(l, IMP.pmi.mmcif._ExternalReferenceDumper.INPUT_DATA)
         # Different repository
-        l = IMP.pmi.metadata.FileLocation(repo=repo2, path='baz')
+        l = ihm.location.OutputFileLocation(repo=repo2, path='baz')
         dump.add(l, IMP.pmi.mmcif._ExternalReferenceDumper.MODELING_OUTPUT)
         # Repository containing a single file (not an archive)
-        l = IMP.pmi.metadata.FileLocation(repo=repo3, path='foo.spd',
+        l = ihm.location.InputFileLocation(repo=repo3, path='foo.spd',
                                           details='EM micrographs')
         dump.add(l, IMP.pmi.mmcif._ExternalReferenceDumper.INPUT_DATA)
         bar = 'test_mmcif_extref.tmp'
         with open(bar, 'w') as f:
             f.write("abcd")
         # Local file
-        l = IMP.pmi.metadata.FileLocation(bar)
+        l = ihm.location.WorkflowFileLocation(bar)
         dump.add(l, IMP.pmi.mmcif._ExternalReferenceDumper.WORKFLOW)
         # DatabaseLocations should be ignored
-        l = IMP.pmi.metadata.PDBLocation('1abc', '1.0', 'test details')
+        l = ihm.location.PDBLocation('1abc', '1.0', 'test details')
         dump.add(l, IMP.pmi.mmcif._ExternalReferenceDumper.WORKFLOW)
         dump.finalize_after_datasets()
         fh = StringIO()
@@ -1461,7 +1462,7 @@ CYS 'L-peptide linking'
         po = DummyPO(None)
         simo.add_protocol_output(po)
         # Need Repository in order to handle PDB file datasets
-        simo.add_metadata(IMP.pmi.metadata.Repository(doi='foo', root='.'))
+        simo.add_metadata(ihm.location.Repository(doi='foo', root='.'))
         simo.create_component("Nup84", True)
         simo.add_component_sequence("Nup84",
                                     self.get_input_file_name("test.fasta"))
@@ -1759,7 +1760,7 @@ All kmeans_weight_500_2/cluster.0/ centroid index 49
                                      {}, None)
         e2 = po._add_simple_ensemble(pp, 'Ensemble 2', 5, 0.1, 1,
                                      {}, None)
-        loc = IMP.pmi.metadata.FileLocation(repo='foo', path='bar')
+        loc = ihm.location.InputFileLocation(repo='foo', path='bar')
         po.set_ensemble_file(1, loc)
         loc.id = 42
         fh = StringIO()
@@ -1798,7 +1799,7 @@ _ihm_ensemble_info.ensemble_file_id
 
         ensemble = DummyEnsemble()
         ensemble.id = 42
-        loc = IMP.pmi.metadata.FileLocation(repo='foo', path='bar')
+        loc = ihm.location.OutputFileLocation(repo='foo', path='bar')
         loc.id = 97
         ensemble.localization_density = {'Nup84': loc}
         po.density_dump.add(ensemble)
@@ -1911,7 +1912,7 @@ _ihm_cross_link_restraint.sigma_2
         r = DummyRestraint()
         rd = IMP.pmi.mmcif._RestraintDataset(r, num=None,
                                              allow_duplicates=False)
-        l = IMP.pmi.metadata.FileLocation(repo='foo', path='bar')
+        l = ihm.location.InputFileLocation(repo='foo', path='bar')
         d = IMP.pmi.metadata.CXMSDataset(l)
         r.dataset = d
         # Get current dataset from restraint
@@ -1934,9 +1935,9 @@ _ihm_cross_link_restraint.sigma_2
             pass
         r = DummyRestraint()
         rd = IMP.pmi.mmcif._RestraintDataset(r, num=1, allow_duplicates=False)
-        l = IMP.pmi.metadata.FileLocation(repo='foo', path='bar')
+        l = ihm.location.InputFileLocation(repo='foo', path='bar')
         d1 = IMP.pmi.metadata.CXMSDataset(l)
-        l = IMP.pmi.metadata.FileLocation(repo='bar', path='baz')
+        l = ihm.location.InputFileLocation(repo='bar', path='baz')
         d2 = IMP.pmi.metadata.CXMSDataset(l)
         r.datasets = [d1, d2]
         # Get current dataset from restraint
@@ -1950,7 +1951,7 @@ _ihm_cross_link_restraint.sigma_2
             pass
         r = DummyRestraint()
         rd = IMP.pmi.mmcif._RestraintDataset(r, num=None, allow_duplicates=True)
-        l = IMP.pmi.metadata.FileLocation(repo='foo', path='bar')
+        l = ihm.location.InputFileLocation(repo='foo', path='bar')
         d = IMP.pmi.metadata.CXMSDataset(l)
         r.dataset = d
         # Get current dataset from restraint
@@ -1975,7 +1976,7 @@ _ihm_cross_link_restraint.sigma_2
                                          resolution=10.0, pixel_size=4.2,
                                          image_resolution=1.0,
                                          projection_number=200)
-        l = IMP.pmi.metadata.FileLocation(repo='foo', path='bar')
+        l = ihm.location.InputFileLocation(repo='foo', path='bar')
         d = IMP.pmi.metadata.EM2DClassDataset(l)
         pr.dataset = d
         self.assertEqual(r.get_num_raw_micrographs(), None)
@@ -1995,13 +1996,13 @@ _ihm_cross_link_restraint.sigma_2
                                          resolution=10.0, pixel_size=4.2,
                                          image_resolution=1.0,
                                          projection_number=200)
-        lp = IMP.pmi.metadata.FileLocation(repo='foo', path='baz')
+        lp = ihm.location.InputFileLocation(repo='foo', path='baz')
         dp = IMP.pmi.metadata.EMMicrographsDataset(lp, number=50)
-        l = IMP.pmi.metadata.FileLocation(repo='foo', path='bar')
+        l = ihm.location.InputFileLocation(repo='foo', path='bar')
         d = IMP.pmi.metadata.EM2DClassDataset(l)
         pr.dataset = d
         # Random other dataset that isn't micrographs
-        l = IMP.pmi.metadata.FileLocation(repo='foo', path='bar')
+        l = ihm.location.InputFileLocation(repo='foo', path='bar')
         oth = IMP.pmi.metadata.EM2DClassDataset(l)
         d.add_parent(oth)
         d.add_parent(dp)
@@ -2032,9 +2033,9 @@ _ihm_cross_link_restraint.sigma_2
                                          resolution=10.0, pixel_size=4.2,
                                          image_resolution=1.0,
                                          projection_number=200)
-        lp = IMP.pmi.metadata.FileLocation(repo='foo', path='baz')
+        lp = ihm.location.InputFileLocation(repo='foo', path='baz')
         dp = IMP.pmi.metadata.EMMicrographsDataset(lp, number=50)
-        l = IMP.pmi.metadata.FileLocation(repo='foo', path='bar')
+        l = ihm.location.InputFileLocation(repo='foo', path='bar')
         d = IMP.pmi.metadata.EM2DClassDataset(l)
         d.id = 4
         d.add_primary(dp)
@@ -2109,7 +2110,7 @@ _ihm_2dem_class_average_fitting.tr_vector[3]
         simo.add_component_sequence("Nup84",
                                     self.get_input_file_name("test.fasta"))
 
-        lp = IMP.pmi.metadata.FileLocation(repo='foo', path='baz')
+        lp = ihm.location.InputFileLocation(repo='foo', path='baz')
         d = IMP.pmi.metadata.SASDataset(lp)
         d.id = 4
         model = DummyModel()
@@ -2161,7 +2162,7 @@ _ihm_sas_restraint.details
         r = IMP.pmi.mmcif._EM3DRestraint(po, state, rd, pr,
                                          target_ps=[None, None], densities=[])
 
-        l = IMP.pmi.metadata.FileLocation(repo='foo', path='bar')
+        l = ihm.location.InputFileLocation(repo='foo', path='bar')
         d = IMP.pmi.metadata.EM2DClassDataset(l)
         d.id = 4
         pr.dataset = d
@@ -2205,7 +2206,7 @@ _ihm_3dem_restraint.cross_correlation_coefficient
             bar = os.path.join(tmpdir, 'bar')
             with open(bar, 'w') as f:
                 f.write("")
-            local = IMP.pmi.metadata.FileLocation(bar)
+            local = ihm.location.InputFileLocation(bar)
             # No Repository set, so cannot map local to repository location
             po._update_location(local)
             self.assertEqual(local.repo, None)
@@ -2214,9 +2215,9 @@ _ihm_3dem_restraint.cross_correlation_coefficient
                                   name='test', classification='test code',
                                   description='Some test program',
                                   version=1, url='http://salilab.org'))
-            simo.add_metadata(IMP.pmi.metadata.Repository(doi='foo',
-                                                          root=tmpdir))
-            loc = IMP.pmi.metadata.FileLocation(bar)
+            simo.add_metadata(ihm.location.Repository(doi='foo',
+                                                      root=tmpdir))
+            loc = ihm.location.InputFileLocation(bar)
             po._update_location(loc)
             self.assertEqual(loc.repo.doi, 'foo')
             self.assertEqual(loc.path, 'bar')

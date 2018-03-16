@@ -30,6 +30,7 @@ import weakref
 import operator
 import itertools
 import ihm.format
+import ihm.location
 
 def _assign_id(obj, seen_objs, obj_by_id):
     """Assign a unique ID to obj, and track all ids in obj_by_id."""
@@ -571,7 +572,7 @@ class _ExternalReferenceDumper(_Dumper):
 
     def finalize_metadata(self):
         """Register locations for any metadata and add the main script"""
-        loc = IMP.pmi.metadata.FileLocation(path=self.simo._main_script,
+        loc = ihm.location.WorkflowFileLocation(path=self.simo._main_script,
                                details="The main integrative modeling script")
         main_script = IMP.pmi.metadata.PythonScript(loc)
         self._workflow = [main_script] \
@@ -589,7 +590,7 @@ class _ExternalReferenceDumper(_Dumper):
         # handled elsewhere)
         self._refs = [x for x in self._refs
                       if not isinstance(x.location,
-                                        IMP.pmi.metadata.DatabaseLocation)]
+                                        ihm.location.DatabaseLocation)]
         # Assign IDs to all locations and repos (including the None repo, which
         # is for local files)
         seen_refs = {}
@@ -720,15 +721,15 @@ class _DatasetDumper(_Dumper):
             for d in self._dataset_by_id:
                 l.write(id=d.id, data_type=d._data_type,
                         database_hosted=isinstance(d.location,
-                                        IMP.pmi.metadata.DatabaseLocation))
+                                             ihm.location.DatabaseLocation))
         self.dump_groups(writer)
         self.dump_other((d for d in self._dataset_by_id
                          if not isinstance(d.location,
-                                            IMP.pmi.metadata.DatabaseLocation)),
+                                           ihm.location.DatabaseLocation)),
                         writer)
         self.dump_rel_dbs((d for d in self._dataset_by_id
                            if isinstance(d.location,
-                                            IMP.pmi.metadata.DatabaseLocation)),
+                                         ihm.location.DatabaseLocation)),
                           writer)
         self.dump_related(writer)
 
@@ -1687,10 +1688,10 @@ class _StartingModelDumper(_Dumper):
         for t in templates:
             if t._orig_tm_code:
                 fname = template_path_map[t._orig_tm_code]
-                l = IMP.pmi.metadata.FileLocation(fname,
+                l = ihm.location.InputFileLocation(fname,
                                  details="Template for comparative modeling")
             else:
-                l = IMP.pmi.metadata.PDBLocation(t.tm_db_code)
+                l = ihm.location.PDBLocation(t.tm_db_code)
             d = IMP.pmi.metadata.PDBDataset(l)
             d = self.simo._add_dataset(d)
             t.tm_dataset = d
@@ -1727,14 +1728,14 @@ class _StartingModelDumper(_Dumper):
         # Attempt to identity PDB file vs. comparative model
         fh = open(pdbname)
         first_line = fh.readline()
-        local_file = IMP.pmi.metadata.FileLocation(pdbname,
+        local_file = ihm.location.InputFileLocation(pdbname,
                                           details="Starting model structure")
         file_dataset = self.simo.get_file_dataset(pdbname)
         if first_line.startswith('HEADER'):
             version, details, metadata = self._parse_pdb(fh, first_line)
             source = _PDBSource(model, first_line[62:66].strip(), chain,
                                 metadata)
-            l = IMP.pmi.metadata.PDBLocation(source.db_code, version, details)
+            l = ihm.location.PDBLocation(source.db_code, version, details)
             d = IMP.pmi.metadata.PDBDataset(l)
             model.dataset = self.simo._add_dataset(file_dataset or d)
             return [source]
@@ -1744,7 +1745,7 @@ class _StartingModelDumper(_Dumper):
             local_file.details = self._parse_details(fh)
             db_code = first_line[27:].strip()
             d = IMP.pmi.metadata.PDBDataset(local_file)
-            pdb_loc = IMP.pmi.metadata.PDBLocation(db_code)
+            pdb_loc = ihm.location.PDBLocation(db_code)
             parent = IMP.pmi.metadata.PDBDataset(pdb_loc)
             d.add_parent(parent)
             model.dataset = self.simo._add_dataset(file_dataset or d)
@@ -1755,9 +1756,9 @@ class _StartingModelDumper(_Dumper):
             # model as a parent
             local_file.details = self._parse_details(fh)
             d = IMP.pmi.metadata.ComparativeModelDataset(local_file)
-            repo = IMP.pmi.metadata.Repository(doi=first_line[46:].strip())
+            repo = ihm.location.Repository(doi=first_line[46:].strip())
             # todo: better specify an unknown path
-            orig_loc = IMP.pmi.metadata.FileLocation(repo=repo, path='.',
+            orig_loc = ihm.location.InputFileLocation(repo=repo, path='.',
                               details="Starting comparative model structure")
             parent = IMP.pmi.metadata.ComparativeModelDataset(orig_loc)
             d.add_parent(parent)
@@ -1769,9 +1770,9 @@ class _StartingModelDumper(_Dumper):
             # model as a parent
             local_file.details = self._parse_details(fh)
             d = IMP.pmi.metadata.IntegrativeModelDataset(local_file)
-            repo = IMP.pmi.metadata.Repository(doi=first_line[46:].strip())
+            repo = ihm.location.Repository(doi=first_line[46:].strip())
             # todo: better specify an unknown path
-            orig_loc = IMP.pmi.metadata.FileLocation(repo=repo, path='.',
+            orig_loc = ihm.location.InputFileLocation(repo=repo, path='.',
                               details="Starting integrative model structure")
             parent = IMP.pmi.metadata.IntegrativeModelDataset(orig_loc)
             d.add_parent(parent)
@@ -1800,7 +1801,7 @@ class _StartingModelDumper(_Dumper):
         model.dataset = self.simo._add_dataset(file_dataset or d)
         templates, alnfile = self.get_templates(pdbname, model)
         if alnfile:
-            model.alignment_file = IMP.pmi.metadata.FileLocation(alnfile,
+            model.alignment_file = ihm.location.InputFileLocation(alnfile,
                                     details="Alignment for starting "
                                             "comparative model")
             self.simo.extref_dump.add(model.alignment_file,
@@ -2178,7 +2179,7 @@ class _ReplicaExchangeAnalysisEnsemble(_Ensemble):
         if os.path.exists(fname):
             details = "Localization density for %s %s" \
                       % (component, self.model_group.name)
-            local_file = IMP.pmi.metadata.FileLocation(fname,
+            local_file = ihm.location.OutputFileLocation(fname,
                               details=state.get_postfixed_name(details))
             self.localization_density[component] = local_file
             extref_dump.add(local_file,
@@ -2815,8 +2816,8 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
     def _update_location(self, fileloc):
         """Update FileLocation to point to a parent repository, if any"""
         all_repos = [m for m in self._metadata
-                     if isinstance(m, IMP.pmi.metadata.Repository)]
-        IMP.pmi.metadata.Repository.update_in_repos(fileloc, all_repos)
+                     if isinstance(m, ihm.location.Repository)]
+        ihm.location.Repository._update_in_repos(fileloc, all_repos)
 
     _metadata = property(lambda self:
                          itertools.chain.from_iterable(self._each_metadata))

@@ -16,6 +16,7 @@ import sys
 import re
 import os
 from math import sqrt
+import ihm.location
 
 class GaussianEMRestraint(object):
     """Fit Gaussian-decorated particles to an EM map
@@ -188,7 +189,7 @@ class GaussianEMRestraint(object):
             self.dataset = representation.get_file_dataset(target_fn)
             if self.dataset:
                 return
-        l = IMP.pmi.metadata.FileLocation(target_fn,
+        l = ihm.location.InputFileLocation(target_fn,
                               details="Electron microscopy density map, "
                                       "represented as a Gaussian Mixture "
                                       "Model (GMM)")
@@ -196,7 +197,7 @@ class GaussianEMRestraint(object):
         # If the GMM was derived from an MRC file that exists, add that too
         m = re.match('(.*\.mrc)\..*\.txt$', target_fn)
         if m and os.path.exists(m.group(1)):
-            l = IMP.pmi.metadata.FileLocation(path=m.group(1),
+            l = ihm.location.InputFileLocation(path=m.group(1),
                      details='Original MRC file from which the GMM was derived')
             self.dataset.add_parent(IMP.pmi.metadata.EMDensityDataset(l))
 

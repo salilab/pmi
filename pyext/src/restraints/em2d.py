@@ -9,6 +9,7 @@ import IMP.algebra
 import IMP.atom
 import IMP.pmi.tools
 import IMP.pmi.metadata
+import ihm.location
 
 class ElectronMicroscopy2D(object):
     """Fit particles against a set of class averages by principal components.
@@ -57,7 +58,7 @@ class ElectronMicroscopy2D(object):
                 if d:
                     self.datasets.append(d)
                     continue
-            l = IMP.pmi.metadata.FileLocation(image,
+            l = ihm.location.InputFileLocation(image,
                                  details="Electron microscopy class average")
             d = IMP.pmi.metadata.EM2DClassDataset(l)
             self.datasets.append(d)

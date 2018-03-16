@@ -29,12 +29,7 @@ import textwrap
 import weakref
 import operator
 import itertools
-
-# Python 3 has no 'long' type, so use 'int' instead
-if sys.version_info[0] >= 3:
-    _long_type = int
-else:
-    _long_type = long
+import ihm.format
 
 def _assign_id(obj, seen_objs, obj_by_id):
     """Assign a unique ID to obj, and track all ids in obj_by_id."""
@@ -46,105 +41,6 @@ def _assign_id(obj, seen_objs, obj_by_id):
     else:
         obj.id = seen_objs[obj]
 
-class _LineWriter(object):
-    def __init__(self, writer, line_len=80):
-        self.writer = writer
-        self.line_len = line_len
-        self.column = 0
-    def write(self, val):
-        if isinstance(val, str) and '\n' in val:
-            self.writer.fh.write("\n;")
-            self.writer.fh.write(val)
-            if not val.endswith('\n'):
-                self.writer.fh.write("\n")
-            self.writer.fh.write(";\n")
-            self.column = 0
-            return
-        val = self.writer._repr(val)
-        if self.column > 0:
-            if self.column + len(val) + 1 > self.line_len:
-                self.writer.fh.write("\n")
-                self.column = 0
-            else:
-                self.writer.fh.write(" ")
-                self.column += 1
-        self.writer.fh.write(val)
-        self.column += len(val)
-
-
-class _CifCategoryWriter(object):
-    def __init__(self, writer, category):
-        self.writer = writer
-        self.category = category
-    def write(self, **kwargs):
-        self.writer._write(self.category, kwargs)
-    def __enter__(self):
-        return self
-    def __exit__(self, exc_type, exc_value, traceback):
-        pass
-
-
-class _CifLoopWriter(object):
-    def __init__(self, writer, category, keys):
-        self.writer = writer
-        self.category = category
-        self.keys = keys
-        # Remove characters that we can't use in Python identifiers
-        self.python_keys = [k.replace('[', '').replace(']', '') for k in keys]
-        self._empty_loop = True
-    def write(self, **kwargs):
-        if self._empty_loop:
-            f = self.writer.fh
-            f.write("#\nloop_\n")
-            for k in self.keys:
-                f.write("%s.%s\n" % (self.category, k))
-            self._empty_loop = False
-        l = _LineWriter(self.writer)
-        for k in self.python_keys:
-            l.write(kwargs.get(k, self.writer.omitted))
-        self.writer.fh.write("\n")
-    def __enter__(self):
-        return self
-    def __exit__(self, exc_type, exc_value, traceback):
-        if not self._empty_loop:
-            self.writer.fh.write("#\n")
-
-
-class _CifWriter(object):
-    omitted = '.'
-    unknown = '?'
-    _boolmap = {False: 'NO', True: 'YES'}
-
-    def __init__(self, fh):
-        self.fh = fh
-    def category(self, category):
-        return _CifCategoryWriter(self, category)
-    def loop(self, category, keys):
-        return _CifLoopWriter(self, category, keys)
-    def write_comment(self, comment):
-        for line in textwrap.wrap(comment, 78):
-            self.fh.write('# ' + line + '\n')
-    def _write(self, category, kwargs):
-        for key in kwargs:
-            self.fh.write("%s.%s %s\n" % (category, key,
-                                          self._repr(kwargs[key])))
-    def _repr(self, obj):
-        if isinstance(obj, str) and '"' not in obj \
-           and "'" not in obj and " " not in obj \
-           and not obj.startswith('data_') \
-           and not obj.startswith('[') \
-           and obj not in ('save_', 'loop_', 'stop_', 'global_'):
-            return obj
-        elif isinstance(obj, float):
-            return "%.3f" % obj
-        elif isinstance(obj, bool):
-            return self._boolmap[obj]
-        # Don't use repr(x) if type(x) == long since that adds an 'L' suffix,
-        # which isn't valid mmCIF syntax. _long_type = long only on Python 2.
-        elif isinstance(obj, _long_type):
-            return "%d" % obj
-        else:
-            return repr(obj)
 
 def _get_by_residue(p):
     """Determine whether the given particle represents a specific residue
@@ -252,7 +148,7 @@ class _SoftwareDumper(_Dumper):
                     l.write(pdbx_ordinal=ordinal, name=m.name,
                             classification=m.classification,
                             version=m.version if m.version
-                                              else _CifWriter.unknown,
+                                              else ihm.unknown,
                             type=m.type, location=m.url)
                     ordinal += 1
 
@@ -289,7 +185,7 @@ class _CitationDumper(_Dumper):
                     page_first, page_last = c.page_range
                 else:
                     page_first = c.page_range
-                    page_last = _CifWriter.omitted
+                    page_last = None
                 l.write(id=n+1, title=c.title, journal_abbrev=c.journal,
                         journal_volume=c.volume, page_first=page_first,
                         page_last=page_last, year=c.year,
@@ -372,7 +268,7 @@ class _EntityPolySeqDumper(_Dumper):
                     restyp = IMP.atom.get_residue_type(one_letter_code)
                     l.write(entity_id=entity.id, num=num + 1,
                             mon_id=restyp.get_string(),
-                            hetero=_CifWriter.omitted)
+                            hetero=None)
 
 class _StructAsymDumper(_Dumper):
     def __init__(self, simo):
@@ -394,7 +290,7 @@ class _PDBFragment(object):
        for a component."""
     primitive = 'sphere'
     granularity = 'by-residue'
-    num = _CifWriter.omitted
+    num = None
     def __init__(self, state, component, start, end, offset, pdbname,
                  chain, hier):
         self.component, self.start, self.end, self.offset, self.pdbname \
@@ -427,10 +323,10 @@ class _StartingModel(object):
     """Record details about an input model (e.g. comparative modeling
        template) used for a component."""
 
-    source = _CifWriter.unknown
-    db_name = _CifWriter.unknown
-    db_code = _CifWriter.unknown
-    sequence_identity = _CifWriter.unknown
+    source = ihm.unknown
+    db_name = ihm.unknown
+    db_code = ihm.unknown
+    sequence_identity = ihm.unknown
 
     def __init__(self, fragment):
         self.fragments = [fragment]
@@ -499,7 +395,7 @@ class _ModelRepresentationDumper(_Dumper):
                 chain_id = self.simo._get_chain_for_component(comp, self.output)
                 for f in statefrag[state]:
                     entity = self.simo.entities[f.component]
-                    starting_model_id = _CifWriter.omitted
+                    starting_model_id = None
                     if hasattr(f, 'pdbname'):
                         starting_model_id \
                              = self.starting_model[state, orig, f.pdbname].name
@@ -537,7 +433,7 @@ class _PDBSource(object):
 class _TemplateSource(object):
     """A PDB file used as a template for a comparative starting model"""
     source = 'comparative model'
-    db_name = db_code = _CifWriter.omitted
+    db_name = db_code = None
     tm_dataset = None
     # Right now assume all alignments are Modeller alignments, which uses
     # the length of the shorter sequence as the denominator for sequence
@@ -556,7 +452,7 @@ class _TemplateSource(object):
         else:
             # Otherwise, will need to look up in TEMPLATE PATH remarks
             self._orig_tm_code = tm_code
-            self.tm_db_code = _CifWriter.omitted
+            self.tm_db_code = None
             self.tm_chain_id = tm_code[-1]
         self.sequence_identity = seq_id
         self.tm_seq_id_begin = tm_seq_id_begin
@@ -572,10 +468,10 @@ class _TemplateSource(object):
 
 class _UnknownSource(object):
     """Part of a starting model from an unknown source"""
-    db_code = _CifWriter.unknown
-    db_name = _CifWriter.unknown
-    chain_id = _CifWriter.unknown
-    sequence_identity = _CifWriter.unknown
+    db_code = ihm.unknown
+    db_name = ihm.unknown
+    chain_id = ihm.unknown
+    sequence_identity = ihm.unknown
     # Map dataset types to starting model sources
     _source_map = {'Comparative model': 'comparative model',
                    'Integrative model': 'integrative model',
@@ -633,11 +529,11 @@ class _ExternalReferenceDumper(_Dumper):
     VISUALIZATION = "Visualization script"
 
     class _LocalFiles(object):
-        reference_provider = _CifWriter.omitted
+        reference_provider = None
         reference_type = 'Supplementary Files'
-        reference = _CifWriter.omitted
+        reference = None
         refers_to = 'Other'
-        associated_url = _CifWriter.omitted
+        associated_url = None
 
         def __init__(self, top_directory):
             self.top_directory = top_directory
@@ -646,10 +542,10 @@ class _ExternalReferenceDumper(_Dumper):
             return os.path.relpath(path, start=self.top_directory)
 
     class _Repository(object):
-        reference_provider = _CifWriter.omitted
+        reference_provider = None
         reference_type = 'DOI'
         refers_to = 'Other'
-        associated_url = _CifWriter.omitted
+        associated_url = None
 
         def __init__(self, repo):
             self.id = repo.id
@@ -738,14 +634,14 @@ class _ExternalReferenceDumper(_Dumper):
                 repo = loc.repo or self._local_files
                 file_path=self._posix_path(repo._get_full_path(loc.path))
                 if r.file_size is None:
-                    file_size = _CifWriter.omitted
+                    file_size = None
                 else:
                     file_size = r.file_size
                 l.write(id=loc.id, reference_id=repo.id,
                         file_path=file_path,
                         content_type=r.content_type,
                         file_size_bytes=file_size,
-                        details=loc.details or _CifWriter.omitted)
+                        details=loc.details or None)
 
     # On Windows systems, convert native paths to POSIX-like (/-separated) paths
     if os.sep == '/':
@@ -869,9 +765,9 @@ class _DatasetDumper(_Dumper):
                         db_name=d.location.db_name,
                         accession_code=d.location.access_code,
                         version=d.location.version if d.location.version
-                                else _CifWriter.omitted,
+                                else None,
                         details=d.location.details if d.location.details
-                                else _CifWriter.omitted)
+                                else None)
                 ordinal += 1
 
     def dump_other(self, datasets, writer):
@@ -1115,7 +1011,7 @@ class _EM2DDumper(_Dumper):
                           "number_of_projections", "struct_assembly_id",
                           "details"]) as l:
             for r in self.restraints:
-                unk = _CifWriter.unknown
+                unk = ihm.unknown
                 num_raw = r.get_num_raw_micrographs()
                 l.write(id=r.id, dataset_list_id=r.rdataset.dataset.id,
                         number_raw_micrographs=num_raw if num_raw else unk,
@@ -1195,7 +1091,7 @@ class _SASDumper(_Dumper):
                         fitting_atom_type='Heavy atoms',
                         fitting_method=r.method, fitting_state=r.fitting_state,
                         radius_of_gyration=r.rg, chi_value=r.chi,
-                        details=r.details if r.details else _CifWriter.omitted)
+                        details=r.details if r.details else None)
                 ordinal += 1
 
 
@@ -1254,7 +1150,7 @@ class _EM3DDumper(_Dumper):
                             number_of_gaussians=r.number_of_gaussians,
                             model_id=model.id,
                             cross_correlation_coefficient=ccc if ccc is not None
-                                                        else _CifWriter.omitted)
+                                                        else None)
                     ordinal += 1
 
 class _AssemblyComponent(object):
@@ -1348,9 +1244,9 @@ class _AssemblyDumper(_Dumper):
                           "assembly_description"]) as l:
             for a in self._assembly_by_id:
                 l.write(assembly_id=a.id,
-                        assembly_name=a.name if a.name else _CifWriter.omitted,
+                        assembly_name=a.name if a.name else None,
                         assembly_description=a.description if a.description
-                                             else _CifWriter.omitted)
+                                             else None)
 
     def dump(self, writer):
         self.dump_details(writer)
@@ -1491,7 +1387,7 @@ class _Model(object):
         self.geometric_center = IMP.algebra.Vector3D(*self.geometric_center)
         self._make_spheres_atoms(particle_infos_for_pdb, o, name, simo)
         self.rmsf = {}
-        self.name = _CifWriter.omitted
+        self.name = None
 
     def all_chains(self, simo):
         """Yield all chains, including transformed ones"""
@@ -1548,7 +1444,7 @@ class _Model(object):
     def get_rmsf(self, component, indexes):
         """Get the RMSF value for the given residue indexes."""
         if not self.rmsf:
-            return _CifWriter.omitted
+            return None
         rmsf = self.rmsf[component]
         blocknums = dict.fromkeys(rmsf[ind][0] for ind in indexes)
         if len(blocknums) != 1:
@@ -1815,7 +1711,7 @@ class _StartingModelDumper(_Dumper):
             elif line.startswith('HELIX'):
                 metadata.append(_PDBHelix(line))
         return (first_line[50:59].strip(),
-                details if details else _CifWriter.unknown, metadata)
+                details if details else ihm.unknown, metadata)
 
     def _parse_details(self, fh):
         """Extract TITLE records from a PDB file"""
@@ -1998,10 +1894,10 @@ class _StartingModelDumper(_Dumper):
                       template_sequence_identity_denominator=denom,
                       template_dataset_list_id=template.tm_dataset.id
                                                if template.tm_dataset
-                                               else _CifWriter.unknown,
+                                               else ihm.unknown,
                       alignment_file_id=model.alignment_file.id
                                         if hasattr(model, 'alignment_file')
-                                        else _CifWriter.unknown)
+                                        else ihm.unknown)
                     ordinal += 1
 
     def dump_details(self, writer):
@@ -2137,8 +2033,8 @@ class _StructConfDumper(_Dumper):
 
     def dump(self, writer):
         with writer.category("_struct_conf_type") as l:
-            l.write(id='HELX_P', criteria=_CifWriter.unknown,
-                    reference=_CifWriter.unknown)
+            l.write(id='HELX_P', criteria=ihm.unknown,
+                    reference=ihm.unknown)
         # Dump helix information for the model. For any model fragment that
         # is rigid, atomic, and uses an experimental PDB structure as the
         # starting model, inherit any helix information from that PDB file.
@@ -2312,7 +2208,7 @@ class _ReplicaExchangeAnalysisEnsemble(_Ensemble):
                                 "precision.%d.%d.out" % (self.cluster_num,
                                                          self.cluster_num))
         if not os.path.exists(precfile):
-            return _CifWriter.unknown
+            return ihm.unknown
         # Fail if the precision.x.x.out file doesn't match the cluster
         r = re.compile('All .*/cluster.%d/ average centroid distance ([\d\.]+)'
                        % self.cluster_num)
@@ -2379,7 +2275,7 @@ class _EnsembleDumper(_Dumper):
                         num_ensemble_models_deposited=e.num_deposit,
                         ensemble_precision_value=e.precision,
                         ensemble_file_id=e.file.id if e.file
-                                                   else _CifWriter.omitted)
+                                                   else None)
 
 class _DensityDumper(_Dumper):
     """Output localization densities for ensembles"""
@@ -2439,7 +2335,7 @@ class _MultiStateDumper(_Dumper):
                         state_group_id=state.id,
                         model_group_id=group.id,
                         state_name=state.long_name if state.long_name
-                                   else _CifWriter.omitted,
+                                   else None,
                         # No IMP models are currently single molecule
                         experiment_type='Fraction of bulk',
                         details=state.get_prefixed_name(group.name))
@@ -2569,7 +2465,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self._main_script = os.path.abspath(sys.argv[0])
         self._states = {}
         self._working_directory = os.getcwd()
-        self._cif_writer = _CifWriter(fh)
+        self._cif_writer = ihm.format.CifWriter(fh)
         self._representations = []
         self.create_representation("Default representation")
         self.entities = _EntityMapper()
@@ -2693,7 +2589,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
             return output.multi_chainids[chain]
         else:
             # A non-modeled component doesn't have a chain ID
-            return _CifWriter.omitted
+            return None
 
     def create_transformed_component(self, state, name, original, transform):
         if name in state.modeled_assembly:

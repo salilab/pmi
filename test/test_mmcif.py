@@ -7,6 +7,7 @@ import IMP.pmi.macros
 import sys
 import os
 import io
+import ihm.format
 if sys.version_info[0] >= 3:
     from io import StringIO
 else:
@@ -89,7 +90,7 @@ class Tests(IMP.test.TestCase):
         r.add_metadata(IMP.pmi.metadata.Repository(doi="foo", root='.'))
         d = IMP.pmi.mmcif._SoftwareDumper(r)
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         d.dump(w)
         out = fh.getvalue().split('\n')
         self.assertEqual(out[-4],
@@ -129,7 +130,7 @@ class Tests(IMP.test.TestCase):
         po.add_comment("Comment 2")
         d = IMP.pmi.mmcif._CommentDumper(po)
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         d.dump(w)
         self.assertEqual(fh.getvalue(), """# Comment 1
 # Comment 2
@@ -141,7 +142,7 @@ class Tests(IMP.test.TestCase):
         po._add_state(DummyRepr(None, None))
         d = IMP.pmi.mmcif._MultiStateDumper(po)
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         d.dump(w)
         self.assertEqual(fh.getvalue(), "")
 
@@ -157,7 +158,7 @@ class Tests(IMP.test.TestCase):
         po.add_model_group(IMP.pmi.mmcif._ModelGroup(state2, "group 3"))
         d = IMP.pmi.mmcif._MultiStateDumper(po)
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         d.dump(w)
         self.assertEqual(fh.getvalue(), """#
 loop_
@@ -206,7 +207,7 @@ _ihm_multi_state_modeling.details
 
         d = IMP.pmi.mmcif._ExternalReferenceDumper(po)
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         d.finalize_metadata()
         d.finalize_after_datasets()
         d.dump(w)
@@ -315,7 +316,7 @@ _ihm_external_files.details
         d.get_subassembly({'foo':(2,3)})
 
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         d.finalize()
         d.dump(w)
         out = fh.getvalue()
@@ -355,7 +356,7 @@ _ihm_struct_assembly.seq_id_end
             po.add_component_sequence(c, seq)
 
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         po.assembly_dump.finalize() # assign IDs
         po.assembly_dump.dump(w)
         out = fh.getvalue()
@@ -395,7 +396,7 @@ _ihm_struct_assembly.seq_id_end
             po.add_component_sequence(c, seq)
 
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         d.dump(w)
         out = fh.getvalue()
         self.assertEqual(out, """#
@@ -414,7 +415,7 @@ C 2 baz
         po = DummyPO(EmptyObject())
         d = IMP.pmi.mmcif._EntryDumper(po)
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         d.dump(w)
         out = fh.getvalue()
         self.assertEqual(out, "data_imp_model\n_entry.id imp_model\n")
@@ -435,7 +436,7 @@ C 2 baz
 
         d = IMP.pmi.mmcif._AuditAuthorDumper(r)
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         d.dump(w)
         out = fh.getvalue()
         # auth2 is repeated in the input; we should see it only once in the
@@ -462,7 +463,7 @@ auth4 4
         po.add_component_sequence('baz', 'ACC')
         d = IMP.pmi.mmcif._EntityDumper(po)
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         d.dump(w)
         out = fh.getvalue()
         self.assertEqual(out, """#
@@ -490,7 +491,7 @@ _entity.details
         po.add_component_sequence('baz', 'ACC')
         d = IMP.pmi.mmcif._EntityPolyDumper(po)
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         d.dump(w)
         out = fh.getvalue()
         self.assertEqual(out, """#
@@ -518,7 +519,7 @@ _entity_poly.pdbx_seq_one_letter_code_can
         po.add_component_sequence('baz', 'ACC')
         d = IMP.pmi.mmcif._EntityPolySeqDumper(po)
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         d.dump(w)
         out = fh.getvalue()
         self.assertEqual(out, """#
@@ -556,7 +557,7 @@ _entity_poly_seq.hetero
         r.add_metadata(s)
         d = IMP.pmi.mmcif._CitationDumper(r)
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         d.dump(w)
         out = fh.getvalue()
         expected = """#
@@ -600,7 +601,7 @@ _citation_author.ordinal
         s.page_range = 'e1637'
         d = IMP.pmi.mmcif._CitationDumper(r)
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         d.dump(w)
         out = fh.getvalue()
         self.assertTrue("'Mol Cell Proteomics' 13 e1637 . 2014 " in out)
@@ -664,29 +665,6 @@ _citation_author.ordinal
         self.assertEqual(mapper[h1[1]], 'Nup84')
         self.assertEqual(mapper[h2[0]], 'Nup85')
         self.assertEqual(mapper[h2[1]], 'Nup85')
-
-    def test_cif_repr(self):
-        """Test _CifWriter._repr()"""
-        w = IMP.pmi.mmcif._CifWriter(None)
-        self.assertEqual(w._repr('foo'), 'foo')
-        self.assertEqual(w._repr('foo bar'), "'foo bar'")
-        self.assertEqual(w._repr("foo'bar"), '"foo\'bar"')
-        self.assertEqual(w._repr(42), '42')
-        self.assertEqual(w._repr(42.1234567), '42.123')
-        self.assertEqual(w._repr(False), 'NO')
-        self.assertEqual(w._repr(True), 'YES')
-        # Test handling of 'long' type
-        if sys.version_info[0] == 2:
-            self.assertEqual(w._repr(long(42)), '42')
-        # data_ should be quoted to distinguish from data blocks
-        self.assertEqual(w._repr('data_foo'), "'data_foo'")
-        self.assertEqual(w._repr('data_'), "'data_'")
-        # [ is a reserved character and cannot start a nonquoted string
-        self.assertEqual(w._repr('[foo'), "'[foo'")
-        # Reserved words must be quoted (but just a prefix is OK)
-        for word in ('save', 'loop', 'stop', 'global'):
-            self.assertEqual(w._repr('%s_foo' % word), '%s_foo' % word)
-            self.assertEqual(w._repr('%s_' % word), "'%s_'" % word)
 
     def test_cif_entities(self):
         """Test _EntityMapper class"""
@@ -860,7 +838,7 @@ _citation_author.ordinal
         self.assertEqual(ds.dataset.location.access_code, '1abc')
 
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         dump.finalize()
         dump.dump(w)
         out = fh.getvalue()
@@ -948,7 +926,7 @@ _ihm_related_datasets.dataset_list_id_primary
         dump.add(l, IMP.pmi.mmcif._ExternalReferenceDumper.WORKFLOW)
         dump.finalize_after_datasets()
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         dump.dump(w)
         out = fh.getvalue()
         self.assertEqual(out, """#
@@ -1009,9 +987,9 @@ _ihm_external_files.details
         group.id = 7
         model = d.add(simo.prot, protocol, assembly, representation, group)
         self.assertEqual(model.id, 1)
-        self.assertEqual(model.get_rmsf('Nup84', (1,)), '.')
+        self.assertEqual(model.get_rmsf('Nup84', (1,)), None)
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         d.dump(w)
         out = fh.getvalue()
         self.assertEqual(out, """#
@@ -1071,9 +1049,9 @@ _ihm_sphere_obj_site.model_id
         group.id = 7
         model = d.add(simo.prot, protocol, assembly, representation, group)
         self.assertEqual(model.id, 1)
-        self.assertEqual(model.get_rmsf('Nup84', (1,)), '.')
+        self.assertEqual(model.get_rmsf('Nup84', (1,)), None)
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         d.dump(w)
         out = fh.getvalue()
         self.assertEqual(out, """#
@@ -1151,7 +1129,7 @@ _ihm_sphere_obj_site.model_id
         self.assertAlmostEqual(model.get_rmsf('Nup84', (1,)), 4.5, delta=1e-4)
         self.assertRaises(ValueError, model.get_rmsf, 'Nup84', (1,2))
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         d.dump(w)
         out = fh.getvalue()
         self.assertEqual(out, """#
@@ -1216,7 +1194,7 @@ _ihm_sphere_obj_site.model_id
 
 
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         po.dataset_dump.finalize()
         po.starting_model_dump.finalize()
         po.starting_model_dump.dump(w)
@@ -1390,11 +1368,11 @@ Nup85-m1 ATOM 2 C CA GLU 2 B 2 -8.986 11.688 -5.817 91.820 4
     def check_modeller_model(self, pdbname):
         m, model, sources = self.get_dumper_sources(pdbname)
         s1, s2 = sources
-        self.assertEqual(s1.db_code, '.')
+        self.assertEqual(s1.db_code, None)
         self.assertEqual(s1.chain_id, 'A')
         self.assertEqual(s1.tm_db_code, '3JRO')
         self.assertEqual(s1.tm_chain_id, 'C')
-        self.assertEqual(s2.db_code, '.')
+        self.assertEqual(s2.db_code, None)
         self.assertEqual(s2.chain_id, 'A')
         self.assertEqual(s2.tm_db_code, '3F3F')
         self.assertEqual(s2.tm_chain_id, 'G')
@@ -1417,9 +1395,9 @@ Nup85-m1 ATOM 2 C CA GLU 2 B 2 -8.986 11.688 -5.817 91.820 4
         pdbname = self.get_input_file_name('modeller_model_local.pdb')
         m, model, sources = self.get_dumper_sources(pdbname)
         s1, = sources
-        self.assertEqual(s1.db_code, '.')
+        self.assertEqual(s1.db_code, None)
         self.assertEqual(s1.chain_id, 'A')
-        self.assertEqual(s1.tm_db_code, '.')
+        self.assertEqual(s1.tm_db_code, None)
         self.assertEqual(s1.tm_chain_id, 'C')
         p1, = model.dataset._parents
         self.assertEqual(p1._data_type, 'Experimental model')
@@ -1433,7 +1411,7 @@ Nup85-m1 ATOM 2 C CA GLU 2 B 2 -8.986 11.688 -5.817 91.820 4
         pdbname = self.get_input_file_name('phyre2_model.pdb')
         m, model, sources = self.get_dumper_sources(pdbname)
         (s,) = sources
-        self.assertEqual(s.db_code, '.')
+        self.assertEqual(s.db_code, None)
         self.assertEqual(s.chain_id, 'A')
         self.assertEqual(s.tm_db_code, '4BZK')
         self.assertEqual(s.tm_chain_id, 'A')
@@ -1461,7 +1439,7 @@ Nup85-m1 ATOM 2 C CA GLU 2 B 2 -8.986 11.688 -5.817 91.820 4
         d = IMP.pmi.mmcif._ChemCompDumper(po)
 
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         d.dump(w)
         out = fh.getvalue()
         self.assertEqual(out, """#
@@ -1501,7 +1479,7 @@ CYS 'L-peptide linking'
                                  test_mode=True)
         mc2.execute_macro()
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         po.assembly_dump.finalize() # Assign IDs to assemblies
         po.dataset_dump.finalize() # Assign IDs to datasets
         po.model_prot_dump.dump(w)
@@ -1563,7 +1541,7 @@ _ihm_modeling_protocol.ordered_flag
         po._add_simple_postprocessing(20, 80)
 
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         po.post_process_dump.finalize()
         po.post_process_dump.dump(w)
         out = fh.getvalue()
@@ -1601,7 +1579,7 @@ _ihm_modeling_post_process.num_models_end
         self.assertEqual(pp.num_models_end, 10)
 
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         po.post_process_dump.finalize()
         po.post_process_dump.dump(w)
         out = fh.getvalue()
@@ -1785,7 +1763,7 @@ All kmeans_weight_500_2/cluster.0/ centroid index 49
         po.set_ensemble_file(1, loc)
         loc.id = 42
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         po.ensemble_dump.dump(w)
         out = fh.getvalue()
         self.assertEqual(out, """#
@@ -1826,7 +1804,7 @@ _ihm_ensemble_info.ensemble_file_id
         po.density_dump.add(ensemble)
 
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         po.density_dump.dump(w)
         out = fh.getvalue()
         self.assertEqual(out, """#
@@ -1883,7 +1861,7 @@ _ihm_localization_density_files.seq_id_end
         po.add_cross_link(state, ex_xl, rs[0], rs[1], sigma1, sigma2, psi)
 
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         po.cross_link_dump.dump(w)
         out = fh.getvalue()
         self.assertEqual(out, """#
@@ -2077,7 +2055,7 @@ _ihm_cross_link_restraint.sigma_2
                    prefix + 'Rotation3': '-0.726253660826'}
         po.em2d_dump.add(r)
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         po.assembly_dump.finalize() # assign assembly IDs
         po.em2d_dump.dump(w)
         out = fh.getvalue()
@@ -2139,7 +2117,7 @@ _ihm_2dem_class_average_fitting.tr_vector[3]
         po._add_foxs_restraint(model, 'Nup84', (2,3), d, 3.4, 1.2, 'test')
 
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         po.assembly_dump.finalize() # assign assembly IDs
         po.sas_dump.dump(w)
         out = fh.getvalue()
@@ -2198,7 +2176,7 @@ _ihm_sas_restraint.details
         m.stats = {'GaussianEMRestraint_foo_CCC': 0.2}
         po.em3d_dump.add(r)
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         po.assembly_dump.finalize() # Assign IDs to assemblies
         po.em3d_dump.dump(w)
         out = fh.getvalue()
@@ -2266,7 +2244,7 @@ _ihm_3dem_restraint.cross_correlation_coefficient
         po = DummyPO()
         d = IMP.pmi.mmcif._StartingModelDumper(po)
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         d.dump_seq_dif(w, [IMP.pmi.mmcif._MSESeqDif(DummyRes(), 'nup84',
                                                     DummySource(),
                                                     DummyModel(), 2)])
@@ -2355,7 +2333,7 @@ _ihm_starting_model_seq_dif.details
         simo.create_transformed_component("Nup84.2", "Nup84",
                 IMP.algebra.Transformation3D(IMP.algebra.Vector3D(1,2,3)))
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         # Need this to assign starting model details
         po.starting_model_dump.finalize()
         po.model_repr_dump.dump(w)
@@ -2395,7 +2373,7 @@ _ihm_model_representation.model_object_count
         simo.set_rigid_body_from_hierarchies(nup84)
         simo.set_floppy_bodies()
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         # Need this to assign starting model details
         po.starting_model_dump.finalize()
         po.model_repr_dump.dump(w)
@@ -2455,7 +2433,7 @@ _ihm_model_representation.model_object_count
                     tm_seq_id_end=90, seq_id_begin=1, chain_id='G',
                     seq_id_end=90, seq_id=42., model=m)
         self.assertEqual(p.source, 'comparative model')
-        self.assertEqual(p.tm_db_code, '.')
+        self.assertEqual(p.tm_db_code, None)
         self.assertEqual(p.tm_chain_id, 'A')
         self.assertEqual(p.get_seq_id_range(m), (10, 90))
 
@@ -2505,7 +2483,7 @@ _ihm_model_representation.model_object_count
         d = IMP.pmi.mmcif._StructConfDumper(po)
 
         fh = StringIO()
-        w = IMP.pmi.mmcif._CifWriter(fh)
+        w = ihm.format.CifWriter(fh)
         po.starting_model_dump.finalize()
         d.dump(w)
         out = fh.getvalue().split('\n')

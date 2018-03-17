@@ -9,6 +9,7 @@ import os
 import io
 import ihm.format
 import ihm.location
+import ihm.dataset
 if sys.version_info[0] >= 3:
     from io import StringIO
 else:
@@ -247,14 +248,14 @@ _ihm_external_files.details
         m1 = IMP.Model()
         r1 = IMP.pmi.representation.Representation(m1)
         l1 = ihm.location.InputFileLocation(repo='foo', path='baz')
-        d1 = IMP.pmi.metadata.EM2DClassDataset(l1)
+        d1 = ihm.dataset.EM2DClassDataset(l1)
         r1.add_protocol_output(po)
         r1.set_file_dataset('foo', d1)
 
         m2 = IMP.Model()
         r2 = IMP.pmi.representation.Representation(m2)
         l2 = ihm.location.InputFileLocation(repo='bar', path='baz')
-        d2 = IMP.pmi.metadata.EM2DClassDataset(l2)
+        d2 = ihm.dataset.EM2DClassDataset(l2)
         r2.add_protocol_output(po)
         r2.set_file_dataset('bar', d2)
 
@@ -692,13 +693,13 @@ _citation_author.ordinal
         class DummyRestraint(object):
             pass
         l = ihm.location.InputFileLocation(repo='foo', path='baz')
-        ds1 = IMP.pmi.metadata.EM2DClassDataset(l)
+        ds1 = ihm.dataset.EM2DClassDataset(l)
         # Duplicate dataset
-        ds2 = IMP.pmi.metadata.EM2DClassDataset(l)
+        ds2 = ihm.dataset.EM2DClassDataset(l)
         # Restraint dataset
         r = DummyRestraint()
         l = ihm.location.InputFileLocation(repo='foo', path='bar')
-        ds3 = IMP.pmi.metadata.EM2DClassDataset(l)
+        ds3 = ihm.dataset.EM2DClassDataset(l)
         r.dataset = ds3
         rds = IMP.pmi.mmcif._RestraintDataset(r, None, False)
         dg = IMP.pmi.mmcif._DatasetGroup([ds1, ds2, rds])
@@ -713,11 +714,11 @@ _citation_author.ordinal
         state2 = 'state2'
         dump, simo = make_dataset_dumper()
         l = ihm.location.InputFileLocation(repo='foo', path='baz')
-        ds1 = IMP.pmi.metadata.EM2DClassDataset(l)
+        ds1 = ihm.dataset.EM2DClassDataset(l)
         l = ihm.location.InputFileLocation(repo='foo', path='bar')
-        ds2 = IMP.pmi.metadata.CXMSDataset(l)
+        ds2 = ihm.dataset.CXMSDataset(l)
         l = ihm.location.PDBLocation('1abc', '1.0', 'test details')
-        ds3 = IMP.pmi.metadata.PDBDataset(l)
+        ds3 = ihm.dataset.PDBDataset(l)
 
         g1 = dump.get_all_group(state1)
 
@@ -749,10 +750,10 @@ _citation_author.ordinal
         """DatasetDumper ignores duplicate datasets with differing details"""
         dump, simo = make_dataset_dumper()
         l = ihm.location.PDBLocation('1abc', '1.0', 'test details')
-        ds1 = dump.add('state', IMP.pmi.metadata.PDBDataset(l))
+        ds1 = dump.add('state', ihm.dataset.PDBDataset(l))
         # A duplicate dataset should be ignored even if details differ
         l = ihm.location.PDBLocation('1abc', '1.0', 'other details')
-        ds2 = dump.add('state', IMP.pmi.metadata.PDBDataset(l))
+        ds2 = dump.add('state', ihm.dataset.PDBDataset(l))
         dump.finalize() # Assign IDs
         self.assertEqual(ds1.id, 1)
         self.assertEqual(ds2.id, 1)
@@ -765,8 +766,8 @@ _citation_author.ordinal
         loc2 = ihm.location.DatabaseLocation("mydb", "xyz", "1.0", "")
 
         # Identical datasets in the same location aren't duplicated
-        cx1 = IMP.pmi.metadata.CXMSDataset(loc1)
-        cx2 = IMP.pmi.metadata.CXMSDataset(loc1)
+        cx1 = ihm.dataset.CXMSDataset(loc1)
+        cx2 = ihm.dataset.CXMSDataset(loc1)
 
         dump, simo = make_dataset_dumper()
         dump.add(state, cx1)
@@ -777,8 +778,8 @@ _citation_author.ordinal
         self.assertEqual(len(dump._dataset_by_id), 1)
 
         # Datasets in different locations are OK
-        cx1 = IMP.pmi.metadata.CXMSDataset(loc1)
-        cx2 = IMP.pmi.metadata.CXMSDataset(loc2)
+        cx1 = ihm.dataset.CXMSDataset(loc1)
+        cx2 = ihm.dataset.CXMSDataset(loc2)
         dump, simo = make_dataset_dumper()
         dump.add(state, cx1)
         dump.add(state, cx2)
@@ -788,8 +789,8 @@ _citation_author.ordinal
         self.assertEqual(len(dump._dataset_by_id), 2)
 
         # Different datasets in same location are OK (but odd)
-        cx2 = IMP.pmi.metadata.CXMSDataset(loc2)
-        em2d = IMP.pmi.metadata.EM2DClassDataset(loc2)
+        cx2 = ihm.dataset.CXMSDataset(loc2)
+        em2d = ihm.dataset.EM2DClassDataset(loc2)
         dump, simo = make_dataset_dumper()
         dump.add(state, cx2)
         dump.add(state, em2d)
@@ -802,8 +803,8 @@ _citation_author.ordinal
         emloc1 = ihm.location.EMDBLocation("abc")
         emloc2 = ihm.location.EMDBLocation("abc")
         emloc1._allow_duplicates = True
-        em3d_1 = IMP.pmi.metadata.EMDensityDataset(emloc1)
-        em3d_2 = IMP.pmi.metadata.EMDensityDataset(emloc2)
+        em3d_1 = ihm.dataset.EMDensityDataset(emloc1)
+        em3d_2 = ihm.dataset.EMDensityDataset(emloc2)
         dump, simo = make_dataset_dumper()
         dump.add(state, em3d_1)
         dump.add(state, em3d_2)
@@ -818,12 +819,12 @@ _citation_author.ordinal
         dump, simo = make_dataset_dumper()
         l = ihm.location.InputFileLocation(repo='foo', path='bar')
         l.id = 97
-        pds = dump.add(state1, IMP.pmi.metadata.CXMSDataset(l))
+        pds = dump.add(state1, ihm.dataset.CXMSDataset(l))
         # group1 contains just the first dataset
         group1 = dump.get_all_group(state1)
         l = ihm.location.InputFileLocation(repo='foo2', path='bar2')
         l.id = 98
-        pds = dump.add(state1, IMP.pmi.metadata.CXMSDataset(l))
+        pds = dump.add(state1, ihm.dataset.CXMSDataset(l))
         # group2 contains the first two datasets
         group2 = dump.get_all_group(state1)
         # last dataset is in no group and is wrapped by RestraintDataset
@@ -831,8 +832,8 @@ _citation_author.ordinal
             pass
         dr = DummyRestraint()
         l = ihm.location.PDBLocation('1abc', '1.0', 'test details')
-        dr.dataset = IMP.pmi.metadata.PDBDataset(l)
-        dr.dataset.add_primary(pds)
+        dr.dataset = ihm.dataset.PDBDataset(l)
+        dr.dataset.parents.append(pds)
         rd = IMP.pmi.mmcif._RestraintDataset(dr, num=None,
                                              allow_duplicates=False)
         ds = dump.add(state1, rd)
@@ -1282,7 +1283,7 @@ Nup85-m1 ATOM 2 C CA GLU 2 B 2 -8.986 11.688 -5.817 91.820 4
         (s, ) = sources
         self.assertEqual(s.db_code, '2HBJ')
         self.assertEqual(s.chain_id, 'A')
-        self.assertEqual(model.dataset._data_type, 'Experimental model')
+        self.assertEqual(model.dataset.data_type, 'Experimental model')
         self.assertEqual(model.dataset.location.db_name, 'PDB')
         self.assertEqual(model.dataset.location.access_code, '2HBJ')
         self.assertEqual(model.dataset.location.version, '14-JUN-06')
@@ -1298,15 +1299,15 @@ Nup85-m1 ATOM 2 C CA GLU 2 B 2 -8.986 11.688 -5.817 91.820 4
         (s, ) = sources
         self.assertEqual(s.db_code, '?')
         self.assertEqual(s.chain_id, 'A')
-        self.assertEqual(model.dataset._data_type, 'Experimental model')
+        self.assertEqual(model.dataset.data_type, 'Experimental model')
         self.assertEqual(model.dataset.location.path, pdbname)
         self.assertEqual(model.dataset.location.repo, None)
         self.assertEqual(model.dataset.location.details,
                          'MED7C AND MED21 STRUCTURES FROM PDB ENTRY 1YKH, '
                          'ROTATED AND TRANSLATED TO ALIGN WITH THE '
                          'MED4-MED9 MODEL')
-        (parent,) = model.dataset._parents
-        self.assertEqual(parent._data_type, 'Experimental model')
+        (parent,) = model.dataset.parents
+        self.assertEqual(parent.data_type, 'Experimental model')
         self.assertEqual(parent.location.db_name, 'PDB')
         self.assertEqual(parent.location.access_code, '1YKH')
         self.assertEqual(parent.location.version, None)
@@ -1319,7 +1320,7 @@ Nup85-m1 ATOM 2 C CA GLU 2 B 2 -8.986 11.688 -5.817 91.820 4
         (s, ) = sources
         self.assertEqual(s.db_code, '?')
         self.assertEqual(s.chain_id, 'A')
-        self.assertEqual(model.dataset._data_type, 'Comparative model')
+        self.assertEqual(model.dataset.data_type, 'Comparative model')
         self.assertEqual(model.dataset.location.path, pdbname)
         self.assertEqual(model.dataset.location.repo, None)
         self.assertEqual(model.dataset.location.details,
@@ -1327,8 +1328,8 @@ Nup85-m1 ATOM 2 C CA GLU 2 B 2 -8.986 11.688 -5.817 91.820 4
                          'ET AL, NUCLEIC ACIDS RESEARCH. 2013;41:9266-9273. '
                          'DOI: 10.1093/nar/gkt704. THE MED10 STRUCTURE ALSO '
                          'PROPOSED IN THAT WORK IS NOT USED IN THIS STUDY.')
-        (parent,) = model.dataset._parents
-        self.assertEqual(parent._data_type, 'Comparative model')
+        (parent,) = model.dataset.parents
+        self.assertEqual(parent.data_type, 'Comparative model')
         self.assertEqual(parent.location.path, '.')
         self.assertEqual(parent.location.repo.doi, '10.1093/nar/gkt704')
         self.assertEqual(parent.location.details,
@@ -1341,14 +1342,14 @@ Nup85-m1 ATOM 2 C CA GLU 2 B 2 -8.986 11.688 -5.817 91.820 4
         (s, ) = sources
         self.assertEqual(s.db_code, '?')
         self.assertEqual(s.chain_id, 'A')
-        self.assertEqual(model.dataset._data_type, 'Integrative model')
+        self.assertEqual(model.dataset.data_type, 'Integrative model')
         self.assertEqual(model.dataset.location.path, pdbname)
         self.assertEqual(model.dataset.location.repo, None)
         self.assertEqual(model.dataset.location.details,
                          'POM152 STRUCTURE TAKEN FROM UPLA ET AL, STRUCTURE '
                          '25(3) 434-445. DOI: 10.1016/j.str.2017.01.006.')
-        (parent,) = model.dataset._parents
-        self.assertEqual(parent._data_type, 'Integrative model')
+        (parent,) = model.dataset.parents
+        self.assertEqual(parent.data_type, 'Integrative model')
         self.assertEqual(parent.location.path, '.')
         self.assertEqual(parent.location.repo.doi, '10.1016/j.str.2017.01.006')
         self.assertEqual(parent.location.details,
@@ -1377,13 +1378,13 @@ Nup85-m1 ATOM 2 C CA GLU 2 B 2 -8.986 11.688 -5.817 91.820 4
         self.assertEqual(s2.chain_id, 'A')
         self.assertEqual(s2.tm_db_code, '3F3F')
         self.assertEqual(s2.tm_chain_id, 'G')
-        self.assertEqual(model.dataset._data_type, 'Comparative model')
+        self.assertEqual(model.dataset.data_type, 'Comparative model')
         self.assertEqual(model.dataset.location.path, pdbname)
         self.assertEqual(model.dataset.location.repo, None)
         self.assertEqual(model.dataset.location.details,
                          'Starting model structure')
-        p1, p2 = model.dataset._parents
-        self.assertEqual(p1._data_type, 'Experimental model')
+        p1, p2 = model.dataset.parents
+        self.assertEqual(p1.data_type, 'Experimental model')
         self.assertEqual(p1.location.db_name, 'PDB')
         self.assertEqual(p1.location.access_code, '3JRO')
         self.assertEqual(p1.location.version, None)
@@ -1400,8 +1401,8 @@ Nup85-m1 ATOM 2 C CA GLU 2 B 2 -8.986 11.688 -5.817 91.820 4
         self.assertEqual(s1.chain_id, 'A')
         self.assertEqual(s1.tm_db_code, None)
         self.assertEqual(s1.tm_chain_id, 'C')
-        p1, = model.dataset._parents
-        self.assertEqual(p1._data_type, 'Experimental model')
+        p1, = model.dataset.parents
+        self.assertEqual(p1.data_type, 'Experimental model')
         self.assertEqual(p1.location.details,
                          'Template for comparative modeling')
         self.assertEqual(p1.location.path,
@@ -1416,13 +1417,13 @@ Nup85-m1 ATOM 2 C CA GLU 2 B 2 -8.986 11.688 -5.817 91.820 4
         self.assertEqual(s.chain_id, 'A')
         self.assertEqual(s.tm_db_code, '4BZK')
         self.assertEqual(s.tm_chain_id, 'A')
-        self.assertEqual(model.dataset._data_type, 'Comparative model')
+        self.assertEqual(model.dataset.data_type, 'Comparative model')
         self.assertEqual(model.dataset.location.path, pdbname)
         self.assertEqual(model.dataset.location.repo, None)
         self.assertEqual(model.dataset.location.details,
                          'Starting model structure')
-        (p,) = model.dataset._parents
-        self.assertEqual(p._data_type, 'Experimental model')
+        (p,) = model.dataset.parents
+        self.assertEqual(p.data_type, 'Experimental model')
         self.assertEqual(p.location.db_name, 'PDB')
         self.assertEqual(p.location.access_code, '4BZK')
         self.assertEqual(p.location.version, None)
@@ -1913,11 +1914,11 @@ _ihm_cross_link_restraint.sigma_2
         rd = IMP.pmi.mmcif._RestraintDataset(r, num=None,
                                              allow_duplicates=False)
         l = ihm.location.InputFileLocation(repo='foo', path='bar')
-        d = IMP.pmi.metadata.CXMSDataset(l)
+        d = ihm.dataset.CXMSDataset(l)
         r.dataset = d
         # Get current dataset from restraint
         d2 = rd.dataset
-        self.assertEqual(d2._data_type, 'CX-MS data')
+        self.assertEqual(d2.data_type, 'CX-MS data')
         self.assertEqual(d2.location.repo, 'foo')
         # Should be a copy, so we can change it without affecting the original
         self.assertEqual(d, d2)
@@ -1936,13 +1937,13 @@ _ihm_cross_link_restraint.sigma_2
         r = DummyRestraint()
         rd = IMP.pmi.mmcif._RestraintDataset(r, num=1, allow_duplicates=False)
         l = ihm.location.InputFileLocation(repo='foo', path='bar')
-        d1 = IMP.pmi.metadata.CXMSDataset(l)
+        d1 = ihm.dataset.CXMSDataset(l)
         l = ihm.location.InputFileLocation(repo='bar', path='baz')
-        d2 = IMP.pmi.metadata.CXMSDataset(l)
+        d2 = ihm.dataset.CXMSDataset(l)
         r.datasets = [d1, d2]
         # Get current dataset from restraint
         d2 = rd.dataset
-        self.assertEqual(d2._data_type, 'CX-MS data')
+        self.assertEqual(d2.data_type, 'CX-MS data')
         self.assertEqual(d2.location.repo, 'bar')
 
     def test_restraint_dataset_duplicate(self):
@@ -1952,35 +1953,15 @@ _ihm_cross_link_restraint.sigma_2
         r = DummyRestraint()
         rd = IMP.pmi.mmcif._RestraintDataset(r, num=None, allow_duplicates=True)
         l = ihm.location.InputFileLocation(repo='foo', path='bar')
-        d = IMP.pmi.metadata.CXMSDataset(l)
+        d = ihm.dataset.CXMSDataset(l)
         r.dataset = d
         # Get current dataset from restraint
         d2 = rd.dataset
-        self.assertEqual(d2._data_type, 'CX-MS data')
+        self.assertEqual(d2.data_type, 'CX-MS data')
         self.assertEqual(d2.location.repo, 'foo')
         # Should be a copy, but should not compare equal
         # since allow_duplicates=True
         self.assertNotEqual(d, d2)
-
-    def test_em2d_restraint_no_raw(self):
-        """Test EM2DRestraint class, no raw micrographs"""
-        class DummyRestraint(object):
-            pass
-        class DummyState(object):
-            pass
-        pr = DummyRestraint()
-        state = DummyState()
-        rd = IMP.pmi.mmcif._RestraintDataset(pr, num=None,
-                                             allow_duplicates=False)
-        r = IMP.pmi.mmcif._EM2DRestraint(state, rd, pr, 0,
-                                         resolution=10.0, pixel_size=4.2,
-                                         image_resolution=1.0,
-                                         projection_number=200)
-        l = ihm.location.InputFileLocation(repo='foo', path='bar')
-        d = IMP.pmi.metadata.EM2DClassDataset(l)
-        pr.dataset = d
-        self.assertEqual(r.get_num_raw_micrographs(), None)
-        self.assertEqual(r.rdataset.dataset.location.repo, 'foo')
 
     def test_em2d_restraint_with_raw(self):
         """Test EM2DRestraint class, with raw micrographs"""
@@ -1995,18 +1976,9 @@ _ihm_cross_link_restraint.sigma_2
         r = IMP.pmi.mmcif._EM2DRestraint(state, rd, pr, 0,
                                          resolution=10.0, pixel_size=4.2,
                                          image_resolution=1.0,
-                                         projection_number=200)
-        lp = ihm.location.InputFileLocation(repo='foo', path='baz')
-        dp = IMP.pmi.metadata.EMMicrographsDataset(lp, number=50)
-        l = ihm.location.InputFileLocation(repo='foo', path='bar')
-        d = IMP.pmi.metadata.EM2DClassDataset(l)
-        pr.dataset = d
-        # Random other dataset that isn't micrographs
-        l = ihm.location.InputFileLocation(repo='foo', path='bar')
-        oth = IMP.pmi.metadata.EM2DClassDataset(l)
-        d.add_parent(oth)
-        d.add_parent(dp)
-        self.assertEqual(r.get_num_raw_micrographs(), 50)
+                                         projection_number=200,
+                                         micrographs_number=50)
+        self.assertEqual(r.micrographs_number, 50)
 
     def test_em2d_dumper(self):
         """Test EM2DDumper class"""
@@ -2032,13 +2004,14 @@ _ihm_cross_link_restraint.sigma_2
         r = IMP.pmi.mmcif._EM2DRestraint(state, rd, pr, 0,
                                          resolution=10.0, pixel_size=4.2,
                                          image_resolution=1.0,
-                                         projection_number=200)
+                                         projection_number=200,
+                                         micrographs_number=50)
         lp = ihm.location.InputFileLocation(repo='foo', path='baz')
-        dp = IMP.pmi.metadata.EMMicrographsDataset(lp, number=50)
+        dp = ihm.dataset.EMMicrographsDataset(lp)
         l = ihm.location.InputFileLocation(repo='foo', path='bar')
-        d = IMP.pmi.metadata.EM2DClassDataset(l)
+        d = ihm.dataset.EM2DClassDataset(l)
         d.id = 4
-        d.add_primary(dp)
+        d.parents.append(dp)
         pr.dataset = d
         p = DummyProtocolStep()
         p.state = po._last_state
@@ -2111,7 +2084,7 @@ _ihm_2dem_class_average_fitting.tr_vector[3]
                                     self.get_input_file_name("test.fasta"))
 
         lp = ihm.location.InputFileLocation(repo='foo', path='baz')
-        d = IMP.pmi.metadata.SASDataset(lp)
+        d = ihm.dataset.SASDataset(lp)
         d.id = 4
         model = DummyModel()
         model.id = 42
@@ -2163,7 +2136,7 @@ _ihm_sas_restraint.details
                                          target_ps=[None, None], densities=[])
 
         l = ihm.location.InputFileLocation(repo='foo', path='bar')
-        d = IMP.pmi.metadata.EM2DClassDataset(l)
+        d = ihm.dataset.EM2DClassDataset(l)
         d.id = 4
         pr.dataset = d
 
@@ -2441,7 +2414,7 @@ _ihm_model_representation.model_object_count
     def test_unknown_source(self):
         """Test UnknownSource class"""
         class DummyDataset(object):
-            _data_type = 'Comparative model'
+            data_type = 'Comparative model'
         class DummyModel(object):
             dataset = DummyDataset()
             seq_id_begin = 10

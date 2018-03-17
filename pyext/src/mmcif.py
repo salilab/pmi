@@ -31,6 +31,7 @@ import operator
 import itertools
 import ihm.format
 import ihm.location
+import ihm.dataset
 
 def _assign_id(obj, seen_objs, obj_by_id):
     """Assign a unique ID to obj, and track all ids in obj_by_id."""
@@ -479,7 +480,7 @@ class _UnknownSource(object):
                    'Experimental model': 'experimental model'}
 
     def __init__(self, model, chain):
-        self.source = self._source_map[model.dataset._data_type]
+        self.source = self._source_map[model.dataset.data_type]
         self.chain_id = chain
 
     def get_seq_id_range(self, model):
@@ -710,7 +711,7 @@ class _DatasetDumper(_Dumper):
             for x in self._flatten_dataset(d.dataset):
                 yield x
         else:
-            for p in d._parents.keys():
+            for p in d.parents:
                 for x in self._flatten_dataset(p):
                     yield x
             yield d
@@ -719,7 +720,7 @@ class _DatasetDumper(_Dumper):
         with writer.loop("_ihm_dataset_list",
                          ["id", "data_type", "database_hosted"]) as l:
             for d in self._dataset_by_id:
-                l.write(id=d.id, data_type=d._data_type,
+                l.write(id=d.id, data_type=d.data_type,
                         database_hosted=isinstance(d.location,
                                              ihm.location.DatabaseLocation))
         self.dump_groups(writer)
@@ -749,8 +750,7 @@ class _DatasetDumper(_Dumper):
                          ["ordinal_id", "dataset_list_id_derived",
                           "dataset_list_id_primary"]) as l:
             for derived in self._dataset_by_id:
-                for parent in sorted(derived._parents.keys(),
-                                     key=lambda d: d.id):
+                for parent in sorted(derived.parents, key=lambda d: d.id):
                     l.write(ordinal_id=ordinal,
                             dataset_list_id_derived=derived.id,
                             dataset_list_id_primary=parent.id)
@@ -956,12 +956,14 @@ class _CrossLinkDumper(_Dumper):
 
 class _EM2DRestraint(object):
     def __init__(self, state, rdataset, pmi_restraint, image_number, resolution,
-                 pixel_size, image_resolution, projection_number):
+                 pixel_size, image_resolution, projection_number,
+                 micrographs_number):
         self.state = state
         self.pmi_restraint, self.image_number = pmi_restraint, image_number
         self.rdataset, self.resolution = rdataset, resolution
         self.pixel_size, self.image_resolution = pixel_size, image_resolution
         self.projection_number = projection_number
+        self.micrographs_number = micrographs_number
 
     def get_transformation(self, model):
         """Get the transformation that places the model on the image"""
@@ -984,12 +986,6 @@ class _EM2DRestraint(object):
                                  % (self.pmi_restraint.label,
                                     self.image_number + 1)])
 
-    def get_num_raw_micrographs(self):
-        """Return the number of raw micrographs used, if known.
-           This is extracted from the EMMicrographsDataset if any."""
-        for d in self.rdataset.dataset._parents.keys():
-            if isinstance(d, IMP.pmi.metadata.EMMicrographsDataset):
-                return d.number
 
 class _EM2DDumper(_Dumper):
     def __init__(self, simo):
@@ -1013,7 +1009,7 @@ class _EM2DDumper(_Dumper):
                           "details"]) as l:
             for r in self.restraints:
                 unk = ihm.unknown
-                num_raw = r.get_num_raw_micrographs()
+                num_raw = r.micrographs_number
                 l.write(id=r.id, dataset_list_id=r.rdataset.dataset.id,
                         number_raw_micrographs=num_raw if num_raw else unk,
                         pixel_size_width=r.pixel_size,
@@ -1692,10 +1688,10 @@ class _StartingModelDumper(_Dumper):
                                  details="Template for comparative modeling")
             else:
                 l = ihm.location.PDBLocation(t.tm_db_code)
-            d = IMP.pmi.metadata.PDBDataset(l)
+            d = ihm.dataset.PDBDataset(l)
             d = self.simo._add_dataset(d)
             t.tm_dataset = d
-            model.dataset.add_parent(d)
+            model.dataset.parents.append(d)
 
         # Sort by starting residue, then ending residue
         return(sorted(templates,
@@ -1736,7 +1732,7 @@ class _StartingModelDumper(_Dumper):
             source = _PDBSource(model, first_line[62:66].strip(), chain,
                                 metadata)
             l = ihm.location.PDBLocation(source.db_code, version, details)
-            d = IMP.pmi.metadata.PDBDataset(l)
+            d = ihm.dataset.PDBDataset(l)
             model.dataset = self.simo._add_dataset(file_dataset or d)
             return [source]
         elif first_line.startswith('EXPDTA    DERIVED FROM PDB:'):
@@ -1744,10 +1740,10 @@ class _StartingModelDumper(_Dumper):
             # model with the official PDB as a parent
             local_file.details = self._parse_details(fh)
             db_code = first_line[27:].strip()
-            d = IMP.pmi.metadata.PDBDataset(local_file)
+            d = ihm.dataset.PDBDataset(local_file)
             pdb_loc = ihm.location.PDBLocation(db_code)
-            parent = IMP.pmi.metadata.PDBDataset(pdb_loc)
-            d.add_parent(parent)
+            parent = ihm.dataset.PDBDataset(pdb_loc)
+            d.parents.append(parent)
             model.dataset = self.simo._add_dataset(file_dataset or d)
             return [_UnknownSource(model, chain)]
         elif first_line.startswith('EXPDTA    DERIVED FROM COMPARATIVE '
@@ -1755,13 +1751,13 @@ class _StartingModelDumper(_Dumper):
             # Model derived from a comparative model; link back to the original
             # model as a parent
             local_file.details = self._parse_details(fh)
-            d = IMP.pmi.metadata.ComparativeModelDataset(local_file)
+            d = ihm.dataset.ComparativeModelDataset(local_file)
             repo = ihm.location.Repository(doi=first_line[46:].strip())
             # todo: better specify an unknown path
             orig_loc = ihm.location.InputFileLocation(repo=repo, path='.',
                               details="Starting comparative model structure")
-            parent = IMP.pmi.metadata.ComparativeModelDataset(orig_loc)
-            d.add_parent(parent)
+            parent = ihm.dataset.ComparativeModelDataset(orig_loc)
+            d.parents.append(parent)
             model.dataset = self.simo._add_dataset(file_dataset or d)
             return [_UnknownSource(model, chain)]
         elif first_line.startswith('EXPDTA    DERIVED FROM INTEGRATIVE '
@@ -1769,13 +1765,13 @@ class _StartingModelDumper(_Dumper):
             # Model derived from an integrative model; link back to the original
             # model as a parent
             local_file.details = self._parse_details(fh)
-            d = IMP.pmi.metadata.IntegrativeModelDataset(local_file)
+            d = ihm.dataset.IntegrativeModelDataset(local_file)
             repo = ihm.location.Repository(doi=first_line[46:].strip())
             # todo: better specify an unknown path
             orig_loc = ihm.location.InputFileLocation(repo=repo, path='.',
                               details="Starting integrative model structure")
-            parent = IMP.pmi.metadata.IntegrativeModelDataset(orig_loc)
-            d.add_parent(parent)
+            parent = ihm.dataset.IntegrativeModelDataset(orig_loc)
+            d.parents.append(parent)
             model.dataset = self.simo._add_dataset(file_dataset or d)
             return [_UnknownSource(model, chain)]
         elif first_line.startswith('EXPDTA    THEORETICAL MODEL, MODELLER'):
@@ -1797,7 +1793,7 @@ class _StartingModelDumper(_Dumper):
 
     def handle_comparative_model(self, local_file, file_dataset, pdbname,
                                  model, chain):
-        d = IMP.pmi.metadata.ComparativeModelDataset(local_file)
+        d = ihm.dataset.ComparativeModelDataset(local_file)
         model.dataset = self.simo._add_dataset(file_dataset or d)
         templates, alnfile = self.get_templates(pdbname, model)
         if alnfile:
@@ -2791,11 +2787,13 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                                         rg, chi, details))
 
     def add_em2d_restraint(self, state, r, i, resolution, pixel_size,
-                           image_resolution, projection_number):
+                           image_resolution, projection_number,
+                           micrographs_number):
         d = self._get_restraint_dataset(r, i)
         self.em2d_dump.add(_EM2DRestraint(state, d, r, i, resolution,
                                           pixel_size, image_resolution,
-                                          projection_number))
+                                          projection_number,
+                                          micrographs_number))
 
     def add_em3d_restraint(self, state, target_ps, densities, r):
         # A 3DEM restraint's dataset ID uniquely defines the restraint, so

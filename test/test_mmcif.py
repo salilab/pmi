@@ -298,6 +298,7 @@ _ihm_external_files.details
 
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
+        self.assign_entity_asym_ids(po.system)
         d.finalize()
         d.dump(w)
         out = fh.getvalue()
@@ -338,6 +339,7 @@ _ihm_struct_assembly.seq_id_end
 
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
+        self.assign_entity_asym_ids(po.system)
         po.assembly_dump.finalize() # assign IDs
         po.assembly_dump.dump(w)
         out = fh.getvalue()
@@ -365,31 +367,24 @@ _ihm_struct_assembly.seq_id_end
 #
 """)
 
-    def test_struct_asym(self):
-        """Test StructAsymDumper"""
+    def test_asym_units(self):
+        """Test assigning asym units and entities"""
         po = DummyPO(EmptyObject())
         state1 = po._add_state(EmptyObject())
         state2 = po._add_state(EmptyObject())
-        d = IMP.pmi.mmcif._StructAsymDumper(po)
         for state, c, seq in ((state1, "foo", "AAA"), (state2, "bar", "AAA"),
+                              (state2, "foo", "AAA"),
                               (state1, "baz", "AA")):
             po.create_component(state, c, True)
             po.add_component_sequence(c, seq)
-
-        fh = StringIO()
-        w = ihm.format.CifWriter(fh)
-        d.dump(w)
-        out = fh.getvalue()
-        self.assertEqual(out, """#
-loop_
-_struct_asym.id
-_struct_asym.entity_id
-_struct_asym.details
-A 1 foo
-B 1 bar
-C 2 baz
-#
-""")
+        self.assertEqual(len(po.system.entities), 2)
+        self.assertEqual(po.system.asym_units[0].details, 'foo')
+        self.assertEqual(po.system.entities[0].sequence, 'AAA')
+        self.assertEqual(po.system.entities[1].sequence, 'AA')
+        self.assertEqual(len(po.system.asym_units), 3)
+        self.assertEqual(po.system.asym_units[0].details, 'foo')
+        self.assertEqual(po.system.asym_units[1].details, 'bar')
+        self.assertEqual(po.system.asym_units[2].details, 'baz')
 
     def test_audit_author(self):
         """Test AuditAuthorDumper"""
@@ -423,91 +418,22 @@ auth4 4
 #
 """)
 
-    def test_entity_dumper(self):
-        """Test EntityDumper"""
+    def test_entity_creation(self):
+        """Test creation of Entity objects"""
         m = IMP.Model()
         simo = IMP.pmi.representation.Representation(m)
         po = DummyPO(None)
         simo.add_protocol_output(po)
+        simo.create_component('foo.1@12')
+        simo.create_component('bar')
+        simo.create_component('baz')
         po.add_component_sequence('foo.1@12', 'ACGT')
         po.add_component_sequence('bar', 'ACGT')
         po.add_component_sequence('baz', 'ACC')
-        d = IMP.pmi.mmcif._EntityDumper(po)
-        fh = StringIO()
-        w = ihm.format.CifWriter(fh)
-        d.dump(w)
-        out = fh.getvalue()
-        self.assertEqual(out, """#
-loop_
-_entity.id
-_entity.type
-_entity.src_method
-_entity.pdbx_description
-_entity.formula_weight
-_entity.pdbx_number_of_molecules
-_entity.details
-1 polymer man foo ? 1 ?
-2 polymer man baz ? 1 ?
-#
-""")
 
-    def test_entity_poly_dumper(self):
-        """Test EntityPolyDumper"""
-        m = IMP.Model()
-        simo = IMP.pmi.representation.Representation(m)
-        po = DummyPO(None)
-        simo.add_protocol_output(po)
-        po.add_component_sequence('foo.1', 'ACGT')
-        po.add_component_sequence('bar@12', 'ACGT')
-        po.add_component_sequence('baz', 'ACC')
-        d = IMP.pmi.mmcif._EntityPolyDumper(po)
-        fh = StringIO()
-        w = ihm.format.CifWriter(fh)
-        d.dump(w)
-        out = fh.getvalue()
-        self.assertEqual(out, """#
-loop_
-_entity_poly.entity_id
-_entity_poly.type
-_entity_poly.nstd_linkage
-_entity_poly.nstd_monomer
-_entity_poly.pdbx_strand_id
-_entity_poly.pdbx_seq_one_letter_code
-_entity_poly.pdbx_seq_one_letter_code_can
-1 polypeptide(L) no no . ACGT ACGT
-2 polypeptide(L) no no . ACC ACC
-#
-""")
-
-    def test_entity_poly_seq_dumper(self):
-        """Test EntityPolySeqDumper"""
-        m = IMP.Model()
-        simo = IMP.pmi.representation.Representation(m)
-        po = DummyPO(None)
-        simo.add_protocol_output(po)
-        po.add_component_sequence('foo', 'ACGT')
-        po.add_component_sequence('bar', 'ACGT')
-        po.add_component_sequence('baz', 'ACC')
-        d = IMP.pmi.mmcif._EntityPolySeqDumper(po)
-        fh = StringIO()
-        w = ihm.format.CifWriter(fh)
-        d.dump(w)
-        out = fh.getvalue()
-        self.assertEqual(out, """#
-loop_
-_entity_poly_seq.entity_id
-_entity_poly_seq.num
-_entity_poly_seq.mon_id
-_entity_poly_seq.hetero
-1 1 ALA .
-1 2 CYS .
-1 3 GLY .
-1 4 THR .
-2 1 ALA .
-2 2 CYS .
-2 3 CYS .
-#
-""")
+        self.assertEqual(len(po.system.entities), 2)
+        self.assertEqual(po.system.entities[0].description, 'foo')
+        self.assertEqual(po.system.entities[1].description, 'baz')
 
     def test_citation(self):
         """Test CitationDumper"""
@@ -602,6 +528,11 @@ _citation_author.ordinal
                                     self.get_input_file_name("test.fasta"))
         h1 = simo.add_component_beads("Nup84", [(1,2), (3,4)])
         h2 = simo.add_component_beads("Nup85", [(1,2), (3,4)])
+
+        self.assertEqual(len(po.system.asym_units), 2)
+        po.system.asym_units[0]._id = 'A'
+        po.system.asym_units[1]._id = 'B'
+
         mapper = IMP.pmi.mmcif._AsymIDMapper(po, simo.prot)
         self.assertEqual(mapper[h1[0]], 'A')
         self.assertEqual(mapper[h1[1]], 'A')
@@ -639,21 +570,18 @@ _citation_author.ordinal
 
     def test_cif_entities(self):
         """Test _EntityMapper class"""
-        c = IMP.pmi.mmcif._EntityMapper()
+        system = ihm.System()
+        c = IMP.pmi.mmcif._EntityMapper(system)
         c.add('foo', 'MELS')
         c.add('bar', 'SELM')
         c.add('foo_2', 'MELS')
-        self.assertEqual(c['foo'].id, 1)
-        self.assertEqual(c['foo_2'].id, 1)
-        self.assertEqual(c['bar'].id, 2)
-        a = c.get_all()
+        self.assertEqual(len(system.entities), 2)
+        self.assertIs(c['foo'], c['foo_2'])
+        self.assertIsNot(c['foo'], c['bar'])
+        a = system.entities
         self.assertEqual(len(a), 2)
-        self.assertEqual(a[0].id, 1)
-        self.assertEqual(a[0].first_component, 'foo')
         self.assertEqual(a[0].description, 'foo')
         self.assertEqual(a[0].sequence, 'MELS')
-        self.assertEqual(a[1].id, 2)
-        self.assertEqual(a[1].first_component, 'bar')
         self.assertEqual(a[1].description, 'bar')
         self.assertEqual(a[1].sequence, 'SELM')
 
@@ -960,6 +888,7 @@ _ihm_external_files.details
         self.assertEqual(model.id, 1)
         self.assertEqual(model.get_rmsf('Nup84', (1,)), None)
         fh = StringIO()
+        self.assign_entity_asym_ids(po.system)
         w = ihm.format.CifWriter(fh)
         d.dump(w)
         out = fh.getvalue()
@@ -1021,6 +950,7 @@ _ihm_sphere_obj_site.model_id
         model = d.add(simo.prot, protocol, assembly, representation, group)
         self.assertEqual(model.id, 1)
         self.assertEqual(model.get_rmsf('Nup84', (1,)), None)
+        self.assign_entity_asym_ids(po.system)
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
         d.dump(w)
@@ -1099,6 +1029,7 @@ _ihm_sphere_obj_site.model_id
                               'Nup84')
         self.assertAlmostEqual(model.get_rmsf('Nup84', (1,)), 4.5, delta=1e-4)
         self.assertRaises(ValueError, model.get_rmsf, 'Nup84', (1,2))
+        self.assign_entity_asym_ids(po.system)
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
         d.dump(w)
@@ -1134,6 +1065,13 @@ _ihm_sphere_obj_site.model_id
 #
 """)
 
+    def assign_entity_asym_ids(self, system):
+        """Assign IDs to all Entities and AsymUnits in the system"""
+        d = ihm.dumper._EntityDumper()
+        d.finalize(system)
+        d = ihm.dumper._StructAsymDumper()
+        d.finalize(system)
+
     def test_starting_model_dumper(self):
         """Test StartingModelDumper"""
         m = IMP.Model()
@@ -1163,6 +1101,7 @@ _ihm_sphere_obj_site.model_id
                               self.get_input_file_name("test.nup85.pdb"), "A",
                               resrange=(8,9),offset=-7)
 
+        self.assign_entity_asym_ids(po.system)
 
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
@@ -1397,33 +1336,6 @@ Nup85-m1 ATOM 2 C CA GLU 2 B 2 -8.986 11.688 -5.817 91.820 4
         self.assertEqual(p.location.access_code, '4BZK')
         self.assertEqual(p.location.version, None)
         self.assertEqual(p.location.details, None)
-
-    def test_chem_comp_dumper(self):
-        """Test ChemCompDumper"""
-        po = DummyPO(None)
-        state = po._add_state(EmptyObject())
-        po.create_component(state, "Nup84", True)
-        po.add_component_sequence("Nup84", "MELS")
-        po.create_component(state, "Nup85", True)
-        po.add_component_sequence("Nup85", "MC")
-
-        d = IMP.pmi.mmcif._ChemCompDumper(po)
-
-        fh = StringIO()
-        w = ihm.format.CifWriter(fh)
-        d.dump(w)
-        out = fh.getvalue()
-        self.assertEqual(out, """#
-loop_
-_chem_comp.id
-_chem_comp.type
-MET 'L-peptide linking'
-GLU 'L-peptide linking'
-LEU 'L-peptide linking'
-SER 'L-peptide linking'
-CYS 'L-peptide linking'
-#
-""")
 
     def test_protocol_dumper(self):
         """Test ModelProtocolDumper output"""
@@ -1775,6 +1687,7 @@ _ihm_ensemble_info.ensemble_file_id
         po.density_dump.add(ensemble)
 
         fh = StringIO()
+        self.assign_entity_asym_ids(po.system)
         w = ihm.format.CifWriter(fh)
         po.density_dump.dump(w)
         out = fh.getvalue()
@@ -1832,6 +1745,7 @@ _ihm_localization_density_files.seq_id_end
         po.add_cross_link(state, ex_xl, rs[0], rs[1], sigma1, sigma2, psi)
 
         fh = StringIO()
+        self.assign_entity_asym_ids(po.system)
         w = ihm.format.CifWriter(fh)
         po.cross_link_dump.dump(w)
         out = fh.getvalue()
@@ -2171,7 +2085,7 @@ _ihm_3dem_restraint.cross_correlation_coefficient
     def test_seq_dif(self):
         """Test StartingModelDumper.dump_seq_dif"""
         class DummyEntity(object):
-            id = 4
+            _id = 4
         class DummyPO(object):
             def _get_chain_for_component(self, comp, output):
                 return 'H'
@@ -2277,6 +2191,7 @@ _ihm_starting_model_seq_dif.details
                 IMP.algebra.Transformation3D(IMP.algebra.Vector3D(1,2,3)))
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
+        self.assign_entity_asym_ids(po.system)
         # Need this to assign starting model details
         po.starting_model_dump.finalize()
         po.model_repr_dump.dump(w)
@@ -2317,6 +2232,7 @@ _ihm_model_representation.model_object_count
         simo.set_floppy_bodies()
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
+        self.assign_entity_asym_ids(po.system)
         # Need this to assign starting model details
         po.starting_model_dump.finalize()
         po.model_repr_dump.dump(w)
@@ -2424,6 +2340,8 @@ _ihm_model_representation.model_object_count
                          self.get_input_file_name("test.nup84.helix.pdb"), "A")
         simo.set_rigid_body_from_hierarchies(nup84)
         simo.set_floppy_bodies()
+
+        po.system.asym_units[0]._id = 'A'
         d = IMP.pmi.mmcif._StructConfDumper(po)
 
         fh = StringIO()

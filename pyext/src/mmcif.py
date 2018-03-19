@@ -182,90 +182,6 @@ class _CitationDumper(_Dumper):
                     l.write(citation_id=n+1, name=a, ordinal=ordinal)
                     ordinal += 1
 
-class _EntityDumper(_Dumper):
-    # todo: we currently only support amino acid sequences here (and
-    # then only standard amino acids; need to add support for MSE etc.)
-    def dump(self, writer):
-        with writer.loop("_entity",
-                         ["id", "type", "src_method", "pdbx_description",
-                          "formula_weight", "pdbx_number_of_molecules",
-                          "details"]) as l:
-            for entity in self.simo.entities.get_all():
-                l.write(id=entity.id, type='polymer', src_method='man',
-                        pdbx_description=entity.description,
-                        formula_weight=writer.unknown,
-                        pdbx_number_of_molecules=1, details=writer.unknown)
-
-
-class _EntityPolyDumper(_Dumper):
-    # todo: we currently only support amino acid sequences here
-    def __init__(self, simo):
-        super(_EntityPolyDumper, self).__init__(simo)
-        self.output = IMP.pmi.output.Output()
-
-    def dump(self, writer):
-        with writer.loop("_entity_poly",
-                         ["entity_id", "type", "nstd_linkage",
-                          "nstd_monomer", "pdbx_strand_id",
-                          "pdbx_seq_one_letter_code",
-                          "pdbx_seq_one_letter_code_can"]) as l:
-            for entity in self.simo.entities.get_all():
-                seq = entity.sequence
-                # Split into lines to get tidier CIF output
-                seq = "\n".join(seq[i:i+70] for i in range(0, len(seq), 70))
-                name = entity.description
-                chain_id = self.simo._get_chain_for_component(name, self.output)
-                l.write(entity_id=entity.id, type='polypeptide(L)',
-                        nstd_linkage='no', nstd_monomer='no',
-                        pdbx_strand_id=chain_id,
-                        pdbx_seq_one_letter_code=seq,
-                        pdbx_seq_one_letter_code_can=seq)
-
-
-class _ChemCompDumper(_Dumper):
-    def dump(self, writer):
-        seen = {}
-        std = dict.fromkeys(('ALA', 'CYS', 'ASP', 'GLU', 'PHE', 'GLY', 'HIS',
-               'ILE', 'LYS', 'LEU', 'MET', 'ASN', 'PRO', 'GLN', 'ARG', 'SER',
-               'THR', 'VAL', 'TRP', 'TYR'))
-        with writer.loop("_chem_comp", ["id", "type"]) as l:
-            for entity in self.simo.entities.get_all():
-                seq = entity.sequence
-                for num, one_letter_code in enumerate(seq):
-                    restyp = IMP.atom.get_residue_type(one_letter_code)
-                    resid = restyp.get_string()
-                    if resid not in seen:
-                        seen[resid] = None
-                        l.write(id=resid,
-                                type='L-peptide linking' if resid in std \
-                                                         else 'other')
-
-class _EntityPolySeqDumper(_Dumper):
-    def dump(self, writer):
-        with writer.loop("_entity_poly_seq",
-                         ["entity_id", "num", "mon_id", "hetero"]) as l:
-            for entity in self.simo.entities.get_all():
-                seq = entity.sequence
-                for num, one_letter_code in enumerate(seq):
-                    restyp = IMP.atom.get_residue_type(one_letter_code)
-                    l.write(entity_id=entity.id, num=num + 1,
-                            mon_id=restyp.get_string(),
-                            hetero=None)
-
-class _StructAsymDumper(_Dumper):
-    def __init__(self, simo):
-        super(_StructAsymDumper, self).__init__(simo)
-        self.output = IMP.pmi.output.Output()
-
-    def dump(self, writer):
-        with writer.loop("_struct_asym",
-                         ["id", "entity_id", "details"]) as l:
-            for comp in self.simo.all_modeled_components:
-                entity = self.simo.entities[comp]
-                chain_id = self.simo._get_chain_for_component(comp, self.output)
-                l.write(id=chain_id,
-                        entity_id=entity.id,
-                        details=comp)
 
 class _PDBFragment(object):
     """Record details about part of a PDB file used as input
@@ -384,7 +300,7 @@ class _ModelRepresentationDumper(_Dumper):
                     l.write(ordinal_id=ordinal_id,
                             representation_id=representation.id,
                             segment_id=segment_id,
-                            entity_id=entity.id,
+                            entity_id=entity._id,
                             entity_description=entity.description,
                             entity_asym_id=chain_id,
                             seq_id_begin=f.start,
@@ -833,11 +749,11 @@ class _CrossLinkDumper(_Dumper):
                 xl.id = xl_id
                 l.write(id=xl.id, group_id=xl.id,
                         entity_description_1=entity1.description,
-                        entity_id_1=entity1.id,
+                        entity_id_1=entity1._id,
                         seq_id_1=xl.r1,
                         comp_id_1=rt1.get_string(),
                         entity_description_2=entity2.description,
-                        entity_id_2=entity2.id,
+                        entity_id_2=entity2._id,
                         seq_id_2=xl.r2,
                         comp_id_2=rt2.get_string(),
                         linker_type=xl.group.label,
@@ -883,11 +799,11 @@ class _CrossLinkDumper(_Dumper):
                 xl.id = xl_id
                 l.write(id=xl.id,
                         group_id=xl.ex_xl.id,
-                        entity_id_1=entity1.id,
+                        entity_id_1=entity1._id,
                         asym_id_1=asym1,
                         seq_id_1=xl.ex_xl.r1,
                         comp_id_1=rt1.get_string(),
-                        entity_id_2=entity2.id,
+                        entity_id_2=entity2._id,
                         asym_id_2=asym2,
                         seq_id_2=xl.ex_xl.r2,
                         comp_id_2=rt2.get_string(),
@@ -1245,7 +1161,7 @@ class _AssemblyDumper(_Dumper):
                             # so each assembly is a self-parent
                             parent_assembly_id=a.id,
                             entity_description=entity.description,
-                            entity_id=entity.id,
+                            entity_id=entity._id,
                             asym_id=chain_id,
                             seq_id_begin=seqrange[0],
                             seq_id_end=seqrange[1])
@@ -1290,8 +1206,8 @@ class _ModelGroup(object):
 
 class _Chain(object):
     """Represent a single chain in a Model"""
-    def __init__(self, pmi_chain_id, chain_id):
-        self.pmi_chain_id, self.chain_id = pmi_chain_id, chain_id
+    def __init__(self, pmi_chain_id, asym_unit):
+        self.pmi_chain_id, self.asym_unit = pmi_chain_id, asym_unit
         self.spheres = []
         self.atoms = []
 
@@ -1307,8 +1223,8 @@ class _Chain(object):
 
 class _TransformedChain(object):
     """Represent a chain that is a transformed version of another"""
-    def __init__(self, orig_chain, chain_id, transform):
-        self.orig_chain, self.chain_id = orig_chain, chain_id
+    def __init__(self, orig_chain, asym_unit, transform):
+        self.orig_chain, self.asym_unit = orig_chain, asym_unit
         self.transform = transform
 
     def __get_spheres(self):
@@ -1375,23 +1291,22 @@ class _Model(object):
         for tc in simo._transformed_components:
             orig_chain = chain_for_comp.get(tc.original, None)
             if orig_chain:
-                chain_id = simo._get_chain_for_component(tc.name, self.output)
-                c = _TransformedChain(orig_chain, chain_id, tc.transform)
+                asym = simo.asym_units[tc.name]
+                c = _TransformedChain(orig_chain, asym, tc.transform)
                 c.comp = tc.name
                 yield c
 
     def _make_spheres_atoms(self, particle_infos_for_pdb, o, name, simo):
         entity_for_chain = {}
         comp_for_chain = {}
-        correct_chain_id = {}
+        correct_asym = {}
         for protname, chain_id in o.dictchain[name].items():
             entity_for_chain[chain_id] = simo.entities[protname]
             comp_for_chain[chain_id] = protname
             # When doing multi-state modeling, the chain ID returned here
             # (assigned sequentially) might not be correct (states may have
-            # gaps in the chain IDs). Map it to the correct ID.
-            correct_chain_id[chain_id] = \
-                           simo._get_chain_for_component(protname, o)
+            # gaps in the chain IDs). Map it to the correct asym unit.
+            correct_asym[chain_id] = simo.asym_units[protname]
 
         # Gather by chain ID (should be sorted by chain ID already)
         self.chains = []
@@ -1401,7 +1316,7 @@ class _Model(object):
         for (xyz, atom_type, residue_type, chain_id, residue_index,
              all_indexes, radius) in particle_infos_for_pdb:
             if chain is None or chain.pmi_chain_id != chain_id:
-                chain = _Chain(chain_id, correct_chain_id[chain_id])
+                chain = _Chain(chain_id, correct_asym[chain_id])
                 chain.entity = entity_for_chain[chain_id]
                 chain.comp = comp_for_chain[chain_id]
                 self.chains.append(chain)
@@ -1480,8 +1395,8 @@ class _ModelDumper(_Dumper):
                         l.write(id=ordinal,
                                 label_atom_id=atom_type.get_string(),
                                 label_comp_id=residue_type.get_string(),
-                                label_asym_id=chain.chain_id,
-                                label_entity_id=chain.entity.id,
+                                label_asym_id=chain.asym_unit._id,
+                                label_entity_id=chain.entity._id,
                                 label_seq_id=residue_index,
                                 Cartn_x=pt[0], Cartn_y=pt[1], Cartn_z=pt[2],
                                 model_id=model.id)
@@ -1503,10 +1418,10 @@ class _ModelDumper(_Dumper):
                             all_indexes = (residue_index,)
                         pt = model.transform * xyz
                         l.write(ordinal_id=ordinal,
-                                entity_id=chain.entity.id,
+                                entity_id=chain.entity._id,
                                 seq_id_begin = all_indexes[0],
                                 seq_id_end = all_indexes[-1],
-                                asym_id=chain.chain_id,
+                                asym_id=chain.asym_unit._id,
                                 Cartn_x=pt[0], Cartn_y=pt[1], Cartn_z=pt[2],
                                 object_radius=radius,
                                 rmsf=model.get_rmsf(chain.orig_comp,
@@ -1830,7 +1745,7 @@ class _StartingModelDumper(_Dumper):
                 chain_id = self.simo._get_chain_for_component(
                                     sd.component, self.output)
                 entity = self.simo.entities[sd.component]
-                l.write(ordinal_id=ordinal, entity_id=entity.id,
+                l.write(ordinal_id=ordinal, entity_id=entity._id,
                         asym_id=chain_id, seq_id=sd.res.get_index(),
                         comp_id=sd.comp_id,
                         db_asym_id=sd.source.chain_id,
@@ -1903,7 +1818,7 @@ modeling. These may need to be added manually below.""")
                     this_begin, this_end = source.get_seq_id_range(model)
                     seq_id_begin = min(seq_id_begin, this_begin)
                     seq_id_end = max(seq_id_end, this_end)
-                l.write(entity_id=entity.id,
+                l.write(entity_id=entity._id,
                       entity_description=entity.description,
                       asym_id=chain_id,
                       seq_id_begin=seq_id_begin,
@@ -1965,7 +1880,7 @@ modeling. These may need to be added manually below.""")
                                 group_PDB=group_pdb,
                                 id=atom.get_input_index(), type_symbol=element,
                                 atom_id=atom_name, comp_id=res_name,
-                                entity_id=entity.id,
+                                entity_id=entity._id,
                                 asym_id=chain_id,
                                 seq_id=res.get_index() + f.offset,
                                 Cartn_x=coord[0],
@@ -2283,7 +2198,7 @@ class _DensityDumper(_Dumper):
                     chain_id = self.simo._get_chain_for_component(comp,
                                                                   self.output)
                     l.write(id=ordinal, ensemble_id=ensemble.id,
-                            entity_id=entity.id,
+                            entity_id=entity._id,
                             file_id=density.id,
                             seq_id_begin=1, seq_id_end=lenseq,
                             asym_id=chain_id)
@@ -2318,37 +2233,24 @@ class _MultiStateDumper(_Dumper):
                         details=state.get_prefixed_name(group.name))
 
 
-class _Entity(object):
-    """Represent a CIF entity (a chain with a unique sequence)"""
-    def __init__(self, seq, first_component):
-        self.sequence = seq
-        self.first_component = first_component
-    # Use the name of the first component, stripped of any copy number,
-    # as the description of the entity
-    def __get_description(self):
-        # Strip out anything after a @ or .
-        return self.first_component.split("@")[0].split(".")[0]
-    description = property(__get_description)
-
 class _EntityMapper(dict):
     """Handle mapping from IMP components to CIF entities.
        Multiple components may map to the same entity if they share sequence."""
-    def __init__(self):
+    def __init__(self, system):
         super(_EntityMapper, self).__init__()
         self._sequence_dict = {}
         self._entities = []
+        self.system = system
 
     def add(self, component_name, sequence):
         if sequence not in self._sequence_dict:
-            entity = _Entity(sequence, component_name)
-            self._entities.append(entity)
-            entity.id = len(self._entities)
+            # Use the name of the first component, stripped of any copy number,
+            # as the description of the entity
+            d = component_name.split("@")[0].split(".")[0]
+            entity = ihm.Entity(sequence, description=d)
+            self.system.entities.append(entity)
             self._sequence_dict[sequence] = entity
         self[component_name] = self._sequence_dict[sequence]
-
-    def get_all(self):
-        """Yield all entities"""
-        return self._entities
 
 
 class _RestraintDataset(object):
@@ -2449,8 +2351,9 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self._cif_writer = ihm.format.CifWriter(fh)
         self._representations = []
         self.create_representation("Default representation")
-        self.entities = _EntityMapper()
-        self.chains = {}
+        self.entities = _EntityMapper(self.system)
+        # Mapping from component names to ihm.AsymUnit
+        self.asym_units = {}
         self._all_components = {}
         self.all_modeled_components = []
         self._transformed_components = []
@@ -2497,10 +2400,6 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self._dumpers = [self.comment_dump,
                          _AuditAuthorDumper(self),
                          _CitationDumper(self),
-                         _ChemCompDumper(self),
-                         _EntityDumper(self),
-                         _EntityPolyDumper(self), _EntityPolySeqDumper(self),
-                         _StructAsymDumper(self),
                          self.assembly_dump,
                          self.model_repr_dump, self.extref_dump,
                          self.dataset_dump,
@@ -2564,9 +2463,8 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
     def _get_chain_for_component(self, name, output):
         """Get the chain ID for a component, if any."""
         # todo: handle multiple copies
-        if name in self.chains:
-            chain = self.chains[name]
-            return output.multi_chainids[chain]
+        if name in self.asym_units:
+            return self.asym_units[name]._id
         else:
             # A non-modeled component doesn't have a chain ID
             return None
@@ -2587,7 +2485,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         if modeled:
             state.all_modeled_components.append(name)
             if new_comp:
-                self.chains[name] = len(self.chains)
+                self.asym_units[name] = None # assign asym once we get sequence
                 self.all_modeled_components.append(name)
             state.modeled_assembly.append(name)
         if new_comp:
@@ -2600,6 +2498,12 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         else:
             self.sequence_dict[name] = seq
             self.entities.add(name, seq)
+        if name in self.asym_units and self.asym_units[name] is None:
+            # Set up a new asymmetric unit for this component
+            entity = self.entities[name]
+            asym = ihm.AsymUnit(entity, details=name)
+            self.system.asym_units.append(asym)
+            self.asym_units[name] = asym
 
     def flush(self):
         # Dump out ihm-managed objects first

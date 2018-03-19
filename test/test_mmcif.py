@@ -77,53 +77,32 @@ class Tests(IMP.test.TestCase):
         d.finalize()
         d.finalize_metadata()
 
-    def test_software(self):
-        """Test SoftwareDumper"""
-        s = IMP.pmi.metadata.Software(name='test', classification='test code',
-                                      description='Some test program',
-                                      version=1, url='http://salilab.org')
-        s2 = IMP.pmi.metadata.Software(name='foo', classification='test code',
-                                       description='Some test program',
-                                       url='http://salilab.org')
-        m = IMP.Model()
-        r = IMP.pmi.representation.Representation(m)
-        r.add_metadata(s)
-        r.add_metadata(s2)
-        r.add_metadata(ihm.location.Repository(doi="foo", root='.'))
-        d = IMP.pmi.mmcif._SoftwareDumper(r)
-        fh = StringIO()
-        w = ihm.format.CifWriter(fh)
-        d.dump(w)
-        out = fh.getvalue().split('\n')
-        self.assertEqual(out[-4],
-                         "3 test 'test code' 1 program http://salilab.org")
-        self.assertEqual(out[-3],
-                         "4 foo 'test code' ? program http://salilab.org")
-
     def test_software_modeller(self):
-        """Test SoftwareDumper.set_modeller_used"""
-        d = IMP.pmi.mmcif._SoftwareDumper(EmptyObject())
+        """Test AllSoftware.set_modeller_used"""
+        system = ihm.System()
+        d = IMP.pmi.mmcif._AllSoftware(system)
         self.assertEqual(d.modeller_used, False)
         d.set_modeller_used('9.18', '2018-01-01')
         self.assertEqual(d.modeller_used, True)
-        self.assertEqual(len(d.software), 3)
-        self.assertEqual(d.software[-1].version, '9.18')
+        self.assertEqual(len(system.software), 3)
+        self.assertEqual(system.software[-1].version, '9.18')
         # Further calls should have no effect
         d.set_modeller_used('9.0', 'xxx')
-        self.assertEqual(len(d.software), 3)
-        self.assertEqual(d.software[-1].version, '9.18')
+        self.assertEqual(len(system.software), 3)
+        self.assertEqual(system.software[-1].version, '9.18')
 
     def test_software_phyre2(self):
-        """Test SoftwareDumper.set_phyre2_used"""
-        d = IMP.pmi.mmcif._SoftwareDumper(EmptyObject())
+        """Test AllSoftware.set_phyre2_used"""
+        system = ihm.System()
+        d = IMP.pmi.mmcif._AllSoftware(system)
         self.assertEqual(d.phyre2_used, False)
         d.set_phyre2_used()
         self.assertEqual(d.phyre2_used, True)
-        self.assertEqual(len(d.software), 3)
-        self.assertEqual(d.software[-1].version, '2.0')
+        self.assertEqual(len(system.software), 3)
+        self.assertEqual(system.software[-1].version, '2.0')
         # Further calls should have no effect
         d.set_phyre2_used()
-        self.assertEqual(len(d.software), 3)
+        self.assertEqual(len(system.software), 3)
 
     def test_comment_dumper(self):
         """Test CommentDumper"""
@@ -411,16 +390,6 @@ B 1 bar
 C 2 baz
 #
 """)
-
-    def test_entry(self):
-        """Test EntryDumper"""
-        po = DummyPO(EmptyObject())
-        d = IMP.pmi.mmcif._EntryDumper(po)
-        fh = StringIO()
-        w = ihm.format.CifWriter(fh)
-        d.dump(w)
-        out = fh.getvalue()
-        self.assertEqual(out, "data_imp_model\n_entry.id imp_model\n")
 
     def test_audit_author(self):
         """Test AuditAuthorDumper"""
@@ -2436,7 +2405,8 @@ _ihm_model_representation.model_object_count
             def dump(self, cw):
                 self.actions.append('d')
         dump = DummyDumper()
-        po = IMP.pmi.mmcif.ProtocolOutput(None)
+        fh = StringIO()
+        po = IMP.pmi.mmcif.ProtocolOutput(fh)
         po._dumpers = [dump]
         po.flush()
         self.assertEqual(dump.actions, ['fm', 'f', 'd'])

@@ -286,7 +286,7 @@ class Representation(object):
 
         self.elements[name].append((length, length, " ", "end"))
         for p, state in self._protocol_output:
-            p.add_component_sequence(name, self.sequence_dict[name])
+            p.add_component_sequence(state, name, self.sequence_dict[name])
 
     def autobuild_model(self, name, pdbname, chain,
                         resolutions=None, resrange=None,

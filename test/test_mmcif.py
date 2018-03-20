@@ -248,124 +248,21 @@ _ihm_external_files.details
         self.assertEqual(r2.get_file_dataset('foobar'), None)
         self.assertEqual(po.get_file_dataset('foobar'), None)
 
-    def test_assembly_dumper_get_subassembly(self):
-        """Test AssemblyDumper.get_subassembly()"""
-        po = DummyPO(EmptyObject())
-        d = IMP.pmi.mmcif._AssemblyDumper(po)
-        complete = IMP.pmi.mmcif._Assembly(['a', 'b', 'c'])
-        d.add(complete)
-        x1 = d.get_subassembly({'a':None, 'b':None}, name="foo",
-                               description="bar")
-        x2 = d.get_subassembly({'a':None, 'b':None, 'c':None})
-        x3 = d.get_subassembly({'a':(10,20)})
-        d.finalize() # assign IDs to all assemblies
-        self.assertEqual(complete.id, 1)
-        self.assertEqual(x1.id, 2)
-        self.assertEqual(x1.name, "foo")
-        self.assertEqual(x1.description, "bar")
-        self.assertEqual([ac.component for ac in x1], ['a', 'b'])
-        self.assertEqual(x2.id, 1)
-        self.assertEqual(x3.id, 3)
-        self.assertEqual([ac.component for ac in x3], ['a'])
-        self.assertEqual([ac._seqrange for ac in x3], [(10,20)])
-
     def test_create_component_repeat(self):
         """Test repeated calls to create_component()"""
         po = DummyPO(EmptyObject())
         state = po._add_state(EmptyObject())
         po.create_component(state, "foo", True)
-        po.add_component_sequence("foo", "CCC")
+        po.add_component_sequence(state, "foo", "CCC")
 
         # Repeated call is OK
         po.create_component(state, "foo", True)
 
         # Repeated creation of sequence is OK if it's the same
-        po.add_component_sequence("foo", "CCC")
+        po.add_component_sequence(state, "foo", "CCC")
         # Not OK if it differs
-        self.assertRaises(ValueError, po.add_component_sequence, "foo", "AAA")
-
-    def test_assembly_all_modeled(self):
-        """Test AssemblyDumper, all components modeled"""
-        po = DummyPO(EmptyObject())
-        state = po._add_state(EmptyObject())
-        d = IMP.pmi.mmcif._AssemblyDumper(po)
-        for c, seq in (("foo", "AAA"), ("bar", "AAA"), ("baz", "AA")):
-            po.create_component(state, c, True)
-            po.add_component_sequence(c, seq)
-        d.add(IMP.pmi.mmcif._Assembly(["foo", "bar"]))
-        d.add(IMP.pmi.mmcif._Assembly(["bar", "baz"]))
-        d.get_subassembly({'foo':(2,3)})
-
-        fh = StringIO()
-        w = ihm.format.CifWriter(fh)
-        self.assign_entity_asym_ids(po.system)
-        d.finalize()
-        d.dump(w)
-        out = fh.getvalue()
-        self.assertEqual(out, """#
-loop_
-_ihm_struct_assembly_details.assembly_id
-_ihm_struct_assembly_details.assembly_name
-_ihm_struct_assembly_details.assembly_description
-1 . .
-2 . .
-3 Subassembly Subassembly
-#
-#
-loop_
-_ihm_struct_assembly.ordinal_id
-_ihm_struct_assembly.assembly_id
-_ihm_struct_assembly.parent_assembly_id
-_ihm_struct_assembly.entity_description
-_ihm_struct_assembly.entity_id
-_ihm_struct_assembly.asym_id
-_ihm_struct_assembly.seq_id_begin
-_ihm_struct_assembly.seq_id_end
-1 1 1 foo 1 A 1 3
-2 1 1 foo 1 B 1 3
-3 2 2 foo 1 B 1 3
-4 2 2 baz 2 C 1 2
-5 3 3 foo 1 A 2 3
-#
-""")
-
-    def test_assembly_subset_modeled(self):
-        """Test AssemblyDumper, subset of components modeled"""
-        po = DummyPO(EmptyObject())
-        state = po._add_state(EmptyObject())
-        for c, seq, modeled in (("foo", "AAA", True), ("bar", "AA", False)):
-            po.create_component(state, c, modeled)
-            po.add_component_sequence(c, seq)
-
-        fh = StringIO()
-        w = ihm.format.CifWriter(fh)
-        self.assign_entity_asym_ids(po.system)
-        po.assembly_dump.finalize() # assign IDs
-        po.assembly_dump.dump(w)
-        out = fh.getvalue()
-        self.assertEqual(out, """#
-loop_
-_ihm_struct_assembly_details.assembly_id
-_ihm_struct_assembly_details.assembly_name
-_ihm_struct_assembly_details.assembly_description
-1 'Complete assembly' 'All known components'
-2 'Modeled assembly' 'All components modeled by IMP'
-#
-#
-loop_
-_ihm_struct_assembly.ordinal_id
-_ihm_struct_assembly.assembly_id
-_ihm_struct_assembly.parent_assembly_id
-_ihm_struct_assembly.entity_description
-_ihm_struct_assembly.entity_id
-_ihm_struct_assembly.asym_id
-_ihm_struct_assembly.seq_id_begin
-_ihm_struct_assembly.seq_id_end
-1 1 1 foo 1 A 1 3
-2 1 1 bar 2 . 1 2
-3 2 2 foo 1 A 1 3
-#
-""")
+        self.assertRaises(ValueError, po.add_component_sequence, state,
+                          "foo", "AAA")
 
     def test_asym_units(self):
         """Test assigning asym units and entities"""
@@ -376,7 +273,7 @@ _ihm_struct_assembly.seq_id_end
                               (state2, "foo", "AAA"),
                               (state1, "baz", "AA")):
             po.create_component(state, c, True)
-            po.add_component_sequence(c, seq)
+            po.add_component_sequence(state, c, seq)
         self.assertEqual(len(po.system.entities), 2)
         self.assertEqual(po.system.asym_units[0].details, 'foo')
         self.assertEqual(po.system.entities[0].sequence, 'AAA')
@@ -427,9 +324,9 @@ auth4 4
         simo.create_component('foo.1@12')
         simo.create_component('bar')
         simo.create_component('baz')
-        po.add_component_sequence('foo.1@12', 'ACGT')
-        po.add_component_sequence('bar', 'ACGT')
-        po.add_component_sequence('baz', 'ACC')
+        po.add_component_sequence(po._last_state, 'foo.1@12', 'ACGT')
+        po.add_component_sequence(po._last_state, 'bar', 'ACGT')
+        po.add_component_sequence(po._last_state, 'baz', 'ACC')
 
         self.assertEqual(len(po.system.entities), 2)
         self.assertEqual(po.system.entities[0].description, 'foo')
@@ -876,8 +773,8 @@ _ihm_external_files.details
                 IMP.algebra.Transformation3D(IMP.algebra.Vector3D(1,2,3)))
 
         d = IMP.pmi.mmcif._ModelDumper(po)
-        assembly = IMP.pmi.mmcif._Assembly()
-        assembly.id = 42
+        assembly = ihm.Assembly()
+        assembly._id = 42
         representation = IMP.pmi.mmcif._Representation(name="test rep")
         representation.id = 99
         protocol = IMP.pmi.mmcif._Protocol()
@@ -939,8 +836,8 @@ _ihm_sphere_obj_site.model_id
                                      "A", resolutions=[0])
 
         d = IMP.pmi.mmcif._ModelDumper(po)
-        assembly = IMP.pmi.mmcif._Assembly()
-        assembly.id = 42
+        assembly = ihm.Assembly()
+        assembly._id = 42
         representation = IMP.pmi.mmcif._Representation(name="test rep")
         representation.id = 99
         protocol = IMP.pmi.mmcif._Protocol()
@@ -1014,8 +911,8 @@ _ihm_sphere_obj_site.model_id
                                      "A")
 
         d = IMP.pmi.mmcif._ModelDumper(po)
-        assembly = IMP.pmi.mmcif._Assembly()
-        assembly.id = 42
+        assembly = ihm.Assembly()
+        assembly._id = 42
         representation = IMP.pmi.mmcif._Representation(name="test rep")
         representation.id = 99
         protocol = IMP.pmi.mmcif._Protocol()
@@ -1363,7 +1260,8 @@ Nup85-m1 ATOM 2 C CA GLU 2 B 2 -8.986 11.688 -5.817 91.820 4
         mc2.execute_macro()
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
-        po.assembly_dump.finalize() # Assign IDs to assemblies
+        po.system.assemblies[0]._id = 1
+        po.system.assemblies[1]._id = 1
         po.dataset_dump.finalize() # Assign IDs to datasets
         po.model_prot_dump.dump(w)
         out = fh.getvalue()
@@ -1913,7 +1811,8 @@ _ihm_cross_link_restraint.sigma_2
         po.em2d_dump.add(r)
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
-        po.assembly_dump.finalize() # assign assembly IDs
+        self.assign_entity_asym_ids(po.system)
+        ihm.dumper._AssemblyDumper().finalize(po.system)  # assign assembly IDs
         po.em2d_dump.dump(w)
         out = fh.getvalue()
         self.assertEqual(out, """#
@@ -1975,7 +1874,8 @@ _ihm_2dem_class_average_fitting.tr_vector[3]
 
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
-        po.assembly_dump.finalize() # assign assembly IDs
+        self.assign_entity_asym_ids(po.system)
+        ihm.dumper._AssemblyDumper().finalize(po.system)  # assign assembly IDs
         po.sas_dump.dump(w)
         out = fh.getvalue()
         self.assertEqual(out, """#
@@ -2034,7 +1934,8 @@ _ihm_sas_restraint.details
         po.em3d_dump.add(r)
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
-        po.assembly_dump.finalize() # Assign IDs to assemblies
+        self.assign_entity_asym_ids(po.system)
+        ihm.dumper._AssemblyDumper().finalize(po.system)  # assign assembly IDs
         po.em3d_dump.dump(w)
         out = fh.getvalue()
         self.assertEqual(out, """#

@@ -914,7 +914,7 @@ class _EM2DDumper(_Dumper):
                         number_of_projections=r.projection_number,
                         # todo: check that the assembly is the same for each
                         # state
-                        struct_assembly_id=r.state.modeled_assembly.id,
+                        struct_assembly_id=r.state.modeled_assembly._id,
                         image_segment_flag=False)
 
     def dump_fitting(self, writer):
@@ -979,7 +979,7 @@ class _SASDumper(_Dumper):
                           "chi_value", "details"]) as l:
             for r in self.restraints:
                 l.write(ordinal_id=ordinal, dataset_list_id=r.dataset.id,
-                        model_id=r.model.id, struct_assembly_id=r.assembly.id,
+                        model_id=r.model.id, struct_assembly_id=r.assembly._id,
                         profile_segment_flag=False,
                         fitting_atom_type='Heavy atoms',
                         fitting_method=r.method, fitting_state=r.fitting_state,
@@ -1004,7 +1004,7 @@ class _EM3DRestraint(object):
         components = {}
         for d in densities:
             components[cm[d]] = None # None == all residues in this component
-        return simo.assembly_dump.get_subassembly(components,
+        return simo._get_subassembly(components,
                               name="EM subassembly",
                               description="All components that fit the EM map")
 
@@ -1039,132 +1039,11 @@ class _EM3DDumper(_Dumper):
                     l.write(ordinal_id=ordinal,
                             dataset_list_id=r.rdataset.dataset.id,
                             fitting_method=r.fitting_method,
-                            struct_assembly_id=r.assembly.id,
+                            struct_assembly_id=r.assembly._id,
                             number_of_gaussians=r.number_of_gaussians,
                             model_id=model.id,
                             cross_correlation_coefficient=ccc if ccc is not None
                                                         else None)
-                    ordinal += 1
-
-class _AssemblyComponent(object):
-    """A single component (or part of a component) in an _Assembly"""
-    def __init__(self, component, seqrange=None):
-        # todo: support multiple sequence ranges
-        self.component, self._seqrange = component, seqrange
-
-    def get_seq_range(self, simo):
-        """Get the sequence range. Defaults to the entire sequence."""
-        if self._seqrange:
-            return self._seqrange
-        else:
-            seq = simo.sequence_dict[self.component]
-            return (1, len(seq))
-
-    def __hash__(self):
-        return hash((self.component, self._seqrange))
-    def __eq__(self, other):
-        return (self.component, self._seqrange) \
-                == (other.component, other._seqrange)
-
-
-class _Assembly(list):
-    """A collection of components. Currently simply implemented as a list of
-       _AssemblyComponent objects. These must be in creation order."""
-
-    def __init__(self, elements=()):
-        self.name = None
-        self.description = None
-        def fix_element(e):
-            if isinstance(e, _AssemblyComponent):
-                return e
-            else:
-                return _AssemblyComponent(e)
-        super(_Assembly, self).__init__(fix_element(e) for e in elements)
-
-    def __hash__(self):
-        # allow putting assemblies in a dict. 'list' isn't hashable
-        # but 'tuple' is
-        return hash(tuple(self))
-
-    def __contains__(self, item):
-        for ac in self:
-            if ac.component == item:
-                return True
-        return False
-
-    def append(self, component, seqrange=None):
-        super(_Assembly, self).append(_AssemblyComponent(component, seqrange))
-
-
-class _AssemblyDumper(_Dumper):
-    def __init__(self, simo):
-        super(_AssemblyDumper, self).__init__(simo)
-        self.assemblies = []
-        self.output = IMP.pmi.output.Output()
-
-    def add(self, a):
-        """Add a new assembly. The first such assembly is assumed to contain
-           all components. Duplicate assemblies will be pruned at the end."""
-        self.assemblies.append(a)
-        return a
-
-    def get_subassembly(self, compdict, name="Subassembly",
-                        description="Subassembly"):
-        """Get an _Assembly consisting of the given components.
-           `compdict` is a dictionary of the components to add, where keys
-           are the component names and values are the sequence ranges (or
-           None to use all residues in the component)."""
-        # Put components in creation order
-        ac_from_name = {}
-        for c in compdict:
-            ac_from_name[c] = _AssemblyComponent(c, seqrange=compdict[c])
-        newa = _Assembly(ac_from_name[ac.component] for ac in self.assemblies[0]
-                         if ac.component in ac_from_name)
-        newa.name = name
-        newa.description = description
-        return self.add(newa)
-
-    def finalize(self):
-        seen_assemblies = {}
-        # Assign IDs to all assemblies
-        self._assembly_by_id = []
-        for a in self.assemblies:
-            _assign_id(a, seen_assemblies, self._assembly_by_id)
-
-    def dump_details(self, writer):
-        with writer.loop("_ihm_struct_assembly_details",
-                         ["assembly_id", "assembly_name",
-                          "assembly_description"]) as l:
-            for a in self._assembly_by_id:
-                l.write(assembly_id=a.id,
-                        assembly_name=a.name if a.name else None,
-                        assembly_description=a.description if a.description
-                                             else None)
-
-    def dump(self, writer):
-        self.dump_details(writer)
-        ordinal = 1
-        with writer.loop("_ihm_struct_assembly",
-                         ["ordinal_id", "assembly_id", "parent_assembly_id",
-                          "entity_description",
-                          "entity_id", "asym_id", "seq_id_begin",
-                          "seq_id_end"]) as l:
-            for a in self._assembly_by_id:
-                for ac in a:
-                    comp = ac.component
-                    seqrange = ac.get_seq_range(self.simo)
-                    entity = self.simo.entities[comp]
-                    chain_id = self.simo._get_chain_for_component(comp,
-                                                                  self.output)
-                    l.write(ordinal_id=ordinal, assembly_id=a.id,
-                            # Currently all assemblies are not hierarchical,
-                            # so each assembly is a self-parent
-                            parent_assembly_id=a.id,
-                            entity_description=entity.description,
-                            entity_id=entity._id,
-                            asym_id=chain_id,
-                            seq_id_begin=seqrange[0],
-                            seq_id_end=seqrange[1])
                     ordinal += 1
 
 
@@ -1373,7 +1252,7 @@ class _ModelDumper(_Dumper):
                         model_group_id=model.group.id,
                         model_name=model.name,
                         model_group_name=group_name,
-                        assembly_id=model.assembly.id,
+                        assembly_id=model.assembly._id,
                         protocol_id=model.protocol.id,
                         representation_id=model.representation.id)
                 ordinal += 1
@@ -1480,7 +1359,7 @@ class _ModelProtocolDumper(_Dumper):
                         l.write(ordinal_id=ordinal, protocol_id=p.id,
                                 step_id=step.id, step_method=step.method,
                                 step_name=step.name,
-                                struct_assembly_id=step.modeled_assembly.id,
+                                struct_assembly_id=step.modeled_assembly._id,
                                 dataset_group_id=step.dataset_group.id,
                                 num_models_begin=step.num_models_begin,
                                 num_models_end=step.num_models_end,
@@ -2294,10 +2173,10 @@ class _State(object):
 
         # The assembly of all components modeled by IMP in this state.
         # This may be smaller than the complete assembly.
-        self.modeled_assembly = _Assembly()
-        self.modeled_assembly.name = "Modeled assembly"
-        self.modeled_assembly.description = "All components modeled by IMP"
-        po.assembly_dump.add(self.modeled_assembly)
+        self.modeled_assembly = ihm.Assembly(
+                        name="Modeled assembly",
+                        description="All components modeled by IMP")
+        po.system.assemblies.append(self.modeled_assembly)
 
         self.all_modeled_components = []
 
@@ -2374,13 +2253,6 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.extref_dump = _ExternalReferenceDumper(self)
         self.dataset_dump = _DatasetDumper(self)
         self.starting_model_dump = _StartingModelDumper(self)
-        self.assembly_dump = _AssemblyDumper(self)
-
-        # The assembly of all known components.
-        self.complete_assembly = _Assembly()
-        self.complete_assembly.name = "Complete assembly"
-        self.complete_assembly.description = "All known components"
-        self.assembly_dump.add(self.complete_assembly)
 
         self.model_dump = _ModelDumper(self)
         self.model_repr_dump.starting_model \
@@ -2400,7 +2272,6 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self._dumpers = [self.comment_dump,
                          _AuditAuthorDumper(self),
                          _CitationDumper(self),
-                         self.assembly_dump,
                          self.model_repr_dump, self.extref_dump,
                          self.dataset_dump,
                          self.cross_link_dump, self.sas_dump,
@@ -2469,13 +2340,22 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
             # A non-modeled component doesn't have a chain ID
             return None
 
+    def _get_assembly_comps(self, assembly):
+        """Get the names of the components in the given assembly"""
+        # component name = asym_unit.details
+        comps = {}
+        for ca in assembly:
+            comps[ca.asym.details] = None
+        return comps
+
     def create_transformed_component(self, state, name, original, transform):
-        if name in state.modeled_assembly:
+        assembly_comps = self._get_assembly_comps(state.modeled_assembly)
+        if name in assembly_comps:
             raise ValueError("Component %s already exists" % name)
-        elif original not in state.modeled_assembly:
+        elif original not in assembly_comps:
             raise ValueError("Original component %s does not exist" % original)
         self.create_component(state, name, True)
-        self.add_component_sequence(name, self.sequence_dict[original])
+        self.add_component_sequence(state, name, self.sequence_dict[original])
         self._transformed_components.append(_TransformedComponent(
                                             name, original, transform))
 
@@ -2487,11 +2367,8 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
             if new_comp:
                 self.asym_units[name] = None # assign asym once we get sequence
                 self.all_modeled_components.append(name)
-            state.modeled_assembly.append(name)
-        if new_comp:
-            self.complete_assembly.append(name)
 
-    def add_component_sequence(self, name, seq):
+    def add_component_sequence(self, state, name, seq):
         if name in self.sequence_dict:
             if self.sequence_dict[name] != seq:
                 raise ValueError("Sequence mismatch for component %s" % name)
@@ -2503,6 +2380,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
             entity = self.entities[name]
             asym = ihm.AsymUnit(entity, details=name)
             self.system.asym_units.append(asym)
+            state.modeled_assembly.append(ihm.AssemblyComponent(asym))
             self.asym_units[name] = asym
 
     def flush(self):
@@ -2665,11 +2543,25 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                 for c in state.all_modeled_components:
                     e.load_rmsf(m, c)
 
+    def _get_subassembly(self, comps, name, description):
+        """Get an Assembly consisting of the given components.
+           `compdict` is a dictionary of the components to add, where keys
+           are the component names and values are the sequence ranges (or
+           None to use all residues in the component)."""
+        asyms = []
+        for comp, seqrng in comps.items():
+            a = self.asym_units[comp]
+            asyms.append(a if seqrng is None else a(*seqrng))
+
+        a = ihm.Assembly(asyms, name=name, description=description)
+        self.system.assemblies.append(a)
+        return a
+
     def _add_foxs_restraint(self, model, comp, seqrange, dataset, rg, chi,
                             details):
         """Add a basic FoXS fit. This is largely intended for use from the
            NPC application."""
-        assembly = self.assembly_dump.get_subassembly({comp:seqrange},
+        assembly = self._get_subassembly({comp:seqrange},
                               name="SAXS subassembly",
                               description="All components that fit SAXS data")
         dataset = self._add_dataset(dataset)

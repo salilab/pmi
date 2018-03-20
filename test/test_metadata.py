@@ -7,13 +7,6 @@ import os
 
 class Tests(IMP.test.TestCase):
 
-    def test_software(self):
-        """Test metadata.Software"""
-        s = IMP.pmi.metadata.Software(name='test', classification='test code',
-                                      description='Some test program',
-                                      url='http://salilab.org')
-        self.assertEqual(s.name, 'test')
-
     def test_citation(self):
         """Test metadata.Citation"""
         s = IMP.pmi.metadata.Citation(title='Test paper', journal='J Mol Biol',

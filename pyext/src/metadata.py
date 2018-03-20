@@ -16,18 +16,6 @@ class RootMetadata(Metadata):
     pass
 
 
-class Software(RootMetadata):
-    """Software (other than IMP) used as part of the modeling protocol."""
-    def __init__(self, name, classification, description, url, type='program',
-                 version=None):
-        self.name = name
-        self.classification = classification
-        self.description = description
-        self.url = url
-        self.type = type
-        self.version = version
-
-
 class Citation(RootMetadata):
     """A publication that describes the modeling."""
     def __init__(self, pmid, title, journal, volume, page_range, year, authors,

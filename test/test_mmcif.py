@@ -1,6 +1,5 @@
 from __future__ import print_function
 import IMP.test
-import IMP.pmi.metadata
 import IMP.pmi.representation
 import IMP.pmi.mmcif
 import IMP.pmi.macros

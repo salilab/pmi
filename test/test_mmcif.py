@@ -31,11 +31,6 @@ class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
     def flush(self):
         pass
 
-def make_dataset_dumper():
-    """Make an empty DatasetDumper object."""
-    simo = EmptyObject()
-    return IMP.pmi.mmcif._DatasetDumper(simo), simo
-
 def get_all_models_group(simo, po):
     state = simo._protocol_output[0][1]
     return po.add_model_group(IMP.pmi.mmcif._ModelGroup(state, "All models"))
@@ -337,11 +332,13 @@ _ihm_multi_state_modeling.details
         # replaced by the real underlying dataset, ds3
         self.assertEqual(list(dg._datasets), [ds1, ds3])
 
-    def test_dataset_dumper_all_group(self):
-        """Test DatasetDumper.get_all_group()"""
+    def test_all_datasets_all_group(self):
+        """Test AllDatasets.get_all_group()"""
         state1 = 'state1'
         state2 = 'state2'
-        dump, simo = make_dataset_dumper()
+
+        alld = IMP.pmi.mmcif._AllDatasets()
+
         l = ihm.location.InputFileLocation(repo='foo', path='baz')
         ds1 = ihm.dataset.EM2DClassDataset(l)
         l = ihm.location.InputFileLocation(repo='foo', path='bar')
@@ -349,174 +346,25 @@ _ihm_multi_state_modeling.details
         l = ihm.location.PDBLocation('1abc', '1.0', 'test details')
         ds3 = ihm.dataset.PDBDataset(l)
 
-        g1 = dump.get_all_group(state1)
+        g1 = alld.get_all_group(state1)
 
-        dump.add(state1, ds1)
-        dump.add(state1, ds2)
-        g2 = dump.get_all_group(state1)
-        g3 = dump.get_all_group(state1)
+        alld.add(state1, ds1)
+        alld.add(state1, ds2)
+        g2 = alld.get_all_group(state1)
+        g3 = alld.get_all_group(state1)
 
-        dump.add(state1, ds3)
-        g4 = dump.get_all_group(state1)
-        dump.add(state2, ds3)
-        g5 = dump.get_all_group(state2)
-        dump.finalize() # Assign IDs
+        alld.add(state1, ds3)
+        g4 = alld.get_all_group(state1)
+        alld.add(state2, ds3)
+        g5 = alld.get_all_group(state2)
 
-        self.assertEqual(g1.id, 1)
+        for g in (g2, g2, g3, g4, g5):
+            g.finalize()
+
         self.assertEqual(list(g1._datasets), [])
-
-        self.assertEqual(g2.id, 2)
         self.assertEqual(list(g2._datasets), [ds1, ds2])
-        self.assertEqual(g3.id, 2)
-
-        self.assertEqual(g4.id, 3)
         self.assertEqual(list(g4._datasets), [ds1, ds2, ds3])
-
-        self.assertEqual(g5.id, 4)
         self.assertEqual(list(g5._datasets), [ds3])
-
-    def test_dataset_dumper_duplicates_details(self):
-        """DatasetDumper ignores duplicate datasets with differing details"""
-        dump, simo = make_dataset_dumper()
-        l = ihm.location.PDBLocation('1abc', '1.0', 'test details')
-        ds1 = dump.add('state', ihm.dataset.PDBDataset(l))
-        # A duplicate dataset should be ignored even if details differ
-        l = ihm.location.PDBLocation('1abc', '1.0', 'other details')
-        ds2 = dump.add('state', ihm.dataset.PDBDataset(l))
-        dump.finalize() # Assign IDs
-        self.assertEqual(ds1.id, 1)
-        self.assertEqual(ds2.id, 1)
-        self.assertEqual(len(dump._dataset_by_id), 1)
-
-    def test_dataset_dumper_duplicates_location(self):
-        """DatasetDumper ignores duplicate dataset locations"""
-        state = 'state1'
-        loc1 = ihm.location.DatabaseLocation("mydb", "abc", "1.0", "")
-        loc2 = ihm.location.DatabaseLocation("mydb", "xyz", "1.0", "")
-
-        # Identical datasets in the same location aren't duplicated
-        cx1 = ihm.dataset.CXMSDataset(loc1)
-        cx2 = ihm.dataset.CXMSDataset(loc1)
-
-        dump, simo = make_dataset_dumper()
-        dump.add(state, cx1)
-        dump.add(state, cx2)
-        dump.finalize() # Assign IDs
-        self.assertEqual(cx1.id, 1)
-        self.assertEqual(cx2.id, 1)
-        self.assertEqual(len(dump._dataset_by_id), 1)
-
-        # Datasets in different locations are OK
-        cx1 = ihm.dataset.CXMSDataset(loc1)
-        cx2 = ihm.dataset.CXMSDataset(loc2)
-        dump, simo = make_dataset_dumper()
-        dump.add(state, cx1)
-        dump.add(state, cx2)
-        dump.finalize() # Assign IDs
-        self.assertEqual(cx1.id, 1)
-        self.assertEqual(cx2.id, 2)
-        self.assertEqual(len(dump._dataset_by_id), 2)
-
-        # Different datasets in same location are OK (but odd)
-        cx2 = ihm.dataset.CXMSDataset(loc2)
-        em2d = ihm.dataset.EM2DClassDataset(loc2)
-        dump, simo = make_dataset_dumper()
-        dump.add(state, cx2)
-        dump.add(state, em2d)
-        dump.finalize() # Assign IDs
-        self.assertEqual(cx2.id, 1)
-        self.assertEqual(em2d.id, 2)
-        self.assertEqual(len(dump._dataset_by_id), 2)
-
-        # Datasets can be duplicated if allow_duplicates=True
-        emloc1 = ihm.location.EMDBLocation("abc")
-        emloc2 = ihm.location.EMDBLocation("abc")
-        emloc1._allow_duplicates = True
-        em3d_1 = ihm.dataset.EMDensityDataset(emloc1)
-        em3d_2 = ihm.dataset.EMDensityDataset(emloc2)
-        dump, simo = make_dataset_dumper()
-        dump.add(state, em3d_1)
-        dump.add(state, em3d_2)
-        dump.finalize() # Assign IDs
-        self.assertEqual(em3d_1.id, 1)
-        self.assertEqual(em3d_2.id, 2)
-        self.assertEqual(len(dump._dataset_by_id), 2)
-
-    def test_dataset_dumper_dump(self):
-        """Test DatasetDumper.dump()"""
-        state1 = 'state'
-        dump, simo = make_dataset_dumper()
-        l = ihm.location.InputFileLocation(repo='foo', path='bar')
-        l._id = 97
-        pds = dump.add(state1, ihm.dataset.CXMSDataset(l))
-        # group1 contains just the first dataset
-        group1 = dump.get_all_group(state1)
-        l = ihm.location.InputFileLocation(repo='foo2', path='bar2')
-        l._id = 98
-        pds = dump.add(state1, ihm.dataset.CXMSDataset(l))
-        # group2 contains the first two datasets
-        group2 = dump.get_all_group(state1)
-        # last dataset is in no group and is wrapped by RestraintDataset
-        class DummyRestraint(object):
-            pass
-        dr = DummyRestraint()
-        l = ihm.location.PDBLocation('1abc', '1.0', 'test details')
-        dr.dataset = ihm.dataset.PDBDataset(l)
-        dr.dataset.parents.append(pds)
-        rd = IMP.pmi.mmcif._RestraintDataset(dr, num=None,
-                                             allow_duplicates=False)
-        ds = dump.add(state1, rd)
-        self.assertEqual(ds.dataset.location.access_code, '1abc')
-
-        fh = StringIO()
-        w = ihm.format.CifWriter(fh)
-        dump.finalize()
-        dump.dump(w)
-        out = fh.getvalue()
-        self.assertEqual(out, """#
-loop_
-_ihm_dataset_list.id
-_ihm_dataset_list.data_type
-_ihm_dataset_list.database_hosted
-1 'CX-MS data' NO
-2 'CX-MS data' NO
-3 'Experimental model' YES
-#
-#
-loop_
-_ihm_dataset_group.ordinal_id
-_ihm_dataset_group.group_id
-_ihm_dataset_group.dataset_list_id
-1 1 1
-2 2 1
-3 2 2
-#
-#
-loop_
-_ihm_dataset_external_reference.id
-_ihm_dataset_external_reference.dataset_list_id
-_ihm_dataset_external_reference.file_id
-1 1 97
-2 2 98
-#
-#
-loop_
-_ihm_dataset_related_db_reference.id
-_ihm_dataset_related_db_reference.dataset_list_id
-_ihm_dataset_related_db_reference.db_name
-_ihm_dataset_related_db_reference.accession_code
-_ihm_dataset_related_db_reference.version
-_ihm_dataset_related_db_reference.details
-1 3 PDB 1abc 1.0 'test details'
-#
-#
-loop_
-_ihm_related_datasets.ordinal_id
-_ihm_related_datasets.dataset_list_id_derived
-_ihm_related_datasets.dataset_list_id_primary
-1 3 2
-#
-""")
 
     def test_model_dumper_sphere(self):
         """Test ModelDumper sphere_obj output"""
@@ -725,6 +573,17 @@ _ihm_sphere_obj_site.model_id
 #
 """)
 
+    def assign_dataset_ids(self, po):
+        """Assign IDs to all Datasets in the system"""
+        system = po.system
+        # Handle RestraintDataset
+        system.orphan_datasets.extend(
+                           po.all_datasets._get_final_datasets())
+        system.orphan_dataset_groups.extend(
+                           po.all_datasets._get_final_groups())
+        d = ihm.dumper._DatasetDumper()
+        d.finalize(system)
+
     def assign_entity_asym_ids(self, system):
         """Assign IDs to all Entities and AsymUnits in the system"""
         d = ihm.dumper._EntityDumper()
@@ -768,7 +627,7 @@ _ihm_sphere_obj_site.model_id
         # Assign ID (2) to referenced alignment file (id=1 is assigned to
         # the Python script)
         ihm.dumper._ExternalReferenceDumper().finalize(po.system)
-        po.dataset_dump.finalize()
+        self.assign_dataset_ids(po)
         po.starting_model_dump.finalize()
         po.starting_model_dump.dump(w)
         out = fh.getvalue()
@@ -1028,7 +887,7 @@ Nup85-m1 ATOM 2 C CA GLU 2 B 2 -8.986 11.688 -5.817 91.820 4
         w = ihm.format.CifWriter(fh)
         self.assign_entity_asym_ids(po.system)
         ihm.dumper._AssemblyDumper().finalize(po.system)  # assign assembly IDs
-        po.dataset_dump.finalize() # Assign IDs to datasets
+        self.assign_dataset_ids(po)
         po.model_prot_dump.dump(w)
         out = fh.getvalue()
         self.assertEqual(out, """#
@@ -1387,7 +1246,7 @@ _ihm_localization_density_files.seq_id_end
                                      "A")
         r = DummyRestraint()
         r.dataset = DummyDataset()
-        r.dataset.id = 42
+        r.dataset._id = 42
         xl_group = po.get_cross_link_group(r)
         ex_xl = po.add_experimental_cross_link(1, 'Nup84',
                                                2, 'Nup84', 42.0, xl_group)
@@ -1557,7 +1416,7 @@ _ihm_cross_link_restraint.sigma_2
         dp = ihm.dataset.EMMicrographsDataset(lp)
         l = ihm.location.InputFileLocation(repo='foo', path='bar')
         d = ihm.dataset.EM2DClassDataset(l)
-        d.id = 4
+        d._id = 4
         d.parents.append(dp)
         pr.dataset = d
         p = DummyProtocolStep()
@@ -1633,7 +1492,7 @@ _ihm_2dem_class_average_fitting.tr_vector[3]
 
         lp = ihm.location.InputFileLocation(repo='foo', path='baz')
         d = ihm.dataset.SASDataset(lp)
-        d.id = 4
+        d._id = 4
         model = DummyModel()
         model.id = 42
         po._add_foxs_restraint(model, 'Nup84', (2,3), d, 3.4, 1.2, 'test')
@@ -1686,7 +1545,7 @@ _ihm_sas_restraint.details
 
         l = ihm.location.InputFileLocation(repo='foo', path='bar')
         d = ihm.dataset.EM2DClassDataset(l)
-        d.id = 4
+        d._id = 4
         pr.dataset = d
 
         p = DummyProtocolStep()

@@ -2176,7 +2176,7 @@ class _State(object):
         self.modeled_assembly = ihm.Assembly(
                         name="Modeled assembly",
                         description="All components modeled by IMP")
-        po.system.assemblies.append(self.modeled_assembly)
+        po.system.orphan_assemblies.append(self.modeled_assembly)
 
         self.all_modeled_components = []
 
@@ -2554,7 +2554,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
             asyms.append(a if seqrng is None else a(*seqrng))
 
         a = ihm.Assembly(asyms, name=name, description=description)
-        self.system.assemblies.append(a)
+        self.system.orphan_assemblies.append(a)
         return a
 
     def _add_foxs_restraint(self, model, comp, seqrange, dataset, rg, chi,

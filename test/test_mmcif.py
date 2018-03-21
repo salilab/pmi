@@ -1260,8 +1260,8 @@ Nup85-m1 ATOM 2 C CA GLU 2 B 2 -8.986 11.688 -5.817 91.820 4
         mc2.execute_macro()
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
-        po.system.assemblies[0]._id = 1
-        po.system.assemblies[1]._id = 1
+        self.assign_entity_asym_ids(po.system)
+        ihm.dumper._AssemblyDumper().finalize(po.system)  # assign assembly IDs
         po.dataset_dump.finalize() # Assign IDs to datasets
         po.model_prot_dump.dump(w)
         out = fh.getvalue()
@@ -1968,10 +1968,10 @@ _ihm_3dem_restraint.cross_correlation_coefficient
             po._update_location(local)
             self.assertEqual(local.repo, None)
 
-            simo.add_metadata(IMP.pmi.metadata.Software(
+            simo.add_metadata(ihm.Software(
                                   name='test', classification='test code',
                                   description='Some test program',
-                                  version=1, url='http://salilab.org'))
+                                  version=1, location='http://salilab.org'))
             simo.add_metadata(ihm.location.Repository(doi='foo',
                                                       root=tmpdir))
             loc = ihm.location.InputFileLocation(bar)

@@ -10,7 +10,6 @@ import IMP.atom
 import IMP.isd
 import IMP.container
 import IMP.pmi.tools
-import IMP.pmi.metadata
 import IMP.pmi.output
 import IMP.pmi.io.crosslink
 import IMP.pmi.restraints

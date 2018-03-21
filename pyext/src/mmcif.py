@@ -350,157 +350,6 @@ class _DatasetGroup(object):
         self._datasets = final_datasets.keys()
 
 
-class _ExternalReference(object):
-    """A single externally-referenced file"""
-    def __init__(self, location, content_type):
-        self.location, self.content_type = location, content_type
-
-    # Pass id through to location
-    def __set_id(self, i):
-        self.location.id = i
-    id = property(lambda x: x.location.id, __set_id)
-    file_size = property(lambda x: x.location.file_size)
-
-    def __eq__(self, other):
-        return self.location == other.location
-    def __hash__(self):
-        return hash(self.location)
-
-
-class _ExternalReferenceDumper(_Dumper):
-    """Output information on externally referenced files
-       (i.e. anything that refers to a Location that isn't
-       a DatabaseLocation)."""
-
-    INPUT_DATA = "Input data or restraints"
-    MODELING_OUTPUT = "Modeling or post-processing output"
-    WORKFLOW = "Modeling workflow or script"
-    VISUALIZATION = "Visualization script"
-
-    class _LocalFiles(object):
-        reference_provider = None
-        reference_type = 'Supplementary Files'
-        reference = None
-        refers_to = 'Other'
-        associated_url = None
-
-        def __init__(self, top_directory):
-            self.top_directory = top_directory
-
-        def _get_full_path(self, path):
-            return os.path.relpath(path, start=self.top_directory)
-
-    class _Repository(object):
-        reference_provider = None
-        reference_type = 'DOI'
-        refers_to = 'Other'
-        associated_url = None
-
-        def __init__(self, repo):
-            self.id = repo.id
-            self.reference = repo.doi
-            if 'zenodo' in self.reference:
-                self.reference_provider = 'Zenodo'
-            if repo.url:
-                self.associated_url = repo.url
-                if repo.url.endswith(".zip"):
-                    self.refers_to = 'Archive'
-                else:
-                    self.refers_to = 'File'
-
-    def __init__(self, simo):
-        super(_ExternalReferenceDumper, self).__init__(simo)
-        self._refs = []
-
-    def add(self, location, content_type):
-        """Add a new location.
-           Note that ids are assigned later."""
-        self._refs.append(_ExternalReference(location, content_type))
-        return location
-
-    def finalize_metadata(self):
-        """Register locations for any metadata and add the main script"""
-        loc = ihm.location.WorkflowFileLocation(path=self.simo._main_script,
-                               details="The main integrative modeling script")
-        main_script = IMP.pmi.metadata.PythonScript(loc)
-        self._workflow = [main_script] \
-                         + [m for m in self.simo._metadata
-                            if isinstance(m, IMP.pmi.metadata.PythonScript)]
-        for w in self._workflow:
-            self.add(w.location, self.WORKFLOW)
-        for m in self.simo._metadata:
-            if isinstance(m, IMP.pmi.metadata.ChimeraXCommandScript):
-                self.add(m.location, self.VISUALIZATION)
-
-    def finalize_after_datasets(self):
-        """Note that this must happen *after* DatasetDumper.finalize()"""
-        # Keep only locations that don't point into databases (these are
-        # handled elsewhere)
-        self._refs = [x for x in self._refs
-                      if not isinstance(x.location,
-                                        ihm.location.DatabaseLocation)]
-        # Assign IDs to all locations and repos (including the None repo, which
-        # is for local files)
-        seen_refs = {}
-        seen_repos = {}
-        self._ref_by_id = []
-        self._repo_by_id = []
-        # Special dummy repo for repo=None (local files)
-        self._local_files = self._LocalFiles(self.simo._working_directory)
-        for r in self._refs:
-            # Update location to point to parent repository, if any
-            self.simo._update_location(r.location)
-            # Assign a unique ID to the reference
-            _assign_id(r, seen_refs, self._ref_by_id)
-            # Assign a unique ID to the repository
-            _assign_id(r.location.repo or self._local_files, seen_repos,
-                       self._repo_by_id)
-
-    def dump(self, writer):
-        self.dump_repos(writer)
-        self.dump_refs(writer)
-
-    def dump_repos(self, writer):
-        def map_repo(r):
-            return r if isinstance(r, self._LocalFiles) else self._Repository(r)
-        with writer.loop("_ihm_external_reference_info",
-                         ["reference_id", "reference_provider",
-                          "reference_type", "reference", "refers_to",
-                          "associated_url"]) as l:
-            for repo in [map_repo(r) for r in self._repo_by_id]:
-                l.write(reference_id=repo.id,
-                        reference_provider=repo.reference_provider,
-                        reference_type=repo.reference_type,
-                        reference=repo.reference, refers_to=repo.refers_to,
-                        associated_url=repo.associated_url)
-
-    def dump_refs(self, writer):
-        with writer.loop("_ihm_external_files",
-                         ["id", "reference_id", "file_path", "content_type",
-                          "file_size_bytes", "details"]) as l:
-            for r in self._ref_by_id:
-                loc = r.location
-                repo = loc.repo or self._local_files
-                file_path=self._posix_path(repo._get_full_path(loc.path))
-                if r.file_size is None:
-                    file_size = None
-                else:
-                    file_size = r.file_size
-                l.write(id=loc.id, reference_id=repo.id,
-                        file_path=file_path,
-                        content_type=r.content_type,
-                        file_size_bytes=file_size,
-                        details=loc.details or None)
-
-    # On Windows systems, convert native paths to POSIX-like (/-separated) paths
-    if os.sep == '/':
-        def _posix_path(self, path):
-            return path
-    else:
-        def _posix_path(self, path):
-            return path.replace(os.sep, '/')
-
-
 class _DatasetDumper(_Dumper):
     def __init__(self, simo):
         super(_DatasetDumper, self).__init__(simo)
@@ -523,15 +372,16 @@ class _DatasetDumper(_Dumper):
         self._datasets_by_state[state].append(dataset)
         return dataset
 
+    def get_all_locations(self):
+        """Get all Locations referenced by datasets"""
+        for d in self._flatten_dataset(self._datasets):
+            yield d.location
+
     def finalize(self):
         seen_datasets = {}
         # Assign IDs to all datasets
         self._dataset_by_id = []
         for d in self._flatten_dataset(self._datasets):
-            # Register location (need to do that now rather than in add() in
-            # order to properly handle _RestraintDataset)
-            self.simo.extref_dump.add(d.location,
-                                      _ExternalReferenceDumper.INPUT_DATA)
             _assign_id(d, seen_datasets, self._dataset_by_id)
 
         # Assign IDs to all groups and remove duplicates
@@ -546,8 +396,6 @@ class _DatasetDumper(_Dumper):
                 seen_group_ids[ids] = g
             else:
                 g.id = seen_group_ids[ids].id
-        # Finalize external references (must happen after dataset finalize)
-        self.simo.extref_dump.finalize_after_datasets()
 
     def _flatten_dataset(self, d):
         if isinstance(d, list):
@@ -623,7 +471,8 @@ class _DatasetDumper(_Dumper):
         with writer.loop("_ihm_dataset_external_reference",
                          ["id", "dataset_list_id", "file_id"]) as l:
             for d in datasets:
-                l.write(id=ordinal, dataset_list_id=d.id, file_id=d.location.id)
+                l.write(id=ordinal, dataset_list_id=d.id,
+                        file_id=d.location._id)
                 ordinal += 1
 
 
@@ -1525,8 +1374,7 @@ class _StartingModelDumper(_Dumper):
             model.alignment_file = ihm.location.InputFileLocation(alnfile,
                                     details="Alignment for starting "
                                             "comparative model")
-            self.simo.extref_dump.add(model.alignment_file,
-                                      _ExternalReferenceDumper.INPUT_DATA)
+            self.simo.system.locations.append(model.alignment_file)
 
         if templates:
             return templates
@@ -1617,7 +1465,7 @@ class _StartingModelDumper(_Dumper):
                       template_dataset_list_id=template.tm_dataset.id
                                                if template.tm_dataset
                                                else ihm.unknown,
-                      alignment_file_id=model.alignment_file.id
+                      alignment_file_id=model.alignment_file._id
                                         if hasattr(model, 'alignment_file')
                                         else ihm.unknown)
                     ordinal += 1
@@ -1895,7 +1743,7 @@ class _ReplicaExchangeAnalysisEnsemble(_Ensemble):
                             'cluster.%d' % self.cluster_num,
                             '%s.mrc' % component)
 
-    def load_localization_density(self, state, component, extref_dump):
+    def load_localization_density(self, state, component, locations):
         fname = self.get_localization_density_file(component)
         if os.path.exists(fname):
             details = "Localization density for %s %s" \
@@ -1903,8 +1751,7 @@ class _ReplicaExchangeAnalysisEnsemble(_Ensemble):
             local_file = ihm.location.OutputFileLocation(fname,
                               details=state.get_postfixed_name(details))
             self.localization_density[component] = local_file
-            extref_dump.add(local_file,
-                            _ExternalReferenceDumper.MODELING_OUTPUT)
+            locations.append(local_file)
 
     def load_all_models(self, simo, state):
         stat_fname = self.postproc.get_stat_file(self.cluster_num)
@@ -1960,10 +1807,9 @@ class _SimpleEnsemble(_Ensemble):
         self.precision = drmsd
 
     def load_localization_density(self, state, component, local_file,
-                                  extref_dump):
+                                  locations):
         self.localization_density[component] = local_file
-        extref_dump.add(local_file,
-                        _ExternalReferenceDumper.MODELING_OUTPUT)
+        locations.append(local_file)
 
     name = property(lambda self: self.model_group.name)
 
@@ -1996,8 +1842,8 @@ class _EnsembleDumper(_Dumper):
                         num_ensemble_models=e.num_models,
                         num_ensemble_models_deposited=e.num_deposit,
                         ensemble_precision_value=e.precision,
-                        ensemble_file_id=e.file.id if e.file
-                                                   else None)
+                        ensemble_file_id=e.file._id if e.file
+                                                    else None)
 
 class _DensityDumper(_Dumper):
     """Output localization densities for ensembles"""
@@ -2029,7 +1875,7 @@ class _DensityDumper(_Dumper):
                                                                   self.output)
                     l.write(id=ordinal, ensemble_id=ensemble.id,
                             entity_id=entity._id,
-                            file_id=density.id,
+                            file_id=density._id,
                             seq_id_begin=1, seq_id_end=lenseq,
                             asym_id=chain_id)
                     ordinal += 1
@@ -2176,6 +2022,12 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self._each_metadata = [] # list of metadata for each representation
         self._file_datasets = []
         self._main_script = os.path.abspath(sys.argv[0])
+
+        # Point to the main modeling script
+        loc = ihm.location.WorkflowFileLocation(path=self._main_script,
+                               details="The main integrative modeling script")
+        self.system.locations.append(loc)
+
         self._states = {}
         self._working_directory = os.getcwd()
         self._cif_writer = ihm.format.CifWriter(fh)
@@ -2201,7 +2053,6 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.em2d_dump = _EM2DDumper(self)
         self.em3d_dump = _EM3DDumper(self)
         self.model_prot_dump = _ModelProtocolDumper(self)
-        self.extref_dump = _ExternalReferenceDumper(self)
         self.dataset_dump = _DatasetDumper(self)
         self.starting_model_dump = _StartingModelDumper(self)
 
@@ -2221,7 +2072,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.em2d_dump.models = self.model_dump.models
 
         self._dumpers = [self.comment_dump,
-                         self.model_repr_dump, self.extref_dump,
+                         self.model_repr_dump,
                          self.dataset_dump,
                          self.cross_link_dump, self.sas_dump,
                          self.em2d_dump, self.em3d_dump,
@@ -2333,6 +2184,13 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
             self.asym_units[name] = asym
 
     def flush(self):
+        # Make sure ihm knows about dataset locations
+        self.system.locations.extend(self.dataset_dump.get_all_locations())
+        # Point all locations to repos, if applicable
+        all_repos = [m for m in self._metadata
+                     if isinstance(m, ihm.location.Repository)]
+        self.system.update_locations_in_repositories(all_repos)
+
         # Dump out ihm-managed objects first
         ihm.dumper.write(self.fh, [self.system])
         # Now dump our own
@@ -2440,8 +2298,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         state = self._last_state
         group = self.add_model_group(_ModelGroup(state, name))
         if ensemble_file:
-            self.extref_dump.add(ensemble_file,
-                                 _ExternalReferenceDumper.MODELING_OUTPUT)
+            self.system.locations.append(ensemble_file)
         e = _SimpleEnsemble(pp, group, num_models, drmsd, num_models_deposited,
                             ensemble_file)
         self.ensemble_dump.add(e)
@@ -2449,15 +2306,15 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         for c in state.all_modeled_components:
             den = localization_densities.get(c, None)
             if den:
-                e.load_localization_density(state, c, den, self.extref_dump)
+                e.load_localization_density(state, c, den,
+                                            self.system.locations)
         return e
 
     def set_ensemble_file(self, i, location):
         """Point a previously-created ensemble to an 'all-models' file.
            This could be a trajectory such as DCD, an RMF, or a multimodel
            PDB file."""
-        self.extref_dump.add(location,
-                             _ExternalReferenceDumper.MODELING_OUTPUT)
+        self.system.locations.append(location)
         # Ensure that we point to an ensemble related to the current state
         ind = i + self._state_ensemble_offset
         self.ensemble_dump.ensembles[ind].file = location
@@ -2481,7 +2338,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
             self.density_dump.add(e)
             # Add localization density info if available
             for c in state.all_modeled_components:
-                e.load_localization_density(state, c, self.extref_dump)
+                e.load_localization_density(state, c, self.system.locations)
             for stats in e.load_all_models(self, state):
                 m = self.add_model(group)
                 # Since we currently only deposit 1 model, it is the
@@ -2542,11 +2399,12 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                            assembly if assembly else state.modeled_assembly,
                            representation, group)
 
-    def _update_location(self, fileloc):
+    def _update_locations(self, filelocs):
         """Update FileLocation to point to a parent repository, if any"""
         all_repos = [m for m in self._metadata
                      if isinstance(m, ihm.location.Repository)]
-        ihm.location.Repository._update_in_repos(fileloc, all_repos)
+        for fileloc in filelocs:
+            ihm.location.Repository._update_in_repos(fileloc, all_repos)
 
     _metadata = property(lambda self:
                          itertools.chain.from_iterable(self._each_metadata))

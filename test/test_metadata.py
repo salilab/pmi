@@ -1,23 +1,10 @@
 from __future__ import print_function
 import IMP.test
-import IMP.pmi.metadata
 import IMP.pmi.representation
 import ihm.location
 import os
 
 class Tests(IMP.test.TestCase):
-
-    def test_python_script(self):
-        """Test metadata.PythonScript"""
-        r = ihm.location.Repository(doi='10.5281/zenodo.46266')
-        f = ihm.location.WorkflowFileLocation(repo=r, path='foo')
-        s = IMP.pmi.metadata.PythonScript(location=f)
-
-    def test_chimerax_command_script(self):
-        """Test metadata.ChimeraXCommandScript"""
-        r = ihm.location.Repository(doi='10.5281/zenodo.46266')
-        f = ihm.location.WorkflowFileLocation(repo=r, path='foo')
-        s = IMP.pmi.metadata.ChimeraXCommandScript(location=f)
 
     def test_repr_add(self):
         """Test Representation.add_metadata()"""

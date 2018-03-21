@@ -34,11 +34,7 @@ class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
 
 def make_dataset_dumper():
     """Make an empty DatasetDumper object."""
-    class MockExtRef(IMP.pmi.mmcif._ExternalReferenceDumper):
-        def finalize_after_datasets(self):
-            pass
     simo = EmptyObject()
-    simo.extref_dump = MockExtRef(simo)
     return IMP.pmi.mmcif._DatasetDumper(simo), simo
 
 def get_all_models_group(simo, po):
@@ -157,66 +153,6 @@ _ihm_multi_state_modeling.details
 3 2 2 . . 'state2 long' 3 'Fraction of bulk' 'state2 short group 3'
 #
 """)
-
-    def test_workflow_visualization(self):
-        """Test output of workflow and visualization files"""
-        m = IMP.Model()
-        simo = IMP.pmi.representation.Representation(m)
-        root = os.path.dirname(sys.argv[0]) or '.'
-        simo.add_metadata(ihm.location.Repository(doi="foo", root=root))
-        po = DummyPO(None)
-        # Usually main_script is populated from sys.argv[0], which is usually
-        # the name of the modeling script. But if we run the tests with nose,
-        # it will be 'nosetests' instead. So make sure it's reliably the name
-        # of the test script:
-        po._main_script = __file__
-        file_size = os.stat(__file__).st_size
-        simo.add_protocol_output(po)
-
-        r = ihm.location.Repository(doi="bar")
-        l = ihm.location.WorkflowFileLocation(repo=r,
-                                          path=os.path.join('bar', 'baz'),
-                                          details='foo')
-        s = IMP.pmi.metadata.PythonScript(location=l)
-        simo.add_metadata(s)
-
-        l = ihm.location.VisualizationFileLocation(repo=r,
-                                          path=os.path.join('bar', 'test.cxc'),
-                                          details='ChimeraX commands')
-        s = IMP.pmi.metadata.ChimeraXCommandScript(location=l)
-        simo.add_metadata(s)
-
-        d = IMP.pmi.mmcif._ExternalReferenceDumper(po)
-        fh = StringIO()
-        w = ihm.format.CifWriter(fh)
-        d.finalize_metadata()
-        d.finalize_after_datasets()
-        d.dump(w)
-        self.assertEqual(fh.getvalue(), """#
-loop_
-_ihm_external_reference_info.reference_id
-_ihm_external_reference_info.reference_provider
-_ihm_external_reference_info.reference_type
-_ihm_external_reference_info.reference
-_ihm_external_reference_info.refers_to
-_ihm_external_reference_info.associated_url
-1 . DOI foo Other .
-2 . DOI bar Other .
-#
-#
-loop_
-_ihm_external_files.id
-_ihm_external_files.reference_id
-_ihm_external_files.file_path
-_ihm_external_files.content_type
-_ihm_external_files.file_size_bytes
-_ihm_external_files.details
-1 1 test_mmcif.py 'Modeling workflow or script' %d
-'The main integrative modeling script'
-2 2 bar/baz 'Modeling workflow or script' . foo
-3 2 bar/test.cxc 'Visualization script' . 'ChimeraX commands'
-#
-""" % file_size)
 
     def test_file_dataset(self):
         """Test get/set_file_dataset methods"""
@@ -512,12 +448,12 @@ _ihm_external_files.details
         state1 = 'state'
         dump, simo = make_dataset_dumper()
         l = ihm.location.InputFileLocation(repo='foo', path='bar')
-        l.id = 97
+        l._id = 97
         pds = dump.add(state1, ihm.dataset.CXMSDataset(l))
         # group1 contains just the first dataset
         group1 = dump.get_all_group(state1)
         l = ihm.location.InputFileLocation(repo='foo2', path='bar2')
-        l.id = 98
+        l._id = 98
         pds = dump.add(state1, ihm.dataset.CXMSDataset(l))
         # group2 contains the first two datasets
         group2 = dump.get_all_group(state1)
@@ -582,78 +518,6 @@ _ihm_related_datasets.dataset_list_id_primary
 1 3 2
 #
 """)
-
-    def test_external_reference_dumper_dump(self):
-        """Test ExternalReferenceDumper.dump()"""
-        m = IMP.Model()
-        simo = IMP.pmi.representation.Representation(m)
-        po = DummyPO(None)
-        simo.add_protocol_output(po)
-        dump = IMP.pmi.mmcif._ExternalReferenceDumper(po)
-        repo1 = ihm.location.Repository(doi="foo")
-        repo2 = ihm.location.Repository(doi="10.5281/zenodo.46266",
-                                     url='nup84-v1.0.zip',
-                                     top_directory=os.path.join('foo', 'bar'))
-        repo3 = ihm.location.Repository(doi="10.5281/zenodo.58025",
-                                        url='foo.spd')
-        l = ihm.location.InputFileLocation(repo=repo1, path='bar')
-        dump.add(l, IMP.pmi.mmcif._ExternalReferenceDumper.INPUT_DATA)
-        # Duplicates should be ignored
-        l = ihm.location.InputFileLocation(repo=repo1, path='bar')
-        dump.add(l, IMP.pmi.mmcif._ExternalReferenceDumper.INPUT_DATA)
-        # Different file, same repository
-        l = ihm.location.InputFileLocation(repo=repo1, path='baz')
-        dump.add(l, IMP.pmi.mmcif._ExternalReferenceDumper.INPUT_DATA)
-        # Different repository
-        l = ihm.location.OutputFileLocation(repo=repo2, path='baz')
-        dump.add(l, IMP.pmi.mmcif._ExternalReferenceDumper.MODELING_OUTPUT)
-        # Repository containing a single file (not an archive)
-        l = ihm.location.InputFileLocation(repo=repo3, path='foo.spd',
-                                          details='EM micrographs')
-        dump.add(l, IMP.pmi.mmcif._ExternalReferenceDumper.INPUT_DATA)
-        bar = 'test_mmcif_extref.tmp'
-        with open(bar, 'w') as f:
-            f.write("abcd")
-        # Local file
-        l = ihm.location.WorkflowFileLocation(bar)
-        dump.add(l, IMP.pmi.mmcif._ExternalReferenceDumper.WORKFLOW)
-        # DatabaseLocations should be ignored
-        l = ihm.location.PDBLocation('1abc', '1.0', 'test details')
-        dump.add(l, IMP.pmi.mmcif._ExternalReferenceDumper.WORKFLOW)
-        dump.finalize_after_datasets()
-        fh = StringIO()
-        w = ihm.format.CifWriter(fh)
-        dump.dump(w)
-        out = fh.getvalue()
-        self.assertEqual(out, """#
-loop_
-_ihm_external_reference_info.reference_id
-_ihm_external_reference_info.reference_provider
-_ihm_external_reference_info.reference_type
-_ihm_external_reference_info.reference
-_ihm_external_reference_info.refers_to
-_ihm_external_reference_info.associated_url
-1 . DOI foo Other .
-2 Zenodo DOI 10.5281/zenodo.46266 Archive nup84-v1.0.zip
-3 Zenodo DOI 10.5281/zenodo.58025 File foo.spd
-4 . 'Supplementary Files' . Other .
-#
-#
-loop_
-_ihm_external_files.id
-_ihm_external_files.reference_id
-_ihm_external_files.file_path
-_ihm_external_files.content_type
-_ihm_external_files.file_size_bytes
-_ihm_external_files.details
-1 1 bar 'Input data or restraints' . .
-2 1 baz 'Input data or restraints' . .
-3 2 foo/bar/baz 'Modeling or post-processing output' . .
-4 3 foo.spd 'Input data or restraints' . 'EM micrographs'
-5 4 %s 'Modeling workflow or script' 4 .
-#
-""" % bar)
-        os.unlink(bar)
 
     def test_model_dumper_sphere(self):
         """Test ModelDumper sphere_obj output"""
@@ -902,6 +766,9 @@ _ihm_sphere_obj_site.model_id
 
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
+        # Assign ID (2) to referenced alignment file (id=1 is assigned to
+        # the Python script)
+        ihm.dumper._ExternalReferenceDumper().finalize(po.system)
         po.dataset_dump.finalize()
         po.starting_model_dump.finalize()
         po.starting_model_dump.dump(w)
@@ -940,10 +807,10 @@ _ihm_starting_comparative_models.template_sequence_identity
 _ihm_starting_comparative_models.template_sequence_identity_denominator
 _ihm_starting_comparative_models.template_dataset_list_id
 _ihm_starting_comparative_models.alignment_file_id
-1 Nup84-m1 A 33 2 C 33 424 100.0 1 1 1
-2 Nup84-m1 A 429 2 G 482 551 10.0 1 2 1
-3 Nup85-m1 A 33 -5 C 33 424 100.0 1 1 1
-4 Nup85-m1 A 429 -5 G 482 551 10.0 1 2 1
+1 Nup84-m1 A 33 2 C 33 424 100.0 1 1 2
+2 Nup84-m1 A 429 2 G 482 551 10.0 1 2 2
+3 Nup85-m1 A 33 -5 C 33 424 100.0 1 1 2
+4 Nup85-m1 A 429 -5 G 482 551 10.0 1 2 2
 #
 #
 loop_
@@ -1334,7 +1201,7 @@ _ihm_modeling_post_process.num_models_end
             _number_of_clusters = 1
         class DummyGroup(object):
             name = 'dgroup'
-        extref_dump = IMP.pmi.mmcif._ExternalReferenceDumper(EmptyObject())
+        locations = []
         with IMP.test.temporary_directory() as tmpdir:
             d = DummyRex()
             d._outputdir = tmpdir
@@ -1373,13 +1240,13 @@ _ihm_modeling_post_process.num_models_end
                              os.path.join(tmpdir, 'cluster.0', 'Nup84.mrc'))
             self.assertEqual(list(e.localization_density.keys()), [])
             # Density that doesn't exist
-            e.load_localization_density(None, 'noden', extref_dump)
+            e.load_localization_density(None, 'noden', locations)
             self.assertEqual(list(e.localization_density.keys()), [])
             # Density that does exist
             po = DummyPO(None)
             r = DummyRepr('dummy', 'none')
             state = po._add_state(r)
-            e.load_localization_density(state, 'Nup84', extref_dump)
+            e.load_localization_density(state, 'Nup84', locations)
             self.assertEqual(e.localization_density['Nup84'].path,
                              os.path.join(tmpdir, 'cluster.0', 'Nup84.mrc'))
             self.assertEqual(e.localization_density['Nup84'].details,
@@ -1442,7 +1309,7 @@ All kmeans_weight_500_2/cluster.0/ centroid index 49
                                      {}, None)
         loc = ihm.location.InputFileLocation(repo='foo', path='bar')
         po.set_ensemble_file(1, loc)
-        loc.id = 42
+        loc._id = 42
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
         po.ensemble_dump.dump(w)
@@ -1480,7 +1347,7 @@ _ihm_ensemble_info.ensemble_file_id
         ensemble = DummyEnsemble()
         ensemble.id = 42
         loc = ihm.location.OutputFileLocation(repo='foo', path='bar')
-        loc.id = 97
+        loc._id = 97
         ensemble.localization_density = {'Nup84': loc}
         po.density_dump.add(ensemble)
 
@@ -1852,8 +1719,8 @@ _ihm_3dem_restraint.cross_correlation_coefficient
 #
 """)
 
-    def test_update_location(self):
-        """Test update_location() method"""
+    def test_update_locations(self):
+        """Test update_locations() method"""
         m = IMP.Model()
         simo = IMP.pmi.representation.Representation(m)
         po = DummyPO(None)
@@ -1865,7 +1732,7 @@ _ihm_3dem_restraint.cross_correlation_coefficient
                 f.write("")
             local = ihm.location.InputFileLocation(bar)
             # No Repository set, so cannot map local to repository location
-            po._update_location(local)
+            po._update_locations([local])
             self.assertEqual(local.repo, None)
 
             simo.add_metadata(ihm.Software(
@@ -1875,11 +1742,11 @@ _ihm_3dem_restraint.cross_correlation_coefficient
             simo.add_metadata(ihm.location.Repository(doi='foo',
                                                       root=tmpdir))
             loc = ihm.location.InputFileLocation(bar)
-            po._update_location(loc)
+            po._update_locations([loc])
             self.assertEqual(loc.repo.doi, 'foo')
             self.assertEqual(loc.path, 'bar')
             # Further calls shouldn't change things
-            po._update_location(loc)
+            po._update_locations([loc])
             self.assertEqual(loc.repo.doi, 'foo')
             self.assertEqual(loc.path, 'bar')
 

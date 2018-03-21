@@ -230,17 +230,6 @@ _ihm_multi_state_modeling.details
         self.assertEqual(po.system.entities[0].description, 'foo')
         self.assertEqual(po.system.entities[1].description, 'baz')
 
-    def test_pdb_helix(self):
-        """Test PDBHelix class"""
-        p = IMP.pmi.mmcif._PDBHelix("HELIX   10  10 ASP A  607  GLU A  624  1                                  18   ")
-        self.assertEqual(p.helix_id, '10')
-        self.assertEqual(p.start_asym, 'A')
-        self.assertEqual(p.start_resnum, 607)
-        self.assertEqual(p.end_asym, 'A')
-        self.assertEqual(p.end_resnum, 624)
-        self.assertEqual(p.helix_class, 1)
-        self.assertEqual(p.length, 18)
-
     def test_asym_id_mapper(self):
         """Test AsymIDMapper class"""
         m = IMP.Model()
@@ -665,10 +654,10 @@ _ihm_starting_comparative_models.template_sequence_identity
 _ihm_starting_comparative_models.template_sequence_identity_denominator
 _ihm_starting_comparative_models.template_dataset_list_id
 _ihm_starting_comparative_models.alignment_file_id
-1 Nup84-m1 A 33 2 C 33 424 100.0 1 1 2
-2 Nup84-m1 A 429 2 G 482 551 10.0 1 2 2
-3 Nup85-m1 A 33 -5 C 33 424 100.0 1 1 2
-4 Nup85-m1 A 429 -5 G 482 551 10.0 1 2 2
+1 Nup84-m1 A 33 424 C 33 424 100.000 1 1 2
+2 Nup84-m1 A 429 488 G 482 551 10.000 1 2 2
+3 Nup85-m1 A 33 424 C 33 424 100.000 1 1 2
+4 Nup85-m1 A 429 488 G 482 551 10.000 1 2 2
 #
 #
 loop_
@@ -705,159 +694,6 @@ Nup85-m1 ATOM 2 C CA GLU 2 B 2 -8.986 11.688 -5.817 91.820 4
         model = IMP.pmi.mmcif._StartingModel(fragment)
         sources = po.starting_model_dump.get_sources(model, pdbname, chain)
         return m, model, sources
-
-    def test_get_sources_official_pdb(self):
-        """Test get_sources() when given an official PDB"""
-        pdbname = self.get_input_file_name('official.pdb')
-        m, model, sources = self.get_dumper_sources(pdbname)
-        (s, ) = sources
-        self.assertEqual(s.db_code, '2HBJ')
-        self.assertEqual(s.chain_id, 'A')
-        self.assertEqual(model.dataset.data_type, 'Experimental model')
-        self.assertEqual(model.dataset.location.db_name, 'PDB')
-        self.assertEqual(model.dataset.location.access_code, '2HBJ')
-        self.assertEqual(model.dataset.location.version, '14-JUN-06')
-        self.assertEqual(model.dataset.location.details,
-                         'STRUCTURE OF THE YEAST NUCLEAR EXOSOME COMPONENT, '
-                         'RRP6P, REVEALS AN INTERPLAY BETWEEN THE ACTIVE '
-                         'SITE AND THE HRDC DOMAIN')
-
-    def test_get_sources_derived_pdb(self):
-        """Test get_sources() when given a file derived from a PDB"""
-        pdbname = self.get_input_file_name('derived_pdb.pdb')
-        m, model, sources = self.get_dumper_sources(pdbname)
-        (s, ) = sources
-        self.assertEqual(s.db_code, '?')
-        self.assertEqual(s.chain_id, 'A')
-        self.assertEqual(model.dataset.data_type, 'Experimental model')
-        self.assertEqual(model.dataset.location.path, pdbname)
-        self.assertEqual(model.dataset.location.repo, None)
-        self.assertEqual(model.dataset.location.details,
-                         'MED7C AND MED21 STRUCTURES FROM PDB ENTRY 1YKH, '
-                         'ROTATED AND TRANSLATED TO ALIGN WITH THE '
-                         'MED4-MED9 MODEL')
-        (parent,) = model.dataset.parents
-        self.assertEqual(parent.data_type, 'Experimental model')
-        self.assertEqual(parent.location.db_name, 'PDB')
-        self.assertEqual(parent.location.access_code, '1YKH')
-        self.assertEqual(parent.location.version, None)
-        self.assertEqual(parent.location.details, None)
-
-    def test_get_sources_derived_comp_model(self):
-        """Test get_sources() given a file derived from a comparative model"""
-        pdbname = self.get_input_file_name('derived_model.pdb')
-        m, model, sources = self.get_dumper_sources(pdbname)
-        (s, ) = sources
-        self.assertEqual(s.db_code, '?')
-        self.assertEqual(s.chain_id, 'A')
-        self.assertEqual(model.dataset.data_type, 'Comparative model')
-        self.assertEqual(model.dataset.location.path, pdbname)
-        self.assertEqual(model.dataset.location.repo, None)
-        self.assertEqual(model.dataset.location.details,
-                         'MED4 AND MED9 STRUCTURE TAKEN FROM LARIVIERE '
-                         'ET AL, NUCLEIC ACIDS RESEARCH. 2013;41:9266-9273. '
-                         'DOI: 10.1093/nar/gkt704. THE MED10 STRUCTURE ALSO '
-                         'PROPOSED IN THAT WORK IS NOT USED IN THIS STUDY.')
-        (parent,) = model.dataset.parents
-        self.assertEqual(parent.data_type, 'Comparative model')
-        self.assertEqual(parent.location.path, '.')
-        self.assertEqual(parent.location.repo.doi, '10.1093/nar/gkt704')
-        self.assertEqual(parent.location.details,
-                         'Starting comparative model structure')
-
-    def test_get_sources_derived_int_model(self):
-        """Test get_sources() given a file derived from an integrative model"""
-        pdbname = self.get_input_file_name('derived_int_model.pdb')
-        m, model, sources = self.get_dumper_sources(pdbname)
-        (s, ) = sources
-        self.assertEqual(s.db_code, '?')
-        self.assertEqual(s.chain_id, 'A')
-        self.assertEqual(model.dataset.data_type, 'Integrative model')
-        self.assertEqual(model.dataset.location.path, pdbname)
-        self.assertEqual(model.dataset.location.repo, None)
-        self.assertEqual(model.dataset.location.details,
-                         'POM152 STRUCTURE TAKEN FROM UPLA ET AL, STRUCTURE '
-                         '25(3) 434-445. DOI: 10.1016/j.str.2017.01.006.')
-        (parent,) = model.dataset.parents
-        self.assertEqual(parent.data_type, 'Integrative model')
-        self.assertEqual(parent.location.path, '.')
-        self.assertEqual(parent.location.repo.doi, '10.1016/j.str.2017.01.006')
-        self.assertEqual(parent.location.details,
-                         'Starting integrative model structure')
-
-    def test_get_sources_modeller(self):
-        """Test get_sources() when given a Modeller model with alignment"""
-        pdbname = self.get_input_file_name('modeller_model.pdb')
-        m, model, sources = self.check_modeller_model(pdbname)
-        self.assertEqual(model.alignment_file.path,
-                         self.get_input_file_name('modeller_model.ali'))
-
-    def test_get_sources_modeller_no_aln(self):
-        """Test get_sources() when given a Modeller model with no alignment"""
-        pdbname = self.get_input_file_name('modeller_model_no_aln.pdb')
-        m, model, sources = self.check_modeller_model(pdbname)
-
-    def check_modeller_model(self, pdbname):
-        m, model, sources = self.get_dumper_sources(pdbname)
-        s1, s2 = sources
-        self.assertEqual(s1.db_code, None)
-        self.assertEqual(s1.chain_id, 'A')
-        self.assertEqual(s1.tm_db_code, '3JRO')
-        self.assertEqual(s1.tm_chain_id, 'C')
-        self.assertEqual(s2.db_code, None)
-        self.assertEqual(s2.chain_id, 'A')
-        self.assertEqual(s2.tm_db_code, '3F3F')
-        self.assertEqual(s2.tm_chain_id, 'G')
-        self.assertEqual(model.dataset.data_type, 'Comparative model')
-        self.assertEqual(model.dataset.location.path, pdbname)
-        self.assertEqual(model.dataset.location.repo, None)
-        self.assertEqual(model.dataset.location.details,
-                         'Starting model structure')
-        p1, p2 = model.dataset.parents
-        self.assertEqual(p1.data_type, 'Experimental model')
-        self.assertEqual(p1.location.db_name, 'PDB')
-        self.assertEqual(p1.location.access_code, '3JRO')
-        self.assertEqual(p1.location.version, None)
-        self.assertEqual(p1.location.details, None)
-        self.assertEqual(p2.location.access_code, '3F3F')
-        return m, model, sources
-
-    def test_get_sources_modeller_local(self):
-        """Test get_sources() when given a Modeller model with local template"""
-        pdbname = self.get_input_file_name('modeller_model_local.pdb')
-        m, model, sources = self.get_dumper_sources(pdbname)
-        s1, = sources
-        self.assertEqual(s1.db_code, None)
-        self.assertEqual(s1.chain_id, 'A')
-        self.assertEqual(s1.tm_db_code, None)
-        self.assertEqual(s1.tm_chain_id, 'C')
-        p1, = model.dataset.parents
-        self.assertEqual(p1.data_type, 'Experimental model')
-        self.assertEqual(p1.location.details,
-                         'Template for comparative modeling')
-        self.assertEqual(p1.location.path,
-                         self.get_input_file_name('15133C.pdb'))
-
-    def test_get_sources_phyre2(self):
-        """Test get_sources() when given a Phyre2 model"""
-        pdbname = self.get_input_file_name('phyre2_model.pdb')
-        m, model, sources = self.get_dumper_sources(pdbname)
-        (s,) = sources
-        self.assertEqual(s.db_code, None)
-        self.assertEqual(s.chain_id, 'A')
-        self.assertEqual(s.tm_db_code, '4BZK')
-        self.assertEqual(s.tm_chain_id, 'A')
-        self.assertEqual(model.dataset.data_type, 'Comparative model')
-        self.assertEqual(model.dataset.location.path, pdbname)
-        self.assertEqual(model.dataset.location.repo, None)
-        self.assertEqual(model.dataset.location.details,
-                         'Starting model structure')
-        (p,) = model.dataset.parents
-        self.assertEqual(p.data_type, 'Experimental model')
-        self.assertEqual(p.location.db_name, 'PDB')
-        self.assertEqual(p.location.access_code, '4BZK')
-        self.assertEqual(p.location.version, None)
-        self.assertEqual(p.location.details, None)
 
     def test_protocol_dumper(self):
         """Test ModelProtocolDumper output"""
@@ -1619,8 +1455,6 @@ _ihm_3dem_restraint.cross_correlation_coefficient
         class DummyRes(object):
             def get_index(self):
                 return 42
-        class DummySource(object):
-            chain_id = 'X'
         class DummyModel(object):
             name = 'dummy-m1'
 
@@ -1629,8 +1463,7 @@ _ihm_3dem_restraint.cross_correlation_coefficient
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
         d.dump_seq_dif(w, [IMP.pmi.mmcif._MSESeqDif(DummyRes(), 'nup84',
-                                                    DummySource(),
-                                                    DummyModel(), 2)])
+                                                    'X', DummyModel(), 2)])
         out = fh.getvalue()
         self.assertEqual(out, """#
 loop_
@@ -1782,58 +1615,6 @@ _ihm_model_representation.model_object_count
 2 1 2 1 Nup84 A 3 4 sphere . flexible by-feature 1
 #
 """)
-
-    def test_pdb_source(self):
-        """Test PDBSource class"""
-        class DummyModel(object):
-            seq_id_begin = 1
-            seq_id_end = 100
-        m = DummyModel()
-        p = IMP.pmi.mmcif._PDBSource(m, '1abc', 'A', metadata=[])
-        self.assertEqual(p.source, 'experimental model')
-        self.assertEqual(p.get_seq_id_range(m), (1, 100))
-
-    def test_template_source_pdb(self):
-        """Test TemplateSource class, where template is from PDB"""
-        class DummyModel(object):
-            seq_id_begin = 10
-            seq_id_end = 100
-        m = DummyModel()
-        for code in ('1abcA', '1abcA_2'):
-            p = IMP.pmi.mmcif._TemplateSource(tm_code='1abcA',
-                    tm_seq_id_begin=30, tm_seq_id_end=90, seq_id_begin=1,
-                    chain_id='G', seq_id_end=90, seq_id=42., model=m)
-            self.assertEqual(p.source, 'comparative model')
-            self.assertEqual(p.tm_db_code, '1ABC')
-            self.assertEqual(p.tm_chain_id, 'A')
-            self.assertEqual(p.get_seq_id_range(m), (10, 90))
-
-    def test_template_source_unknown(self):
-        """Test TemplateSource class, where template is not in PDB"""
-        class DummyModel(object):
-            seq_id_begin = 10
-            seq_id_end = 100
-        m = DummyModel()
-        p = IMP.pmi.mmcif._TemplateSource(tm_code='fooA', tm_seq_id_begin=30,
-                    tm_seq_id_end=90, seq_id_begin=1, chain_id='G',
-                    seq_id_end=90, seq_id=42., model=m)
-        self.assertEqual(p.source, 'comparative model')
-        self.assertEqual(p.tm_db_code, None)
-        self.assertEqual(p.tm_chain_id, 'A')
-        self.assertEqual(p.get_seq_id_range(m), (10, 90))
-
-    def test_unknown_source(self):
-        """Test UnknownSource class"""
-        class DummyDataset(object):
-            data_type = 'Comparative model'
-        class DummyModel(object):
-            dataset = DummyDataset()
-            seq_id_begin = 10
-            seq_id_end = 100
-        m = DummyModel()
-        p = IMP.pmi.mmcif._UnknownSource(m, 'A')
-        self.assertEqual(p.source, 'comparative model')
-        self.assertEqual(p.get_seq_id_range(m), (10, 100))
 
     def test_flush(self):
         """Test ProtocolOutput.flush()"""

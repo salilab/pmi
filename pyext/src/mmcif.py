@@ -32,6 +32,8 @@ import ihm.format
 import ihm.location
 import ihm.dataset
 import ihm.dumper
+import ihm.metadata
+import ihm.startmodel
 
 def _assign_id(obj, seen_objs, obj_by_id):
     """Assign a unique ID to obj, and track all ids in obj_by_id."""
@@ -178,6 +180,27 @@ class _StartingModel(object):
 
     def __init__(self, fragment):
         self.fragments = [fragment]
+        self.asym_id = fragment.chain
+
+    def get_seq_id_range_all_templates(self):
+        """Get the seq_id range covered by all templates in this starting
+           model. Where there are multiple templates, consolidate
+           them; template info is given in starting_comparative_models."""
+        def get_seq_id_range(template, full):
+            # The template may cover more than the current starting model
+            rng = template.seq_id_range
+            return (max(rng[0], full[0]), min(rng[1], full[1]))
+
+        if self.templates:
+            full = self.seq_id_begin, self.seq_id_end
+            rng = get_seq_id_range(self.templates[0], full)
+            for template in self.templates[1:]:
+                this_rng = get_seq_id_range(template, full)
+                rng = (min(rng[0], this_rng[0]), max(rng[1], this_rng[1]))
+            return rng
+        else:
+            return self.seq_id_begin, self.seq_id_end
+
 
 class _ModelRepresentationDumper(_Dumper):
     def __init__(self, simo):
@@ -262,75 +285,6 @@ class _ModelRepresentationDumper(_Dumper):
                             model_object_count=f.num)
                     ordinal_id += 1
                     segment_id += 1
-
-class _PDBSource(object):
-    """An experimental PDB file used as part of a starting model"""
-    source = 'experimental model'
-    db_name = 'PDB'
-    sequence_identity = 100.0
-
-    def __init__(self, model, db_code, chain_id, metadata):
-        self.db_code = db_code
-        self.chain_id = chain_id
-        self.metadata = metadata
-
-    def get_seq_id_range(self, model):
-        # Assume the structure covers the entire sequence
-        return (model.seq_id_begin, model.seq_id_end)
-
-class _TemplateSource(object):
-    """A PDB file used as a template for a comparative starting model"""
-    source = 'comparative model'
-    db_name = db_code = None
-    tm_dataset = None
-    # Right now assume all alignments are Modeller alignments, which uses
-    # the length of the shorter sequence as the denominator for sequence
-    # identity
-    sequence_identity_denominator = 1
-
-    def __init__(self, tm_code, tm_seq_id_begin, tm_seq_id_end, seq_id_begin,
-                 chain_id, seq_id_end, seq_id, model):
-        # Remove any unique suffix
-        stripped_tm_code = tm_code.split('_')[0]
-        # Assume a code of 1abcX or 1abcX_N refers to a real PDB structure
-        if len(stripped_tm_code) == 5:
-            self._orig_tm_code = None
-            self.tm_db_code = stripped_tm_code[:4].upper()
-            self.tm_chain_id = stripped_tm_code[4]
-        else:
-            # Otherwise, will need to look up in TEMPLATE PATH remarks
-            self._orig_tm_code = tm_code
-            self.tm_db_code = None
-            self.tm_chain_id = tm_code[-1]
-        self.sequence_identity = seq_id
-        self.tm_seq_id_begin = tm_seq_id_begin
-        self.tm_seq_id_end = tm_seq_id_end
-        self.chain_id = chain_id
-        self._seq_id_begin, self._seq_id_end = seq_id_begin, seq_id_end
-
-    def get_seq_id_range(self, model):
-        # The template may cover more than the current starting model
-        seq_id_begin = max(model.seq_id_begin, self._seq_id_begin)
-        seq_id_end = min(model.seq_id_end, self._seq_id_end)
-        return (seq_id_begin, seq_id_end)
-
-class _UnknownSource(object):
-    """Part of a starting model from an unknown source"""
-    db_code = ihm.unknown
-    db_name = ihm.unknown
-    chain_id = ihm.unknown
-    sequence_identity = ihm.unknown
-    # Map dataset types to starting model sources
-    _source_map = {'Comparative model': 'comparative model',
-                   'Integrative model': 'integrative model',
-                   'Experimental model': 'experimental model'}
-
-    def __init__(self, model, chain):
-        self.source = self._source_map[model.dataset.data_type]
-        self.chain_id = chain
-
-    def get_seq_id_range(self, model):
-        return (model.seq_id_begin, model.seq_id_end)
 
 class _DatasetGroup(object):
     """A group of datasets"""
@@ -1098,27 +1052,13 @@ class _ModelProtocolDumper(_Dumper):
                         ordinal += 1
 
 
-class _PDBHelix(object):
-    """Represent a HELIX record from a PDB file."""
-    def __init__(self, line):
-        self.helix_id = line[11:14].strip()
-        self.start_resnam = line[14:18].strip()
-        self.start_asym = line[19]
-        self.start_resnum = int(line[21:25])
-        self.end_resnam = line[27:30].strip()
-        self.end_asym = line[31]
-        self.end_resnum = int(line[33:37])
-        self.helix_class = int(line[38:40])
-        self.length = int(line[71:76])
-
-
 class _MSESeqDif(object):
     """Track an MSE -> MET mutation in the starting model sequence"""
     comp_id = 'MET'
     db_comp_id = 'MSE'
     details = 'Conversion of modified residue MSE to MET'
-    def __init__(self, res, component, source, model, offset):
-        self.res, self.component, self.source = res, component, source
+    def __init__(self, res, component, asym_id, model, offset):
+        self.res, self.component, self.asym_id = res, component, asym_id
         self.model = model
         self.offset = offset
 
@@ -1146,168 +1086,24 @@ class _StartingModelDumper(_Dumper):
            or models[-1].fragments[0].pdbname != fragment.pdbname:
             model = _StartingModel(fragment)
             models.append(model)
-            model.sources = self.get_sources(model, fragment.pdbname,
-                                             fragment.chain)
+            self.get_model_metadata(model, fragment.pdbname, fragment.chain)
         else:
             models[-1].fragments.append(fragment)
 
-    def get_templates(self, pdbname, model):
-        template_path_map = {}
-        templates = []
-        alnfile = None
-        alnfilere = re.compile('REMARK   6 ALIGNMENT: (\S+)')
-        tmppathre = re.compile('REMARK   6 TEMPLATE PATH (\S+) (\S+)')
-        tmpre = re.compile('REMARK   6 TEMPLATE: '
-                           '(\S+) (\S+):\S+ \- (\S+):\S+ '
-                           'MODELS (\S+):(\S+) \- (\S+):\S+ AT (\S+)%')
+    def get_model_metadata(self, model, pdbname, chain):
+        parser = ihm.metadata.PDBParser()
+        r = parser.parse_file(pdbname)
 
-        with open(pdbname) as fh:
-            for line in fh:
-                if line.startswith('ATOM'): # Read only the header
-                    break
-                m = tmppathre.match(line)
-                if m:
-                    template_path_map[m.group(1)] = \
-                              IMP.get_relative_path(pdbname, m.group(2))
-                m = alnfilere.match(line)
-                if m:
-                    # Path to alignment is relative to that of the PDB file
-                    alnfile = IMP.get_relative_path(pdbname, m.group(1))
-                m = tmpre.match(line)
-                if m:
-                    templates.append(_TemplateSource(m.group(1),
-                                                     int(m.group(2)),
-                                                     int(m.group(3)),
-                                                     int(m.group(4)),
-                                                     m.group(5),
-                                                     int(m.group(6)),
-                                                     m.group(7), model))
-        # Add datasets for templates
-        for t in templates:
-            if t._orig_tm_code:
-                fname = template_path_map[t._orig_tm_code]
-                l = ihm.location.InputFileLocation(fname,
-                                 details="Template for comparative modeling")
-            else:
-                l = ihm.location.PDBLocation(t.tm_db_code)
-            d = ihm.dataset.PDBDataset(l)
-            d = self.simo._add_dataset(d)
-            t.tm_dataset = d
-            model.dataset.parents.append(d)
-
-        # Sort by starting residue, then ending residue
-        return(sorted(templates,
-                      key=lambda x: (x._seq_id_begin, x._seq_id_end)),
-               alnfile)
-
-    def _parse_pdb(self, fh, first_line):
-        """Extract information from an official PDB"""
-        metadata = []
-        details = ''
-        for line in fh:
-            if line.startswith('TITLE'):
-                details += line[10:].rstrip()
-            elif line.startswith('HELIX'):
-                metadata.append(_PDBHelix(line))
-        return (first_line[50:59].strip(),
-                details if details else ihm.unknown, metadata)
-
-    def _parse_details(self, fh):
-        """Extract TITLE records from a PDB file"""
-        details = ''
-        for line in fh:
-            if line.startswith('TITLE'):
-                details += line[10:].rstrip()
-            elif line.startswith('ATOM'):
-                break
-        return details
-
-    def get_sources(self, model, pdbname, chain):
-        # Attempt to identity PDB file vs. comparative model
-        fh = open(pdbname)
-        first_line = fh.readline()
-        local_file = ihm.location.InputFileLocation(pdbname,
-                                          details="Starting model structure")
-        file_dataset = self.simo.get_file_dataset(pdbname)
-        if first_line.startswith('HEADER'):
-            version, details, metadata = self._parse_pdb(fh, first_line)
-            source = _PDBSource(model, first_line[62:66].strip(), chain,
-                                metadata)
-            l = ihm.location.PDBLocation(source.db_code, version, details)
-            d = ihm.dataset.PDBDataset(l)
-            model.dataset = self.simo._add_dataset(file_dataset or d)
-            return [source]
-        elif first_line.startswith('EXPDTA    DERIVED FROM PDB:'):
-            # Model derived from a PDB structure; treat as a local experimental
-            # model with the official PDB as a parent
-            local_file.details = self._parse_details(fh)
-            db_code = first_line[27:].strip()
-            d = ihm.dataset.PDBDataset(local_file)
-            pdb_loc = ihm.location.PDBLocation(db_code)
-            parent = ihm.dataset.PDBDataset(pdb_loc)
-            d.parents.append(parent)
-            model.dataset = self.simo._add_dataset(file_dataset or d)
-            return [_UnknownSource(model, chain)]
-        elif first_line.startswith('EXPDTA    DERIVED FROM COMPARATIVE '
-                                   'MODEL, DOI:'):
-            # Model derived from a comparative model; link back to the original
-            # model as a parent
-            local_file.details = self._parse_details(fh)
-            d = ihm.dataset.ComparativeModelDataset(local_file)
-            repo = ihm.location.Repository(doi=first_line[46:].strip())
-            # todo: better specify an unknown path
-            orig_loc = ihm.location.InputFileLocation(repo=repo, path='.',
-                              details="Starting comparative model structure")
-            parent = ihm.dataset.ComparativeModelDataset(orig_loc)
-            d.parents.append(parent)
-            model.dataset = self.simo._add_dataset(file_dataset or d)
-            return [_UnknownSource(model, chain)]
-        elif first_line.startswith('EXPDTA    DERIVED FROM INTEGRATIVE '
-                                   'MODEL, DOI:'):
-            # Model derived from an integrative model; link back to the original
-            # model as a parent
-            local_file.details = self._parse_details(fh)
-            d = ihm.dataset.IntegrativeModelDataset(local_file)
-            repo = ihm.location.Repository(doi=first_line[46:].strip())
-            # todo: better specify an unknown path
-            orig_loc = ihm.location.InputFileLocation(repo=repo, path='.',
-                              details="Starting integrative model structure")
-            parent = ihm.dataset.IntegrativeModelDataset(orig_loc)
-            d.parents.append(parent)
-            model.dataset = self.simo._add_dataset(file_dataset or d)
-            return [_UnknownSource(model, chain)]
-        elif first_line.startswith('EXPDTA    THEORETICAL MODEL, MODELLER'):
-            self.simo.all_software.set_modeller_used(
-                                        *first_line[38:].split(' ', 1))
-            return self.handle_comparative_model(local_file, file_dataset,
-                                                 pdbname, model, chain)
-        elif first_line.startswith('REMARK  99  Chain ID :'):
-            # Model generated by Phyre2
-            self.simo.all_software.set_phyre2_used()
-            return self.handle_comparative_model(local_file, file_dataset,
-                                                 pdbname, model, chain)
-        else:
-            # todo: extract Modeller-like template info for Phyre models;
-            # revisit assumption that all such unknown source PDBs are
-            # comparative models
-            return self.handle_comparative_model(local_file, file_dataset,
-                                                 pdbname, model, chain)
-
-    def handle_comparative_model(self, local_file, file_dataset, pdbname,
-                                 model, chain):
-        d = ihm.dataset.ComparativeModelDataset(local_file)
-        model.dataset = self.simo._add_dataset(file_dataset or d)
-        templates, alnfile = self.get_templates(pdbname, model)
-        if alnfile:
-            model.alignment_file = ihm.location.InputFileLocation(alnfile,
-                                    details="Alignment for starting "
-                                            "comparative model")
-            self.simo.system.locations.append(model.alignment_file)
-
-        if templates:
-            return templates
-        else:
-            return [_UnknownSource(model, chain)]
+        model.dataset = r['dataset']
+        self.simo.system.software.extend(r['software'])
+        self.simo._add_dataset(model.dataset)
+        model.templates = r['templates']
+        model.metadata = r['metadata']
+        for t in model.templates:
+            if t.alignment_file:
+                self.simo.system.locations.append(t.alignment_file)
+            if t.dataset:
+                self.simo._add_dataset(t.dataset)
 
     def assign_model_details(self):
         for comp, states in self.models.items():
@@ -1354,7 +1150,7 @@ class _StartingModelDumper(_Dumper):
                 l.write(ordinal_id=ordinal, entity_id=entity._id,
                         asym_id=chain_id, seq_id=sd.res.get_index(),
                         comp_id=sd.comp_id,
-                        db_asym_id=sd.source.chain_id,
+                        db_asym_id=sd.asym_id,
                         db_seq_id=sd.res.get_index() - sd.offset,
                         db_comp_id=sd.db_comp_id,
                         starting_model_id=sd.model.name,
@@ -1376,29 +1172,31 @@ class _StartingModelDumper(_Dumper):
                       "alignment_file_id"]) as l:
             ordinal = 1
             for model in self.all_models():
-                for template in [s for s in model.sources
-                                 if isinstance(s, _TemplateSource)]:
-                    seq_id_begin, seq_id_end = template.get_seq_id_range(model)
+                for template in model.templates:
                     denom = template.sequence_identity_denominator
                     l.write(ordinal_id=ordinal,
                       starting_model_id=model.name,
-                      starting_model_auth_asym_id=template.chain_id,
-                      starting_model_seq_id_begin=seq_id_begin,
-                      starting_model_seq_id_end=seq_id_end,
-                      template_auth_asym_id=template.tm_chain_id,
-                      template_seq_id_begin=template.tm_seq_id_begin,
-                      template_seq_id_end=template.tm_seq_id_end,
+                      starting_model_auth_asym_id=model.asym_id,
+                      starting_model_seq_id_begin=template.seq_id_range[0],
+                      starting_model_seq_id_end=template.seq_id_range[1],
+                      template_auth_asym_id=template.asym_id,
+                      template_seq_id_begin=template.template_seq_id_range[0],
+                      template_seq_id_end=template.template_seq_id_range[1],
                       template_sequence_identity=template.sequence_identity,
                       template_sequence_identity_denominator=denom,
-                      template_dataset_list_id=template.tm_dataset._id
-                                               if template.tm_dataset
+                      template_dataset_list_id=template.dataset._id
+                                               if template.dataset
                                                else ihm.unknown,
-                      alignment_file_id=model.alignment_file._id
-                                        if hasattr(model, 'alignment_file')
+                      alignment_file_id=template.alignment_file._id
+                                        if template.alignment_file
                                         else ihm.unknown)
                     ordinal += 1
 
     def dump_details(self, writer):
+        # Map dataset types to starting model sources
+        source_map = {'Comparative model': 'comparative model',
+                      'Integrative model': 'integrative model',
+                      'Experimental model': 'experimental model'}
         writer.write_comment("""IMP will attempt to identify which input models
 are crystal structures and which are comparative models, but does not always
 have sufficient information to deduce all of the templates used for comparative
@@ -1415,23 +1213,15 @@ modeling. These may need to be added manually below.""")
                 entity = self.simo.entities[f.component]
                 chain_id = self.simo._get_chain_for_component(f.component,
                                                               self.output)
-                source0 = model.sources[0]
-                # Where there are multiple sources (to date, this can only
-                # mean multiple templates for a comparative model) consolidate
-                # them; template info is given in starting_comparative_models.
-                seq_id_begin, seq_id_end = source0.get_seq_id_range(model)
-                for source in model.sources[1:]:
-                    this_begin, this_end = source.get_seq_id_range(model)
-                    seq_id_begin = min(seq_id_begin, this_begin)
-                    seq_id_end = max(seq_id_end, this_end)
+                seq_id_range = model.get_seq_id_range_all_templates()
                 l.write(entity_id=entity._id,
                       entity_description=entity.description,
                       asym_id=chain_id,
-                      seq_id_begin=seq_id_begin,
-                      seq_id_end=seq_id_end,
-                      starting_model_auth_asym_id=source0.chain_id,
+                      seq_id_begin=seq_id_range[0],
+                      seq_id_end=seq_id_range[1],
+                      starting_model_auth_asym_id=model.asym_id,
                       starting_model_id=model.name,
-                      starting_model_source=source0.source,
+                      starting_model_source=source_map[model.dataset.data_type],
                       starting_model_sequence_offset=f.offset,
                       dataset_list_id=model.dataset._id)
 
@@ -1475,9 +1265,9 @@ modeling. These may need to be added manually below.""")
                                 # a crystal structure as the source (a
                                 # comparative model would use MET in
                                 # the sequence)
-                                assert(len(model.sources) == 1)
+                                assert(len(model.templates) == 0)
                                 seq_dif.append(_MSESeqDif(res, f.component,
-                                                          model.sources[0],
+                                                          model.asym_id,
                                                           model, f.offset))
                         chain_id = self.simo._get_chain_for_component(
                                             f.component, self.output)
@@ -1518,13 +1308,11 @@ class _StructConfDumper(_Dumper):
     def all_helices(self):
         """Yield all helices that overlap with rigid model fragments"""
         for f, starting_model, asym_id in self.all_rigid_fragments():
-            if len(starting_model.sources) == 1 \
-               and isinstance(starting_model.sources[0], _PDBSource):
-                pdb = starting_model.sources[0]
-                for m in pdb.metadata:
-                    if isinstance(m, _PDBHelix) \
-                       and m.start_asym == pdb.chain_id \
-                       and m.end_asym == pdb.chain_id \
+            if len(starting_model.templates) == 0:
+                for m in starting_model.metadata:
+                    if isinstance(m, ihm.startmodel.PDBHelix) \
+                       and m.start_asym == starting_model.asym_id \
+                       and m.end_asym == starting_model.asym_id \
                        and m.start_resnum >= f.start and m.end_resnum <= f.end:
                         yield (m, max(f.start, m.start_resnum),
                                min(f.end, m.end_resnum), asym_id)

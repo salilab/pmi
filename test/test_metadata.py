@@ -7,15 +7,6 @@ import os
 
 class Tests(IMP.test.TestCase):
 
-    def test_citation(self):
-        """Test metadata.Citation"""
-        s = IMP.pmi.metadata.Citation(title='Test paper', journal='J Mol Biol',
-                                      volume=45, page_range=(1,20), year=2016,
-                                      authors=['Smith, A.', 'Jones, B.'],
-                                      doi='10.2345/S1384107697000225',
-                                      pmid='1234')
-        self.assertEqual(s.title, 'Test paper')
-
     def test_python_script(self):
         """Test metadata.PythonScript"""
         r = ihm.location.Repository(doi='10.5281/zenodo.46266')

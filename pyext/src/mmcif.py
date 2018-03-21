@@ -134,55 +134,6 @@ class _AllSoftware(object):
                    location='http://www.sbg.bio.ic.ac.uk/~phyre2/'))
 
 
-class _AuditAuthorDumper(_Dumper):
-    """Populate the mmCIF audit_author category (a list of the people that
-       authored this mmCIF file; here we assume that's just the authors of
-       any associated publications)"""
-    def dump(self, writer):
-        citations = [m for m in self.simo._metadata
-                     if isinstance(m, IMP.pmi.metadata.Citation)]
-        seen_authors = {}
-        with writer.loop("_audit_author",
-                         ["name", "pdbx_ordinal"]) as l:
-            ordinal = 1
-            for n, c in enumerate(citations):
-                for a in c.authors:
-                    if a not in seen_authors:
-                        seen_authors[a] = None
-                        l.write(name=a, pdbx_ordinal=ordinal)
-                        ordinal += 1
-
-
-class _CitationDumper(_Dumper):
-    def dump(self, writer):
-        citations = [m for m in self.simo._metadata
-                     if isinstance(m, IMP.pmi.metadata.Citation)]
-        with writer.loop("_citation",
-                         ["id", "title", "journal_abbrev", "journal_volume",
-                          "page_first", "page_last", "year",
-                          "pdbx_database_id_PubMed",
-                          "pdbx_database_id_DOI"]) as l:
-            for n, c in enumerate(citations):
-                if isinstance(c.page_range, (tuple, list)):
-                    page_first, page_last = c.page_range
-                else:
-                    page_first = c.page_range
-                    page_last = None
-                l.write(id=n+1, title=c.title, journal_abbrev=c.journal,
-                        journal_volume=c.volume, page_first=page_first,
-                        page_last=page_last, year=c.year,
-                        pdbx_database_id_PubMed=c.pmid,
-                        pdbx_database_id_DOI=c.doi)
-
-        with writer.loop("_citation_author",
-                         ["citation_id", "name", "ordinal"]) as l:
-            ordinal = 1
-            for n, c in enumerate(citations):
-                for a in c.authors:
-                    l.write(citation_id=n+1, name=a, ordinal=ordinal)
-                    ordinal += 1
-
-
 class _PDBFragment(object):
     """Record details about part of a PDB file used as input
        for a component."""
@@ -2270,8 +2221,6 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.em2d_dump.models = self.model_dump.models
 
         self._dumpers = [self.comment_dump,
-                         _AuditAuthorDumper(self),
-                         _CitationDumper(self),
                          self.model_repr_dump, self.extref_dump,
                          self.dataset_dump,
                          self.cross_link_dump, self.sas_dump,

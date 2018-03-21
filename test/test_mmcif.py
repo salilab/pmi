@@ -283,38 +283,6 @@ _ihm_external_files.details
         self.assertEqual(po.system.asym_units[1].details, 'bar')
         self.assertEqual(po.system.asym_units[2].details, 'baz')
 
-    def test_audit_author(self):
-        """Test AuditAuthorDumper"""
-        m = IMP.Model()
-        r = IMP.pmi.representation.Representation(m)
-
-        s = IMP.pmi.metadata.Citation(pmid='25161197', title='foo',
-              journal="Mol Cell Proteomics", volume=13, page_range=(2927,2943),
-              year=2014, authors=['auth1', 'auth2', 'auth3'], doi='doi1')
-        r.add_metadata(s)
-        s = IMP.pmi.metadata.Citation(pmid='45161197', title='bar',
-              journal="Mol Cell Proteomics", volume=13, page_range=(2927,2943),
-              year=2014, authors=['auth2', 'auth4'], doi='doi2')
-        r.add_metadata(s)
-
-        d = IMP.pmi.mmcif._AuditAuthorDumper(r)
-        fh = StringIO()
-        w = ihm.format.CifWriter(fh)
-        d.dump(w)
-        out = fh.getvalue()
-        # auth2 is repeated in the input; we should see it only once in the
-        # output
-        self.assertEqual(out,"""#
-loop_
-_audit_author.name
-_audit_author.pdbx_ordinal
-auth1 1
-auth2 2
-auth3 3
-auth4 4
-#
-""")
-
     def test_entity_creation(self):
         """Test creation of Entity objects"""
         m = IMP.Model()
@@ -331,74 +299,6 @@ auth4 4
         self.assertEqual(len(po.system.entities), 2)
         self.assertEqual(po.system.entities[0].description, 'foo')
         self.assertEqual(po.system.entities[1].description, 'baz')
-
-    def test_citation(self):
-        """Test CitationDumper"""
-        s = IMP.pmi.metadata.Citation(
-              pmid='25161197',
-              title="Structural characterization by cross-linking reveals the\n"
-                    "detailed architecture of a coatomer-related heptameric\n"
-                    "module from the nuclear pore complex.",
-              journal="Mol Cell Proteomics", volume=13, page_range=(2927,2943),
-              year=2014,
-              authors=['Shi Y', 'Fernandez-Martinez J', 'Tjioe E', 'Pellarin R',
-                       'Kim SJ', 'Williams R', 'Schneidman-Duhovny D', 'Sali A',
-                       'Rout MP', 'Chait BT'],
-              doi='10.1074/mcp.M114.041673')
-
-        m = IMP.Model()
-        r = IMP.pmi.representation.Representation(m)
-        r.add_metadata(s)
-        d = IMP.pmi.mmcif._CitationDumper(r)
-        fh = StringIO()
-        w = ihm.format.CifWriter(fh)
-        d.dump(w)
-        out = fh.getvalue()
-        expected = """#
-loop_
-_citation.id
-_citation.title
-_citation.journal_abbrev
-_citation.journal_volume
-_citation.page_first
-_citation.page_last
-_citation.year
-_citation.pdbx_database_id_PubMed
-_citation.pdbx_database_id_DOI
-1
-;Structural characterization by cross-linking reveals the
-detailed architecture of a coatomer-related heptameric
-module from the nuclear pore complex.
-;
-'Mol Cell Proteomics' 13 2927 2943 2014 25161197 10.1074/mcp.M114.041673
-#
-#
-loop_
-_citation_author.citation_id
-_citation_author.name
-_citation_author.ordinal
-1 'Shi Y' 1
-1 'Fernandez-Martinez J' 2
-1 'Tjioe E' 3
-1 'Pellarin R' 4
-1 'Kim SJ' 5
-1 'Williams R' 6
-1 'Schneidman-Duhovny D' 7
-1 'Sali A' 8
-1 'Rout MP' 9
-1 'Chait BT' 10
-#
-"""
-        self.assertEqual(out, expected)
-
-        # Handle no last page
-        s.page_range = 'e1637'
-        d = IMP.pmi.mmcif._CitationDumper(r)
-        fh = StringIO()
-        w = ihm.format.CifWriter(fh)
-        d.dump(w)
-        out = fh.getvalue()
-        self.assertTrue("'Mol Cell Proteomics' 13 e1637 . 2014 " in out)
 
     def test_pdb_helix(self):
         """Test PDBHelix class"""

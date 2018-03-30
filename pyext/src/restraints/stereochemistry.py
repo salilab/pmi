@@ -1209,7 +1209,8 @@ class SymmetryRestraint(object):
                  clones_list,
                  transforms,
                  label='',
-                 strength=10.0):
+                 strength=10.0,
+                 ca_only=False):
         """Constructor
         @param references Can be one of the following inputs:
                IMP Hierarchy, PMI System/State/Molecule/TempResidue, or a list/set of them
@@ -1217,6 +1218,7 @@ class SymmetryRestraint(object):
         @param transforms Transforms moving each selection to the first selection
         @param label Label for output
         @param strength            The elastic bond strength
+        @param ca_only Optionally select so only CAlpha particles are used
         """
 
         refs = IMP.pmi.tools.input_adaptor(references,flatten=True)
@@ -1234,9 +1236,11 @@ class SymmetryRestraint(object):
                 raise Exception("Error: len(references)!=len(clones)")
             pair_score = IMP.core.TransformedDistancePairScore(harmonic,trans)
             for p0,p1 in zip(refs,clones):
-                r = IMP.core.PairRestraint(self.mdl, pair_score, [p0.get_particle_index(),
-                                                                  p1.get_particle_index()])
-                self.rs.add_restraint(r)
+                if not ca_only or (IMP.atom.Atom(p0).get_atom_type()==IMP.atom.AtomType("CA")
+                                   and IMP.atom.Atom(p1).get_atom_type()==IMP.atom.AtomType("CA")):
+                    r = IMP.core.PairRestraint(self.mdl, pair_score, [p0.get_particle_index(),
+                                                                      p1.get_particle_index()])
+                    self.rs.add_restraint(r)
         print('created symmetry network with',self.rs.get_number_of_restraints(),'restraints')
 
     def set_label(self, label):

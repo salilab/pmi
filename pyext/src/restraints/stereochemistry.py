@@ -1211,15 +1211,16 @@ class SymmetryRestraint(object):
                  label='',
                  strength=10.0):
         """Constructor
-        @param references List of particles for symmetry reference
-        @param clones_list List of lists of clone particles
+        @param references Can be one of the following inputs:
+               IMP Hierarchy, PMI System/State/Molecule/TempResidue, or a list/set of them
+        @param clones_list List of lists of the above
         @param transforms Transforms moving each selection to the first selection
         @param label Label for output
         @param strength            The elastic bond strength
-        \note You will have to perform an IMP::atom::Selection to get the particles you need.
-        Will check to make sure the numbers match.
         """
-        self.mdl = root.get_model()
+
+        refs = IMP.pmi.tools.input_adaptor(references,flatten=True)
+        self.mdl = refs[0].get_model()
         self.rs = IMP.RestraintSet(self.mdl, "Symmetry")
         self.weight = 1
         self.label = label
@@ -1227,14 +1228,15 @@ class SymmetryRestraint(object):
             raise Exception('Error: There should be as many clones as transforms')
 
         harmonic = IMP.core.Harmonic(0.,strength)
-        for clones,trans in zip(clones_list,transforms):
-            if len(clones)!=len(references):
+        for tmp_clones,trans in zip(clones_list,transforms):
+            clones = IMP.pmi.tools.input_adaptor(tmp_clones,flatten=True)
+            if len(clones)!=len(refs):
                 raise Exception("Error: len(references)!=len(clones)")
             pair_score = IMP.core.TransformedDistancePairScore(harmonic,trans)
-            for p0,p1 in zip(references,clones):
-                r = IMP.core.PairRestraint(pair_score,(p0,p1))
+            for p0,p1 in zip(refs,clones):
+                r = IMP.core.PairRestraint(self.mdl, pair_score, [p0.get_particle_index(),
+                                                                  p1.get_particle_index()])
                 self.rs.add_restraint(r)
-
         print('created symmetry network with',self.rs.get_number_of_restraints(),'restraints')
 
     def set_label(self, label):
@@ -1244,7 +1246,7 @@ class SymmetryRestraint(object):
             r.set_name(label)
 
     def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.m, self.rs)
+        IMP.pmi.tools.add_restraint_to_model(self.mdl, self.rs)
 
     def get_restraint(self):
         return self.rs

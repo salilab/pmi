@@ -617,46 +617,6 @@ class _EM2DDumper(_Dumper):
                     ordinal += 1
 
 
-class _SASRestraint(object):
-    # todo: support multifoxs, etc.
-    fitting_state = 'Single'
-    def __init__(self, method, model, assembly, dataset, rg, chi, details):
-        self.method, self.model, self.assembly = method, model, assembly
-        self.dataset, self.rg, self.chi = dataset, rg, chi
-        self.details = details
-
-
-class _SASDumper(_Dumper):
-    def __init__(self, simo):
-        super(_SASDumper, self).__init__(simo)
-        self.restraints = []
-
-    def add(self, rsr):
-        self.restraints.append(rsr)
-        rsr.id = len(self.restraints)
-
-    def dump(self, writer):
-        self.dump_restraints(writer)
-
-    def dump_restraints(self, writer):
-        ordinal = 1
-        with writer.loop("_ihm_sas_restraint",
-                         ["ordinal_id", "dataset_list_id", "model_id",
-                          "struct_assembly_id", "profile_segment_flag",
-                          "fitting_atom_type", "fitting_method",
-                          "fitting_state", "radius_of_gyration",
-                          "chi_value", "details"]) as l:
-            for r in self.restraints:
-                l.write(ordinal_id=ordinal, dataset_list_id=r.dataset._id,
-                        model_id=r.model.id, struct_assembly_id=r.assembly._id,
-                        profile_segment_flag=False,
-                        fitting_atom_type='Heavy atoms',
-                        fitting_method=r.method, fitting_state=r.fitting_state,
-                        radius_of_gyration=r.rg, chi_value=r.chi,
-                        details=r.details if r.details else None)
-                ordinal += 1
-
-
 class _EM3DRestraint(object):
     fitting_method = 'Gaussian mixture models'
 
@@ -673,9 +633,11 @@ class _EM3DRestraint(object):
         components = {}
         for d in densities:
             components[cm[d]] = None # None == all residues in this component
-        return simo._get_subassembly(components,
+        a = simo._get_subassembly(components,
                               name="EM subassembly",
                               description="All components that fit the EM map")
+        simo.system.orphan_assemblies.append(a)
+        return a
 
     def get_cross_correlation(self, model):
         """Get the cross correlation coefficient between the model
@@ -901,6 +863,7 @@ class _ModelDumper(_Dumper):
         m = _Model(prot, self.simo, protocol, assembly, representation, group)
         self.models.append(m)
         m.id = len(self.models)
+        m._id = m.id # support using ihm.restraint classes
         return m
 
     def dump(self, writer):
@@ -1754,7 +1717,6 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
 
         self.model_repr_dump = _ModelRepresentationDumper(self)
         self.cross_link_dump = _CrossLinkDumper(self)
-        self.sas_dump = _SASDumper(self)
         self.em2d_dump = _EM2DDumper(self)
         self.em3d_dump = _EM3DDumper(self)
         self.model_prot_dump = _ModelProtocolDumper(self)
@@ -1776,7 +1738,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.em2d_dump.models = self.model_dump.models
 
         self._dumpers = [self.model_repr_dump,
-                         self.cross_link_dump, self.sas_dump,
+                         self.cross_link_dump,
                          self.em2d_dump, self.em3d_dump,
                          self.starting_model_dump,
                          # todo: detect atomic models and emit struct_conf
@@ -2062,7 +2024,6 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
             asyms.append(a if seqrng is None else a(*seqrng))
 
         a = ihm.Assembly(asyms, name=name, description=description)
-        self.system.orphan_assemblies.append(a)
         return a
 
     def _add_foxs_restraint(self, model, comp, seqrange, dataset, rg, chi,
@@ -2073,8 +2034,11 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                               name="SAXS subassembly",
                               description="All components that fit SAXS data")
         dataset = self._add_dataset(dataset)
-        self.sas_dump.add(_SASRestraint('FoXS', model, assembly, dataset,
-                                        rg, chi, details))
+        r = ihm.restraint.SASRestraint(dataset, assembly, segment=False,
+                fitting_method='FoXS', fitting_atom_type='Heavy atoms',
+                multi_state=False, radius_of_gyration=rg, details=details)
+        r.fits[model] = ihm.restraint.SASRestraintFit(chi_value=chi)
+        self.system.restraints.append(r)
 
     def add_em2d_restraint(self, state, r, i, resolution, pixel_size,
                            image_resolution, projection_number,

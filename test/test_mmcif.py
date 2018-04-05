@@ -1319,14 +1319,16 @@ _ihm_2dem_class_average_fitting.tr_vector[3]
         d = ihm.dataset.SASDataset(lp)
         d._id = 4
         model = DummyModel()
-        model.id = 42
+        model._id = 42
         po._add_foxs_restraint(model, 'Nup84', (2,3), d, 3.4, 1.2, 'test')
 
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
         self.assign_entity_asym_ids(po.system)
         ihm.dumper._AssemblyDumper().finalize(po.system)  # assign assembly IDs
-        po.sas_dump.dump(w)
+        dumper = ihm.dumper._SASDumper()
+        dumper.finalize(po.system)
+        dumper.dump(po.system, w)
         out = fh.getvalue()
         self.assertEqual(out, """#
 loop_

@@ -302,11 +302,13 @@ class _AllDatasets(object):
     def __init__(self):
         self._datasets = []
         self._datasets_by_state = {}
+        self._restraints_by_state = {}
         self._dataset_groups = []
 
     def get_all_group(self, state):
         """Get a _DatasetGroup encompassing all datasets so far in this state"""
-        g = _DatasetGroup(self._datasets_by_state.get(state, []))
+        g = _DatasetGroup(self._datasets_by_state.get(state, [])
+                + [r.dataset for r in self._restraints_by_state.get(state, [])])
         self._dataset_groups.append(g)
         return g
 
@@ -318,6 +320,12 @@ class _AllDatasets(object):
         self._datasets_by_state[state].append(dataset)
         # We don't add to ihm.System yet, since it can't handle RestraintDataset
         return dataset
+
+    def add_restraint(self, state, restraint):
+        """Add the dataset for a restraint"""
+        if state not in self._restraints_by_state:
+            self._restraints_by_state[state] = []
+        self._restraints_by_state[state].append(restraint)
 
     def _get_final_datasets(self):
         """Get final set of datasets, with RestraintDatasets removed"""
@@ -1918,6 +1926,9 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
     def _add_dataset(self, dataset):
         return self.all_datasets.add(self._last_state, dataset)
 
+    def _add_restraint_dataset(self, restraint):
+        return self.all_datasets.add_restraint(self._last_state, restraint)
+
     def add_model_group(self, group):
         self.model_groups.append(group)
         group.id = len(self.model_groups)
@@ -2025,6 +2036,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                 multi_state=False, radius_of_gyration=rg, details=details)
         r.fits[model] = ihm.restraint.SASRestraintFit(chi_value=chi)
         self.system.restraints.append(r)
+        self._add_restraint_dataset(r) # so that all-dataset group works
 
     def add_em2d_restraint(self, state, r, i, resolution, pixel_size,
                            image_resolution, projection_number,
@@ -2037,8 +2049,9 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
 
     def add_em3d_restraint(self, state, target_ps, densities, pmi_restraint):
         # todo: need to set allow_duplicates on this dataset?
-        self.system.restraints.append(_EM3DRestraint(self, state, pmi_restraint,
-                                                     target_ps, densities))
+        r = _EM3DRestraint(self, state, pmi_restraint, target_ps, densities)
+        self.system.restraints.append(r)
+        self._add_restraint_dataset(r) # so that all-dataset group works
 
     def add_model(self, group, assembly=None, representation=None):
         if representation is None:

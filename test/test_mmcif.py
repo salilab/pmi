@@ -94,19 +94,6 @@ class Tests(IMP.test.TestCase):
         d.set_phyre2_used()
         self.assertEqual(len(system.software), 3)
 
-    def test_comment_dumper(self):
-        """Test CommentDumper"""
-        po = DummyPO(None)
-        po.add_comment("Comment 1")
-        po.add_comment("Comment 2")
-        d = IMP.pmi.mmcif._CommentDumper(po)
-        fh = StringIO()
-        w = ihm.format.CifWriter(fh)
-        d.dump(w)
-        self.assertEqual(fh.getvalue(), """# Comment 1
-# Comment 2
-""")
-
     def test_single_state(self):
         """Test MultiStateDumper with a single state"""
         po = DummyPO(None)

@@ -1347,8 +1347,8 @@ _ihm_sas_restraint.details
 #
 """)
 
-    def test_em3d_dumper(self):
-        """Test EM3DDumper class"""
+    def test_add_em3d_restraint(self):
+        """Test add_em3d_restraint method"""
         m = IMP.Model()
         simo = IMP.pmi.representation.Representation(m)
         po = DummyPO(None)
@@ -1360,18 +1360,19 @@ _ihm_sas_restraint.details
         nup84 = simo.autobuild_model("Nup84",
                                      self.get_input_file_name("test.nup84.pdb"),
                                      "A")
+        p = IMP.atom.get_by_type(simo.hier_dict['Nup84'],
+                                 IMP.atom.FRAGMENT_TYPE)[0]
         class DummyRestraint(object):
             label = 'foo'
         class DummyProtocolStep(object):
             pass
         pr = DummyRestraint()
-        rd = IMP.pmi.mmcif._RestraintDataset(pr, num=None,
-                                             allow_duplicates=True)
-        r = IMP.pmi.mmcif._EM3DRestraint(po, state, rd, pr,
-                                         target_ps=[None, None], densities=[])
+        pr.dataset = None
+        po.add_em3d_restraint(state, pmi_restraint=pr,
+                              target_ps=[None, None], densities=[p])
 
         l = ihm.location.InputFileLocation(repo='foo', path='bar')
-        d = ihm.dataset.EM2DClassDataset(l)
+        d = ihm.dataset.EMDensityDataset(l)
         d._id = 4
         pr.dataset = d
 
@@ -1383,24 +1384,28 @@ _ihm_sas_restraint.details
         m.stats = {'GaussianEMRestraint_foo_CCC': 0.1}
         m = po.add_model(group)
         m.stats = {'GaussianEMRestraint_foo_CCC': 0.2}
-        po.em3d_dump.add(r)
+        po._add_restraint_model_fits()
+
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
         self.assign_entity_asym_ids(po.system)
         ihm.dumper._AssemblyDumper().finalize(po.system)  # assign assembly IDs
-        po.em3d_dump.dump(w)
+        d = ihm.dumper._EM3DDumper()
+        d.finalize(po.system)
+        d.dump(po.system, w)
         out = fh.getvalue()
         self.assertEqual(out, """#
 loop_
 _ihm_3dem_restraint.ordinal_id
 _ihm_3dem_restraint.dataset_list_id
 _ihm_3dem_restraint.fitting_method
+_ihm_3dem_restraint.fitting_method_citation
 _ihm_3dem_restraint.struct_assembly_id
 _ihm_3dem_restraint.number_of_gaussians
 _ihm_3dem_restraint.model_id
 _ihm_3dem_restraint.cross_correlation_coefficient
-1 4 'Gaussian mixture models' 2 2 1 0.100
-2 4 'Gaussian mixture models' 2 2 2 0.200
+1 4 'Gaussian mixture models' . 1 2 1 0.100
+2 4 'Gaussian mixture models' . 1 2 2 0.200
 #
 """)
 

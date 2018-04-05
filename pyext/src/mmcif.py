@@ -617,17 +617,23 @@ class _EM2DDumper(_Dumper):
                     ordinal += 1
 
 
-class _EM3DRestraint(object):
-    fitting_method = 'Gaussian mixture models'
+class _EM3DRestraint(ihm.restraint.EM3DRestraint):
 
-    def __init__(self, simo, state, rdataset, pmi_restraint, target_ps,
-                 densities):
+    def __init__(self, simo, state, pmi_restraint, target_ps, densities):
         self.pmi_restraint = pmi_restraint
-        self.rdataset = rdataset
-        self.number_of_gaussians = len(target_ps)
-        self.assembly = self.get_assembly(densities, simo, state)
+        super(_EM3DRestraint, self).__init__(
+                dataset=pmi_restraint.dataset,
+                assembly=self._get_assembly(densities, simo, state),
+                fitting_method='Gaussian mixture models',
+                number_of_gaussians=len(target_ps))
 
-    def get_assembly(self, densities, simo, state):
+    # Have our dataset point to that in the original PMI restraint
+    def __set_dataset(self, val):
+        self.pmi_restraint.dataset = val
+    dataset = property(lambda self: self.pmi_restraint.dataset,
+                       __set_dataset)
+
+    def _get_assembly(self, densities, simo, state):
         """Get the Assembly that this restraint acts on"""
         cm = _ComponentMapper(state.prot)
         components = {}
@@ -636,46 +642,19 @@ class _EM3DRestraint(object):
         a = simo._get_subassembly(components,
                               name="EM subassembly",
                               description="All components that fit the EM map")
-        simo.system.orphan_assemblies.append(a)
         return a
 
-    def get_cross_correlation(self, model):
+    def add_fits_from_model_statfile(self, model):
+        ccc = self._get_cross_correlation(model)
+        self.fits[model] = ihm.restraint.EM3DRestraintFit(
+                                           cross_correlation_coefficient=ccc)
+
+    def _get_cross_correlation(self, model):
         """Get the cross correlation coefficient between the model
            and the map"""
         if model.stats is not None:
             return float(model.stats['GaussianEMRestraint_%s_CCC'
                                      % self.pmi_restraint.label])
-
-
-class _EM3DDumper(_Dumper):
-    def __init__(self, simo):
-        super(_EM3DDumper, self).__init__(simo)
-        self.restraints = []
-
-    def add(self, rsr):
-        self.restraints.append(rsr)
-
-    def dump(self, writer):
-        # todo: support other fields
-        ordinal = 1
-        with writer.loop("_ihm_3dem_restraint",
-                         ["ordinal_id", "dataset_list_id", "fitting_method",
-                          "struct_assembly_id",
-                          "number_of_gaussians", "model_id",
-                          "cross_correlation_coefficient"]) as l:
-            for model in self.models:
-                if not model._is_restrained: continue
-                for r in self.restraints:
-                    ccc = r.get_cross_correlation(model)
-                    l.write(ordinal_id=ordinal,
-                            dataset_list_id=r.rdataset.dataset._id,
-                            fitting_method=r.fitting_method,
-                            struct_assembly_id=r.assembly._id,
-                            number_of_gaussians=r.number_of_gaussians,
-                            model_id=model.id,
-                            cross_correlation_coefficient=ccc if ccc is not None
-                                                        else None)
-                    ordinal += 1
 
 
 class _Protocol(list):
@@ -1718,7 +1697,6 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.model_repr_dump = _ModelRepresentationDumper(self)
         self.cross_link_dump = _CrossLinkDumper(self)
         self.em2d_dump = _EM2DDumper(self)
-        self.em3d_dump = _EM3DDumper(self)
         self.model_prot_dump = _ModelProtocolDumper(self)
         self.all_datasets = _AllDatasets()
         self.starting_model_dump = _StartingModelDumper(self)
@@ -1734,12 +1712,11 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         # Some dumpers add per-model information; give them a pointer to
         # the model list
         self.cross_link_dump.models = self.model_dump.models
-        self.em3d_dump.models = self.model_dump.models
         self.em2d_dump.models = self.model_dump.models
 
         self._dumpers = [self.model_repr_dump,
                          self.cross_link_dump,
-                         self.em2d_dump, self.em3d_dump,
+                         self.em2d_dump,
                          self.starting_model_dump,
                          # todo: detect atomic models and emit struct_conf
                          #_StructConfDumper(self),
@@ -1843,7 +1820,16 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
             state.modeled_assembly.append(asym)
             self.asym_units[name] = asym
 
+    def _add_restraint_model_fits(self):
+        """Add fits to restraints for all known models"""
+        for m in self.model_dump.models:
+            if m._is_restrained:
+                for r in self.system.restraints:
+                    if hasattr(r, 'add_fits_from_model_statfile'):
+                        r.add_fits_from_model_statfile(m)
+
     def flush(self):
+        self._add_restraint_model_fits()
         # Make sure ihm knows about final datasets and groups
         self.system.orphan_datasets.extend(
                            self.all_datasets._get_final_datasets())
@@ -2049,12 +2035,10 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                                           projection_number,
                                           micrographs_number))
 
-    def add_em3d_restraint(self, state, target_ps, densities, r):
-        # A 3DEM restraint's dataset ID uniquely defines the restraint, so
-        # we need to allow duplicates
-        d = self._get_restraint_dataset(r, allow_duplicates=True)
-        self.em3d_dump.add(_EM3DRestraint(self, state, d, r, target_ps,
-                                          densities))
+    def add_em3d_restraint(self, state, target_ps, densities, pmi_restraint):
+        # todo: need to set allow_duplicates on this dataset?
+        self.system.restraints.append(_EM3DRestraint(self, state, pmi_restraint,
+                                                     target_ps, densities))
 
     def add_model(self, group, assembly=None, representation=None):
         if representation is None:

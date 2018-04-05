@@ -206,8 +206,10 @@ _ihm_multi_state_modeling.details
             po.add_component_sequence(state, c, seq)
         self.assertEqual(len(po.system.entities), 2)
         self.assertEqual(po.system.asym_units[0].details, 'foo')
-        self.assertEqual(po.system.entities[0].sequence, 'AAA')
-        self.assertEqual(po.system.entities[1].sequence, 'AA')
+        self.assertEqual(''.join(x.code for x in
+                                 po.system.entities[0].sequence), 'AAA')
+        self.assertEqual(''.join(x.code for x in
+                                 po.system.entities[1].sequence), 'AA')
         self.assertEqual(len(po.system.asym_units), 3)
         self.assertEqual(po.system.asym_units[0].details, 'foo')
         self.assertEqual(po.system.asym_units[1].details, 'bar')
@@ -297,9 +299,9 @@ _ihm_multi_state_modeling.details
         a = system.entities
         self.assertEqual(len(a), 2)
         self.assertEqual(a[0].description, 'foo')
-        self.assertEqual(a[0].sequence, 'MELS')
+        self.assertEqual(''.join(x.code for x in a[0].sequence), 'MELS')
         self.assertEqual(a[1].description, 'bar')
-        self.assertEqual(a[1].sequence, 'SELM')
+        self.assertEqual(''.join(x.code for x in a[1].sequence), 'SELM')
 
     def test_dataset_group_finalize(self):
         """Test DatasetGroup.finalize()"""

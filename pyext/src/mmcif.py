@@ -420,8 +420,6 @@ class _CrossLinkDumper(_Dumper):
                 entity2 = self.simo.entities[xl.c2]
                 seq1 = entity1.sequence
                 seq2 = entity2.sequence
-                rt1 = IMP.atom.get_residue_type(seq1[xl.r1-1])
-                rt2 = IMP.atom.get_residue_type(seq2[xl.r2-1])
                 # todo: handle experimental ambiguity (group_id) properly
                 xl_id += 1
                 seen_cross_links[sig] = xl_id
@@ -430,11 +428,11 @@ class _CrossLinkDumper(_Dumper):
                         entity_description_1=entity1.description,
                         entity_id_1=entity1._id,
                         seq_id_1=xl.r1,
-                        comp_id_1=rt1.get_string(),
+                        comp_id_1=seq1[xl.r1-1].id,
                         entity_description_2=entity2.description,
                         entity_id_2=entity2._id,
                         seq_id_2=xl.r2,
-                        comp_id_2=rt2.get_string(),
+                        comp_id_2=seq2[xl.r2-1].id,
                         linker_type=xl.group.label,
                         dataset_list_id=xl.group.rdataset.dataset._id)
 
@@ -463,8 +461,6 @@ class _CrossLinkDumper(_Dumper):
                 entity2 = self.simo.entities[xl.ex_xl.c2]
                 seq1 = entity1.sequence
                 seq2 = entity2.sequence
-                rt1 = IMP.atom.get_residue_type(seq1[xl.ex_xl.r1-1])
-                rt2 = IMP.atom.get_residue_type(seq2[xl.ex_xl.r2-1])
                 asym1 = asym[xl.p1]
                 asym2 = asym[xl.p2]
                 # Skip identical cross links
@@ -481,11 +477,11 @@ class _CrossLinkDumper(_Dumper):
                         entity_id_1=entity1._id,
                         asym_id_1=asym1,
                         seq_id_1=xl.ex_xl.r1,
-                        comp_id_1=rt1.get_string(),
+                        comp_id_1=seq1[xl.ex_xl.r1-1].id,
                         entity_id_2=entity2._id,
                         asym_id_2=asym2,
                         seq_id_2=xl.ex_xl.r2,
-                        comp_id_2=rt2.get_string(),
+                        comp_id_2=seq2[xl.ex_xl.r2-1].id,
                         restraint_type='upper bound',
                         # todo: any circumstances where this could be ANY?
                         conditional_crosslink_flag="ALL",
@@ -1860,7 +1856,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         # component name = asym_unit.details
         comps = {}
         for ca in assembly:
-            comps[ca.asym.details] = None
+            comps[ca.details] = None
         return comps
 
     def create_transformed_component(self, state, name, original, transform):

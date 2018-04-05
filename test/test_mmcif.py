@@ -1194,25 +1194,8 @@ _ihm_cross_link_restraint.sigma_2
         # since allow_duplicates=True
         self.assertNotEqual(d, d2)
 
-    def test_em2d_restraint_with_raw(self):
-        """Test EM2DRestraint class, with raw micrographs"""
-        class DummyRestraint(object):
-            pass
-        class DummyState(object):
-            pass
-        pr = DummyRestraint()
-        state = DummyState()
-        rd = IMP.pmi.mmcif._RestraintDataset(pr, num=None,
-                                             allow_duplicates=False)
-        r = IMP.pmi.mmcif._EM2DRestraint(state, rd, pr, 0,
-                                         resolution=10.0, pixel_size=4.2,
-                                         image_resolution=1.0,
-                                         projection_number=200,
-                                         micrographs_number=50)
-        self.assertEqual(r.micrographs_number, 50)
-
-    def test_em2d_dumper(self):
-        """Test EM2DDumper class"""
+    def test_add_em2d_restraint(self):
+        """Test add_em2d_restraint method"""
         m = IMP.Model()
         simo = IMP.pmi.representation.Representation(m)
         po = DummyPO(None)
@@ -1230,20 +1213,19 @@ _ihm_cross_link_restraint.sigma_2
         class DummyProtocolStep(object):
             pass
         pr = DummyRestraint()
-        rd = IMP.pmi.mmcif._RestraintDataset(pr, num=None,
-                                             allow_duplicates=False)
-        r = IMP.pmi.mmcif._EM2DRestraint(state, rd, pr, 0,
-                                         resolution=10.0, pixel_size=4.2,
-                                         image_resolution=1.0,
-                                         projection_number=200,
-                                         micrographs_number=50)
+        pr.datasets = [None]
+        po.add_em2d_restraint(state, pr, 0,
+                              resolution=10.0, pixel_size=4.2,
+                              image_resolution=1.0,
+                              projection_number=200,
+                              micrographs_number=50)
         lp = ihm.location.InputFileLocation(repo='foo', path='baz')
         dp = ihm.dataset.EMMicrographsDataset(lp)
         l = ihm.location.InputFileLocation(repo='foo', path='bar')
         d = ihm.dataset.EM2DClassDataset(l)
         d._id = 4
         d.parents.append(dp)
-        pr.dataset = d
+        pr.datasets[0] = d
         p = DummyProtocolStep()
         p.state = po._last_state
         po.model_prot_dump.add_step(p)
@@ -1258,12 +1240,15 @@ _ihm_cross_link_restraint.sigma_2
                    prefix + 'Rotation1': '0.316041672423',
                    prefix + 'Rotation2': '-0.419293315413',
                    prefix + 'Rotation3': '-0.726253660826'}
-        po.em2d_dump.add(r)
+        po._add_restraint_model_fits()
+
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
         self.assign_entity_asym_ids(po.system)
         ihm.dumper._AssemblyDumper().finalize(po.system)  # assign assembly IDs
-        po.em2d_dump.dump(w)
+        d = ihm.dumper._EM2DDumper()
+        d.finalize(po.system)
+        d.dump(po.system, w)
         out = fh.getvalue()
         self.assertEqual(out, """#
 loop_

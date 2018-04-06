@@ -36,6 +36,7 @@ import ihm.metadata
 import ihm.startmodel
 import ihm.model
 import ihm.protocol
+import ihm.analysis
 
 def _assign_id(obj, seen_objs, obj_by_id):
     """Assign a unique ID to obj, and track all ids in obj_by_id."""
@@ -901,6 +902,13 @@ class _AllProtocols(object):
         # Assume that protocol uses all currently-defined datasets
         step.dataset_group = self.simo.all_datasets.get_all_group(state)
 
+    def add_postproc(self, step, state):
+        """Add a postprocessing step to the last protocol"""
+        protocol = self.get_last_protocol(state)
+        if len(protocol.analyses) == 0:
+            protocol.analyses.append(ihm.analysis.Analysis())
+        protocol.analyses[-1].steps.append(step)
+
     def get_last_protocol(self, state):
         """Return the most recently-added _Protocol"""
         return self.protocols[state][-1]
@@ -1207,23 +1215,18 @@ class _StructConfDumper(_Dumper):
                         end_label_seq_id=end)
 
 
-class _PostProcess(object):
-    """Base class for any post processing"""
-    pass
-
-class _ReplicaExchangeAnalysisPostProcess(_PostProcess):
+class _ReplicaExchangeAnalysisPostProcess(ihm.analysis.ClusterStep):
     """Post processing using AnalysisReplicaExchange0 macro"""
-    type = 'cluster'
-    feature = 'RMSD'
 
-    def __init__(self, protocol, rex, num_models_begin):
-        self.protocol = protocol
+    def __init__(self, rex, num_models_begin):
         self.rex = rex
-        self.num_models_begin = num_models_begin
-        self.num_models_end = 0
+        num_models_end = 0
         for fname in self.get_all_stat_files():
             with open(fname) as fh:
-                self.num_models_end += len(fh.readlines())
+                num_models_end += len(fh.readlines())
+        super(_ReplicaExchangeAnalysisPostProcess, self).__init__(
+                feature='RMSD', num_models_begin=num_models_begin,
+                num_models_end=num_models_end)
 
     def get_stat_file(self, cluster_num):
         return os.path.join(self.rex._outputdir, "cluster.%d" % cluster_num,
@@ -1233,59 +1236,6 @@ class _ReplicaExchangeAnalysisPostProcess(_PostProcess):
         for i in range(self.rex._number_of_clusters):
             yield self.get_stat_file(i)
 
-class _SimplePostProcess(_PostProcess):
-    """Simple ad hoc clustering"""
-    type = 'cluster'
-    feature = 'RMSD'
-
-    def __init__(self, protocol, num_models_begin, num_models_end):
-        self.protocol = protocol
-        self.num_models_begin = num_models_begin
-        self.num_models_end = num_models_end
-
-
-class _NoPostProcess(_PostProcess):
-    """No post processing"""
-    type = 'none'
-    feature = 'none'
-
-    def __init__(self, protocol, num_models):
-        self.protocol = protocol
-        self.num_models_begin = self.num_models_end = num_models
-
-class _PostProcessDumper(_Dumper):
-    def __init__(self, simo):
-        super(_PostProcessDumper, self).__init__(simo)
-        self.postprocs = []
-
-    def add(self, postproc):
-        protocol = postproc.protocol
-        self.postprocs.append(postproc)
-        postproc.id = len(self.postprocs)
-        postproc._id = postproc.id # work with python-ihm EnsembleDumper
-
-    def finalize(self):
-        # Assign step IDs per protocol
-        pp_by_protocol = {}
-        for p in self.postprocs:
-            protocol = p.protocol
-            if id(protocol) not in pp_by_protocol:
-                pp_by_protocol[id(protocol)] = []
-            by_prot = pp_by_protocol[id(protocol)]
-            by_prot.append(p)
-            p.step_id = len(by_prot)
-
-    def dump(self, writer):
-        with writer.loop("_ihm_modeling_post_process",
-                         ["id", "protocol_id", "analysis_id", "step_id",
-                          "type", "feature", "num_models_begin",
-                          "num_models_end"]) as l:
-            # todo: handle multiple analyses
-            for p in self.postprocs:
-                l.write(id=p.id, protocol_id=p.protocol._id, analysis_id=1,
-                        step_id=p.step_id, type=p.type, feature=p.feature,
-                        num_models_begin=p.num_models_begin,
-                        num_models_end=p.num_models_end)
 
 class _ReplicaExchangeAnalysisEnsemble(ihm.model.Ensemble):
     """Ensemble generated using AnalysisReplicaExchange0 macro"""
@@ -1550,7 +1500,6 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.model_repr_dump.starting_model \
                     = self.starting_model_dump.starting_model
         self.all_software = _AllSoftware(self.system)
-        self.post_process_dump = _PostProcessDumper(self)
 
         # Some dumpers add per-model information; give them a pointer to
         # the model list
@@ -1561,7 +1510,6 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                          self.starting_model_dump,
                          # todo: detect atomic models and emit struct_conf
                          #_StructConfDumper(self),
-                         self.post_process_dump,
                          self.model_dump]
 
     def create_representation(self, name):
@@ -1763,17 +1711,16 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
     def _add_simple_postprocessing(self, num_models_begin, num_models_end):
         # Always assumed that we're dealing with the last state
         state = self._last_state
-        protocol = self.all_protocols.get_last_protocol(state)
-        pp = _SimplePostProcess(protocol, num_models_begin, num_models_end)
-        self.post_process_dump.add(pp)
+        pp = ihm.analysis.ClusterStep('RMSD', num_models_begin, num_models_end)
+        self.all_protocols.add_postproc(pp, state)
         return pp
 
     def _add_no_postprocessing(self, num_models):
         # Always assumed that we're dealing with the last state
         state = self._last_state
-        protocol = self.all_protocols.get_last_protocol(state)
-        pp = _NoPostProcess(protocol, num_models)
-        self.post_process_dump.add(pp)
+        pp = ihm.analysis.EmptyStep()
+        pp.num_models_begin = pp.num_models_end = num_models
+        self.all_protocols.add_postproc(pp, state)
         return pp
 
     def _add_simple_ensemble(self, pp, name, num_models, drmsd,
@@ -1813,8 +1760,8 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         # constructor)
         protocol = self.all_protocols.get_last_protocol(state)
         num_models = protocol.steps[-1].num_models_end
-        pp = _ReplicaExchangeAnalysisPostProcess(protocol, rex, num_models)
-        self.post_process_dump.add(pp)
+        pp = _ReplicaExchangeAnalysisPostProcess(rex, num_models)
+        self.all_protocols.add_postproc(pp, state)
         for i in range(rex._number_of_clusters):
             group = ihm.model.ModelGroup(name=state.get_prefixed_name(
                                                       'cluster %d' % (i + 1)))

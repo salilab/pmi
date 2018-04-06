@@ -783,8 +783,9 @@ _ihm_modeling_protocol.ordered_flag
         w = ihm.format.CifWriter(fh)
         # Assign protocol IDs
         ihm.dumper._ProtocolDumper().finalize(po.system)
-        po.post_process_dump.finalize()
-        po.post_process_dump.dump(w)
+        d = ihm.dumper._PostProcessDumper()
+        d.finalize(po.system)
+        d.dump(po.system, w)
         out = fh.getvalue()
         self.assertEqual(out, """#
 loop_
@@ -796,10 +797,12 @@ _ihm_modeling_post_process.type
 _ihm_modeling_post_process.feature
 _ihm_modeling_post_process.num_models_begin
 _ihm_modeling_post_process.num_models_end
-1 1 1 1 cluster RMSD 10 90
-2 1 1 2 cluster RMSD 12 90
-3 2 1 1 cluster RMSD 34 56
-4 3 1 1 cluster RMSD 20 80
+_ihm_modeling_post_process.struct_assembly_id
+_ihm_modeling_post_process.dataset_group_id
+1 1 1 1 cluster RMSD 10 90 . .
+2 1 1 2 cluster RMSD 12 90 . .
+3 2 1 1 cluster RMSD 34 56 . .
+4 3 1 1 cluster RMSD 20 80 . .
 #
 """)
 
@@ -822,8 +825,9 @@ _ihm_modeling_post_process.num_models_end
         w = ihm.format.CifWriter(fh)
         # Assign protocol IDs
         ihm.dumper._ProtocolDumper().finalize(po.system)
-        po.post_process_dump.finalize()
-        po.post_process_dump.dump(w)
+        d = ihm.dumper._PostProcessDumper()
+        d.finalize(po.system)
+        d.dump(po.system, w)
         out = fh.getvalue()
         self.assertEqual(out, """#
 loop_
@@ -835,7 +839,9 @@ _ihm_modeling_post_process.type
 _ihm_modeling_post_process.feature
 _ihm_modeling_post_process.num_models_begin
 _ihm_modeling_post_process.num_models_end
-1 1 1 1 none none 10 10
+_ihm_modeling_post_process.struct_assembly_id
+_ihm_modeling_post_process.dataset_group_id
+1 1 1 1 none none 10 10 . .
 #
 """)
 
@@ -873,7 +879,7 @@ _ihm_modeling_post_process.num_models_end
                     # 1 model for first cluster, 2 for second cluster
                     for line in range(i + 1):
                         fh.write('#\n')
-            pp = IMP.pmi.mmcif._ReplicaExchangeAnalysisPostProcess(None, d, 45)
+            pp = IMP.pmi.mmcif._ReplicaExchangeAnalysisPostProcess(d, 45)
         self.assertEqual(pp.rex, d)
         self.assertEqual(pp.num_models_begin, 45)
         self.assertEqual(pp.num_models_end, 3)
@@ -911,7 +917,7 @@ _ihm_modeling_post_process.num_models_end
             # Mock RMSF file
             with open(os.path.join(subdir, 'rmsf.Nup84.dat'), 'w') as fh:
                 pass
-            pp = IMP.pmi.mmcif._ReplicaExchangeAnalysisPostProcess(None, d, 45)
+            pp = IMP.pmi.mmcif._ReplicaExchangeAnalysisPostProcess(d, 45)
             mg = DummyGroup()
             e = IMP.pmi.mmcif._ReplicaExchangeAnalysisEnsemble(pp, 0, mg, 1)
             self.assertEqual(e.cluster_num, 0)

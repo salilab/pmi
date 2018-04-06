@@ -292,25 +292,13 @@ _ihm_multi_state_modeling.details
         self.assertEqual(a[1].description, 'bar')
         self.assertEqual(''.join(x.code for x in a[1].sequence), 'SELM')
 
-    def test_dataset_group_finalize(self):
-        """Test DatasetGroup.finalize()"""
-        class DummyRestraint(object):
-            pass
-        l = ihm.location.InputFileLocation(repo='foo', path='baz')
-        ds1 = ihm.dataset.EM2DClassDataset(l)
-        # Duplicate dataset
-        ds2 = ihm.dataset.EM2DClassDataset(l)
-        dg = IMP.pmi.mmcif._DatasetGroup([ds1, ds2])
-        dg.finalize()
-        # ds2 should be ignored (duplicate of ds1)
-        self.assertEqual(list(dg._datasets), [ds1])
-
     def test_all_datasets_all_group(self):
         """Test AllDatasets.get_all_group()"""
+        s = ihm.System()
         state1 = 'state1'
         state2 = 'state2'
 
-        alld = IMP.pmi.mmcif._AllDatasets()
+        alld = IMP.pmi.mmcif._AllDatasets(s)
 
         l = ihm.location.InputFileLocation(repo='foo', path='baz')
         ds1 = ihm.dataset.EM2DClassDataset(l)
@@ -331,13 +319,10 @@ _ihm_multi_state_modeling.details
         alld.add(state2, ds3)
         g5 = alld.get_all_group(state2)
 
-        for g in (g2, g2, g3, g4, g5):
-            g.finalize()
-
-        self.assertEqual(list(g1._datasets), [])
-        self.assertEqual(list(g2._datasets), [ds1, ds2])
-        self.assertEqual(list(g4._datasets), [ds1, ds2, ds3])
-        self.assertEqual(list(g5._datasets), [ds3])
+        self.assertEqual(list(g1), [])
+        self.assertEqual(list(g2), [ds1, ds2])
+        self.assertEqual(list(g4), [ds1, ds2, ds3])
+        self.assertEqual(list(g5), [ds3])
 
     def test_model_dumper_sphere(self):
         """Test ModelDumper sphere_obj output"""
@@ -550,11 +535,6 @@ _ihm_sphere_obj_site.model_id
     def assign_dataset_ids(self, po):
         """Assign IDs to all Datasets in the system"""
         system = po.system
-        # Handle RestraintDataset
-        system.orphan_datasets.extend(
-                           po.all_datasets._get_final_datasets())
-        system.orphan_dataset_groups.extend(
-                           po.all_datasets._get_final_groups())
         d = ihm.dumper._DatasetDumper()
         d.finalize(system)
 
@@ -706,9 +686,6 @@ Nup85-m1 ATOM 2 C CA GLU 2 B 2 -8.986 11.688 -5.817 91.820 4
         mc2.execute_macro()
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
-        # Map _DatasetGroup to ihm equivalent (todo: remove)
-        dgs = list(po.all_datasets._get_final_groups())
-        po.all_protocols.set_final_dataset_groups()
         self.assign_entity_asym_ids(po.system)
         ihm.dumper._AssemblyDumper().finalize(po.system)  # assign assembly IDs
         self.assign_dataset_ids(po)

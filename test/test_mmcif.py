@@ -300,17 +300,10 @@ _ihm_multi_state_modeling.details
         ds1 = ihm.dataset.EM2DClassDataset(l)
         # Duplicate dataset
         ds2 = ihm.dataset.EM2DClassDataset(l)
-        # Restraint dataset
-        r = DummyRestraint()
-        l = ihm.location.InputFileLocation(repo='foo', path='bar')
-        ds3 = ihm.dataset.EM2DClassDataset(l)
-        r.dataset = ds3
-        rds = IMP.pmi.mmcif._RestraintDataset(r, None, False)
-        dg = IMP.pmi.mmcif._DatasetGroup([ds1, ds2, rds])
+        dg = IMP.pmi.mmcif._DatasetGroup([ds1, ds2])
         dg.finalize()
-        # ds2 should be ignored (duplicate of ds1) and rds should have been
-        # replaced by the real underlying dataset, ds3
-        self.assertEqual(list(dg._datasets), [ds1, ds3])
+        # ds2 should be ignored (duplicate of ds1)
+        self.assertEqual(list(dg._datasets), [ds1])
 
     def test_all_datasets_all_group(self):
         """Test AllDatasets.get_all_group()"""
@@ -1159,63 +1152,6 @@ _ihm_cross_link_restraint.sigma_2
 1 1 1 A 1 MET 1 A 2 GLU 'upper bound' ALL by-residue 42.000 0.800 1.000 0.500
 #
 """)
-
-    def test_restraint_dataset(self):
-        """Test RestraintDataset class"""
-        class DummyRestraint(object):
-            pass
-        r = DummyRestraint()
-        rd = IMP.pmi.mmcif._RestraintDataset(r, num=None,
-                                             allow_duplicates=False)
-        l = ihm.location.InputFileLocation(repo='foo', path='bar')
-        d = ihm.dataset.CXMSDataset(l)
-        r.dataset = d
-        # Get current dataset from restraint
-        d2 = rd.dataset
-        self.assertEqual(d2.data_type, 'CX-MS data')
-        self.assertEqual(d2.location.repo, 'foo')
-        # Should be a copy, so we can change it without affecting the original
-        self.assertEqual(d, d2)
-        self.assertNotEqual(id(d), id(d2))
-        d2.location.repo = 'bar'
-        self.assertEqual(d2.location.repo, 'bar')
-        self.assertEqual(d.location.repo, 'foo')
-        # Subsequent accesses should be cached, not copying again
-        d3 = rd.dataset
-        self.assertEqual(id(d2), id(d3))
-
-    def test_restraint_dataset_num(self):
-        """Test RestraintDataset with num!=None"""
-        class DummyRestraint(object):
-            pass
-        r = DummyRestraint()
-        rd = IMP.pmi.mmcif._RestraintDataset(r, num=1, allow_duplicates=False)
-        l = ihm.location.InputFileLocation(repo='foo', path='bar')
-        d1 = ihm.dataset.CXMSDataset(l)
-        l = ihm.location.InputFileLocation(repo='bar', path='baz')
-        d2 = ihm.dataset.CXMSDataset(l)
-        r.datasets = [d1, d2]
-        # Get current dataset from restraint
-        d2 = rd.dataset
-        self.assertEqual(d2.data_type, 'CX-MS data')
-        self.assertEqual(d2.location.repo, 'bar')
-
-    def test_restraint_dataset_duplicate(self):
-        """Test RestraintDataset with allow_duplicates=True"""
-        class DummyRestraint(object):
-            pass
-        r = DummyRestraint()
-        rd = IMP.pmi.mmcif._RestraintDataset(r, num=None, allow_duplicates=True)
-        l = ihm.location.InputFileLocation(repo='foo', path='bar')
-        d = ihm.dataset.CXMSDataset(l)
-        r.dataset = d
-        # Get current dataset from restraint
-        d2 = rd.dataset
-        self.assertEqual(d2.data_type, 'CX-MS data')
-        self.assertEqual(d2.location.repo, 'foo')
-        # Should be a copy, but should not compare equal
-        # since allow_duplicates=True
-        self.assertNotEqual(d, d2)
 
     def test_add_em2d_restraint(self):
         """Test add_em2d_restraint method"""

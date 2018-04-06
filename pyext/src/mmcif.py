@@ -291,11 +291,7 @@ class _DatasetGroup(object):
     def finalize(self):
         """Get final datasets for each restraint and remove duplicates"""
         final_datasets = OrderedDict()
-        for ds in self._datasets:
-            if isinstance(ds, _RestraintDataset):
-                d = ds.dataset
-            else:
-                d = ds
+        for d in self._datasets:
             final_datasets[d] = None
         self._datasets = final_datasets.keys()
 
@@ -321,7 +317,6 @@ class _AllDatasets(object):
         if state not in self._datasets_by_state:
             self._datasets_by_state[state] = []
         self._datasets_by_state[state].append(dataset)
-        # We don't add to ihm.System yet, since it can't handle RestraintDataset
         return dataset
 
     def add_restraint(self, state, restraint):
@@ -331,12 +326,12 @@ class _AllDatasets(object):
         self._restraints_by_state[state].append(restraint)
 
     def _get_final_datasets(self):
-        """Get final set of datasets, with RestraintDatasets removed"""
+        """Get final set of datasets"""
         for d in self._flatten_dataset(self._datasets):
             yield d
 
     def _get_final_groups(self):
-        """Get final set of dataset groups, with RestraintDatasets removed"""
+        """Get final set of dataset groups"""
         self._final_dataset_group = {}
         for g in self._dataset_groups:
             g.finalize()
@@ -350,9 +345,6 @@ class _AllDatasets(object):
             for p in d:
                 for x in self._flatten_dataset(p):
                     yield x
-        elif isinstance(d, _RestraintDataset):
-            for x in self._flatten_dataset(d.dataset):
-                yield x
         else:
             for p in d.parents:
                 for x in self._flatten_dataset(p):
@@ -1359,29 +1351,6 @@ class _EntityMapper(dict):
         self[component_name] = self._sequence_dict[sequence]
 
 
-class _RestraintDataset(object):
-    """Wrapper around a dataset associated with a restraint.
-       This is needed because we need to delay access to the dataset
-       in case the writer of the PMI script overrides or changes it
-       after creating the restraint."""
-    def __init__(self, restraint, num, allow_duplicates):
-        self.restraint = restraint
-        self.num, self.allow_duplicates = num, allow_duplicates
-        self.__dataset = None
-    def __get_dataset(self):
-        if self.__dataset:
-            return self.__dataset
-        if self.num is not None:
-            d = copy.deepcopy(self.restraint.datasets[self.num])
-        else:
-            d = copy.deepcopy(self.restraint.dataset)
-        if self.allow_duplicates:
-            d.location._allow_duplicates = True
-        # Don't copy again next time we access self.dataset
-        self.__dataset = d
-        return d
-    dataset = property(__get_dataset)
-
 class _TransformedComponent(object):
     def __init__(self, name, original, transform):
         self.name, self.original, self.transform = name, original, transform
@@ -1660,14 +1629,6 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         b = _BeadsFragment(state, name, start, end, num, hier)
         self.model_repr_dump.add_fragment(state, representation, b)
 
-    def _get_restraint_dataset(self, r, num=None, allow_duplicates=False):
-        """Get a wrapper object for the dataset used by this restraint.
-           This is needed because the restraint's dataset may be changed
-           in the PMI script before we get to use it."""
-        rs = _RestraintDataset(r, num, allow_duplicates)
-        self._add_dataset(rs)
-        return rs
-
     def get_cross_link_group(self, pmi_restraint):
         r = _CrossLinkGroup(pmi_restraint)
         self.system.restraints.append(r)
@@ -1808,7 +1769,6 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         assembly = self._get_subassembly({comp:seqrange},
                               name="SAXS subassembly",
                               description="All components that fit SAXS data")
-        dataset = self._add_dataset(dataset)
         r = ihm.restraint.SASRestraint(dataset, assembly, segment=False,
                 fitting_method='FoXS', fitting_atom_type='Heavy atoms',
                 multi_state=False, radius_of_gyration=rg, details=details)

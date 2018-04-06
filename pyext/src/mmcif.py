@@ -622,10 +622,6 @@ class _EM3DRestraint(ihm.restraint.EM3DRestraint):
                                      % self.pmi_restraint.label])
 
 
-class _Protocol(list):
-    """A modeling protocol. This can consist of multiple _ProtocolSteps."""
-    pass
-
 class _ReplicaExchangeProtocolStep(ihm.protocol.Step):
     def __init__(self, state, rex):
         if rex.monte_carlo_sample_objects is not None:
@@ -888,7 +884,7 @@ class _ModelProtocolDumper(_Dumper):
         """Add a new Protocol"""
         if state not in self.protocols:
             self.protocols[state] = []
-        p = _Protocol()
+        p = ihm.protocol.Protocol()
         self.protocols[state].append(p)
         p.id = self._protocol_id # IDs must be unique across states
         self._protocol_id += 1
@@ -898,12 +894,12 @@ class _ModelProtocolDumper(_Dumper):
         if state not in self.protocols:
             self.add_protocol(state)
         protocol = self.get_last_protocol(state)
-        if len(protocol) == 0:
+        if len(protocol.steps) == 0:
             step.num_models_begin = 0
         else:
-            step.num_models_begin = protocol[-1].num_models_end
-        protocol.append(step)
-        step.id = len(protocol)
+            step.num_models_begin = protocol.steps[-1].num_models_end
+        protocol.steps.append(step)
+        step.id = len(protocol.steps)
         # Assume that protocol uses all currently-defined datasets
         step.dataset_group = self.simo.all_datasets.get_all_group(state)
 
@@ -922,7 +918,7 @@ class _ModelProtocolDumper(_Dumper):
                           "multi_state_flag", "ordered_flag"]) as l:
             for ps in self.protocols.values():
                 for p in ps:
-                    for step in p:
+                    for step in p.steps:
                         # Map to final dataset group; todo: remove
                         dg = step.dataset_group
                         dg = self.simo.all_datasets._final_dataset_group[dg]
@@ -1836,7 +1832,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         # relevant methods are called (currently it is done from the
         # constructor)
         protocol = self.model_prot_dump.get_last_protocol(state)
-        num_models = protocol[-1].num_models_end
+        num_models = protocol.steps[-1].num_models_end
         pp = _ReplicaExchangeAnalysisPostProcess(protocol, rex, num_models)
         self.post_process_dump.add(pp)
         for i in range(rex._number_of_clusters):

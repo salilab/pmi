@@ -873,21 +873,19 @@ class _ModelDumper(_Dumper):
                         ordinal += 1
 
 
-class _ModelProtocolDumper(_Dumper):
+class _AllProtocols(object):
     def __init__(self, simo):
-        super(_ModelProtocolDumper, self).__init__(simo)
+        self.simo = weakref.proxy(simo)
         # Lists of Protocols by state
         self.protocols = OrderedDict()
-        self._protocol_id = 1
 
     def add_protocol(self, state):
         """Add a new Protocol"""
         if state not in self.protocols:
             self.protocols[state] = []
         p = ihm.protocol.Protocol()
+        self.simo.system.orphan_protocols.append(p)
         self.protocols[state].append(p)
-        p.id = self._protocol_id # IDs must be unique across states
-        self._protocol_id += 1
 
     def add_step(self, step, state):
         """Add a ProtocolStep to the last Protocol of the given State"""
@@ -907,33 +905,14 @@ class _ModelProtocolDumper(_Dumper):
         """Return the most recently-added _Protocol"""
         return self.protocols[state][-1]
 
-    def dump(self, writer):
-        ordinal = 1
-        with writer.loop("_ihm_modeling_protocol",
-                         ["ordinal_id", "protocol_id", "step_id",
-                          "struct_assembly_id", "dataset_group_id",
-                          "struct_assembly_description", "protocol_name",
-                          "step_name", "step_method", "num_models_begin",
-                          "num_models_end", "multi_scale_flag",
-                          "multi_state_flag", "ordered_flag"]) as l:
-            for ps in self.protocols.values():
-                for p in ps:
-                    for step in p.steps:
-                        # Map to final dataset group; todo: remove
-                        dg = step.dataset_group
-                        dg = self.simo.all_datasets._final_dataset_group[dg]
-                        l.write(ordinal_id=ordinal, protocol_id=p.id,
-                                step_id=step.id, step_method=step.method,
-                                step_name=step.name,
-                                struct_assembly_id=step.assembly._id,
-                                dataset_group_id=dg._id,
-                                num_models_begin=step.num_models_begin,
-                                num_models_end=step.num_models_end,
-                                # todo: support multiple states, time ordered
-                                multi_state_flag=False, ordered_flag=False,
-                                # all PMI models are multi scale
-                                multi_scale_flag=True)
-                        ordinal += 1
+    def set_final_dataset_groups(self):
+        # Map to final dataset group; todo: remove
+        for ps in self.protocols.values():
+            for p in ps:
+                for step in p.steps:
+                    dg = step.dataset_group
+                    step.dataset_group = \
+                             self.simo.all_datasets._final_dataset_group[dg]
 
 
 class _MSESeqDif(object):
@@ -1303,7 +1282,7 @@ class _PostProcessDumper(_Dumper):
                           "num_models_end"]) as l:
             # todo: handle multiple analyses
             for p in self.postprocs:
-                l.write(id=p.id, protocol_id=p.protocol.id, analysis_id=1,
+                l.write(id=p.id, protocol_id=p.protocol._id, analysis_id=1,
                         step_id=p.step_id, type=p.type, feature=p.feature,
                         num_models_begin=p.num_models_begin,
                         num_models_end=p.num_models_end)
@@ -1563,7 +1542,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
 
         self.model_repr_dump = _ModelRepresentationDumper(self)
         self.cross_link_dump = _CrossLinkDumper(self)
-        self.model_prot_dump = _ModelProtocolDumper(self)
+        self.all_protocols = _AllProtocols(self)
         self.all_datasets = _AllDatasets()
         self.starting_model_dump = _StartingModelDumper(self)
 
@@ -1582,7 +1561,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                          self.starting_model_dump,
                          # todo: detect atomic models and emit struct_conf
                          #_StructConfDumper(self),
-                         self.model_prot_dump, self.post_process_dump,
+                         self.post_process_dump,
                          self.model_dump]
 
     def create_representation(self, name):
@@ -1693,6 +1672,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                            self.all_datasets._get_final_datasets())
         self.system.orphan_dataset_groups.extend(
                            self.all_datasets._get_final_groups())
+        self.all_protocols.set_final_dataset_groups()
 
         # Point all locations to repos, if applicable
         all_repos = [m for m in self._metadata
@@ -1760,19 +1740,19 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         # actual experiment, and how many independent runs were carried out
         # (use these as multipliers to get the correct total number of
         # output models)
-        self.model_prot_dump.add_step(_ReplicaExchangeProtocolStep(state, rex),
-                                      state)
+        self.all_protocols.add_step(_ReplicaExchangeProtocolStep(state, rex),
+                                    state)
 
     def _add_simple_dynamics(self, num_models_end, method):
         # Always assumed that we're dealing with the last state
         state = self._last_state
-        self.model_prot_dump.add_step(_SimpleProtocolStep(state, num_models_end,
-                                                          method), state)
+        self.all_protocols.add_step(_SimpleProtocolStep(state, num_models_end,
+                                                        method), state)
 
     def _add_protocol(self):
         # Always assumed that we're dealing with the last state
         state = self._last_state
-        self.model_prot_dump.add_protocol(state)
+        self.all_protocols.add_protocol(state)
 
     def _add_dataset(self, dataset):
         return self.all_datasets.add(self._last_state, dataset)
@@ -1783,7 +1763,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
     def _add_simple_postprocessing(self, num_models_begin, num_models_end):
         # Always assumed that we're dealing with the last state
         state = self._last_state
-        protocol = self.model_prot_dump.get_last_protocol(state)
+        protocol = self.all_protocols.get_last_protocol(state)
         pp = _SimplePostProcess(protocol, num_models_begin, num_models_end)
         self.post_process_dump.add(pp)
         return pp
@@ -1791,7 +1771,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
     def _add_no_postprocessing(self, num_models):
         # Always assumed that we're dealing with the last state
         state = self._last_state
-        protocol = self.model_prot_dump.get_last_protocol(state)
+        protocol = self.all_protocols.get_last_protocol(state)
         pp = _NoPostProcess(protocol, num_models)
         self.post_process_dump.add(pp)
         return pp
@@ -1831,7 +1811,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         # todo: postpone rmsf/density localization extraction until after
         # relevant methods are called (currently it is done from the
         # constructor)
-        protocol = self.model_prot_dump.get_last_protocol(state)
+        protocol = self.all_protocols.get_last_protocol(state)
         num_models = protocol.steps[-1].num_models_end
         pp = _ReplicaExchangeAnalysisPostProcess(protocol, rex, num_models)
         self.post_process_dump.add(pp)
@@ -1903,7 +1883,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         if representation is None:
             representation = self._representations[0]
         return self.model_dump.add(state.prot,
-                           self.model_prot_dump.get_last_protocol(state),
+                           self.all_protocols.get_last_protocol(state),
                            assembly if assembly else state.modeled_assembly,
                            representation, group)
 

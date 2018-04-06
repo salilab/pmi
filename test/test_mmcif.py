@@ -713,10 +713,15 @@ Nup85-m1 ATOM 2 C CA GLU 2 B 2 -8.986 11.688 -5.817 91.820 4
         mc2.execute_macro()
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
+        # Map _DatasetGroup to ihm equivalent (todo: remove)
+        dgs = list(po.all_datasets._get_final_groups())
+        po.all_protocols.set_final_dataset_groups()
         self.assign_entity_asym_ids(po.system)
         ihm.dumper._AssemblyDumper().finalize(po.system)  # assign assembly IDs
         self.assign_dataset_ids(po)
-        po.model_prot_dump.dump(w)
+        d = ihm.dumper._ProtocolDumper()
+        d.finalize(po.system)
+        d.dump(po.system, w)
         out = fh.getvalue()
         self.assertEqual(out, """#
 loop_
@@ -734,8 +739,10 @@ _ihm_modeling_protocol.num_models_end
 _ihm_modeling_protocol.multi_scale_flag
 _ihm_modeling_protocol.multi_state_flag
 _ihm_modeling_protocol.ordered_flag
-1 1 1 1 1 . . Sampling 'Replica exchange monte carlo' 0 1000 YES NO NO
-2 1 2 1 1 . . Sampling 'Replica exchange monte carlo' 1000 1000 YES NO NO
+1 1 1 1 1 'All known components & All components modeled by IMP' . Sampling
+'Replica exchange monte carlo' 0 1000 YES NO NO
+2 1 2 1 1 'All known components & All components modeled by IMP' . Sampling
+'Replica exchange monte carlo' 1000 1000 YES NO NO
 #
 """)
 
@@ -753,7 +760,7 @@ _ihm_modeling_protocol.ordered_flag
         po._add_state(DummyRepr(None, None))
         p = DummyProtocolStep()
         p.num_models_end = 10
-        po.model_prot_dump.add_step(p, po._last_state)
+        po.all_protocols.add_step(p, po._last_state)
         pp = po._add_simple_postprocessing(10, 90)
         self.assertEqual(pp.type, 'cluster')
         self.assertEqual(pp.feature, 'RMSD')
@@ -769,11 +776,13 @@ _ihm_modeling_protocol.ordered_flag
         po._add_state(DummyRepr(None, None))
         p = DummyProtocolStep()
         p.num_models_end = 10
-        po.model_prot_dump.add_step(p, po._last_state)
+        po.all_protocols.add_step(p, po._last_state)
         po._add_simple_postprocessing(20, 80)
 
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
+        # Assign protocol IDs
+        ihm.dumper._ProtocolDumper().finalize(po.system)
         po.post_process_dump.finalize()
         po.post_process_dump.dump(w)
         out = fh.getvalue()
@@ -802,7 +811,7 @@ _ihm_modeling_post_process.num_models_end
         po._add_state(DummyRepr(None, None))
         p = DummyProtocolStep()
         p.num_models_end = 10
-        po.model_prot_dump.add_step(p, po._last_state)
+        po.all_protocols.add_step(p, po._last_state)
         pp = po._add_no_postprocessing(10)
         self.assertEqual(pp.type, 'none')
         self.assertEqual(pp.feature, 'none')
@@ -811,6 +820,8 @@ _ihm_modeling_post_process.num_models_end
 
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
+        # Assign protocol IDs
+        ihm.dumper._ProtocolDumper().finalize(po.system)
         po.post_process_dump.finalize()
         po.post_process_dump.dump(w)
         out = fh.getvalue()
@@ -971,7 +982,7 @@ All kmeans_weight_500_2/cluster.0/ centroid index 49
                 fh.write("{'modelnum': 1}\n")
             prot = DummyProtocolStep()
             prot.num_models_end = 10
-            po.model_prot_dump.add_step(prot, po._last_state)
+            po.all_protocols.add_step(prot, po._last_state)
             po.add_replica_exchange_analysis(simo._protocol_output[0][1], rex)
 
     def test_ensemble_dumper(self):
@@ -1233,7 +1244,8 @@ _ihm_cross_link_restraint.sigma_2
         d.parents.append(dp)
         pr.datasets[0] = d
         p = DummyProtocolStep()
-        po.model_prot_dump.add_step(p, po._last_state)
+        p.assembly = None
+        po.all_protocols.add_step(p, po._last_state)
         group = get_all_models_group(simo, po)
         m = po.add_model(group)
         prefix = 'ElectronMicroscopy2D_foo_Image1_'
@@ -1355,7 +1367,7 @@ _ihm_sas_restraint.details
         class DummyRestraint(object):
             label = 'foo'
         class DummyProtocolStep(object):
-            pass
+            assembly = None
         pr = DummyRestraint()
         pr.dataset = None
         po.add_em3d_restraint(state, pmi_restraint=pr,
@@ -1367,7 +1379,7 @@ _ihm_sas_restraint.details
         pr.dataset = d
 
         p = DummyProtocolStep()
-        po.model_prot_dump.add_step(p, po._last_state)
+        po.all_protocols.add_step(p, po._last_state)
         group = get_all_models_group(simo, po)
         m = po.add_model(group)
         m.stats = {'GaussianEMRestraint_foo_CCC': 0.1}

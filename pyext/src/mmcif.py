@@ -360,14 +360,17 @@ class _AllDatasets(object):
             yield d
 
 
-class _CrossLinkGroup(object):
+class _CrossLinkGroup(ihm.restraint.Restraint):
     """Group common information for a set of cross links"""
-    def __init__(self, pmi_restraint, rdataset):
-        self.pmi_restraint, self.rdataset = pmi_restraint, rdataset
+    def __init__(self, pmi_restraint):
+        self.pmi_restraint = pmi_restraint
         self.label = self.pmi_restraint.label
         # Map commonly-used subtypes to more standard labels
         if self.label == 'wtDSS':
             self.label = 'DSS'
+    # Point dataset to that of the original PMI restraint (so that if it is
+    # changed, we get the changed version)
+    dataset = property(lambda self: self.pmi_restraint.dataset)
 
 
 class _ExperimentalCrossLink(object):
@@ -439,7 +442,7 @@ class _CrossLinkDumper(_Dumper):
                         seq_id_2=xl.r2,
                         comp_id_2=seq2[xl.r2-1].id,
                         linker_type=xl.group.label,
-                        dataset_list_id=xl.group.rdataset.dataset._id)
+                        dataset_list_id=xl.group.dataset._id)
 
     def _granularity(self, xl):
         """Determine the granularity of a cross link"""
@@ -1665,8 +1668,11 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self._add_dataset(rs)
         return rs
 
-    def get_cross_link_group(self, r):
-        return _CrossLinkGroup(r, self._get_restraint_dataset(r))
+    def get_cross_link_group(self, pmi_restraint):
+        r = _CrossLinkGroup(pmi_restraint)
+        self.system.restraints.append(r)
+        self._add_restraint_dataset(r) # so that all-dataset group works
+        return r
 
     def add_experimental_cross_link(self, r1, c1, r2, c2, length, group):
         if c1 not in self._all_components or c2 not in self._all_components:

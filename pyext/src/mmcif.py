@@ -1326,7 +1326,6 @@ class _ReplicaExchangeAnalysisEnsemble(ihm.model.Ensemble):
                 name="cluster %d" % (cluster_num + 1))
         self.cluster_num = cluster_num
         self.num_models_deposited = num_deposit
-        self.localization_density = {}
 
     def get_rmsf_file(self, component):
         return os.path.join(self.post_process.rex._outputdir,
@@ -1346,15 +1345,15 @@ class _ReplicaExchangeAnalysisEnsemble(ihm.model.Ensemble):
                             'cluster.%d' % self.cluster_num,
                             '%s.mrc' % component)
 
-    def load_localization_density(self, state, component, locations):
+    def load_localization_density(self, state, component, asym):
         fname = self.get_localization_density_file(component)
         if os.path.exists(fname):
             details = "Localization density for %s %s" \
                       % (component, self.model_group.name)
             local_file = ihm.location.OutputFileLocation(fname,
                               details=state.get_postfixed_name(details))
-            self.localization_density[component] = local_file
-            locations.append(local_file)
+            den = ihm.model.LocalizationDensity(file=local_file, asym_unit=asym)
+            self.densities.append(den)
 
     def load_all_models(self, simo, state):
         stat_fname = self.post_process.get_stat_file(self.cluster_num)
@@ -1405,48 +1404,10 @@ class _SimpleEnsemble(ihm.model.Ensemble):
                 file=ensemble_file, precision=drmsd, name=model_group.name,
                 clustering_feature='dRMSD')
         self.num_models_deposited = num_models_deposited
-        self.localization_density = {}
 
-    def load_localization_density(self, state, component, local_file,
-                                  locations):
-        self.localization_density[component] = local_file
-        locations.append(local_file)
-
-
-class _DensityDumper(_Dumper):
-    """Output localization densities for ensembles"""
-
-    def __init__(self, simo):
-        super(_DensityDumper, self).__init__(simo)
-        self.ensembles = []
-        self.output = IMP.pmi.output.Output()
-
-    def add(self, ensemble):
-        self.ensembles.append(ensemble)
-
-    def get_density(self, ensemble, component):
-        return ensemble.localization_density.get(component, None)
-
-    def dump(self, writer):
-        with writer.loop("_ihm_localization_density_files",
-                         ["id", "file_id", "ensemble_id", "entity_id",
-                          "asym_id", "seq_id_begin", "seq_id_end"]) as l:
-            ordinal = 1
-            for ensemble in self.ensembles:
-                for comp in self.simo.all_modeled_components:
-                    density = self.get_density(ensemble, comp)
-                    if not density:
-                        continue
-                    entity = self.simo.entities[comp]
-                    lenseq = len(entity.sequence)
-                    chain_id = self.simo._get_chain_for_component(comp,
-                                                                  self.output)
-                    l.write(id=ordinal, ensemble_id=ensemble.id,
-                            entity_id=entity._id,
-                            file_id=density._id,
-                            seq_id_begin=1, seq_id_end=lenseq,
-                            asym_id=chain_id)
-                    ordinal += 1
+    def load_localization_density(self, state, component, asym, local_file):
+        den = ihm.model.LocalizationDensity(file=local_file, asym_unit=asym)
+        self.densities.append(den)
 
 
 class _EntityMapper(dict):
@@ -1614,7 +1575,6 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                     = self.starting_model_dump.starting_model
         self.all_software = _AllSoftware(self.system)
         self.post_process_dump = _PostProcessDumper(self)
-        self.density_dump = _DensityDumper(self)
 
         # Some dumpers add per-model information; give them a pointer to
         # the model list
@@ -1626,7 +1586,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                          # todo: detect atomic models and emit struct_conf
                          #_StructConfDumper(self),
                          self.model_prot_dump, self.post_process_dump,
-                         self.density_dump, self.model_dump]
+                         self.model_dump]
 
     def create_representation(self, name):
         """Create a new Representation and return it. This can be
@@ -1852,12 +1812,10 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         e = _SimpleEnsemble(pp, group, num_models, drmsd, num_models_deposited,
                             ensemble_file)
         self.system.ensembles.append(e)
-        self.density_dump.add(e)
         for c in state.all_modeled_components:
             den = localization_densities.get(c, None)
             if den:
-                e.load_localization_density(state, c, den,
-                                            self.system.locations)
+                e.load_localization_density(state, c, self.asym_units[c], den)
         return e
 
     def set_ensemble_file(self, i, location):
@@ -1886,10 +1844,9 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
             # todo: make # of models to deposit configurable somewhere
             e = _ReplicaExchangeAnalysisEnsemble(pp, i, group, 1)
             self.system.ensembles.append(e)
-            self.density_dump.add(e)
             # Add localization density info if available
             for c in state.all_modeled_components:
-                e.load_localization_density(state, c, self.system.locations)
+                e.load_localization_density(state, c, self.asym_units[c])
             for stats in e.load_all_models(self, state):
                 m = self.add_model(group)
                 # Since we currently only deposit 1 model, it is the

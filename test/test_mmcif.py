@@ -909,7 +909,7 @@ _ihm_modeling_post_process.num_models_end
             self.assertEqual(e.cluster_num, 0)
             self.assertEqual(e.post_process, pp)
             self.assertEqual(e.num_models_deposited, 1)
-            self.assertEqual(e.localization_density, {})
+            self.assertEqual(e.densities, [])
             self.assertEqual(e.num_models, 2)
             self.assertEqual(e.clustering_feature, 'RMSD')
             self.assertEqual(e.name, 'cluster 1')
@@ -924,18 +924,18 @@ _ihm_modeling_post_process.num_models_end
             self.assertEqual(dm.comp, 'Nup84')
             self.assertEqual(e.get_localization_density_file('Nup84'),
                              os.path.join(tmpdir, 'cluster.0', 'Nup84.mrc'))
-            self.assertEqual(list(e.localization_density.keys()), [])
+            self.assertEqual(len(e.densities), 0)
             # Density that doesn't exist
             e.load_localization_density(None, 'noden', locations)
-            self.assertEqual(list(e.localization_density.keys()), [])
+            self.assertEqual(len(e.densities), 0)
             # Density that does exist
             po = DummyPO(None)
             r = DummyRepr('dummy', 'none')
             state = po._add_state(r)
             e.load_localization_density(state, 'Nup84', locations)
-            self.assertEqual(e.localization_density['Nup84'].path,
+            self.assertEqual(e.densities[0].file.path,
                              os.path.join(tmpdir, 'cluster.0', 'Nup84.mrc'))
-            self.assertEqual(e.localization_density['Nup84'].details,
+            self.assertEqual(e.densities[0].file.details,
                          'Localization density for Nup84 dgroup in state dummy')
             # No precision available
             self.assertEqual(e._get_precision(), '?')
@@ -1034,16 +1034,20 @@ _ihm_ensemble_info.ensemble_file_id
                                     self.get_input_file_name("test.fasta"))
 
         ensemble = DummyEnsemble()
-        ensemble.id = 42
+        ensemble._id = 42
         loc = ihm.location.OutputFileLocation(repo='foo', path='bar')
         loc._id = 97
-        ensemble.localization_density = {'Nup84': loc}
-        po.density_dump.add(ensemble)
+        den = ihm.model.LocalizationDensity(file=loc,
+                                asym_unit=po.asym_units['Nup84'])
+        ensemble.densities = [den]
+        po.system.ensembles.append(ensemble)
 
         fh = StringIO()
         self.assign_entity_asym_ids(po.system)
         w = ihm.format.CifWriter(fh)
-        po.density_dump.dump(w)
+        d = ihm.dumper._DensityDumper()
+        d.finalize(po.system)
+        d.dump(po.system, w)
         out = fh.getvalue()
         self.assertEqual(out, """#
 loop_

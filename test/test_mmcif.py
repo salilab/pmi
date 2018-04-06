@@ -369,7 +369,7 @@ _ihm_multi_state_modeling.details
         representation = IMP.pmi.mmcif._Representation(name="test rep")
         representation.id = 99
         protocol = ihm.protocol.Protocol()
-        protocol.id = 93
+        protocol._id = 93
         group = ihm.model.ModelGroup(name="all models")
         group._id = 7
         model = d.add(simo.prot, protocol, assembly, representation, group)
@@ -432,7 +432,7 @@ _ihm_sphere_obj_site.model_id
         representation = IMP.pmi.mmcif._Representation(name="test rep")
         representation.id = 99
         protocol = ihm.protocol.Protocol()
-        protocol.id = 93
+        protocol._id = 93
         group = ihm.model.ModelGroup(name="all models")
         group._id = 7
         model = d.add(simo.prot, protocol, assembly, representation, group)
@@ -507,7 +507,7 @@ _ihm_sphere_obj_site.model_id
         representation = IMP.pmi.mmcif._Representation(name="test rep")
         representation.id = 99
         protocol = ihm.protocol.Protocol()
-        protocol.id = 93
+        protocol._id = 93
         group = ihm.model.ModelGroup(name='all models')
         state.append(group)
         group._id = 7

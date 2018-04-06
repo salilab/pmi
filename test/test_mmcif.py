@@ -341,22 +341,24 @@ _ihm_multi_state_modeling.details
         simo.create_transformed_component("Nup84.2", "Nup84",
                 IMP.algebra.Transformation3D(IMP.algebra.Vector3D(1,2,3)))
 
-        d = IMP.pmi.mmcif._ModelDumper(po)
+        d = ihm.dumper._ModelDumper()
         assembly = ihm.Assembly()
         assembly._id = 42
         representation = IMP.pmi.mmcif._Representation(name="test rep")
-        representation.id = 99
+        representation._id = 99
         protocol = ihm.protocol.Protocol()
         protocol._id = 93
         group = ihm.model.ModelGroup(name="all models")
-        group._id = 7
-        model = d.add(simo.prot, protocol, assembly, representation, group)
-        self.assertEqual(model.id, 1)
+        state.append(group)
+        model = IMP.pmi.mmcif._Model(simo.prot, po, protocol, assembly,
+                                     representation)
+        group.append(model)
         self.assertEqual(model.get_rmsf('Nup84', (1,)), None)
         fh = StringIO()
         self.assign_entity_asym_ids(po.system)
         w = ihm.format.CifWriter(fh)
-        d.dump(w)
+        d.finalize(po.system)
+        d.dump(po.system, w)
         out = fh.getvalue()
         self.assertEqual(out, """#
 loop_
@@ -368,7 +370,7 @@ _ihm_model_list.model_group_name
 _ihm_model_list.assembly_id
 _ihm_model_list.protocol_id
 _ihm_model_list.representation_id
-1 1 7 . 'all models' 42 93 99
+1 1 1 . 'all models' 42 93 99
 #
 #
 loop_
@@ -404,22 +406,24 @@ _ihm_sphere_obj_site.model_id
                                      self.get_input_file_name("test.nup84.pdb"),
                                      "A", resolutions=[0])
 
-        d = IMP.pmi.mmcif._ModelDumper(po)
+        d = ihm.dumper._ModelDumper()
         assembly = ihm.Assembly()
         assembly._id = 42
         representation = IMP.pmi.mmcif._Representation(name="test rep")
-        representation.id = 99
+        representation._id = 99
         protocol = ihm.protocol.Protocol()
         protocol._id = 93
         group = ihm.model.ModelGroup(name="all models")
-        group._id = 7
-        model = d.add(simo.prot, protocol, assembly, representation, group)
-        self.assertEqual(model.id, 1)
+        state.append(group)
+        model = IMP.pmi.mmcif._Model(simo.prot, po, protocol, assembly,
+                                     representation)
+        group.append(model)
         self.assertEqual(model.get_rmsf('Nup84', (1,)), None)
         self.assign_entity_asym_ids(po.system)
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
-        d.dump(w)
+        d.finalize(po.system)
+        d.dump(po.system, w)
         out = fh.getvalue()
         self.assertEqual(out, """#
 loop_
@@ -431,12 +435,15 @@ _ihm_model_list.model_group_name
 _ihm_model_list.assembly_id
 _ihm_model_list.protocol_id
 _ihm_model_list.representation_id
-1 1 7 . 'all models' 42 93 99
+1 1 1 . 'all models' 42 93 99
 #
 #
 loop_
+_atom_site.group_PDB
 _atom_site.id
+_atom_site.type_symbol
 _atom_site.label_atom_id
+_atom_site.label_alt_id
 _atom_site.label_comp_id
 _atom_site.label_seq_id
 _atom_site.label_asym_id
@@ -444,9 +451,12 @@ _atom_site.Cartn_x
 _atom_site.Cartn_y
 _atom_site.Cartn_z
 _atom_site.label_entity_id
-_atom_site.model_id
-1 CA MET 1 A -8.986 11.688 -5.817 1 1
-2 CA GLU 2 A -8.986 11.688 -5.817 1 1
+_atom_site.auth_asym_id
+_atom_site.B_iso_or_equiv
+_atom_site.pdbx_PDB_model_num
+_atom_site.ihm_model_id
+ATOM 1 . CA . MET 1 A -8.986 11.688 -5.817 1 A . 1 1
+ATOM 2 . CA . GLU 2 A -8.986 11.688 -5.817 1 A . 1 1
 #
 #
 loop_
@@ -479,18 +489,18 @@ _ihm_sphere_obj_site.model_id
                                      self.get_input_file_name("test.nup84.pdb"),
                                      "A")
 
-        d = IMP.pmi.mmcif._ModelDumper(po)
+        d = ihm.dumper._ModelDumper()
         assembly = ihm.Assembly()
         assembly._id = 42
         representation = IMP.pmi.mmcif._Representation(name="test rep")
-        representation.id = 99
+        representation._id = 99
         protocol = ihm.protocol.Protocol()
         protocol._id = 93
         group = ihm.model.ModelGroup(name='all models')
         state.append(group)
-        group._id = 7
-        model = d.add(simo.prot, protocol, assembly, representation, group)
-        self.assertEqual(model.id, 1)
+        model = IMP.pmi.mmcif._Model(simo.prot, po, protocol, assembly,
+                                     representation)
+        group.append(model)
         model.name = 'foo'
         model.parse_rmsf_file(self.get_input_file_name('test.nup84.rmsf'),
                               'Nup84')
@@ -499,7 +509,8 @@ _ihm_sphere_obj_site.model_id
         self.assign_entity_asym_ids(po.system)
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
-        d.dump(w)
+        d.finalize(po.system)
+        d.dump(po.system, w)
         out = fh.getvalue()
         self.assertEqual(out, """#
 loop_
@@ -511,7 +522,7 @@ _ihm_model_list.model_group_name
 _ihm_model_list.assembly_id
 _ihm_model_list.protocol_id
 _ihm_model_list.representation_id
-1 1 7 foo 'all models' 42 93 99
+1 1 1 foo 'all models' 42 93 99
 #
 #
 loop_
@@ -1167,6 +1178,7 @@ _ihm_cross_link_restraint.sigma_2
         po.all_protocols.add_step(p, po._last_state)
         group = get_all_models_group(simo, po)
         m = po.add_model(group)
+        m._id = 9
         prefix = 'ElectronMicroscopy2D_foo_Image1_'
         m.stats = {prefix + 'CCC': '0.872880665234',
                    prefix + 'Translation0': '304.187464117',
@@ -1218,7 +1230,7 @@ _ihm_2dem_class_average_fitting.rot_matrix[3][3]
 _ihm_2dem_class_average_fitting.tr_vector[1]
 _ihm_2dem_class_average_fitting.tr_vector[2]
 _ihm_2dem_class_average_fitting.tr_vector[3]
-1 1 1 0.873 -0.406503 -0.909500 -0.086975 0.379444 -0.254653 0.889480 -0.831131
+1 1 9 0.873 -0.406503 -0.909500 -0.086975 0.379444 -0.254653 0.889480 -0.831131
 0.328574 0.448622 304.187 219.586 0.000
 #
 """)
@@ -1301,8 +1313,10 @@ _ihm_sas_restraint.details
         po.all_protocols.add_step(p, po._last_state)
         group = get_all_models_group(simo, po)
         m = po.add_model(group)
+        m._id = 5
         m.stats = {'GaussianEMRestraint_foo_CCC': 0.1}
         m = po.add_model(group)
+        m._id = 9
         m.stats = {'GaussianEMRestraint_foo_CCC': 0.2}
         po._add_restraint_model_fits()
 
@@ -1324,8 +1338,8 @@ _ihm_3dem_restraint.struct_assembly_id
 _ihm_3dem_restraint.number_of_gaussians
 _ihm_3dem_restraint.model_id
 _ihm_3dem_restraint.cross_correlation_coefficient
-1 4 'Gaussian mixture models' . 1 2 1 0.100
-2 4 'Gaussian mixture models' . 1 2 2 0.200
+1 4 'Gaussian mixture models' . 1 2 5 0.100
+2 4 'Gaussian mixture models' . 1 2 9 0.200
 #
 """)
 

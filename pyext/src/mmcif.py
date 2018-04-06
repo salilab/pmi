@@ -480,7 +480,7 @@ class _CrossLinkDumper(_Dumper):
         with writer.loop("_ihm_cross_link_result_parameters",
                          ["ordinal_id", "restraint_id", "model_id",
                           "psi", "sigma_1", "sigma_2"]) as l:
-            for model in self.models:
+            for group, model in self.simo.system._all_models():
                 if not model._is_restrained: continue
                 for g in all_groups.keys():
                     self._set_psi_sigma(model, g)
@@ -662,18 +662,16 @@ class _Excluder(object):
                 return True
 
 
-class _Model(object):
-    def __init__(self, prot, simo, protocol, assembly, representation, group):
+class _Model(ihm.model.Model):
+    def __init__(self, prot, simo, protocol, assembly, representation):
+        super(_Model, self).__init__(assembly=assembly, protocol=protocol,
+                                     representation=representation)
+        self.simo = weakref.proxy(simo)
         # Transformation from IMP coordinates into mmCIF coordinate system.
         # Normally we pass through coordinates unchanged, but in some cases
         # we may want to translate them (e.g. Nup84, where the deposited PDB
         # files are all centered; we want the mmCIF files to match)
         self.transform = IMP.algebra.get_identity_transformation_3d()
-        self.group = group
-        # The _Protocol which produced this model
-        self.protocol = protocol
-        self.assembly = assembly
-        self.representation = representation
         self.em2d_stats = None
         self.stats = None
         # True iff restraints act on this model
@@ -687,7 +685,6 @@ class _Model(object):
         self.geometric_center = IMP.algebra.Vector3D(*self.geometric_center)
         self._make_spheres_atoms(particle_infos_for_pdb, o, name, simo)
         self.rmsf = {}
-        self.name = None
 
     def all_chains(self, simo):
         """Yield all chains, including transformed ones"""
@@ -751,89 +748,29 @@ class _Model(object):
                              % str(indexes))
         return rmsf[indexes[0]][1]
 
-class _ModelDumper(_Dumper):
-    def __init__(self, simo):
-        super(_ModelDumper, self).__init__(simo)
-        self.models = []
+    def get_atoms(self):
+        for chain in self.all_chains(self.simo):
+            for atom in chain.atoms:
+                (xyz, atom_type, residue_type, residue_index,
+                 all_indexes, radius) = atom
+                pt = self.transform * xyz
+                yield ihm.model.Atom(asym_unit=chain.asym_unit,
+                        seq_id=residue_index, atom_id=atom_type.get_string(),
+                        type_symbol=None, # todo: get element
+                        x=pt[0], y=pt[1], z=pt[2])
 
-    def add(self, prot, protocol, assembly, representation, group):
-        m = _Model(prot, self.simo, protocol, assembly, representation, group)
-        self.models.append(m)
-        m.id = len(self.models)
-        m._id = m.id # support using ihm.restraint classes
-        return m
-
-    def dump(self, writer):
-        self.dump_model_list(writer)
-        self.dump_atoms(writer)
-        self.dump_spheres(writer)
-
-    def dump_model_list(self, writer):
-        ordinal = 1
-        with writer.loop("_ihm_model_list",
-                         ["ordinal_id", "model_id", "model_group_id",
-                          "model_name", "model_group_name", "assembly_id",
-                          "protocol_id", "representation_id"]) as l:
-            for model in self.models:
-                l.write(ordinal_id=ordinal, model_id=model.id,
-                        model_group_id=model.group._id,
-                        model_name=model.name,
-                        model_group_name=model.group.name,
-                        assembly_id=model.assembly._id,
-                        protocol_id=model.protocol._id,
-                        representation_id=model.representation.id)
-                ordinal += 1
-
-    def dump_atoms(self, writer):
-        ordinal = 1
-        with writer.loop("_atom_site",
-                         ["id", "label_atom_id", "label_comp_id",
-                          "label_seq_id",
-                          "label_asym_id", "Cartn_x",
-                          "Cartn_y", "Cartn_z", "label_entity_id",
-                          "model_id"]) as l:
-            for model in self.models:
-                for chain in model.all_chains(self.simo):
-                    for atom in chain.atoms:
-                        (xyz, atom_type, residue_type, residue_index,
-                         all_indexes, radius) = atom
-                        pt = model.transform * xyz
-                        l.write(id=ordinal,
-                                label_atom_id=atom_type.get_string(),
-                                label_comp_id=residue_type.get_string(),
-                                label_asym_id=chain.asym_unit._id,
-                                label_entity_id=chain.entity._id,
-                                label_seq_id=residue_index,
-                                Cartn_x=pt[0], Cartn_y=pt[1], Cartn_z=pt[2],
-                                model_id=model.id)
-                        ordinal += 1
-
-    def dump_spheres(self, writer):
-        ordinal = 1
-        with writer.loop("_ihm_sphere_obj_site",
-                         ["ordinal_id", "entity_id", "seq_id_begin",
-                          "seq_id_end", "asym_id", "Cartn_x",
-                          "Cartn_y", "Cartn_z", "object_radius", "rmsf",
-                          "model_id"]) as l:
-            for model in self.models:
-                for chain in model.all_chains(self.simo):
-                    for sphere in chain.spheres:
-                        (xyz, residue_type, residue_index,
-                         all_indexes, radius) = sphere
-                        if all_indexes is None:
-                            all_indexes = (residue_index,)
-                        pt = model.transform * xyz
-                        l.write(ordinal_id=ordinal,
-                                entity_id=chain.entity._id,
-                                seq_id_begin = all_indexes[0],
-                                seq_id_end = all_indexes[-1],
-                                asym_id=chain.asym_unit._id,
-                                Cartn_x=pt[0], Cartn_y=pt[1], Cartn_z=pt[2],
-                                object_radius=radius,
-                                rmsf=model.get_rmsf(chain.orig_comp,
-                                                    all_indexes),
-                                model_id=model.id)
-                        ordinal += 1
+    def get_spheres(self):
+        for chain in self.all_chains(self.simo):
+            for sphere in chain.spheres:
+                (xyz, residue_type, residue_index,
+                 all_indexes, radius) = sphere
+                if all_indexes is None:
+                    all_indexes = (residue_index,)
+                pt = self.transform * xyz
+                yield ihm.model.Sphere(asym_unit=chain.asym_unit,
+                        seq_id_range=(all_indexes[0], all_indexes[-1]),
+                        x=pt[0], y=pt[1], z=pt[2], radius=radius,
+                        rmsf=self.get_rmsf(chain.orig_comp, all_indexes))
 
 
 class _AllProtocols(object):
@@ -1345,6 +1282,7 @@ class _State(ihm.model.State):
 
     def add_model_group(self, group):
         self.append(group)
+        return group
 
     def get_prefixed_name(self, name):
         """Prefix the given name with the state name, if available."""
@@ -1375,6 +1313,9 @@ class _Representation(object):
     """A complete model representation"""
     def __init__(self, name):
         self.name = name
+    # Fool ihm into thinking this is an empty ihm Representation object
+    def __len__(self):
+        return 0
 
 
 class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
@@ -1426,21 +1367,16 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.all_datasets = _AllDatasets(self.system)
         self.starting_model_dump = _StartingModelDumper(self)
 
-        self.model_dump = _ModelDumper(self)
         self.model_repr_dump.starting_model \
                     = self.starting_model_dump.starting_model
         self.all_software = _AllSoftware(self.system)
-
-        # Some dumpers add per-model information; give them a pointer to
-        # the model list
-        self.cross_link_dump.models = self.model_dump.models
 
         self._dumpers = [self.model_repr_dump,
                          self.cross_link_dump,
                          self.starting_model_dump,
                          # todo: detect atomic models and emit struct_conf
                          #_StructConfDumper(self),
-                         self.model_dump]
+                         ]
 
     def create_representation(self, name):
         """Create a new Representation and return it. This can be
@@ -1448,6 +1384,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         r = _Representation(name)
         self._representations.append(r)
         r.id = len(self._representations)
+        r._id = r.id # python-ihm compatibility
         return r
 
     def exclude_coordinates(self, component, seqrange):
@@ -1537,7 +1474,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
 
     def _add_restraint_model_fits(self):
         """Add fits to restraints for all known models"""
-        for m in self.model_dump.models:
+        for group, m in self.system._all_models():
             if m._is_restrained:
                 for r in self.system.restraints:
                     if hasattr(r, 'add_fits_from_model_statfile'):
@@ -1747,10 +1684,12 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         state = self._last_state
         if representation is None:
             representation = self._representations[0]
-        return self.model_dump.add(state.prot,
-                           self.all_protocols.get_last_protocol(state),
-                           assembly if assembly else state.modeled_assembly,
-                           representation, group)
+        protocol = self.all_protocols.get_last_protocol(state)
+        m = _Model(state.prot, self, protocol,
+                   assembly if assembly else state.modeled_assembly,
+                   representation)
+        group.append(m)
+        return m
 
     def _update_locations(self, filelocs):
         """Update FileLocation to point to a parent repository, if any"""

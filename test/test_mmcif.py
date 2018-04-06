@@ -752,9 +752,8 @@ _ihm_modeling_protocol.ordered_flag
         po = DummyPO(None)
         po._add_state(DummyRepr(None, None))
         p = DummyProtocolStep()
-        p.state = po._last_state
         p.num_models_end = 10
-        po.model_prot_dump.add_step(p)
+        po.model_prot_dump.add_step(p, po._last_state)
         pp = po._add_simple_postprocessing(10, 90)
         self.assertEqual(pp.type, 'cluster')
         self.assertEqual(pp.feature, 'RMSD')
@@ -769,9 +768,8 @@ _ihm_modeling_protocol.ordered_flag
         # Add protocol and postprocessing for a second state
         po._add_state(DummyRepr(None, None))
         p = DummyProtocolStep()
-        p.state = po._last_state
         p.num_models_end = 10
-        po.model_prot_dump.add_step(p)
+        po.model_prot_dump.add_step(p, po._last_state)
         po._add_simple_postprocessing(20, 80)
 
         fh = StringIO()
@@ -803,9 +801,8 @@ _ihm_modeling_post_process.num_models_end
         po = DummyPO(None)
         po._add_state(DummyRepr(None, None))
         p = DummyProtocolStep()
-        p.state = po._last_state
         p.num_models_end = 10
-        po.model_prot_dump.add_step(p)
+        po.model_prot_dump.add_step(p, po._last_state)
         pp = po._add_no_postprocessing(10)
         self.assertEqual(pp.type, 'none')
         self.assertEqual(pp.feature, 'none')
@@ -973,9 +970,8 @@ All kmeans_weight_500_2/cluster.0/ centroid index 49
                 fh.write("{'modelnum': 0}\n")
                 fh.write("{'modelnum': 1}\n")
             prot = DummyProtocolStep()
-            prot.state = po._last_state
             prot.num_models_end = 10
-            po.model_prot_dump.add_step(prot)
+            po.model_prot_dump.add_step(prot, po._last_state)
             po.add_replica_exchange_analysis(simo._protocol_output[0][1], rex)
 
     def test_ensemble_dumper(self):
@@ -1237,8 +1233,7 @@ _ihm_cross_link_restraint.sigma_2
         d.parents.append(dp)
         pr.datasets[0] = d
         p = DummyProtocolStep()
-        p.state = po._last_state
-        po.model_prot_dump.add_step(p)
+        po.model_prot_dump.add_step(p, po._last_state)
         group = get_all_models_group(simo, po)
         m = po.add_model(group)
         prefix = 'ElectronMicroscopy2D_foo_Image1_'
@@ -1372,8 +1367,7 @@ _ihm_sas_restraint.details
         pr.dataset = d
 
         p = DummyProtocolStep()
-        p.state = po._last_state
-        po.model_prot_dump.add_step(p)
+        po.model_prot_dump.add_step(p, po._last_state)
         group = get_all_models_group(simo, po)
         m = po.add_model(group)
         m.stats = {'GaussianEMRestraint_foo_CCC': 0.1}

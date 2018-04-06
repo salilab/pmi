@@ -35,6 +35,7 @@ import ihm.dumper
 import ihm.metadata
 import ihm.startmodel
 import ihm.model
+import ihm.protocol
 
 def _assign_id(obj, seen_objs, obj_by_id):
     """Assign a unique ID to obj, and track all ids in obj_by_id."""
@@ -625,29 +626,30 @@ class _Protocol(list):
     """A modeling protocol. This can consist of multiple _ProtocolSteps."""
     pass
 
-class _ProtocolStep(object):
-    """A single step in a _Protocol."""
-    pass
-
-class _ReplicaExchangeProtocolStep(_ProtocolStep):
+class _ReplicaExchangeProtocolStep(ihm.protocol.Step):
     def __init__(self, state, rex):
-        self.state = state
-        self.modeled_assembly = state.modeled_assembly
-        self.name = 'Sampling'
         if rex.monte_carlo_sample_objects is not None:
-            self.method = 'Replica exchange monte carlo'
+            method = 'Replica exchange monte carlo'
         else:
-            self.method = 'Replica exchange molecular dynamics'
-        self.num_models_end = rex.vars["number_of_frames"]
+            method = 'Replica exchange molecular dynamics'
+        super(_ReplicaExchangeProtocolStep, self).__init__(
+                assembly=state.modeled_assembly,
+                dataset_group=None, # filled in by add_step()
+                method=method, name='Sampling',
+                num_models_begin=None, # filled in by add_step()
+                num_models_end=rex.vars["number_of_frames"],
+                multi_scale=True, multi_state=False, ordered=False)
 
 
-class _SimpleProtocolStep(_ProtocolStep):
+class _SimpleProtocolStep(ihm.protocol.Step):
     def __init__(self, state, num_models_end, method):
-        self.state = state
-        self.modeled_assembly = state.modeled_assembly
-        self.name = 'Sampling'
-        self.method = method
-        self.num_models_end = num_models_end
+        super(_SimpleProtocolStep, self).__init__(
+                assembly=state.modeled_assembly,
+                dataset_group=None, # filled in by add_step()
+                method=method, name='Sampling',
+                num_models_begin=None, # filled in by add_step()
+                num_models_end=num_models_end,
+                multi_scale=True, multi_state=False, ordered=False)
 
 
 class _Chain(object):
@@ -891,9 +893,8 @@ class _ModelProtocolDumper(_Dumper):
         p.id = self._protocol_id # IDs must be unique across states
         self._protocol_id += 1
 
-    def add_step(self, step):
-        """Add a ProtocolStep to the last Protocol"""
-        state = step.state
+    def add_step(self, step, state):
+        """Add a ProtocolStep to the last Protocol of the given State"""
         if state not in self.protocols:
             self.add_protocol(state)
         protocol = self.get_last_protocol(state)
@@ -928,7 +929,7 @@ class _ModelProtocolDumper(_Dumper):
                         l.write(ordinal_id=ordinal, protocol_id=p.id,
                                 step_id=step.id, step_method=step.method,
                                 step_name=step.name,
-                                struct_assembly_id=step.modeled_assembly._id,
+                                struct_assembly_id=step.assembly._id,
                                 dataset_group_id=dg._id,
                                 num_models_begin=step.num_models_begin,
                                 num_models_end=step.num_models_end,
@@ -1763,13 +1764,14 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         # actual experiment, and how many independent runs were carried out
         # (use these as multipliers to get the correct total number of
         # output models)
-        self.model_prot_dump.add_step(_ReplicaExchangeProtocolStep(state, rex))
+        self.model_prot_dump.add_step(_ReplicaExchangeProtocolStep(state, rex),
+                                      state)
 
     def _add_simple_dynamics(self, num_models_end, method):
         # Always assumed that we're dealing with the last state
         state = self._last_state
         self.model_prot_dump.add_step(_SimpleProtocolStep(state, num_models_end,
-                                                          method))
+                                                          method), state)
 
     def _add_protocol(self):
         # Always assumed that we're dealing with the last state

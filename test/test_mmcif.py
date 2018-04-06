@@ -849,7 +849,7 @@ _ihm_modeling_post_process.num_models_end
         e = po._add_simple_ensemble(pp, 'Ensemble 1', 5, 0.1, 1, densities,
                                     None)
         self.assertEqual(e.num_models, 5)
-        self.assertEqual(e.num_deposit, 1)
+        self.assertEqual(e.num_models_deposited, 1)
 
     def test_rex_postproces(self):
         """Test ReplicaExchangeAnalysisPostProcess"""
@@ -907,11 +907,11 @@ _ihm_modeling_post_process.num_models_end
             mg = DummyGroup()
             e = IMP.pmi.mmcif._ReplicaExchangeAnalysisEnsemble(pp, 0, mg, 1)
             self.assertEqual(e.cluster_num, 0)
-            self.assertEqual(e.postproc, pp)
-            self.assertEqual(e.num_deposit, 1)
+            self.assertEqual(e.post_process, pp)
+            self.assertEqual(e.num_models_deposited, 1)
             self.assertEqual(e.localization_density, {})
             self.assertEqual(e.num_models, 2)
-            self.assertEqual(e.feature, 'RMSD')
+            self.assertEqual(e.clustering_feature, 'RMSD')
             self.assertEqual(e.name, 'cluster 1')
             self.assertEqual(e.get_rmsf_file('Nup84'),
                              os.path.join(tmpdir, 'cluster.0',
@@ -979,7 +979,7 @@ All kmeans_weight_500_2/cluster.0/ centroid index 49
             po.add_replica_exchange_analysis(simo._protocol_output[0][1], rex)
 
     def test_ensemble_dumper(self):
-        """Test EnsembleDumper"""
+        """Test dumping of simple ensembles"""
         class DummyPostProcess(object):
             pass
         m = IMP.Model()
@@ -988,7 +988,7 @@ All kmeans_weight_500_2/cluster.0/ centroid index 49
         simo.add_protocol_output(po)
 
         pp = DummyPostProcess()
-        pp.id = 99
+        pp._id = 99
         e1 = po._add_simple_ensemble(pp, 'Ensemble 1', 5, 0.1, 1,
                                      {}, None)
         e2 = po._add_simple_ensemble(pp, 'Ensemble 2', 5, 0.1, 1,
@@ -999,7 +999,9 @@ All kmeans_weight_500_2/cluster.0/ centroid index 49
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
         ihm.dumper._ModelDumper().finalize(po.system)  # assign model group IDs
-        po.ensemble_dump.dump(w)
+        d = ihm.dumper._EnsembleDumper()
+        d.finalize(po.system)
+        d.dump(po.system, w)
         out = fh.getvalue()
         self.assertEqual(out, """#
 loop_

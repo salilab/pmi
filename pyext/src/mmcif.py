@@ -1286,6 +1286,7 @@ class _PostProcessDumper(_Dumper):
         protocol = postproc.protocol
         self.postprocs.append(postproc)
         postproc.id = len(self.postprocs)
+        postproc._id = postproc.id # work with python-ihm EnsembleDumper
 
     def finalize(self):
         # Assign step IDs per protocol
@@ -1310,26 +1311,25 @@ class _PostProcessDumper(_Dumper):
                         num_models_begin=p.num_models_begin,
                         num_models_end=p.num_models_end)
 
-class _Ensemble(object):
-    """Base class for any ensemble"""
-    pass
-
-
-class _ReplicaExchangeAnalysisEnsemble(_Ensemble):
+class _ReplicaExchangeAnalysisEnsemble(ihm.model.Ensemble):
     """Ensemble generated using AnalysisReplicaExchange0 macro"""
 
+    num_models_deposited = None # Override base class property
+
     def __init__(self, pp, cluster_num, model_group, num_deposit):
-        self.file = None
-        self.model_group = model_group
-        self.cluster_num = cluster_num
-        self.postproc = pp
-        self.num_deposit = num_deposit
-        self.localization_density = {}
         with open(pp.get_stat_file(cluster_num)) as fh:
-            self.num_models = len(fh.readlines())
+            num_models = len(fh.readlines())
+        super(_ReplicaExchangeAnalysisEnsemble, self).__init__(
+                num_models=num_models,
+                model_group=model_group, post_process=pp,
+                clustering_feature=pp.feature,
+                name="cluster %d" % (cluster_num + 1))
+        self.cluster_num = cluster_num
+        self.num_models_deposited = num_deposit
+        self.localization_density = {}
 
     def get_rmsf_file(self, component):
-        return os.path.join(self.postproc.rex._outputdir,
+        return os.path.join(self.post_process.rex._outputdir,
                             'cluster.%d' % self.cluster_num,
                             'rmsf.%s.dat' % component)
 
@@ -1342,7 +1342,7 @@ class _ReplicaExchangeAnalysisEnsemble(_Ensemble):
         # todo: this assumes that the localization density file name matches
         # the component name and is of the complete residue range (usually
         # this is the case, but it doesn't have to be)
-        return os.path.join(self.postproc.rex._outputdir,
+        return os.path.join(self.post_process.rex._outputdir,
                             'cluster.%d' % self.cluster_num,
                             '%s.mrc' % component)
 
@@ -1357,7 +1357,7 @@ class _ReplicaExchangeAnalysisEnsemble(_Ensemble):
             locations.append(local_file)
 
     def load_all_models(self, simo, state):
-        stat_fname = self.postproc.get_stat_file(self.cluster_num)
+        stat_fname = self.post_process.get_stat_file(self.cluster_num)
         model_num = 0
         with open(stat_fname) as fh:
             stats = ast.literal_eval(fh.readline())
@@ -1371,12 +1371,12 @@ class _ReplicaExchangeAnalysisEnsemble(_Ensemble):
             # todo: fill in other data from stat file, e.g. crosslink phi/psi
             yield stats
             model_num += 1
-            if model_num >= self.num_deposit:
+            if model_num >= self.num_models_deposited:
                 return
 
     # todo: also support dRMS precision
     def _get_precision(self):
-        precfile = os.path.join(self.postproc.rex._outputdir,
+        precfile = os.path.join(self.post_process.rex._outputdir,
                                 "precision.%d.%d.out" % (self.cluster_num,
                                                          self.cluster_num))
         if not os.path.exists(precfile):
@@ -1390,62 +1390,28 @@ class _ReplicaExchangeAnalysisEnsemble(_Ensemble):
                 if m:
                     return float(m.group(1))
 
-    feature = property(lambda self: self.postproc.feature)
-    name = property(lambda self: "cluster %d" % (self.cluster_num + 1))
-    precision = property(lambda self: self._get_precision())
+    precision = property(lambda self: self._get_precision(),
+                         lambda self, val: None)
 
-class _SimpleEnsemble(_Ensemble):
+class _SimpleEnsemble(ihm.model.Ensemble):
     """Simple manually-created ensemble"""
 
-    feature = 'dRMSD'
+    num_models_deposited = None # Override base class property
 
     def __init__(self, pp, model_group, num_models, drmsd,
                  num_models_deposited, ensemble_file):
-        self.file = ensemble_file
-        self.postproc = pp
-        self.model_group = model_group
-        self.num_deposit = num_models_deposited
+        super(_SimpleEnsemble, self).__init__(
+                model_group=model_group, post_process=pp, num_models=num_models,
+                file=ensemble_file, precision=drmsd, name=model_group.name,
+                clustering_feature='dRMSD')
+        self.num_models_deposited = num_models_deposited
         self.localization_density = {}
-        self.num_models = num_models
-        self.precision = drmsd
 
     def load_localization_density(self, state, component, local_file,
                                   locations):
         self.localization_density[component] = local_file
         locations.append(local_file)
 
-    name = property(lambda self: self.model_group.name)
-
-
-class _EnsembleDumper(_Dumper):
-    def __init__(self, simo):
-        super(_EnsembleDumper, self).__init__(simo)
-        self.ensembles = []
-
-    def add(self, ensemble):
-        self.ensembles.append(ensemble)
-        ensemble.id = len(self.ensembles)
-
-    def dump(self, writer):
-        with writer.loop("_ihm_ensemble_info",
-                         ["ensemble_id", "ensemble_name", "post_process_id",
-                          "model_group_id", "ensemble_clustering_method",
-                          "ensemble_clustering_feature",
-                          "num_ensemble_models",
-                          "num_ensemble_models_deposited",
-                          "ensemble_precision_value",
-                          "ensemble_file_id"]) as l:
-            for e in self.ensembles:
-                l.write(ensemble_id=e.id,
-                        ensemble_name=e.name,
-                        post_process_id=e.postproc.id,
-                        model_group_id=e.model_group._id,
-                        ensemble_clustering_feature=e.feature,
-                        num_ensemble_models=e.num_models,
-                        num_ensemble_models_deposited=e.num_deposit,
-                        ensemble_precision_value=e.precision,
-                        ensemble_file_id=e.file._id if e.file
-                                                    else None)
 
 class _DensityDumper(_Dumper):
     """Output localization densities for ensembles"""
@@ -1648,7 +1614,6 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                     = self.starting_model_dump.starting_model
         self.all_software = _AllSoftware(self.system)
         self.post_process_dump = _PostProcessDumper(self)
-        self.ensemble_dump = _EnsembleDumper(self)
         self.density_dump = _DensityDumper(self)
 
         # Some dumpers add per-model information; give them a pointer to
@@ -1661,7 +1626,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                          # todo: detect atomic models and emit struct_conf
                          #_StructConfDumper(self),
                          self.model_prot_dump, self.post_process_dump,
-                         self.ensemble_dump, self.density_dump, self.model_dump]
+                         self.density_dump, self.model_dump]
 
     def create_representation(self, name):
         """Create a new Representation and return it. This can be
@@ -1692,7 +1657,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
 
     def _add_state(self, state):
         """Create a new state and return a pointer to it."""
-        self._state_ensemble_offset = len(self.ensemble_dump.ensembles)
+        self._state_ensemble_offset = len(self.system.ensembles)
         s = _State(state, self)
         self._state_group.append(s)
         self._last_state = s
@@ -1886,7 +1851,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
             self.system.locations.append(ensemble_file)
         e = _SimpleEnsemble(pp, group, num_models, drmsd, num_models_deposited,
                             ensemble_file)
-        self.ensemble_dump.add(e)
+        self.system.ensembles.append(e)
         self.density_dump.add(e)
         for c in state.all_modeled_components:
             den = localization_densities.get(c, None)
@@ -1902,7 +1867,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.system.locations.append(location)
         # Ensure that we point to an ensemble related to the current state
         ind = i + self._state_ensemble_offset
-        self.ensemble_dump.ensembles[ind].file = location
+        self.system.ensembles[ind].file = location
 
     def add_replica_exchange_analysis(self, state, rex):
         # todo: add prefilter as an additional postprocess step (complication:
@@ -1920,7 +1885,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
             state.add_model_group(group)
             # todo: make # of models to deposit configurable somewhere
             e = _ReplicaExchangeAnalysisEnsemble(pp, i, group, 1)
-            self.ensemble_dump.add(e)
+            self.system.ensembles.append(e)
             self.density_dump.add(e)
             # Add localization density info if available
             for c in state.all_modeled_components:

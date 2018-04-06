@@ -33,7 +33,7 @@ class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
 
 def get_all_models_group(simo, po):
     state = simo._protocol_output[0][1]
-    return po.add_model_group(IMP.pmi.mmcif._ModelGroup(state, "All models"))
+    return state.add_model_group(ihm.model.ModelGroup(name="All models"))
 
 class Tests(IMP.test.TestCase):
 
@@ -95,29 +95,31 @@ class Tests(IMP.test.TestCase):
         self.assertEqual(len(system.software), 3)
 
     def test_single_state(self):
-        """Test MultiStateDumper with a single state"""
+        """Test with a single state"""
         po = DummyPO(None)
         po._add_state(DummyRepr(None, None))
-        d = IMP.pmi.mmcif._MultiStateDumper(po)
+        d = ihm.dumper._MultiStateDumper()
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
-        d.dump(w)
+        d.dump(po.system, w)
         self.assertEqual(fh.getvalue(), "")
 
     def test_multi_state(self):
-        """Test MultiStateDumper with multiple states"""
+        """Test with multiple states"""
         po = DummyPO(None)
         r1 = DummyRepr(None, None)
         state1 = po._add_state(r1)
-        po.add_model_group(IMP.pmi.mmcif._ModelGroup(state1, "group 1"))
-        po.add_model_group(IMP.pmi.mmcif._ModelGroup(state1, "group 2"))
+        state1.add_model_group(ihm.model.ModelGroup(name="Group 1"))
+        state1.add_model_group(ihm.model.ModelGroup(name="Group 2"))
         r2 = DummyRepr('state2 short', 'state2 long')
         state2 = po._add_state(r2)
-        po.add_model_group(IMP.pmi.mmcif._ModelGroup(state2, "group 3"))
-        d = IMP.pmi.mmcif._MultiStateDumper(po)
+        state2.add_model_group(ihm.model.ModelGroup(name="Group 3"))
+        d = ihm.dumper._MultiStateDumper()
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
-        d.dump(w)
+        ihm.dumper._ModelDumper().finalize(po.system)  # assign model group IDs
+        d.finalize(po.system)
+        d.dump(po.system, w)
         self.assertEqual(fh.getvalue(), """#
 loop_
 _ihm_multi_state_modeling.ordinal_id
@@ -129,9 +131,9 @@ _ihm_multi_state_modeling.state_name
 _ihm_multi_state_modeling.model_group_id
 _ihm_multi_state_modeling.experiment_type
 _ihm_multi_state_modeling.details
-1 1 1 . . . 1 'Fraction of bulk' 'Group 1'
-2 1 1 . . . 2 'Fraction of bulk' 'Group 2'
-3 2 2 . . 'state2 long' 3 'Fraction of bulk' 'state2 short group 3'
+1 1 1 . . . 1 'Fraction of bulk' .
+2 1 1 . . . 2 'Fraction of bulk' .
+3 2 1 . . 'state2 long' 3 'Fraction of bulk' .
 #
 """)
 
@@ -368,8 +370,8 @@ _ihm_multi_state_modeling.details
         representation.id = 99
         protocol = IMP.pmi.mmcif._Protocol()
         protocol.id = 93
-        group = IMP.pmi.mmcif._ModelGroup(state, "all models")
-        group.id = 7
+        group = ihm.model.ModelGroup(name="all models")
+        group._id = 7
         model = d.add(simo.prot, protocol, assembly, representation, group)
         self.assertEqual(model.id, 1)
         self.assertEqual(model.get_rmsf('Nup84', (1,)), None)
@@ -388,7 +390,7 @@ _ihm_model_list.model_group_name
 _ihm_model_list.assembly_id
 _ihm_model_list.protocol_id
 _ihm_model_list.representation_id
-1 1 7 . 'All models' 42 93 99
+1 1 7 . 'all models' 42 93 99
 #
 #
 loop_
@@ -431,8 +433,8 @@ _ihm_sphere_obj_site.model_id
         representation.id = 99
         protocol = IMP.pmi.mmcif._Protocol()
         protocol.id = 93
-        group = IMP.pmi.mmcif._ModelGroup(state, "all models")
-        group.id = 7
+        group = ihm.model.ModelGroup(name="all models")
+        group._id = 7
         model = d.add(simo.prot, protocol, assembly, representation, group)
         self.assertEqual(model.id, 1)
         self.assertEqual(model.get_rmsf('Nup84', (1,)), None)
@@ -451,7 +453,7 @@ _ihm_model_list.model_group_name
 _ihm_model_list.assembly_id
 _ihm_model_list.protocol_id
 _ihm_model_list.representation_id
-1 1 7 . 'All models' 42 93 99
+1 1 7 . 'all models' 42 93 99
 #
 #
 loop_
@@ -506,8 +508,9 @@ _ihm_sphere_obj_site.model_id
         representation.id = 99
         protocol = IMP.pmi.mmcif._Protocol()
         protocol.id = 93
-        group = IMP.pmi.mmcif._ModelGroup(state, "all models")
-        group.id = 7
+        group = ihm.model.ModelGroup(name='all models')
+        state.append(group)
+        group._id = 7
         model = d.add(simo.prot, protocol, assembly, representation, group)
         self.assertEqual(model.id, 1)
         model.name = 'foo'
@@ -530,7 +533,7 @@ _ihm_model_list.model_group_name
 _ihm_model_list.assembly_id
 _ihm_model_list.protocol_id
 _ihm_model_list.representation_id
-1 1 7 foo 'All models' 42 93 99
+1 1 7 foo 'all models' 42 93 99
 #
 #
 loop_
@@ -995,6 +998,7 @@ All kmeans_weight_500_2/cluster.0/ centroid index 49
         loc._id = 42
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
+        ihm.dumper._ModelDumper().finalize(po.system)  # assign model group IDs
         po.ensemble_dump.dump(w)
         out = fh.getvalue()
         self.assertEqual(out, """#

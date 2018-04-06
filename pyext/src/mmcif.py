@@ -34,6 +34,7 @@ import ihm.dataset
 import ihm.dumper
 import ihm.metadata
 import ihm.startmodel
+import ihm.model
 
 def _assign_id(obj, seen_objs, obj_by_id):
     """Assign a unique ID to obj, and track all ids in obj_by_id."""
@@ -649,13 +650,6 @@ class _SimpleProtocolStep(_ProtocolStep):
         self.num_models_end = num_models_end
 
 
-class _ModelGroup(object):
-    """Group sets of models"""
-    def __init__(self, state, name):
-        self.state = state
-        self.name = name
-
-
 class _Chain(object):
     """Represent a single chain in a Model"""
     def __init__(self, pmi_chain_id, asym_unit):
@@ -820,12 +814,10 @@ class _ModelDumper(_Dumper):
                           "model_name", "model_group_name", "assembly_id",
                           "protocol_id", "representation_id"]) as l:
             for model in self.models:
-                state = model.group.state
-                group_name = state.get_prefixed_name(model.group.name)
                 l.write(ordinal_id=ordinal, model_id=model.id,
-                        model_group_id=model.group.id,
+                        model_group_id=model.group._id,
                         model_name=model.name,
-                        model_group_name=group_name,
+                        model_group_name=model.group.name,
                         assembly_id=model.assembly._id,
                         protocol_id=model.protocol.id,
                         representation_id=model.representation.id)
@@ -1444,11 +1436,10 @@ class _EnsembleDumper(_Dumper):
                           "ensemble_precision_value",
                           "ensemble_file_id"]) as l:
             for e in self.ensembles:
-                state = e.model_group.state
                 l.write(ensemble_id=e.id,
-                        ensemble_name=state.get_prefixed_name(e.name),
+                        ensemble_name=e.name,
                         post_process_id=e.postproc.id,
-                        model_group_id=e.model_group.id,
+                        model_group_id=e.model_group._id,
                         ensemble_clustering_feature=e.feature,
                         num_ensemble_models=e.num_models,
                         num_ensemble_models_deposited=e.num_deposit,
@@ -1490,34 +1481,6 @@ class _DensityDumper(_Dumper):
                             seq_id_begin=1, seq_id_end=lenseq,
                             asym_id=chain_id)
                     ordinal += 1
-
-
-class _MultiStateDumper(_Dumper):
-    """Output information on multiple states"""
-
-    def dump(self, writer):
-        states = sorted(self.simo._states.keys(),
-                        key=operator.attrgetter('id'))
-        # Nothing to do for single state modeling
-        if len(states) <= 1:
-            return
-        # Sort all model groups first by state, then by their own ID
-        groups = sorted(self.simo.model_groups,
-                        key=lambda g: (g.state.id, g.id))
-        with writer.loop("_ihm_multi_state_modeling",
-                         ["ordinal_id", "state_id", "state_group_id",
-                          "population_fraction", "state_type", "state_name",
-                          "model_group_id", "experiment_type", "details"]) as l:
-            for n, group in enumerate(groups):
-                state = group.state
-                l.write(ordinal_id=n+1, state_id=state.id,
-                        state_group_id=state.id,
-                        model_group_id=group.id,
-                        state_name=state.long_name if state.long_name
-                                   else None,
-                        # No IMP models are currently single molecule
-                        experiment_type='Fraction of bulk',
-                        details=state.get_prefixed_name(group.name))
 
 
 class _EntityMapper(dict):
@@ -1568,7 +1531,7 @@ class _TransformedComponent(object):
         self.name, self.original, self.transform = name, original, transform
 
 
-class _State(object):
+class _State(ihm.model.State):
     """Representation of a single state in the system."""
 
     def __init__(self, pmi_object, po):
@@ -1578,6 +1541,10 @@ class _State(object):
         # Representation object.
         self._pmi_object = weakref.proxy(pmi_object)
         self._pmi_state = pmi_object.state
+        # Preserve PMI state name
+        old_name = self.name
+        super(_State, self).__init__(experiment_type='Fraction of bulk')
+        self.name = old_name
 
         # The assembly of all components modeled by IMP in this state.
         # This may be smaller than the complete assembly.
@@ -1587,6 +1554,14 @@ class _State(object):
         po.system.orphan_assemblies.append(self.modeled_assembly)
 
         self.all_modeled_components = []
+
+    def __hash__(self):
+        return hash(self._pmi_state)
+    def __eq__(self, other):
+        return self._pmi_state == other._pmi_state
+
+    def add_model_group(self, group):
+        self.append(group)
 
     def get_prefixed_name(self, name):
         """Prefix the given name with the state name, if available."""
@@ -1606,6 +1581,11 @@ class _State(object):
 
     short_name = property(lambda self: self._pmi_state.short_name)
     long_name = property(lambda self: self._pmi_state.long_name)
+    def __get_name(self):
+        return self._pmi_state.long_name
+    def __set_name(self, val):
+        self._pmi_state.long_name = val
+    name = property(__get_name, __set_name)
 
 
 class _Representation(object):
@@ -1627,6 +1607,8 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
     def __init__(self, fh):
         # Ultimately, collect data in an ihm.System object
         self.system = ihm.System()
+        self._state_group = ihm.model.StateGroup()
+        self.system.state_groups.append(self._state_group)
 
         self.fh = fh
         self._state_ensemble_offset = 0
@@ -1650,8 +1632,6 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self._all_components = {}
         self.all_modeled_components = []
         self._transformed_components = []
-        self.model_groups = []
-        self.default_model_group = None
         self.sequence_dict = {}
 
         # Coordinates to exclude
@@ -1681,8 +1661,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                          # todo: detect atomic models and emit struct_conf
                          #_StructConfDumper(self),
                          self.model_prot_dump, self.post_process_dump,
-                         self.ensemble_dump, self.density_dump, self.model_dump,
-                         _MultiStateDumper(self)]
+                         self.ensemble_dump, self.density_dump, self.model_dump]
 
     def create_representation(self, name):
         """Create a new Representation and return it. This can be
@@ -1715,10 +1694,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         """Create a new state and return a pointer to it."""
         self._state_ensemble_offset = len(self.ensemble_dump.ensembles)
         s = _State(state, self)
-        if not self._states:
-            self._first_state = s
-        self._states[s] = None
-        s.id = len(self._states)
+        self._state_group.append(s)
         self._last_state = s
         return s
 
@@ -1881,11 +1857,6 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
     def _add_restraint_dataset(self, restraint):
         return self.all_datasets.add_restraint(self._last_state, restraint)
 
-    def add_model_group(self, group):
-        self.model_groups.append(group)
-        group.id = len(self.model_groups)
-        return group
-
     def _add_simple_postprocessing(self, num_models_begin, num_models_end):
         # Always assumed that we're dealing with the last state
         state = self._last_state
@@ -1909,7 +1880,8 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
            This is currently only used by the Nup84 system."""
         # Always assumed that we're dealing with the last state
         state = self._last_state
-        group = self.add_model_group(_ModelGroup(state, name))
+        group = ihm.model.ModelGroup(name=state.get_prefixed_name(name))
+        state.add_model_group(group)
         if ensemble_file:
             self.system.locations.append(ensemble_file)
         e = _SimpleEnsemble(pp, group, num_models, drmsd, num_models_deposited,
@@ -1943,8 +1915,9 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         pp = _ReplicaExchangeAnalysisPostProcess(protocol, rex, num_models)
         self.post_process_dump.add(pp)
         for i in range(rex._number_of_clusters):
-            group = self.add_model_group(_ModelGroup(state,
-                                                     'cluster %d' % (i + 1)))
+            group = ihm.model.ModelGroup(name=state.get_prefixed_name(
+                                                      'cluster %d' % (i + 1)))
+            state.add_model_group(group)
             # todo: make # of models to deposit configurable somewhere
             e = _ReplicaExchangeAnalysisEnsemble(pp, i, group, 1)
             self.ensemble_dump.add(e)
@@ -2006,9 +1979,9 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self._add_restraint_dataset(r) # so that all-dataset group works
 
     def add_model(self, group, assembly=None, representation=None):
+        state = self._last_state
         if representation is None:
             representation = self._representations[0]
-        state = group.state
         return self.model_dump.add(state.prot,
                            self.model_prot_dump.get_last_protocol(state),
                            assembly if assembly else state.modeled_assembly,

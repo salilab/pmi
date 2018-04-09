@@ -1415,21 +1415,24 @@ _ihm_starting_model_seq_dif.details
         """Test _BeadsFragment class"""
         m = None
         bf1 = IMP.pmi.mmcif._BeadsFragment(m, 'comp1', start=0,
-                                           end=10, num=2, hier=None)
+                                           end=10, count=2, hier=None,
+                                           asym_unit=None)
         bf2 = IMP.pmi.mmcif._BeadsFragment(m, 'comp1', start=11,
-                                           end=30, num=3, hier=None)
+                                           end=30, count=3, hier=None,
+                                           asym_unit=None)
         bf3 = IMP.pmi.mmcif._BeadsFragment(m, 'comp1', start=31,
-                                           end=50, num=4, hier=None)
+                                           end=50, count=4, hier=None,
+                                           asym_unit=None)
         self.assertFalse(bf1.combine(None))
         self.assertFalse(bf1.combine(bf3))
         self.assertTrue(bf1.combine(bf2))
         self.assertEqual(bf1.start, 0)
         self.assertEqual(bf1.end, 30)
-        self.assertEqual(bf1.num, 5)
+        self.assertEqual(bf1.count, 5)
         self.assertTrue(bf1.combine(bf3))
         self.assertEqual(bf1.start, 0)
         self.assertEqual(bf1.end, 50)
-        self.assertEqual(bf1.num, 9)
+        self.assertEqual(bf1.count, 9)
 
     def test_model_repr_dump_add_frag(self):
         """Test ModelRepresentationDumper.add_fragment()"""
@@ -1439,7 +1442,8 @@ _ihm_starting_model_seq_dif.details
         rep1 = 'rep1'
         d = IMP.pmi.mmcif._ModelRepresentationDumper(EmptyObject())
         b = IMP.pmi.mmcif._BeadsFragment(m, 'comp1', start=0,
-                                         end=10, num=2, hier=None)
+                                         end=10, count=2, hier=None,
+                                         asym_unit=None)
         d.add_fragment(state1, rep1, b)
         self.assertEqual(len(d.fragments['rep1']['comp1']), 1)
         self.assertEqual(len(d.fragments['rep1']['comp1'][state1]), 1)
@@ -1448,7 +1452,8 @@ _ihm_starting_model_seq_dif.details
         self.assertEqual(frag.end, 10)
 
         b = IMP.pmi.mmcif._BeadsFragment(m, 'comp1', start=11,
-                                         end=30, num=3, hier=None)
+                                         end=30, count=3, hier=None,
+                                         asym_unit=None)
         d.add_fragment(state1, rep1, b)
         self.assertEqual(len(d.fragments['rep1']['comp1']), 1)
         self.assertEqual(len(d.fragments['rep1']['comp1'][state1]), 1)

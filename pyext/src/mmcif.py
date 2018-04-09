@@ -37,6 +37,7 @@ import ihm.startmodel
 import ihm.model
 import ihm.protocol
 import ihm.analysis
+import ihm.representation
 
 def _assign_id(obj, seen_objs, obj_by_id):
     """Assign a unique ID to obj, and track all ids in obj_by_id."""
@@ -131,15 +132,19 @@ class _AllSoftware(object):
                    version='2.0',
                    location='http://www.sbg.bio.ic.ac.uk/~phyre2/'))
 
+def _get_fragment_is_rigid(fragment):
+    """Determine whether a fragment is modeled rigidly"""
+    leaves = IMP.atom.get_leaves(fragment.hier)
+    # Assume all leaves are set up as rigid/flexible in the same way
+    return IMP.core.RigidMember.get_is_setup(leaves[0])
 
-class _PDBFragment(object):
+class _PDBFragment(ihm.representation.ResidueSegment):
     """Record details about part of a PDB file used as input
        for a component."""
-    primitive = 'sphere'
-    granularity = 'by-residue'
-    num = None
     def __init__(self, state, component, start, end, offset, pdbname,
-                 chain, hier):
+                 chain, hier, asym_unit):
+        super(_PDBFragment, self).__init__(asym_unit=asym_unit, rigid=None,
+                      primitive='sphere')
         self.component, self.start, self.end, self.offset, self.pdbname \
               = component, start, end, offset, pdbname
         self.state, self.chain, self.hier = state, chain, hier
@@ -147,24 +152,32 @@ class _PDBFragment(object):
               & IMP.atom.ChainPDBSelector(chain)
         self.starting_hier = IMP.atom.read_pdb(pdbname, state.m, sel)
 
+    rigid = property(lambda self: _get_fragment_is_rigid(self),
+                     lambda self, val: None)
+
     def combine(self, other):
         pass
 
-class _BeadsFragment(object):
+
+class _BeadsFragment(ihm.representation.FeatureSegment):
     """Record details about beads used to represent part of a component."""
-    primitive = 'sphere'
-    granularity = 'by-feature'
     chain = None
-    def __init__(self, state, component, start, end, num, hier):
-        self.state, self.component, self.start, self.end, self.num, self.hier \
-              = state, component, start, end, num, hier
+    def __init__(self, state, component, start, end, count, hier, asym_unit):
+        super(_BeadsFragment, self).__init__(asym_unit=asym_unit, rigid=None,
+                               primitive='sphere', count=count)
+        self.state, self.component, self.start, self.end, self.hier \
+              = state, component, start, end, hier
+
+    rigid = property(lambda self: _get_fragment_is_rigid(self),
+                     lambda self, val: None)
 
     def combine(self, other):
         # todo: don't combine if one fragment is rigid and the other flexible
         if type(other) == type(self) and other.start == self.end + 1:
             self.end = other.end
-            self.num += other.num
+            self.count += other.count
             return True
+
 
 class _StartingModel(object):
     """Record details about an input model (e.g. comparative modeling
@@ -220,16 +233,6 @@ class _ModelRepresentationDumper(_Dumper):
         if len(fragments) == 0 or not fragments[-1].combine(fragment):
             fragments.append(fragment)
 
-    def get_model_mode(self, fragment):
-        """Determine the model_mode for a given fragment ('rigid' or
-           'flexible')"""
-        leaves = IMP.atom.get_leaves(fragment.hier)
-        # Assume all leaves are set up as rigid/flexible in the same way
-        if IMP.core.RigidMember.get_is_setup(leaves[0]):
-            return 'rigid'
-        else:
-            return 'flexible'
-
     def _all_fragments(self):
         """Yield all fragments, with copies for any transformed components"""
         trans_orig = {}
@@ -277,9 +280,9 @@ class _ModelRepresentationDumper(_Dumper):
                             seq_id_end=f.end,
                             model_object_primitive=f.primitive,
                             starting_model_id=starting_model_id,
-                            model_mode=self.get_model_mode(f),
+                            model_mode='rigid' if f.rigid else 'flexible',
                             model_granularity=f.granularity,
-                            model_object_count=f.num)
+                            model_object_count=f.count)
                     ordinal_id += 1
                     segment_id += 1
 
@@ -1058,8 +1061,7 @@ class _StructConfDumper(_Dumper):
                 # component is the same in all states, so just take the first
                 state = list(statefrag.keys())[0]
                 for f in statefrag[state]:
-                    if hasattr(f, 'pdbname') \
-                       and model_repr.get_model_mode(f) == 'rigid':
+                    if hasattr(f, 'pdbname') and f.rigid:
                         asym = get_asym_mapper_for_state(self.simo, f.state,
                                                          asym_states)
                         yield (f, model_repr.starting_model[state, comp,
@@ -1505,7 +1507,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         if representation is None:
             representation = self._representations[0]
         p = _PDBFragment(state, name, start, end, offset, pdbname, chain,
-                         hier)
+                         hier, self.asym_units[name])
         self.model_repr_dump.add_fragment(state, representation, p)
         self.starting_model_dump.add_pdb_fragment(p)
 
@@ -1515,7 +1517,8 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
             return
         if representation is None:
             representation = self._representations[0]
-        b = _BeadsFragment(state, name, start, end, num, hier)
+        b = _BeadsFragment(state, name, start, end, num, hier,
+                           self.asym_units[name])
         self.model_repr_dump.add_fragment(state, representation, b)
 
     def get_cross_link_group(self, pmi_restraint):

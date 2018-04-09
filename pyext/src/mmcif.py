@@ -179,39 +179,6 @@ class _BeadsFragment(ihm.representation.FeatureSegment):
             return True
 
 
-class _StartingModel(object):
-    """Record details about an input model (e.g. comparative modeling
-       template) used for a component."""
-
-    source = ihm.unknown
-    db_name = ihm.unknown
-    db_code = ihm.unknown
-    sequence_identity = ihm.unknown
-
-    def __init__(self, fragment):
-        self.fragments = [fragment]
-        self.asym_id = fragment.chain
-
-    def get_seq_id_range_all_templates(self):
-        """Get the seq_id range covered by all templates in this starting
-           model. Where there are multiple templates, consolidate
-           them; template info is given in starting_comparative_models."""
-        def get_seq_id_range(template, full):
-            # The template may cover more than the current starting model
-            rng = template.seq_id_range
-            return (max(rng[0], full[0]), min(rng[1], full[1]))
-
-        if self.templates:
-            full = self.seq_id_begin, self.seq_id_end
-            rng = get_seq_id_range(self.templates[0], full)
-            for template in self.templates[1:]:
-                this_rng = get_seq_id_range(template, full)
-                rng = (min(rng[0], this_rng[0]), max(rng[1], this_rng[1]))
-            return rng
-        else:
-            return self.seq_id_begin, self.seq_id_end
-
-
 class _ModelRepresentationDumper(_Dumper):
     def __init__(self, simo):
         super(_ModelRepresentationDumper, self).__init__(simo)
@@ -850,26 +817,36 @@ class _StartingModelDumper(_Dumper):
         models = self.models[comp][state]
         if len(models) == 0 \
            or models[-1].fragments[0].pdbname != fragment.pdbname:
-            model = _StartingModel(fragment)
+            model = self._add_model(fragment)
             models.append(model)
-            self.get_model_metadata(model, fragment.pdbname, fragment.chain)
         else:
             models[-1].fragments.append(fragment)
+            # Update residue range to cover all fragments
+            sid_begin = min(fragment.start + fragment.offset,
+                            models[-1].asym_unit.seq_id_range[0])
+            sid_end = max(fragment.end + fragment.offset,
+                          models[-1].asym_unit.seq_id_range[1])
+            models[-1].asym_unit = fragment.asym_unit(sid_begin, sid_end)
 
-    def get_model_metadata(self, model, pdbname, chain):
+
+    def _add_model(self, f):
         parser = ihm.metadata.PDBParser()
-        r = parser.parse_file(pdbname)
+        r = parser.parse_file(f.pdbname)
 
-        model.dataset = r['dataset']
         self.simo.system.software.extend(r['software'])
-        self.simo._add_dataset(model.dataset)
-        model.templates = r['templates']
-        model.metadata = r['metadata']
-        for t in model.templates:
+        self.simo._add_dataset(r['dataset'])
+        for t in r['templates']:
             if t.alignment_file:
                 self.simo.system.locations.append(t.alignment_file)
             if t.dataset:
                 self.simo._add_dataset(t.dataset)
+        m = ihm.startmodel.StartingModel(
+                    asym_unit=f.asym_unit(f.start + f.offset, f.end + f.offset),
+                    dataset=r['dataset'], asym_id=f.chain,
+                    templates=r['templates'], offset=f.offset,
+                    metadata=r['metadata'])
+        m.fragments = [f]
+        return m
 
     def assign_model_details(self):
         for comp, states in self.models.items():
@@ -880,10 +857,6 @@ class _StartingModelDumper(_Dumper):
                     model.name = "%s-m%d" % (comp, model_id)
                     self.starting_model[state, comp,
                                         model.fragments[0].pdbname] = model
-                    model.seq_id_begin = min(x.start + x.offset
-                                             for x in model.fragments)
-                    model.seq_id_end = max(x.end + x.offset
-                                           for x in model.fragments)
 
     def all_models(self):
         for comp, states in self.models.items():

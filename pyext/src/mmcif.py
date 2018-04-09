@@ -263,6 +263,8 @@ class _ModelRepresentationDumper(_Dumper):
                 # For now, assume that representation of the same-named
                 # component is the same in all states, so just take the first
                 state = list(statefrag.keys())[0]
+                # Note: can't use asym_unit._id - doesn't work for
+                # transformed components
                 chain_id = self.simo._get_chain_for_component(comp, self.output)
                 for f in statefrag[state]:
                     entity = self.simo.entities[f.component]

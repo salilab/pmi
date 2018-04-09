@@ -235,10 +235,6 @@ class _ModelRepresentationDumper(_Dumper):
                 chain_id = self.simo._get_chain_for_component(comp, self.output)
                 for f in statefrag[state]:
                     entity = self.simo.entities[f.component]
-                    starting_model_id = None
-                    if hasattr(f, 'pdbname'):
-                        starting_model_id \
-                             = self.starting_model[state, orig, f.pdbname].name
                     l.write(ordinal_id=ordinal_id,
                             representation_id=representation.id,
                             segment_id=segment_id,
@@ -248,7 +244,8 @@ class _ModelRepresentationDumper(_Dumper):
                             seq_id_begin=f.start,
                             seq_id_end=f.end,
                             model_object_primitive=f.primitive,
-                            starting_model_id=starting_model_id,
+                            starting_model_id=f.starting_model.name
+                                              if f.starting_model else None,
                             model_mode='rigid' if f.rigid else 'flexible',
                             model_granularity=f.granularity,
                             model_object_count=f.count)
@@ -802,8 +799,6 @@ class _StartingModelDumper(_Dumper):
         # dict of starting models (entire PDB files), collected from fragments,
         # ordered by component name and state
         self.models = OrderedDict()
-        # mapping from state+component+pdbname to starting model
-        self.starting_model = {}
         self.output = IMP.pmi.output.Output()
 
     def add_pdb_fragment(self, fragment):
@@ -820,14 +815,15 @@ class _StartingModelDumper(_Dumper):
             model = self._add_model(fragment)
             models.append(model)
         else:
-            models[-1].fragments.append(fragment)
+            # Break circular ref between fragment and model
+            models[-1].fragments.append(weakref.proxy(fragment))
             # Update residue range to cover all fragments
             sid_begin = min(fragment.start + fragment.offset,
                             models[-1].asym_unit.seq_id_range[0])
             sid_end = max(fragment.end + fragment.offset,
                           models[-1].asym_unit.seq_id_range[1])
             models[-1].asym_unit = fragment.asym_unit(sid_begin, sid_end)
-
+        fragment.starting_model = models[-1]
 
     def _add_model(self, f):
         parser = ihm.metadata.PDBParser()
@@ -845,7 +841,7 @@ class _StartingModelDumper(_Dumper):
                     dataset=r['dataset'], asym_id=f.chain,
                     templates=r['templates'], offset=f.offset,
                     metadata=r['metadata'])
-        m.fragments = [f]
+        m.fragments = [weakref.proxy(f)]
         return m
 
     def assign_model_details(self):
@@ -855,8 +851,6 @@ class _StartingModelDumper(_Dumper):
                 for model in states[state]:
                     model_id += 1
                     model.name = "%s-m%d" % (comp, model_id)
-                    self.starting_model[state, comp,
-                                        model.fragments[0].pdbname] = model
 
     def all_models(self):
         for comp, states in self.models.items():
@@ -948,20 +942,17 @@ modeling. These may need to be added manually below.""")
                       "starting_model_sequence_offset",
                       "dataset_list_id"]) as l:
             for model in self.all_models():
-                f = model.fragments[0]
-                entity = self.simo.entities[f.component]
-                chain_id = self.simo._get_chain_for_component(f.component,
-                                                              self.output)
+                entity = model.asym_unit.entity
                 seq_id_range = model.get_seq_id_range_all_templates()
                 l.write(entity_id=entity._id,
                       entity_description=entity.description,
-                      asym_id=chain_id,
+                      asym_id=model.asym_unit._id,
                       seq_id_begin=seq_id_range[0],
                       seq_id_end=seq_id_range[1],
                       starting_model_auth_asym_id=model.asym_id,
                       starting_model_id=model.name,
                       starting_model_source=source_map[model.dataset.data_type],
-                      starting_model_sequence_offset=f.offset,
+                      starting_model_sequence_offset=model.offset,
                       dataset_list_id=model.dataset._id)
 
     def dump_coords(self, writer):
@@ -1036,21 +1027,19 @@ class _StructConfDumper(_Dumper):
                 # component is the same in all states, so just take the first
                 state = list(statefrag.keys())[0]
                 for f in statefrag[state]:
-                    if hasattr(f, 'pdbname') and f.rigid:
+                    if f.starting_model and f.rigid:
                         asym = get_asym_mapper_for_state(self.simo, f.state,
                                                          asym_states)
-                        yield (f, model_repr.starting_model[state, comp,
-                                                            f.pdbname],
-                               asym[f.hier])
+                        yield (f, asym[f.hier])
 
     def all_helices(self):
         """Yield all helices that overlap with rigid model fragments"""
-        for f, starting_model, asym_id in self.all_rigid_fragments():
-            if len(starting_model.templates) == 0:
-                for m in starting_model.metadata:
+        for f, asym_id in self.all_rigid_fragments():
+            if len(f.starting_model.templates) == 0:
+                for m in f.starting_model.metadata:
                     if isinstance(m, ihm.startmodel.PDBHelix) \
-                       and m.start_asym == starting_model.asym_id \
-                       and m.end_asym == starting_model.asym_id \
+                       and m.start_asym == f.starting_model.asym_id \
+                       and m.end_asym == f.starting_model.asym_id \
                        and m.start_resnum >= f.start and m.end_resnum <= f.end:
                         yield (m, max(f.start, m.start_resnum),
                                min(f.end, m.end_resnum), asym_id)
@@ -1344,8 +1333,6 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.all_datasets = _AllDatasets(self.system)
         self.starting_model_dump = _StartingModelDumper(self)
 
-        self.model_repr_dump.starting_model \
-                    = self.starting_model_dump.starting_model
         self.all_software = _AllSoftware(self.system)
 
         self._dumpers = [self.model_repr_dump,

@@ -187,6 +187,19 @@ class _ModelRepresentationDumper(_Dumper):
         self.fragments = OrderedDict()
         self.output = IMP.pmi.output.Output()
 
+    def copy_component(self, state, name, original, asym_unit):
+        """Copy all representation for `original` in `state` to `name`"""
+        def copy_frag(f):
+            newf = copy.copy(f)
+            newf.asym_unit = asym_unit
+            return newf
+        for rep in self.fragments:
+            if original in self.fragments[rep]:
+                if name not in self.fragments[rep]:
+                    self.fragments[rep][name] = OrderedDict()
+                self.fragments[rep][name][state] = [copy_frag(f)
+                            for f in self.fragments[rep][original][state]]
+
     def add_fragment(self, state, representation, fragment):
         """Add a model fragment."""
         comp = fragment.component
@@ -201,19 +214,10 @@ class _ModelRepresentationDumper(_Dumper):
             fragments.append(fragment)
 
     def _all_fragments(self):
-        """Yield all fragments, with copies for any transformed components"""
-        trans_orig = {}
-        for tc in self.simo._transformed_components:
-            if tc.original not in trans_orig:
-                trans_orig[tc.original] = []
-            trans_orig[tc.original].append(tc.name)
+        """Yield all fragments"""
         for representation, compdict in self.fragments.items():
             for comp, statefrag in compdict.items():
-                yield representation, comp, comp, statefrag
-        for representation, compdict in self.fragments.items():
-            for orig, statefrag in compdict.items():
-                for comp in trans_orig.get(orig, []):
-                    yield representation, comp, orig, statefrag
+                yield representation, comp, statefrag
 
     def dump(self, writer):
         ordinal_id = 1
@@ -226,21 +230,18 @@ class _ModelRepresentationDumper(_Dumper):
                           "model_object_primitive", "starting_model_id",
                           "model_mode", "model_granularity",
                           "model_object_count"]) as l:
-            for representation, comp, orig, statefrag in self._all_fragments():
+            for representation, comp, statefrag in self._all_fragments():
                 # For now, assume that representation of the same-named
                 # component is the same in all states, so just take the first
                 state = list(statefrag.keys())[0]
-                # Note: can't use asym_unit._id - doesn't work for
-                # transformed components
-                chain_id = self.simo._get_chain_for_component(comp, self.output)
                 for f in statefrag[state]:
-                    entity = self.simo.entities[f.component]
+                    entity = f.asym_unit.entity
                     l.write(ordinal_id=ordinal_id,
                             representation_id=representation.id,
                             segment_id=segment_id,
                             entity_id=entity._id,
                             entity_description=entity.description,
-                            entity_asym_id=chain_id,
+                            entity_asym_id=f.asym_unit._id,
                             seq_id_begin=f.start,
                             seq_id_end=f.end,
                             model_object_primitive=f.primitive,
@@ -1290,6 +1291,9 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         return comps
 
     def create_transformed_component(self, state, name, original, transform):
+        """Make a new component that's a transformed copy of another.
+           All representation for the existing component is copied to the
+           new one."""
         assembly_comps = self._get_assembly_comps(state.modeled_assembly)
         if name in assembly_comps:
             raise ValueError("Component %s already exists" % name)
@@ -1299,6 +1303,8 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.add_component_sequence(state, name, self.sequence_dict[original])
         self._transformed_components.append(_TransformedComponent(
                                             name, original, transform))
+        self.model_repr_dump.copy_component(state, name, original,
+                                            self.asym_units[name])
 
     def create_component(self, state, name, modeled):
         new_comp = name not in self._all_components

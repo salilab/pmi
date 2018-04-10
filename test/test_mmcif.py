@@ -344,7 +344,7 @@ _ihm_multi_state_modeling.details
         d = ihm.dumper._ModelDumper()
         assembly = ihm.Assembly()
         assembly._id = 42
-        representation = IMP.pmi.mmcif._Representation(name="test rep")
+        representation = ihm.representation.Representation()
         representation._id = 99
         protocol = ihm.protocol.Protocol()
         protocol._id = 93
@@ -409,7 +409,7 @@ _ihm_sphere_obj_site.model_id
         d = ihm.dumper._ModelDumper()
         assembly = ihm.Assembly()
         assembly._id = 42
-        representation = IMP.pmi.mmcif._Representation(name="test rep")
+        representation = ihm.representation.Representation()
         representation._id = 99
         protocol = ihm.protocol.Protocol()
         protocol._id = 93
@@ -492,7 +492,7 @@ _ihm_sphere_obj_site.model_id
         d = ihm.dumper._ModelDumper()
         assembly = ihm.Assembly()
         assembly._id = 42
-        representation = IMP.pmi.mmcif._Representation(name="test rep")
+        representation = ihm.representation.Representation()
         representation._id = 99
         protocol = ihm.protocol.Protocol()
         protocol._id = 93
@@ -1432,16 +1432,19 @@ _ihm_starting_model_seq_dif.details
 
     def test_beads_fragment(self):
         """Test _BeadsFragment class"""
+        system = ihm.System()
+        e = ihm.Entity('A' * 40)
+        asym = ihm.AsymUnit(e)
         m = None
         bf1 = IMP.pmi.mmcif._BeadsFragment(m, 'comp1', start=0,
                                            end=10, count=2, hier=None,
-                                           asym_unit=None)
+                                           asym_unit=asym)
         bf2 = IMP.pmi.mmcif._BeadsFragment(m, 'comp1', start=11,
                                            end=30, count=3, hier=None,
-                                           asym_unit=None)
+                                           asym_unit=asym)
         bf3 = IMP.pmi.mmcif._BeadsFragment(m, 'comp1', start=31,
                                            end=50, count=4, hier=None,
-                                           asym_unit=None)
+                                           asym_unit=asym)
         self.assertFalse(bf1.combine(None))
         self.assertFalse(bf1.combine(bf3))
         self.assertTrue(bf1.combine(bf2))
@@ -1456,34 +1459,37 @@ _ihm_starting_model_seq_dif.details
     def test_model_repr_dump_add_frag(self):
         """Test ModelRepresentationDumper.add_fragment()"""
         m = None
+        system = ihm.System()
+        e = ihm.Entity('A' * 40)
+        asym = ihm.AsymUnit(e)
         state1 = 'state1'
         state2 = 'state2'
-        rep1 = 'rep1'
-        d = IMP.pmi.mmcif._ModelRepresentationDumper(EmptyObject())
+        rep1 = ihm.representation.Representation()
+        d = IMP.pmi.mmcif._AllModelRepresentations(EmptyObject())
         b = IMP.pmi.mmcif._BeadsFragment(m, 'comp1', start=0,
                                          end=10, count=2, hier=None,
-                                         asym_unit=None)
+                                         asym_unit=asym)
         d.add_fragment(state1, rep1, b)
-        self.assertEqual(len(d.fragments['rep1']['comp1']), 1)
-        self.assertEqual(len(d.fragments['rep1']['comp1'][state1]), 1)
-        frag = d.fragments['rep1']['comp1'][state1][0]
+        self.assertEqual(len(d.fragments[id(rep1)]['comp1']), 1)
+        self.assertEqual(len(d.fragments[id(rep1)]['comp1'][state1]), 1)
+        frag = d.fragments[id(rep1)]['comp1'][state1][0]
         self.assertEqual(frag.start, 0)
         self.assertEqual(frag.end, 10)
 
         b = IMP.pmi.mmcif._BeadsFragment(m, 'comp1', start=11,
                                          end=30, count=3, hier=None,
-                                         asym_unit=None)
+                                         asym_unit=asym)
         d.add_fragment(state1, rep1, b)
-        self.assertEqual(len(d.fragments['rep1']['comp1']), 1)
-        self.assertEqual(len(d.fragments['rep1']['comp1'][state1]), 1)
-        frag = d.fragments['rep1']['comp1'][state1][0]
+        self.assertEqual(len(d.fragments[id(rep1)]['comp1']), 1)
+        self.assertEqual(len(d.fragments[id(rep1)]['comp1'][state1]), 1)
+        frag = d.fragments[id(rep1)]['comp1'][state1][0]
         self.assertEqual(frag.start, 0)
         self.assertEqual(frag.end, 30)
 
         d.add_fragment(state2, rep1, b)
-        self.assertEqual(len(d.fragments['rep1']['comp1']), 2)
-        self.assertEqual(len(d.fragments['rep1']['comp1'][state2]), 1)
-        frag = d.fragments['rep1']['comp1'][state2][0]
+        self.assertEqual(len(d.fragments[id(rep1)]['comp1']), 2)
+        self.assertEqual(len(d.fragments[id(rep1)]['comp1'][state2]), 1)
+        frag = d.fragments[id(rep1)]['comp1'][state2][0]
         self.assertEqual(frag.start, 11)
         self.assertEqual(frag.end, 30)
 
@@ -1507,7 +1513,9 @@ _ihm_starting_model_seq_dif.details
         self.assign_entity_asym_ids(po.system)
         # Need this to assign starting model details
         ihm.dumper._StartingModelDumper().finalize(po.system)
-        po.model_repr_dump.dump(w)
+        d = ihm.dumper._ModelRepresentationDumper()
+        d.finalize(po.system)
+        d.dump(po.system, w)
         out = fh.getvalue()
         self.assertEqual(out, """#
 loop_
@@ -1548,7 +1556,9 @@ _ihm_model_representation.model_object_count
         self.assign_entity_asym_ids(po.system)
         # Need this to assign starting model details
         ihm.dumper._StartingModelDumper().finalize(po.system)
-        po.model_repr_dump.dump(w)
+        d = ihm.dumper._ModelRepresentationDumper()
+        d.finalize(po.system)
+        d.dump(po.system, w)
         out = fh.getvalue()
         self.assertEqual(out, """#
 loop_

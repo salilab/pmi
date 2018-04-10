@@ -143,8 +143,8 @@ class _PDBFragment(ihm.representation.ResidueSegment):
        for a component."""
     def __init__(self, state, component, start, end, offset, pdbname,
                  chain, hier, asym_unit):
-        super(_PDBFragment, self).__init__(asym_unit=asym_unit, rigid=None,
-                      primitive='sphere')
+        super(_PDBFragment, self).__init__(asym_unit=asym_unit(start, end),
+                      rigid=None, primitive='sphere')
         self.component, self.start, self.end, self.offset, self.pdbname \
               = component, start, end, offset, pdbname
         self.state, self.chain, self.hier = state, chain, hier
@@ -163,8 +163,8 @@ class _BeadsFragment(ihm.representation.FeatureSegment):
     """Record details about beads used to represent part of a component."""
     chain = None
     def __init__(self, state, component, start, end, count, hier, asym_unit):
-        super(_BeadsFragment, self).__init__(asym_unit=asym_unit, rigid=None,
-                               primitive='sphere', count=count)
+        super(_BeadsFragment, self).__init__(asym_unit=asym_unit(start, end),
+                    rigid=None, primitive='sphere', count=count)
         self.state, self.component, self.start, self.end, self.hier \
               = state, component, start, end, hier
 
@@ -173,25 +173,28 @@ class _BeadsFragment(ihm.representation.FeatureSegment):
 
     def combine(self, other):
         # todo: don't combine if one fragment is rigid and the other flexible
-        if type(other) == type(self) and other.start == self.end + 1:
-            self.end = other.end
+        if type(other) == type(self) and \
+          other.asym_unit.seq_id_range[0] == self.asym_unit.seq_id_range[1] + 1:
+            self.asym_unit.seq_id_range = (self.asym_unit.seq_id_range[0],
+                                           other.asym_unit.seq_id_range[1])
+            self.start, self.end = self.asym_unit.seq_id_range
             self.count += other.count
             return True
 
 
-class _ModelRepresentationDumper(_Dumper):
+class _AllModelRepresentations(object):
     def __init__(self, simo):
-        super(_ModelRepresentationDumper, self).__init__(simo)
+        self.simo = simo
         # dict of fragments, ordered by representation, then component name,
         # then state
         self.fragments = OrderedDict()
-        self.output = IMP.pmi.output.Output()
+        self._all_representations = {}
 
     def copy_component(self, state, name, original, asym_unit):
         """Copy all representation for `original` in `state` to `name`"""
         def copy_frag(f):
             newf = copy.copy(f)
-            newf.asym_unit = asym_unit
+            newf.asym_unit = asym_unit(*f.asym_unit.seq_id_range)
             return newf
         for rep in self.fragments:
             if original in self.fragments[rep]:
@@ -199,59 +202,32 @@ class _ModelRepresentationDumper(_Dumper):
                     self.fragments[rep][name] = OrderedDict()
                 self.fragments[rep][name][state] = [copy_frag(f)
                             for f in self.fragments[rep][original][state]]
+            # Assume representation for a component is the same in all states,
+            # so only write out the first one
+            first_state = list(self.fragments[rep][name].keys())[0]
+            if state is first_state:
+                representation = self._all_representations[rep]
+                representation.extend(self.fragments[rep][name][state])
 
     def add_fragment(self, state, representation, fragment):
         """Add a model fragment."""
         comp = fragment.component
-        if representation not in self.fragments:
-            self.fragments[representation] = OrderedDict()
-        if comp not in self.fragments[representation]:
-            self.fragments[representation][comp] = OrderedDict()
-        if state not in self.fragments[representation][comp]:
-            self.fragments[representation][comp][state] = []
-        fragments = self.fragments[representation][comp][state]
+        id_rep = id(representation)
+        self._all_representations[id_rep] = representation
+        if id_rep not in self.fragments:
+            self.fragments[id_rep] = OrderedDict()
+        if comp not in self.fragments[id_rep]:
+            self.fragments[id_rep][comp] = OrderedDict()
+        if state not in self.fragments[id_rep][comp]:
+            self.fragments[id_rep][comp][state] = []
+        fragments = self.fragments[id_rep][comp][state]
         if len(fragments) == 0 or not fragments[-1].combine(fragment):
             fragments.append(fragment)
-
-    def _all_fragments(self):
-        """Yield all fragments"""
-        for representation, compdict in self.fragments.items():
-            for comp, statefrag in compdict.items():
-                yield representation, comp, statefrag
-
-    def dump(self, writer):
-        ordinal_id = 1
-        segment_id = 1
-        with writer.loop("_ihm_model_representation",
-                         ["ordinal_id", "representation_id",
-                          "segment_id", "entity_id", "entity_description",
-                          "entity_asym_id",
-                          "seq_id_begin", "seq_id_end",
-                          "model_object_primitive", "starting_model_id",
-                          "model_mode", "model_granularity",
-                          "model_object_count"]) as l:
-            for representation, comp, statefrag in self._all_fragments():
-                # For now, assume that representation of the same-named
-                # component is the same in all states, so just take the first
-                state = list(statefrag.keys())[0]
-                for f in statefrag[state]:
-                    entity = f.asym_unit.entity
-                    l.write(ordinal_id=ordinal_id,
-                            representation_id=representation.id,
-                            segment_id=segment_id,
-                            entity_id=entity._id,
-                            entity_description=entity.description,
-                            entity_asym_id=f.asym_unit._id,
-                            seq_id_begin=f.start,
-                            seq_id_end=f.end,
-                            model_object_primitive=f.primitive,
-                            starting_model_id=f.starting_model._id
-                                              if f.starting_model else None,
-                            model_mode='rigid' if f.rigid else 'flexible',
-                            model_granularity=f.granularity,
-                            model_object_count=f.count)
-                    ordinal_id += 1
-                    segment_id += 1
+            # Assume representation for a component is the same in all states,
+            # so only write out the first one
+            first_state = list(self.fragments[id_rep][comp].keys())[0]
+            if state is first_state:
+                representation.append(fragment)
 
 
 class _AllDatasets(object):
@@ -798,17 +774,12 @@ class _AllStartingModels(object):
         if comp not in self.models:
             self.models[comp] = OrderedDict()
         if state not in self.models[comp]:
-            # Assume starting models are the same in each state, so only track
-            # the first state
-            if len(self.models[comp]) > 0:
-                return
             self.models[comp][state] = []
         models = self.models[comp][state]
         if len(models) == 0 \
            or models[-1].fragments[0].pdbname != fragment.pdbname:
             model = self._add_model(fragment)
             models.append(model)
-            self.simo.system.orphan_starting_models.append(model)
         else:
             # Break circular ref between fragment and model
             models[-1].fragments.append(weakref.proxy(fragment))
@@ -817,7 +788,7 @@ class _AllStartingModels(object):
                             models[-1].asym_unit.seq_id_range[0])
             sid_end = max(fragment.end + fragment.offset,
                           models[-1].asym_unit.seq_id_range[1])
-            models[-1].asym_unit = fragment.asym_unit(sid_begin, sid_end)
+            models[-1].asym_unit = fragment.asym_unit.asym(sid_begin, sid_end)
         fragment.starting_model = models[-1]
 
     def _add_model(self, f):
@@ -832,7 +803,8 @@ class _AllStartingModels(object):
             if t.dataset:
                 self.simo._add_dataset(t.dataset)
         m = _StartingModel(
-                    asym_unit=f.asym_unit(f.start + f.offset, f.end + f.offset),
+                    asym_unit=f.asym_unit.asym(f.start + f.offset,
+                                               f.end + f.offset),
                     dataset=r['dataset'], asym_id=f.chain,
                     templates=r['templates'], offset=f.offset,
                     metadata=r['metadata'])
@@ -910,7 +882,7 @@ class _StructConfDumper(_Dumper):
     def all_rigid_fragments(self):
         """Yield all rigid model representation fragments"""
         asym_states = {}
-        model_repr = self.simo.model_repr_dump
+        model_repr = self.simo.all_representations
         for representation, compdict in model_repr.fragments.items():
             for comp, statefrag in compdict.items():
                 # For now, assume that representation of the same-named
@@ -1165,15 +1137,6 @@ class _State(ihm.model.State):
     name = property(__get_name, __set_name)
 
 
-class _Representation(object):
-    """A complete model representation"""
-    def __init__(self, name):
-        self.name = name
-    # Fool ihm into thinking this is an empty ihm Representation object
-    def __len__(self):
-        return 0
-
-
 class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
     """Class to encode a modeling protocol as mmCIF.
 
@@ -1204,8 +1167,8 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self._states = {}
         self._working_directory = os.getcwd()
         self._cif_writer = ihm.format.CifWriter(fh)
-        self._representations = []
-        self.create_representation("Default representation")
+        self.default_representation = self.create_representation(
+                                                    "Default representation")
         self.entities = _EntityMapper(self.system)
         # Mapping from component names to ihm.AsymUnit
         self.asym_units = {}
@@ -1217,7 +1180,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         # Coordinates to exclude
         self._exclude_coords = {}
 
-        self.model_repr_dump = _ModelRepresentationDumper(self)
+        self.all_representations = _AllModelRepresentations(self)
         self.cross_link_dump = _CrossLinkDumper(self)
         self.all_protocols = _AllProtocols(self)
         self.all_datasets = _AllDatasets(self.system)
@@ -1225,8 +1188,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
 
         self.all_software = _AllSoftware(self.system)
 
-        self._dumpers = [self.model_repr_dump,
-                         self.cross_link_dump,
+        self._dumpers = [self.cross_link_dump,
                          # todo: detect atomic models and emit struct_conf
                          #_StructConfDumper(self),
                          ]
@@ -1234,10 +1196,8 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
     def create_representation(self, name):
         """Create a new Representation and return it. This can be
            passed to add_model(), add_bead_element() or add_pdb_element()."""
-        r = _Representation(name)
-        self._representations.append(r)
-        r.id = len(self._representations)
-        r._id = r.id # python-ihm compatibility
+        r = ihm.representation.Representation()
+        self.system.orphan_representations.append(r)
         return r
 
     def exclude_coordinates(self, component, seqrange):
@@ -1303,8 +1263,8 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.add_component_sequence(state, name, self.sequence_dict[original])
         self._transformed_components.append(_TransformedComponent(
                                             name, original, transform))
-        self.model_repr_dump.copy_component(state, name, original,
-                                            self.asym_units[name])
+        self.all_representations.copy_component(state, name, original,
+                                                self.asym_units[name])
 
     def create_component(self, state, name, modeled):
         new_comp = name not in self._all_components
@@ -1361,10 +1321,10 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         if self._is_excluded(name, start, end):
             return
         if representation is None:
-            representation = self._representations[0]
+            representation = self.default_representation
         p = _PDBFragment(state, name, start, end, offset, pdbname, chain,
                          hier, self.asym_units[name])
-        self.model_repr_dump.add_fragment(state, representation, p)
+        self.all_representations.add_fragment(state, representation, p)
         self.all_starting_models.add_pdb_fragment(p)
 
     def add_bead_element(self, state, name, start, end, num, hier,
@@ -1372,10 +1332,10 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         if self._is_excluded(name, start, end):
             return
         if representation is None:
-            representation = self._representations[0]
+            representation = self.default_representation
         b = _BeadsFragment(state, name, start, end, num, hier,
                            self.asym_units[name])
-        self.model_repr_dump.add_fragment(state, representation, b)
+        self.all_representations.add_fragment(state, representation, b)
 
     def get_cross_link_group(self, pmi_restraint):
         r = _CrossLinkGroup(pmi_restraint)
@@ -1542,7 +1502,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
     def add_model(self, group, assembly=None, representation=None):
         state = self._last_state
         if representation is None:
-            representation = self._representations[0]
+            representation = self.default_representation
         protocol = self.all_protocols.get_last_protocol(state)
         m = _Model(state.prot, self, protocol,
                    assembly if assembly else state.modeled_assembly,

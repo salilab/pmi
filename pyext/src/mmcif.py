@@ -70,15 +70,15 @@ class _ComponentMapper(object):
         return protname
 
 
-class _AsymIDMapper(object):
-    """Map a Particle to an asym_id (chain ID)"""
+class _AsymMapper(object):
+    """Map a Particle to an asym_unit"""
     def __init__(self, simo, prot):
         self.simo = simo
         self._cm = _ComponentMapper(prot)
 
     def __getitem__(self, p):
         protname = self._cm[p]
-        return self.simo._get_chain_for_component(protname, self._cm.o)
+        return self.simo.asym_units[protname]
 
 class _Dumper(object):
     """Base class for helpers to dump output to mmCIF"""
@@ -265,46 +265,59 @@ class _AllDatasets(object):
         self._restraints_by_state[state].append(restraint)
 
 
-class _CrossLinkGroup(ihm.restraint.Restraint):
-    """Group common information for a set of cross links"""
+class _CrossLinkRestraint(ihm.restraint.Restraint):
+    """Restrain to a set of cross links"""
+
+    assembly = None
+
     def __init__(self, pmi_restraint):
         self.pmi_restraint = pmi_restraint
-        self.label = self.pmi_restraint.label
+        label = self.pmi_restraint.label
         # Map commonly-used subtypes to more standard labels
-        if self.label == 'wtDSS':
-            self.label = 'DSS'
-    # Point dataset to that of the original PMI restraint (so that if it is
-    # changed, we get the changed version)
-    dataset = property(lambda self: self.pmi_restraint.dataset)
+        if label == 'wtDSS':
+            label = 'DSS'
+        self.label = label
+        self.linker_type = label
+        self.experimental_cross_links = []
+        self.cross_links = []
 
-
-class _ExperimentalCrossLink(object):
-    def __init__(self, r1, c1, r2, c2, length, group):
-        self.r1, self.c1, self.r2, self.c2 = r1, c1, r2, c2
-        self.length, self.group = length, group
-
-class _CrossLink(object):
-    def __init__(self, state, ex_xl, p1, p2, sigma1, sigma2, psi):
-        self.state = state
-        self.ex_xl, self.sigma1, self.sigma2 = ex_xl, sigma1, sigma2
-        self.p1, self.p2 = p1, p2
-        self.psi = psi
+    # Have our dataset point to that in the original PMI restraint
+    def __set_dataset(self, val):
+        self.pmi_restraint.dataset = val
+    dataset = property(lambda self: self.pmi_restraint.dataset,
+                       __set_dataset)
 
 def get_asym_mapper_for_state(simo, state, asym_map):
     asym = asym_map.get(state, None)
     if asym is None:
-        asym = _AsymIDMapper(simo, state.prot)
+        asym = _AsymMapper(simo, state.prot)
         asym_map[state] = asym
     return asym
+
+class _PMICrossLink(object):
+    # Query PMI particles to get psi and sigma values at time of use, not
+    # time of construction (since they may be set after creating the restraint)
+    psi = property(lambda self: self.psi_p.get_scale(),
+                   lambda self, val: None)
+    sigma1 = property(lambda self: self.sigma1_p.get_scale(),
+                      lambda self, val: None)
+    sigma2 = property(lambda self: self.sigma2_p.get_scale(),
+                      lambda self, val: None)
+
+
+class _ResidueCrossLink(ihm.restraint.ResidueCrossLink, _PMICrossLink):
+    pass
+
+
+class _FeatureCrossLink(ihm.restraint.FeatureCrossLink, _PMICrossLink):
+    pass
+
 
 class _CrossLinkDumper(_Dumper):
     def __init__(self, simo):
         super(_CrossLinkDumper, self).__init__(simo)
+        self.restraints = []
         self.cross_links = []
-        self.exp_cross_links = []
-
-    def add_experimental(self, cross_link):
-        self.exp_cross_links.append(cross_link)
 
     def add(self, cross_link):
         self.cross_links.append(cross_link)
@@ -323,42 +336,38 @@ class _CrossLinkDumper(_Dumper):
                           "entity_id_2", "seq_id_2", "comp_id_2",
                           "linker_type", "dataset_list_id"]) as l:
             xl_id = 0
-            for xl in self.exp_cross_links:
-                # Skip identical cross links
-                sig = (xl.c1, xl.c2, xl.r1, xl.r2, xl.group.label)
-                if sig in seen_cross_links:
-                    xl.id = seen_cross_links[sig]
-                    continue
-                entity1 = self.simo.entities[xl.c1]
-                entity2 = self.simo.entities[xl.c2]
-                seq1 = entity1.sequence
-                seq2 = entity2.sequence
-                # todo: handle experimental ambiguity (group_id) properly
-                xl_id += 1
-                seen_cross_links[sig] = xl_id
-                xl.id = xl_id
-                l.write(id=xl.id, group_id=xl.id,
+            for r in self.restraints:
+                for xl_list in r.experimental_cross_links:
+                    xl, = xl_list # assume 1 per group
+                    # Skip identical cross links
+                    sig = (xl.residue1.entity, xl.residue2.entity,
+                           xl.residue1.seq_id, xl.residue2.seq_id,
+                           r.linker_type)
+                    if sig in seen_cross_links:
+                        xl.id = seen_cross_links[sig]
+                        continue
+                    entity1 = xl.residue1.entity
+                    entity2 = xl.residue2.entity
+                    seq1 = entity1.sequence
+                    seq2 = entity2.sequence
+                    # todo: handle experimental ambiguity (group_id) properly
+                    xl_id += 1
+                    seen_cross_links[sig] = xl_id
+                    xl.id = xl_id
+                    l.write(id=xl.id, group_id=xl.id,
                         entity_description_1=entity1.description,
                         entity_id_1=entity1._id,
-                        seq_id_1=xl.r1,
-                        comp_id_1=seq1[xl.r1-1].id,
+                        seq_id_1=xl.residue1.seq_id,
+                        comp_id_1=seq1[xl.residue1.seq_id-1].id,
                         entity_description_2=entity2.description,
                         entity_id_2=entity2._id,
-                        seq_id_2=xl.r2,
-                        comp_id_2=seq2[xl.r2-1].id,
-                        linker_type=xl.group.label,
-                        dataset_list_id=xl.group.dataset._id)
-
-    def _granularity(self, xl):
-        """Determine the granularity of a cross link"""
-        if _get_by_residue(xl.p1) and _get_by_residue(xl.p2):
-            return 'by-residue'
-        else:
-            return 'by-feature'
+                        seq_id_2=xl.residue2.seq_id,
+                        comp_id_2=seq2[xl.residue2.seq_id-1].id,
+                        linker_type=r.linker_type,
+                        dataset_list_id=r.dataset._id)
 
     def dump_restraint(self, writer):
         seen_cross_links = {}
-        asym_states = {} # AsymIDMapper for each state
         with writer.loop("_ihm_cross_link_restraint",
                          ["id", "group_id", "entity_id_1", "asym_id_1",
                           "seq_id_1", "comp_id_1",
@@ -367,42 +376,38 @@ class _CrossLinkDumper(_Dumper):
                           "model_granularity", "distance_threshold",
                           "psi", "sigma_1", "sigma_2"]) as l:
             xl_id = 0
-            for xl in self.cross_links:
-                asym = get_asym_mapper_for_state(self.simo, xl.state,
-                                                 asym_states)
-                entity1 = self.simo.entities[xl.ex_xl.c1]
-                entity2 = self.simo.entities[xl.ex_xl.c2]
-                seq1 = entity1.sequence
-                seq2 = entity2.sequence
-                asym1 = asym[xl.p1]
-                asym2 = asym[xl.p2]
-                # Skip identical cross links
-                sig = (asym1, xl.ex_xl.r1, asym2, xl.ex_xl.r2,
-                       xl.ex_xl.group.label)
-                if sig in seen_cross_links:
-                    xl.id = seen_cross_links[sig]
-                    continue
-                xl_id += 1
-                seen_cross_links[sig] = xl_id
-                xl.id = xl_id
-                l.write(id=xl.id,
-                        group_id=xl.ex_xl.id,
+            for r in self.restraints:
+                for xl in r.cross_links:
+                    ex_xl = xl.experimental_cross_link
+                    entity1 = ex_xl.residue1.entity
+                    entity2 = ex_xl.residue2.entity
+                    seq1 = entity1.sequence
+                    seq2 = entity2.sequence
+                    # Skip identical cross links
+                    sig = (xl.asym1, ex_xl.residue1.seq_id, xl.asym2,
+                           ex_xl.residue2.seq_id, r.linker_type)
+                    if sig in seen_cross_links:
+                        xl.id = seen_cross_links[sig]
+                        continue
+                    xl_id += 1
+                    seen_cross_links[sig] = xl_id
+                    xl.id = xl_id
+                    l.write(id=xl.id,
+                        group_id=ex_xl.id,
                         entity_id_1=entity1._id,
-                        asym_id_1=asym1,
-                        seq_id_1=xl.ex_xl.r1,
-                        comp_id_1=seq1[xl.ex_xl.r1-1].id,
+                        asym_id_1=xl.asym1._id,
+                        seq_id_1=ex_xl.residue1.seq_id,
+                        comp_id_1=seq1[ex_xl.residue1.seq_id-1].id,
                         entity_id_2=entity2._id,
-                        asym_id_2=asym2,
-                        seq_id_2=xl.ex_xl.r2,
-                        comp_id_2=seq2[xl.ex_xl.r2-1].id,
+                        asym_id_2=xl.asym2._id,
+                        seq_id_2=ex_xl.residue2.seq_id,
+                        comp_id_2=seq2[ex_xl.residue2.seq_id-1].id,
                         restraint_type='upper bound',
                         # todo: any circumstances where this could be ANY?
                         conditional_crosslink_flag="ALL",
-                        model_granularity=self._granularity(xl),
-                        distance_threshold=xl.ex_xl.length,
-                        psi=xl.psi.get_scale(),
-                        sigma_1=xl.sigma1.get_scale(),
-                        sigma_2=xl.sigma2.get_scale())
+                        model_granularity=xl.granularity,
+                        distance_threshold=xl.distance.distance,
+                        psi=xl.psi, sigma_1=xl.sigma1, sigma_2=xl.sigma2)
 
     def _set_psi_sigma(self, model, g):
         for resolution in g.pmi_restraint.sigma_dictionary:
@@ -420,23 +425,20 @@ class _CrossLinkDumper(_Dumper):
 
     def dump_results(self, writer):
         all_groups = {}
-        for xl in self.cross_links:
-            all_groups[xl.ex_xl.group] = None
         ordinal = 1
         with writer.loop("_ihm_cross_link_result_parameters",
                          ["ordinal_id", "restraint_id", "model_id",
                           "psi", "sigma_1", "sigma_2"]) as l:
             for group, model in self.simo.system._all_models():
                 if not model._is_restrained: continue
-                for g in all_groups.keys():
-                    self._set_psi_sigma(model, g)
-                for xl in self.cross_links:
-                    if model.stats:
-                        l.write(ordinal_id=ordinal, restraint_id=xl.id,
-                                model_id=model.id, psi=xl.psi.get_scale(),
-                                sigma_1=xl.sigma1.get_scale(),
-                                sigma_2=xl.sigma2.get_scale())
-                        ordinal += 1
+                for r in self.restraints:
+                    self._set_psi_sigma(model, r)
+                    for xl in r.cross_links:
+                        if model.stats:
+                            l.write(ordinal_id=ordinal, restraint_id=xl.id,
+                                model_id=model._id, psi=xl.psi,
+                                sigma_1=xl.sigma1, sigma_2=xl.sigma2)
+                            ordinal += 1
 
 class _EM2DRestraint(ihm.restraint.EM2DRestraint):
     def __init__(self, state, pmi_restraint, image_number, resolution,
@@ -892,7 +894,7 @@ class _StructConfDumper(_Dumper):
                     if f.starting_model and f.rigid:
                         asym = get_asym_mapper_for_state(self.simo, f.state,
                                                          asym_states)
-                        yield (f, asym[f.hier])
+                        yield (f, asym[f.hier]._id)
 
     def all_helices(self):
         """Yield all helices that overlap with rigid model fragments"""
@@ -1165,6 +1167,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.system.locations.append(loc)
 
         self._states = {}
+        self.__asym_states = {}
         self._working_directory = os.getcwd()
         self._cif_writer = ihm.format.CifWriter(fh)
         self.default_representation = self.create_representation(
@@ -1338,25 +1341,41 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.all_representations.add_fragment(state, representation, b)
 
     def get_cross_link_group(self, pmi_restraint):
-        r = _CrossLinkGroup(pmi_restraint)
+        r = _CrossLinkRestraint(pmi_restraint)
         self.system.restraints.append(r)
         self._add_restraint_dataset(r) # so that all-dataset group works
+        self.cross_link_dump.restraints.append(r)
         return r
 
-    def add_experimental_cross_link(self, r1, c1, r2, c2, length, group):
+    def add_experimental_cross_link(self, r1, c1, r2, c2, rsr):
         if c1 not in self._all_components or c2 not in self._all_components:
             # Crosslink refers to a component we didn't model
             # As a quick hack, just ignore it.
             # todo: need to add an entity for this anyway (so will need the
             # sequence, and add to struct_assembly)
             return None
-        xl = _ExperimentalCrossLink(r1, c1, r2, c2, length, group)
-        self.cross_link_dump.add_experimental(xl)
+        e1 = self.entities[c1]
+        e2 = self.entities[c2]
+        xl = ihm.restraint.ExperimentalCrossLink(residue1=e1.residue(r1),
+                                                 residue2=e2.residue(r2))
+        rsr.experimental_cross_links.append([xl])
         return xl
 
-    def add_cross_link(self, state, ex_xl, p1, p2, sigma1, sigma2, psi):
-        self.cross_link_dump.add(_CrossLink(state, ex_xl, p1, p2, sigma1,
-                                            sigma2, psi))
+    def add_cross_link(self, state, ex_xl, p1, p2, length, sigma1_p, sigma2_p,
+                       psi_p, rsr):
+        # Map p1/p2 to asym units
+        asym = get_asym_mapper_for_state(self, state, self.__asym_states)
+        d = ihm.restraint.UpperBoundDistanceRestraint(length)
+
+        if _get_by_residue(p1) and _get_by_residue(p2):
+            cls = _ResidueCrossLink
+        else:
+            cls = _FeatureCrossLink
+        xl = cls(ex_xl, asym1=asym[p1], asym2=asym[p2], distance=d,
+                 restrain_all=True)
+        # Needed to look up fits later
+        xl.psi_p, xl.sigma1_p, xl.sigma2_p = psi_p, sigma1_p, sigma2_p
+        rsr.cross_links.append(xl)
 
     def add_replica_exchange(self, state, rex):
         # todo: allow for metadata to say how many replicas were used in the

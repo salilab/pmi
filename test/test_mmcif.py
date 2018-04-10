@@ -240,11 +240,11 @@ _ihm_multi_state_modeling.details
         po.system.asym_units[0]._id = 'A'
         po.system.asym_units[1]._id = 'B'
 
-        mapper = IMP.pmi.mmcif._AsymIDMapper(po, simo.prot)
-        self.assertEqual(mapper[h1[0]], 'A')
-        self.assertEqual(mapper[h1[1]], 'A')
-        self.assertEqual(mapper[h2[0]], 'B')
-        self.assertEqual(mapper[h2[1]], 'B')
+        mapper = IMP.pmi.mmcif._AsymMapper(po, simo.prot)
+        self.assertEqual(mapper[h1[0]]._id, 'A')
+        self.assertEqual(mapper[h1[1]]._id, 'A')
+        self.assertEqual(mapper[h2[0]]._id, 'B')
+        self.assertEqual(mapper[h2[1]]._id, 'B')
         # Check handling of multiple states
         simo2 = IMP.pmi.representation.Representation(m)
         simo2.add_protocol_output(po)
@@ -252,10 +252,10 @@ _ihm_multi_state_modeling.details
         simo2.add_component_sequence("Nup85",
                                      self.get_input_file_name("test.fasta"))
         h1 = simo2.add_component_beads("Nup85", [(1,2), (3,4)])
-        mapper = IMP.pmi.mmcif._AsymIDMapper(po, simo2.prot)
+        mapper = IMP.pmi.mmcif._AsymMapper(po, simo2.prot)
         # First chain, but ID isn't "A" since it gets the same chain ID
         # as the component in the first state (simo)
-        self.assertEqual(mapper[h1[0]], 'B')
+        self.assertEqual(mapper[h1[0]]._id, 'B')
 
     def test_component_mapper(self):
         """Test ComponentMapper class"""
@@ -1074,23 +1074,24 @@ _ihm_localization_density_files.seq_id_end
         r.dataset._id = 42
         xl_group = po.get_cross_link_group(r)
         ex_xl = po.add_experimental_cross_link(1, 'Nup84',
-                                               2, 'Nup84', 42.0, xl_group)
+                                               2, 'Nup84', xl_group)
         ex_xl2 = po.add_experimental_cross_link(1, 'Nup84',
-                                                3, 'Nup84', 42.0, xl_group)
+                                                3, 'Nup84', xl_group)
         # Duplicates should be ignored
-        po.add_experimental_cross_link(1, 'Nup84',
-                                       3, 'Nup84', 42.0, xl_group)
+        po.add_experimental_cross_link(1, 'Nup84', 3, 'Nup84', xl_group)
         # Non-modeled component should be ignored
         nm_ex_xl = po.add_experimental_cross_link(1, 'Nup85',
-                                                  2, 'Nup84', 42.0, xl_group)
+                                                  2, 'Nup84', xl_group)
         self.assertEqual(nm_ex_xl, None)
         rs = nup84[0].get_children()
         sigma1 = IMP.isd.Scale.setup_particle(IMP.Particle(m), 1.0)
         sigma2 = IMP.isd.Scale.setup_particle(IMP.Particle(m), 0.5)
         psi = IMP.isd.Scale.setup_particle(IMP.Particle(m), 0.8)
-        po.add_cross_link(state, ex_xl, rs[0], rs[1], sigma1, sigma2, psi)
+        po.add_cross_link(state, ex_xl, rs[0], rs[1], 42.0, sigma1, sigma2,
+                          psi, xl_group)
         # Duplicates should be ignored
-        po.add_cross_link(state, ex_xl, rs[0], rs[1], sigma1, sigma2, psi)
+        po.add_cross_link(state, ex_xl, rs[0], rs[1], 42.0, sigma1, sigma2,
+                          psi, xl_group)
 
         fh = StringIO()
         self.assign_entity_asym_ids(po.system)

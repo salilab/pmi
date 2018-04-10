@@ -1370,6 +1370,27 @@ _ihm_3dem_restraint.cross_correlation_coefficient
             self.assertEqual(loc.repo.doi, 'foo')
             self.assertEqual(loc.path, 'bar')
 
+    def test_dump_atoms_restype_mismatch(self):
+        """Test StartingModelDumper.dump_atoms with residue type mismatch"""
+        m = IMP.Model()
+        po = DummyPO(None)
+        simo = IMP.pmi.representation.Representation(m)
+        simo.add_protocol_output(po)
+        simo.create_component("Nup84", True)
+        simo.add_component_sequence("Nup84",
+                                    self.get_input_file_name("test.fasta"))
+        nup84 = simo.autobuild_model("Nup84",
+                                     self.get_input_file_name("test.nup84.pdb"),
+                                     "A")
+        # Create sequence mismatch
+        po.system.entities[0].sequence = po.system.entities[0].sequence[1:]
+        self.assign_entity_asym_ids(po.system)
+        fh = StringIO()
+        d = ihm.dumper._StartingModelDumper()
+        w = ihm.format.CifWriter(fh)
+        d.finalize(po.system)
+        self.assertRaises(ValueError, d.dump_coords, po.system, w)
+
     def test_seq_dif(self):
         """Test StartingModelDumper.dump_seq_dif"""
 

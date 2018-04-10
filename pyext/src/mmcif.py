@@ -862,6 +862,7 @@ class _MutantHandler(object):
         # by IMP to MET, so reflect that in the output,
         # and pass back to populate the seq_dif category.
         if res_name == 'MSE':
+            res_name = 'MET'
             # Only add one seq_dif record per residue
             ind = res.get_index()
             if ind != self._last_res_index:
@@ -873,6 +874,7 @@ class _MutantHandler(object):
                 assert(len(self.templates) == 0)
                 self._seq_dif.append(ihm.startmodel.MSESeqDif(
                             res.get_index(), res.get_index() + f.offset))
+        return res_name
 
 
 class _StartingModel(ihm.startmodel.StartingModel):
@@ -896,8 +898,15 @@ class _StartingModel(ihm.startmodel.StartingModel):
                     atom_name = atom_name[4:]
                 res = IMP.atom.get_residue(atom)
 
-                mh.handle_residue(res)
-                # todo: warn if residue type does not match that in Entity
+                seq_id = res.get_index() + f.offset
+                resname = mh.handle_residue(res)
+                comp_id = self.asym_unit.entity.sequence[seq_id-1].id
+                if resname != comp_id:
+                    raise ValueError("Starting model residue %s does not match "
+                            "that in the output model (%s) for %s at index %d. "
+                            "Check offset (currently %d)."
+                            % (resname, comp_id, self.asym_unit,
+                               seq_id-1, f.offset))
                 yield ihm.model.Atom(asym_unit=self.asym_unit,
                                      seq_id=res.get_index() + f.offset,
                                      atom_id=atom_name, type_symbol=element,

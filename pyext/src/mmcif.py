@@ -1144,15 +1144,21 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                         r.add_fits_from_model_statfile(m)
 
     def flush(self):
+        self.finalize()
+        ihm.dumper.write(self.fh, [self.system])
+
+    def finalize(self):
+        """Do any final processing on the class hierarchy.
+           After calling this method, the `system` member (an instance
+           of `ihm.System`) completely reproduces the PMI modeling, and
+           can be written out to an mmCIF file with `ihm.dumper.write`,
+           and/or modified using the ihm API."""
         self._add_restraint_model_fits()
 
         # Point all locations to repos, if applicable
         all_repos = [m for m in self._metadata
                      if isinstance(m, ihm.location.Repository)]
         self.system.update_locations_in_repositories(all_repos)
-
-        # Dump out all ihm-managed objects
-        ihm.dumper.write(self.fh, [self.system])
 
     def add_pdb_element(self, state, name, start, end, offset, pdbname,
                         chain, hier, representation=None):

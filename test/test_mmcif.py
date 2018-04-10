@@ -593,15 +593,11 @@ _ihm_sphere_obj_site.model_id
         # the Python script)
         ihm.dumper._ExternalReferenceDumper().finalize(po.system)
         self.assign_dataset_ids(po)
-        po.starting_model_dump.finalize()
-        po.starting_model_dump.dump(w)
+        d = ihm.dumper._StartingModelDumper()
+        d.finalize(po.system)
+        d.dump(po.system, w)
         out = fh.getvalue()
-        self.assertEqual(out,
-"""# IMP will attempt to identify which input models are crystal structures and
-# which are comparative models, but does not always have sufficient information
-# to deduce all of the templates used for comparative modeling. These may need
-# to be added manually below.
-#
+        self.assertEqual(out, """#
 loop_
 _ihm_starting_model_details.starting_model_id
 _ihm_starting_model_details.entity_id
@@ -613,8 +609,8 @@ _ihm_starting_model_details.starting_model_source
 _ihm_starting_model_details.starting_model_auth_asym_id
 _ihm_starting_model_details.starting_model_sequence_offset
 _ihm_starting_model_details.dataset_list_id
-Nup84-m1 1 Nup84 A 33 2 'comparative model' A 0 3
-Nup85-m1 2 Nup85 B 26 -5 'comparative model' A -7 4
+1 1 Nup84 A 33 2 'comparative model' A 0 3
+2 2 Nup85 B 26 -5 'comparative model' A -7 4
 #
 #
 loop_
@@ -630,10 +626,10 @@ _ihm_starting_comparative_models.template_sequence_identity
 _ihm_starting_comparative_models.template_sequence_identity_denominator
 _ihm_starting_comparative_models.template_dataset_list_id
 _ihm_starting_comparative_models.alignment_file_id
-1 Nup84-m1 A 33 424 C 33 424 100.000 1 1 2
-2 Nup84-m1 A 429 488 G 482 551 10.000 1 2 2
-3 Nup85-m1 A 33 424 C 33 424 100.000 1 1 2
-4 Nup85-m1 A 429 488 G 482 551 10.000 1 2 2
+1 1 A 33 424 C 33 424 100.000 1 1 2
+2 1 A 429 488 G 482 551 10.000 1 2 2
+3 2 A 26 417 C 33 424 100.000 1 1 2
+4 2 A 422 481 G 482 551 10.000 1 2 2
 #
 #
 loop_
@@ -651,10 +647,10 @@ _ihm_starting_model_coord.Cartn_y
 _ihm_starting_model_coord.Cartn_z
 _ihm_starting_model_coord.B_iso_or_equiv
 _ihm_starting_model_coord.ordinal_id
-Nup84-m1 ATOM 1 C CA MET 1 A 1 -8.986 11.688 -5.817 91.820 1
-Nup84-m1 ATOM 2 C CA GLU 1 A 2 -8.986 11.688 -5.817 91.820 2
-Nup85-m1 ATOM 1 C CA MET 2 B 1 -8.986 11.688 -5.817 91.820 3
-Nup85-m1 ATOM 2 C CA GLU 2 B 2 -8.986 11.688 -5.817 91.820 4
+1 ATOM 1 C CA MET 1 A 1 -8.986 11.688 -5.817 91.820 1
+1 ATOM 2 C CA GLU 1 A 2 -8.986 11.688 -5.817 91.820 2
+2 ATOM 1 C CA SER 2 B 1 -8.986 11.688 -5.817 91.820 3
+2 ATOM 2 C CA GLU 2 B 2 -7.986 18.688 -5.817 91.820 4
 #
 """)
 
@@ -1376,24 +1372,26 @@ _ihm_3dem_restraint.cross_correlation_coefficient
 
     def test_seq_dif(self):
         """Test StartingModelDumper.dump_seq_dif"""
-        class DummyEntity(object):
-            _id = 4
-        class DummyPO(object):
-            def _get_chain_for_component(self, comp, output):
-                return 'H'
-            entities = {'nup84': DummyEntity()}
-        class DummyRes(object):
-            def get_index(self):
-                return 42
-        class DummyModel(object):
-            name = 'dummy-m1'
 
-        po = DummyPO()
-        d = IMP.pmi.mmcif._StartingModelDumper(po)
+        class MockStartingModel(ihm.startmodel.StartingModel):
+            def get_seq_dif(self):
+                return [ihm.startmodel.MSESeqDif(db_seq_id=40, seq_id=42)]
+        s = ihm.System()
+        e = ihm.Entity('A' * 41 + 'M')
+        e._id = 4
+        asym = ihm.AsymUnit(e)
+        asym._id = 'H'
+        s.entities.append(e)
+        s.asym_units.append(asym)
+        sm = MockStartingModel(asym_unit=asym, dataset=None, asym_id='X',
+                               offset=2)
+        s.orphan_starting_models.append(sm)
+        sm._id = 'dummy-m1'
+
+        d = ihm.dumper._StartingModelDumper()
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
-        d.dump_seq_dif(w, [IMP.pmi.mmcif._MSESeqDif(DummyRes(), 'nup84',
-                                                    'X', DummyModel(), 2)])
+        d.dump_seq_dif(s, w)
         out = fh.getvalue()
         self.assertEqual(out, """#
 loop_
@@ -1487,7 +1485,7 @@ _ihm_starting_model_seq_dif.details
         w = ihm.format.CifWriter(fh)
         self.assign_entity_asym_ids(po.system)
         # Need this to assign starting model details
-        po.starting_model_dump.finalize()
+        ihm.dumper._StartingModelDumper().finalize(po.system)
         po.model_repr_dump.dump(w)
         out = fh.getvalue()
         self.assertEqual(out, """#
@@ -1505,8 +1503,8 @@ _ihm_model_representation.starting_model_id
 _ihm_model_representation.model_mode
 _ihm_model_representation.model_granularity
 _ihm_model_representation.model_object_count
-1 1 1 1 Nup84 A 1 2 sphere Nup84-m1 flexible by-residue .
-2 1 2 1 Nup84 B 1 2 sphere Nup84-m1 flexible by-residue .
+1 1 1 1 Nup84 A 1 2 sphere 1 flexible by-residue .
+2 1 2 1 Nup84 B 1 2 sphere 1 flexible by-residue .
 #
 """)
 
@@ -1528,7 +1526,7 @@ _ihm_model_representation.model_object_count
         w = ihm.format.CifWriter(fh)
         self.assign_entity_asym_ids(po.system)
         # Need this to assign starting model details
-        po.starting_model_dump.finalize()
+        ihm.dumper._StartingModelDumper().finalize(po.system)
         po.model_repr_dump.dump(w)
         out = fh.getvalue()
         self.assertEqual(out, """#
@@ -1546,7 +1544,7 @@ _ihm_model_representation.starting_model_id
 _ihm_model_representation.model_mode
 _ihm_model_representation.model_granularity
 _ihm_model_representation.model_object_count
-1 1 1 1 Nup84 A 1 2 sphere Nup84-m1 rigid by-residue .
+1 1 1 1 Nup84 A 1 2 sphere 1 rigid by-residue .
 2 1 2 1 Nup84 A 3 4 sphere . flexible by-feature 1
 #
 """)
@@ -1588,7 +1586,7 @@ _ihm_model_representation.model_object_count
 
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
-        po.starting_model_dump.finalize()
+        ihm.dumper._StartingModelDumper().finalize(po.system)
         d.dump(w)
         out = fh.getvalue().split('\n')
         # Account for the fact that _struct_conf_type items do not have a

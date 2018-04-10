@@ -244,7 +244,7 @@ class _ModelRepresentationDumper(_Dumper):
                             seq_id_begin=f.start,
                             seq_id_end=f.end,
                             model_object_primitive=f.primitive,
-                            starting_model_id=f.starting_model.name
+                            starting_model_id=f.starting_model._id
                                               if f.starting_model else None,
                             model_mode='rigid' if f.rigid else 'flexible',
                             model_granularity=f.granularity,
@@ -793,9 +793,9 @@ class _MSESeqDif(object):
         self.offset = offset
 
 
-class _StartingModelDumper(_Dumper):
+class _AllStartingModels(object):
     def __init__(self, simo):
-        super(_StartingModelDumper, self).__init__(simo)
+        self.simo = simo
         # dict of starting models (entire PDB files), collected from fragments,
         # ordered by component name and state
         self.models = OrderedDict()
@@ -808,12 +808,17 @@ class _StartingModelDumper(_Dumper):
         if comp not in self.models:
             self.models[comp] = OrderedDict()
         if state not in self.models[comp]:
+            # Assume starting models are the same in each state, so only track
+            # the first state
+            if len(self.models[comp]) > 0:
+                return
             self.models[comp][state] = []
         models = self.models[comp][state]
         if len(models) == 0 \
            or models[-1].fragments[0].pdbname != fragment.pdbname:
             model = self._add_model(fragment)
             models.append(model)
+            self.simo.system.orphan_starting_models.append(model)
         else:
             # Break circular ref between fragment and model
             models[-1].fragments.append(weakref.proxy(fragment))
@@ -836,7 +841,7 @@ class _StartingModelDumper(_Dumper):
                 self.simo.system.locations.append(t.alignment_file)
             if t.dataset:
                 self.simo._add_dataset(t.dataset)
-        m = ihm.startmodel.StartingModel(
+        m = _StartingModel(
                     asym_unit=f.asym_unit(f.start + f.offset, f.end + f.offset),
                     dataset=r['dataset'], asym_id=f.chain,
                     templates=r['templates'], offset=f.offset,
@@ -844,177 +849,63 @@ class _StartingModelDumper(_Dumper):
         m.fragments = [weakref.proxy(f)]
         return m
 
-    def assign_model_details(self):
-        for comp, states in self.models.items():
-            model_id = 0
-            for state in states:
-                for model in states[state]:
-                    model_id += 1
-                    model.name = "%s-m%d" % (comp, model_id)
 
-    def all_models(self):
-        for comp, states in self.models.items():
-            # For now, assume that starting model of the same-named
-            # component is the same in all states, so just take the first
-            first_state = list(states.keys())[0]
-            for model in states[first_state]:
-                yield model
+class _MutantHandler(object):
+    def __init__(self, templates):
+        self._seq_dif = []
+        self._last_res_index = None
+        self.templates = templates
 
-    def finalize(self):
-        self.assign_model_details()
+    def handle_residue(self, res):
+        res_name = res.get_residue_type().get_string()
+        # MSE in the original PDB is automatically mutated
+        # by IMP to MET, so reflect that in the output,
+        # and pass back to populate the seq_dif category.
+        if res_name == 'MSE':
+            # Only add one seq_dif record per residue
+            ind = res.get_index()
+            if ind != self._last_res_index:
+                self._last_res_index = ind
+                # This should only happen when we're using
+                # a crystal structure as the source (a
+                # comparative model would use MET in
+                # the sequence)
+                assert(len(self.templates) == 0)
+                self._seq_dif.append(ihm.startmodel.MSESeqDif(
+                            res.get_index(), res.get_index() + f.offset))
 
-    def dump(self, writer):
-        self.dump_details(writer)
-        self.dump_comparative(writer)
-        seq_dif = self.dump_coords(writer)
-        self.dump_seq_dif(writer, seq_dif)
 
-    def dump_seq_dif(self, writer, seq_dif):
-        ordinal = 1
-        with writer.loop("_ihm_starting_model_seq_dif",
-                     ["ordinal_id", "entity_id", "asym_id",
-                      "seq_id", "comp_id", "starting_model_id",
-                      "db_asym_id", "db_seq_id", "db_comp_id",
-                      "details"]) as l:
-            for sd in seq_dif:
-                chain_id = self.simo._get_chain_for_component(
-                                    sd.component, self.output)
-                entity = self.simo.entities[sd.component]
-                l.write(ordinal_id=ordinal, entity_id=entity._id,
-                        asym_id=chain_id, seq_id=sd.res.get_index(),
-                        comp_id=sd.comp_id,
-                        db_asym_id=sd.asym_id,
-                        db_seq_id=sd.res.get_index() - sd.offset,
-                        db_comp_id=sd.db_comp_id,
-                        starting_model_id=sd.model.name,
-                        details=sd.details)
-                ordinal += 1
+class _StartingModel(ihm.startmodel.StartingModel):
+    def get_seq_dif(self):
+        return self._seq_dif
 
-    def dump_comparative(self, writer):
-        """Dump details on comparative models. Must be called after
-           dump_details() since it uses IDs assigned there."""
-        with writer.loop("_ihm_starting_comparative_models",
-                     ["ordinal_id", "starting_model_id",
-                      "starting_model_auth_asym_id",
-                      "starting_model_seq_id_begin",
-                      "starting_model_seq_id_end",
-                      "template_auth_asym_id", "template_seq_id_begin",
-                      "template_seq_id_end", "template_sequence_identity",
-                      "template_sequence_identity_denominator",
-                      "template_dataset_list_id",
-                      "alignment_file_id"]) as l:
-            ordinal = 1
-            for model in self.all_models():
-                for template in model.templates:
-                    denom = template.sequence_identity_denominator
-                    l.write(ordinal_id=ordinal,
-                      starting_model_id=model.name,
-                      starting_model_auth_asym_id=model.asym_id,
-                      starting_model_seq_id_begin=template.seq_id_range[0],
-                      starting_model_seq_id_end=template.seq_id_range[1],
-                      template_auth_asym_id=template.asym_id,
-                      template_seq_id_begin=template.template_seq_id_range[0],
-                      template_seq_id_end=template.template_seq_id_range[1],
-                      template_sequence_identity=template.sequence_identity,
-                      template_sequence_identity_denominator=denom,
-                      template_dataset_list_id=template.dataset._id
-                                               if template.dataset
-                                               else ihm.unknown,
-                      alignment_file_id=template.alignment_file._id
-                                        if template.alignment_file
-                                        else ihm.unknown)
-                    ordinal += 1
-
-    def dump_details(self, writer):
-        # Map dataset types to starting model sources
-        source_map = {'Comparative model': 'comparative model',
-                      'Integrative model': 'integrative model',
-                      'Experimental model': 'experimental model'}
-        writer.write_comment("""IMP will attempt to identify which input models
-are crystal structures and which are comparative models, but does not always
-have sufficient information to deduce all of the templates used for comparative
-modeling. These may need to be added manually below.""")
-        with writer.loop("_ihm_starting_model_details",
-                     ["starting_model_id", "entity_id", "entity_description",
-                      "asym_id", "seq_id_begin",
-                      "seq_id_end", "starting_model_source",
-                      "starting_model_auth_asym_id",
-                      "starting_model_sequence_offset",
-                      "dataset_list_id"]) as l:
-            for model in self.all_models():
-                entity = model.asym_unit.entity
-                seq_id_range = model.get_seq_id_range_all_templates()
-                l.write(entity_id=entity._id,
-                      entity_description=entity.description,
-                      asym_id=model.asym_unit._id,
-                      seq_id_begin=seq_id_range[0],
-                      seq_id_end=seq_id_range[1],
-                      starting_model_auth_asym_id=model.asym_id,
-                      starting_model_id=model.name,
-                      starting_model_source=source_map[model.dataset.data_type],
-                      starting_model_sequence_offset=model.offset,
-                      dataset_list_id=model.dataset._id)
-
-    def dump_coords(self, writer):
-        seq_dif = []
-        ordinal = 1
-        with writer.loop("_ihm_starting_model_coord",
-                     ["starting_model_id", "group_PDB", "id", "type_symbol",
-                      "atom_id", "comp_id", "entity_id", "asym_id",
-                      "seq_id", "Cartn_x",
-                      "Cartn_y", "Cartn_z", "B_iso_or_equiv",
-                      "ordinal_id"]) as l:
-            for model in self.all_models():
-                for f in model.fragments:
-                    sel = IMP.atom.Selection(f.starting_hier,
-                               residue_indexes=list(range(f.start - f.offset,
+    def get_atoms(self):
+        mh = _MutantHandler(self.templates)
+        for f in self.fragments:
+            sel = IMP.atom.Selection(f.starting_hier,
+                            residue_indexes=list(range(f.start - f.offset,
                                                        f.end - f.offset + 1)))
-                    last_res_index = None
-                    for a in sel.get_selected_particles():
-                        coord = IMP.core.XYZ(a).get_coordinates()
-                        atom = IMP.atom.Atom(a)
-                        element = atom.get_element()
-                        element = IMP.atom.get_element_table().get_name(element)
-                        atom_name = atom.get_atom_type().get_string()
-                        group_pdb = 'ATOM'
-                        if atom_name.startswith('HET:'):
-                            group_pdb = 'HETATM'
-                            atom_name = atom_name[4:]
-                        res = IMP.atom.get_residue(atom)
-                        res_name = res.get_residue_type().get_string()
-                        # MSE in the original PDB is automatically mutated
-                        # by IMP to MET, so reflect that in the output,
-                        # and pass back to populate the seq_dif category.
-                        if res_name == 'MSE':
-                            res_name = 'MET'
-                            # Only add one seq_dif record per residue
-                            ind = res.get_index()
-                            if ind != last_res_index:
-                                last_res_index = ind
-                                # This should only happen when we're using
-                                # a crystal structure as the source (a
-                                # comparative model would use MET in
-                                # the sequence)
-                                assert(len(model.templates) == 0)
-                                seq_dif.append(_MSESeqDif(res, f.component,
-                                                          model.asym_id,
-                                                          model, f.offset))
-                        chain_id = self.simo._get_chain_for_component(
-                                            f.component, self.output)
-                        entity = self.simo.entities[f.component]
-                        l.write(starting_model_id=model.name,
-                                group_PDB=group_pdb,
-                                id=atom.get_input_index(), type_symbol=element,
-                                atom_id=atom_name, comp_id=res_name,
-                                entity_id=entity._id,
-                                asym_id=chain_id,
-                                seq_id=res.get_index() + f.offset,
-                                Cartn_x=coord[0],
-                                Cartn_y=coord[1], Cartn_z=coord[2],
-                                B_iso_or_equiv=atom.get_temperature_factor(),
-                                ordinal_id=ordinal)
-                        ordinal += 1
-        return seq_dif
+            for a in sel.get_selected_particles():
+                coord = IMP.core.XYZ(a).get_coordinates()
+                atom = IMP.atom.Atom(a)
+                element = atom.get_element()
+                element = IMP.atom.get_element_table().get_name(element)
+                atom_name = atom.get_atom_type().get_string()
+                het = atom_name.startswith('HET:')
+                if het:
+                    atom_name = atom_name[4:]
+                res = IMP.atom.get_residue(atom)
+
+                mh.handle_residue(res)
+                # todo: warn if residue type does not match that in Entity
+                yield ihm.model.Atom(asym_unit=self.asym_unit,
+                                     seq_id=res.get_index() + f.offset,
+                                     atom_id=atom_name, type_symbol=element,
+                                     x=coord[0], y=coord[1], z=coord[2],
+                                     het=het,
+                                     biso=atom.get_temperature_factor())
+        self._seq_dif = mh._seq_dif
+
 
 class _StructConfDumper(_Dumper):
     def all_rigid_fragments(self):
@@ -1331,13 +1222,12 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.cross_link_dump = _CrossLinkDumper(self)
         self.all_protocols = _AllProtocols(self)
         self.all_datasets = _AllDatasets(self.system)
-        self.starting_model_dump = _StartingModelDumper(self)
+        self.all_starting_models = _AllStartingModels(self)
 
         self.all_software = _AllSoftware(self.system)
 
         self._dumpers = [self.model_repr_dump,
                          self.cross_link_dump,
-                         self.starting_model_dump,
                          # todo: detect atomic models and emit struct_conf
                          #_StructConfDumper(self),
                          ]
@@ -1471,7 +1361,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         p = _PDBFragment(state, name, start, end, offset, pdbname, chain,
                          hier, self.asym_units[name])
         self.model_repr_dump.add_fragment(state, representation, p)
-        self.starting_model_dump.add_pdb_fragment(p)
+        self.all_starting_models.add_pdb_fragment(p)
 
     def add_bead_element(self, state, name, start, end, num, hier,
                          representation=None):

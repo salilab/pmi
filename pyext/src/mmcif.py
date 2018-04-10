@@ -782,17 +782,6 @@ class _AllProtocols(object):
         return self.protocols[state][-1]
 
 
-class _MSESeqDif(object):
-    """Track an MSE -> MET mutation in the starting model sequence"""
-    comp_id = 'MET'
-    db_comp_id = 'MSE'
-    details = 'Conversion of modified residue MSE to MET'
-    def __init__(self, res, component, asym_id, model, offset):
-        self.res, self.component, self.asym_id = res, component, asym_id
-        self.model = model
-        self.offset = offset
-
-
 class _AllStartingModels(object):
     def __init__(self, simo):
         self.simo = simo

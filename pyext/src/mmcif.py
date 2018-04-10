@@ -785,61 +785,6 @@ class _StartingModel(ihm.startmodel.StartingModel):
         self._seq_dif = mh._seq_dif
 
 
-class _StructConfDumper(_Dumper):
-    def all_rigid_fragments(self):
-        """Yield all rigid model representation fragments"""
-        asym_states = {}
-        model_repr = self.simo.all_representations
-        for representation, compdict in model_repr.fragments.items():
-            for comp, statefrag in compdict.items():
-                # For now, assume that representation of the same-named
-                # component is the same in all states, so just take the first
-                state = list(statefrag.keys())[0]
-                for f in statefrag[state]:
-                    if f.starting_model and f.rigid:
-                        asym = get_asym_mapper_for_state(self.simo, f.state,
-                                                         asym_states)
-                        yield (f, asym[f.hier]._id)
-
-    def all_helices(self):
-        """Yield all helices that overlap with rigid model fragments"""
-        for f, asym_id in self.all_rigid_fragments():
-            if len(f.starting_model.templates) == 0:
-                for m in f.starting_model.metadata:
-                    if isinstance(m, ihm.startmodel.PDBHelix) \
-                       and m.start_asym == f.starting_model.asym_id \
-                       and m.end_asym == f.starting_model.asym_id \
-                       and m.start_resnum >= f.start and m.end_resnum <= f.end:
-                        yield (m, max(f.start, m.start_resnum),
-                               min(f.end, m.end_resnum), asym_id)
-
-    def dump(self, writer):
-        with writer.category("_struct_conf_type") as l:
-            l.write(id='HELX_P', criteria=ihm.unknown,
-                    reference=ihm.unknown)
-        # Dump helix information for the model. For any model fragment that
-        # is rigid, atomic, and uses an experimental PDB structure as the
-        # starting model, inherit any helix information from that PDB file.
-        # Note that we can't use the helix id from the original PDB, since
-        # it has to be unique and this might not be the case if we inherit
-        # from multiple PDBs.
-        ordinal = 0
-        with writer.loop("_struct_conf",
-                     ["id", "conf_type_id", "beg_label_comp_id",
-                      "beg_label_asym_id", "beg_label_seq_id",
-                      "end_label_comp_id", "end_label_asym_id",
-                      "end_label_seq_id",]) as l:
-            for h, begin, end, asym_id in self.all_helices():
-                ordinal += 1
-                l.write(id='HELX_P%d' % ordinal, conf_type_id='HELX_P',
-                        beg_label_comp_id=h.start_resnam,
-                        beg_label_asym_id=asym_id,
-                        beg_label_seq_id=begin,
-                        end_label_comp_id=h.end_resnam,
-                        end_label_asym_id=asym_id,
-                        end_label_seq_id=end)
-
-
 class _ReplicaExchangeAnalysisPostProcess(ihm.analysis.ClusterStep):
     """Post processing using AnalysisReplicaExchange0 macro"""
 
@@ -1096,8 +1041,6 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.all_software = _AllSoftware(self.system)
 
         self._dumpers = []
-                         # todo: detect atomic models and emit struct_conf
-                         #_StructConfDumper(self),
 
     def create_representation(self, name):
         """Create a new Representation and return it. This can be

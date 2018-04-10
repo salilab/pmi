@@ -1604,49 +1604,6 @@ _ihm_model_representation.model_object_count
         po.flush()
         self.assertEqual(dump.actions, ['fm', 'f', 'd'])
 
-    def test_struct_conf_dumper(self):
-        """Test StructConfDumper"""
-        m = IMP.Model()
-        simo = IMP.pmi.representation.Representation(m)
-        po = DummyPO(None)
-        simo.add_protocol_output(po)
-        simo.create_component("Nup84", True)
-        simo.add_component_sequence("Nup84",
-                                    self.get_input_file_name("test.fasta"))
-        nup84 = simo.autobuild_model("Nup84",
-                         self.get_input_file_name("test.nup84.helix.pdb"), "A")
-        simo.set_rigid_body_from_hierarchies(nup84)
-        simo.set_floppy_bodies()
-
-        po.system.asym_units[0]._id = 'A'
-        d = IMP.pmi.mmcif._StructConfDumper(po)
-
-        fh = StringIO()
-        w = ihm.format.CifWriter(fh)
-        ihm.dumper._StartingModelDumper().finalize(po.system)
-        d.dump(w)
-        out = fh.getvalue().split('\n')
-        # Account for the fact that _struct_conf_type items do not have a
-        # guaranteed order (they are stored in a dict), by sorting them
-        out = sorted(out[:3]) + out[3:]
-        self.assertEqual("\n".join(out),
-"""_struct_conf_type.criteria ?
-_struct_conf_type.id HELX_P
-_struct_conf_type.reference ?
-#
-loop_
-_struct_conf.id
-_struct_conf.conf_type_id
-_struct_conf.beg_label_comp_id
-_struct_conf.beg_label_asym_id
-_struct_conf.beg_label_seq_id
-_struct_conf.end_label_comp_id
-_struct_conf.end_label_asym_id
-_struct_conf.end_label_seq_id
-HELX_P1 HELX_P MET A 1 GLU A 2
-#
-""")
-
     def test_state_prefix(self):
         """Test _State.get_prefixed_name()"""
         po = DummyPO(None)

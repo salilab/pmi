@@ -1096,7 +1096,9 @@ _ihm_localization_density_files.seq_id_end
         fh = StringIO()
         self.assign_entity_asym_ids(po.system)
         w = ihm.format.CifWriter(fh)
-        po.cross_link_dump.dump(w)
+        d = ihm.dumper._CrossLinkDumper()
+        d.finalize(po.system)
+        d.dump(po.system, w)
         out = fh.getvalue()
         self.assertEqual(out, """#
 loop_
@@ -1127,6 +1129,8 @@ _ihm_cross_link_restraint.entity_id_2
 _ihm_cross_link_restraint.asym_id_2
 _ihm_cross_link_restraint.seq_id_2
 _ihm_cross_link_restraint.comp_id_2
+_ihm_cross_link_restraint.atom_id_1
+_ihm_cross_link_restraint.atom_id_2
 _ihm_cross_link_restraint.restraint_type
 _ihm_cross_link_restraint.conditional_crosslink_flag
 _ihm_cross_link_restraint.model_granularity
@@ -1134,7 +1138,8 @@ _ihm_cross_link_restraint.distance_threshold
 _ihm_cross_link_restraint.psi
 _ihm_cross_link_restraint.sigma_1
 _ihm_cross_link_restraint.sigma_2
-1 1 1 A 1 MET 1 A 2 GLU 'upper bound' ALL by-residue 42.000 0.800 1.000 0.500
+1 1 1 A 1 MET 1 A 2 GLU . . 'upper bound' ALL by-residue 42.000 0.800 1.000
+0.500
 #
 """)
 

@@ -28,7 +28,6 @@ import textwrap
 import weakref
 import operator
 import itertools
-import ihm.format
 import ihm.location
 import ihm.dataset
 import ihm.dumper
@@ -1019,7 +1018,6 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self._states = {}
         self.__asym_states = {}
         self._working_directory = os.getcwd()
-        self._cif_writer = ihm.format.CifWriter(fh)
         self.default_representation = self.create_representation(
                                                     "Default representation")
         self.entities = _EntityMapper(self.system)
@@ -1039,8 +1037,6 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self.all_starting_models = _AllStartingModels(self)
 
         self.all_software = _AllSoftware(self.system)
-
-        self._dumpers = []
 
     def create_representation(self, name):
         """Create a new Representation and return it. This can be
@@ -1155,15 +1151,8 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                      if isinstance(m, ihm.location.Repository)]
         self.system.update_locations_in_repositories(all_repos)
 
-        # Dump out ihm-managed objects first
+        # Dump out all ihm-managed objects
         ihm.dumper.write(self.fh, [self.system])
-        # Now dump our own
-        for dumper in self._dumpers:
-            dumper.finalize_metadata()
-        for dumper in self._dumpers:
-            dumper.finalize()
-        for dumper in self._dumpers:
-            dumper.dump(self._cif_writer)
 
     def add_pdb_element(self, state, name, start, end, offset, pdbname,
                         chain, hier, representation=None):

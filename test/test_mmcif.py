@@ -1588,21 +1588,19 @@ _ihm_model_representation.model_object_count
 
     def test_flush(self):
         """Test ProtocolOutput.flush()"""
-        class DummyDumper(IMP.pmi.mmcif._Dumper):
+        class MockSystem(ihm.System):
             def __init__(self):
+                super(MockSystem, self).__init__()
                 self.actions = []
-            def finalize_metadata(self):
-                self.actions.append('fm')
-            def finalize(self):
-                self.actions.append('f')
-            def dump(self, cw):
-                self.actions.append('d')
-        dump = DummyDumper()
+            def update_locations_in_repositories(self, all_repos):
+                super(MockSystem, self).update_locations_in_repositories(
+                                                                all_repos)
+                self.actions.append('ul')
         fh = StringIO()
         po = IMP.pmi.mmcif.ProtocolOutput(fh)
-        po._dumpers = [dump]
+        po.system = MockSystem()
         po.flush()
-        self.assertEqual(dump.actions, ['fm', 'f', 'd'])
+        self.assertEqual(po.system.actions, ['ul'])
 
     def test_state_prefix(self):
         """Test _State.get_prefixed_name()"""

@@ -924,7 +924,7 @@ _ihm_modeling_post_process.dataset_group_id
             self.assertEqual(e.densities[0].file.path,
                              os.path.join(tmpdir, 'cluster.0', 'Nup84.mrc'))
             self.assertEqual(e.densities[0].file.details,
-                         'Localization density for Nup84 dgroup in state dummy')
+                         'Localization density for Nup84 dgroup')
             # No precision available
             self.assertEqual(e._get_precision(), '?')
             self.assertEqual(e.precision, '?')

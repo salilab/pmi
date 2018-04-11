@@ -1391,11 +1391,31 @@ _ihm_3dem_restraint.cross_correlation_coefficient
         # Create sequence mismatch
         po.system.entities[0].sequence = po.system.entities[0].sequence[1:]
         self.assign_entity_asym_ids(po.system)
-        fh = StringIO()
         d = ihm.dumper._StartingModelDumper()
+        fh = StringIO()
         w = ihm.format.CifWriter(fh)
         d.finalize(po.system)
-        self.assertRaises(ValueError, d.dump_coords, po.system, w)
+        d.dump_coords(po.system, w) # Needed to populate _seq_dif
+        fh = StringIO()
+        w = ihm.format.CifWriter(fh)
+        d.dump_seq_dif(po.system, w)
+        out = fh.getvalue()
+        self.assertEqual(out, """#
+loop_
+_ihm_starting_model_seq_dif.ordinal_id
+_ihm_starting_model_seq_dif.entity_id
+_ihm_starting_model_seq_dif.asym_id
+_ihm_starting_model_seq_dif.seq_id
+_ihm_starting_model_seq_dif.comp_id
+_ihm_starting_model_seq_dif.starting_model_id
+_ihm_starting_model_seq_dif.db_asym_id
+_ihm_starting_model_seq_dif.db_seq_id
+_ihm_starting_model_seq_dif.db_comp_id
+_ihm_starting_model_seq_dif.details
+1 1 A 1 GLU 1 A 1 MET 'Mutation of MET to GLU'
+1 1 A 2 LEU 1 A 2 GLU 'Mutation of GLU to LEU'
+#
+""")
 
     def test_seq_dif(self):
         """Test StartingModelDumper.dump_seq_dif"""

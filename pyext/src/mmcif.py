@@ -838,14 +838,11 @@ class _ReplicaExchangeAnalysisEnsemble(ihm.model.Ensemble):
                             '%s.mrc' % component)
 
     def load_localization_density(self, state, component, asym):
-        def uncap(s):
-            return s[:1].lower() + s[1:]
         fname = self.get_localization_density_file(component)
         if os.path.exists(fname):
             details = "Localization density for %s %s" \
-                      % (component, uncap(self.model_group.name))
-            local_file = ihm.location.OutputFileLocation(fname,
-                              details=state.get_postfixed_name(details))
+                      % (component, self.model_group.name)
+            local_file = ihm.location.OutputFileLocation(fname, details=details)
             den = ihm.model.LocalizationDensity(file=local_file, asym_unit=asym)
             self.densities.append(den)
 
@@ -1294,7 +1291,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
            This is currently only used by the Nup84 system."""
         # Always assumed that we're dealing with the last state
         state = self._last_state
-        group = ihm.model.ModelGroup(name=state.get_prefixed_name(name))
+        group = ihm.model.ModelGroup(name=state.get_postfixed_name(name))
         state.add_model_group(group)
         if ensemble_file:
             # Deprecated Location class does not state input vs output

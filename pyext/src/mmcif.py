@@ -1132,13 +1132,14 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         else:
             self.sequence_dict[name] = seq
             self.entities.add(name, seq)
-        if name in self.asym_units and self.asym_units[name] is None:
-            # Set up a new asymmetric unit for this component
-            entity = self.entities[name]
-            asym = ihm.AsymUnit(entity, details=name)
-            self.system.asym_units.append(asym)
-            state.modeled_assembly.append(asym)
-            self.asym_units[name] = asym
+        if name in self.asym_units:
+            if self.asym_units[name] is None:
+                # Set up a new asymmetric unit for this component
+                entity = self.entities[name]
+                asym = ihm.AsymUnit(entity, details=name)
+                self.system.asym_units.append(asym)
+                self.asym_units[name] = asym
+            state.modeled_assembly.append(self.asym_units[name])
 
     def _add_restraint_model_fits(self):
         """Add fits to restraints for all known models"""

@@ -79,17 +79,6 @@ class _AsymMapper(object):
         protname = self._cm[p]
         return self.simo.asym_units[protname]
 
-class _Dumper(object):
-    """Base class for helpers to dump output to mmCIF"""
-    def __init__(self, simo):
-        self.simo = weakref.proxy(simo)
-
-    def finalize(self):
-        pass
-
-    def finalize_metadata(self):
-        pass
-
 
 class _AllSoftware(object):
     def __init__(self, system):

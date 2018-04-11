@@ -954,7 +954,8 @@ class _State(ihm.model.State):
         # This may be smaller than the complete assembly.
         self.modeled_assembly = ihm.Assembly(
                         name="Modeled assembly",
-                        description="All components modeled by IMP")
+                        description=self.get_postfixed_name(
+                                         "All components modeled by IMP"))
         po.system.orphan_assemblies.append(self.modeled_assembly)
 
         self.all_modeled_components = []

@@ -215,11 +215,13 @@ _ihm_multi_state_modeling.details
         simo.create_component('baz')
         po.add_component_sequence(po._last_state, 'foo.1@12', 'ACGT')
         po.add_component_sequence(po._last_state, 'bar', 'ACGT')
-        po.add_component_sequence(po._last_state, 'baz', 'ACC')
+        po.add_component_sequence(po._last_state, 'baz', 'ACCX')
 
         self.assertEqual(len(po.system.entities), 2)
         self.assertEqual(po.system.entities[0].description, 'foo')
         self.assertEqual(po.system.entities[1].description, 'baz')
+        self.assertEqual([s.id for s in po.system.entities[1].sequence],
+                         ['ALA', 'CYS', 'CYS', 'UNK'])
 
     def test_asym_id_mapper(self):
         """Test AsymIDMapper class"""

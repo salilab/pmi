@@ -923,11 +923,17 @@ class _EntityMapper(dict):
         self.system = system
 
     def add(self, component_name, sequence):
+        def entity_seq(sequence):
+            # Map X to UNK
+            if 'X' in sequence:
+                return ['UNK' if s == 'X' else s for s in sequence]
+            else:
+                return sequence
         if sequence not in self._sequence_dict:
             # Use the name of the first component, stripped of any copy number,
             # as the description of the entity
             d = component_name.split("@")[0].split(".")[0]
-            entity = ihm.Entity(sequence, description=d)
+            entity = ihm.Entity(entity_seq(sequence), description=d)
             self.system.entities.append(entity)
             self._sequence_dict[sequence] = entity
         self[component_name] = self._sequence_dict[sequence]

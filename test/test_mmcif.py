@@ -900,7 +900,7 @@ _ihm_modeling_post_process.dataset_group_id
             self.assertEqual(e.densities, [])
             self.assertEqual(e.num_models, 2)
             self.assertEqual(e.clustering_feature, 'RMSD')
-            self.assertEqual(e.name, 'cluster 1')
+            self.assertEqual(e.name, 'dgroup')
             self.assertEqual(e.get_rmsf_file('Nup84'),
                              os.path.join(tmpdir, 'cluster.0',
                                           'rmsf.Nup84.dat'))

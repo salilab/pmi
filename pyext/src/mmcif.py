@@ -815,7 +815,7 @@ class _ReplicaExchangeAnalysisEnsemble(ihm.model.Ensemble):
                 num_models=num_models,
                 model_group=model_group, post_process=pp,
                 clustering_feature=pp.feature,
-                name="cluster %d" % (cluster_num + 1))
+                name=model_group.name)
         self.cluster_num = cluster_num
         self.num_models_deposited = num_deposit
 
@@ -838,10 +838,12 @@ class _ReplicaExchangeAnalysisEnsemble(ihm.model.Ensemble):
                             '%s.mrc' % component)
 
     def load_localization_density(self, state, component, asym):
+        def uncap(s):
+            return s[:1].lower() + s[1:]
         fname = self.get_localization_density_file(component)
         if os.path.exists(fname):
             details = "Localization density for %s %s" \
-                      % (component, self.model_group.name)
+                      % (component, uncap(self.model_group.name))
             local_file = ihm.location.OutputFileLocation(fname,
                               details=state.get_postfixed_name(details))
             den = ihm.model.LocalizationDensity(file=local_file, asym_unit=asym)

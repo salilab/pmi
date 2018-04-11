@@ -1169,6 +1169,14 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
            and/or modified using the ihm API."""
         self._add_restraint_model_fits()
 
+        # Add metadata to ihm.System
+        self.system.software.extend(m for m in self._metadata
+                                    if isinstance(m, ihm.Software))
+        self.system.citations.extend(m for m in self._metadata
+                                     if isinstance(m, ihm.Citation))
+        self.system.locations.extend(m for m in self._metadata
+                                   if isinstance(m, ihm.location.FileLocation))
+
         # Point all locations to repos, if applicable
         all_repos = [m for m in self._metadata
                      if isinstance(m, ihm.location.Repository)]

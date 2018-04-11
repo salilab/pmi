@@ -1347,6 +1347,35 @@ _ihm_3dem_restraint.cross_correlation_coefficient
 #
 """)
 
+    def test_metadata(self):
+        """Test adding metadata to ihm.System"""
+        m = IMP.Model()
+        po = DummyPO(None)
+        simo = IMP.pmi.representation.Representation(m)
+        simo.add_protocol_output(po)
+
+        simo.add_metadata(ihm.Software(name='t', classification='c',
+          description='d', version='2.0.16', location='u'))
+        self.assertEqual(len(po.system.software), 2) # IMP & PMI
+
+        simo.add_metadata(ihm.Citation(pmid='p', title='t',
+          journal="j", volume=13, page_range=(2927,2943), year=2014,
+          authors=['A B'], doi='10.1074/mcp.M114.041673'))
+        self.assertEqual(len(po.system.citations), 0)
+
+        with IMP.test.temporary_directory() as tmpdir:
+            bar = os.path.join(tmpdir, 'bar')
+            with open(bar, 'w') as f:
+                f.write("")
+            local = ihm.location.WorkflowFileLocation(bar)
+            simo.add_metadata(local)
+        self.assertEqual(len(po.system.locations), 1) # This script
+
+        po.finalize()
+        self.assertEqual(len(po.system.software), 3)
+        self.assertEqual(len(po.system.citations), 1)
+        self.assertEqual(len(po.system.locations), 2)
+
     def test_update_locations(self):
         """Test update_locations() method"""
         m = IMP.Model()

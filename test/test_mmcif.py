@@ -1483,7 +1483,7 @@ _ihm_starting_model_seq_dif.db_seq_id
 _ihm_starting_model_seq_dif.db_comp_id
 _ihm_starting_model_seq_dif.details
 1 1 A 1 GLU 1 A 1 MET 'Mutation of MET to GLU'
-1 1 A 2 LEU 1 A 2 GLU 'Mutation of GLU to LEU'
+2 1 A 2 LEU 1 A 2 GLU 'Mutation of GLU to LEU'
 #
 """)
 

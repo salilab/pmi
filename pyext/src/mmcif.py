@@ -1157,6 +1157,19 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                     if hasattr(r, 'add_fits_from_model_statfile'):
                         r.add_fits_from_model_statfile(m)
 
+    def _add_em2d_raw_micrographs(self):
+        """If the deprecated metadata.EMMicrographsDataset class was used,
+           transfer its data to the EM2D restraint."""
+        for r in self.system.restraints:
+            if isinstance(r, _EM2DRestraint):
+                for d in r.dataset.parents:
+                    if isinstance(d, IMP.pmi.metadata.EMMicrographsDataset):
+                        r.number_raw_micrographs = d.number
+                        if isinstance(d.location,
+                                      IMP.pmi.metadata.FileLocation):
+                            d.location.content_type = \
+                                   ihm.location.InputFileLocation.content_type
+
     def flush(self):
         self.finalize()
         ihm.dumper.write(self.fh, [self.system])
@@ -1168,6 +1181,8 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
            can be written out to an mmCIF file with `ihm.dumper.write`,
            and/or modified using the ihm API."""
         self._add_restraint_model_fits()
+
+        self._add_em2d_raw_micrographs()
 
         # Add metadata to ihm.System
         self.system.software.extend(m for m in self._metadata
@@ -1289,6 +1304,10 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         group = ihm.model.ModelGroup(name=state.get_prefixed_name(name))
         state.add_model_group(group)
         if ensemble_file:
+            # Deprecated Location class does not state input vs output
+            if isinstance(ensemble_file, IMP.pmi.metadata.FileLocation):
+                ensemble_file.content_type = \
+                        ihm.location.OutputFileLocation.content_type
             self.system.locations.append(ensemble_file)
         e = _SimpleEnsemble(pp, group, num_models, drmsd, num_models_deposited,
                             ensemble_file)
@@ -1296,6 +1315,10 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         for c in state.all_modeled_components:
             den = localization_densities.get(c, None)
             if den:
+                # Deprecated Location class does not state input vs output
+                if isinstance(den, IMP.pmi.metadata.FileLocation):
+                    den.content_type = \
+                            ihm.location.OutputFileLocation.content_type
                 e.load_localization_density(state, c, self.asym_units[c], den)
         return e
 
@@ -1303,6 +1326,9 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         """Point a previously-created ensemble to an 'all-models' file.
            This could be a trajectory such as DCD, an RMF, or a multimodel
            PDB file."""
+        # Deprecated Location class does not state input vs output
+        if isinstance(location, IMP.pmi.metadata.FileLocation):
+            location.content_type = ihm.location.OutputFileLocation.content_type
         self.system.locations.append(location)
         # Ensure that we point to an ensemble related to the current state
         ind = i + self._state_ensemble_offset

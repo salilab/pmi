@@ -1396,6 +1396,7 @@ _ihm_3dem_restraint.cross_correlation_coefficient
                 f.write("")
             with IMP.allow_deprecated():
                 l = IMP.pmi.metadata.FileLocation(bar)
+                local = IMP.pmi.metadata.ChimeraXCommandScript(location=l)
                 local = IMP.pmi.metadata.PythonScript(location=l)
             simo.add_metadata(local)
         self.assertEqual(len(po.system.locations), 1) # This script
@@ -1406,6 +1407,7 @@ _ihm_3dem_restraint.cross_correlation_coefficient
         with IMP.allow_deprecated():
             loc = IMP.pmi.metadata.MassIVELocation('foo')
             loc = IMP.pmi.metadata.EMDBLocation('foo')
+            loc = IMP.pmi.metadata.EMPIARLocation('foo')
             d = IMP.pmi.metadata.EMMicrographsDataset(location=loc, number=10)
             d = IMP.pmi.metadata.MassSpecDataset(location=loc)
             d = IMP.pmi.metadata.EMDensityDataset(location=loc)

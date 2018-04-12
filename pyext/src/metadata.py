@@ -39,7 +39,7 @@ class FileLocation(ihm.location.FileLocation):
 class EMMicrographsDataset(ihm.dataset.EMMicrographsDataset):
     def __init__(self, location, number):
         super(EMMicrographsDataset, self).__init__(location)
-        self.number = number # todo: add to restraint
+        self.number = number
 
 
 @IMP.deprecated_object("2.9", "Use ihm.location.MassIVELocation instead")
@@ -57,6 +57,11 @@ class EMDBLocation(ihm.location.EMDBLocation):
     pass
 
 
+@IMP.deprecated_object("2.9", "Use ihm.location.EMPIARLocation instead")
+class EMPIARLocation(ihm.location.EMPIARLocation):
+    pass
+
+
 @IMP.deprecated_object("2.9", "Use ihm.dataset.EMDensityDataset instead")
 class EMDensityDataset(ihm.dataset.EMDensityDataset):
     pass
@@ -65,4 +70,11 @@ class EMDensityDataset(ihm.dataset.EMDensityDataset):
 @IMP.deprecated_function("2.9", "Use ihm.location.WorkflowFileLocation instead")
 def PythonScript(location):
     location.content_type = ihm.location.WorkflowFileLocation.content_type
+    return location
+
+
+@IMP.deprecated_function("2.9",
+                         "Use ihm.location.VisualizationFileLocation instead")
+def ChimeraXCommandScript(location):
+    location.content_type = ihm.location.VisualizationFileLocation.content_type
     return location

@@ -190,12 +190,12 @@ class _AllModelRepresentations(object):
                     self.fragments[rep][name] = OrderedDict()
                 self.fragments[rep][name][state] = [copy_frag(f)
                             for f in self.fragments[rep][original][state]]
-            # Assume representation for a component is the same in all states,
-            # so only write out the first one
-            first_state = list(self.fragments[rep][name].keys())[0]
-            if state is first_state:
-                representation = self._all_representations[rep]
-                representation.extend(self.fragments[rep][name][state])
+                # Assume representation for a component is the same in all
+                # states, so only write out the first one
+                first_state = list(self.fragments[rep][name].keys())[0]
+                if state is first_state:
+                    representation = self._all_representations[rep]
+                    representation.extend(self.fragments[rep][name][state])
 
     def add_fragment(self, state, representation, fragment):
         """Add a model fragment."""

@@ -1407,10 +1407,12 @@ _ihm_3dem_restraint.cross_correlation_coefficient
         with IMP.allow_deprecated():
             loc = IMP.pmi.metadata.MassIVELocation('foo')
             loc = IMP.pmi.metadata.EMDBLocation('foo')
+            loc = IMP.pmi.metadata.SASBDBLocation('foo')
             loc = IMP.pmi.metadata.EMPIARLocation('foo')
             d = IMP.pmi.metadata.EMMicrographsDataset(location=loc, number=10)
             d = IMP.pmi.metadata.MassSpecDataset(location=loc)
             d = IMP.pmi.metadata.EMDensityDataset(location=loc)
+            d = IMP.pmi.metadata.SASDataset(location=loc)
 
         po.finalize()
         self.assertEqual(len(po.system.software), 3)

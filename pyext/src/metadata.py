@@ -62,8 +62,18 @@ class EMPIARLocation(ihm.location.EMPIARLocation):
     pass
 
 
+@IMP.deprecated_object("2.9", "Use ihm.location.SASBDBLocation instead")
+class SASBDBLocation(ihm.location.SASBDBLocation):
+    pass
+
+
 @IMP.deprecated_object("2.9", "Use ihm.dataset.EMDensityDataset instead")
 class EMDensityDataset(ihm.dataset.EMDensityDataset):
+    pass
+
+
+@IMP.deprecated_object("2.9", "Use ihm.dataset.SASDataset instead")
+class SASDataset(ihm.dataset.SASDataset):
     pass
 
 

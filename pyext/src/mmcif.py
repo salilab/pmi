@@ -287,7 +287,7 @@ class _CrossLinkRestraint(ihm.restraint.CrossLinkRestraint):
                 p.set_scale(psi)
         # If the same particle is set multiple times, make sure we get the
         # original value last
-        return reversed(old_values)
+        return list(reversed(old_values))
 
     def add_fits_from_model_statfile(self, model):
         # Set psi/sigma for all particles

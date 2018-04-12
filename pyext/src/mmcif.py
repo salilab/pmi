@@ -695,7 +695,9 @@ class _AllStartingModels(object):
 
         self.simo.system.software.extend(r['software'])
         self.simo._add_dataset(r['dataset'])
-        for t in r['templates']:
+        # We only want the templates that model the starting model chain
+        templates = r['templates'].get(f.chain, [])
+        for t in templates:
             if t.alignment_file:
                 self.simo.system.locations.append(t.alignment_file)
             if t.dataset:
@@ -704,7 +706,7 @@ class _AllStartingModels(object):
                     asym_unit=f.asym_unit.asym(f.start + f.offset,
                                                f.end + f.offset),
                     dataset=r['dataset'], asym_id=f.chain,
-                    templates=r['templates'], offset=f.offset,
+                    templates=templates, offset=f.offset,
                     metadata=r['metadata'])
         m.fragments = [weakref.proxy(f)]
         return m

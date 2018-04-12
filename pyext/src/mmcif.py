@@ -292,6 +292,9 @@ class _CrossLinkRestraint(ihm.restraint.CrossLinkRestraint):
     def add_fits_from_model_statfile(self, model):
         # Set psi/sigma for all particles
         old_values = self._set_psi_sigma(model)
+        # If no stats were collected, we can't show the fit
+        if not old_values:
+            return
         for xl in self.cross_links:
             # Get current psi/sigma particle value for each XL
             xl.fits[model] = ihm.restraint.CrossLinkFit(

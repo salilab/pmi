@@ -233,7 +233,8 @@ class _AllDatasets(object):
         # the group will still contain the old dataset - mark dataset as read
         # only?
         g = ihm.dataset.DatasetGroup(self._datasets_by_state.get(state, [])
-                + [r.dataset for r in self._restraints_by_state.get(state, [])])
+                + [r.dataset for r in self._restraints_by_state.get(state, [])
+                   if r.dataset])
         return g
 
     def add(self, state, dataset):

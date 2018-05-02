@@ -962,10 +962,11 @@ class TempResidue(object):
     def set_structure(self,res,soft_check=False):
         if res.get_residue_type()!=self.get_residue_type():
             if soft_check:
-                print('WARNING: Replacing sequence residue',self.get_index(),self.hier.get_residue_type(),
-                      'with PDB type',res.get_residue_type())
-                self.hier.set_residue_type((res.get_residue_type()))
-                self.rtype = res.get_residue_type()
+                print('WARNING: Inconsistency between Fasta sequence and PDB sequence. Faste type',\
+                      self.get_index(),self.hier.get_residue_type(),
+                      'and PDB type',res.get_residue_type())
+                self.hier.set_residue_type((self.get_residue_type()))
+                self.rtype = self.get_residue_type()
             else:
                 raise Exception('ERROR: PDB residue index',self.get_index(),'is',
                                 IMP.atom.get_one_letter_code(res.get_residue_type()),

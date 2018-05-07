@@ -1004,8 +1004,8 @@ class RMFHierarchyHandler(IMP.atom.Hierarchy):
         self.rh_ref = RMF.open_rmf_file_read_only(rmf_file_name)
         IMP.rmf.link_hierarchies(self.rh_ref, [self])
         if self.ColorHierarchy:
-           self.ColorHierarchy.method()
-        #RMFHierarchyHandler.set_frame(self,0)
+            self.ColorHierarchy.method()
+        RMFHierarchyHandler.set_frame(self,0)
 
     def set_frame(self,index):
         try:
@@ -1124,12 +1124,12 @@ class StatHierarchyHandler(RMFHierarchyHandler):
             self.current_index=None
             self.score_threshold=StatHierarchyHandler.score_threshold
             self.score_key=StatHierarchyHandler.score_key
-            self.cache=StatHierarchyHandler.cache 
+            self.cache=StatHierarchyHandler.cache
             RMFHierarchyHandler.__init__(self, self.model,self.current_rmf)
-            if self.cache: 
-               self.cache=CacheHierarchyCoordinates(self)
-            else: 
-               self.cache=None
+            if self.cache:
+                self.cache=CacheHierarchyCoordinates(self)
+            else:
+                self.cache=None
             self.set_frame(0)
 
         else:
@@ -1206,13 +1206,13 @@ class StatHierarchyHandler(RMFHierarchyHandler):
 
         if not self.is_setup:
             RMFHierarchyHandler.__init__(self, self.model,self.get_rmf_names()[0])
-            if self.cache: 
+            if self.cache:
                 self.cache=CacheHierarchyCoordinates(self)
             else:
                 self.cache=None
             self.is_setup=True
             self.current_rmf=self.get_rmf_names()[0]
-        
+
         self.set_frame(0)
 
     def save_data(self,filename='data.pkl'):
@@ -1251,7 +1251,7 @@ class StatHierarchyHandler(RMFHierarchyHandler):
     def set_frame(self,index):
         if self.cache is not None and self.cache[index]:
             self.cache.do_update(index)
-        else:        
+        else:
             nm=self.data[index].rmf_name
             fidx=self.data[index].rmf_index
             if nm != self.current_rmf:
@@ -1261,8 +1261,8 @@ class StatHierarchyHandler(RMFHierarchyHandler):
             if fidx!=self.current_frame:
                 RMFHierarchyHandler.set_frame(self, fidx)
                 self.current_frame=fidx
-            if self.cache is not None: 
-               self.cache.do_store(index)
+            if self.cache is not None:
+                self.cache.do_store(index)
 
         self.current_index = index
 
@@ -1366,9 +1366,9 @@ class Cluster(object):
 
     def compute_score(self):
         try:
-           score=sum([d.score for d in self])/len(self)
+            score=sum([d.score for d in self])/len(self)
         except AttributeError:
-           score=None
+            score=None
         return score
 
     def __repr__(self):

@@ -2189,11 +2189,11 @@ class AnalysisReplicaExchange(object):
         self.sel0_alignment=IMP.atom.Selection(self.stath0)
         self.sel1_alignment=IMP.atom.Selection(self.stath1)
         self.clusters=[]
-	# fill the cluster list with a single cluster containing all models
+        # fill the cluster list with a single cluster containing all models
         c = IMP.pmi.output.Cluster(0)
         self.clusters.append(c)
-	for n0 in range(len(self.stath0)):
-	    c.add_member(n0)
+        for n0 in range(len(self.stath0)):
+            c.add_member(n0)
         self.pairwise_rmsd={}
         self.pairwise_molecular_assignment={}
         self.alignment=alignment
@@ -2218,7 +2218,7 @@ class AnalysisReplicaExchange(object):
         """
         self.symmetric_molecules[molecule_name]=0
         self.update_seldicts()
-        
+
     def set_alignment_selection(self,**kwargs):
         """
         Setup the selection onto which the alignment is computed
@@ -2385,15 +2385,16 @@ class AnalysisReplicaExchange(object):
         else:
             cluster.center_index=cluster.members[0]
 
-    def save_coordinates(self,cluster,reference="Absolute", prefix="./"):
+    def save_coordinates(self,cluster,rmf_name=None,reference="Absolute", prefix="./"):
         """
         Save the coordinates of the current cluster a single rmf file
         """
         print("saving coordinates",cluster)
         if self.alignment: self.set_reference(reference,cluster)
         o=IMP.pmi.output.Output()
-        rmf_name=prefix+'/'+str(cluster.cluster_id)+".rmf3"
-        
+        if rmf_name is None:
+            rmf_name=prefix+'/'+str(cluster.cluster_id)+".rmf3"
+
         d1=self.stath1[cluster.members[0]]
         o.init_rmf(rmf_name, [self.stath1])
         for n1 in cluster.members:
@@ -2413,18 +2414,18 @@ class AnalysisReplicaExchange(object):
         print("pruning models")
         selected=0
         filtered=[selected]
-        remaining=range(1,len(self.stath1),10)        
+        remaining=range(1,len(self.stath1),10)
 
         while len(remaining)>0:
             d0=self.stath0[selected]
             rm=[]
             for n1 in remaining:
-               d1=self.stath1[n1]
-               if self.alignment: self.align()
-               d, _ = self.rmsd()
-               if d<=rmsd_cutoff:
-                  rm.append(n1)
-                  print("pruning model %s, similar to model %s, rmsd %s"%(str(n1),str(selected),str(d)))
+                d1=self.stath1[n1]
+                if self.alignment: self.align()
+                d, _ = self.rmsd()
+                if d<=rmsd_cutoff:
+                    rm.append(n1)
+                    print("pruning model %s, similar to model %s, rmsd %s"%(str(n1),str(selected),str(d)))
             remaining=[x for x in remaining if x not in rm]
             if len(remaining)==0: break
             selected=remaining[0]
@@ -2436,8 +2437,8 @@ class AnalysisReplicaExchange(object):
             d0=self.stath0[n0]
             c.add_member(n0,d0)
         self.update_clusters()
-        
-            
+
+
 
     def precision(self,cluster):
         """
@@ -2505,7 +2506,7 @@ class AnalysisReplicaExchange(object):
                 members0 = [cluster.center_index]
             else:
                 members0 = cluster.members
-            
+
         s0=IMP.atom.Selection(self.stath0,molecule=molecule,resolution=1,
                               copy_index=copy_index,state_index=state_index)
         ps0=s0.get_selected_particles()
@@ -2545,7 +2546,7 @@ class AnalysisReplicaExchange(object):
                     self.undo_apply_molecular_assignments(n1)
         for r in rmsf:
             rmsf[r]/=npairs
-            
+
             for stath in [self.stath0,self.stath1]:
                 if molecule not in self.symmetric_molecules:
                     s=IMP.atom.Selection(stath,molecule=molecule,residue_index=r,resolution=1,
@@ -2560,7 +2561,7 @@ class AnalysisReplicaExchange(object):
                         IMP.pmi.Uncertainty(p).set_uncertainty(rmsf[r])
                     else:
                         IMP.pmi.Uncertainty.setup_particle(p,rmsf[r])
-        
+
         return rmsf
 
     def save_densities(self,cluster,density_custom_ranges,voxel_size=5,reference="Absolute", prefix="./",step=1):
@@ -2586,26 +2587,26 @@ class AnalysisReplicaExchange(object):
         from scipy.spatial.distance import cdist
         import IMP.pmi.topology
         if molecules is None:
-        	mols=[IMP.pmi.topology.PMIMoleculeHierarchy(mol) for mol in IMP.pmi.tools.get_molecules(IMP.atom.get_leaves(self.stath1))]
-	else:
-                mols=[IMP.pmi.topology.PMIMoleculeHierarchy(mol) for mol in IMP.pmi.tools.get_molecules(IMP.atom.Selection(self.stath1,molecules=molecules).get_selected_particles())]
+            mols=[IMP.pmi.topology.PMIMoleculeHierarchy(mol) for mol in IMP.pmi.tools.get_molecules(IMP.atom.get_leaves(self.stath1))]
+        else:
+            mols=[IMP.pmi.topology.PMIMoleculeHierarchy(mol) for mol in IMP.pmi.tools.get_molecules(IMP.atom.Selection(self.stath1,molecules=molecules).get_selected_particles())]
         unique_copies=[mol for mol in mols if mol.get_copy_index() == 0]
         mol_names_unique=dict((mol.get_name(),mol) for mol in unique_copies)
         total_len_unique=sum(max(mol.get_residue_indexes()) for mol in unique_copies)
-        
-        
+
+
         # coords = np.ones((total_len,3)) * 1e6 #default to coords "very far away"
         index_dict={}
         prev_stop=0
-        
+
         if not consolidate:
             for mol in mols:
                 seqlen=max(mol.get_residue_indexes())
                 index_dict[mol] = range(prev_stop, prev_stop + seqlen)
                 prev_stop+=seqlen
-        
+
         else:
-           for mol in unique_copies:
+            for mol in unique_copies:
                 seqlen=max(mol.get_residue_indexes())
                 index_dict[mol] = range(prev_stop, prev_stop + seqlen)
                 prev_stop+=seqlen
@@ -2628,11 +2629,11 @@ class AnalysisReplicaExchange(object):
                     selpart = selpart[0]
                     coords[rnum - 1, :] = IMP.core.XYZ(selpart).get_coordinates()
                 coord_dict[mol]=coords
-      
+
             if not consolidate:
                 coords=np.concatenate(coord_dict.values())
-            	dists = cdist(coords, coords)
-		binary_dists = np.where((dists <= contact_threshold) & (dists >= 1.0), 1.0, 0.0)
+                dists = cdist(coords, coords)
+                binary_dists = np.where((dists <= contact_threshold) & (dists >= 1.0), 1.0, 0.0)
             else:
                 binary_dists_dict={}
                 for mol1 in mols:
@@ -2640,17 +2641,17 @@ class AnalysisReplicaExchange(object):
                     for mol2 in mols:
                         name1=mol1.get_name()
                         name2=mol2.get_name()
-	            	dists = cdist(coord_dict[mol1], coord_dict[mol2])
+                        dists = cdist(coord_dict[mol1], coord_dict[mol2])
                         if (name1, name2) not in binary_dists_dict:
                             binary_dists_dict[(name1, name2)] = np.zeros((len1,len1))
                         binary_dists_dict[(name1, name2)] += np.where((dists <= contact_threshold) & (dists >= 1.0), 1.0, 0.0)
-		binary_dists=np.zeros((total_len_unique,total_len_unique))
-                
+                binary_dists=np.zeros((total_len_unique,total_len_unique))
+
                 for name1,name2 in  binary_dists_dict:
-                        r1=index_dict[mol_names_unique[name1]]
-                        r2=index_dict[mol_names_unique[name2]]
-                	binary_dists[min(r1):max(r1)+1,min(r2):max(r2)+1] = np.where((binary_dists_dict[(name1, name2)]>=1.0),1.0,0.0)
-                
+                    r1=index_dict[mol_names_unique[name1]]
+                    r2=index_dict[mol_names_unique[name2]]
+                    binary_dists[min(r1):max(r1)+1,min(r2):max(r2)+1] = np.where((binary_dists_dict[(name1, name2)]>=1.0),1.0,0.0)
+
             if ncl==0:
                 dist_maps = [dists]
                 av_dist_map = dists
@@ -2861,8 +2862,8 @@ class AnalysisReplicaExchange(object):
         for mol in self.symmetric_molecules:
             self.symmetric_molecules[mol]=len(self.seldict0[mol])
             for sel in self.seldict0[mol]:
-	    	self.issymmetricsel[sel]=True
-            
+                self.issymmetricsel[sel]=True
+
 
     def align(self):
         print("alignment")
@@ -2962,22 +2963,22 @@ class AnalysisReplicaExchange(object):
                 sels = [sels0[(offset+i)%N] for i in range(N)]
                 sel0 = sels[0]
                 sel1 = sels1[0]
-	        r=metric(sel0, sel1)
+                r=metric(sel0, sel1)
                 rmsd2=r*r*N
                 ###print(order,rmsd2)
                 if rmsd2 < best_rmsd2:
-                   best_rmsd2 = rmsd2
-                   best_sel = sels
-                   best_order=order
-        else:  
+                    best_rmsd2 = rmsd2
+                    best_sel = sels
+                    best_order=order
+        else:
             for sels in itertools.permutations(sels0):
                 rmsd2=0.0
                 for sel0, sel1 in itertools.takewhile(lambda x: rmsd2<best_rmsd2, zip(sels, sels1)):
-                   r=metric(sel0, sel1)
-                   rmsd2+=r*r
+                    r=metric(sel0, sel1)
+                    rmsd2+=r*r
                 if rmsd2 < best_rmsd2:
-                   best_rmsd2 = rmsd2
-                   best_sel = sels
+                    best_rmsd2 = rmsd2
+                    best_sel = sels
         ###for i,sel in enumerate(best_sel):
         ###    p0 = sel.get_selected_particles()[0]
         ###    p1 = sels1[i].get_selected_particles()[0]

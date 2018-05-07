@@ -2563,12 +2563,13 @@ class AnalysisReplicaExchange(object):
         
         return rmsf
 
-    def save_densities(self,cluster,density_custom_ranges,voxel_size=5,reference="Absolute", prefix="./"):
+    def save_densities(self,cluster,density_custom_ranges,voxel_size=5,reference="Absolute", prefix="./",step=1):
         if self.alignment: self.set_reference(reference,cluster)
         dens = IMP.pmi.analysis.GetModelDensity(density_custom_ranges,
                                                 voxel=voxel_size)
 
-        for n1 in cluster.members:
+        for n1 in cluster.members[::step]:
+            print("density "+str(n1))
             d1=self.stath1[n1]
             self.apply_molecular_assignments(n1)
             if self.alignment: self.align()
@@ -2590,7 +2591,7 @@ class AnalysisReplicaExchange(object):
                 mols=[IMP.pmi.topology.PMIMoleculeHierarchy(mol) for mol in IMP.pmi.tools.get_molecules(IMP.atom.Selection(self.stath1,molecules=molecules).get_selected_particles())]
         unique_copies=[mol for mol in mols if mol.get_copy_index() == 0]
         mol_names_unique=dict((mol.get_name(),mol) for mol in unique_copies)
-        total_len_unique=sum(len(mol.get_residue_indexes()) for mol in unique_copies)
+        total_len_unique=sum(max(mol.get_residue_indexes()) for mol in unique_copies)
         
         
         # coords = np.ones((total_len,3)) * 1e6 #default to coords "very far away"
@@ -2599,27 +2600,27 @@ class AnalysisReplicaExchange(object):
         
         if not consolidate:
             for mol in mols:
-                seqlen=len(mol.get_residue_indexes())
+                seqlen=max(mol.get_residue_indexes())
                 index_dict[mol] = range(prev_stop, prev_stop + seqlen)
                 prev_stop+=seqlen
         
         else:
            for mol in unique_copies:
-                seqlen=len(mol.get_residue_indexes())
+                seqlen=max(mol.get_residue_indexes())
                 index_dict[mol] = range(prev_stop, prev_stop + seqlen)
                 prev_stop+=seqlen
 
 
         for ncl,n1 in enumerate(cluster.members):
-
+            print(ncl)
             d1=self.stath1[n1]
-            self.apply_molecular_assignments(n1)
+            #self.apply_molecular_assignments(n1)
             coord_dict=IMP.pmi.tools.OrderedDict()
             for mol in mols:
                 mol_name=mol.get_name()
                 copy_index=mol.get_copy_index()
                 rindexes = mol.get_residue_indexes()
-                coords = np.ones((len(rindexes),3))
+                coords = np.ones((max(rindexes),3))
                 for rnum in rindexes:
                     sel = IMP.atom.Selection(mol, residue_index=rnum, resolution=1)
                     selpart = sel.get_selected_particles()
@@ -2635,7 +2636,7 @@ class AnalysisReplicaExchange(object):
             else:
                 binary_dists_dict={}
                 for mol1 in mols:
-                    len1 = len(mol1.get_residue_indexes())
+                    len1 = max(mol1.get_residue_indexes())
                     for mol2 in mols:
                         name1=mol1.get_name()
                         name2=mol2.get_name()
@@ -2659,7 +2660,7 @@ class AnalysisReplicaExchange(object):
                 av_dist_map += dists
                 contact_freqs += binary_dists
 
-            self.undo_apply_molecular_assignments(n1)
+            #self.undo_apply_molecular_assignments(n1)
 
         if log_scale:
             contact_freqs =-np.log(1.0-1.0/(len(cluster)+1)*contact_freqs)
@@ -2690,13 +2691,13 @@ class AnalysisReplicaExchange(object):
 
         prot_listx = prot_list
         nresx = gap_between_components + \
-            sum([len(mol.get_residue_indexes())
+            sum([max(mol.get_residue_indexes())
                 + gap_between_components for mol in prot_listx])
 
         # set the list of proteins on the y axis
         prot_listy = prot_list
         nresy = gap_between_components + \
-            sum([len(mol.get_residue_indexes())
+            sum([max(mol.get_residue_indexes())
                 + gap_between_components for mol in prot_listy])
 
         # this is the residue offset for each protein
@@ -2705,7 +2706,7 @@ class AnalysisReplicaExchange(object):
         res = gap_between_components
         for mol in prot_listx:
             resoffsetx[mol] = res
-            res += len(mol.get_residue_indexes())
+            res += max(mol.get_residue_indexes())
             resendx[mol] = res
             res += gap_between_components
 
@@ -2714,7 +2715,7 @@ class AnalysisReplicaExchange(object):
         res = gap_between_components
         for mol in prot_listy:
             resoffsety[mol] = res
-            res += len(mol.get_residue_indexes())
+            res += max(mol.get_residue_indexes())
             resendy[mol] = res
             res += gap_between_components
 
@@ -2722,7 +2723,7 @@ class AnalysisReplicaExchange(object):
         res = gap_between_components
         for mol in IMP.pmi.tools.OrderedSet(prot_listx + prot_listy):
             resoffsetdiagonal[mol] = res
-            res += len(mol.get_residue_indexes())
+            res += max(mol.get_residue_indexes())
             res += gap_between_components
 
         # plot protein boundaries
@@ -2854,6 +2855,9 @@ class AnalysisReplicaExchange(object):
         """
         self.seldict0=IMP.pmi.tools.get_selections_dictionary(self.sel0_rmsd.get_selected_particles())
         self.seldict1=IMP.pmi.tools.get_selections_dictionary(self.sel1_rmsd.get_selected_particles())
+        for mol in self.seldict0:
+            for sel in self.seldict0[mol]:
+                self.issymmetricsel[sel]=False
         for mol in self.symmetric_molecules:
             self.symmetric_molecules[mol]=len(self.seldict0[mol])
             for sel in self.seldict0[mol]:

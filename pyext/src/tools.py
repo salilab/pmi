@@ -2236,7 +2236,7 @@ class ColorHierarchy(object):
 
     def get_color_bar(self,filename):
         import matplotlib as mpl
-        mpl.use('agg')
+        mpl.use('Agg')
         import matplotlib.pyplot as plt
         import math
         plt.clf()

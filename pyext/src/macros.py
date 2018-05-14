@@ -2631,7 +2631,7 @@ class AnalysisReplicaExchange(object):
                 coord_dict[mol]=coords
 
             if not consolidate:
-                coords=np.concatenate(coord_dict.values())
+                coords=np.concatenate(list(coord_dict.values()))
                 dists = cdist(coords, coords)
                 binary_dists = np.where((dists <= contact_threshold) & (dists >= 1.0), 1.0, 0.0)
             else:

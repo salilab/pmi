@@ -1701,7 +1701,7 @@ def plot_fields_box_plots(name, values, positions, frequencies=None,
 def plot_xy_data(x,y,title=None,out_fn=None,display=True,set_plot_yaxis_range=None,
                  xlabel=None,ylabel=None):
     import matplotlib as mpl
-    mpl.use('Agg')
+    mpl.use('agg')
     import matplotlib.pyplot as plt
     plt.rc('lines', linewidth=2)
 

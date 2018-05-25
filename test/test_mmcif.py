@@ -589,6 +589,7 @@ _ihm_sphere_obj_site.model_id
         # Assign ID (2) to referenced alignment file (id=1 is assigned to
         # the Python script)
         ihm.dumper._ExternalReferenceDumper().finalize(po.system)
+        ihm.dumper._SoftwareDumper().finalize(po.system)  # assign software IDs
         self.assign_dataset_ids(po)
         d = ihm.dumper._StartingModelDumper()
         d.finalize(po.system)
@@ -608,6 +609,14 @@ _ihm_starting_model_details.starting_model_sequence_offset
 _ihm_starting_model_details.dataset_list_id
 1 1 Nup84 A 33 2 'comparative model' A 0 3
 2 2 Nup85 B 26 -5 'comparative model' A -7 4
+#
+#
+loop_
+_ihm_starting_computational_models.starting_model_id
+_ihm_starting_computational_models.software_id
+_ihm_starting_computational_models.script_file_id
+1 3 5
+2 3 .
 #
 #
 loop_

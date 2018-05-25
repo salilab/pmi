@@ -2175,8 +2175,9 @@ def shuffle_configuration(objects,
         return debug
 
 class ColorHierarchy(object):
-    import matplotlib.pyplot as plt
     import matplotlib as mpl
+    mpl.use('Agg')
+    import matplotlib.pyplot as plt
 
     def __init__(self,hier):
         hier.ColorHierarchy=self

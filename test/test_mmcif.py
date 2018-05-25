@@ -713,10 +713,12 @@ _ihm_modeling_protocol.num_models_end
 _ihm_modeling_protocol.multi_scale_flag
 _ihm_modeling_protocol.multi_state_flag
 _ihm_modeling_protocol.ordered_flag
+_ihm_modeling_protocol.software_id
+_ihm_modeling_protocol.script_file_id
 1 1 1 1 1 'All known components & All components modeled by IMP' . Sampling
-'Replica exchange monte carlo' 0 1000 YES NO NO
+'Replica exchange monte carlo' 0 1000 YES NO NO . .
 2 1 2 1 1 'All known components & All components modeled by IMP' . Sampling
-'Replica exchange monte carlo' 1000 1000 YES NO NO
+'Replica exchange monte carlo' 1000 1000 YES NO NO . .
 #
 """)
 
@@ -773,10 +775,12 @@ _ihm_modeling_post_process.num_models_begin
 _ihm_modeling_post_process.num_models_end
 _ihm_modeling_post_process.struct_assembly_id
 _ihm_modeling_post_process.dataset_group_id
-1 1 1 1 cluster RMSD 10 90 . .
-2 1 1 2 cluster RMSD 12 90 . .
-3 2 1 1 cluster RMSD 34 56 . .
-4 3 1 1 cluster RMSD 20 80 . .
+_ihm_modeling_post_process.software_id
+_ihm_modeling_post_process.script_file_id
+1 1 1 1 cluster RMSD 10 90 . . . .
+2 1 1 2 cluster RMSD 12 90 . . . .
+3 2 1 1 cluster RMSD 34 56 . . . .
+4 3 1 1 cluster RMSD 20 80 . . . .
 #
 """)
 
@@ -815,7 +819,9 @@ _ihm_modeling_post_process.num_models_begin
 _ihm_modeling_post_process.num_models_end
 _ihm_modeling_post_process.struct_assembly_id
 _ihm_modeling_post_process.dataset_group_id
-1 1 1 1 none none 10 10 . .
+_ihm_modeling_post_process.software_id
+_ihm_modeling_post_process.script_file_id
+1 1 1 1 none none 10 10 . . . .
 #
 """)
 

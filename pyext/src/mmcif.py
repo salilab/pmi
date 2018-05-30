@@ -284,7 +284,7 @@ class _CrossLinkRestraint(ihm.restraint.CrossLinkRestraint):
         self.pmi_restraint = pmi_restraint
         label = self.pmi_restraint.label
         # Map commonly-used subtypes to more standard labels
-        if label == 'wtDSS':
+        if label in ('wtDSS', 'scDSS'):
             label = 'DSS'
         self.label = label
         super(_CrossLinkRestraint, self).__init__(

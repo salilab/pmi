@@ -890,7 +890,7 @@ _ihm_modeling_post_process.script_file_id
             _number_of_clusters = 1
         class DummyGroup(object):
             name = 'dgroup'
-        locations = []
+        comp_to_asym = {'Nup84':None}
         with IMP.test.temporary_directory() as tmpdir:
             d = DummyRex()
             d._outputdir = tmpdir
@@ -929,13 +929,13 @@ _ihm_modeling_post_process.script_file_id
                              os.path.join(tmpdir, 'cluster.0', 'Nup84.mrc'))
             self.assertEqual(len(e.densities), 0)
             # Density that doesn't exist
-            e.load_localization_density(None, 'noden', locations)
+            e.load_localization_density(None, 'noden', [], comp_to_asym)
             self.assertEqual(len(e.densities), 0)
             # Density that does exist
             po = DummyPO(None)
             r = DummyRepr('dummy', 'none')
             state = po._add_state(r)
-            e.load_localization_density(state, 'Nup84', locations)
+            e.load_localization_density(state, 'Nup84', ['Nup84'], comp_to_asym)
             self.assertEqual(e.densities[0].file.path,
                              os.path.join(tmpdir, 'cluster.0', 'Nup84.mrc'))
             self.assertEqual(e.densities[0].file.details,
@@ -978,7 +978,8 @@ All kmeans_weight_500_2/cluster.0/ centroid index 49
             prot = DummyProtocolStep()
             prot.num_models_end = 10
             po.all_protocols.add_step(prot, po._last_state)
-            po.add_replica_exchange_analysis(simo._protocol_output[0][1], rex)
+            po.add_replica_exchange_analysis(simo._protocol_output[0][1],
+                                             rex, {})
 
     def test_ensemble_dumper(self):
         """Test dumping of simple ensembles"""

@@ -817,22 +817,26 @@ class _ReplicaExchangeAnalysisEnsemble(ihm.model.Ensemble):
         if os.path.exists(fname):
             model.parse_rmsf_file(fname, component)
 
-    def get_localization_density_file(self, component):
-        # todo: this assumes that the localization density file name matches
-        # the component name and is of the complete residue range (usually
-        # this is the case, but it doesn't have to be)
+    def get_localization_density_file(self, fname):
         return os.path.join(self.post_process.rex._outputdir,
                             'cluster.%d' % self.cluster_num,
-                            '%s.mrc' % component)
+                            '%s.mrc' % fname)
 
-    def load_localization_density(self, state, component, asym):
-        fname = self.get_localization_density_file(component)
-        if os.path.exists(fname):
+    def load_localization_density(self, state, fname, select_tuple, asym_units):
+        fullpath = self.get_localization_density_file(fname)
+        if os.path.exists(fullpath):
             details = "Localization density for %s %s" \
-                      % (component, self.model_group.name)
-            local_file = ihm.location.OutputFileLocation(fname, details=details)
-            den = ihm.model.LocalizationDensity(file=local_file, asym_unit=asym)
-            self.densities.append(den)
+                      % (fname, self.model_group.name)
+            local_file = ihm.location.OutputFileLocation(fullpath,
+                                                         details=details)
+            for s in select_tuple:
+                if isinstance(s, tuple) and len(s) == 3:
+                    asym = asym_units[s[2]](s[0], s[1])
+                else:
+                    asym = asym_units[s]
+                den = ihm.model.LocalizationDensity(file=local_file,
+                                                    asym_unit=asym)
+                self.densities.append(den)
 
     def load_all_models(self, simo, state):
         stat_fname = self.post_process.get_stat_file(self.cluster_num)
@@ -1317,7 +1321,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         ind = i + self._state_ensemble_offset
         self.system.ensembles[ind].file = location
 
-    def add_replica_exchange_analysis(self, state, rex):
+    def add_replica_exchange_analysis(self, state, rex, density_custom_ranges):
         # todo: add prefilter as an additional postprocess step (complication:
         # we don't know how many models it filtered)
         # todo: postpone rmsf/density localization extraction until after
@@ -1335,8 +1339,9 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
             e = _ReplicaExchangeAnalysisEnsemble(pp, i, group, 1)
             self.system.ensembles.append(e)
             # Add localization density info if available
-            for c in state.all_modeled_components:
-                e.load_localization_density(state, c, self.asym_units[c])
+            for fname, stuple in density_custom_ranges.items():
+                e.load_localization_density(state, fname, stuple,
+                                            self.asym_units)
             for stats in e.load_all_models(self, state):
                 m = self.add_model(group)
                 # Since we currently only deposit 1 model, it is the

@@ -482,15 +482,15 @@ class ResiduePairListParser(_CrossLinkDataBaseStandardKeys):
             chain2,second_series=input_strings[1].split(":")
 
             first_residues=first_series.replace(";","|").split("|")
-            second_residues=second_series.replace(";","|").split("|") 
+            second_residues=second_series.replace(";","|").split("|")
             residue_pair_indexes=[]
             chain_pair_indexes=[]
             for fpi in first_residues:
                 for spi in second_residues:
-                        residue1=self.re.sub("[^0-9]", "", fpi)
-                        residue2=self.re.sub("[^0-9]", "", spi)
-                        residue_pair_indexes.append((residue1,residue2))
-                        chain_pair_indexes.append((chain1,chain2))
+                    residue1=self.re.sub("[^0-9]", "", fpi)
+                    residue2=self.re.sub("[^0-9]", "", spi)
+                    residue_pair_indexes.append((residue1,residue2))
+                    chain_pair_indexes.append((chain1,chain2))
             return residue_pair_indexes, chain_pair_indexes
 
 

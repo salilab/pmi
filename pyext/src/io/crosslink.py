@@ -17,6 +17,8 @@ import IMP.display
 import operator
 import math
 import sys
+import ihm.location
+import ihm.dataset
 from collections import defaultdict
 
 # json default serializations
@@ -560,6 +562,7 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
         # default amino acids considered to be 'linkable' if none are given
         self.def_aa_tuple = linkable_aa
         self.fasta_seq = fasta_seq      #type: IMP.pmi.topology.Sequences
+        self.dataset = None
         self._update()
 
     def _update(self):
@@ -714,6 +717,8 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
 
         self.data_base=new_xl_dict
         self.name=file_name
+        l = ihm.location.InputFileLocation(file_name, details='Crosslinks')
+        self.dataset = ihm.dataset.CXMSDataset(l)
         self._update()
 
     def update_cross_link_unique_sub_index(self):
@@ -880,7 +885,9 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
                     else:
                         new_xl_dict[id].append(xl)
         self._update()
-        return CrossLinkDataBase(self.cldbkc,new_xl_dict)
+        cdb = CrossLinkDataBase(self.cldbkc,new_xl_dict)
+        cdb.dataset = self.dataset
+        return cdb
 
     def filter_score(self,score):
         '''Get all crosslinks with score greater than an input value'''

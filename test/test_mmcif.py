@@ -276,9 +276,9 @@ _ihm_multi_state_modeling.details
         """Test _EntityMapper class"""
         system = ihm.System()
         c = IMP.pmi.mmcif._EntityMapper(system)
-        c.add('foo', 'MELS')
-        c.add('bar', 'SELM')
-        c.add('foo_2', 'MELS')
+        c.add('foo', 'MELS', 0)
+        c.add('bar', 'SELM', 0)
+        c.add('foo_2', 'MELS', 0)
         self.assertEqual(len(system.entities), 2)
         self.assertIs(c['foo'], c['foo_2'])
         self.assertIsNot(c['foo'], c['bar'])
@@ -1758,12 +1758,12 @@ _ihm_starting_model_seq_dif.details
         self.assertFalse(bf1.combine(None))
         self.assertFalse(bf1.combine(bf3))
         self.assertTrue(bf1.combine(bf2))
-        self.assertEqual(bf1.start, 0)
-        self.assertEqual(bf1.end, 30)
+        self.assertEqual(bf1.asym_unit.seq_id_range[0], 0)
+        self.assertEqual(bf1.asym_unit.seq_id_range[1], 30)
         self.assertEqual(bf1.count, 5)
         self.assertTrue(bf1.combine(bf3))
-        self.assertEqual(bf1.start, 0)
-        self.assertEqual(bf1.end, 50)
+        self.assertEqual(bf1.asym_unit.seq_id_range[0], 0)
+        self.assertEqual(bf1.asym_unit.seq_id_range[1], 50)
         self.assertEqual(bf1.count, 9)
 
     def test_model_repr_dump_add_frag(self):
@@ -1783,8 +1783,8 @@ _ihm_starting_model_seq_dif.details
         self.assertEqual(len(d.fragments[id(rep1)]['comp1']), 1)
         self.assertEqual(len(d.fragments[id(rep1)]['comp1'][state1]), 1)
         frag = d.fragments[id(rep1)]['comp1'][state1][0]
-        self.assertEqual(frag.start, 0)
-        self.assertEqual(frag.end, 10)
+        self.assertEqual(frag.asym_unit.seq_id_range[0], 0)
+        self.assertEqual(frag.asym_unit.seq_id_range[1], 10)
 
         b = IMP.pmi.mmcif._BeadsFragment(m, 'comp1', start=11,
                                          end=30, count=3, hier=None,
@@ -1793,15 +1793,15 @@ _ihm_starting_model_seq_dif.details
         self.assertEqual(len(d.fragments[id(rep1)]['comp1']), 1)
         self.assertEqual(len(d.fragments[id(rep1)]['comp1'][state1]), 1)
         frag = d.fragments[id(rep1)]['comp1'][state1][0]
-        self.assertEqual(frag.start, 0)
-        self.assertEqual(frag.end, 30)
+        self.assertEqual(frag.asym_unit.seq_id_range[0], 0)
+        self.assertEqual(frag.asym_unit.seq_id_range[1], 30)
 
         d.add_fragment(state2, rep1, b)
         self.assertEqual(len(d.fragments[id(rep1)]['comp1']), 2)
         self.assertEqual(len(d.fragments[id(rep1)]['comp1'][state2]), 1)
         frag = d.fragments[id(rep1)]['comp1'][state2][0]
-        self.assertEqual(frag.start, 11)
-        self.assertEqual(frag.end, 30)
+        self.assertEqual(frag.asym_unit.seq_id_range[0], 11)
+        self.assertEqual(frag.asym_unit.seq_id_range[1], 30)
 
     def test_model_repr_dump(self):
         """Test ModelRepresentationDumper"""

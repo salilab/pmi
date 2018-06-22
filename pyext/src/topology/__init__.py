@@ -106,6 +106,7 @@ class System(_SystemBase):
     def __init__(self,mdl=None,name="System"):
         _SystemBase.__init__(self,mdl)
         self._number_of_states = 0
+        self._protocol_output = []
         self.states = []
         self.built=False
 
@@ -141,6 +142,17 @@ class System(_SystemBase):
             self.built=True
         return self.hier
 
+    def add_protocol_output(self, p):
+        """Capture details of the modeling protocol.
+           @param p an instance of IMP.pmi.output.ProtocolOutput or a subclass.
+        """
+        self._protocol_output.append(p)
+#       p._each_metadata.append(self._metadata)
+#       p._file_datasets.append(self._file_dataset)
+        for state in self.states:
+            state._add_protocol_output(p, self)
+
+
 #------------------------
 
 class State(_SystemBase):
@@ -157,13 +169,23 @@ class State(_SystemBase):
         self.mdl = system.get_hierarchy().get_model()
         self.system = system
         self.hier = self._create_child(system.get_hierarchy())
-        self.hier.set_name("State_"+str(state_index))
+        self.short_name = self.long_name = "State_"+str(state_index)
+        self.hier.set_name(self.short_name)
         self.molecules = defaultdict(list) # key is molecule name. value are the molecule copies!
         IMP.atom.State.setup_particle(self.hier,state_index)
         self.built = False
+        self._protocol_output = []
+        for p in system._protocol_output:
+            self._add_protocol_output(p, system)
 
     def __repr__(self):
         return self.system.__repr__()+'.'+self.hier.get_name()
+
+    def _add_protocol_output(self, p, system):
+        state = p._add_state(self)
+        self._protocol_output.append((p, state))
+        state.m = system.mdl
+        state.prot = self.hier
 
     def get_molecules(self):
         """Return a dictionary where key is molecule name and value
@@ -553,6 +575,9 @@ class Molecule(_SystemBase):
                                                     ideal_helix,
                                                     color))
 
+    def _all_protocol_output(self):
+        return self.state._protocol_output
+
     def build(self):
         """Create all parts of the IMP hierarchy
         including Atoms, Residues, and Fragments/Representations and, finally, Copies
@@ -562,6 +587,11 @@ class Molecule(_SystemBase):
               from the PDB file
         """
         if not self.built:
+            # Add molecule name and sequence to any ProtocolOutput objects
+            name = self.hier.get_name()
+            for po, state in self._all_protocol_output():
+                po.create_component(state, name, True)
+                po.add_component_sequence(state, name, self.sequence)
             # if requested, clone structure and representations BEFORE building original
             if self.mol_to_clone is not None:
                 for nr,r in enumerate(self.mol_to_clone.residues):

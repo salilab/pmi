@@ -152,7 +152,7 @@ class State(_SystemBase):
         @param system        the PMI System
         @param state_index   the index of the new state
         \note It's expected that you will not use this constructor directly,
-        but rather create it with pmi::System::create_molecule()
+        but rather create it with pmi::System::create_state()
         """
         self.mdl = system.get_hierarchy().get_model()
         self.system = system

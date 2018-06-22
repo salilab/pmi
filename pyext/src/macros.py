@@ -590,7 +590,7 @@ class BuildSystem(object):
         @param mdl An IMP Model
         @param sequence_connectivity_scale For scaling the connectivity restraint
         @param force_create_gmm_files If True, will sample and create GMMs
-                  no matter what. If False, will only only sample if the
+                  no matter what. If False, will only sample if the
                   files don't exist. If number of Gaussians is zero, won't
                   do anything.
         @param resolutions The resolutions to build for structured regions
@@ -826,7 +826,7 @@ class BuildModel(object):
            @param add_each_domain_as_rigid_body That way you don't have to
                   put all of them in the list
            @param force_create_gmm_files If True, will sample and create GMMs
-                  no matter what. If False, will only only sample if the
+                  no matter what. If False, will only sample if the
                   files don't exist. If number of Gaussians is zero, won't
                   do anything.
         """

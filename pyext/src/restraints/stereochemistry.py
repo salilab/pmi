@@ -147,7 +147,6 @@ class ConnectivityRestraint(object):
         self.rs.set_weight(weight)
 
     def get_output(self):
-        self.m.update()
         output = {}
         score = self.weight * self.rs.unprotected_evaluate(None)
         output["_TotalScore"] = str(score)
@@ -278,7 +277,6 @@ class ExcludedVolumeSphere(object):
         self.rs.set_weight(weight)
 
     def get_output(self):
-        self.mdl.update()
         output = {}
         score = self.weight * self.rs.unprotected_evaluate(None)
         output["_TotalScore"] = str(score)
@@ -347,7 +345,6 @@ class HelixRestraint(object):
         return self.weight * self.rs.unprotected_evaluate(None)
 
     def get_output(self):
-        self.mdl.update()
         output = {}
         score = self.evaluate()
         output["_TotalScore"] = str(score)
@@ -434,7 +431,6 @@ class ResidueBondRestraint(object):
         return self.pairslist
 
     def get_output(self):
-        self.m.update()
         output = {}
         score = self.weight * self.rs.unprotected_evaluate(None)
         output["_TotalScore"] = str(score)
@@ -513,7 +509,6 @@ class ResidueAngleRestraint(object):
         return self.pairslist
 
     def get_output(self):
-        self.m.update()
         output = {}
         score = self.weight * self.rs.unprotected_evaluate(None)
         output["_TotalScore"] = str(score)
@@ -614,7 +609,6 @@ class ResidueDihedralRestraint(object):
         return self.pairslist
 
     def get_output(self):
-        self.m.update()
         output = {}
         score = self.weight * self.rs.unprotected_evaluate(None)
         output["_TotalScore"] = str(score)
@@ -834,7 +828,6 @@ class SecondaryStructure(object):
 
     def get_output(self):
         output = {}
-        self.m.update()
         score_angle = self.anglrs.unprotected_evaluate(None)
         score_dihers = self.dihers.unprotected_evaluate(None)
         score_bondrs = self.bondrs.unprotected_evaluate(None)
@@ -926,7 +919,6 @@ class ElasticNetworkRestraint(object):
         return self.pairslist
 
     def get_output(self):
-        self.m.update()
         output = {}
         score = self.weight * self.rs.unprotected_evaluate(None)
         output["_TotalScore"] = str(score)
@@ -1045,7 +1037,6 @@ class CharmmForceFieldRestraint(object):
         self.rs.set_weight(weight)
 
     def get_output(self):
-        self.mdl.update()
         output = {}
         bonds_score = self.weight * self.bonds_rs.unprotected_evaluate(None)
         nonbonded_score = self.weight * self.nonbonded_rs.unprotected_evaluate(None)
@@ -1193,7 +1184,6 @@ class PseudoAtomicRestraint(object):
         return self.pairslist
 
     def get_output(self):
-        self.m.update()
         output = {}
         score = self.weight * self.rs.unprotected_evaluate(None)
         output["_TotalScore"] = str(score)
@@ -1263,7 +1253,6 @@ class SymmetryRestraint(object):
         return self.pairslist
 
     def get_output(self):
-        self.mdl.update()
         output = {}
         score = self.weight * self.rs.unprotected_evaluate(None)
         output["SymmetryRestraint_" + self.label] = str(score)
@@ -1338,7 +1327,6 @@ class FusionRestraint(object):
         self.rs.set_weight(weight)
 
     def get_output(self):
-        self.m.update()
         output = {}
         score = self.weight * self.rs.unprotected_evaluate(None)
         output["_TotalScore"] = str(score)

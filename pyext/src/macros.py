@@ -398,6 +398,11 @@ class ReplicaExchange0(object):
         output = IMP.pmi.output.Output(atomistic=self.vars["atomistic"])
         low_temp_stat_file = globaldir + \
             self.vars["stat_file_name_suffix"] + "." + str(myindex) + ".out"
+
+        # Ensure model is updated before saving init files
+        if not self.test_mode:
+            self.model.update()
+
         if not self.test_mode:
             if self.output_objects is not None:
                 output.init_stat2(low_temp_stat_file,
@@ -525,6 +530,10 @@ class ReplicaExchange0(object):
             elif self.vars["save_coordinates_mode"] == "75th_score":
                 score_perc=mpivs.get_percentile("score")
                 save_frame=(score_perc*100.0<=75.0)
+
+            # Ensure model is updated before saving output files
+            if save_frame or not self.test_mode:
+                self.model.update()
 
             if save_frame:
                 print("--- frame %s score %s " % (str(i), str(score)))
@@ -1406,6 +1415,7 @@ class BuildModel1(object):
     def save_rmf(self,rmfname):
 
         o=IMP.pmi.output.Output()
+        self.simo.m.update()
         o.init_rmf(rmfname,[self.simo.prot])
         o.write_rmf(rmfname)
         o.close_rmf(rmfname)
@@ -1907,6 +1917,7 @@ class AnalysisReplicaExchange0(object):
                             IMP.core.transform(rb,transformation)
 
                     o=IMP.pmi.output.Output()
+                    self.model.update()
                     out_pdb_fn=os.path.join(dircluster,str(cnt)+"."+str(self.rank)+".pdb")
                     out_rmf_fn=os.path.join(dircluster,str(cnt)+"."+str(self.rank)+".rmf3")
                     o.init_pdb(out_pdb_fn,prot)
@@ -2112,6 +2123,7 @@ class AnalysisReplicaExchange0(object):
 
                     # pdb writing should be optimized!
                     o = IMP.pmi.output.Output()
+                    self.model.update()
                     o.init_pdb(dircluster + str(k) + ".pdb", prot)
                     o.write_pdb(dircluster + str(k) + ".pdb")
 
@@ -2396,6 +2408,7 @@ class AnalysisReplicaExchange(object):
             rmf_name=prefix+'/'+str(cluster.cluster_id)+".rmf3"
 
         d1=self.stath1[cluster.members[0]]
+        self.model.update()
         o.init_rmf(rmf_name, [self.stath1])
         for n1 in cluster.members:
             d1=self.stath1[n1]

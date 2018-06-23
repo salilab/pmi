@@ -1180,8 +1180,6 @@ class ConnectivityCrossLinkMS(object):
     def get_output(self):
         # content of the crosslink database pairs
         # self.pairs.append((p1,p2,dr,r1,c1,r2,c2))
-        self.m.update()
-
         output = {}
         score = self.weight * self.rs.unprotected_evaluate(None)
         output["_TotalScore"] = str(score)
@@ -1406,8 +1404,6 @@ class SimplifiedCrossLinkMS(object):
     def get_output(self):
         # content of the crosslink database pairs
         # self.pairs.append((p1,p2,dr,r1,c1,r2,c2))
-        self.m.update()
-
         output = {}
         score = self.weight * self.rs.unprotected_evaluate(None)
         output["_TotalScore"] = str(score)
@@ -1633,8 +1629,6 @@ class SigmoidalCrossLinkMS(object):
     def get_output(self):
         # content of the crosslink database pairs
         # self.pairs.append((p1,p2,dr,r1,c1,r2,c2))
-        self.m.update()
-
         output = {}
         score = self.weight * self.rs.unprotected_evaluate(None)
         output["_TotalScore"] = str(score)
@@ -2114,8 +2108,6 @@ class ISDCrossLinkMS(IMP.pmi.restraints._NuisancesBase):
     def get_output(self):
         # content of the crosslink database pairs
         # self.pairs.append((p1,p2,dr,r1,c1,r2,c2))
-        self.m.update()
-
         output = {}
         score = self.weight * self.rs.unprotected_evaluate(None)
         output["_TotalScore"] = str(score)
@@ -2399,7 +2391,6 @@ class CysteineCrossLinkRestraint(object):
         return self.sigma
 
     def get_output(self):
-        self.m.update()
         output = {}
         score = self.rs.unprotected_evaluate(None)
         output["_TotalScore"] = str(score)

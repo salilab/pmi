@@ -100,7 +100,6 @@ class RestraintBase(object):
     def get_output(self):
         """Get outputs to write to stat files."""
         output = {}
-        self.m.update()
         score = self.evaluate()
         output["_TotalScore"] = str(score)
 

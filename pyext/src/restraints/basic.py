@@ -206,7 +206,6 @@ class TorqueRestraint(IMP.Restraint):
         IMP.pmi.tools.add_restraint_to_model(self.m, self)
 
     def get_output(self):
-        self.m.update()
         output = {}
         score = self.weight * self.unprotected_evaluate(None)
         output["_TotalScore"] = str(score)
@@ -282,7 +281,6 @@ class CylinderRestraint(IMP.Restraint):
         IMP.pmi.tools.add_restraint_to_model(self.m, self)
 
     def get_output(self):
-        self.m.update()
         output = {}
         score = self.weight * self.unprotected_evaluate(None)
         output["_TotalScore"] = str(score)

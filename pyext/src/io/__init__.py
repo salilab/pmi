@@ -582,7 +582,6 @@ class RMSDOutput(object):
             self.init_coords = init_coords
         self.label = label
     def get_output(self):
-        self.mdl.update()
         output = {}
         coords = [IMP.core.XYZ(p).get_coordinates() for p in self.ps]
         rmsd = IMP.algebra.get_rmsd(coords,self.init_coords)
@@ -595,7 +594,6 @@ class TotalScoreOutput(object):
         self.mdl = mdl
         self.rs = IMP.pmi.tools.get_restraint_set(self.mdl)
     def get_output(self):
-        self.mdl.update()
         score = self.rs.evaluate(False)
         output = {}
         output["Total_Score"] = str(score)

@@ -58,7 +58,7 @@ class Tests(IMP.test.TestCase):
         self.assertEqual(len(rmf_file_list),8)
         self.assertEqual(len(rmf_file_frame_list),8)
         self.assertEqual(len(score_list),8)
-        for k,l in feature_keyword_list_dict.iteritems():
+        for k,l in feature_keyword_list_dict.items():
             self.assertEqual(len(l),8)
 
     def test_read_coordinates_of_rmfs(self):
@@ -86,8 +86,10 @@ class Tests(IMP.test.TestCase):
         self.assertEqual(len(all_coordinates),8)
         self.assertEqual(len(alignment_coordinates),8)
         self.assertEqual(len(rmsd_coordinates),8)
-        self.assertEqual(rmsd_coordinates[0].keys(),['med2'])
-        self.assertEqual(cmp(alignment_coordinates,[{}]*8),0)
+        self.assertEqual(list(rmsd_coordinates[0].keys()), ['med2'])
+        ltmp = [{}] * 8
+        self.assertEqual((alignment_coordinates > ltmp) -
+                         (alignment_coordinates < ltmp), 0)
 
         # testing first coordinate of med2 for each frame
         check_coords=[[17.23349762, 27.99548721,-8.91260719],

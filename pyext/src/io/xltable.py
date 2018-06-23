@@ -267,7 +267,7 @@ class XLTable():
         maxlen=max(len(self.index_dict[key]) for key in self.index_dict)
         cnames=[]
         idxs=[]
-        for cname,idx in self.index_dict.iteritems():
+        for cname,idx in self.index_dict.items():
             cnames.append(cname)
             idxs.append(idx+[-1]*(maxlen-len(idx)))
         idx_array=np.array(idxs)
@@ -851,7 +851,7 @@ class XLTable():
 
         # display and write to file
         fig.set_size_inches(0.002 * nresx, 0.002 * nresy)
-        [i.set_linewidth(2.0) for i in ax.spines.itervalues()]
+        [i.set_linewidth(2.0) for i in ax.spines.values()]
         if cbar_labels is not None:
             cbar = fig.colorbar(cax, ticks=[0.5,1.5,2.5,3.5])
             cbar.ax.set_yticklabels(cbar_labels)# vertically oriented colorbar

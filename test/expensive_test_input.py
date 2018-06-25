@@ -10,7 +10,7 @@ import os
 class Tests(IMP.test.TestCase):
     def setUp(self):
         IMP.test.TestCase.setUp(self)
-        self.mdl=IMP.Model()
+        self.model=IMP.Model()
         input_dir=os.path.dirname(self.get_input_file_name('chainA.pdb'))
         self.stat_files = [os.path.join(input_dir,'output','stat.2.out'),
                            os.path.join(input_dir,'output','stat.3.out')]
@@ -21,7 +21,7 @@ class Tests(IMP.test.TestCase):
 
     def test_save_best_models(self):
         """Test function to collect top models into a single RMF file"""
-        IMP.pmi.io.save_best_models(self.mdl,'./',self.stat_files,
+        IMP.pmi.io.save_best_models(self.model,'./',self.stat_files,
                                     number_of_best_scoring_models=3,
                                     score_key=self.score_key,
                                     feature_keys=self.feature_keys)
@@ -30,7 +30,7 @@ class Tests(IMP.test.TestCase):
         self.assertEqual(len(fields[self.score_key]),3)
         self.assertEqual(float(fields[self.score_key][0]),301.048975729)
         rh = RMF.open_rmf_file_read_only('top_3.rmf3')
-        prots = IMP.rmf.create_hierarchies(rh,self.mdl)
+        prots = IMP.rmf.create_hierarchies(rh,self.model)
 
         # testing first coordinate of med2 for each frame
         check_coords=[(26.2109, 61.2197, -16.9102),
@@ -74,7 +74,7 @@ class Tests(IMP.test.TestCase):
                          range(len(score_list)),
                          range(len(score_list)))
         rmsdc={'med2':'med2'}
-        got_coords = IMP.pmi.io.read_coordinates_of_rmfs(self.mdl,
+        got_coords = IMP.pmi.io.read_coordinates_of_rmfs(self.model,
                                                          rmf_tuples,
                                                          alignment_components=None,
                                                          rmsd_calculation_components=rmsdc)

@@ -218,7 +218,7 @@ class ExcludedVolumeSphere(object):
             if bipartite:
                 other_ps = [h.get_particle() for h in other_hierarchies]
         elif isinstance(representation, IMP.pmi.representation.Representation):
-            self.mdl = representation.m
+            self.mdl = representation.model
             included_ps = IMP.pmi.tools.select(
                 representation,
                 resolution=resolution,
@@ -876,7 +876,7 @@ class ElasticNetworkRestraint(object):
                                              atom_type=IMP.atom.AtomType("CA"))
                 particles+=sel.get_selected_particles()
         elif representation is not None and type(representation)==IMP.pmi.representation.Representation:
-            self.m = representation.mdl
+            self.m = representation.model
             for st in selection_tuples:
                 print('selecting with',st)
                 for p in IMP.pmi.tools.select_by_tuple(representation,st,resolution=resolution):

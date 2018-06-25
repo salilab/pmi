@@ -576,10 +576,10 @@ class BuildSystem(object):
     as a dictionary with key = (molecule name), value = IMP.pmi.topology.Molecule
     Quick multi-state system:
     @code{.python}
-    mdl = IMP.Model()
+    model = IMP.Model()
     reader1 = IMP.pmi.topology.TopologyReader(tfile1)
     reader2 = IMP.pmi.topology.TopologyReader(tfile2)
-    bs = IMP.pmi.macros.BuildSystem(mdl)
+    bs = IMP.pmi.macros.BuildSystem(model)
     bs.add_state(reader1)
     bs.add_state(reader2)
     bs.execute_macro() # build everything including degrees of freedom
@@ -591,12 +591,12 @@ class BuildSystem(object):
     as requested.
     """
     def __init__(self,
-                 mdl,
+                 model,
                  sequence_connectivity_scale=4.0,
                  force_create_gmm_files=False,
                  resolutions=[1,10]):
         """Constructor
-        @param mdl An IMP Model
+        @param model An IMP Model
         @param sequence_connectivity_scale For scaling the connectivity restraint
         @param force_create_gmm_files If True, will sample and create GMMs
                   no matter what. If False, will only sample if the
@@ -604,13 +604,18 @@ class BuildSystem(object):
                   do anything.
         @param resolutions The resolutions to build for structured regions
         """
-        self.mdl = mdl
-        self.system = IMP.pmi.topology.System(self.mdl)
+        self.model = model
+        self.system = IMP.pmi.topology.System(self.model)
         self._readers = []    # the TopologyReaders (one per state)
         self._domain_res = [] # TempResidues for each domain key=unique name, value=(atomic_res,non_atomic_res).
         self._domains = []    # key = domain unique name, value = Component
         self.force_create_gmm_files = force_create_gmm_files
         self.resolutions = resolutions
+
+    @property
+    @IMP.deprecated_method("3.0", "Model should be accessed with `.model`.")
+    def mdl(self):
+        return self.model
 
     def add_state(self,
                   reader,
@@ -741,7 +746,7 @@ class BuildSystem(object):
         self.root_hier = self.system.build()
 
         print("BuildSystem.execute_macro: setting up degrees of freedom")
-        self.dof = IMP.pmi.dof.DegreesOfFreedom(self.mdl)
+        self.dof = IMP.pmi.dof.DegreesOfFreedom(self.model)
         for nstate,reader in enumerate(self._readers):
             rbs = reader.get_rigid_bodies()
             srbs = reader.get_super_rigid_bodies()
@@ -839,8 +844,8 @@ class BuildModel(object):
                   files don't exist. If number of Gaussians is zero, won't
                   do anything.
         """
-        self.m = model
-        self.simo = IMP.pmi.representation.Representation(self.m,
+        self.model = model
+        self.simo = IMP.pmi.representation.Representation(self.model,
                                                           upperharmonic=True,
                                                           disorderedlength=False)
 
@@ -938,6 +943,11 @@ class BuildModel(object):
 
         self.simo.set_floppy_bodies()
         self.simo.setup_bonds()
+
+    @property
+    @IMP.deprecated_method("3.0", "Model should be accessed with `.model`.")
+    def m(self):
+        return self.model
 
     def get_representation(self):
         '''Return the Representation object'''
@@ -1415,7 +1425,7 @@ class BuildModel1(object):
     def save_rmf(self,rmfname):
 
         o=IMP.pmi.output.Output()
-        self.simo.m.update()
+        self.simo.model.update()
         o.init_rmf(rmfname,[self.simo.prot])
         o.write_rmf(rmfname)
         o.close_rmf(rmfname)

@@ -176,7 +176,7 @@ class State(_SystemBase):
         self.hier = self._create_child(system.get_hierarchy())
         self.short_name = self.long_name = "State_"+str(state_index)
         self.hier.set_name(self.short_name)
-        self.molecules = defaultdict(list) # key is molecule name. value are the molecule copies!
+        self.molecules = IMP.pmi.tools.OrderedDict() # key is molecule name. value are the molecule copies!
         IMP.atom.State.setup_particle(self.hier,state_index)
         self.built = False
         self._protocol_output = []
@@ -229,7 +229,7 @@ class State(_SystemBase):
             raise Exception('Cannot use a molecule name already used')
 
         mol = Molecule(self,name,sequence,chain_id,copy_num=0,is_nucleic=is_nucleic)
-        self.molecules[name].append(mol)
+        self.molecules[name] = [mol]
         return mol
 
     def get_hierarchy(self):
@@ -1089,7 +1089,7 @@ class TopologyReader(object):
         @param gmm_dir Relative path to the GMM directory
         """
         self.topology_file = topology_file
-        self.molecules = {} # key=molname, value=TempMolecule
+        self.molecules = IMP.pmi.tools.OrderedDict() # key=molname, value=TempMolecule
         self.pdb_dir = pdb_dir
         self.fasta_dir = fasta_dir
         self.gmm_dir = gmm_dir

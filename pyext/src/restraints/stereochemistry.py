@@ -1360,8 +1360,8 @@ class PlaneDihedralRestraint(IMP.pmi.restraints.RestraintBase):
         \note Particles defining planes should be rigid and more or less
               parallel for proper behavior
         """
-        m = particle_triplets[0][0].get_model()
-        super(PlaneDihedralRestraint, self).__init__(m, label=label,
+        model = particle_triplets[0][0].get_model()
+        super(PlaneDihedralRestraint, self).__init__(model, label=label,
                                                      weight=weight)
 
         angle = pi * angle / 180.
@@ -1370,5 +1370,7 @@ class PlaneDihedralRestraint(IMP.pmi.restraints.RestraintBase):
             t2 = particle_triplets[i + 1]
             q1 = [t1[1], t1[0], t2[0], t2[1]]
             q2 = [t1[2], t1[0], t2[0], t2[2]]
-            self.rs.add_restraint(IMP.core.DihedralRestraint(self.m, ds, *q1))
-            self.rs.add_restraint(IMP.core.DihedralRestraint(self.m, ds, *q2))
+            self.rs.add_restraint(
+                IMP.core.DihedralRestraint(self.model, ds, *q1))
+            self.rs.add_restraint(
+                IMP.core.DihedralRestraint(self.model, ds, *q2))

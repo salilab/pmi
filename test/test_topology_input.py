@@ -67,60 +67,6 @@ class Tests(IMP.test.TestCase):
         self.assertEqual(c[1].copyname,"1")
         self.assertEqual(c[5].get_unique_name(),"Prot2.1.1")
 
-    def test_beads(self):
-        try:
-            import sklearn
-        except ImportError:
-            self.skipTest("no sklearn package")
-        mdl = IMP.Model()
-        tfile = self.get_input_file_name('topology_beads.txt')
-        input_dir = os.path.dirname(tfile)
-        t = IMP.pmi.topology.TopologyReader(tfile,
-                                            pdb_dir=input_dir,
-                                            fasta_dir=input_dir,
-                                            gmm_dir=input_dir)
-        bs = IMP.pmi.macros.BuildSystem(mdl)
-        bs.add_state(t)
-        root_hier, dof = bs.execute_macro()
-
-        sel = IMP.atom.Selection(root_hier,molecule="Prot2",
-                                 residue_indexes=range(1,13),
-                                 resolution=IMP.atom.ALL_RESOLUTIONS)
-        self.assertEqual(len(sel.get_selected_particles()),2)
-        IMP.atom.show_with_representations(root_hier)
-        sel = IMP.atom.Selection(root_hier,molecule="Prot2",
-                                 residue_indexes=range(13,30),
-                                 resolution=IMP.atom.ALL_RESOLUTIONS)
-        self.assertEqual(len(sel.get_selected_particles()),17+2)
-
-        # check rigid and flexible parts
-        rbs = dof.get_rigid_bodies()
-        fbs = dof.get_flexible_beads()
-        self.assertEqual(len(rbs),2)
-        self.assertEqual(len(fbs),7)
-
-    def test_draw_molecular_composition(self):
-        try:
-            import matplotlib
-        except ImportError:
-            self.skipTest("no matplotlib package")
-        try:
-            import sklearn
-        except ImportError:
-            self.skipTest("no sklearn package")
-        mdl = IMP.Model()
-        tfile = self.get_input_file_name('topology_new.txt')
-        input_dir = os.path.dirname(tfile)
-        t = IMP.pmi.topology.TopologyReader(tfile,
-                                            pdb_dir=input_dir,
-                                            fasta_dir=input_dir,
-                                            gmm_dir=input_dir)
-        bs = IMP.pmi.macros.BuildSystem(mdl)
-        bs.add_state(t)
-        root_hier, dof = bs.execute_macro()
-        IMP.pmi.plotting.topology.draw_component_composition(dof)
-
-
     def test_set_movers(self):
         """Check if rigid bodies etc are set up as requested"""
         try:
@@ -154,77 +100,6 @@ class Tests(IMP.test.TestCase):
         found1 = set(tuple(sorted(i)) for i in srbs)
         found2 = set(tuple(sorted(i)) for i in expected_srbs)
         self.assertEqual(found1,found2)
-
-    def test_build_system(self):
-        """Test the new BuildSystem macro including beads and ideal helix"""
-        try:
-            import sklearn
-        except ImportError:
-            self.skipTest("no sklearn package")
-        mdl = IMP.Model()
-        tfile = self.get_input_file_name('topology_new.txt')
-        input_dir = os.path.dirname(tfile)
-        t = IMP.pmi.topology.TopologyReader(tfile,
-                                            pdb_dir=input_dir,
-                                            fasta_dir=input_dir,
-                                            gmm_dir=input_dir)
-        bs = IMP.pmi.macros.BuildSystem(mdl)
-        bs.add_state(t)
-        root_hier, dof = bs.execute_macro()
-
-        # check a few selections
-        sel1 = IMP.atom.Selection(root_hier,molecule="Prot1",
-                                  resolution=1,copy_index=0).get_selected_particles()
-        #                          res1 bead
-        self.assertEqual(len(sel1), 7  + 2 )
-
-        sel1 = IMP.atom.Selection(root_hier,molecule="Prot1",
-                                  resolution=1,copy_index=1).get_selected_particles()
-        #                          res1 bead
-        self.assertEqual(len(sel1), 7  + 2 )
-
-        sel1D = IMP.atom.Selection(root_hier,molecule="Prot1",
-                                  representation_type=IMP.atom.DENSITIES).get_selected_particles()
-        self.assertEqual(len(sel1D),6) #3 each
-
-        sel2 = IMP.atom.Selection(root_hier,molecule="Prot2",
-                                  resolution=10,
-                                  copy_index=0).get_selected_particles()
-        self.assertEqual(len(sel2),2)
-
-        sel2 = IMP.atom.Selection(root_hier,molecule="Prot2",
-                                  resolution=10,
-                                  copy_index=1).get_selected_particles()
-        self.assertEqual(len(sel2),2)
-
-        sel3 = IMP.atom.Selection(root_hier,molecule="Prot3",resolution=5).get_selected_particles()
-        self.assertEqual(len(sel3),2)
-
-        sel4_1 = IMP.atom.Selection(root_hier,molecule="Prot4",
-                                    resolution=1).get_selected_particles()
-        sel4_10 = IMP.atom.Selection(root_hier,molecule="Prot4",
-                                     resolution=10).get_selected_particles()
-        sel4_D = IMP.atom.Selection(root_hier,molecule="Prot4",
-                                    representation_type=IMP.atom.DENSITIES).get_selected_particles()
-
-        sel5 = IMP.atom.Selection(root_hier, molecule='Prot5',
-                                  resolution=1).get_selected_particles()
-
-        color=IMP.display.Colored(sel5[0]).get_color()
-        self.assertAlmostEqual(color.get_red(), 0.1, delta=1e-6)
-        self.assertAlmostEqual(color.get_green(), 0.2, delta=1e-6)
-        self.assertAlmostEqual(color.get_blue(), 0.3, delta=1e-6)
-        self.assertEqual(len(sel4_1),10)
-        self.assertEqual(len(sel4_10),1)
-        self.assertEqual(len(sel4_D),2)
-
-        # check rigid bodies
-        rbs = dof.get_rigid_bodies()
-        fbs = dof.get_flexible_beads()
-        self.assertEqual(len(rbs),3)
-        #                         Prot1x2 Prot3
-        self.assertEqual(len(fbs), 4   +  2)
-
 
 
 if __name__=="__main__":

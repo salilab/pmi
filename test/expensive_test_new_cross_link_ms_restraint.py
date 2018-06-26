@@ -6,7 +6,6 @@ import IMP.core
 import IMP.container
 import IMP.pmi
 import IMP.pmi.topology
-import IMP.pmi.dof
 import IMP.pmi.io
 import IMP.pmi.io.crosslink
 import IMP.pmi.representation
@@ -172,31 +171,6 @@ class Tests(IMP.test.TestCase):
             r.setup_component_sequence_connectivity(components[n], 1)
         return r
 
-    def init_representation_complex_pmi2(self,m):
-        pdbfile = self.get_input_file_name("1WCM.pdb")
-        fastafile = self.get_input_file_name("1WCM.fasta.txt")
-        components = ["Rpb1","Rpb2","Rpb3","Rpb4"]
-        chains = "ABCD"
-        beadsize = 20
-        s = IMP.pmi.topology.System(m)
-        st = s.create_state()
-        seqs = IMP.pmi.topology.Sequences(fastafile)
-        offsets = [0,0,0,0]
-        mols = []
-        for n in range(len(components)):
-            print('PMI2: setting up',components[n],'1WCM:'+chains[n],offsets[n])
-            mol = st.create_molecule(components[n],sequence=seqs['1WCM:'+chains[n]],chain_id=chains[n])
-            atomic = mol.add_structure(pdbfile,chain_id=chains[n],offset=offsets[n],soft_check=True)
-            mol.add_representation(atomic,resolutions=[1,10,100])
-            mol.add_representation(mol[:]-atomic,resolutions=[beadsize])
-            mols.append(mol)
-        hier = s.build()
-        dof = IMP.pmi.dof.DegreesOfFreedom(m)
-        for molecule in mols:
-            dof.create_rigid_body(molecule,
-                                  nonrigid_parts = molecule.get_non_atomic_residues())
-        return hier,dof
-
     def init_representation_beads(self,m):
         r = IMP.pmi.representation.Representation(m)
         r.create_component("ProtA",color=1.0)
@@ -210,38 +184,14 @@ class Tests(IMP.test.TestCase):
         r.set_floppy_bodies()
         return r
 
-    def init_representation_beads_pmi2(self,m):
-        s = IMP.pmi.topology.System(m)
-        st = s.create_state()
-        protA = st.create_molecule("ProtA",sequence='A'*30,chain_id='A')
-        protA.add_representation(protA[0:10],resolutions=[1],bead_default_coord=[0,0,0])
-        protA.add_representation(protA[10:20],resolutions=[1],bead_default_coord=[10,0,0])
-        protA.add_representation(protA[20:30],resolutions=[1],bead_default_coord=[20,0,0])
-        protB = st.create_molecule("ProtB",sequence='A'*30,chain_id='B')
-        protB.add_representation(protB[0:10],resolutions=[1],bead_default_coord=[0,0,0])
-        protB.add_representation(protB[10:20],resolutions=[1],bead_default_coord=[10,0,0])
-        protB.add_representation(protB[20:30],resolutions=[1],bead_default_coord=[20,0,0])
-        hier = s.build()
-        dof = IMP.pmi.dof.DegreesOfFreedom(m)
-        dof.create_flexible_beads(protA)
-        dof.create_flexible_beads(protB)
-        return hier,dof
-
     def test_restraint_probability_complex(self):
         """Test restraint gets correct probabilities"""
-        for i in range(2):
+        for i in [0]:
             m = IMP.Model()
             print("Testing PMI version",i+1)
             if i==0:
                 rcomplex = self.init_representation_complex(m)
                 xlc,cldb = self.setup_crosslinks_complex(rcomplex,"single_category")
-            else:
-                rcomplex,dof=self.init_representation_complex_pmi2(m)
-                xlc,cldb = self.setup_crosslinks_complex(root_hier=rcomplex,
-                                                         mode="single_category")
-                self.assertEqual(len(dof.get_movers()),42)
-                dof.get_nuisances_from_restraint(xlc)
-                self.assertEqual(len(dof.get_movers()),44)
             # check all internals didn't change since last time
             o=IMP.pmi.output.Output()
             o.write_test("expensive_test_new_cross_link_ms_restraint.dat", [xlc])
@@ -289,14 +239,6 @@ class Tests(IMP.test.TestCase):
                                                        test_mode=True,
                                                        replica_exchange_object = rem)
                 rex0.execute_macro()
-            else:
-                rex = IMP.pmi.macros.ReplicaExchange0(m,
-                                                      root_hier=rcomplex,
-                                                      monte_carlo_sample_objects=dof.get_movers(),
-                                                      number_of_frames=2,
-                                                      test_mode=True,
-                                                      replica_exchange_object = rem)
-                rex.execute_macro()
             for output in ['excluded.None.xl.db',
                            'expensive_test_new_cross_link_ms_restraint.dat',
                            'included.None.xl.db', 'missing.None.xl.db']:
@@ -304,17 +246,11 @@ class Tests(IMP.test.TestCase):
 
     def test_restraint_probability_beads(self):
         """Test restraint works for all-bead systems"""
-        for i in range(2):
+        for i in [0]:
             m = IMP.Model()
             if i==0:
                 rbeads=self.init_representation_beads(m)
                 xlbeads,cldb=self.setup_crosslinks_beads(rbeads,"single_category")
-            else:
-                rbeads,dof=self.init_representation_beads_pmi2(m)
-                xlbeads,cldb=self.setup_crosslinks_beads(root_hier=rbeads,mode="single_category")
-                self.assertEqual(len(dof.get_movers()),60)
-                dof.get_nuisances_from_restraint(xlbeads)
-                self.assertEqual(len(dof.get_movers()),62)
             for xl in xlbeads.xl_list:
 
                 chain1 = xl[cldb.protein1_key]
@@ -372,87 +308,9 @@ class Tests(IMP.test.TestCase):
                                                        test_mode=True,
                                                        replica_exchange_object = rem)
                 rex0.execute_macro()
-            else:
-                rex = IMP.pmi.macros.ReplicaExchange0(m,
-                                                      root_hier=rbeads,
-                                                      monte_carlo_sample_objects=dof.get_movers(),
-                                                      number_of_frames=2,
-                                                      test_mode=True,
-                                                      replica_exchange_object = rem)
-                rex.execute_macro()
             for output in ['excluded.None.xl.db',
                            'included.None.xl.db', 'missing.None.xl.db']:
                 os.unlink(output)
-
-    def test_restraint_copy_ambiguity(self):
-        """Test restraint works for systems with configuration ambiguity in PMI2"""
-
-        # setup system
-        m = IMP.Model()
-        s = IMP.pmi.topology.System(m)
-        st = s.create_state()
-        protA = st.create_molecule("ProtA",sequence='A'*30,chain_id='A')
-        protA.add_representation(protA[0:10],resolutions=[1],bead_default_coord=[0,0,0])
-        protA.add_representation(protA[10:20],resolutions=[1],bead_default_coord=[10,0,0])
-        protA.add_representation(protA[20:30],resolutions=[1],bead_default_coord=[20,0,0])
-        protA2 = protA.create_clone('C')
-        protB = st.create_molecule("ProtB",sequence='A'*30,chain_id='B')
-        protB.add_representation(protB[0:10],resolutions=[1],bead_default_coord=[0,0,0])
-        protB.add_representation(protB[10:20],resolutions=[1],bead_default_coord=[10,0,0])
-        protB.add_representation(protB[20:30],resolutions=[1],bead_default_coord=[20,0,0])
-        protB2 = protB.create_clone('D')
-        hier = s.build()
-        dof = IMP.pmi.dof.DegreesOfFreedom(m)
-        dof.create_flexible_beads([protA,protA2,protB,protB2])
-
-        xlbeads,cldb = self.setup_crosslinks_beads(root_hier=hier,mode="single_category")
-
-        # check enough clones were created
-        self.assertEqual(len(cldb.data_base['1']),8)
-        self.assertEqual(len(cldb.data_base['2']),4)
-        self.assertEqual(len(cldb.data_base['3']),4)
-        self.assertEqual(len(cldb.data_base['4']),4)
-
-        # check score
-        for j in range(100):
-            IMP.pmi.tools.shuffle_configuration(hier,max_translation=10)
-            cross_link_dict={}
-            for xl in xlbeads.xl_list:
-                p0 = xl["Particle1"]
-                p1 = xl["Particle2"]
-                prob = xl["Restraint"].get_probability()
-                resid1 = xl[cldb.residue1_key]
-                chain1 = xl[cldb.protein1_key]
-                resid2 = xl[cldb.residue2_key]
-                chain2 = xl[cldb.protein2_key]
-                xlid=xl[cldb.unique_id_key]
-                d0 = IMP.core.XYZ(p0)
-                d1 = IMP.core.XYZ(p1)
-                sig1 = xl["Particle_sigma1"]
-                sig2 = xl["Particle_sigma2"]
-                psi =  xl["Particle_psi"]
-
-                if xlid not in cross_link_dict:
-                    cross_link_dict[xlid]=([d0],[d1],[sig1],[sig2],[psi],prob)
-                else:
-                    cross_link_dict[xlid][0].append(d0)
-                    cross_link_dict[xlid][1].append(d1)
-                    cross_link_dict[xlid][2].append(sig1)
-                    cross_link_dict[xlid][3].append(sig2)
-                    cross_link_dict[xlid][4].append(psi)
-
-            for xlid in cross_link_dict:
-                test_prob=get_probability(cross_link_dict[xlid][0],
-                                          cross_link_dict[xlid][1],
-                                          cross_link_dict[xlid][2],
-                                          cross_link_dict[xlid][3],
-                                          cross_link_dict[xlid][4],21.0,0.01)
-                prob=cross_link_dict[xlid][5]
-
-                self.assertAlmostEqual(test_prob,prob, delta=0.0001)
-        for output in ['excluded.None.xl.db',
-                       'included.None.xl.db', 'missing.None.xl.db']:
-            os.unlink(output)
 
 
 if __name__ == '__main__':

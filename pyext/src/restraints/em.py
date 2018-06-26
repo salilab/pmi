@@ -261,10 +261,8 @@ class GaussianEMRestraint(object):
     def center_model_on_target_density(self, input_object):
         if type(input_object) is IMP.pmi.representation.Representation:
             hier = input_object.prot
-        elif type(input_object) is IMP.pmi.topology.State:
-            hier = input_object.get_hierarchy()
         else:
-            raise Exception("Input must be a Representation or topology.State object")
+            raise Exception("Input must be a Representation object")
         target_com = self.get_center_of_mass()
         print('target com', target_com)
         model_com = self.get_center_of_mass(target=False)
@@ -355,12 +353,10 @@ class GaussianEMRestraint(object):
     def add_target_density_to_hierarchy(self,inp):
         ''' Can add a target GMM to a Hierarchy.
         For PMI2 a state object may also be passed'''
-        if type(inp) is IMP.pmi.topology.State:
-            inp.get_hierarchy().add_child(self.get_density_as_hierarchy())
-        elif type(inp) is IMP.atom.Hierarchy:
+        if type(inp) is IMP.atom.Hierarchy:
             inp.add_child(self.get_density_as_hierarchy())
         else:
-            raise Exception("Can only add a density to a PMI State object or IMP.atom.Hierarchy. You passed a", type(inp))
+            raise Exception("Can only add a density to an IMP.atom.Hierarchy. You passed a", type(inp))
 
     def get_restraint(self):
         return self.rs

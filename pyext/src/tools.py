@@ -1651,10 +1651,10 @@ def input_adaptor(stuff,
     except NotImplementedError:
         is_hierarchy=False
     # get the other types homogenously
-    is_system=all(isinstance(s, IMP.pmi.topology.System) for s in stuff)
-    is_state=all(isinstance(s, IMP.pmi.topology.State) for s in stuff)
-    is_molecule=all(isinstance(s, IMP.pmi.topology.Molecule) for s in stuff)
-    is_temp_residue=all(isinstance(s, IMP.pmi.topology.TempResidue) for s in stuff)
+    is_system=False
+    is_state=False
+    is_molecule=False
+    is_temp_residue=False
 
     # now that things are ok, do selection if requested
     hier_list = []

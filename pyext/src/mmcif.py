@@ -934,6 +934,14 @@ class _TransformedComponent(object):
         self.name, self.original, self.transform = name, original, transform
 
 
+class _SimpleRef(object):
+    """Class with similar interface to weakref.ref, but keeps a strong ref"""
+    def __init__(self, ref):
+        self.ref = ref
+    def __call__(self):
+        return self.ref
+
+
 class _State(ihm.model.State):
     """Representation of a single state in the system."""
 
@@ -944,7 +952,9 @@ class _State(ihm.model.State):
         # Representation object; in PMI2 it is the PMI2 State object itself.
         self._pmi_object = weakref.proxy(pmi_object)
         if hasattr(pmi_object, 'state'):
-            self._pmi_state = weakref.ref(pmi_object.state)
+            # Need a strong ref to pmi_object.state to prevent it from being
+            # cleaned up when doing PMI1 multistate modeling
+            self._pmi_state = _SimpleRef(pmi_object.state)
         else:
             self._pmi_state = weakref.ref(pmi_object)
         # Preserve PMI state name

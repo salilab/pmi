@@ -12,7 +12,6 @@ import IMP.pmi.analysis
 import IMP.pmi.io
 import IMP.rmf
 import IMP.isd
-import IMP.pmi.dof
 import RMF
 import os
 import glob

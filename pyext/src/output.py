@@ -86,7 +86,6 @@ class Output(object):
         self.dictchain = {}  # keys are molecule names, values are chain ids
         self.particle_infos_for_pdb = {}
         self.atomistic=atomistic
-        self.use_pmi2 = False
 
     def get_pdb_names(self):
         return list(self.dictionary_pdbs.keys())
@@ -99,7 +98,6 @@ class Output(object):
 
     def _init_dictchain(self, name, prot, multichar_chain=False):
         self.dictchain[name] = {}
-        self.use_pmi2 = False
 
         chainids = self.multi_chainids if multichar_chain else self.chainids
         for n, i in enumerate(self.dictionary_pdbs[name].get_children()):
@@ -211,11 +209,8 @@ class Output(object):
     def get_prot_name_from_particle(self, name, p):
         """Get the protein name from the particle.
            This is done by traversing the hierarchy."""
-        if self.use_pmi2:
-            return IMP.pmi.get_molecule_name_and_copy(p), True
-        else:
-            return IMP.pmi.tools.get_prot_name_from_particle(
-                                       p, self.dictchain[name])
+        return IMP.pmi.tools.get_prot_name_from_particle(
+                                   p, self.dictchain[name])
 
     def get_particle_infos_for_pdb_writing(self, name):
         # index_residue_pair_list={}
@@ -233,11 +228,7 @@ class Output(object):
         atom_count = 0
         atom_index = 0
 
-        if self.use_pmi2:
-            # select highest resolution
-            ps = IMP.atom.Selection(self.dictionary_pdbs[name],resolution=0).get_selected_particles()
-        else:
-            ps = IMP.atom.get_leaves(self.dictionary_pdbs[name])
+        ps = IMP.atom.get_leaves(self.dictionary_pdbs[name])
 
         for n, p in enumerate(ps):
             protname, is_a_bead = self.get_prot_name_from_particle(name, p)

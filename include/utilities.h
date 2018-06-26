@@ -81,12 +81,6 @@ inline Floats get_list_of_bipartite_minimum_sphere_distance(const ParticlesTemps
   return mindistances;
 }
 
-//! Walk up a PMI2 hierarchy/representations and get the "molname.copynum"
-inline std::string get_molecule_name_and_copy(atom::Hierarchy h){
-  return atom::get_molecule_name(h) + "." +
-    boost::lexical_cast<std::string>(atom::get_copy_index(h));
-}
-
 IMPPMI_END_NAMESPACE
 
 #endif /* IMPPMI_UTILITIES_H */

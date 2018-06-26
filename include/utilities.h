@@ -87,17 +87,6 @@ inline std::string get_molecule_name_and_copy(atom::Hierarchy h){
     boost::lexical_cast<std::string>(atom::get_copy_index(h));
 }
 
-//! Walk up a PMI2 hierarchy/representations and check if the root is named System
-inline bool get_is_canonical(atom::Hierarchy h){
-  while (h) {
-    if (h->get_name()=="System") {
-      return true;
-    }
-    h = get_parent_representation(h);
-  }
-  return false;
-}
-
 IMPPMI_END_NAMESPACE
 
 #endif /* IMPPMI_UTILITIES_H */

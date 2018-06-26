@@ -773,11 +773,7 @@ class Precision(object):
     def _get_residue_particle_index_map(self,prot_name,structure,hier):
         # Creates map from all particles to residue numbers
         residue_particle_index_map = []
-        if IMP.pmi.get_is_canonical(hier):
-            s = IMP.atom.Selection(hier,molecules=[prot_name],
-                                   resolution=1)
-        else:
-            s = IMP.atom.Selection(hier,molecules=[prot_name])
+        s = IMP.atom.Selection(hier,molecules=[prot_name])
         all_selected_particles = s.get_selected_particles()
         intersection = list(set(all_selected_particles) & set(structure))
         sorted_intersection = IMP.pmi.tools.sort_by_residues(intersection)
@@ -790,21 +786,14 @@ class Precision(object):
         selected_coordinates=[]
         for t in tuple_selections:
             if type(t)==tuple and len(t)==3:
-                if IMP.pmi.get_is_canonical(prot):
-                    s = IMP.atom.Selection(prot,molecules=[t[2]],residue_indexes=range(t[0],t[1]+1),
-                                           resolution=1)
-                else:
-                    s = IMP.atom.Selection(prot,molecules=[t[2]],residue_indexes=range(t[0],t[1]+1))
+                s = IMP.atom.Selection(prot,molecules=[t[2]],residue_indexes=range(t[0],t[1]+1))
                 all_selected_particles = s.get_selected_particles()
                 intersection = list(set(all_selected_particles) & set(structure))
                 sorted_intersection = IMP.pmi.tools.sort_by_residues(intersection)
                 cc = [tuple(IMP.core.XYZ(p).get_coordinates()) for p in sorted_intersection]
                 selected_coordinates += cc
             elif type(t)==str:
-                if IMP.pmi.get_is_canonical(prot):
-                    s = IMP.atom.Selection(prot,molecules=[t],resolution=1)
-                else:
-                    s = IMP.atom.Selection(prot,molecules=[t])
+                s = IMP.atom.Selection(prot,molecules=[t])
                 all_selected_particles = s.get_selected_particles()
                 intersection = list(set(all_selected_particles) & set(structure))
                 sorted_intersection = IMP.pmi.tools.sort_by_residues(intersection)
@@ -1157,10 +1146,9 @@ class GetModelDensity(object):
                                                        seg, resolution=1, name_is_ambiguous=False)
                 else:
                     # else, when you have a hierarchy, but not a representation
-                    if not IMP.pmi.get_is_canonical(hierarchy):
-                        for h in hierarchy.get_children():
-                            if not IMP.atom.Molecule.get_is_setup(h):
-                                IMP.atom.Molecule.setup_particle(h.get_particle())
+                    for h in hierarchy.get_children():
+                        if not IMP.atom.Molecule.get_is_setup(h):
+                            IMP.atom.Molecule.setup_particle(h.get_particle())
 
                     if type(seg) == str:
                         s = IMP.atom.Selection(hierarchy,molecule=seg)
@@ -1178,10 +1166,7 @@ class GetModelDensity(object):
 
                     all_particles_by_segments += s.get_selected_particles()
             if hierarchy:
-                if IMP.pmi.get_is_canonical(hierarchy):
-                    parts = all_particles_by_segments
-                else:
-                    parts = list(
+                parts = list(
                         set(all_particles_by_segments) & set(all_particles_by_resolution))
             self._create_density_from_particles(parts, density_name)
 
@@ -1596,26 +1581,20 @@ def get_particles_at_resolution_one(prot):
     """
     particle_dict = {}
 
-    # attempt to give good results for PMI2
-    if IMP.pmi.get_is_canonical(prot):
-        for mol in IMP.atom.get_by_type(prot,IMP.atom.MOLECULE_TYPE):
-            sel = IMP.atom.Selection(mol,resolution=1)
-            particle_dict[mol.get_name()] = sel.get_selected_particles()
-    else:
-        allparticles = []
-        for c in prot.get_children():
-            name = c.get_name()
-            particle_dict[name] = IMP.atom.get_leaves(c)
-            for s in c.get_children():
-                if "_Res:1" in s.get_name() and "_Res:10" not in s.get_name():
-                    allparticles += IMP.atom.get_leaves(s)
-                if "Beads" in s.get_name():
-                    allparticles += IMP.atom.get_leaves(s)
+    allparticles = []
+    for c in prot.get_children():
+        name = c.get_name()
+        particle_dict[name] = IMP.atom.get_leaves(c)
+        for s in c.get_children():
+            if "_Res:1" in s.get_name() and "_Res:10" not in s.get_name():
+                allparticles += IMP.atom.get_leaves(s)
+            if "Beads" in s.get_name():
+                allparticles += IMP.atom.get_leaves(s)
 
-        particle_align = []
-        for name in particle_dict:
-            particle_dict[name] = IMP.pmi.tools.sort_by_residues(
-                list(set(particle_dict[name]) & set(allparticles)))
+    particle_align = []
+    for name in particle_dict:
+        particle_dict[name] = IMP.pmi.tools.sort_by_residues(
+            list(set(particle_dict[name]) & set(allparticles)))
     return particle_dict
 
 def get_particles_at_resolution_ten(prot):
@@ -1626,25 +1605,19 @@ def get_particles_at_resolution_ten(prot):
     \note If the root node is named "System" or is a "State", do proper selection.
     """
     particle_dict = {}
-    # attempt to give good results for PMI2
-    if IMP.pmi.get_is_canonical(prot):
-        for mol in IMP.atom.get_by_type(prot,IMP.atom.MOLECULE_TYPE):
-            sel = IMP.atom.Selection(mol,resolution=10)
-            particle_dict[mol.get_name()] = sel.get_selected_particles()
-    else:
-        allparticles = []
-        for c in prot.get_children():
-            name = c.get_name()
-            particle_dict[name] = IMP.atom.get_leaves(c)
-            for s in c.get_children():
-                if "_Res:10" in s.get_name():
-                    allparticles += IMP.atom.get_leaves(s)
-                if "Beads" in s.get_name():
-                    allparticles += IMP.atom.get_leaves(s)
-        particle_align = []
-        for name in particle_dict:
-            particle_dict[name] = IMP.pmi.tools.sort_by_residues(
-                list(set(particle_dict[name]) & set(allparticles)))
+    allparticles = []
+    for c in prot.get_children():
+        name = c.get_name()
+        particle_dict[name] = IMP.atom.get_leaves(c)
+        for s in c.get_children():
+            if "_Res:10" in s.get_name():
+                allparticles += IMP.atom.get_leaves(s)
+            if "Beads" in s.get_name():
+                allparticles += IMP.atom.get_leaves(s)
+    particle_align = []
+    for name in particle_dict:
+        particle_dict[name] = IMP.pmi.tools.sort_by_residues(
+            list(set(particle_dict[name]) & set(allparticles)))
     return particle_dict
 
 def select_by_tuple(first_res_last_res_name_tuple):

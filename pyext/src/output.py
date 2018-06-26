@@ -101,17 +101,9 @@ class Output(object):
         self.dictchain[name] = {}
         self.use_pmi2 = False
 
-        # attempt to find PMI objects.
-        if IMP.pmi.get_is_canonical(prot):
-            self.use_pmi2 = True
-            self.atomistic = True #detects automatically
-            for n,mol in enumerate(IMP.atom.get_by_type(prot,IMP.atom.MOLECULE_TYPE)):
-                chid = IMP.atom.Chain(mol).get_id()
-                self.dictchain[name][IMP.pmi.get_molecule_name_and_copy(mol)] = chid
-        else:
-            chainids = self.multi_chainids if multichar_chain else self.chainids
-            for n, i in enumerate(self.dictionary_pdbs[name].get_children()):
-                self.dictchain[name][i.get_name()] = chainids[n]
+        chainids = self.multi_chainids if multichar_chain else self.chainids
+        for n, i in enumerate(self.dictionary_pdbs[name].get_children()):
+            self.dictchain[name][i.get_name()] = chainids[n]
 
     def init_pdb(self, name, prot):
         """Init PDB Writing.

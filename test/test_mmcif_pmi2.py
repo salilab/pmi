@@ -61,12 +61,15 @@ _entity.details
         s.add_protocol_output(po)
         state = s.create_state()
         nup84 = state.create_molecule("Nup84", "MELS", "A")
+        nup84.add_structure(self.get_input_file_name('test.nup84.pdb'), 'A')
         nup84.add_representation(resolutions=[1])
-        # todo: add structured region
         hier = s.build()
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
         self.assign_entity_asym_ids(po.system)
+        # Assign starting model IDs
+        d = ihm.dumper._StartingModelDumper()
+        d.finalize(po.system)
         d = ihm.dumper._ModelRepresentationDumper()
         d.finalize(po.system)
         d.dump(po.system, w)
@@ -86,7 +89,8 @@ _ihm_model_representation.starting_model_id
 _ihm_model_representation.model_mode
 _ihm_model_representation.model_granularity
 _ihm_model_representation.model_object_count
-1 1 1 1 Nup84 A 1 4 sphere . flexible by-feature 4
+1 1 1 1 Nup84 A 1 2 sphere 1 flexible by-residue .
+2 1 2 1 Nup84 A 3 4 sphere . flexible by-feature 2
 #
 """)
 

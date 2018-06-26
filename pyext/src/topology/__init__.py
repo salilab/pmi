@@ -282,6 +282,7 @@ class Molecule(_SystemBase):
         self.mol_to_clone = mol_to_clone
         self.is_nucleic=is_nucleic
         self.representations = []  # list of stuff to build
+        self._pdb_elements = []
         self._represented = IMP.pmi.tools.OrderedSet()   # residues with representation
         self.coord_finder = _FindCloseStructure() # helps you place beads by storing structure
         self._ideal_helices = [] # list of OrderedSets of tempresidues set to ideal helix
@@ -419,6 +420,9 @@ class Molecule(_SystemBase):
 
         if len(self.residues)==0:
             print("WARNING: Substituting PDB residue type with FASTA residue type. Potentially dangerous.")
+
+        # Store info for ProtocolOutput usage later
+        self._pdb_elements.append((rhs, offset, pdb_fn, chain_id))
 
         # load those into TempResidue object
         atomic_res = IMP.pmi.tools.OrderedSet() # collect integer indexes of atomic residues to return
@@ -639,6 +643,14 @@ class Molecule(_SystemBase):
             if len(no_rep)>0:
                 print('WARNING: Residues without representation in molecule',
                       self.get_name(),':',system_tools.resnums2str(no_rep))
+
+            # Tell ProtocolOutput about any PDBs we read in
+            for rhs, offset, pdb_fn, chain_id in self._pdb_elements:
+                for po, state in self._all_protocol_output():
+                    # todo handle last argument properly
+                    po.add_pdb_element(state, self.hier.get_name(),
+                            rhs[0].get_index(), rhs[1].get_index(), offset,
+                            pdb_fn, chain_id, rhs[0].get_parent())
 
             # first build any ideal helices (fills in structure for the TempResidues)
             for rep in self.representations:

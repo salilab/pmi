@@ -26,7 +26,6 @@ import IMP.pmi.tools
 import csv
 import os
 from collections import defaultdict
-from . import system_tools
 from bisect import bisect_left
 from math import pi,cos,sin
 from operator import itemgetter

@@ -648,7 +648,9 @@ class Molecule(_SystemBase):
             # build all the representations
             built_reps = []
             for rep in self.representations:
-                built_reps += system_tools.build_representation(self.hier,rep,self.coord_finder)
+                built_reps += system_tools.build_representation(
+                            self.hier, rep, self.coord_finder,
+                            self._all_protocol_output())
 
             # sort them before adding as children
             built_reps.sort(key=lambda r: IMP.atom.Fragment(r).get_residue_indexes()[0])

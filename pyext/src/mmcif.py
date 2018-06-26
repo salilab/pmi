@@ -944,9 +944,9 @@ class _State(ihm.model.State):
         # Representation object; in PMI2 it is the PMI2 State object itself.
         self._pmi_object = weakref.proxy(pmi_object)
         if hasattr(pmi_object, 'state'):
-            self._pmi_state = pmi_object.state
+            self._pmi_state = weakref.ref(pmi_object.state)
         else:
-            self._pmi_state = self._pmi_object
+            self._pmi_state = weakref.ref(pmi_object)
         # Preserve PMI state name
         old_name = self.name
         super(_State, self).__init__(experiment_type='Fraction of bulk')
@@ -963,9 +963,9 @@ class _State(ihm.model.State):
         self.all_modeled_components = []
 
     def __hash__(self):
-        return hash(self._pmi_state)
+        return hash(self._pmi_state())
     def __eq__(self, other):
-        return self._pmi_state == other._pmi_state
+        return self._pmi_state() == other._pmi_state()
 
     def add_model_group(self, group):
         self.append(group)
@@ -987,12 +987,12 @@ class _State(ihm.model.State):
         else:
             return name
 
-    short_name = property(lambda self: self._pmi_state.short_name)
-    long_name = property(lambda self: self._pmi_state.long_name)
+    short_name = property(lambda self: self._pmi_state().short_name)
+    long_name = property(lambda self: self._pmi_state().long_name)
     def __get_name(self):
-        return self._pmi_state.long_name
+        return self._pmi_state().long_name
     def __set_name(self, val):
-        self._pmi_state.long_name = val
+        self._pmi_state().long_name = val
     name = property(__get_name, __set_name)
 
 

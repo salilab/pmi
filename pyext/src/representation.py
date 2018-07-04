@@ -170,7 +170,7 @@ class Representation(object):
         self.residuenamekey = IMP.StringKey("ResidueName")
 
     @property
-    @IMP.deprecated_method("3.0", "Model should be accessed with `.model`.")
+    @IMP.deprecated_method("2.10", "Model should be accessed with `.model`.")
     def m(self):
         return self.model
 

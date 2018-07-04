@@ -83,7 +83,7 @@ class _SystemBase(object):
             self.model=model
 
     @property
-    @IMP.deprecated_method("3.0", "Model should be accessed with `.model`.")
+    @IMP.deprecated_method("2.10", "Model should be accessed with `.model`.")
     def mdl(self):
         return self.model
 
@@ -184,7 +184,7 @@ class State(_SystemBase):
             self._add_protocol_output(p, system)
 
     @property
-    @IMP.deprecated_method("3.0", "Model should be accessed with `.model`.")
+    @IMP.deprecated_method("2.10", "Model should be accessed with `.model`.")
     def mdl(self):
         return self.model
 
@@ -301,7 +301,7 @@ class Molecule(_SystemBase):
             self.residues.append(r)
 
     @property
-    @IMP.deprecated_method("3.0", "Model should be accessed with `.model`.")
+    @IMP.deprecated_method("2.10", "Model should be accessed with `.model`.")
     def mdl(self):
         return self.model
 
@@ -848,7 +848,7 @@ class PDBSequences(object):
         self.read_sequences(pdb_fn,name_map)
 
     @property
-    @IMP.deprecated_method("3.0", "Model should be accessed with `.model`.")
+    @IMP.deprecated_method("2.10", "Model should be accessed with `.model`.")
     def m(self):
         return self.model
 

@@ -176,7 +176,8 @@ class Representation(object):
 
     def add_metadata(self, m):
         """Associate some metadata with this modeling.
-           @param m an instance of IMP.pmi.metadata.Metadata or a subclass.
+           @param m an instance of an ihm metadata class, such as
+                    ihm.Software, ihm.Citation, or ihm.location.Repository.
         """
         self._metadata.append(m)
 

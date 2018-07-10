@@ -700,6 +700,7 @@ _ihm_starting_model_coord.ordinal_id
         w = ihm.format.CifWriter(fh)
         self.assign_entity_asym_ids(po.system)
         ihm.dumper._AssemblyDumper().finalize(po.system)  # assign assembly IDs
+        ihm.dumper._SoftwareDumper().finalize(po.system)  # assign software IDs
         self.assign_dataset_ids(po)
         d = ihm.dumper._ProtocolDumper()
         d.finalize(po.system)
@@ -724,9 +725,9 @@ _ihm_modeling_protocol.ordered_flag
 _ihm_modeling_protocol.software_id
 _ihm_modeling_protocol.script_file_id
 1 1 1 1 1 'All known components & All components modeled by IMP' . Sampling
-'Replica exchange monte carlo' 0 1000 YES NO NO . .
+'Replica exchange monte carlo' 0 1000 YES NO NO 1 .
 2 1 2 1 1 'All known components & All components modeled by IMP' . Sampling
-'Replica exchange monte carlo' 1000 1000 YES NO NO . .
+'Replica exchange monte carlo' 1000 1000 YES NO NO 1 .
 #
 """)
 

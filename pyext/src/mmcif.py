@@ -111,19 +111,19 @@ class _AllSoftware(object):
     def __init__(self, system):
         self.system = system
         self.modeller_used = self.phyre2_used = False
-        self.system.software.extend([
-           ihm.Software(
-                 name="Integrative Modeling Platform (IMP)",
-                 version=IMP.__version__,
-                 classification="integrative model building",
-                 description="integrative model building",
-                 location='https://integrativemodeling.org'),
-           ihm.Software(
+        self.pmi = ihm.Software(
                 name="IMP PMI module",
                 version=IMP.pmi.__version__,
                 classification="integrative model building",
                 description="integrative model building",
-                location='https://integrativemodeling.org')])
+                location='https://integrativemodeling.org')
+        self.imp = ihm.Software(
+                 name="Integrative Modeling Platform (IMP)",
+                 version=IMP.__version__,
+                 classification="integrative model building",
+                 description="integrative model building",
+                 location='https://integrativemodeling.org')
+        self.system.software.extend([self.pmi, self.imp])
 
     def set_modeller_used(self, version, date):
         if self.modeller_used:
@@ -1316,8 +1316,9 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         # actual experiment, and how many independent runs were carried out
         # (use these as multipliers to get the correct total number of
         # output models)
-        self.all_protocols.add_step(_ReplicaExchangeProtocolStep(state, rex),
-                                    state)
+        step = _ReplicaExchangeProtocolStep(state, rex)
+        step.software = self.all_software.pmi
+        self.all_protocols.add_step(step, state)
 
     def _add_simple_dynamics(self, num_models_end, method):
         # Always assumed that we're dealing with the last state
@@ -1389,6 +1390,7 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         protocol = self.all_protocols.get_last_protocol(state)
         num_models = protocol.steps[-1].num_models_end
         pp = _ReplicaExchangeAnalysisPostProcess(rex, num_models)
+        pp.software = self.all_software.pmi
         self.all_protocols.add_postproc(pp, state)
         for i in range(rex._number_of_clusters):
             group = ihm.model.ModelGroup(name=state.get_prefixed_name(

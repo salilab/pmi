@@ -1106,6 +1106,8 @@ class ProtocolOutput(IMP.pmi1.output.ProtocolOutput):
 
         # Common geometric objects used in PMI systems
         self._xy_plane = ihm.geometry.XYPlane()
+        self._xz_plane = ihm.geometry.XZPlane()
+        self._z_axis = ihm.geometry.ZAxis()
         self._center_origin = ihm.geometry.Center(0,0,0)
         self._identity_transform = ihm.geometry.Transformation.identity()
 
@@ -1486,8 +1488,23 @@ class ProtocolOutput(IMP.pmi1.output.ProtocolOutput):
 
     def add_zaxial_restraint(self, state, ps, lower_bound, upper_bound,
                              sigma, pmi_restraint):
+        self._add_geometric_restraint(state, ps, lower_bound, upper_bound,
+                                      sigma, pmi_restraint, self._xy_plane)
+
+    def add_yaxial_restraint(self, state, ps, lower_bound, upper_bound,
+                             sigma, pmi_restraint):
+        self._add_geometric_restraint(state, ps, lower_bound, upper_bound,
+                                      sigma, pmi_restraint, self._xz_plane)
+
+    def add_xyradial_restraint(self, state, ps, lower_bound, upper_bound,
+                               sigma, pmi_restraint):
+        self._add_geometric_restraint(state, ps, lower_bound, upper_bound,
+                                      sigma, pmi_restraint, self._z_axis)
+
+    def _add_geometric_restraint(self, state, ps, lower_bound, upper_bound,
+                                 sigma, pmi_restraint, geom):
         asym = get_asym_mapper_for_state(self, state, self.__asym_states)
-        r = _GeometricRestraint(self, state, pmi_restraint, self._xy_plane,
+        r = _GeometricRestraint(self, state, pmi_restraint, geom,
                              asym.get_feature(ps),
                              ihm.restraint.LowerUpperBoundDistanceRestraint(
                                                     lower_bound, upper_bound),
@@ -1512,12 +1529,20 @@ class ProtocolOutput(IMP.pmi1.output.ProtocolOutput):
 
     def add_membrane_surface_location_restraint(
             self, state, ps, tor_R, tor_r, tor_th, sigma, pmi_restraint):
+        self._add_membrane_restraint(state, ps, tor_R, tor_r, tor_th, sigma,
+                  pmi_restraint, ihm.restraint.UpperBoundDistanceRestraint(0.))
+
+    def add_membrane_exclusion_restraint(
+            self, state, ps, tor_R, tor_r, tor_th, sigma, pmi_restraint):
+        self._add_membrane_restraint(state, ps, tor_R, tor_r, tor_th, sigma,
+                  pmi_restraint, ihm.restraint.LowerBoundDistanceRestraint(0.))
+
+    def _add_membrane_restraint(self, state, ps, tor_R, tor_r, tor_th,
+                                sigma, pmi_restraint, rsr):
         asym = get_asym_mapper_for_state(self, state, self.__asym_states)
         r = _GeometricRestraint(self, state, pmi_restraint,
                              self._get_membrane(tor_R, tor_r, tor_th),
-                             asym.get_feature(ps),
-                             ihm.restraint.UpperBoundDistanceRestraint(0.),
-                             sigma)
+                             asym.get_feature(ps), rsr, sigma)
         self.system.restraints.append(r)
         self._add_restraint_dataset(r) # so that all-dataset group works
 

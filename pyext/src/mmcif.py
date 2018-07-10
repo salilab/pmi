@@ -76,6 +76,7 @@ class _AsymMapper(object):
     def __init__(self, simo, prot):
         self.simo = simo
         self._cm = _ComponentMapper(prot)
+        self._seen_ranges = {}
 
     def __getitem__(self, p):
         protname = self._cm[p]
@@ -104,7 +105,15 @@ class _AsymMapper(object):
                                          rng.seq_id_range[1])
             else:
                 rngs.append(rng)
-        return ihm.restraint.PolyResidueFeature(rngs)
+        # If an identical feature already exists, return that
+        # todo: python-ihm should handle this automatically for us
+        hrngs = tuple(rngs)
+        if hrngs in self._seen_ranges:
+            return self._seen_ranges[hrngs]
+        else:
+            feat = ihm.restraint.PolyResidueFeature(rngs)
+            self._seen_ranges[hrngs] = feat
+            return feat
 
 
 class _AllSoftware(object):

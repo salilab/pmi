@@ -1331,6 +1331,9 @@ _ihm_geometric_object_axis.transformation_id
         method = getattr(po, method_name)
         method(state, residues, lower_bound=4.0,
                upper_bound=8.0, sigma=2.0, pmi_restraint=pmi_r)
+        # duplicate restraint should use the same feature
+        method(state, residues, lower_bound=4.0,
+               upper_bound=8.0, sigma=2.0, pmi_restraint=pmi_r)
         self.assertRaises(ValueError, method,
                           state, [simo.hier_dict['Nup84']], lower_bound=4.0,
                           upper_bound=8.0, sigma=2.0, pmi_restraint=pmi_r)
@@ -1387,6 +1390,7 @@ _ihm_geometric_object_distance_restraint.distance_upper_limit
 _ihm_geometric_object_distance_restraint.group_conditionality
 _ihm_geometric_object_distance_restraint.dataset_list_id
 1 1 1 other 'lower and upper bound' 0.500 4.000 8.000 ALL .
+2 1 1 other 'lower and upper bound' 0.500 4.000 8.000 ALL .
 #
 """)
 

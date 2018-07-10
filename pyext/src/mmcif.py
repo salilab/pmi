@@ -87,16 +87,23 @@ class _AsymMapper(object):
         rngs = []
         for p in ps:
             asym = self[p]
-            # todo: handle overlapping or adjoining ranges
+            # todo: handle overlapping ranges
             if IMP.atom.Residue.get_is_setup(p):
                 rind = IMP.atom.Residue(p).get_index()
-                rngs.append(asym(rind, rind))
+                rng = asym(rind, rind)
             elif IMP.atom.Fragment.get_is_setup(p):
                 # PMI Fragments always contain contiguous residues
                 rinds = IMP.atom.Fragment(p).get_residue_indexes()
-                rngs.append(asym(rinds[0], rinds[-1]))
+                rng = asym(rinds[0], rinds[-1])
             else:
                 raise ValueError("Unsupported particle type %s" % str(p))
+            # Join contiguous ranges
+            if len(rngs) > 0 and rngs[-1].asym == asym \
+               and rngs[-1].seq_id_range[1] == rng.seq_id_range[0] - 1:
+                rngs[-1].seq_id_range = (rngs[-1].seq_id_range[0],
+                                         rng.seq_id_range[1])
+            else:
+                rngs.append(rng)
         return ihm.restraint.PolyResidueFeature(rngs)
 
 

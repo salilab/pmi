@@ -1364,9 +1364,7 @@ _ihm_poly_residue_feature.seq_id_begin
 _ihm_poly_residue_feature.comp_id_begin
 _ihm_poly_residue_feature.seq_id_end
 _ihm_poly_residue_feature.comp_id_end
-1 1 1 A 1 MET 1 MET
-2 1 1 A 2 GLU 2 GLU
-3 1 1 A 3 LEU 4 SER
+1 1 1 A 1 MET 4 SER
 #
 """)
         d = ihm.dumper._GeometricRestraintDumper()

@@ -86,6 +86,7 @@ class Output(object):
         self.use_pmi2 = False
 
     def get_pdb_names(self):
+        """Get a list of all PDB files being output by this instance"""
         return list(self.dictionary_pdbs.keys())
 
     def get_rmf_names(self):

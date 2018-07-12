@@ -21,6 +21,14 @@ output1_categories = ['AtomicXLRestraint', 'AtomicXLRestraint_0_BestDist',
         'rmf_file', 'rmf_frame_index']
 
 class Tests(IMP.test.TestCase):
+    def test_flatten(self):
+        """Test _flatten function"""
+        inp = [1,2,3,4]
+        self.assertEqual(list(IMP.pmi.output._flatten(inp)), inp)
+        inp = (1,2,(4,5,6),[3,4,(9,0),5],9)
+        self.assertEqual(list(IMP.pmi.output._flatten(inp)),
+                         [1,2,4,5,6,3,4,9,0,5,9])
+
     def test_multi_chainids(self):
         """Test multi-character chain IDs"""
         output = IMP.pmi.output.Output()

@@ -1,9 +1,9 @@
 import os
 import IMP
 import IMP.test
-import IMP.pmi.representation
-import IMP.pmi.tools
-import IMP.pmi.output
+import IMP.pmi1.representation
+import IMP.pmi1.tools
+import IMP.pmi1.output
 import IMP.rmf
 import RMF
 
@@ -18,9 +18,9 @@ class Tests(IMP.test.TestCase):
             self.assertEqual(d1.features[k], d2.features[k])
 
     def _get_info_from_stat_file(self, stat_file):
-        po=IMP.pmi.output.ProcessOutput(stat_file)
+        po=IMP.pmi1.output.ProcessOutput(stat_file)
         fs=po.get_keys()
-        models = IMP.pmi.io.get_best_models([stat_file],
+        models = IMP.pmi1.io.get_best_models([stat_file],
                                             score_key="Total_Score",
                                             feature_keys=fs,
                                             rmf_file_key="rmf_file",
@@ -46,7 +46,7 @@ class Tests(IMP.test.TestCase):
 
         m=IMP.Model()
         stat_name=[self.get_input_file_name("output_test/stat.1.out")]
-        stath=IMP.pmi.output.StatHierarchyHandler(m,stat_name)
+        stath=IMP.pmi1.output.StatHierarchyHandler(m,stat_name)
 
         # test that it is indeed a hierarchy
         self.assertEqual(348,len(IMP.atom.get_leaves(stath)))
@@ -138,7 +138,7 @@ class Tests(IMP.test.TestCase):
             self._check_coordinate_identity(lvs,lvsh)
 
         #test multiple stat files with filter
-        stath=IMP.pmi.output.StatHierarchyHandler(m,stat_names,10)
+        stath=IMP.pmi1.output.StatHierarchyHandler(m,stat_names,10)
         lvs=IMP.atom.get_leaves(stath)
         self.assertEqual(10,len(stath))
         for o in stath:
@@ -149,7 +149,7 @@ class Tests(IMP.test.TestCase):
             self._check_coordinate_identity(lvs,lvsh)
 
         #test copy constructor
-        stathcopy=IMP.pmi.output.StatHierarchyHandler(StatHierarchyHandler=stath)
+        stathcopy=IMP.pmi1.output.StatHierarchyHandler(StatHierarchyHandler=stath)
         lvsh=IMP.atom.get_leaves(stathcopy)
         self.assertEqual(stath.get_scores(),stathcopy.get_scores())
         self.assertEqual(stath.get_rmf_names(),stathcopy.get_rmf_names())
@@ -165,7 +165,7 @@ class Tests(IMP.test.TestCase):
         stath.save_data('data.pkl')
 
         #test read data
-        stath_read=IMP.pmi.output.StatHierarchyHandler(m,'data.pkl')
+        stath_read=IMP.pmi1.output.StatHierarchyHandler(m,'data.pkl')
         lvs_read=IMP.atom.get_leaves(stath_read)
 
         for n,d  in enumerate(stath):

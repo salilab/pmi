@@ -1,10 +1,10 @@
 from __future__ import print_function, division
 import IMP
 import IMP.atom
-import IMP.pmi
-import IMP.pmi.topology
+import IMP.pmi1
+import IMP.pmi1.topology
 import IMP.test
-import IMP.pmi.restraints.basic
+import IMP.pmi1.restraints.basic
 import math
 
 
@@ -19,7 +19,7 @@ class Tests(IMP.test.TestCase):
         d.set_radius(1.0)
         IMP.atom.Mass.setup_particle(p,1.0)
         h=IMP.atom.Hierarchy.setup_particle(p)
-        cr=IMP.pmi.restraints.basic.CylinderRestraint(mdl,[h],10,20)
+        cr=IMP.pmi1.restraints.basic.CylinderRestraint(mdl,[h],10,20)
         cr.set_was_used(True)
         for r in range(100):
             d.set_coordinates((r,0,0))
@@ -34,7 +34,7 @@ class Tests(IMP.test.TestCase):
         d.set_radius(1.0)
         IMP.atom.Mass.setup_particle(p,1.0)
         h=IMP.atom.Hierarchy.setup_particle(p)
-        cr=IMP.pmi.restraints.basic.CylinderRestraint(mdl,[h],10,20,-72,72)
+        cr=IMP.pmi1.restraints.basic.CylinderRestraint(mdl,[h],10,20,-72,72)
         cr.set_was_used(True)
         for angle in range(360):
             anglerad=float(angle)/180.0*math.pi

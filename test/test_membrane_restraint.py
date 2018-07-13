@@ -1,12 +1,12 @@
 import IMP
 import IMP.atom
-import IMP.pmi
+import IMP.pmi1
 import IMP.test
 import IMP.isd
-import IMP.pmi.nonmantained
-import IMP.pmi.restraints.proteomics
-import IMP.pmi.representation
-import IMP.pmi.io
+import IMP.pmi1.nonmantained
+import IMP.pmi1.restraints.proteomics
+import IMP.pmi1.representation
+import IMP.pmi1.io
 import IMP.rmf
 import RMF
 import math
@@ -100,7 +100,7 @@ class MembraneRestraint(IMP.test.TestCase):
         r = MembraneRestraintPrototype(m, z_center)
         r.add_particles_inside([atom])
 
-        r2 = IMP.pmi.MembraneRestraint(
+        r2 = IMP.pmi1.MembraneRestraint(
             m, z_center.get_particle_index(), 30.0, 3.0, 0.0000000001, 0.02)
         r2.set_was_used(True)
         r2.add_particles_inside([atom.get_index()])
@@ -127,7 +127,7 @@ class MembraneRestraint(IMP.test.TestCase):
         r = MembraneRestraintPrototype(m, z_center)
         r.add_particles_above([atom])
 
-        r2 = IMP.pmi.MembraneRestraint(
+        r2 = IMP.pmi1.MembraneRestraint(
             m, z_center.get_particle_index(), 30.0, 3.0, 0.0000000001, 0.02)
         r2.set_was_used(True)
         r2.add_particles_above([atom.get_index()])
@@ -154,7 +154,7 @@ class MembraneRestraint(IMP.test.TestCase):
         r = MembraneRestraintPrototype(m, z_center)
         r.add_particles_below([atom])
 
-        r2 = IMP.pmi.MembraneRestraint(
+        r2 = IMP.pmi1.MembraneRestraint(
             m, z_center.get_particle_index(), 30.0, 3.0, 0.0000000001, 0.02)
         r2.set_was_used(True)
         r2.add_particles_below([atom.get_index()])
@@ -176,9 +176,9 @@ class TestOldRestraint(IMP.test.TestCase):
 
         m = IMP.Model()
 
-        r=IMP.pmi.representation.Representation(m)
+        r=IMP.pmi1.representation.Representation(m)
 
-        smr=IMP.pmi.nonmantained.SetupMembranePoreRestraint(
+        smr=IMP.pmi1.nonmantained.SetupMembranePoreRestraint(
             r,
             selection_tuples_outside=None,
             selection_tuples_membrane=None,

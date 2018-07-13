@@ -1,4 +1,4 @@
-"""@namespace IMP.pmi.io.crosslink
+"""@namespace IMP.pmi1.io.crosslink
    Handles cross-link data sets.
 
    Utilities are also provided to help in the analysis of models that
@@ -6,8 +6,8 @@
 """
 from __future__ import print_function
 import IMP
-import IMP.pmi
-import IMP.pmi.output
+import IMP.pmi1
+import IMP.pmi1.output
 import IMP.atom
 import IMP.core
 import IMP.algebra
@@ -25,7 +25,7 @@ from collections import defaultdict
 def set_json_default(obj):
     if isinstance(obj, set):
         return list(obj)
-    if isinstance(obj, IMP.pmi.topology.Molecule):
+    if isinstance(obj, IMP.pmi1.topology.Molecule):
         return str(obj)
     raise TypeError
 
@@ -536,7 +536,7 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
         Constructor.
         @param converter an instance of CrossLinkDataBaseKeywordsConverter
         @param data_base an instance of CrossLinkDataBase to build the new database on
-        @param fasta_seq an instance of IMP.pmi.topology.Sequences containing protein fasta sequences to check
+        @param fasta_seq an instance of IMP.pmi1.topology.Sequences containing protein fasta sequences to check
                 crosslink consistency. If not given consistency will not be checked
         @param linkable_aa a tuple containing one-letter amino acids which are linkable by the crosslinker;
                 only used if the database DOES NOT provide a value for a certain residueX_amino_acid_key
@@ -561,7 +561,7 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
 
         # default amino acids considered to be 'linkable' if none are given
         self.def_aa_tuple = linkable_aa
-        self.fasta_seq = fasta_seq      #type: IMP.pmi.topology.Sequences
+        self.fasta_seq = fasta_seq      #type: IMP.pmi1.topology.Sequences
         self.dataset = None
         self._update()
 
@@ -615,7 +615,7 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
         @param FixedFormatParser a parser for a fixed format
         '''
         if not FixedFormatParser:
-            xl_list=IMP.pmi.tools.get_db_from_csv(file_name)
+            xl_list=IMP.pmi1.tools.get_db_from_csv(file_name)
 
             if converter is not None:
                 self.cldbkc = converter
@@ -807,7 +807,7 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
     def _match_xlinks(self, prot_name, res_index, aa_tuple):
         # returns Boolean whether given aa matches a position in the fasta file
         # cross link files usually start counting at 1 and not 0; therefore subtract -1 to compare with fasta
-        amino_dict = IMP.pmi.tools.ThreeToOneConverter()
+        amino_dict = IMP.pmi1.tools.ThreeToOneConverter()
         res_index -= 1
         for amino_acid in aa_tuple:
             if len(amino_acid) == 3:
@@ -891,7 +891,7 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
 
     def filter_score(self,score):
         '''Get all crosslinks with score greater than an input value'''
-        FilterOperator=IMP.pmi.io.crosslink.FilterOperator(self.id_score_key,operator.gt,score)
+        FilterOperator=IMP.pmi1.io.crosslink.FilterOperator(self.id_score_key,operator.gt,score)
         return self.filter(FilterOperator)
 
     def merge(self,CrossLinkDataBase1,CrossLinkDataBase2):
@@ -1135,11 +1135,11 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
             #in an histogram
             #molecule name
             molecule=kwargs["molecule"]
-            if type(molecule) is IMP.pmi.topology.Molecule:
+            if type(molecule) is IMP.pmi1.topology.Molecule:
                 length=len(molecule.sequence)
                 molecule=molecule.get_name()
             else:
-                #you need a IMP.pmi.topology.Sequences object
+                #you need a IMP.pmi1.topology.Sequences object
                 sequences_object=kwargs["sequences_object"]
                 sequence=sequences_object.sequences[molecule]
                 length=len(sequence)
@@ -1175,7 +1175,7 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
                 except ValueError:
                     print("CrossLinkDataBase.plot: Value error for cross-link %s" % (xl[self.unique_id_key]))
                     continue
-            IMP.pmi.output.plot_field_histogram(
+            IMP.pmi1.output.plot_field_histogram(
                   filename, [values_list], valuename=valuename, bins=bins,
                   colors=None, format="pdf",
                   reference_xline=None, yplotrange=None,
@@ -1330,8 +1330,8 @@ class MapCrossLinkDataBaseOnStructure(object):
 
     def __init__(self,CrossLinkDataBase,rmf_or_stat_handler):
         self.CrossLinkDataBase=CrossLinkDataBase
-        if type(rmf_or_stat_handler) is IMP.pmi.output.RMFHierarchyHandler or \
-                type(rmf_or_stat_handler) is IMP.pmi.output.StatHierarchyHandler:
+        if type(rmf_or_stat_handler) is IMP.pmi1.output.RMFHierarchyHandler or \
+                type(rmf_or_stat_handler) is IMP.pmi1.output.StatHierarchyHandler:
             self.prots=rmf_or_stat_handler
         self.distances=defaultdict(list)
         self.array_to_id={}
@@ -1482,7 +1482,7 @@ class MapCrossLinkDataBaseOnStructure(object):
         dists=[self.distances[self.array_to_id[k]] for k in keys]
         distances_sorted_by_median=[x for _,x in sorted(zip(medians,dists))]
         keys_sorted_by_median=[x for _,x in sorted(zip(medians,keys))]
-        IMP.pmi.output.plot_fields_box_plots(filename,
+        IMP.pmi1.output.plot_fields_box_plots(filename,
                                          distances_sorted_by_median,
                                          range(len(distances_sorted_by_median)),
                                          xlabels=keys_sorted_by_median,scale_plot_length=0.2)
@@ -1557,13 +1557,13 @@ class CrossLinkDataBaseFromStructure(object):
                 residues1=[i for i in range(1,len(seq)+1) if seq[i-1] in self.residue_types_1]
                 residues2=[i for i in range(1,len(seq)+1) if seq[i-1] in self.residue_types_2]
                 for r in residues1:
-                    h=IMP.pmi.tools.select_by_tuple(self.representation,(r,r,protein),resolution=1)[0]
+                    h=IMP.pmi1.tools.select_by_tuple(self.representation,(r,r,protein),resolution=1)[0]
                     p=h.get_particle()
                     index=p.get_index()
                     self.indexes_dict1[index]=(protein,r)
                     self.protein_residue_dict[(protein,r)]=index
                 for r in residues2:
-                    h=IMP.pmi.tools.select_by_tuple(self.representation,(r,r,protein),resolution=1)[0]
+                    h=IMP.pmi1.tools.select_by_tuple(self.representation,(r,r,protein),resolution=1)[0]
                     p=h.get_particle()
                     index=p.get_index()
                     self.indexes_dict2[index]=(protein,r)
@@ -1720,7 +1720,7 @@ class CrossLinkDataBaseFromStructure(object):
 
 
     def get_random_residue_pair(self,distance=None,xwalk_bin_path=None,max_delta_distance=None):
-        import IMP.pmi.tools
+        import IMP.pmi1.tools
         import math
         from random import choice,uniform
         if distance is None:
@@ -1733,8 +1733,8 @@ class CrossLinkDataBaseFromStructure(object):
                     seq2=self.representation.sequence_dict[protein2]
                     residue1=choice([i for i in range(1,len(seq1)+1) if seq1[i-1] in self.residue_types_1])
                     residue2=choice([i for i in range(1,len(seq2)+1) if seq2[i-1] in self.residue_types_2])
-                    h1=IMP.pmi.tools.select_by_tuple(self.representation,(residue1,residue1,protein1),resolution=1)[0]
-                    h2=IMP.pmi.tools.select_by_tuple(self.representation,(residue2,residue2,protein2),resolution=1)[0]
+                    h1=IMP.pmi1.tools.select_by_tuple(self.representation,(residue1,residue1,protein1),resolution=1)[0]
+                    h2=IMP.pmi1.tools.select_by_tuple(self.representation,(residue2,residue2,protein2),resolution=1)[0]
                     particle_distance=IMP.core.get_distance(IMP.core.XYZ(h1.get_particle()),IMP.core.XYZ(h2.get_particle()))
                     if (protein1,residue1) != (protein2,residue2):
                         break
@@ -1850,9 +1850,9 @@ class CrossLinkDataBaseFromStructure(object):
         return ((protein1,protein2,residue1,residue2)),particle_distance
 
     def get_xwalk_distances(self,xwalk_bin_path,distance):
-        import IMP.pmi.output
+        import IMP.pmi1.output
         import os
-        o=IMP.pmi.output.Output(atomistic=True)
+        o=IMP.pmi1.output.Output(atomistic=True)
         o.init_pdb("xwalk.pdb",self.representation.prot)
         o.write_pdb("xwalk.pdb")
         namechainiddict=o.dictchain["xwalk.pdb"]

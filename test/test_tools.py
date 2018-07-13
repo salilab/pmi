@@ -4,15 +4,15 @@ import os
 import IMP.test
 import IMP.core
 import IMP.container
-import IMP.pmi
-import IMP.pmi.topology
-import IMP.pmi.io
-import IMP.pmi.io.crosslink
-import IMP.pmi.representation
-import IMP.pmi.restraints
-import IMP.pmi.restraints.em
-import IMP.pmi.restraints.crosslinking
-import IMP.pmi.macros
+import IMP.pmi1
+import IMP.pmi1.topology
+import IMP.pmi1.io
+import IMP.pmi1.io.crosslink
+import IMP.pmi1.representation
+import IMP.pmi1.restraints
+import IMP.pmi1.restraints.em
+import IMP.pmi1.restraints.crosslinking
+import IMP.pmi1.macros
 import RMF
 import IMP.rmf
 from math import *
@@ -29,7 +29,7 @@ class Tests(IMP.test.TestCase):
                             'Nuisances_Psi': ('p2', 'p3')})
         r2 = MockRestraint({'Nuisances_Sigma': ('p0', 'p4')})
         with IMP.allow_deprecated():
-            p = IMP.pmi.tools.ParticleToSampleFilter([r1, r2])
+            p = IMP.pmi1.tools.ParticleToSampleFilter([r1, r2])
         p.add_filter('Sigma')
         ps = p.get_particles_to_sample()
         self.assertEqual(list(ps.keys()), ['Nuisances_Sigma'])
@@ -38,7 +38,7 @@ class Tests(IMP.test.TestCase):
 
     def test_particle_to_sample_list(self):
         """Test ParticleToSampleList"""
-        p = IMP.pmi.tools.ParticleToSampleList()
+        p = IMP.pmi1.tools.ParticleToSampleList()
         self.assertEqual(p.label, 'None')
         self.assertRaises(TypeError, p.add_particle, 'P0', 'bad_type', 1, 'foo')
 
@@ -73,23 +73,23 @@ class Tests(IMP.test.TestCase):
             xyzr.set_coordinates((0,0,0))
             xyzr.set_radius(1.0)
             root.add_child(h)
-        hs=IMP.pmi.tools.input_adaptor(root)
+        hs=IMP.pmi1.tools.input_adaptor(root)
         self.assertEqual([IMP.atom.get_leaves(root)],hs)
-        hs=IMP.pmi.tools.input_adaptor(root,pmi_resolution=1)
+        hs=IMP.pmi1.tools.input_adaptor(root,pmi_resolution=1)
         self.assertEqual([IMP.atom.get_leaves(root)],hs)
 
     def test_Segments(self):
-        s=IMP.pmi.tools.Segments(1)
+        s=IMP.pmi1.tools.Segments(1)
         self.assertEqual(s.segs,[[1]])
-        s=IMP.pmi.tools.Segments([1])
+        s=IMP.pmi1.tools.Segments([1])
         self.assertEqual(s.segs,[[1]])
-        s=IMP.pmi.tools.Segments([1,1])
+        s=IMP.pmi1.tools.Segments([1,1])
         self.assertEqual(s.segs,[[1]])
-        s=IMP.pmi.tools.Segments([1,2])
+        s=IMP.pmi1.tools.Segments([1,2])
         self.assertEqual(s.segs,[[1,2]])
-        s=IMP.pmi.tools.Segments([1,2,3])
+        s=IMP.pmi1.tools.Segments([1,2,3])
         self.assertEqual(s.segs,[[1,2,3]])
-        s=IMP.pmi.tools.Segments([1,2,3,5])
+        s=IMP.pmi1.tools.Segments([1,2,3,5])
         self.assertEqual(s.segs,[[1,2,3],[5]])
         s.add(6)
         self.assertEqual(s.segs,[[1,2,3],[5,6]])
@@ -131,7 +131,7 @@ class Tests(IMP.test.TestCase):
                               'MET': 'M', 'PHE': 'F', 'PRO': 'P', 'SER': 'S',
                               'THR': 'T', 'TRP': 'W', 'TYR': 'Y', 'VAL': 'V', 'UNK': 'X'}
 
-        tto=IMP.pmi.tools.ThreeToOneConverter(is_nucleic=False)
+        tto=IMP.pmi1.tools.ThreeToOneConverter(is_nucleic=False)
 
         for key in threetoone:
             self.assertEqual(threetoone[key],tto[key])
@@ -146,7 +146,7 @@ class Tests(IMP.test.TestCase):
         threetoone = {'ADE': 'A', 'URA': 'U', 'CYT': 'C', 'GUA': 'G',
                       'THY': 'T', 'UNK': 'X'}
 
-        tto = IMP.pmi.tools.ThreeToOneConverter(is_nucleic=True)
+        tto = IMP.pmi1.tools.ThreeToOneConverter(is_nucleic=True)
 
         for key in threetoone:
             self.assertEqual(threetoone[key], tto[key])
@@ -163,11 +163,11 @@ class Tests(IMP.test.TestCase):
         """Test get_restraint_set()"""
         m = IMP.Model()
         # Should make an empty set
-        rs = IMP.pmi.tools.get_restraint_set(m)
+        rs = IMP.pmi1.tools.get_restraint_set(m)
         self.assertEqual(rs.get_number_of_restraints(), 0)
 
         for rmf in (True, False):
-            rs = IMP.pmi.tools.get_restraint_set(m, rmf)
+            rs = IMP.pmi1.tools.get_restraint_set(m, rmf)
             self.assertEqual(rs.get_number_of_restraints(), 0)
 
     def test_add_restraint(self):
@@ -175,14 +175,14 @@ class Tests(IMP.test.TestCase):
         m = IMP.Model()
 
         r1 = IMP._ConstRestraint(m, [], 1)
-        IMP.pmi.tools.add_restraint_to_model(m, r1, add_to_rmf=False)
+        IMP.pmi1.tools.add_restraint_to_model(m, r1, add_to_rmf=False)
         r2 = IMP._ConstRestraint(m, [], 1)
-        IMP.pmi.tools.add_restraint_to_model(m, r2, add_to_rmf=True)
+        IMP.pmi1.tools.add_restraint_to_model(m, r2, add_to_rmf=True)
 
-        rs = IMP.pmi.tools.get_restraint_set(m, rmf=False)
+        rs = IMP.pmi1.tools.get_restraint_set(m, rmf=False)
         self.assertEqual(rs.get_number_of_restraints(), 2)
 
-        rs = IMP.pmi.tools.get_restraint_set(m, rmf=True)
+        rs = IMP.pmi1.tools.get_restraint_set(m, rmf=True)
         self.assertEqual(rs.get_number_of_restraints(), 1)
 
 

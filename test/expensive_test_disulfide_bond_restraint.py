@@ -3,12 +3,12 @@ import IMP
 import IMP.test
 import IMP.core
 import IMP.container
-import IMP.pmi
-import IMP.pmi.io
-import IMP.pmi.io.crosslink
-import IMP.pmi.representation
-import IMP.pmi.restraints
-import IMP.pmi.restraints.crosslinking_new
+import IMP.pmi1
+import IMP.pmi1.io
+import IMP.pmi1.io.crosslink
+import IMP.pmi1.representation
+import IMP.pmi1.restraints
+import IMP.pmi1.restraints.crosslinking_new
 from math import *
 
 def sphere_cap(r1, r2, d):
@@ -77,14 +77,14 @@ class Tests(IMP.test.TestCase):
 
     def test_restraint_probability_beads(self):
         m = IMP.Model()
-        r = IMP.pmi.representation.Representation(m)
+        r = IMP.pmi1.representation.Representation(m)
         r.create_component("ProtA",color=1.0)
         r.add_component_beads("ProtA", [(1,10)],incoord=(0,0,0))
         r.create_component("ProtB",color=1.0)
         r.add_component_beads("ProtB", [(1,10)],incoord=(0,10,0))
         r.set_floppy_bodies()
 
-        xl = IMP.pmi.restraints.crosslinking_new.DisulfideCrossLinkRestraint(
+        xl = IMP.pmi1.restraints.crosslinking_new.DisulfideCrossLinkRestraint(
             r,
             (1,1,"ProtA"),
             (1,1,"ProtB"),

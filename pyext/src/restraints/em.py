@@ -1,4 +1,4 @@
-"""@namespace IMP.pmi.restraints.em
+"""@namespace IMP.pmi1.restraints.em
 Restraints for handling electron microscopy maps.
 """
 
@@ -9,7 +9,7 @@ import IMP.algebra
 import IMP.atom
 import IMP.container
 import IMP.isd
-import IMP.pmi.tools
+import IMP.pmi1.tools
 import IMP.isd.gmm_tools
 import sys
 import re
@@ -152,7 +152,7 @@ class GaussianEMRestraint(object):
             self.rb=None
 
         # sigma particle
-        self.sigmaglobal = IMP.pmi.tools.SetupNuisance(self.m, self.sigmainit,
+        self.sigmaglobal = IMP.pmi1.tools.SetupNuisance(self.m, self.sigmainit,
                                                self.sigmamin, self.sigmamax,
                                                self.sigmaissampled).get_particle()
 
@@ -226,7 +226,7 @@ class GaussianEMRestraint(object):
         transformation = IMP.algebra.Transformation3D(IMP.algebra.Vector3D(-v))
         for p in self.target_ps:
             IMP.core.transform(IMP.core.RigidBody(p), transformation)
-        # IMP.pmi.tools.translate_hierarchies(self.densities,v)
+        # IMP.pmi1.tools.translate_hierarchies(self.densities,v)
 
     def get_center_of_mass(self, target=True):
         '''Returns the geometric center of the GMM particles
@@ -256,10 +256,10 @@ class GaussianEMRestraint(object):
         transformation = IMP.algebra.Transformation3D(IMP.algebra.Vector3D(-v))
         for p in self.target_ps:
             IMP.core.transform(IMP.core.RigidBody(p), transformation)
-        # IMP.pmi.tools.translate_hierarchies(self.densities,v)
+        # IMP.pmi1.tools.translate_hierarchies(self.densities,v)
 
     def center_model_on_target_density(self, input_object):
-        if type(input_object) is IMP.pmi.representation.Representation:
+        if type(input_object) is IMP.pmi1.representation.Representation:
             hier = input_object.prot
         else:
             raise Exception("Input must be a Representation object")
@@ -323,7 +323,7 @@ class GaussianEMRestraint(object):
         self.label = label
 
     def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.m, self.rs, add_to_rmf=True)
+        IMP.pmi1.tools.add_restraint_to_model(self.m, self.rs, add_to_rmf=True)
 
     def get_particles_to_sample(self):
         ps = {}
@@ -447,7 +447,7 @@ class CrossCorrelationRestraint(object):
         self.label = label
 
     def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.m, self.rs)
+        IMP.pmi1.tools.add_restraint_to_model(self.m, self.rs)
 
     def get_restraint_set(self):
         return self.rs
@@ -479,7 +479,7 @@ class ElectronMicroscopy2D(object):
         self.label = "None"
 
         # IMP.atom.get_by_type
-        particles = IMP.pmi.tools.select(
+        particles = IMP.pmi1.tools.select(
             representation,
             resolution=resolution)
 
@@ -490,7 +490,7 @@ class ElectronMicroscopy2D(object):
         self.label = label
 
     def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.m, self.rs)
+        IMP.pmi1.tools.add_restraint_to_model(self.m, self.rs)
 
     def get_restraint(self):
         return self.rs

@@ -3,8 +3,8 @@ import IMP.core
 import IMP.algebra
 import IMP.test
 
-import IMP.pmi.restraints.em
-import IMP.pmi.representation
+import IMP.pmi1.restraints.em
+import IMP.pmi1.representation
 
 import math
 
@@ -12,7 +12,7 @@ class Tests(IMP.test.TestCase):
     def setUp(self):
         IMP.test.TestCase.setUp(self)
         self.model = IMP.Model()
-        self.simo1 = IMP.pmi.representation.Representation(
+        self.simo1 = IMP.pmi1.representation.Representation(
             self.model, upperharmonic=True, disorderedlength=False)
 
     def test_GaussianEMRestraint_rigid_body(self):
@@ -25,7 +25,7 @@ class Tests(IMP.test.TestCase):
             self.model,
             radius_scale=3.0,
             mass_scale=1.0)
-        gemh = IMP.pmi.restraints.em.GaussianEMRestraint(target_ps, fname,
+        gemh = IMP.pmi1.restraints.em.GaussianEMRestraint(target_ps, fname,
                                                          target_mass_scale=1.0,
                                                          slope=0.000001,
                                                          target_radii_scale=3.0,

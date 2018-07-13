@@ -1,4 +1,4 @@
-import IMP.pmi
+import IMP.pmi1
 import IMP.test
 import RMF
 import IMP.rmf
@@ -10,8 +10,8 @@ try:
 except ImportError:
     scipy = None
 if scipy is not None:
-    import IMP.pmi.analysis
-    import IMP.pmi.io
+    import IMP.pmi1.analysis
+    import IMP.pmi1.io
 
 class AnalysisTest(IMP.test.TestCase):
     def setUp(self):
@@ -56,7 +56,7 @@ class AnalysisTest(IMP.test.TestCase):
         coord_dict_1={"prot1":[xyz11],"prot2":[xyz21]}
 
         # initialize the alignment class
-        ali=IMP.pmi.analysis.Alignment(coord_dict_0,coord_dict_1)
+        ali=IMP.pmi1.analysis.Alignment(coord_dict_0,coord_dict_1)
         (rmsd,transformation)=ali.align()
 
         # test output
@@ -121,7 +121,7 @@ class AnalysisTest(IMP.test.TestCase):
 
 
         # initialize the alignment class
-        ali=IMP.pmi.analysis.Alignment(coord_ali_dict_0,coord_ali_dict_1)
+        ali=IMP.pmi1.analysis.Alignment(coord_ali_dict_0,coord_ali_dict_1)
         (rmsd,transformation)=ali.align()
 
         # test output
@@ -138,7 +138,7 @@ class AnalysisTest(IMP.test.TestCase):
 
         coord_rmsd_dict_0={"prot1":[xyz10],"prot2":[xyz20],"prot3":[xyz30],"prot4":[xyz40]}
         coord_rmsd_dict_1={"prot1":[xyz11],"prot2":[xyz21],"prot3":[xyz31],"prot4":[xyz41]}
-        ali=IMP.pmi.analysis.Alignment(coord_rmsd_dict_0,coord_rmsd_dict_1)
+        ali=IMP.pmi1.analysis.Alignment(coord_rmsd_dict_0,coord_rmsd_dict_1)
         self.assertAlmostEqual(ali.get_rmsd(),1.0/sqrt(4.0))
 
     def test_alignment_rmsd(self):
@@ -155,7 +155,7 @@ class AnalysisTest(IMP.test.TestCase):
         coord_dict_0={"prot1":[xyz10],"prot2":[xyz20]}
         coord_dict_1={"prot1":[xyz11],"prot2":[xyz21]}
 
-        ali=IMP.pmi.analysis.Alignment(coord_dict_0,coord_dict_1)
+        ali=IMP.pmi1.analysis.Alignment(coord_dict_0,coord_dict_1)
         self.assertAlmostEqual(ali.get_rmsd(),1.0/sqrt(2.0))
 
     def test_alignment_rmsd_with_permutation(self):
@@ -174,7 +174,7 @@ class AnalysisTest(IMP.test.TestCase):
         coord_dict_0={"prot1":[xyz10],"prot2..1":[xyz20],"prot2..2":[xyz30]}
         coord_dict_1={"prot1":[xyz11],"prot2..1":[xyz21],"prot2..2":[xyz31]}
 
-        ali=IMP.pmi.analysis.Alignment(coord_dict_0,coord_dict_1)
+        ali=IMP.pmi1.analysis.Alignment(coord_dict_0,coord_dict_1)
         self.assertAlmostEqual(ali.get_rmsd(),1.0/sqrt(3.0))
 
 
@@ -193,7 +193,7 @@ class AnalysisTest(IMP.test.TestCase):
         coord_dict_1={"prot1":[xyz11],"prot2":[xyz21]}
 
         weights={"prot1":[1.0],"prot2":[10.0]}
-        ali=IMP.pmi.analysis.Alignment(coord_dict_0,coord_dict_1,weights)
+        ali=IMP.pmi1.analysis.Alignment(coord_dict_0,coord_dict_1,weights)
         self.assertAlmostEqual(ali.get_rmsd(),sqrt(10.0/11.0))
 
     def test_get_model_density(self):
@@ -202,7 +202,7 @@ class AnalysisTest(IMP.test.TestCase):
             self.skipTest("no scipy module")
         custom_ranges={'med2':[(1,100,'med2')],
                        'med16':['med16']}
-        mdens = IMP.pmi.analysis.GetModelDensity(custom_ranges)
+        mdens = IMP.pmi1.analysis.GetModelDensity(custom_ranges)
         rmf_file=self.get_input_file_name('output/rmfs/2.rmf3')
         rh = RMF.open_rmf_file_read_only(rmf_file)
         prots = IMP.rmf.create_hierarchies(rh,self.model)
@@ -259,7 +259,7 @@ class ClusteringTest(IMP.test.TestCase):
 
         weights={"prot1":[1.0],"prot2..1":[10.0],"prot2..2":[10.0]}
 
-        clu=IMP.pmi.analysis.Clustering(weights)
+        clu=IMP.pmi1.analysis.Clustering(weights)
 
         clu.fill(0,coord_dict_0)
         clu.fill(1,coord_dict_1)
@@ -335,7 +335,7 @@ class PrecisionTest(IMP.test.TestCase):
 
         # read into precision class as two separate groups
         ofn = self.get_tmp_file_name('test_precision.out')
-        pr = IMP.pmi.analysis.Precision(mdl,resolution=1)
+        pr = IMP.pmi1.analysis.Precision(mdl,resolution=1)
         pr.add_structures([[fn,0],[fn,1]],'set0')
         pr.add_structures([[fn,2],[fn,3]],'set1')
         pr.get_precision('set0','set1',outfile=ofn)

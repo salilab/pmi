@@ -1,4 +1,4 @@
-"""@namespace IMP.pmi.restraints.basic
+"""@namespace IMP.pmi1.restraints.basic
 Some miscellaneous simple restraints.
 """
 
@@ -8,11 +8,11 @@ import IMP.core
 import IMP.algebra
 import IMP.atom
 import IMP.container
-import IMP.pmi.tools
-import IMP.pmi.restraints
+import IMP.pmi1.tools
+import IMP.pmi1.restraints
 
 
-class ExternalBarrier(IMP.pmi.restraints.RestraintBase):
+class ExternalBarrier(IMP.pmi1.restraints.RestraintBase):
 
     """Restraint to keep all structures inside sphere."""
 
@@ -38,12 +38,12 @@ class ExternalBarrier(IMP.pmi.restraints.RestraintBase):
         """
         if representation:
             model = representation.prot.get_model()
-            particles = IMP.pmi.tools.select(
+            particles = IMP.pmi1.tools.select(
                 representation,
                 resolution=resolution,
                 hierarchies=hierarchies)
         elif hierarchies:
-            hiers = IMP.pmi.tools.input_adaptor(hierarchies, resolution,
+            hiers = IMP.pmi1.tools.input_adaptor(hierarchies, resolution,
                                                 flatten=True)
             model = hiers[0].get_model()
             particles = [h.get_particle() for h in hiers]
@@ -73,7 +73,7 @@ class ExternalBarrier(IMP.pmi.restraints.RestraintBase):
         self.rs.add_restraint(r3)
 
 
-class DistanceRestraint(IMP.pmi.restraints.RestraintBase):
+class DistanceRestraint(IMP.pmi1.restraints.RestraintBase):
 
     """A simple distance restraint"""
 
@@ -113,11 +113,11 @@ class DistanceRestraint(IMP.pmi.restraints.RestraintBase):
 
         if representation and not root_hier:
             model = representation.prot.get_model()
-            particles1 = IMP.pmi.tools.select(representation,
+            particles1 = IMP.pmi1.tools.select(representation,
                                               resolution=resolution,
                                               name=tuple_selection1[2],
                                               residue=tuple_selection1[0])
-            particles2 = IMP.pmi.tools.select(representation,
+            particles2 = IMP.pmi1.tools.select(representation,
                                               resolution=resolution,
                                               name=tuple_selection2[2],
                                               residue=tuple_selection2[0])
@@ -174,7 +174,7 @@ class TorqueRestraint(IMP.Restraint):
         self.plateau = 1e-10
         self.weight = 1.0
         self.m=m
-        hierarchies = IMP.pmi.tools.input_adaptor(objects,
+        hierarchies = IMP.pmi1.tools.input_adaptor(objects,
                                             resolution,
                                             flatten=True)
         self.particles = [h.get_particle() for h in hierarchies]
@@ -205,7 +205,7 @@ class TorqueRestraint(IMP.Restraint):
         return self.particles
 
     def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.m, self)
+        IMP.pmi1.tools.add_restraint_to_model(self.m, self)
 
     def get_output(self):
         output = {}
@@ -244,7 +244,7 @@ class CylinderRestraint(IMP.Restraint):
         self.mintheta=mintheta
         self.maxtheta=maxtheta
         self.repulsive=repulsive
-        hierarchies = IMP.pmi.tools.input_adaptor(objects,
+        hierarchies = IMP.pmi1.tools.input_adaptor(objects,
                                             resolution,
                                             flatten=True)
         self.particles = [h.get_particle() for h in hierarchies]
@@ -280,7 +280,7 @@ class CylinderRestraint(IMP.Restraint):
         return self.particles
 
     def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.m, self)
+        IMP.pmi1.tools.add_restraint_to_model(self.m, self)
 
     def get_output(self):
         output = {}
@@ -333,7 +333,7 @@ class BiStableDistanceRestraint(IMP.Restraint):
         return self.particle_list
 
 
-class DistanceToPointRestraint(IMP.pmi.restraints.RestraintBase):
+class DistanceToPointRestraint(IMP.pmi1.restraints.RestraintBase):
 
     """Restraint for anchoring a particle to a specific coordinate."""
 
@@ -369,7 +369,7 @@ class DistanceToPointRestraint(IMP.pmi.restraints.RestraintBase):
 
         if representation and not root_hier:
             model = representation.prot.get_model()
-            ps = IMP.pmi.tools.select(representation,
+            ps = IMP.pmi1.tools.select(representation,
                                       resolution=resolution,
                                       name=tuple_selection[2],
                                       residue=tuple_selection[0])

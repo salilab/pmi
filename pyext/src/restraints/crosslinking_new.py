@@ -1,6 +1,6 @@
-"""@namespace IMP.pmi.restraints.crosslinking_new
+"""@namespace IMP.pmi1.restraints.crosslinking_new
 Restraints for handling crosslinking data. This temporary module will be soon
-deprecated and merged with IMP.pmi.restraints.crosslinking
+deprecated and merged with IMP.pmi1.restraints.crosslinking
 """
 
 from __future__ import print_function
@@ -9,8 +9,8 @@ import IMP.core
 import IMP.algebra
 import IMP.atom
 import IMP.container
-import IMP.pmi.tools
-import IMP.pmi.restraints.crosslinking
+import IMP.pmi1.tools
+import IMP.pmi1.restraints.crosslinking
 import pdb
 
 class DisulfideCrossLinkRestraint(object):
@@ -38,12 +38,12 @@ class DisulfideCrossLinkRestraint(object):
         self.sigma_is_sampled = False
         self.xl={}
 
-        ps1 = IMP.pmi.tools.select_by_tuple(
+        ps1 = IMP.pmi1.tools.select_by_tuple(
                 representation,
                 selection_tuple1,
                 resolution=resolution)
 
-        ps2 = IMP.pmi.tools.select_by_tuple(
+        ps2 = IMP.pmi1.tools.select_by_tuple(
                 representation,
                 selection_tuple2,
                 resolution=resolution)
@@ -88,8 +88,8 @@ class DisulfideCrossLinkRestraint(object):
         self.xl["Psi"]=psi
 
     def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.m, self.rs)
-        IMP.pmi.tools.add_restraint_to_model(self.m, self.rslin)
+        IMP.pmi1.tools.add_restraint_to_model(self.m, self.rs)
+        IMP.pmi1.tools.add_restraint_to_model(self.m, self.rslin)
 
     def get_hierarchies(self):
         return self.prot
@@ -127,7 +127,7 @@ class DisulfideCrossLinkRestraint(object):
         sigmamin = 0.01
         sigmamax = 100.0
         sigmatrans = 0.5
-        sigma = IMP.pmi.tools.SetupNuisance(self.m, sigmainit,
+        sigma = IMP.pmi1.tools.SetupNuisance(self.m, sigmainit,
                                                  sigmaminnuis, sigmamaxnuis, self.sigma_is_sampled).get_particle()
         self.sigma_dictionary[name] = (
             sigma,
@@ -147,7 +147,7 @@ class DisulfideCrossLinkRestraint(object):
         psimin = 0.01
         psimax = 0.49
         psitrans = 0.1
-        psi = IMP.pmi.tools.SetupNuisance(self.m, psiinit,
+        psi = IMP.pmi1.tools.SetupNuisance(self.m, psiinit,
                                                psiminnuis, psimaxnuis,
                                                self.psi_is_sampled).get_particle()
         self.psi_dictionary[name] = (
@@ -171,8 +171,8 @@ class DisulfideCrossLinkRestraint(object):
         raise NotImplementedError(" ")
 
 
-@IMP.deprecated_object("2.5", "Use IMP.pmi.restraints.crosslinking.CrossLinkingMassSpectrometryRestraint instead.")
-class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.crosslinking.CrossLinkingMassSpectrometryRestraint):
+@IMP.deprecated_object("2.5", "Use IMP.pmi1.restraints.crosslinking.CrossLinkingMassSpectrometryRestraint instead.")
+class CrossLinkingMassSpectrometryRestraint(IMP.pmi1.restraints.crosslinking.CrossLinkingMassSpectrometryRestraint):
 
     def __init__(self, *args, **kwargs):
-        IMP.pmi.restraints.crosslinking.CrossLinkingMassSpectrometryRestraint.__init__(self, *args, **kwargs)
+        IMP.pmi1.restraints.crosslinking.CrossLinkingMassSpectrometryRestraint.__init__(self, *args, **kwargs)

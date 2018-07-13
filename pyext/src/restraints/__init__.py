@@ -1,15 +1,15 @@
-"""@namespace IMP.pmi.restraints
+"""@namespace IMP.pmi1.restraints
    Classes to handle different kinds of restraints.
 
 PMI restraints generally wrap IMP restraints. Typical features in PMI restraints are:
- - Easy setup: for example, you can usually create one with a PMI [Molecule](@ref IMP::pmi::topology::Molecule) or a slice from one.
- - Fast setup from data files. For example you can set up the [CrossLinkingMassSpectrometryRestraint](@ref IMP::pmi::restraints::crosslinking::CrossLinkingMassSpectrometryRestraint) by reading in a crosslink file into a [database](@ref IMP::pmi::io::crosslink::CrossLinkDataBase).
- - Useful output: reporting functions which are put into log files when running [ReplicaExchange](@ref IMP::pmi::macros::ReplicaExchange0).
+ - Easy setup: for example, you can usually create one with a PMI [Molecule](@ref IMP::pmi1::topology::Molecule) or a slice from one.
+ - Fast setup from data files. For example you can set up the [CrossLinkingMassSpectrometryRestraint](@ref IMP::pmi1::restraints::crosslinking::CrossLinkingMassSpectrometryRestraint) by reading in a crosslink file into a [database](@ref IMP::pmi1::io::crosslink::CrossLinkDataBase).
+ - Useful output: reporting functions which are put into log files when running [ReplicaExchange](@ref IMP::pmi1::macros::ReplicaExchange0).
 """
 
 import IMP
-import IMP.pmi
-import IMP.pmi.tools
+import IMP.pmi1
+import IMP.pmi1.tools
 
 
 class RestraintBase(object):
@@ -81,7 +81,7 @@ class RestraintBase(object):
         """Add the restraint to the model."""
         self._label_is_set = True
         for rs in self.restraint_sets:
-            IMP.pmi.tools.add_restraint_to_model(self.model, rs)
+            IMP.pmi1.tools.add_restraint_to_model(self.model, rs)
 
     def evaluate(self):
         """Evaluate the score of the restraint."""
@@ -138,7 +138,7 @@ class _RestraintNuisanceMixin(object):
     """Mix-in to add nuisance particle creation functionality to restraint.
 
     This class must only be inherited if also inheriting
-    IMP.pmi.restraints.RestraintBase.
+    IMP.pmi1.restraints.RestraintBase.
     """
 
     def __init__(self, *args, **kwargs):
@@ -155,9 +155,9 @@ class _RestraintNuisanceMixin(object):
         @param max_trans Maximum move to apply to nuisance
         @param name Name of particle
         @param is_sampled Nuisance is a sampled particle
-        \see IMP.pmi.tools.SetupNuisance
+        \see IMP.pmi1.tools.SetupNuisance
         """
-        nuis = IMP.pmi.tools.SetupNuisance(
+        nuis = IMP.pmi1.tools.SetupNuisance(
             self.model, init_val, min_val, max_val,
             isoptimized=is_sampled).get_particle()
         nuis_name = self.name + "_" + name
@@ -199,7 +199,7 @@ class _NuisancesBase(object):
         lengthmin = 6.0
         lengthmax = 30.0
         lengthtrans = 0.2
-        length = IMP.pmi.tools.SetupNuisance(self.m, lengthinit,
+        length = IMP.pmi1.tools.SetupNuisance(self.m, lengthinit,
                                              lengthminnuis, lengthmaxnuis,
                                              self.lengthissampled
                                              ).get_particle()
@@ -223,7 +223,7 @@ class _NuisancesBase(object):
         sigmamin = 0.01
         sigmamax = 100.0
         sigmatrans = 0.5
-        sigma = IMP.pmi.tools.SetupNuisance(self.m, sigmainit, sigmaminnuis,
+        sigma = IMP.pmi1.tools.SetupNuisance(self.m, sigmainit, sigmaminnuis,
                                             sigmamaxnuis, self.sigmaissampled
                                             ).get_particle()
         self.sigma_dictionary[resolution] = (
@@ -257,7 +257,7 @@ class _NuisancesBase(object):
         psimin = 0.01
         psimax = 0.49
         psitrans = 0.1
-        psi = IMP.pmi.tools.SetupNuisance(self.m, psiinit,
+        psi = IMP.pmi1.tools.SetupNuisance(self.m, psiinit,
                                           psiminnuis, psimaxnuis,
                                           self.psiissampled).get_particle()
         self.psi_dictionary[value] = (

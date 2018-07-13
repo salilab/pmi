@@ -2,12 +2,12 @@ from __future__ import print_function
 import IMP
 import IMP.core
 import IMP.test
-import IMP.pmi.restraints
-import IMP.pmi.tools
-import IMP.pmi.samplers
+import IMP.pmi1.restraints
+import IMP.pmi1.tools
+import IMP.pmi1.samplers
 
 
-class SurfaceRestraint(IMP.pmi.restraints.RestraintBase):
+class SurfaceRestraint(IMP.pmi1.restraints.RestraintBase):
 
     def __init__(self, m, surface, sphere, weight=1, label=None):
         super(SurfaceRestraint, self).__init__(m, weight=weight, label=label)
@@ -31,7 +31,7 @@ class Tests(IMP.test.TestCase):
     def test_surface_mover(self):
         """Test surface is moved closer to sphere."""
         m = IMP.Model()
-        surf = IMP.pmi.tools.SetupSurface(m, (0, 0, 0), (0, 0, 1),
+        surf = IMP.pmi1.tools.SetupSurface(m, (0, 0, 0), (0, 0, 1),
                                           True).get_particle()
 
         d = IMP.core.create_xyzr_particles(m, 1, 1.)[0]
@@ -41,7 +41,7 @@ class Tests(IMP.test.TestCase):
 
         init_height = IMP.core.get_height(surf, d)
         sample_objects = [rs]
-        mc = IMP.pmi.samplers.MonteCarlo(m, sample_objects, 1.0)
+        mc = IMP.pmi1.samplers.MonteCarlo(m, sample_objects, 1.0)
         for i in range(100):
             mc.optimize(1)
             print(surf.get_coordinates(), surf.get_normal())

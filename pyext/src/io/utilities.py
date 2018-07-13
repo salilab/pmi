@@ -1,4 +1,4 @@
-"""@namespace IMP.pmi.io.utilities
+"""@namespace IMP.pmi1.io.utilities
    Utility classes and functions for IO.
 """
 

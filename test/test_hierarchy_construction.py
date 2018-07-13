@@ -2,10 +2,10 @@ import IMP
 import os
 import IMP.test
 
-import IMP.pmi.restraints.stereochemistry
-import IMP.pmi.representation
-import IMP.pmi.tools
-import IMP.pmi.output
+import IMP.pmi1.restraints.stereochemistry
+import IMP.pmi1.representation
+import IMP.pmi1.tools
+import IMP.pmi1.output
 
 class Tests(IMP.test.TestCase):
     def test_hierarchy_construction(self):
@@ -19,10 +19,10 @@ class Tests(IMP.test.TestCase):
         chains = "AB"
         colors = [0.,  1.]
         beadsize = 20
-        fastids = IMP.pmi.tools.get_ids_from_fasta_file(fastafile)
+        fastids = IMP.pmi1.tools.get_ids_from_fasta_file(fastafile)
 
         m = IMP.Model()
-        simo = IMP.pmi.representation.Representation(m)
+        simo = IMP.pmi1.representation.Representation(m)
 
         for n in range(len(components)):
             simo.create_component(components[n], color=colors[n])
@@ -32,11 +32,11 @@ class Tests(IMP.test.TestCase):
                                resolutions=[1, 10], missingbeadsize=beadsize)
             simo.setup_component_sequence_connectivity(components[n], 1)
 
-        ev = IMP.pmi.restraints.stereochemistry.ExcludedVolumeSphere(
+        ev = IMP.pmi1.restraints.stereochemistry.ExcludedVolumeSphere(
                                                     simo, resolution=10)
         ev.add_to_model()
 
-        o = IMP.pmi.output.Output()
+        o = IMP.pmi1.output.Output()
         o.init_rmf("conformations.rmf", [simo.prot])
         o.write_rmf("conformations.rmf")
 

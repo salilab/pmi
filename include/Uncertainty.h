@@ -1,27 +1,27 @@
 /**
- *  \file IMP/pmi/Uncertainty.h
+ *  \file IMP/pmi1/Uncertainty.h
  *  \brief A decorator for particles with Uncertainty
  *
  *  Copyright 2007-2018 IMP Inventors. All rights reserved.
  */
 
-#ifndef IMPPMI_UNCERTAINTY_H
-#define IMPPMI_UNCERTAINTY_H
+#ifndef IMPPMI1_UNCERTAINTY_H
+#define IMPPMI1_UNCERTAINTY_H
 
-#include <IMP/pmi/pmi_config.h>
+#include <IMP/pmi1/pmi1_config.h>
 
 #include <IMP/PairContainer.h>
 #include <IMP/SingletonContainer.h>
 #include <IMP/Decorator.h>
 #include <IMP/decorator_macros.h>
 
-IMPPMI_BEGIN_NAMESPACE
+IMPPMI1_BEGIN_NAMESPACE
 
 //! Add uncertainty to a particle
 /** The uncertainty of the particle can be assumed to be the radius
     of a particle.
  */
-class IMPPMIEXPORT Uncertainty : public Decorator {
+class IMPPMI1EXPORT Uncertainty : public Decorator {
   static void do_setup_particle(Model *m, ParticleIndex pi, double uncertainty) {
     m->add_attribute(get_uncertainty_key(), pi, uncertainty);
   }
@@ -47,6 +47,6 @@ class IMPPMIEXPORT Uncertainty : public Decorator {
   static FloatKey get_uncertainty_key();
 };
 
-IMPPMI_END_NAMESPACE
+IMPPMI1_END_NAMESPACE
 
-#endif /* IMPPMI_UNCERTAINTY_H */
+#endif /* IMPPMI1_UNCERTAINTY_H */

@@ -5,14 +5,14 @@ import IMP.core
 import IMP.algebra
 import IMP.atom
 import IMP.container
-import IMP.pmi.restraints.stereochemistry
-import IMP.pmi.restraints.basic
-import IMP.pmi.restraints.proteomics
-import IMP.pmi.restraints.crosslinking
-import IMP.pmi.restraints.em
-import IMP.pmi.representation
-import IMP.pmi.tools
-import IMP.pmi.macros
+import IMP.pmi1.restraints.stereochemistry
+import IMP.pmi1.restraints.basic
+import IMP.pmi1.restraints.proteomics
+import IMP.pmi1.restraints.crosslinking
+import IMP.pmi1.restraints.em
+import IMP.pmi1.representation
+import IMP.pmi1.tools
+import IMP.pmi1.macros
 
 class TestPMI(IMP.test.TestCase):
     def test_em_pmi(self):
@@ -28,7 +28,7 @@ class TestPMI(IMP.test.TestCase):
         # setting up topology
 
         m = IMP.Model()
-        simo = IMP.pmi.representation.Representation(m,upperharmonic=True,disorderedlength=False)
+        simo = IMP.pmi1.representation.Representation(m,upperharmonic=True,disorderedlength=False)
 
         fastadirectory = self.get_input_file_name("mediator/")
         pdbdirectory=self.get_input_file_name("mediator/")
@@ -43,7 +43,7 @@ class TestPMI(IMP.test.TestCase):
         domains=domains_middle
 
         with IMP.allow_deprecated():
-            bm=IMP.pmi.macros.BuildModel1(simo)
+            bm=IMP.pmi1.macros.BuildModel1(simo)
         bm.build_model(domains)
         bm.scale_bead_radii(40,0.8)
 
@@ -64,7 +64,7 @@ class TestPMI(IMP.test.TestCase):
 
         # middle module em density
         middle_mass=sum((IMP.atom.Mass(p).get_mass() for h in resdensities_middle for p in IMP.atom.get_leaves(h)))
-        gemh = IMP.pmi.restraints.em.GaussianEMRestraint(
+        gemh = IMP.pmi1.restraints.em.GaussianEMRestraint(
             resdensities_middle,
             gmmdirectory+'target_gmm.txt',
             target_mass_scale=middle_mass,

@@ -1,15 +1,15 @@
-"""@namespace IMP.pmi.macros
+"""@namespace IMP.pmi1.macros
 Protocols for sampling structures and analyzing them.
 """
 
 from __future__ import print_function, division
 import IMP
-import IMP.pmi.representation
-import IMP.pmi.tools
-import IMP.pmi.samplers
-import IMP.pmi.output
-import IMP.pmi.analysis
-import IMP.pmi.io
+import IMP.pmi1.representation
+import IMP.pmi1.tools
+import IMP.pmi1.samplers
+import IMP.pmi1.output
+import IMP.pmi1.analysis
+import IMP.pmi1.io
 import IMP.rmf
 import IMP.isd
 import RMF
@@ -25,7 +25,7 @@ import math
 class _RMFRestraints(object):
     """All restraints that are written out to the RMF file"""
     def __init__(self, model, user_restraints):
-        self._rmf_rs = IMP.pmi.tools.get_restraint_set(model, rmf=True)
+        self._rmf_rs = IMP.pmi1.tools.get_restraint_set(model, rmf=True)
         self._user_restraints = user_restraints if user_restraints else []
 
     def __len__(self):
@@ -174,9 +174,9 @@ class ReplicaExchange0(object):
         elif root_hier and type(root_hier) == IMP.atom.Hierarchy and root_hier.get_name()=='System':
             self.pmi2 = True
             if self.output_objects is not None:
-                self.output_objects.append(IMP.pmi.io.TotalScoreOutput(self.model))
+                self.output_objects.append(IMP.pmi1.io.TotalScoreOutput(self.model))
             if self.rmf_output_objects is not None:
-                self.rmf_output_objects.append(IMP.pmi.io.TotalScoreOutput(self.model))
+                self.rmf_output_objects.append(IMP.pmi1.io.TotalScoreOutput(self.model))
             self.root_hier = root_hier
             states = IMP.atom.get_by_type(root_hier,IMP.atom.STATE_TYPE)
             self.vars["number_of_states"] = len(states)
@@ -285,7 +285,7 @@ class ReplicaExchange0(object):
                     iterations)
             p.set_number_of_replicas(
                     self.replica_exchange_object.get_number_of_replicas())
-            IMP.pmi.tools._add_pmi_provenance(h)
+            IMP.pmi1.tools._add_pmi_provenance(h)
             IMP.core.add_provenance(self.model, h, p)
 
     def execute_macro(self):
@@ -295,7 +295,7 @@ class ReplicaExchange0(object):
         sampler_md=None
         if self.monte_carlo_sample_objects is not None:
             print("Setting up MonteCarlo")
-            sampler_mc = IMP.pmi.samplers.MonteCarlo(self.model,
+            sampler_mc = IMP.pmi1.samplers.MonteCarlo(self.model,
                                                      self.monte_carlo_sample_objects,
                                                      self.vars["monte_carlo_temperature"])
             if self.vars["simulated_annealing"]:
@@ -315,7 +315,7 @@ class ReplicaExchange0(object):
 
         if self.molecular_dynamics_sample_objects is not None:
             print("Setting up MolecularDynamics")
-            sampler_md = IMP.pmi.samplers.MolecularDynamics(self.model,
+            sampler_md = IMP.pmi1.samplers.MolecularDynamics(self.model,
                                                             self.molecular_dynamics_sample_objects,
                                                             self.vars["monte_carlo_temperature"],
                                                             maximum_time_step=self.molecular_dynamics_max_time_step)
@@ -333,7 +333,7 @@ class ReplicaExchange0(object):
 # -------------------------------------------------------------------------
 
         print("Setting up ReplicaExchange")
-        rex = IMP.pmi.samplers.ReplicaExchange(self.model,
+        rex = IMP.pmi1.samplers.ReplicaExchange(self.model,
                                                self.vars[
                                                    "replica_exchange_minimum_temperature"],
                                                self.vars[
@@ -387,14 +387,14 @@ class ReplicaExchange0(object):
 
 # -------------------------------------------------------------------------
 
-        sw = IMP.pmi.tools.Stopwatch()
+        sw = IMP.pmi1.tools.Stopwatch()
         if self.output_objects is not None:
             self.output_objects.append(sw)
         if self.rmf_output_objects is not None:
             self.rmf_output_objects.append(sw)
 
         print("Setting up stat file")
-        output = IMP.pmi.output.Output(atomistic=self.vars["atomistic"])
+        output = IMP.pmi1.output.Output(atomistic=self.vars["atomistic"])
         low_temp_stat_file = globaldir + \
             self.vars["stat_file_name_suffix"] + "." + str(myindex) + ".out"
 
@@ -476,7 +476,7 @@ class ReplicaExchange0(object):
 #----------------------------------------------
 
         if not self.test_mode:
-            mpivs=IMP.pmi.samplers.MPI_values(self.replica_exchange_object)
+            mpivs=IMP.pmi1.samplers.MPI_values(self.replica_exchange_object)
 
 #----------------------------------------------
 
@@ -509,7 +509,7 @@ class ReplicaExchange0(object):
                                   self.vars["molecular_dynamics_steps"])
                     if sampler_mc is not None:
                         sampler_mc.optimize(self.vars["monte_carlo_steps"])
-                score = IMP.pmi.tools.get_restraint_set(
+                score = IMP.pmi1.tools.get_restraint_set(
                                              self.model).evaluate(False)
                 mpivs.set_value("score",score)
             output.set_output_entry("score", score)
@@ -580,7 +580,7 @@ class BuildModel(object):
         """Constructor.
            @param model The IMP model
            @param component_topologies List of
-                  IMP.pmi.topology.ComponentTopology items
+                  IMP.pmi1.topology.ComponentTopology items
            @param list_of_rigid_bodies List of lists of domain names that will
                   be moved as rigid bodies.
            @param list_of_super_rigid_bodies List of lists of domain names
@@ -600,7 +600,7 @@ class BuildModel(object):
                   do anything.
         """
         self.model = model
-        self.simo = IMP.pmi.representation.Representation(self.model,
+        self.simo = IMP.pmi1.representation.Representation(self.model,
                                                           upperharmonic=True,
                                                           disorderedlength=False)
 
@@ -744,7 +744,7 @@ class BuildModel(object):
                 else:
                     continue
                 radius=IMP.core.XYZR(b).get_radius()
-                num_residues=len(IMP.pmi.tools.get_residue_indexes(b))
+                num_residues=len(IMP.pmi1.tools.get_residue_indexes(b))
                 scale_factor=slope*float(num_residues)+1.0
                 print(scale_factor)
                 new_radius=scale_factor*radius
@@ -760,7 +760,7 @@ class BuildModel(object):
         res_ind=[]
         for pb in pdbbits+helixbits:
             for p in IMP.core.get_leaves(pb):
-                res_ind+=IMP.pmi.tools.get_residue_indexes(p)
+                res_ind+=IMP.pmi1.tools.get_residue_indexes(p)
 
         number_of_residues=len(set(res_ind))
         outhier=[]
@@ -1053,7 +1053,7 @@ class BuildModel1(object):
                 else:
                     continue
                 radius=IMP.core.XYZR(b).get_radius()
-                num_residues=len(IMP.pmi.tools.get_residue_indexes(b))
+                num_residues=len(IMP.pmi1.tools.get_residue_indexes(b))
                 scale_factor=slope*float(num_residues)+1.0
                 print(scale_factor)
                 new_radius=scale_factor*radius
@@ -1070,7 +1070,7 @@ class BuildModel1(object):
         res_ind=[]
         for pb in pdbbits+helixbits:
             for p in IMP.core.get_leaves(pb):
-                res_ind+=IMP.pmi.tools.get_residue_indexes(p)
+                res_ind+=IMP.pmi1.tools.get_residue_indexes(p)
 
         number_of_residues=len(set(res_ind))
         outhier=[]
@@ -1178,7 +1178,7 @@ class BuildModel1(object):
 
     def save_rmf(self,rmfname):
 
-        o=IMP.pmi.output.Output()
+        o=IMP.pmi1.output.Output()
         self.simo.model.update()
         o.init_rmf(rmfname,[self.simo.prot])
         o.write_rmf(rmfname)
@@ -1212,7 +1212,7 @@ data = [("Rpb1",     pdbfile,   "A",     0.00000000,  (fastafile,    0)),
       ("Rpb12",    pdbfile,   "K",     1.00000000,  (fastafile,   11))]
     '''
 
-    r = IMP.pmi.representation.Representation(m)
+    r = IMP.pmi1.representation.Representation(m)
 
     # the dictionary for the hierarchies,
     hierarchies = {}
@@ -1225,7 +1225,7 @@ data = [("Rpb1",     pdbfile,   "A",     0.00000000,  (fastafile,    0)),
         color_id = d[3]
         fasta_file = d[4][0]
         # this function
-        fastids = IMP.pmi.tools.get_ids_from_fasta_file(fasta_file)
+        fastids = IMP.pmi1.tools.get_ids_from_fasta_file(fasta_file)
         fasta_file_id = d[4][1]
         # avoid to add a component with the same name
         r.create_component(component_name,
@@ -1317,7 +1317,7 @@ class AnalysisReplicaExchange0(object):
 
     def add_protocol_output(self, p):
         """Capture details of the modeling protocol.
-           @param p an instance of IMP.pmi.output.ProtocolOutput or a subclass.
+           @param p an instance of IMP.pmi1.output.ProtocolOutput or a subclass.
         """
         # Assume last state is the one we're interested in
         self._protocol_output.append((p, p._last_state))
@@ -1340,7 +1340,7 @@ class AnalysisReplicaExchange0(object):
         from operator import itemgetter
         import math
 
-        trajectory_models = IMP.pmi.io.get_trajectory_models(self.stat_files,
+        trajectory_models = IMP.pmi1.io.get_trajectory_models(self.stat_files,
                                                  score_key,
                                                  rmf_file_key,
                                                  rmf_file_frame_key,
@@ -1483,11 +1483,11 @@ class AnalysisReplicaExchange0(object):
 
         if not load_distance_matrix_file:
             if len(self.stat_files)==0: print("ERROR: no stat file found in the given path"); return
-            my_stat_files = IMP.pmi.tools.chunk_list_into_segments(
+            my_stat_files = IMP.pmi1.tools.chunk_list_into_segments(
                 self.stat_files,self.number_of_processes)[self.rank]
 
             # read ahead to check if you need the PMI2 score key instead
-            po = IMP.pmi.output.ProcessOutput(my_stat_files[0])
+            po = IMP.pmi1.output.ProcessOutput(my_stat_files[0])
             orig_score_key = score_key
             if score_key not in po.get_keys():
                 if 'Total_Score' in po.get_keys():
@@ -1499,7 +1499,7 @@ class AnalysisReplicaExchange0(object):
                     print("WARNING: no need to pass " +k+" to feature_keys.")
                     feature_keys.remove(k)
 
-            best_models = IMP.pmi.io.get_best_models(my_stat_files,
+            best_models = IMP.pmi1.io.get_best_models(my_stat_files,
                                                      score_key,
                                                      feature_keys,
                                                      rmf_file_key,
@@ -1516,12 +1516,12 @@ class AnalysisReplicaExchange0(object):
 # ------------------------------------------------------------------------
 
             if self.number_of_processes > 1:
-                score_list = IMP.pmi.tools.scatter_and_gather(score_list)
-                rmf_file_list = IMP.pmi.tools.scatter_and_gather(rmf_file_list)
-                rmf_file_frame_list = IMP.pmi.tools.scatter_and_gather(
+                score_list = IMP.pmi1.tools.scatter_and_gather(score_list)
+                rmf_file_list = IMP.pmi1.tools.scatter_and_gather(rmf_file_list)
+                rmf_file_frame_list = IMP.pmi1.tools.scatter_and_gather(
                     rmf_file_frame_list)
                 for k in feature_keyword_list_dict:
-                    feature_keyword_list_dict[k] = IMP.pmi.tools.scatter_and_gather(
+                    feature_keyword_list_dict[k] = IMP.pmi1.tools.scatter_and_gather(
                         feature_keyword_list_dict[k])
 
             # sort by score and get the best scoring ones
@@ -1549,7 +1549,7 @@ class AnalysisReplicaExchange0(object):
                                            key=lambda x: float(x[0]))[:number_of_best_scoring_models]
             best_score_rmf_tuples=[t+(n,) for n,t in enumerate(best_score_rmf_tuples)]
             # Note in the provenance info that we only kept best-scoring models
-            prov.append(IMP.pmi.io.FilterProvenance("Best scoring",
+            prov.append(IMP.pmi1.io.FilterProvenance("Best scoring",
                                0, number_of_best_scoring_models))
             # sort the feature scores in the same way
             best_score_feature_keyword_list_dict = defaultdict(list)
@@ -1558,23 +1558,23 @@ class AnalysisReplicaExchange0(object):
                 for f in feature_keyword_list_dict:
                     best_score_feature_keyword_list_dict[f].append(
                         feature_keyword_list_dict[f][index])
-            my_best_score_rmf_tuples = IMP.pmi.tools.chunk_list_into_segments(
+            my_best_score_rmf_tuples = IMP.pmi1.tools.chunk_list_into_segments(
                 best_score_rmf_tuples,
                 self.number_of_processes)[self.rank]
 
             # expand the dictionaries to include ambiguous copies
-            prot_ahead = IMP.pmi.analysis.get_hiers_from_rmf(self.model,
+            prot_ahead = IMP.pmi1.analysis.get_hiers_from_rmf(self.model,
                                                              0,
                                                              my_best_score_rmf_tuples[0][1])[0]
 
 #-------------------------------------------------------------
 # read the coordinates
 # ------------------------------------------------------------
-            rmsd_weights = IMP.pmi.io.get_bead_sizes(self.model,
+            rmsd_weights = IMP.pmi1.io.get_bead_sizes(self.model,
                                                      my_best_score_rmf_tuples[0],
                                                      rmsd_calculation_components,
                                                      state_number=state_number)
-            got_coords = IMP.pmi.io.read_coordinates_of_rmfs(self.model,
+            got_coords = IMP.pmi1.io.read_coordinates_of_rmfs(self.model,
                                                              my_best_score_rmf_tuples,
                                                              alignment_components,
                                                              rmsd_calculation_components,
@@ -1594,7 +1594,7 @@ class AnalysisReplicaExchange0(object):
 # ------------------------------------------------------------------------
             if skip_clustering:
                 if density_custom_ranges:
-                    DensModule = IMP.pmi.analysis.GetModelDensity(
+                    DensModule = IMP.pmi1.analysis.GetModelDensity(
                         density_custom_ranges,
                         voxel=voxel_size)
 
@@ -1617,12 +1617,12 @@ class AnalysisReplicaExchange0(object):
                         tmp_dict[key]=best_score_feature_keyword_list_dict[key][index]
 
                     if cnt==0:
-                        prots,rs = IMP.pmi.analysis.get_hiers_and_restraints_from_rmf(
+                        prots,rs = IMP.pmi1.analysis.get_hiers_and_restraints_from_rmf(
                           self.model,
                           rmf_frame_number,
                           rmf_name)
                     else:
-                        linking_successful=IMP.pmi.analysis.link_hiers_and_restraints_to_rmf(
+                        linking_successful=IMP.pmi1.analysis.link_hiers_and_restraints_to_rmf(
                             self.model,
                             prots,
                             rs,
@@ -1643,7 +1643,7 @@ class AnalysisReplicaExchange0(object):
                     if cnt > 0:
                         coords_f2=alignment_coordinates[cnt]
                         if coords_f2:
-                            Ali = IMP.pmi.analysis.Alignment(coords_f1, coords_f2)
+                            Ali = IMP.pmi1.analysis.Alignment(coords_f1, coords_f2)
                             transformation = Ali.align()[1]
                         else:
                             transformation = IMP.algebra.get_identity_transformation_3d()
@@ -1664,7 +1664,7 @@ class AnalysisReplicaExchange0(object):
                         for rb in rbs:
                             IMP.core.transform(rb,transformation)
 
-                    o=IMP.pmi.output.Output()
+                    o=IMP.pmi1.output.Output()
                     self.model.update()
                     out_pdb_fn=os.path.join(dircluster,str(cnt)+"."+str(self.rank)+".pdb")
                     out_rmf_fn=os.path.join(dircluster,str(cnt)+"."+str(self.rank)+".rmf3")
@@ -1696,15 +1696,15 @@ class AnalysisReplicaExchange0(object):
 
             # broadcast the coordinates
             if self.number_of_processes > 1:
-                all_coordinates = IMP.pmi.tools.scatter_and_gather(
+                all_coordinates = IMP.pmi1.tools.scatter_and_gather(
                     all_coordinates)
-                all_rmf_file_names = IMP.pmi.tools.scatter_and_gather(
+                all_rmf_file_names = IMP.pmi1.tools.scatter_and_gather(
                     all_rmf_file_names)
-                rmf_file_name_index_dict = IMP.pmi.tools.scatter_and_gather(
+                rmf_file_name_index_dict = IMP.pmi1.tools.scatter_and_gather(
                     rmf_file_name_index_dict)
-                alignment_coordinates=IMP.pmi.tools.scatter_and_gather(
+                alignment_coordinates=IMP.pmi1.tools.scatter_and_gather(
                     alignment_coordinates)
-                rmsd_coordinates=IMP.pmi.tools.scatter_and_gather(
+                rmsd_coordinates=IMP.pmi1.tools.scatter_and_gather(
                     rmsd_coordinates)
 
             if self.rank == 0:
@@ -1718,7 +1718,7 @@ class AnalysisReplicaExchange0(object):
 # Calculate distance matrix and cluster
 # ------------------------------------------------------------------------
             print("setup clustering class")
-            self.cluster_obj = IMP.pmi.analysis.Clustering(rmsd_weights)
+            self.cluster_obj = IMP.pmi1.analysis.Clustering(rmsd_weights)
 
             for n, model_coordinate_dict in enumerate(all_coordinates):
                 template_coordinate_dict = {}
@@ -1748,7 +1748,7 @@ class AnalysisReplicaExchange0(object):
         else:
             if self.rank==0:
                 print("setup clustering class")
-                self.cluster_obj = IMP.pmi.analysis.Clustering()
+                self.cluster_obj = IMP.pmi1.analysis.Clustering()
                 self.cluster_obj.load_distance_matrix_file(file_name=distance_matrix_file)
                 print("clustering with %s clusters" % str(number_of_clusters))
                 self.cluster_obj.do_cluster(number_of_clusters)
@@ -1775,11 +1775,11 @@ class AnalysisReplicaExchange0(object):
                 print(self.cluster_obj.get_cluster_label_names(cl))
                 cluster_size = len(self.cluster_obj.get_cluster_label_names(cl))
                 cluster_prov = prov + \
-                               [IMP.pmi.io.ClusterProvenance(cluster_size)]
+                               [IMP.pmi1.io.ClusterProvenance(cluster_size)]
 
                 # first initialize the Density class if requested
                 if density_custom_ranges:
-                    DensModule = IMP.pmi.analysis.GetModelDensity(
+                    DensModule = IMP.pmi1.analysis.GetModelDensity(
                         density_custom_ranges,
                         voxel=voxel_size)
 
@@ -1811,12 +1811,12 @@ class AnalysisReplicaExchange0(object):
 
                     # extract frame (open or link to existing)
                     if k==0:
-                        prots,rs = IMP.pmi.analysis.get_hiers_and_restraints_from_rmf(
+                        prots,rs = IMP.pmi1.analysis.get_hiers_and_restraints_from_rmf(
                           self.model,
                           rmf_frame_number,
                           rmf_name)
                     else:
-                        linking_successful = IMP.pmi.analysis.link_hiers_and_restraints_to_rmf(
+                        linking_successful = IMP.pmi1.analysis.link_hiers_and_restraints_to_rmf(
                             self.model,
                             prots,
                             rs,
@@ -1829,7 +1829,7 @@ class AnalysisReplicaExchange0(object):
 
                     prot = prots[state_number]
                     if k==0:
-                        IMP.pmi.io.add_provenance(cluster_prov, (prot,))
+                        IMP.pmi1.io.add_provenance(cluster_prov, (prot,))
 
                     # transform clusters onto first
                     if k > 0:
@@ -1859,7 +1859,7 @@ class AnalysisReplicaExchange0(object):
                         DensModule.add_subunits_density(prot)
 
                     # pdb writing should be optimized!
-                    o = IMP.pmi.output.Output()
+                    o = IMP.pmi1.output.Output()
                     self.model.update()
                     o.init_pdb(dircluster + str(k) + ".pdb", prot)
                     o.write_pdb(dircluster + str(k) + ".pdb")
@@ -1921,18 +1921,18 @@ class AnalysisReplicaExchange(object):
 
         self.model=model
         self.best_models=best_models
-        self.stath0=IMP.pmi.output.StatHierarchyHandler(model,stat_files,self.best_models,score_key,cache=True)
-        self.stath1=IMP.pmi.output.StatHierarchyHandler(StatHierarchyHandler=self.stath0)
+        self.stath0=IMP.pmi1.output.StatHierarchyHandler(model,stat_files,self.best_models,score_key,cache=True)
+        self.stath1=IMP.pmi1.output.StatHierarchyHandler(StatHierarchyHandler=self.stath0)
 
-        self.rbs1, self.beads1 = IMP.pmi.tools.get_rbs_and_beads(IMP.pmi.tools.select_at_all_resolutions(self.stath1))
-        self.rbs0, self.beads0 = IMP.pmi.tools.get_rbs_and_beads(IMP.pmi.tools.select_at_all_resolutions(self.stath0))
+        self.rbs1, self.beads1 = IMP.pmi1.tools.get_rbs_and_beads(IMP.pmi1.tools.select_at_all_resolutions(self.stath1))
+        self.rbs0, self.beads0 = IMP.pmi1.tools.get_rbs_and_beads(IMP.pmi1.tools.select_at_all_resolutions(self.stath0))
         self.sel0_rmsd=IMP.atom.Selection(self.stath0)
         self.sel1_rmsd=IMP.atom.Selection(self.stath1)
         self.sel0_alignment=IMP.atom.Selection(self.stath0)
         self.sel1_alignment=IMP.atom.Selection(self.stath1)
         self.clusters=[]
         # fill the cluster list with a single cluster containing all models
-        c = IMP.pmi.output.Cluster(0)
+        c = IMP.pmi1.output.Cluster(0)
         self.clusters.append(c)
         for n0 in range(len(self.stath0)):
             c.add_member(n0)
@@ -1942,8 +1942,8 @@ class AnalysisReplicaExchange(object):
         self.symmetric_molecules={}
         self.issymmetricsel={}
         self.update_seldicts()
-        self.molcopydict0=IMP.pmi.tools.get_molecules_dictionary_by_copy(IMP.atom.get_leaves(self.stath0))
-        self.molcopydict1=IMP.pmi.tools.get_molecules_dictionary_by_copy(IMP.atom.get_leaves(self.stath1))
+        self.molcopydict0=IMP.pmi1.tools.get_molecules_dictionary_by_copy(IMP.atom.get_leaves(self.stath0))
+        self.molcopydict1=IMP.pmi1.tools.get_molecules_dictionary_by_copy(IMP.atom.get_leaves(self.stath1))
 
     def set_rmsd_selection(self,**kwargs):
         """
@@ -2022,14 +2022,14 @@ class AnalysisReplicaExchange(object):
 
         self.clusters=[]
         for i in sorted(list(set(cluster_ids))):
-            self.clusters.append(IMP.pmi.output.Cluster(i))
+            self.clusters.append(IMP.pmi1.output.Cluster(i))
         for i, (idx, d) in enumerate(zip(cluster_ids, self.stath0)):
             self.clusters[idx].add_member(i,d)
 
     def get_cluster_data(self, cluster):
         """
         Return the model data from a cluster
-        @param cluster IMP.pmi.output.Cluster object
+        @param cluster IMP.pmi1.output.Cluster object
         """
         data=[]
         for m in cluster:
@@ -2045,8 +2045,8 @@ class AnalysisReplicaExchange(object):
 
     def set_data(self,data):
         """
-        Set the data from an external IMP.pmi.output.Data
-        @param data IMP.pmi.output.Data
+        Set the data from an external IMP.pmi1.output.Data
+        @param data IMP.pmi1.output.Data
         """
         self.stath0.data=data
         self.stath1.data=data
@@ -2061,7 +2061,7 @@ class AnalysisReplicaExchange(object):
         self.best_models=len(self.stath0)
 
     def add_cluster(self,rmf_name_list):
-        c = IMP.pmi.output.Cluster(len(self.clusters))
+        c = IMP.pmi1.output.Cluster(len(self.clusters))
         print("creating cluster index "+str(len(self.clusters)))
         self.clusters.append(c)
         current_len=len(self.stath0)
@@ -2133,7 +2133,7 @@ class AnalysisReplicaExchange(object):
         """
         print("saving coordinates",cluster)
         if self.alignment: self.set_reference(reference,cluster)
-        o=IMP.pmi.output.Output()
+        o=IMP.pmi1.output.Output()
         if rmf_name is None:
             rmf_name=prefix+'/'+str(cluster.cluster_id)+".rmf3"
 
@@ -2174,7 +2174,7 @@ class AnalysisReplicaExchange(object):
             selected=remaining[0]
             filtered.append(selected)
             remaining.pop(0)
-        c = IMP.pmi.output.Cluster(len(self.clusters))
+        c = IMP.pmi1.output.Cluster(len(self.clusters))
         self.clusters.append(c)
         for n0 in filtered:
             d0=self.stath0[n0]
@@ -2234,9 +2234,9 @@ class AnalysisReplicaExchange(object):
         """
         Compute the Root mean square fluctuations
         of a molecule in a cluster
-        Returns an IMP.pmi.tools.OrderedDict() where the keys are the residue indexes and the value is the rmsf
+        Returns an IMP.pmi1.tools.OrderedDict() where the keys are the residue indexes and the value is the rmsf
         """
-        rmsf=IMP.pmi.tools.OrderedDict()
+        rmsf=IMP.pmi1.tools.OrderedDict()
 
         #assumes that residue indexes are identical for stath0 and stath1
         if cluster_ref is not None:
@@ -2254,7 +2254,7 @@ class AnalysisReplicaExchange(object):
                               copy_index=copy_index,state_index=state_index)
         ps0=s0.get_selected_particles()
         #get the residue indexes
-        residue_indexes=list(IMP.pmi.tools.OrderedSet([IMP.pmi.tools.get_residue_indexes(p)[0] for p in ps0]))
+        residue_indexes=list(IMP.pmi1.tools.OrderedSet([IMP.pmi1.tools.get_residue_indexes(p)[0] for p in ps0]))
 
         #get the corresponding particles
         #s0=IMP.atom.Selection(stat_ref,molecule=molecule,residue_indexes=residue_indexes,resolution=1,
@@ -2300,16 +2300,16 @@ class AnalysisReplicaExchange(object):
 
                 ps = s.get_selected_particles()
                 for p in ps:
-                    if IMP.pmi.Uncertainty.get_is_setup(p):
-                        IMP.pmi.Uncertainty(p).set_uncertainty(rmsf[r])
+                    if IMP.pmi1.Uncertainty.get_is_setup(p):
+                        IMP.pmi1.Uncertainty(p).set_uncertainty(rmsf[r])
                     else:
-                        IMP.pmi.Uncertainty.setup_particle(p,rmsf[r])
+                        IMP.pmi1.Uncertainty.setup_particle(p,rmsf[r])
 
         return rmsf
 
     def save_densities(self,cluster,density_custom_ranges,voxel_size=5,reference="Absolute", prefix="./",step=1):
         if self.alignment: self.set_reference(reference,cluster)
-        dens = IMP.pmi.analysis.GetModelDensity(density_custom_ranges,
+        dens = IMP.pmi1.analysis.GetModelDensity(density_custom_ranges,
                                                 voxel=voxel_size)
 
         for n1 in cluster.members[::step]:
@@ -2328,11 +2328,11 @@ class AnalysisReplicaExchange(object):
         import matplotlib.pyplot as plt
         import matplotlib.cm as cm
         from scipy.spatial.distance import cdist
-        import IMP.pmi.topology
+        import IMP.pmi1.topology
         if molecules is None:
-            mols=[IMP.pmi.topology.PMIMoleculeHierarchy(mol) for mol in IMP.pmi.tools.get_molecules(IMP.atom.get_leaves(self.stath1))]
+            mols=[IMP.pmi1.topology.PMIMoleculeHierarchy(mol) for mol in IMP.pmi1.tools.get_molecules(IMP.atom.get_leaves(self.stath1))]
         else:
-            mols=[IMP.pmi.topology.PMIMoleculeHierarchy(mol) for mol in IMP.pmi.tools.get_molecules(IMP.atom.Selection(self.stath1,molecules=molecules).get_selected_particles())]
+            mols=[IMP.pmi1.topology.PMIMoleculeHierarchy(mol) for mol in IMP.pmi1.tools.get_molecules(IMP.atom.Selection(self.stath1,molecules=molecules).get_selected_particles())]
         unique_copies=[mol for mol in mols if mol.get_copy_index() == 0]
         mol_names_unique=dict((mol.get_name(),mol) for mol in unique_copies)
         total_len_unique=sum(max(mol.get_residue_indexes()) for mol in unique_copies)
@@ -2359,7 +2359,7 @@ class AnalysisReplicaExchange(object):
             print(ncl)
             d1=self.stath1[n1]
             #self.apply_molecular_assignments(n1)
-            coord_dict=IMP.pmi.tools.OrderedDict()
+            coord_dict=IMP.pmi1.tools.OrderedDict()
             for mol in mols:
                 mol_name=mol.get_name()
                 copy_index=mol.get_copy_index()
@@ -2427,10 +2427,10 @@ class AnalysisReplicaExchange(object):
         #        exit()
         # set the list of proteins on the x axis
         if not consolidate:
-            sorted_tuple=sorted([(IMP.pmi.topology.PMIMoleculeHierarchy(mol).get_extended_name(),mol) for mol in mols])
+            sorted_tuple=sorted([(IMP.pmi1.topology.PMIMoleculeHierarchy(mol).get_extended_name(),mol) for mol in mols])
             prot_list=list(zip(*sorted_tuple))[1]
         else:
-            sorted_tuple=sorted([(IMP.pmi.topology.PMIMoleculeHierarchy(mol).get_name(),mol) for mol in unique_copies])
+            sorted_tuple=sorted([(IMP.pmi1.topology.PMIMoleculeHierarchy(mol).get_name(),mol) for mol in unique_copies])
             prot_list=list(zip(*sorted_tuple))[1]
 
         prot_listx = prot_list
@@ -2465,7 +2465,7 @@ class AnalysisReplicaExchange(object):
 
         resoffsetdiagonal = {}
         res = gap_between_components
-        for mol in IMP.pmi.tools.OrderedSet(prot_listx + prot_listy):
+        for mol in IMP.pmi1.tools.OrderedSet(prot_listx + prot_listy):
             resoffsetdiagonal[mol] = res
             res += max(mol.get_residue_indexes())
             res += gap_between_components
@@ -2482,7 +2482,7 @@ class AnalysisReplicaExchange(object):
                 ax.plot([res, res], [resy, endy], linestyle='-',color='gray', lw=0.4)
                 ax.plot([end, end], [resy, endy], linestyle='-',color='gray', lw=0.4)
             xticks.append((float(res) + float(end)) / 2)
-            xlabels.append(IMP.pmi.topology.PMIMoleculeHierarchy(prot).get_extended_name())
+            xlabels.append(IMP.pmi1.topology.PMIMoleculeHierarchy(prot).get_extended_name())
 
         yticks = []
         ylabels = []
@@ -2495,7 +2495,7 @@ class AnalysisReplicaExchange(object):
                 ax.plot([resx, endx], [res, res], linestyle='-',color='gray', lw=0.4)
                 ax.plot([resx, endx], [end, end], linestyle='-',color='gray', lw=0.4)
             yticks.append((float(res) + float(end)) / 2)
-            ylabels.append(IMP.pmi.topology.PMIMoleculeHierarchy(prot).get_extended_name())
+            ylabels.append(IMP.pmi1.topology.PMIMoleculeHierarchy(prot).get_extended_name())
 
         # plot the contact map
 
@@ -2591,14 +2591,14 @@ class AnalysisReplicaExchange(object):
 
     def get_molecule(self, hier, name, copy):
         s=IMP.atom.Selection(hier, molecule=name, copy_index=copy)
-        return IMP.pmi.tools.get_molecules(s.get_selected_particles()[0])[0]
+        return IMP.pmi1.tools.get_molecules(s.get_selected_particles()[0])[0]
 
     def update_seldicts(self):
         """
         Update the seldicts
         """
-        self.seldict0=IMP.pmi.tools.get_selections_dictionary(self.sel0_rmsd.get_selected_particles())
-        self.seldict1=IMP.pmi.tools.get_selections_dictionary(self.sel1_rmsd.get_selected_particles())
+        self.seldict0=IMP.pmi1.tools.get_selections_dictionary(self.sel0_rmsd.get_selected_particles())
+        self.seldict1=IMP.pmi1.tools.get_selections_dictionary(self.sel1_rmsd.get_selected_particles())
         for mol in self.seldict0:
             for sel in self.seldict0[mol]:
                 self.issymmetricsel[sel]=False
@@ -2627,7 +2627,7 @@ class AnalysisReplicaExchange(object):
         n0 = idxs.pop()
         print("clustering model "+str(n0))
         d0 = self.stath0[n0]
-        c = IMP.pmi.output.Cluster(len(self.clusters))
+        c = IMP.pmi1.output.Cluster(len(self.clusters))
         print("creating cluster index "+str(len(self.clusters)))
         self.clusters.append(c)
         c.add_member(n0,d0)
@@ -2725,8 +2725,8 @@ class AnalysisReplicaExchange(object):
         ###for i,sel in enumerate(best_sel):
         ###    p0 = sel.get_selected_particles()[0]
         ###    p1 = sels1[i].get_selected_particles()[0]
-        ###    m0 = IMP.pmi.tools.get_molecules([p0])[0]
-        ###    m1 = IMP.pmi.tools.get_molecules([p1])[0]
+        ###    m0 = IMP.pmi1.tools.get_molecules([p0])[0]
+        ###    m1 = IMP.pmi1.tools.get_molecules([p1])[0]
         ###    c0 = IMP.atom.Copy(m0).get_copy_index()
         ###    c1 = IMP.atom.Copy(m1).get_copy_index()
         ###    name0=m0.get_name()
@@ -2769,8 +2769,8 @@ class AnalysisReplicaExchange(object):
             for sel0, sel1 in zip(sels_best_order, self.seldict1[molname]):
                 p0 = sel0.get_selected_particles()[0]
                 p1 = sel1.get_selected_particles()[0]
-                m0 = IMP.pmi.tools.get_molecules([p0])[0]
-                m1 = IMP.pmi.tools.get_molecules([p1])[0]
+                m0 = IMP.pmi1.tools.get_molecules([p0])[0]
+                m1 = IMP.pmi1.tools.get_molecules([p1])[0]
                 c0 = IMP.atom.Copy(m0).get_copy_index()
                 c1 = IMP.atom.Copy(m1).get_copy_index()
                 ###print(molname,c0,c1)

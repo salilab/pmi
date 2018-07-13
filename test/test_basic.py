@@ -1,8 +1,8 @@
 import math
 import IMP
 import IMP.core
-import IMP.pmi.topology
-import IMP.pmi.restraints.basic
+import IMP.pmi1.topology
+import IMP.pmi1.restraints.basic
 import IMP.test
 
 
@@ -20,7 +20,7 @@ class Tests(IMP.test.TestCase):
         dists = [1., 4.]
         weights = [.5, .5]
         sigmas = [1., 1.]
-        r = IMP.pmi.restraints.basic.BiStableDistanceRestraint(
+        r = IMP.pmi1.restraints.basic.BiStableDistanceRestraint(
             m, p1, p2, dists[0], dists[1], sigmas[0], sigmas[1], weights[0],
             weights[1])
         r.set_was_used(True)
@@ -33,7 +33,7 @@ class Tests(IMP.test.TestCase):
         self.assertEqual(len(r.do_get_inputs()), 2)
         self.assertListEqual(r.do_get_inputs(), [p1, p2])
         self.assertRaises(
-            ValueError, IMP.pmi.restraints.basic.BiStableDistanceRestraint, m,
+            ValueError, IMP.pmi1.restraints.basic.BiStableDistanceRestraint, m,
             p1, p2, dists[0], dists[1], sigmas[0], sigmas[1], weights[0],
             weights[1] + 1e-5)
 

@@ -1,4 +1,4 @@
-"""@namespace IMP.pmi.output
+"""@namespace IMP.pmi1.output
    Classes for writing output files and processing them.
 """
 
@@ -6,9 +6,9 @@ from __future__ import print_function, division
 import IMP
 import IMP.atom
 import IMP.core
-import IMP.pmi
-import IMP.pmi.tools
-import IMP.pmi.io
+import IMP.pmi1
+import IMP.pmi1.tools
+import IMP.pmi1.io
 import os
 import sys
 import ast
@@ -42,11 +42,11 @@ class ProtocolOutput(object):
        Unlike simple output of model coordinates, a complete
        protocol includes the input data used, details on the restraints,
        sampling, and clustering, as well as output models.
-       Use via IMP.pmi.representation.Representation.add_protocol_output()
+       Use via IMP.pmi1.representation.Representation.add_protocol_output()
        (for PMI 1) or
-       IMP.pmi.topology.System.add_protocol_output() (for PMI 2).
+       IMP.pmi1.topology.System.add_protocol_output() (for PMI 2).
 
-       @see IMP.pmi.mmcif.ProtocolOutput for a concrete subclass that outputs
+       @see IMP.pmi1.mmcif.ProtocolOutput for a concrete subclass that outputs
             mmCIF files.
     """
     pass
@@ -145,7 +145,7 @@ class Output(object):
             #get the index list
             indexes=[x[0] for x in ls]
             # get the contiguous pairs
-            indexes_pairs+=list(IMP.pmi.tools.sublist_iterator(indexes,lmin=2,lmax=2))
+            indexes_pairs+=list(IMP.pmi1.tools.sublist_iterator(indexes,lmin=2,lmax=2))
         nbonds=len(indexes_pairs)
         flpsf.write(str(nbonds)+" !NBOND: bonds"+"\n")
 
@@ -209,7 +209,7 @@ class Output(object):
     def get_prot_name_from_particle(self, name, p):
         """Get the protein name from the particle.
            This is done by traversing the hierarchy."""
-        return IMP.pmi.tools.get_prot_name_from_particle(
+        return IMP.pmi1.tools.get_prot_name_from_particle(
                                    p, self.dictchain[name])
 
     def get_particle_infos_for_pdb_writing(self, name):
@@ -272,7 +272,7 @@ class Output(object):
                                                rt, self.dictchain[name][protname], resind, None, radius))
 
             elif IMP.atom.Fragment.get_is_setup(p) and not is_a_bead:
-                resindexes = IMP.pmi.tools.get_residue_indexes(p)
+                resindexes = IMP.pmi1.tools.get_residue_indexes(p)
                 resind = resindexes[len(resindexes) // 2]
                 if resind in resindexes_dict[protname]:
                     continue
@@ -291,7 +291,7 @@ class Output(object):
             else:
                 if is_a_bead:
                     rt = IMP.atom.ResidueType('BEA')
-                    resindexes = IMP.pmi.tools.get_residue_indexes(p)
+                    resindexes = IMP.pmi1.tools.get_residue_indexes(p)
                     if len(resindexes) > 0:
                         resind = resindexes[len(resindexes) // 2]
                         xyz = IMP.core.XYZ(p).get_coordinates()
@@ -639,8 +639,8 @@ class Output(object):
         versions = {}
         versions["IMP_VERSION"] = IMP.get_module_version()
         try:
-            import IMP.pmi
-            versions["PMI_VERSION"] = IMP.pmi.get_module_version()
+            import IMP.pmi1
+            versions["PMI_VERSION"] = IMP.pmi1.get_module_version()
         except (ImportError):
             pass
         try:
@@ -830,7 +830,7 @@ class ProcessOutput(object):
             return self.klist
 
     def show_keys(self, ncolumns=2, truncate=65):
-        IMP.pmi.tools.print_multicolumn(self.get_keys(), ncolumns, truncate)
+        IMP.pmi1.tools.print_multicolumn(self.get_keys(), ncolumns, truncate)
 
     def get_fields(self, fields, filtertuple=None, filterout=None, get_every=1,
                    statistics=None):
@@ -1033,7 +1033,7 @@ class CacheHierarchyCoordinates(object):
         self.rb_trans={}
         self.current_index=None
         self.rmfh=StatHierarchyHandler
-        rbs,xyzs=IMP.pmi.tools.get_rbs_and_beads([self.rmfh])
+        rbs,xyzs=IMP.pmi1.tools.get_rbs_and_beads([self.rmfh])
         self.model=self.rmfh.get_model()
         self.rbs=rbs
         for xyz in xyzs:
@@ -1183,7 +1183,7 @@ class StatHierarchyHandler(RMFHierarchyHandler):
 
             for n,index in enumerate(rmf_frame_indexes):
                 featn_dict=dict([(k,features[k][n]) for k in features])
-                self.data.append(IMP.pmi.output.DataEntry(stat_file,rmf_files[n],index,scores[n],featn_dict))
+                self.data.append(IMP.pmi1.output.DataEntry(stat_file,rmf_files[n],index,scores[n],featn_dict))
 
             if self.number_best_scoring_models:
                 scores=self.get_scores()
@@ -1218,11 +1218,11 @@ class StatHierarchyHandler(RMFHierarchyHandler):
         data_structure=pickle.load(fl)
         #first check that it is a list
         if not type(data_structure) is list:
-            raise TypeError("%filename should contain a list of IMP.pmi.output.DataEntry or IMP.pmi.output.Cluster" % filename)
+            raise TypeError("%filename should contain a list of IMP.pmi1.output.DataEntry or IMP.pmi1.output.Cluster" % filename)
         # second check the types
-        if all(isinstance(item, IMP.pmi.output.DataEntry) for item in data_structure):
+        if all(isinstance(item, IMP.pmi1.output.DataEntry) for item in data_structure):
             self.data=data_structure
-        elif all(isinstance(item, IMP.pmi.output.Cluster) for item in data_structure):
+        elif all(isinstance(item, IMP.pmi1.output.Cluster) for item in data_structure):
             nmodels=0
             for cluster in data_structure:
                 nmodels+=len(cluster)
@@ -1232,7 +1232,7 @@ class StatHierarchyHandler(RMFHierarchyHandler):
                     index=cluster.members[n]
                     self.data[index]=data
         else:
-            raise TypeError("%filename should contain a list of IMP.pmi.output.DataEntry or IMP.pmi.output.Cluster" % filename)
+            raise TypeError("%filename should contain a list of IMP.pmi1.output.DataEntry or IMP.pmi1.output.Cluster" % filename)
 
     def set_frame(self,index):
         if self.cache is not None and self.cache[index]:
@@ -1296,7 +1296,7 @@ class StatHierarchyHandler(RMFHierarchyHandler):
     def get_info_from_stat_file(self, stat_file, score_threshold=None):
         po=ProcessOutput(stat_file)
         fs=po.get_keys()
-        models = IMP.pmi.io.get_best_models([stat_file],
+        models = IMP.pmi1.io.get_best_models([stat_file],
                                             score_key=self.score_key,
                                             feature_keys=fs,
                                             rmf_file_key="rmf_file",
@@ -1325,7 +1325,7 @@ class DataEntry(object):
         self.stat_file=stat_file
 
     def __repr__(self):
-        s= "IMP.pmi.output.DataEntry\n"
+        s= "IMP.pmi1.output.DataEntry\n"
         s+="---- stat file %s \n"%(self.stat_file)
         s+="---- rmf file %s \n"%(self.rmf_name)
         s+="---- rmf index %s \n"%(str(self.rmf_index))
@@ -1358,7 +1358,7 @@ class Cluster(object):
         return score
 
     def __repr__(self):
-        s= "IMP.pmi.output.Cluster\n"
+        s= "IMP.pmi1.output.Cluster\n"
         s+="---- cluster_id %s \n"%str(self.cluster_id)
         s+="---- precision %s \n"%str(self.precision)
         s+="---- average score %s \n"%str(self.average_score)
@@ -1834,7 +1834,7 @@ def draw_graph(graph, labels_dict=None, graph_layout='spring',
         node_color_rgb=(0,0,0)
         node_color_hex="000000"
     else:
-        cc=IMP.pmi.tools.ColorChange()
+        cc=IMP.pmi1.tools.ColorChange()
         tmpcolor_rgb=[]
         tmpcolor_hex=[]
         for node in G.nodes():

@@ -6,8 +6,8 @@ import IMP.algebra
 import IMP.atom
 import IMP.container
 
-import IMP.pmi.tools as tools
-import IMP.pmi.samplers as samplers
+import IMP.pmi1.tools as tools
+import IMP.pmi1.samplers as samplers
 
 
 class XTransRestraint(IMP.Restraint):
@@ -37,7 +37,7 @@ class Tests(IMP.test.TestCase):
         pts.add_particle(sigma, "Nuisances", 1.0, "Sigma")
 
         rs = XTransRestraint(m)
-        IMP.pmi.tools.add_restraint_to_model(m, rs)
+        IMP.pmi1.tools.add_restraint_to_model(m, rs)
 
         mc = samplers.MonteCarlo(m, [pts], 1.0)
         for i in range(100):

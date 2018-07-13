@@ -1,7 +1,7 @@
 import IMP
 import IMP.test
-import IMP.pmi.representation
-import IMP.pmi.restraints.crosslinking
+import IMP.pmi1.representation
+import IMP.pmi1.restraints.crosslinking
 import os
 
 class Tests(IMP.test.TestCase):
@@ -13,7 +13,7 @@ class Tests(IMP.test.TestCase):
             fh.write('962 alpha 691 beta 1 Epsilon-Intra-Solvent\n')
 
         m = IMP.Model()
-        r = IMP.pmi.representation.Representation(m)
+        r = IMP.pmi1.representation.Representation(m)
         r.create_component("alpha",color=0.25)
         r.add_component_sequence("alpha","seq.fasta", id="chainA", offs=962)
         r.add_component_beads("alpha",[(962,962)])
@@ -23,7 +23,7 @@ class Tests(IMP.test.TestCase):
         r.add_component_beads("beta",[(691,691)])
 
 
-        xl = IMP.pmi.restraints.crosslinking.CysteineCrossLinkRestraint([r],
+        xl = IMP.pmi1.restraints.crosslinking.CysteineCrossLinkRestraint([r],
                                           filename="expdata.txt", cbeta=True)
         xl.add_to_model()
         os.unlink('seq.fasta')

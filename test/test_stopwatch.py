@@ -2,7 +2,7 @@ from __future__ import print_function
 import time
 import contextlib
 import IMP.test
-import IMP.pmi.tools
+import IMP.pmi1.tools
 
 @contextlib.contextmanager
 def mocked_object(parent, objname, replacement):
@@ -23,13 +23,13 @@ def get_times(outkey, *args, **kwargs):
             self.count += 1
             return self.count
     with mocked_object(time, 'clock', MockClock()):
-        s = IMP.pmi.tools.Stopwatch(*args, **kwargs)
+        s = IMP.pmi1.tools.Stopwatch(*args, **kwargs)
         return [s.get_output()[outkey] for _ in range(4)]
 
 class Tests(IMP.test.TestCase):
     def test_stopwatch_with_delta(self):
         """Test Stopwatch with delta"""
-        s = IMP.pmi.tools.Stopwatch()
+        s = IMP.pmi1.tools.Stopwatch()
         self.assertEqual(s.label, "None")
         s.set_label("foo")
         self.assertEqual(s.label, "foo")
@@ -42,7 +42,7 @@ class Tests(IMP.test.TestCase):
 
     def test_stopwatch_elapsed(self):
         """Test Stopwatch without delta"""
-        s = IMP.pmi.tools.Stopwatch(isdelta=False)
+        s = IMP.pmi1.tools.Stopwatch(isdelta=False)
         output = s.get_output()
         self.assertEqual(list(output.keys()),
                          ['Stopwatch_None_elapsed_seconds'])

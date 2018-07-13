@@ -1,14 +1,14 @@
-"""@namespace IMP.pmi.restraints.parameters
+"""@namespace IMP.pmi1.restraints.parameters
 Restraints for parameters.
 """
 
 import IMP
 import IMP.isd
-import IMP.pmi.tools
-import IMP.pmi.restraints
+import IMP.pmi1.tools
+import IMP.pmi1.restraints
 
 
-class WeightRestraint(IMP.pmi.restraints.RestraintBase):
+class WeightRestraint(IMP.pmi1.restraints.RestraintBase):
 
     """Wrapper for an ``IMP.isd.WeightRestraint``"""
 
@@ -36,7 +36,7 @@ class WeightRestraint(IMP.pmi.restraints.RestraintBase):
                 self.kappa))
 
 
-class JeffreysPrior(IMP.pmi.restraints.RestraintBase):
+class JeffreysPrior(IMP.pmi1.restraints.RestraintBase):
 
     """Wrapper for ``IMP.isd.JeffreysRestraint``"""
 

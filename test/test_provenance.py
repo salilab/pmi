@@ -1,17 +1,17 @@
 import IMP
 import IMP.test
-import IMP.pmi.macros
-import IMP.pmi.tools
+import IMP.pmi1.macros
+import IMP.pmi1.tools
 
 class Tests(IMP.test.TestCase):
 
     def make_representation(self):
         pdbfile = self.get_input_file_name("nonbond.pdb")
         fastafile = self.get_input_file_name("nonbond.fasta")
-        fastids = IMP.pmi.tools.get_ids_from_fasta_file(fastafile)
+        fastids = IMP.pmi1.tools.get_ids_from_fasta_file(fastafile)
 
         m = IMP.Model()
-        r = IMP.pmi.representation.Representation(m)
+        r = IMP.pmi1.representation.Representation(m)
 
         r.create_component("A", color=0.)
         r.add_component_sequence("A", fastafile, id=fastids[0])
@@ -22,7 +22,7 @@ class Tests(IMP.test.TestCase):
     def test_pdb_provenance(self):
         """Make sure that provenance info is added for each input PDB file"""
         m, r = self.make_representation()
-        pdb_frags = [f for f in IMP.pmi.tools.select(r, resolution=1)
+        pdb_frags = [f for f in IMP.pmi1.tools.select(r, resolution=1)
                      if 'pdb' in f.get_name()]
         parent = pdb_frags[0].get_parent()
         prov = list(IMP.core.get_all_provenance(parent))

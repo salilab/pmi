@@ -1,13 +1,13 @@
 from __future__ import print_function, division
 import IMP
 import IMP.atom
-import IMP.pmi
-import IMP.pmi.topology
-import IMP.pmi.tools
+import IMP.pmi1
+import IMP.pmi1.topology
+import IMP.pmi1.tools
 import IMP.test
 import RMF
 import IMP.rmf
-import IMP.pmi.macros
+import IMP.pmi1.macros
 import os
 
 
@@ -27,7 +27,7 @@ class Tests(IMP.test.TestCase):
     def test_read_sequences(self):
         """Test if the sequence reader returns correct strings"""
         # test without name map
-        seqs0 = IMP.pmi.topology.Sequences(
+        seqs0 = IMP.pmi1.topology.Sequences(
             self.get_input_file_name('seqs.fasta'))
         self.assertEqual(len(seqs0), 3)
         self.assertEqual(seqs0['Protein_1'], 'QEALVVKDLL')
@@ -35,7 +35,7 @@ class Tests(IMP.test.TestCase):
         self.assertEqual(seqs0['Protein_3'], 'QEALVVKDLL')
 
         # test with name map
-        seqs = IMP.pmi.topology.Sequences(
+        seqs = IMP.pmi1.topology.Sequences(
             self.get_input_file_name('seqs.fasta'),
             name_map={'Protein_1': 'Prot1',
                       'Protein_2': 'Prot2',
@@ -47,7 +47,7 @@ class Tests(IMP.test.TestCase):
 
     def test_pmi_molecule_hierarchy(self):
         model=IMP.Model()
-        seqs = IMP.pmi.topology.Sequences(self.get_input_file_name('seqs.fasta'))
+        seqs = IMP.pmi1.topology.Sequences(self.get_input_file_name('seqs.fasta'))
         state=IMP.atom.State.setup_particle(IMP.Particle(model),0)
         for seq in seqs:
             mol=IMP.atom.Molecule.setup_particle(IMP.Particle(model))
@@ -56,7 +56,7 @@ class Tests(IMP.test.TestCase):
             state.add_child(mol)
             mol.set_name(seq)
             IMP.atom.Copy.setup_particle(mol,0)
-            pmimol=IMP.pmi.topology.PMIMoleculeHierarchy(mol)
+            pmimol=IMP.pmi1.topology.PMIMoleculeHierarchy(mol)
             self.assertEqual(pmimol.get_sequence(),seqs[seq])
             self.assertEqual(pmimol.get_residue_indexes(),[])
 

@@ -4,10 +4,10 @@ import os
 import IMP.test
 import IMP.core
 import IMP.container
-import IMP.pmi
-import IMP.pmi.representation
-import IMP.pmi.restraints
-import IMP.pmi.restraints.crosslinking
+import IMP.pmi1
+import IMP.pmi1.representation
+import IMP.pmi1.restraints
+import IMP.pmi1.restraints.crosslinking
 from math import *
 
 def sphere_cap(r1, r2, d):
@@ -72,7 +72,7 @@ def log_evaluate(restraints):
     return score
 
 def init_representation_beads(m):
-    r = IMP.pmi.representation.Representation(m)
+    r = IMP.pmi1.representation.Representation(m)
     r.create_component("ProtA",color=1.0)
     r.add_component_beads("ProtA", [(1,10)],incoord=(0,0,0))
     r.add_component_beads("ProtA", [(11,20)],incoord=(10,0,0))
@@ -96,12 +96,12 @@ def setup_crosslinks_complex(representation,mode):
         columnmap["IDScore"]=None
         columnmap["XLUniqueID"]=None
 
-        ids_map=IMP.pmi.tools.map()
+        ids_map=IMP.pmi1.tools.map()
         ids_map.set_map_element(1.0,1.0)
 
     with IMP.allow_deprecated():
-        xl = IMP.pmi.restraints.crosslinking.ISDCrossLinkMS(representation,
-                               IMP.pmi.get_data_path("polii_xlinks.csv"),
+        xl = IMP.pmi1.restraints.crosslinking.ISDCrossLinkMS(representation,
+                               IMP.pmi1.get_data_path("polii_xlinks.csv"),
                                length=21.0,
                                slope=0.01,
                                columnmapping=columnmap,
@@ -119,19 +119,19 @@ def setup_crosslinks_complex(representation,mode):
 
 def setup_crosslinks_beads(representation,mode):
 
-    restraints_beads=IMP.pmi.tools.get_random_cross_link_dataset(representation,
+    restraints_beads=IMP.pmi1.tools.get_random_cross_link_dataset(representation,
                                                 number_of_cross_links=100,
                                                 resolution=1.0,
                                                 avoid_same_particles=True,
                                                 ambiguity_probability=0.3,
                                                 confidence_score_range=[0,100])
 
-    ids_map=IMP.pmi.tools.map()
+    ids_map=IMP.pmi1.tools.map()
     ids_map.set_map_element(25.0,0.1)
     ids_map.set_map_element(75,0.01)
 
     with IMP.allow_deprecated():
-        xl = IMP.pmi.restraints.crosslinking.ISDCrossLinkMS(
+        xl = IMP.pmi1.restraints.crosslinking.ISDCrossLinkMS(
             representation, restraints_beads, 21, label="XL", ids_map=ids_map,
             resolution=1, inner_slope=0.01)
 
@@ -157,9 +157,9 @@ class Tests(IMP.test.TestCase):
         chains = "ABCD"
         colors = [0.,0.1,0.5,1.0]
         beadsize = 20
-        fastids = IMP.pmi.tools.get_ids_from_fasta_file(fastafile)
+        fastids = IMP.pmi1.tools.get_ids_from_fasta_file(fastafile)
 
-        r = IMP.pmi.representation.Representation(m)
+        r = IMP.pmi1.representation.Representation(m)
         hierarchies = {}
         for n in range(len(components)):
             r.create_component(components[n], color=colors[n])
@@ -177,7 +177,7 @@ class Tests(IMP.test.TestCase):
         xlc=setup_crosslinks_complex(rcomplex,"single_category")
 
         # check all internals didn't change since last time
-        o=IMP.pmi.output.Output()
+        o=IMP.pmi1.output.Output()
         o.write_test("expensive_test_cross_link_ms_restraint.dat", [xlc])
 
         passed=o.test(self.get_input_file_name("expensive_test_cross_link_ms_restraint.dat"), [xlc])
@@ -221,7 +221,7 @@ class Tests(IMP.test.TestCase):
 
     def test_restraint_ambiguity(self):
         m=IMP.Model()
-        r = IMP.pmi.representation.Representation(m)
+        r = IMP.pmi1.representation.Representation(m)
         r.create_component("ProtA",color=1.0)
         r.add_component_beads("ProtA", [(1,10)],incoord=(0,0,0))
         r.create_component("ProtB",color=1.0)
@@ -236,12 +236,12 @@ ProtA ProtB 1 11 52.4259605298 1
 ProtA ProtB 1 21 87.4778223289 1'''
 
 
-        ids_map=IMP.pmi.tools.map()
+        ids_map=IMP.pmi1.tools.map()
         ids_map.set_map_element(25.0,0.1)
         ids_map.set_map_element(75,0.01)
 
         with IMP.allow_deprecated():
-            xl = IMP.pmi.restraints.crosslinking.ISDCrossLinkMS(
+            xl = IMP.pmi1.restraints.crosslinking.ISDCrossLinkMS(
                             r, restraints_beads, 21, label="XL", slope=0.0,
                             ids_map=ids_map, resolution=1, inner_slope=0.01)
 

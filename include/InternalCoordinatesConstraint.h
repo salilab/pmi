@@ -1,18 +1,18 @@
 /**
- *  \file IMP/pmi/InternalCoordinatesConstraint.h
+ *  \file IMP/pmi1/InternalCoordinatesConstraint.h
  *  \brief A modifier that enforce identical internal coordinates for NonRigidMembers.
  *
  *  Copyright 2007-2018 IMP Inventors. All rights reserved.
  */
 
-#ifndef IMPPMI_INTERNAL_COORDINATES_CONSTRAINT_H
-#define IMPPMI_INTERNAL_COORDINATES_CONSTRAINT_H
+#ifndef IMPPMI1_INTERNAL_COORDINATES_CONSTRAINT_H
+#define IMPPMI1_INTERNAL_COORDINATES_CONSTRAINT_H
 
-#include <IMP/pmi/pmi_config.h>
+#include <IMP/pmi1/pmi1_config.h>
 #include <IMP/SingletonModifier.h>
 #include <IMP/singleton_macros.h>
 
-IMPPMI_BEGIN_NAMESPACE
+IMPPMI1_BEGIN_NAMESPACE
 
 //! An example singleton modifier
 /** A simple singleton modifier which ensures the x,y,z coordinates
@@ -28,7 +28,7 @@ IMPPMI_BEGIN_NAMESPACE
     \include InternalCoordinatesConstraint.h
     \include InternalCoordinatesConstraint.cpp
  */
-class IMPPMIEXPORT InternalCoordinatesConstraint : public SingletonModifier {
+class IMPPMI1EXPORT InternalCoordinatesConstraint : public SingletonModifier {
 
  public:
   InternalCoordinatesConstraint();
@@ -44,6 +44,6 @@ class IMPPMIEXPORT InternalCoordinatesConstraint : public SingletonModifier {
   IMP_OBJECT_METHODS(InternalCoordinatesConstraint);
 };
 
-IMPPMI_END_NAMESPACE
+IMPPMI1_END_NAMESPACE
 
-#endif /* IMPPMI_INTERNAL_COORDINATES_CONSTRAINT_H */
+#endif /* IMPPMI1_INTERNAL_COORDINATES_CONSTRAINT_H */

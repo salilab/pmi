@@ -1,9 +1,9 @@
 import os
 import IMP
 import IMP.test
-import IMP.pmi.representation
-import IMP.pmi.tools
-import IMP.pmi.output
+import IMP.pmi1.representation
+import IMP.pmi1.tools
+import IMP.pmi1.output
 import IMP.rmf
 import RMF
 
@@ -23,7 +23,7 @@ output1_categories = ['AtomicXLRestraint', 'AtomicXLRestraint_0_BestDist',
 class Tests(IMP.test.TestCase):
     def test_multi_chainids(self):
         """Test multi-character chain IDs"""
-        output = IMP.pmi.output.Output()
+        output = IMP.pmi1.output.Output()
         c = output.multi_chainids
         self.assertEqual([c[i] for i in range(0, 4)],
                          ['A', 'B', 'C', 'D'])
@@ -37,8 +37,8 @@ class Tests(IMP.test.TestCase):
     def test_get_particle_infos(self):
         """Test get_particle_infos_for_pdb_writing with no particles"""
         m = IMP.Model()
-        simo = IMP.pmi.representation.Representation(m)
-        output = IMP.pmi.output.Output()
+        simo = IMP.pmi1.representation.Representation(m)
+        output = IMP.pmi1.output.Output()
         output.init_pdb("test_output.pdb", simo.prot)
         info, center = output.get_particle_infos_for_pdb_writing(
                                               "test_output.pdb")
@@ -61,7 +61,7 @@ class Tests(IMP.test.TestCase):
     def test_process_output_complex(self):
         """Test reading a more complex stat file"""
         fname = self.get_input_file_name("output/stat.2.out")
-        po = IMP.pmi.output.ProcessOutput(fname)
+        po = IMP.pmi1.output.ProcessOutput(fname)
         categories = sorted(po.get_keys())
         self.assertEqual(len(categories), 409)
         self.assertEqual(categories[4],
@@ -70,7 +70,7 @@ class Tests(IMP.test.TestCase):
 
     def _check_stat_file(self, fname):
         import numpy
-        po = IMP.pmi.output.ProcessOutput(fname)
+        po = IMP.pmi1.output.ProcessOutput(fname)
 
         categories = po.get_keys()
         self.assertEqual(sorted(categories), output1_categories)
@@ -79,7 +79,7 @@ class Tests(IMP.test.TestCase):
         self.assertAlmostEqual(numpy.average(numpy.array(vals).astype(numpy.float)), 10.1270600392)
 
         # Test filters and statistics
-        stats = IMP.pmi.output.OutputStatistics()
+        stats = IMP.pmi1.output.OutputStatistics()
         vals = po.get_fields(["AtomicXLRestraint"], get_every=3,
                              filtertuple=("AtomicXLRestraint", "<", 10.0),
                              statistics=stats)
@@ -98,7 +98,7 @@ class Tests(IMP.test.TestCase):
         """Test provenance info added by get_best_models(), no filtering"""
         stat = self.get_input_file_name("./output1/stat.0.out")
         prov = []
-        models = IMP.pmi.io.get_best_models([stat],
+        models = IMP.pmi1.io.get_best_models([stat],
                         score_key='AtomicXLRestraint', provenance=prov)
         self.assertEqual(prov, [])
 
@@ -107,13 +107,13 @@ class Tests(IMP.test.TestCase):
         stat1 = self.get_input_file_name("./output1/stat.0.out")
         stat2 = self.get_input_file_name("./output1/stat.1.out")
         prov = []
-        models = IMP.pmi.io.get_best_models([stat1, stat2],
+        models = IMP.pmi1.io.get_best_models([stat1, stat2],
                         score_key='AtomicXLRestraint', get_every=2,
                         prefiltervalue=10.0, provenance=prov)
         self.assertEqual(len(prov), 3)
         m = IMP.Model()
         p = IMP.Particle(m)
-        IMP.pmi.io.add_provenance(prov, [p])
+        IMP.pmi1.io.add_provenance(prov, [p])
         self.assertTrue(IMP.core.Provenanced.get_is_setup(p))
         prov = IMP.core.Provenanced(p).get_provenance()
 
@@ -140,7 +140,7 @@ class Tests(IMP.test.TestCase):
 
         m=IMP.Model()
         rmf_name=self.get_input_file_name("output_test/rmfs/1.rmf3")
-        rmfh=IMP.pmi.output.RMFHierarchyHandler(m,rmf_name)
+        rmfh=IMP.pmi1.output.RMFHierarchyHandler(m,rmf_name)
         # test that it is indeed a hierarchy
         self.assertEqual(348,len(IMP.atom.get_leaves(rmfh)))
         s0=rmfh.get_children()[0]
@@ -194,7 +194,7 @@ class Tests(IMP.test.TestCase):
 
         m=IMP.Model()
         stat_name=[self.get_input_file_name("output_test_rmf/rmfs/0.rmf3")]
-        stath=IMP.pmi.output.StatHierarchyHandler(m,stat_name)
+        stath=IMP.pmi1.output.StatHierarchyHandler(m,stat_name)
 
         # test that it is indeed a hierarchy
         self.assertEqual(348,len(IMP.atom.get_leaves(stath)))
@@ -221,7 +221,7 @@ class Tests(IMP.test.TestCase):
 
         #test multiple stat files with filter
         stat_names=glob.glob(self.get_input_file_name("output_test_rmf/rmfs/0.rmf3").replace("0.rmf3","*.rmf3"))
-        stath=IMP.pmi.output.StatHierarchyHandler(m,stat_names,5)
+        stath=IMP.pmi1.output.StatHierarchyHandler(m,stat_names,5)
 
         lvs=IMP.atom.get_leaves(stath)
         self.assertEqual(798,len(stath))

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""@namespace IMP.pmi.tools
+"""@namespace IMP.pmi1.tools
    Miscellaneous utilities.
 """
 
@@ -8,8 +8,8 @@ from __future__ import print_function
 import IMP
 import IMP.algebra
 import IMP.isd
-import IMP.pmi
-import IMP.pmi.topology
+import IMP.pmi1
+import IMP.pmi1.topology
 import collections
 import itertools
 from math import log,pi,sqrt,exp
@@ -23,13 +23,13 @@ from collections import defaultdict
 try:
     from collections import OrderedDict
 except ImportError:
-    from IMP.pmi._compat_collections import OrderedDict
+    from IMP.pmi1._compat_collections import OrderedDict
 
 def _add_pmi_provenance(p):
     """Tag the given particle as being created by the current version of PMI."""
     IMP.core.add_imp_provenance(p)
     IMP.core.add_software_provenance(p, name="IMP PMI module",
-                                     version=IMP.pmi.get_module_version(),
+                                     version=IMP.pmi1.get_module_version(),
                                      location="https://integrativemodeling.org")
     IMP.core.add_script_provenance(p)
 
@@ -602,7 +602,7 @@ def get_terminal_residue(representation, hier, terminus="C", resolution=1):
     Get the particle of the terminal residue at the GIVEN resolution
     (NOTE: not the closest resolution!).
     To get the terminal residue at the closest resolution use:
-    particles=IMP.pmi.tools.select_by_tuple(representation,molecule_name)
+    particles=IMP.pmi1.tools.select_by_tuple(representation,molecule_name)
     particles[0] and particles[-1] will be the first and last particles
     corresponding to the two termini.
     It is needed for instance to determine the last residue of a pdb.
@@ -618,8 +618,8 @@ def get_terminal_residue(representation, hier, terminus="C", resolution=1):
            hierarchies=[hier])
 
     for p in ps:
-        if IMP.pmi.Resolution(p).get_resolution() == resolution:
-            residues = IMP.pmi.tools.get_residue_indexes(p)
+        if IMP.pmi1.Resolution(p).get_resolution() == resolution:
+            residues = IMP.pmi1.tools.get_residue_indexes(p)
             if terminus == "C":
                 if termresidue is None:
                     termresidue = max(residues)
@@ -824,19 +824,19 @@ def select_by_tuple(
     resolution=None,
         name_is_ambiguous=False):
     if isinstance(tupleselection, tuple) and len(tupleselection) == 3:
-        particles = IMP.pmi.tools.select(representation, resolution=resolution,
+        particles = IMP.pmi1.tools.select(representation, resolution=resolution,
                                          name=tupleselection[2],
                                          first_residue=tupleselection[0],
                                          last_residue=tupleselection[1],
                                          name_is_ambiguous=name_is_ambiguous)
     elif isinstance(tupleselection, str):
-        particles = IMP.pmi.tools.select(representation, resolution=resolution,
+        particles = IMP.pmi1.tools.select(representation, resolution=resolution,
                                          name=tupleselection,
                                          name_is_ambiguous=name_is_ambiguous)
     else:
         raise ValueError('you passed something bad to select_by_tuple()')
     # now order the result by residue number
-    particles = IMP.pmi.tools.sort_by_residues(particles)
+    particles = IMP.pmi1.tools.sort_by_residues(particles)
 
     return particles
 
@@ -1074,7 +1074,7 @@ def get_residue_indexes(hier):
         a = IMP.atom.Atom(hier)
         resind = [IMP.atom.Residue(a.get_parent()).get_index()]
     elif IMP.atom.Molecule.get_is_setup(hier):
-        resind_tmp=IMP.pmi.tools.OrderedSet()
+        resind_tmp=IMP.pmi1.tools.OrderedSet()
         for lv in IMP.atom.get_leaves(hier):
             if IMP.atom.Fragment.get_is_setup(lv) or \
                IMP.atom.Residue.get_is_setup(lv) or \
@@ -1087,7 +1087,7 @@ def get_residue_indexes(hier):
 
 
 def sort_by_residues(particles):
-    particles_residues = [(p, IMP.pmi.tools.get_residue_indexes(p))
+    particles_residues = [(p, IMP.pmi1.tools.get_residue_indexes(p))
                           for p in particles]
     sorted_particles_residues = sorted(
         particles_residues,
@@ -1099,7 +1099,7 @@ def sort_by_residues(particles):
 def get_residue_to_particle_map(particles):
     # this function returns a dictionary that map particles to residue indexes
     particles = sort_by_residues(particles)
-    particles_residues = [(p, IMP.pmi.tools.get_residue_indexes(p))
+    particles_residues = [(p, IMP.pmi1.tools.get_residue_indexes(p))
                           for p in particles]
     return dict(zip(particles_residues, particles))
 
@@ -1322,7 +1322,7 @@ def translate_hierarchy(hierarchy, translation_vector):
 
 def translate_hierarchies(hierarchies, translation_vector):
     for h in hierarchies:
-        IMP.pmi.tools.translate_hierarchy(h, translation_vector)
+        IMP.pmi1.tools.translate_hierarchy(h, translation_vector)
 
 
 def translate_hierarchies_to_reference_frame(hierarchies):
@@ -1340,7 +1340,7 @@ def translate_hierarchies_to_reference_frame(hierarchies):
     xc = xc / nc
     yc = yc / nc
     zc = zc / nc
-    IMP.pmi.tools.translate_hierarchies(hierarchies, (-xc, -yc, -zc))
+    IMP.pmi1.tools.translate_hierarchies(hierarchies, (-xc, -yc, -zc))
 
 
 #
@@ -1381,8 +1381,8 @@ def get_random_residue_pairs(representation, resolution,
         if max_distance is not None and \
            core.get_distance(core.XYZ(p1), core.XYZ(p2)) > max_distance:
             continue
-        r1 = random.choice(IMP.pmi.tools.get_residue_indexes(p1))
-        r2 = random.choice(IMP.pmi.tools.get_residue_indexes(p2))
+        r1 = random.choice(IMP.pmi1.tools.get_residue_indexes(p1))
+        r2 = random.choice(IMP.pmi1.tools.get_residue_indexes(p2))
         if r1==r2 and avoid_same_particles: continue
         name1 = representation.get_prot_name_from_particle(p1)
         name2 = representation.get_prot_name_from_particle(p2)
@@ -1741,9 +1741,9 @@ def get_sorted_segments(mol):
     the last particle and the first residue index."""
 
     from operator import itemgetter
-    hiers=IMP.pmi.tools.input_adaptor(mol)
+    hiers=IMP.pmi1.tools.input_adaptor(mol)
     if len(hiers)>1:
-        raise Exception("IMP.pmi.tools.get_sorted_segments: only pass stuff from one Molecule, please")
+        raise Exception("IMP.pmi1.tools.get_sorted_segments: only pass stuff from one Molecule, please")
     hiers = hiers[0]
     SortedSegments = []
     for h in hiers:
@@ -1757,8 +1757,8 @@ def get_sorted_segments(mol):
         except:
             end = IMP.atom.Hierarchy(h)
 
-        startres = IMP.pmi.tools.get_residue_indexes(start)[0]
-        endres = IMP.pmi.tools.get_residue_indexes(end)[-1]
+        startres = IMP.pmi1.tools.get_residue_indexes(start)[0]
+        endres = IMP.pmi1.tools.get_residue_indexes(end)[-1]
         SortedSegments.append((start, end, startres))
     SortedSegments = sorted(SortedSegments, key=itemgetter(2))
     return SortedSegments
@@ -1927,7 +1927,7 @@ def get_molecules(input_objects):
 
 def get_molecules_dictionary(input_objects):
     moldict=defaultdict(list)
-    for mol in IMP.pmi.tools.get_molecules(input_objects):
+    for mol in IMP.pmi1.tools.get_molecules(input_objects):
         name=mol.get_name()
         moldict[name].append(mol)
 
@@ -1937,14 +1937,14 @@ def get_molecules_dictionary(input_objects):
 
 def get_molecules_dictionary_by_copy(input_objects):
     moldict=defaultdict(dict)
-    for mol in IMP.pmi.tools.get_molecules(input_objects):
+    for mol in IMP.pmi1.tools.get_molecules(input_objects):
         name=mol.get_name()
         c=IMP.atom.Copy(mol).get_copy_index()
         moldict[name][c]=mol
     return moldict
 
 def get_selections_dictionary(input_objects):
-    moldict=IMP.pmi.tools.get_molecules_dictionary(input_objects)
+    moldict=IMP.pmi1.tools.get_molecules_dictionary(input_objects)
     seldict=defaultdict(list)
     for name, mols in moldict.items():
         for m in mols:
@@ -2002,7 +2002,7 @@ def shuffle_configuration(objects,
     """
 
     ### checking input
-    hierarchies = IMP.pmi.tools.input_adaptor(objects,
+    hierarchies = IMP.pmi1.tools.input_adaptor(objects,
                                               pmi_resolution='all',
                                               flatten=True)
     rigid_bodies,flexible_beads = get_rbs_and_beads(hierarchies)
@@ -2020,11 +2020,11 @@ def shuffle_configuration(objects,
     gcpf.set_distance(cutoff)
 
     # Add particles from excluded hierarchies to excluded list
-    collision_excluded_hierarchies = IMP.pmi.tools.input_adaptor(hierarchies_excluded_from_collision,
+    collision_excluded_hierarchies = IMP.pmi1.tools.input_adaptor(hierarchies_excluded_from_collision,
                                               pmi_resolution='all',
                                               flatten=True)
 
-    collision_included_hierarchies = IMP.pmi.tools.input_adaptor(hierarchies_included_in_collision,
+    collision_included_hierarchies = IMP.pmi1.tools.input_adaptor(hierarchies_included_in_collision,
                                               pmi_resolution='all',
                                               flatten=True)
 
@@ -2036,7 +2036,7 @@ def shuffle_configuration(objects,
 
     # Excluded collision with Gaussians
     all_idxs = [] #expand to representations?
-    for p in IMP.pmi.tools.get_all_leaves(hierarchies):
+    for p in IMP.pmi1.tools.get_all_leaves(hierarchies):
         if IMP.core.XYZ.get_is_setup(p):
             all_idxs.append(p.get_particle_index())
         if IMP.core.Gaussian.get_is_setup(p):
@@ -2185,8 +2185,8 @@ class ColorHierarchy(object):
 
         hier.ColorHierarchy=self
         self.hier=hier
-        mols=IMP.pmi.tools.get_molecules(IMP.atom.get_leaves(self.hier))
-        self.mols=[IMP.pmi.topology.PMIMoleculeHierarchy(mol) for mol in mols]
+        mols=IMP.pmi1.tools.get_molecules(IMP.atom.get_leaves(self.hier))
+        self.mols=[IMP.pmi1.topology.PMIMoleculeHierarchy(mol) for mol in mols]
         self.method=self.nochange
         self.scheme=None
         self.first=None
@@ -2208,7 +2208,7 @@ class ColorHierarchy(object):
         self.scheme=self.mpl.cm.rainbow
         for mol in self.mols:
             self.first=1
-            self.last=len(IMP.pmi.topology.PMIMoleculeHierarchy(mol).get_residue_indexes())
+            self.last=len(IMP.pmi1.topology.PMIMoleculeHierarchy(mol).get_residue_indexes())
             for p in IMP.atom.get_leaves(mol):
                 if IMP.atom.Residue.get_is_setup(p):
                     ri=IMP.atom.Residue(p).get_index()
@@ -2226,8 +2226,8 @@ class ColorHierarchy(object):
         ps=IMP.atom.get_leaves(self.hier)
         unc_dict={}
         for p in ps:
-            if IMP.pmi.Uncertainty.get_is_setup(p):
-                u=IMP.pmi.Uncertainty(p).get_uncertainty()
+            if IMP.pmi1.Uncertainty.get_is_setup(p):
+                u=IMP.pmi1.Uncertainty(p).get_uncertainty()
                 unc_dict[p]=u
         self.first=self.get_log_scale(1.0) #math.log(min(unc_dict.values())+eps)
         self.last=self.get_log_scale(100.0) #math.log(max(unc_dict.values())+eps)

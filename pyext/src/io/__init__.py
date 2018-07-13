@@ -1,4 +1,4 @@
-"""@namespace IMP.pmi.io
+"""@namespace IMP.pmi1.io
    Utility classes and functions for reading and storing PMI files
 """
 
@@ -6,11 +6,11 @@ from __future__ import print_function
 import IMP
 import IMP.algebra
 import IMP.atom
-import IMP.pmi
+import IMP.pmi1
 import IMP.rmf
-import IMP.pmi.analysis
-import IMP.pmi.output
-import IMP.pmi.tools
+import IMP.pmi1.analysis
+import IMP.pmi1.output
+import IMP.pmi1.tools
 import RMF
 import sys,os
 import numpy as np
@@ -71,7 +71,7 @@ def parse_dssp(dssp_fn, limit_to_chains='',name_map=None):
     start = False
 
     # temporary beta dictionary indexed by DSSP's ID
-    beta_dict = IMP.pmi.tools.OrderedDefaultDict(list)
+    beta_dict = IMP.pmi1.tools.OrderedDefaultDict(list)
     prev_sstype = None
     prev_beta_id = None
 
@@ -162,7 +162,7 @@ def save_best_models(model,
     except ImportError:
         rank = 0
         number_of_processes = 1
-    my_stat_files=IMP.pmi.tools.chunk_list_into_segments(
+    my_stat_files=IMP.pmi1.tools.chunk_list_into_segments(
         stat_files,number_of_processes)[rank]
 
     # filenames
@@ -176,7 +176,7 @@ def save_best_models(model,
         # get list of keywords
         root_directory_of_stat_file = os.path.dirname(os.path.dirname(sf))
         print("getting data from file %s" % sf)
-        po = IMP.pmi.output.ProcessOutput(sf)
+        po = IMP.pmi1.output.ProcessOutput(sf)
         all_keys = [score_key,
                     rmf_file_key,
                     rmf_file_frame_key]
@@ -290,7 +290,7 @@ def add_provenance(prov, hiers):
        Note that we do this all at once since we typically don't preserve
        the IMP::Model object throughout a PMI protocol."""
     for h in hiers:
-        IMP.pmi.tools._add_pmi_provenance(h)
+        IMP.pmi1.tools._add_pmi_provenance(h)
         m = h.get_model()
         for p in prov:
             IMP.core.add_provenance(m, h, p.get_decorator(m))
@@ -309,13 +309,13 @@ def get_best_models(stat_files,
     rmf_file_frame_list=[]        # best RMF frames
     score_list=[]                 # best scores
     feature_keyword_list_dict=defaultdict(list)  # best values of the feature keys
-    statistics = IMP.pmi.output.OutputStatistics()
+    statistics = IMP.pmi1.output.OutputStatistics()
     for sf in stat_files:
         root_directory_of_stat_file = os.path.dirname(os.path.abspath(sf))
         if sf[-4:]=='rmf3':
             root_directory_of_stat_file = os.path.dirname(os.path.abspath(root_directory_of_stat_file))
         print("getting data from file %s" % sf)
-        po = IMP.pmi.output.ProcessOutput(sf)
+        po = IMP.pmi1.output.ProcessOutput(sf)
 
         try:
             file_keywords = po.get_keys()
@@ -401,7 +401,7 @@ def get_trajectory_models(stat_files,
     for sf in stat_files:
         root_directory_of_stat_file = os.path.dirname(os.path.dirname(sf))
         print("getting data from file %s" % sf)
-        po = IMP.pmi.output.ProcessOutput(sf)
+        po = IMP.pmi1.output.ProcessOutput(sf)
         keywords = po.get_keys()
 
         feature_keywords = [score_key,
@@ -457,18 +457,18 @@ def read_coordinates_of_rmfs(model,
         rmf_file = tpl[1]
         frame_number = tpl[2]
         if cnt==0:
-            prots = IMP.pmi.analysis.get_hiers_from_rmf(model,
+            prots = IMP.pmi1.analysis.get_hiers_from_rmf(model,
                                                         frame_number,
                                                         rmf_file)
         else:
-            IMP.pmi.analysis.link_hiers_to_rmf(model,prots,frame_number,rmf_file)
+            IMP.pmi1.analysis.link_hiers_to_rmf(model,prots,frame_number,rmf_file)
 
         if not prots:
             continue
         prot = prots[state_number]
 
         # getting the particles
-        part_dict = IMP.pmi.analysis.get_particles_at_resolution_one(prot)
+        part_dict = IMP.pmi1.analysis.get_particles_at_resolution_one(prot)
         all_particles = [pp for key in part_dict for pp in part_dict[key]]
         all_ps_set = set(all_particles)
         model_coordinate_dict = {}
@@ -519,7 +519,7 @@ def get_bead_sizes(model,rmf_tuple,rmsd_calculation_components=None,state_number
 
     rmf_file = rmf_tuple[1]
     frame_number = rmf_tuple[2]
-    prots = IMP.pmi.analysis.get_hiers_from_rmf(model,
+    prots = IMP.pmi1.analysis.get_hiers_from_rmf(model,
                                                 frame_number,
                                                 rmf_file)
 
@@ -528,7 +528,7 @@ def get_bead_sizes(model,rmf_tuple,rmsd_calculation_components=None,state_number
     rmsd_bead_size_dict = {}
 
     # getting the particles
-    part_dict = IMP.pmi.analysis.get_particles_at_resolution_one(prot)
+    part_dict = IMP.pmi1.analysis.get_particles_at_resolution_one(prot)
     all_particles=[pp for key in part_dict for pp in part_dict[key]]
     all_ps_set=set(all_particles)
 
@@ -545,7 +545,7 @@ def get_bead_sizes(model,rmf_tuple,rmsd_calculation_components=None,state_number
         ps=s.get_selected_particles()
         filtered_particles=[p for p in ps if p in all_ps_set]
         rmsd_bead_size_dict[pr] = \
-            [len(IMP.pmi.tools.get_residue_indexes(p)) for p in filtered_particles]
+            [len(IMP.pmi1.tools.get_residue_indexes(p)) for p in filtered_particles]
 
     return rmsd_bead_size_dict
 
@@ -576,7 +576,7 @@ class TotalScoreOutput(object):
     """A helper output for model evaluation"""
     def __init__(self,model):
         self.model = model
-        self.rs = IMP.pmi.tools.get_restraint_set(self.model)
+        self.rs = IMP.pmi1.tools.get_restraint_set(self.model)
 
     @property
     @IMP.deprecated_method("3.0", "Model should be accessed with `.model`.")

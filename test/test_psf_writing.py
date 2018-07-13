@@ -2,10 +2,10 @@ import os
 import IMP
 import IMP.test
 
-import IMP.pmi.restraints.stereochemistry
-import IMP.pmi.representation
-import IMP.pmi.tools
-import IMP.pmi.output
+import IMP.pmi1.restraints.stereochemistry
+import IMP.pmi1.representation
+import IMP.pmi1.tools
+import IMP.pmi1.output
 
 class Tests(IMP.test.TestCase):
     def test_psf_writing(self):
@@ -23,11 +23,11 @@ class Tests(IMP.test.TestCase):
 
         beadsize = 1
 
-        fastids = IMP.pmi.tools.get_ids_from_fasta_file(fastafile)
+        fastids = IMP.pmi1.tools.get_ids_from_fasta_file(fastafile)
 
 
         m = IMP.Model()
-        simo = IMP.pmi.representation.Representation(m)
+        simo = IMP.pmi1.representation.Representation(m)
 
 
         simo.create_component("Rpb1", color=colors[0])
@@ -42,7 +42,7 @@ class Tests(IMP.test.TestCase):
                              resolutions=[1], missingbeadsize=beadsize)
         simo.setup_component_sequence_connectivity("Rpb2", 1)
 
-        output = IMP.pmi.output.Output()
+        output = IMP.pmi1.output.Output()
         output.init_pdb("test_psf_writing.pdb", simo.prot)
         output.write_pdb("test_psf_writing.pdb")
         output.write_psf("test_psf_writing.psf","test_psf_writing.pdb")

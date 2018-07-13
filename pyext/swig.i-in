@@ -1,18 +1,18 @@
-IMP_SWIG_OBJECT(IMP::pmi, CompositeRestraint, CompositeRestraints);
-IMP_SWIG_DECORATOR(IMP::pmi, Uncertainty, Uncertainties);
-IMP_SWIG_DECORATOR(IMP::pmi, Resolution, Resolutions);
-IMP_SWIG_DECORATOR(IMP::pmi, Symmetric, Symmetrics);
-IMP_SWIG_OBJECT(IMP::pmi, SigmoidRestraintSphere, SigmoidRestraintSpheres);
-IMP_SWIG_OBJECT(IMP::pmi, TransformMover, TransformMovers);
-IMP_SWIG_OBJECT(IMP::pmi, MembraneRestraint, MembraneRestraints);
-IMP_SWIG_OBJECT(IMP::pmi, InternalCoordinatesConstraint, InternalCoordinatesConstraints);
+IMP_SWIG_OBJECT(IMP::pmi1, CompositeRestraint, CompositeRestraints);
+IMP_SWIG_DECORATOR(IMP::pmi1, Uncertainty, Uncertainties);
+IMP_SWIG_DECORATOR(IMP::pmi1, Resolution, Resolutions);
+IMP_SWIG_DECORATOR(IMP::pmi1, Symmetric, Symmetrics);
+IMP_SWIG_OBJECT(IMP::pmi1, SigmoidRestraintSphere, SigmoidRestraintSpheres);
+IMP_SWIG_OBJECT(IMP::pmi1, TransformMover, TransformMovers);
+IMP_SWIG_OBJECT(IMP::pmi1, MembraneRestraint, MembraneRestraints);
+IMP_SWIG_OBJECT(IMP::pmi1, InternalCoordinatesConstraint, InternalCoordinatesConstraints);
 
-%include "IMP/pmi/MembraneRestraint.h"
-%include "IMP/pmi/CompositeRestraint.h"
-%include "IMP/pmi/Uncertainty.h"
-%include "IMP/pmi/Resolution.h"
-%include "IMP/pmi/Symmetric.h"
-%include "IMP/pmi/SigmoidRestraintSphere.h"
-%include "IMP/pmi/TransformMover.h"
-%include "IMP/pmi/utilities.h"
-%include "IMP/pmi/InternalCoordinatesConstraint.h"
+%include "IMP/pmi1/MembraneRestraint.h"
+%include "IMP/pmi1/CompositeRestraint.h"
+%include "IMP/pmi1/Uncertainty.h"
+%include "IMP/pmi1/Resolution.h"
+%include "IMP/pmi1/Symmetric.h"
+%include "IMP/pmi1/SigmoidRestraintSphere.h"
+%include "IMP/pmi1/TransformMover.h"
+%include "IMP/pmi1/utilities.h"
+%include "IMP/pmi1/InternalCoordinatesConstraint.h"

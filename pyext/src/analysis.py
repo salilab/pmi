@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 
-"""@namespace IMP.pmi.analysis
+"""@namespace IMP.pmi1.analysis
    Tools for clustering and cluster analysis
 """
 from __future__ import print_function
 import IMP
 import IMP.algebra
 import IMP.em
-import IMP.pmi
-import IMP.pmi.tools
-import IMP.pmi.output
+import IMP.pmi1
+import IMP.pmi1.tools
+import IMP.pmi1.output
 import IMP.rmf
 import RMF
-import IMP.pmi.analysis
+import IMP.pmi1.analysis
 from operator import itemgetter
 from copy import deepcopy
 from math import log,sqrt
@@ -231,7 +231,7 @@ class Clustering(object):
             list(zip(self.model_list_names, self.model_indexes)))
         model_indexes_unique_pairs = list(itertools.combinations(self.model_indexes, 2))
 
-        my_model_indexes_unique_pairs = IMP.pmi.tools.chunk_list_into_segments(
+        my_model_indexes_unique_pairs = IMP.pmi1.tools.chunk_list_into_segments(
             model_indexes_unique_pairs,
             self.number_of_processes)[self.rank]
 
@@ -242,11 +242,11 @@ class Clustering(object):
                                                                                          my_model_indexes_unique_pairs)
 
         if self.number_of_processes > 1:
-            raw_distance_dict = IMP.pmi.tools.scatter_and_gather(
+            raw_distance_dict = IMP.pmi1.tools.scatter_and_gather(
                 raw_distance_dict)
             pickable_transformations = self.get_pickable_transformation_distance_dict(
             )
-            pickable_transformations = IMP.pmi.tools.scatter_and_gather(
+            pickable_transformations = IMP.pmi1.tools.scatter_and_gather(
                 pickable_transformations)
             self.set_transformation_distance_dict_from_pickable(
                 pickable_transformations)
@@ -474,7 +474,7 @@ class RMSD(object):
     """Compute the RMSD (without alignment) taking into account the copy ambiguity.
     To be used with pmi2 hierarchies. Can be used for instance as follows:
 
-    rmsd=IMP.pmi.analysis.RMSD(hier,hier,[mol.get_name() for mol in mols],dynamic0=True,dynamic1=False)
+    rmsd=IMP.pmi1.analysis.RMSD(hier,hier,[mol.get_name() for mol in mols],dynamic0=True,dynamic1=False)
     output_objects.append(rmsd)
 
     before shuffling the coordinates
@@ -502,7 +502,7 @@ class RMSD(object):
         moldict={}
         mol_coords={}
         mol_XYZs={}
-        for mol in IMP.pmi.tools.get_molecules(hier):
+        for mol in IMP.pmi1.tools.get_molecules(hier):
             name=mol.get_name()
             if name not in molnames:
                 continue
@@ -575,7 +575,7 @@ class RMSD(object):
         return total_rmsd,best_assignments
 
     def get_output(self):
-        """Returns output for IMP.pmi.output.Output object"""
+        """Returns output for IMP.pmi1.output.Output object"""
         total_rmsd,best_assignments=self.get_rmsd_and_assigments()
 
         assignments_out=[]
@@ -740,7 +740,7 @@ class Precision(object):
         """
 
         # split up the requested list to read in parallel
-        my_rmf_name_frame_tuples=IMP.pmi.tools.chunk_list_into_segments(
+        my_rmf_name_frame_tuples=IMP.pmi1.tools.chunk_list_into_segments(
             rmf_name_frame_tuples,self.number_of_processes)[self.rank]
         for nfr,tup in enumerate(my_rmf_name_frame_tuples):
             rmf_name=tup[0]
@@ -757,7 +757,7 @@ class Precision(object):
 
         # synchronize the structures
         if self.number_of_processes > 1:
-            self.rmf_names_frames=IMP.pmi.tools.scatter_and_gather(self.rmf_names_frames)
+            self.rmf_names_frames=IMP.pmi1.tools.scatter_and_gather(self.rmf_names_frames)
             if self.rank != 0:
                 self.comm.send(self.structures_dictionary, dest=0, tag=11)
             elif self.rank == 0:
@@ -776,9 +776,9 @@ class Precision(object):
         s = IMP.atom.Selection(hier,molecules=[prot_name])
         all_selected_particles = s.get_selected_particles()
         intersection = list(set(all_selected_particles) & set(structure))
-        sorted_intersection = IMP.pmi.tools.sort_by_residues(intersection)
+        sorted_intersection = IMP.pmi1.tools.sort_by_residues(intersection)
         for p in sorted_intersection:
-            residue_particle_index_map.append(IMP.pmi.tools.get_residue_indexes(p))
+            residue_particle_index_map.append(IMP.pmi1.tools.get_residue_indexes(p))
         return residue_particle_index_map
 
 
@@ -789,14 +789,14 @@ class Precision(object):
                 s = IMP.atom.Selection(prot,molecules=[t[2]],residue_indexes=range(t[0],t[1]+1))
                 all_selected_particles = s.get_selected_particles()
                 intersection = list(set(all_selected_particles) & set(structure))
-                sorted_intersection = IMP.pmi.tools.sort_by_residues(intersection)
+                sorted_intersection = IMP.pmi1.tools.sort_by_residues(intersection)
                 cc = [tuple(IMP.core.XYZ(p).get_coordinates()) for p in sorted_intersection]
                 selected_coordinates += cc
             elif type(t)==str:
                 s = IMP.atom.Selection(prot,molecules=[t])
                 all_selected_particles = s.get_selected_particles()
                 intersection = list(set(all_selected_particles) & set(structure))
-                sorted_intersection = IMP.pmi.tools.sort_by_residues(intersection)
+                sorted_intersection = IMP.pmi1.tools.sort_by_residues(intersection)
                 cc = [tuple(IMP.core.XYZ(p).get_coordinates()) for p in sorted_intersection]
                 selected_coordinates += cc
             else:
@@ -881,7 +881,7 @@ class Precision(object):
                 raise ValueError("no structure selected. Check the skip parameter.")
 
             # compute pairwise distances in parallel
-            my_pair_combination_list = IMP.pmi.tools.chunk_list_into_segments(
+            my_pair_combination_list = IMP.pmi1.tools.chunk_list_into_segments(
                 pair_combination_list,self.number_of_processes)[self.rank]
             my_length = len(my_pair_combination_list)
             for n,pair in enumerate(my_pair_combination_list):
@@ -889,7 +889,7 @@ class Precision(object):
                 distances[pair] = self._get_distance(structure_set_name1,structure_set_name2,
                                                      selection_name,pair[0],pair[1])
             if self.number_of_processes > 1:
-                distances = IMP.pmi.tools.scatter_and_gather(distances)
+                distances = IMP.pmi1.tools.scatter_and_gather(distances)
 
             # Finally compute distance to centroid
             if self.rank == 0:
@@ -1001,7 +1001,7 @@ class Precision(object):
                     rmsfs.append(rmsf)
                     of.write(str(rn)+" "+str(residue_nblock[rn])+" "+str(rmsf)+"\n")
 
-                IMP.pmi.output.plot_xy_data(residues,rmsfs,title=sel_name,
+                IMP.pmi1.output.plot_xy_data(residues,rmsfs,title=sel_name,
                                             out_fn=outdir+"/rmsf."+sel_name,display=False,
                                             set_plot_yaxis_range=set_plot_yaxis_range,
                                             xlabel='Residue Number',ylabel='Standard error')
@@ -1037,7 +1037,7 @@ class Precision(object):
         align_coordinates = self.structures_dictionary[structure_set_name][alignment_selection_key]
         transformations = []
         for c in align_coordinates:
-            Ali = IMP.pmi.analysis.Alignment({"All":align_reference_coordinates}, {"All":c})
+            Ali = IMP.pmi1.analysis.Alignment({"All":align_reference_coordinates}, {"All":c})
             transformation = Ali.align()[1]
             transformations.append(transformation)
         for selection_name in self.selection_dictionary:
@@ -1141,7 +1141,7 @@ class GetModelDensity(object):
 
             for seg in self.custom_ranges[density_name]:
                 if not hierarchy:
-                    # when you have a IMP.pmi.representation.Representation class
+                    # when you have a IMP.pmi1.representation.Representation class
                     parts += IMP.tools.select_by_tuple(self.representation,
                                                        seg, resolution=1, name_is_ambiguous=False)
                 else:
@@ -1253,7 +1253,7 @@ class GetContactMap(object):
             residue_indexes = []
             for p in particles_dictionary[name]:
                 print(p.get_name())
-                residue_indexes += IMP.pmi.tools.get_residue_indexes(p)
+                residue_indexes += IMP.pmi1.tools.get_residue_indexes(p)
 
             if len(residue_indexes) != 0:
                 self.protnames.append(name)
@@ -1593,7 +1593,7 @@ def get_particles_at_resolution_one(prot):
 
     particle_align = []
     for name in particle_dict:
-        particle_dict[name] = IMP.pmi.tools.sort_by_residues(
+        particle_dict[name] = IMP.pmi1.tools.sort_by_residues(
             list(set(particle_dict[name]) & set(allparticles)))
     return particle_dict
 
@@ -1616,7 +1616,7 @@ def get_particles_at_resolution_ten(prot):
                 allparticles += IMP.atom.get_leaves(s)
     particle_align = []
     for name in particle_dict:
-        particle_dict[name] = IMP.pmi.tools.sort_by_residues(
+        particle_dict[name] = IMP.pmi1.tools.sort_by_residues(
             list(set(particle_dict[name]) & set(allparticles)))
     return particle_dict
 
@@ -1643,7 +1643,7 @@ class CrossLinkTable(object):
             name = i.get_name()
             residue_indexes = []
             for p in IMP.atom.get_leaves(i):
-                residue_indexes += IMP.pmi.tools.get_residue_indexes(p)
+                residue_indexes += IMP.pmi1.tools.get_residue_indexes(p)
 
             if len(residue_indexes) != 0:
                 self.prot_length_dict[name] = max(residue_indexes)
@@ -1671,7 +1671,7 @@ class CrossLinkTable(object):
             residue_indexes = []
             for p in particles_dictionary[name]:
                 print(p.get_name())
-                residue_indexes = IMP.pmi.tools.get_residue_indexes(p)
+                residue_indexes = IMP.pmi1.tools.get_residue_indexes(p)
                 #residue_indexes.add( )
 
                 if len(residue_indexes) != 0:
@@ -1715,7 +1715,7 @@ class CrossLinkTable(object):
         # external datafile is a datafile that contains further information on the crosslinks
         # it will use the unique id to create the dictionary keys
 
-        po = IMP.pmi.output.ProcessOutput(data_file)
+        po = IMP.pmi1.output.ProcessOutput(data_file)
         keys = po.get_keys()
 
         xl_keys = [k for k in keys if search_label in k]
@@ -1741,7 +1741,7 @@ class CrossLinkTable(object):
             # this dictionary stores the further information on crosslinks
             # labeled by unique ID
             self.external_csv_data = {}
-            xldb = IMP.pmi.tools.get_db_from_csv(external_csv_data_file)
+            xldb = IMP.pmi1.tools.get_db_from_csv(external_csv_data_file)
 
             for xl in xldb:
                 self.external_csv_data[
@@ -2048,7 +2048,7 @@ class CrossLinkTable(object):
 
         resoffsetdiagonal = {}
         res = gap_between_components
-        for prot in IMP.pmi.tools.OrderedSet(prot_listx + prot_listy):
+        for prot in IMP.pmi1.tools.OrderedSet(prot_listx + prot_listy):
             resoffsetdiagonal[prot] = res
             res += self.prot_length_dict[prot]
             res += gap_between_components
@@ -2548,20 +2548,20 @@ class CrossLinkTable(object):
         frequencies = [f * 10.0 for f in frequencies]
 
         nchunks = int(float(len(values)) / nxl_per_row)
-        values_chunks = IMP.pmi.tools.chunk_list_into_segments(values, nchunks)
-        positions_chunks = IMP.pmi.tools.chunk_list_into_segments(
+        values_chunks = IMP.pmi1.tools.chunk_list_into_segments(values, nchunks)
+        positions_chunks = IMP.pmi1.tools.chunk_list_into_segments(
             positions,
             nchunks)
-        frequencies_chunks = IMP.pmi.tools.chunk_list_into_segments(
+        frequencies_chunks = IMP.pmi1.tools.chunk_list_into_segments(
             frequencies,
             nchunks)
-        labels_chunks = IMP.pmi.tools.chunk_list_into_segments(labels, nchunks)
+        labels_chunks = IMP.pmi1.tools.chunk_list_into_segments(labels, nchunks)
 
         for n, v in enumerate(values_chunks):
             p = positions_chunks[n]
             f = frequencies_chunks[n]
             l = labels_chunks[n]
-            IMP.pmi.output.plot_fields_box_plots(
+            IMP.pmi1.output.plot_fields_box_plots(
                 filename + "." + str(n), v, p, f,
                 valuename="Distance (Ang)", positionname="Unique " + arrangement + " Crosslinks", xlabels=l)
 
@@ -2601,7 +2601,7 @@ class CrossLinkTable(object):
 
             distances.append(mdist)
 
-        IMP.pmi.output.plot_field_histogram(
+        IMP.pmi1.output.plot_field_histogram(
             filename, distances, valuename="C-alpha C-alpha distance [Ang]",
             bins=bins, color=color,
             format=format,

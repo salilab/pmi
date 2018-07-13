@@ -6,8 +6,8 @@ import IMP.display
 import IMP.algebra
 import IMP.atom
 import IMP.core
-import IMP.pmi.macros
-import IMP.pmi.output
+import IMP.pmi1.macros
+import IMP.pmi1.output
 import IMP.rmf
 import RMF
 
@@ -23,7 +23,7 @@ class Tests(IMP.test.TestCase):
         geo = IMP.display.SphereGeometry(
             IMP.algebra.Sphere3D(IMP.algebra.Vector3D(1, 2, 3), 4.))
         rmf_fn = self.get_tmp_file_name("geometrytest.rmf")
-        o = IMP.pmi.output.Output()
+        o = IMP.pmi1.output.Output()
         o.init_rmf(rmf_fn, [h], geometries=[geo])
         o.write_rmf(rmf_fn)
         o.close_rmf(rmf_fn)

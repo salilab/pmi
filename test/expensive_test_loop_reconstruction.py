@@ -3,11 +3,11 @@ import os
 import IMP
 import IMP.test
 
-import IMP.pmi.restraints.stereochemistry
-import IMP.pmi.representation as representation
-import IMP.pmi.tools as tools
-import IMP.pmi.samplers as samplers
-import IMP.pmi.output as output
+import IMP.pmi1.restraints.stereochemistry
+import IMP.pmi1.representation as representation
+import IMP.pmi1.tools as tools
+import IMP.pmi1.samplers as samplers
+import IMP.pmi1.output as output
 
 IMP.set_log_level(IMP.SILENT)
 
@@ -90,19 +90,19 @@ class Tests(IMP.test.TestCase):
         # add bonds and angles
         for l in lof:
 
-            rbr = IMP.pmi.restraints.stereochemistry.ResidueBondRestraint(r, l)
+            rbr = IMP.pmi1.restraints.stereochemistry.ResidueBondRestraint(r, l)
             rbr.add_to_model()
             listofexcludedpairs += rbr.get_excluded_pairs()
             log_objects.append(rbr)
 
-            rar = IMP.pmi.restraints.stereochemistry.ResidueAngleRestraint(r, l)
+            rar = IMP.pmi1.restraints.stereochemistry.ResidueAngleRestraint(r, l)
             rar.add_to_model()
             listofexcludedpairs += rar.get_excluded_pairs()
             log_objects.append(rar)
 
         # add excluded volume
 
-        ev = IMP.pmi.restraints.stereochemistry.ExcludedVolumeSphere(
+        ev = IMP.pmi1.restraints.stereochemistry.ExcludedVolumeSphere(
                                                    r, resolution=10.0)
         ev.add_excluded_particle_pairs(listofexcludedpairs)
         ev.add_to_model()

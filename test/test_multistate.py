@@ -2,12 +2,12 @@ from __future__ import print_function
 import IMP
 import IMP.test
 import os
-import IMP.pmi.representation
-import IMP.pmi.restraints.basic
+import IMP.pmi1.representation
+import IMP.pmi1.restraints.basic
 import IMP.core
-import IMP.pmi.restraints.crosslinking
-import IMP.pmi.samplers
-import IMP.pmi.output
+import IMP.pmi1.restraints.crosslinking
+import IMP.pmi1.samplers
+import IMP.pmi1.output
 
 class Tests(IMP.test.TestCase):
     def test_multistate(self):
@@ -23,7 +23,7 @@ class Tests(IMP.test.TestCase):
 
 
         m = IMP.Model()
-        r = IMP.pmi.representation.Representation(m)
+        r = IMP.pmi1.representation.Representation(m)
 
         r.create_component("particle1", color=0.1)
         p11 = r.add_component_beads("particle1", [(1, 10)])
@@ -36,7 +36,7 @@ class Tests(IMP.test.TestCase):
 
         # define the particles in state 2
 
-        r = IMP.pmi.representation.Representation(m)
+        r = IMP.pmi1.representation.Representation(m)
 
         r.create_component("particle1", color=0.1)
         p12 = r.add_component_beads("particle1", [(1, 10)])
@@ -78,10 +78,10 @@ class Tests(IMP.test.TestCase):
         xyz22.set_coordinates((inputx, 0, 0))
         xyz32.set_coordinates((inputx, 0, 0))
 
-        eb = IMP.pmi.restraints.basic.ExternalBarrier(representations[0], 1000)
+        eb = IMP.pmi1.restraints.basic.ExternalBarrier(representations[0], 1000)
         eb.add_to_model()
 
-        eb = IMP.pmi.restraints.basic.ExternalBarrier(representations[1], 1000)
+        eb = IMP.pmi1.restraints.basic.ExternalBarrier(representations[1], 1000)
         eb.add_to_model()
 
         restraints = '''#
@@ -89,7 +89,7 @@ class Tests(IMP.test.TestCase):
         particle1 particle3 5 5 1 2 '''
 
         with IMP.allow_deprecated():
-            xl = IMP.pmi.restraints.crosslinking.ISDCrossLinkMS(representations,
+            xl = IMP.pmi1.restraints.crosslinking.ISDCrossLinkMS(representations,
                                                                 restraints,
                                                                 length=length,
                                                                 slope=0.0,
@@ -118,10 +118,10 @@ class Tests(IMP.test.TestCase):
         print(xyz11.get_coordinates())
 
         xl.add_to_model()
-        rset = IMP.pmi.tools.get_restraint_set(m)
+        rset = IMP.pmi1.tools.get_restraint_set(m)
         self.assertAlmostEqual(rset.evaluate(False), -3.03166, delta=1e-2)
 
-        o = IMP.pmi.output.Output()
+        o = IMP.pmi1.output.Output()
         o.init_rmf(
             "trajectory.rmf3",
             [representations[0].prot,
@@ -129,7 +129,7 @@ class Tests(IMP.test.TestCase):
 
         print(o.dictionary_rmfs)
 
-        mc = IMP.pmi.samplers.MonteCarlo(m, representations, 1.0)
+        mc = IMP.pmi1.samplers.MonteCarlo(m, representations, 1.0)
         mc.set_simulated_annealing(min_temp=1.0,
                                    max_temp=2.0,
                                    min_temp_time=200,
@@ -146,7 +146,7 @@ class Tests(IMP.test.TestCase):
                 o.write_stats2()
 
 
-        po = IMP.pmi.output.ProcessOutput("modeling.stat")
+        po = IMP.pmi1.output.ProcessOutput("modeling.stat")
 
         self.assertEqual(len(po.get_keys()), 20)
 

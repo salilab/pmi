@@ -1,5 +1,5 @@
 /**
- *  \file pmi/InternalCoordinatesConstraint.cpp
+ *  \file pmi1/InternalCoordinatesConstraint.cpp
  *  \brief A singleton modifier which wraps an attribute into a
  *  given range.
  *
@@ -7,12 +7,12 @@
  *
  */
 
-#include "IMP/pmi/InternalCoordinatesConstraint.h"
+#include "IMP/pmi1/InternalCoordinatesConstraint.h"
 #include "IMP/core/symmetry.h"
 #include "IMP/core/rigid_bodies.h"
 #include "IMP/algebra/Vector3D.h"
 
-IMPPMI_BEGIN_NAMESPACE
+IMPPMI1_BEGIN_NAMESPACE
 InternalCoordinatesConstraint::InternalCoordinatesConstraint() {}
 
 void InternalCoordinatesConstraint::apply_index(Model *m,
@@ -36,4 +36,4 @@ ModelObjectsTemp InternalCoordinatesConstraint::do_get_outputs(
   return do_get_inputs(m, pis);
 }
 
-IMPPMI_END_NAMESPACE
+IMPPMI1_END_NAMESPACE

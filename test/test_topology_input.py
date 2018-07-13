@@ -1,12 +1,12 @@
 import IMP
-import IMP.pmi
-import IMP.pmi.topology
-import IMP.pmi.macros
+import IMP.pmi1
+import IMP.pmi1.topology
+import IMP.pmi1.macros
 import os
 import IMP.test
 import IMP.rmf
-import IMP.pmi.plotting
-import IMP.pmi.plotting.topology
+import IMP.pmi1.plotting
+import IMP.pmi1.plotting.topology
 
 def children_as_dict(h):
     cdict={}
@@ -19,7 +19,7 @@ class Tests(IMP.test.TestCase):
         """Test reading of old-style topology file"""
         topology_file = self.get_input_file_name("topology.txt")
         with IMP.allow_deprecated():
-            t = IMP.pmi.topology.TopologyReader(topology_file)
+            t = IMP.pmi1.topology.TopologyReader(topology_file)
         c = t.get_components()
         self.assertEqual(len(c), 3)
         self.assertEqual(c[0].molname, "Prot1")
@@ -36,7 +36,7 @@ class Tests(IMP.test.TestCase):
     def test_reading(self):
         """Test basic reading"""
         topology_file = self.get_input_file_name("topology_new.txt")
-        t = IMP.pmi.topology.TopologyReader(topology_file)
+        t = IMP.pmi1.topology.TopologyReader(topology_file)
         self.assertEqual(list(t.molecules.keys()),
                          ['Prot1', 'Prot2', 'Prot3', 'Prot4', 'Prot5'])
         c1 = t.get_components()
@@ -56,10 +56,10 @@ class Tests(IMP.test.TestCase):
         """Test reading and writing"""
         topology_file=self.get_input_file_name("topology_new.txt")
         outfile = self.get_tmp_file_name("ttest.txt")
-        t=IMP.pmi.topology.TopologyReader(topology_file)
+        t=IMP.pmi1.topology.TopologyReader(topology_file)
         t.write_topology_file(outfile)
 
-        tnew = IMP.pmi.topology.TopologyReader(outfile)
+        tnew = IMP.pmi1.topology.TopologyReader(outfile)
         c = tnew.get_components()
         self.assertEqual(len(c),9)
         self.assertEqual(c[0].molname,"Prot1")
@@ -76,7 +76,7 @@ class Tests(IMP.test.TestCase):
         mdl = IMP.Model()
         tfile = self.get_input_file_name('topology_new.txt')
         input_dir = os.path.dirname(tfile)
-        t = IMP.pmi.topology.TopologyReader(tfile,
+        t = IMP.pmi1.topology.TopologyReader(tfile,
                                             pdb_dir=input_dir,
                                             fasta_dir=input_dir,
                                             gmm_dir=input_dir)

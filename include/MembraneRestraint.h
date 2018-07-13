@@ -1,22 +1,22 @@
 /**
- *  \file IMP/pmi/MembraneRestraint.h
+ *  \file IMP/pmi1/MembraneRestraint.h
  *  \brief Favor configurations where target is in the membrane.
  *
  *  Copyright 2007-2018 IMP Inventors. All rights reserved.
  *
  */
 
-#ifndef IMPPMI_MEMBRANE_RESTRAINT_H
-#define IMPPMI_MEMBRANE_RESTRAINT_H
-#include <IMP/pmi/pmi_config.h>
+#ifndef IMPPMI1_MEMBRANE_RESTRAINT_H
+#define IMPPMI1_MEMBRANE_RESTRAINT_H
+#include <IMP/pmi1/pmi1_config.h>
 #include <IMP/isd/ISDRestraint.h>
 #include <IMP/Particle.h>
 
-IMPPMI_BEGIN_NAMESPACE
+IMPPMI1_BEGIN_NAMESPACE
 //! Membrane Restraint
 /** Favors configurations where target is in the membrane
  */
-class IMPPMIEXPORT MembraneRestraint : public isd::ISDRestraint {
+class IMPPMI1EXPORT MembraneRestraint : public isd::ISDRestraint {
   ParticleIndex z_nuisance;
   double thickness;
   double softness;
@@ -48,6 +48,6 @@ public:
   IMP_OBJECT_METHODS(MembraneRestraint);
 };
 
-IMPPMI_END_NAMESPACE
+IMPPMI1_END_NAMESPACE
 
-#endif /* IMPPMI_MEMBRANE_RESTRAINT_H */
+#endif /* IMPPMI1_MEMBRANE_RESTRAINT_H */

@@ -1,4 +1,4 @@
-"""@namespace IMP.pmi.restraints.proteomics
+"""@namespace IMP.pmi1.restraints.proteomics
 Restraints for handling various kinds of proteomics data.
 """
 
@@ -8,9 +8,9 @@ import IMP.core
 import IMP.algebra
 import IMP.atom
 import IMP.container
-import IMP.pmi
-import IMP.pmi.tools
-import IMP.pmi.output
+import IMP.pmi1
+import IMP.pmi1.tools
+import IMP.pmi1.output
 import numpy
 import math
 import math
@@ -50,7 +50,7 @@ class ConnectivityRestraint(object):
         sels = []
 
         for s in selection_tuples:
-            particles = IMP.pmi.tools.select_by_tuple(representation, s,
+            particles = IMP.pmi1.tools.select_by_tuple(representation, s,
                                                       resolution=resolution, name_is_ambiguous=True)
             sel = IMP.atom.Selection(particles)
             sels.append(sel)
@@ -68,7 +68,7 @@ class ConnectivityRestraint(object):
             r.set_name(label)
 
     def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.m, self.rs)
+        IMP.pmi1.tools.add_restraint_to_model(self.m, self.rs)
 
     def get_restraint(self):
         return self.rs
@@ -118,7 +118,7 @@ class CompositeRestraint(object):
 
         self.handleparticles = []
         for s in handleparticles_tuples:
-            self.handleparticles += IMP.pmi.tools.select_by_tuple(
+            self.handleparticles += IMP.pmi1.tools.select_by_tuple(
                 representation, s,
                 resolution=resolution, name_is_ambiguous=True)
         self.compositeparticles = []
@@ -126,13 +126,13 @@ class CompositeRestraint(object):
         for list in compositeparticles_tuple_list:
             tmplist = []
             for s in list:
-                tmplist += IMP.pmi.tools.select_by_tuple(
+                tmplist += IMP.pmi1.tools.select_by_tuple(
                     representation, s,
                     resolution=resolution, name_is_ambiguous=True)
             compositeparticle_list.append(tmplist)
             self.compositeparticles += tmplist
 
-        ln = IMP.pmi.CompositeRestraint(
+        ln = IMP.pmi1.CompositeRestraint(
             self.m,
             self.handleparticles,
             cut_off,
@@ -159,7 +159,7 @@ class CompositeRestraint(object):
         return self.rs
 
     def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.m, self.rs)
+        IMP.pmi1.tools.add_restraint_to_model(self.m, self.rs)
 
     def get_output(self):
         output = {}
@@ -199,7 +199,7 @@ class AmbiguousCompositeRestraint(object):
         self.lam = lam
         self.plateau = plateau
 
-        fl = IMP.pmi.tools.open_file_or_inline_text(restraints_file)
+        fl = IMP.pmi1.tools.open_file_or_inline_text(restraints_file)
 
         for line in fl:
 
@@ -212,7 +212,7 @@ class AmbiguousCompositeRestraint(object):
             r2 = int(tokens[3])
             c2 = tokens[1]
 
-            ps1 = IMP.pmi.tools.select(
+            ps1 = IMP.pmi1.tools.select(
                 representation,
                 resolution=resolution,
                 name=c1,
@@ -220,7 +220,7 @@ class AmbiguousCompositeRestraint(object):
                 residue=r1)
             hrc1 = [representation.hier_db.particle_to_name[p] for p in ps1]
             ps1nosym = [
-                p for p in ps1 if IMP.pmi.Symmetric(
+                p for p in ps1 if IMP.pmi1.Symmetric(
                     p).get_symmetric(
                 ) == 0]
             hrc1nosym = [representation.hier_db.particle_to_name[p]
@@ -232,7 +232,7 @@ class AmbiguousCompositeRestraint(object):
                     (r1, c1))
                 continue
 
-            ps2 = IMP.pmi.tools.select(
+            ps2 = IMP.pmi1.tools.select(
                 representation,
                 resolution=resolution,
                 name=c2,
@@ -240,7 +240,7 @@ class AmbiguousCompositeRestraint(object):
                 residue=r2)
             hrc2 = [representation.hier_db.particle_to_name[p] for p in ps2]
             ps2nosym = [
-                p for p in ps2 if IMP.pmi.Symmetric(
+                p for p in ps2 if IMP.pmi1.Symmetric(
                     p).get_symmetric(
                 ) == 0]
             hrc2nosym = [representation.hier_db.particle_to_name[p]
@@ -252,7 +252,7 @@ class AmbiguousCompositeRestraint(object):
                     (r2, c2))
                 continue
 
-            cr = IMP.pmi.CompositeRestraint(
+            cr = IMP.pmi1.CompositeRestraint(
                 self.m,
                 ps1nosym,
                 self.cut_off,
@@ -273,7 +273,7 @@ class AmbiguousCompositeRestraint(object):
                  r2,
                  cr))
 
-            cr = IMP.pmi.CompositeRestraint(
+            cr = IMP.pmi1.CompositeRestraint(
                 self.m,
                 ps1,
                 self.cut_off,
@@ -303,7 +303,7 @@ class AmbiguousCompositeRestraint(object):
         p2 = IMP.Particle(self.m)
         d1 = IMP.core.XYZR.setup_particle(p1)
         d2 = IMP.core.XYZR.setup_particle(p2)
-        cr = IMP.pmi.CompositeRestraint(
+        cr = IMP.pmi1.CompositeRestraint(
             self.m,
             [p1],
             self.cut_off,
@@ -318,7 +318,7 @@ class AmbiguousCompositeRestraint(object):
                 IMP.algebra.Vector3D(maxdist / npoints * float(i), 0, 0))
             dists.append(IMP.core.get_distance(d1, d2))
             scores.append(cr.unprotected_evaluate(None))
-        IMP.pmi.output.plot_xy_data(dists, scores)
+        IMP.pmi1.output.plot_xy_data(dists, scores)
 
     def set_label(self, label):
         self.label = label
@@ -327,7 +327,7 @@ class AmbiguousCompositeRestraint(object):
             r.set_name(label)
 
     def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.m, self.rs)
+        IMP.pmi1.tools.add_restraint_to_model(self.m, self.rs)
 
     def get_hierarchies(self):
         return self.prot
@@ -402,7 +402,7 @@ class SimplifiedPEMAP(object):
         self.expdistance = expdistance
         self.strength = strength
 
-        fl = IMP.pmi.tools.open_file_or_inline_text(restraints_file)
+        fl = IMP.pmi1.tools.open_file_or_inline_text(restraints_file)
 
         for line in fl:
 
@@ -416,7 +416,7 @@ class SimplifiedPEMAP(object):
             c2 = tokens[1]
             pcc = float(tokens[4])
 
-            ps1 = IMP.pmi.tools.select(
+            ps1 = IMP.pmi1.tools.select(
                 representation,
                 resolution=resolution,
                 name=c1,
@@ -433,7 +433,7 @@ class SimplifiedPEMAP(object):
                     (r1, c1))
                 continue
 
-            ps2 = IMP.pmi.tools.select(
+            ps2 = IMP.pmi1.tools.select(
                 representation,
                 resolution=resolution,
                 name=c2,
@@ -500,7 +500,7 @@ class SimplifiedPEMAP(object):
         self.label = label
 
     def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.m, self.rs)
+        IMP.pmi1.tools.add_restraint_to_model(self.m, self.rs)
 
     def get_hierarchies(self):
         return self.prot
@@ -546,7 +546,7 @@ class SimplifiedPEMAP(object):
 class SetupConnectivityNetworkRestraint(object):
 
     '''
-    generates and wraps a IMP.pmi.ConnectivityRestraint between domains
+    generates and wraps a IMP.pmi1.ConnectivityRestraint between domains
     example:
     cr=restraints.ConnectivityNetworkRestraint(simo,["CCC",(1,100,"TTT"),(100,150,"AAA")])
     cr.add_to_model()
@@ -576,14 +576,14 @@ class SetupConnectivityNetworkRestraint(object):
         if representation is None:
             print(objects)
             for obj in objects:
-                hiers.append(IMP.pmi.tools.input_adaptor(obj,
+                hiers.append(IMP.pmi1.tools.input_adaptor(obj,
                                                 resolution,
                                                 flatten=True))
             self.m=hiers[0][0].get_model()
         else:
             self.m = representation.m
             for s in objects:
-                hiers.append(IMP.pmi.tools.select_by_tuple(representation, s,
+                hiers.append(IMP.pmi1.tools.select_by_tuple(representation, s,
                                                           resolution=resolution,
                                                           name_is_ambiguous=False))
 
@@ -601,7 +601,7 @@ class SetupConnectivityNetworkRestraint(object):
             r.set_name(label)
 
     def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.m, self.rs)
+        IMP.pmi1.tools.add_restraint_to_model(self.m, self.rs)
 
     def get_restraint(self):
         return self.rs
@@ -664,7 +664,7 @@ class ConnectivityNetworkRestraint(IMP.Restraint):
         '''
         import scipy.spatial
         pdist_array = numpy.array(
-            IMP.pmi.get_list_of_bipartite_minimum_sphere_distance(self.particles_blocks))
+            IMP.pmi1.get_list_of_bipartite_minimum_sphere_distance(self.particles_blocks))
         pdist_mat = scipy.spatial.distance.squareform(pdist_array)
         pdist_mat[pdist_mat < 0] = 0
         graph = self.networkx.Graph(pdist_mat)
@@ -711,7 +711,7 @@ class SetupMembraneRestraint(object):
     def get_from_selection_tuple(self,tuples):
         particles = []
         for s in tuples:
-            ps = IMP.pmi.tools.select_by_tuple(
+            ps = IMP.pmi1.tools.select_by_tuple(
                 self.representation, s,
                 resolution=self.resolution, name_is_ambiguous=True)
             particles += ps
@@ -749,7 +749,7 @@ class SetupMembraneRestraint(object):
 
         if representation is None:
             hierarchies_above, hierarchies_inside, hierarchies_below = (
-                IMP.pmi.tools.input_adaptor(objects,
+                IMP.pmi1.tools.input_adaptor(objects,
                                             resolution,
                                             flatten=True) for objects in [objects_above, objects_inside, objects_below])
             for h in hierarchies_above, hierarchies_inside, hierarchies_below:
@@ -767,9 +767,9 @@ class SetupMembraneRestraint(object):
             if objects_inside is not None:
                 particles_inside = self.get_from_selection_tuple(objects_inside)
 
-        self.z_center = IMP.pmi.tools.SetupNuisance(
+        self.z_center = IMP.pmi1.tools.SetupNuisance(
             self.m, self.z_init, z_min, z_max, isoptimized=True).get_particle()
-        mr = IMP.pmi.MembraneRestraint(
+        mr = IMP.pmi1.MembraneRestraint(
             self.m, self.z_center.get_particle_index(), self.thickness, softness, plateau, linear)
         mr.add_particles_inside([h.get_particle().get_index()
                                 for h in hierarchies_inside])
@@ -917,7 +917,7 @@ class SetupMembraneRestraint(object):
             r.set_name(label)
 
     def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.m, self.rs)
+        IMP.pmi1.tools.add_restraint_to_model(self.m, self.rs)
 
     def get_restraint(self):
         return self.rs
@@ -1064,7 +1064,7 @@ class FuzzyRestraint(IMP.Restraint):
         return -math.log(1.0 -(1.0-self.plateau)/(1.0+math.exp(-argvalue)))+self.innerslope*d
 
     def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.m, self)
+        IMP.pmi1.tools.add_restraint_to_model(self.m, self)
 
     def unprotected_evaluate(self, da):
         return self.evaluate()

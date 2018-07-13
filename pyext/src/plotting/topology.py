@@ -3,9 +3,9 @@ import IMP
 import RMF
 import IMP.atom
 import IMP.rmf
-import IMP.pmi
-import IMP.pmi.analysis
-import IMP.pmi.output
+import IMP.pmi1
+import IMP.pmi1.analysis
+import IMP.pmi1.output
 from collections import defaultdict
 import numpy as np
 
@@ -65,7 +65,7 @@ class TopologyPlot(object):
         self.model.update()
 
         #gathers particles for all components
-        part_dict = IMP.pmi.analysis.get_particles_at_resolution_one(hier)
+        part_dict = IMP.pmi1.analysis.get_particles_at_resolution_one(hier)
         all_particles_by_resolution = []
         for name in part_dict:
             all_particles_by_resolution += part_dict[name]
@@ -82,7 +82,7 @@ class TopologyPlot(object):
                 parts = list(set(s.get_selected_particles()) & set(all_particles_by_resolution))
                 ps_per_component[component_name] += IMP.get_indexes(parts)
                 if self.num_rmf==0:
-                    self.size_per_component[component_name] += sum(len(IMP.pmi.tools.get_residue_indexes(p)) for p in parts)
+                    self.size_per_component[component_name] += sum(len(IMP.pmi1.tools.get_residue_indexes(p)) for p in parts)
 
         for n1,name1 in enumerate(self.names):
             for name2 in self.names[n1+1:]:
@@ -184,7 +184,7 @@ class TopologyPlot(object):
                 weights.append(count)
         for nw,w in enumerate(weights):
             weights[nw]=float(weights[nw])/max(weights)
-        IMP.pmi.output.draw_graph(edges,#node_size=1000,
+        IMP.pmi1.output.draw_graph(edges,#node_size=1000,
                                   node_size=dict(self.size_per_component),
                                   node_color=self.colors,
                                   fixed=self.fixed,
@@ -199,15 +199,15 @@ class TopologyPlot(object):
 
 def draw_component_composition(DegreesOfFreedom, max=1000, draw_pdb_names=False,show=True):
     """A function to plot the representation on the sequence
-    @param DegreesOfFreedom input a IMP.pmi.dof.DegreesOfFreedom instance"""
+    @param DegreesOfFreedom input a IMP.pmi1.dof.DegreesOfFreedom instance"""
     import matplotlib as mpl
     mpl.use('Agg')
     from matplotlib import pyplot
     from operator import itemgetter
-    import IMP.pmi.tools
+    import IMP.pmi1.tools
 
     #first build the movers dictionary
-    movers_mols_res=IMP.pmi.tools.OrderedDict()
+    movers_mols_res=IMP.pmi1.tools.OrderedDict()
     for mv in DegreesOfFreedom.movers_particles_map:
         hs=DegreesOfFreedom.movers_particles_map[mv]
         res=[]
@@ -225,11 +225,11 @@ def draw_component_composition(DegreesOfFreedom, max=1000, draw_pdb_names=False,
                     is_molecule=IMP.atom.Molecule.get_is_setup(hp)
                 name=IMP.atom.Molecule(hp).get_name()+"."+str(IMP.atom.Copy(hp).get_copy_index())
                 if not mv in movers_mols_res:
-                    movers_mols_res[mv]=IMP.pmi.tools.OrderedDict()
-                    movers_mols_res[mv][name]=IMP.pmi.tools.Segments(res)
+                    movers_mols_res[mv]=IMP.pmi1.tools.OrderedDict()
+                    movers_mols_res[mv][name]=IMP.pmi1.tools.Segments(res)
                 else:
                     if not name in movers_mols_res[mv]:
-                        movers_mols_res[mv][name]=IMP.pmi.tools.Segments(res)
+                        movers_mols_res[mv][name]=IMP.pmi1.tools.Segments(res)
                     else:
                         movers_mols_res[mv][name].add(res)
     # then get all movers by type
@@ -242,7 +242,7 @@ def draw_component_composition(DegreesOfFreedom, max=1000, draw_pdb_names=False,
             rb_movers.append(mv)
         if type(mv) is IMP.core.BallMover:
             fb_movers.append(mv)
-        if type(mv) is IMP.pmi.TransformMover:
+        if type(mv) is IMP.pmi1.TransformMover:
             srb_movers.append(mv)
 
     # now remove residue assigned to BallMovers from RigidBodies
@@ -256,7 +256,7 @@ def draw_component_composition(DegreesOfFreedom, max=1000, draw_pdb_names=False,
                         continue
 
     elements={}
-    c=IMP.pmi.tools.Colors()
+    c=IMP.pmi1.tools.Colors()
     colors=c.get_list_distant_colors()
     colors=["blue", "red", "green", "pink", "cyan", "purple",
             "magenta", "orange", "grey", "brown", "gold",
@@ -291,7 +291,7 @@ def draw_component_composition(DegreesOfFreedom, max=1000, draw_pdb_names=False,
                 if not mol in elements: elements[mol]=[]
                 for seg in movers_mols_res[mv][mol].segs:
                     elements[mol].append((seg[0],seg[-1]," ","bead"))
-        if type(mv) is IMP.pmi.TransformMover:
+        if type(mv) is IMP.pmi1.TransformMover:
             mvtype="SRB"
 
     # sort everything

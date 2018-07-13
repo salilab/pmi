@@ -1,5 +1,5 @@
 /**
- * \file IMP/pmi/MembraneRestraint.h
+ * \file IMP/pmi1/MembraneRestraint.h
  * \brief membrane restraint
  *
  */
@@ -11,7 +11,7 @@
 
 #include <limits>
 
-IMPPMI_BEGIN_NAMESPACE
+IMPPMI1_BEGIN_NAMESPACE
 
 MembraneRestraint::MembraneRestraint(Model *m, ParticleIndex z_nuisance,
                                      double thickness, double softness,
@@ -98,4 +98,4 @@ IMP::ModelObjectsTemp MembraneRestraint::do_get_inputs() const {
   return ret;
 }
 
-IMPPMI_END_NAMESPACE
+IMPPMI1_END_NAMESPACE

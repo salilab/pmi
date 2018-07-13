@@ -1,6 +1,6 @@
-"""@namespace IMP.pmi.topology
+"""@namespace IMP.pmi1.topology
 Set of python classes to create a multi-state, multi-resolution IMP hierarchy.
-* Start by creating a System with `model = IMP.Model(); s = IMP.pmi.topology.System(model)`. The System will store all the states.
+* Start by creating a System with `model = IMP.Model(); s = IMP.pmi1.topology.System(model)`. The System will store all the states.
 * Then call System.create_state(). You can easily create a multistate system by calling this function multiples times.
 * For each State, call State.create_molecule() to add a Molecule (a uniquely named polymer). This function returns the Molecule object which can be passed to various PMI functions.
 * Some useful functions to help you set up your Molecules:
@@ -9,11 +9,11 @@ Set of python classes to create a multi-state, multi-resolution IMP hierarchy.
  * Molecule.add_representation() to create a representation unit - here you can choose bead resolutions as well as alternate representations like densities or ideal helices.
  * Molecule.create_clone() lets you set up a molecule with identical representations, just a different chain ID. Use Molecule.create_copy() if you want a molecule with the same sequence but that allows custom representations.
 * Once data has been added and representations chosen, call System.build() to create a canonical IMP hierarchy.
-* Following hierarchy construction, setup rigid bodies, flexible beads, etc in IMP::pmi::dof.
+* Following hierarchy construction, setup rigid bodies, flexible beads, etc in IMP::pmi1::dof.
 * Check your representation with a nice printout: IMP::atom::show_with_representation()
 See a [comprehensive example](https://integrativemodeling.org/nightly/doc/ref/pmi_2multiscale_8py-example.html) for using these classes.
 
-Alternatively one can construct the entire topology and degrees of freedom via formatted text file with TopologyReader and IMP::pmi::macros::BuildSystem(). This is used in the [PMI tutorial](@ref rnapolii_stalk).
+Alternatively one can construct the entire topology and degrees of freedom via formatted text file with TopologyReader and IMP::pmi1::macros::BuildSystem(). This is used in the [PMI tutorial](@ref rnapolii_stalk).
 Note that this only allows a limited set of the full options available to PMI users (rigid bodies only, fixed resolutions).
 """
 
@@ -21,8 +21,8 @@ from __future__ import print_function
 import IMP
 import IMP.atom
 import IMP.algebra
-import IMP.pmi
-import IMP.pmi.tools
+import IMP.pmi1
+import IMP.pmi1.tools
 import csv
 import os
 from collections import defaultdict
@@ -78,7 +78,7 @@ class Sequences(object):
         @param fasta_fn sequence file
         @param name_map dictionary mapping the fasta name to final stored name
         """
-        self.sequences = IMP.pmi.tools.OrderedDict()
+        self.sequences = IMP.pmi1.tools.OrderedDict()
         self.read_sequences(fasta_fn,name_map)
     def __len__(self):
         return len(self.sequences)
@@ -129,7 +129,7 @@ class Sequences(object):
 class TopologyReader(object):
     """Automatically setup Sytem and Degrees of Freedom with a formatted text file.
     The file is read in and each part of the topology is stored as a
-    ComponentTopology object for input into IMP::pmi::macros::BuildSystem.
+    ComponentTopology object for input into IMP::pmi1::macros::BuildSystem.
     The topology file should be in a simple pipe-delimited format:
     @code{.txt}
 |molecule_name|color|fasta_fn|fasta_id|pdb_fn|chain|residue_range|pdb_offset|bead_size|em_residues_per_gaussian|rigid_body|super_rigid_body|chain_of_super_rigid_bodies|flags|
@@ -186,7 +186,7 @@ class TopologyReader(object):
         @param gmm_dir Relative path to the GMM directory
         """
         self.topology_file = topology_file
-        self.molecules = IMP.pmi.tools.OrderedDict() # key=molname, value=TempMolecule
+        self.molecules = IMP.pmi1.tools.OrderedDict() # key=molname, value=TempMolecule
         self.pdb_dir = pdb_dir
         self.fasta_dir = fasta_dir
         self.gmm_dir = gmm_dir
@@ -498,7 +498,7 @@ class _TempMolecule(object):
     def __init__(self,init_c):
         self.molname = init_c.molname
          # key=copy ID, value = list of domains
-        self.domains = IMP.pmi.tools.OrderedDefaultDict(list)
+        self.domains = IMP.pmi1.tools.OrderedDefaultDict(list)
         self.add_component(init_c,init_c.copyname)
         self.orig_copyname = init_c.copyname
         self.orig_component = self.domains[init_c.copyname][0]
@@ -510,7 +510,7 @@ class _TempMolecule(object):
 
 class _Component(object):
     """Stores the components required to build a standard IMP hierarchy
-    using IMP.pmi.BuildModel()
+    using IMP.pmi1.BuildModel()
     """
     def __init__(self):
         self.molname = None
@@ -601,10 +601,10 @@ class PMIMoleculeHierarchy(IMP.atom.Molecule):
         return IMP.atom.Chain(self).get_sequence()
 
     def get_residue_indexes(self):
-        return IMP.pmi.tools.get_residue_indexes(self)
+        return IMP.pmi1.tools.get_residue_indexes(self)
 
     def get_residue_segments(self):
-        return IMP.pmi.tools.Segments(self.get_residue_indexes())
+        return IMP.pmi1.tools.Segments(self.get_residue_indexes())
 
     def get_chain_id(self):
         return IMP.atom.Chain(self).get_id()

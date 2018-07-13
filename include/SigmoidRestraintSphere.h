@@ -1,22 +1,22 @@
 /**
- *  \file IMP/pmi/SigmoidRestraintSphere.h
+ *  \file IMP/pmi1/SigmoidRestraintSphere.h
  *  \brief Simple sigmoidal score calculated between sphere surfaces.
  *
  *  Copyright 2007-2018 IMP Inventors. All rights reserved.
  *
  */
 
-#ifndef IMPPMI_SIGMOID_RESTRAINT_SPHERE_H
-#define IMPPMI_SIGMOID_RESTRAINT_SPHERE_H
-#include "pmi_config.h"
+#ifndef IMPPMI1_SIGMOID_RESTRAINT_SPHERE_H
+#define IMPPMI1_SIGMOID_RESTRAINT_SPHERE_H
+#include "pmi1_config.h"
 #include <IMP/Restraint.h>
 #include <IMP/particle_index.h>
 
 
-IMPPMI_BEGIN_NAMESPACE
+IMPPMI1_BEGIN_NAMESPACE
 
 //! Simple sigmoidal score calculated between sphere surfaces.
-class IMPPMIEXPORT  SigmoidRestraintSphere : public Restraint
+class IMPPMI1EXPORT  SigmoidRestraintSphere : public Restraint
 {
     IMP::ParticleIndex p1_;
     IMP::ParticleIndex p2_;
@@ -51,6 +51,6 @@ public:
 
 };
 
-IMPPMI_END_NAMESPACE
+IMPPMI1_END_NAMESPACE
 
-#endif  /* IMPPMI_SIGMOID_RESTRAINT_SPHERE_H */
+#endif  /* IMPPMI1_SIGMOID_RESTRAINT_SPHERE_H */

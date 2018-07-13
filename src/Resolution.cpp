@@ -6,9 +6,9 @@
  *
  */
 
-#include "IMP/pmi/Resolution.h"
+#include "IMP/pmi1/Resolution.h"
 
-IMPPMI_BEGIN_NAMESPACE
+IMPPMI1_BEGIN_NAMESPACE
 
 FloatKey Resolution::get_resolution_key() {
   static FloatKey k("resolution");
@@ -30,4 +30,4 @@ namespace {
 
 IMP_CHECK_DECORATOR(Resolution, check_resolution);
 
-IMPPMI_END_NAMESPACE
+IMPPMI1_END_NAMESPACE

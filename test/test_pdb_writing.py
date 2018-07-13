@@ -1,11 +1,11 @@
 import IMP
 import IMP.test
-import IMP.pmi.restraints.stereochemistry
-import IMP.pmi.representation
-import IMP.pmi.tools
-import IMP.pmi.output
-import IMP.pmi.topology
-import IMP.pmi.macros
+import IMP.pmi1.restraints.stereochemistry
+import IMP.pmi1.representation
+import IMP.pmi1.tools
+import IMP.pmi1.output
+import IMP.pmi1.topology
+import IMP.pmi1.macros
 import os,shutil
 
 try:
@@ -26,11 +26,11 @@ class Tests(IMP.test.TestCase):
         chains = "ABB"
         colors = [0., 0.5, 1.0]
         beadsize = 20
-        fastids = IMP.pmi.tools.get_ids_from_fasta_file(fastafile)
+        fastids = IMP.pmi1.tools.get_ids_from_fasta_file(fastafile)
 
 
         m = IMP.Model()
-        simo = IMP.pmi.representation.Representation(m)
+        simo = IMP.pmi1.representation.Representation(m)
 
         simo.create_component(comps[0], color=colors[0])
         simo.add_component_sequence(comps[0], fastafile, id=fastids[0])
@@ -50,7 +50,7 @@ class Tests(IMP.test.TestCase):
                              resolutions=[1,10], missingbeadsize=2)
         simo.setup_component_sequence_connectivity(comps[2], 1)
 
-        output = IMP.pmi.output.Output()
+        output = IMP.pmi1.output.Output()
         output.init_pdb("test_pdb_writing.pdb", simo.prot)
         output.write_pdbs()
         output.init_pdb_best_scoring("test_pdb_writing", simo.prot, 10)

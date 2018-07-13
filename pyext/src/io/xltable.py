@@ -1,4 +1,4 @@
-"""@namespace IMP.pmi.io.xltable
+"""@namespace IMP.pmi1.io.xltable
    Tools to plot a contact map overlaid with cross-links.
 """
 
@@ -17,15 +17,15 @@ import IMP
 import IMP.atom
 import IMP.rmf
 import RMF
-import IMP.pmi
-import IMP.pmi.io
-import IMP.pmi.io.crosslink
-import IMP.pmi.io.utilities
-import IMP.pmi.topology
-import IMP.pmi.analysis
+import IMP.pmi1
+import IMP.pmi1.io
+import IMP.pmi1.io.crosslink
+import IMP.pmi1.io.utilities
+import IMP.pmi1.topology
+import IMP.pmi1.analysis
 import operator
 
-@IMP.deprecated_object("2.8", "Use PMI2, IMP.pmi.macros.AnalysisReplicaExchange,  instead")
+@IMP.deprecated_object("2.8", "Use PMI2, IMP.pmi1.macros.AnalysisReplicaExchange,  instead")
 class XLTable():
     """ class to read, analyze, and plot xlink data on contact maps
     Canonical way to read the data:
@@ -149,7 +149,7 @@ class XLTable():
         protein_name:      identifier for this sequence (use same name when handling coordinates)
         can provide the fasta name (for retrieval) and the protein name (for storage) """
 
-        record_dict = IMP.pmi.topology.Sequences(fasta_file)
+        record_dict = IMP.pmi1.topology.Sequences(fasta_file)
         if id_in_fasta_file is None:
             id_in_fasta_file = name
         if id_in_fasta_file not in record_dict:
@@ -198,7 +198,7 @@ class XLTable():
 
     def load_rmf_coordinates(self,rmf_name,rmf_frame_index, chain_names, nomap=False):
         """ read coordinates from a rmf file. It needs IMP to run.
-        rmf has been created using IMP.pmi conventions. It gets the
+        rmf has been created using IMP.pmi1 conventions. It gets the
         highest resolution automatically. Also appends to distance maps
         @param rmf_name             file for reading coords
         @param rmf_frame_index      frame index from the rmf
@@ -211,7 +211,7 @@ class XLTable():
 
         coords = np.ones((total_len,3)) * 1e6 #default to coords "very far away"
         prev_stop=0
-        sorted_particles=IMP.pmi.tools.sort_by_residues(particles_resolution_one)
+        sorted_particles=IMP.pmi1.tools.sort_by_residues(particles_resolution_one)
 
         self.prots=prots
         self.particles_resolution_one=particles_resolution_one
@@ -258,7 +258,7 @@ class XLTable():
         print("getting coordinates for frame %i rmf file %s" % (rmf_frame_index, rmf_name))
         del rh
 
-        particle_dict=IMP.pmi.analysis.get_particles_at_resolution_one(prots[0])
+        particle_dict=IMP.pmi1.analysis.get_particles_at_resolution_one(prots[0])
 
         protein_names=particle_dict.keys()
         particles_resolution_one=[]
@@ -292,8 +292,8 @@ class XLTable():
         @distance_field is the optional keyword for the distance to be read form the file.
         This can skip the rmf reading to calculate the distance of cross-links if
         already provided in the csv file."""
-        if type(CrossLinkDataBase) is not IMP.pmi.io.crosslink.CrossLinkDataBase:
-            raise TypeError("Crosslink database must be a IMP.pmi.io.CrossLinkDataBase type")
+        if type(CrossLinkDataBase) is not IMP.pmi1.io.crosslink.CrossLinkDataBase:
+            raise TypeError("Crosslink database must be a IMP.pmi1.io.CrossLinkDataBase type")
         self.cross_link_db=CrossLinkDataBase
         if distance_field is not None:
             total_len = sum(len(self.sequence_dict[s]) for s in self.sequence_dict)
@@ -669,7 +669,7 @@ class XLTable():
 
         resoffsetdiagonal = {}
         res = gap_between_components
-        for prot in IMP.pmi.io.utilities.OrderedSet(prot_listx + prot_listy):
+        for prot in IMP.pmi1.io.utilities.OrderedSet(prot_listx + prot_listy):
             resoffsetdiagonal[prot] = res
             res += len(self.sequence_dict[prot])
             res += gap_between_components
@@ -746,7 +746,7 @@ class XLTable():
         if self.cross_link_db:
             for xl in self.cross_link_db:
 
-                (c1,c2,r1,r2)=IMP.pmi.io.crosslink._ProteinsResiduesArray(xl)
+                (c1,c2,r1,r2)=IMP.pmi1.io.crosslink._ProteinsResiduesArray(xl)
                 label=xl[self.cross_link_db.unique_sub_id_key]
                 if color_crosslinks_by_distance:
 

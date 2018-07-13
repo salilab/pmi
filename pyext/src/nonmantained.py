@@ -1,4 +1,4 @@
-"""@namespace IMP.pmi.nonmaintained
+"""@namespace IMP.pmi1.nonmaintained
    Nonmaintained code.
 """
 
@@ -134,8 +134,8 @@ class MultipleStates(object):
         global itertools, tools, restraints
 
         import itertools
-        import IMP.pmi.tools as tools
-        import IMP.pmi.restraints as restraints
+        import IMP.pmi1.tools as tools
+        import IMP.pmi1.restraints as restraints
 
         self.floppy_bodies = []
         self.rigid_bodies = []
@@ -1138,7 +1138,7 @@ class MarginalChi3Restraint(object):
     def __init__(self, part1, part2):
         global impisd2, tools
         import IMP.isd2 as impisd2
-        import IMP.pmi.tools as tools
+        import IMP.pmi1.tools as tools
 
         self.m = part1.get_model()
         self.label = "None"
@@ -1203,7 +1203,7 @@ class CrossLinkMS(object):
                  sigmamin=1.0, sigmamax=1.0, sigmagrid=1, sigmaissampled=False, typeofprofile="gofr"):
         global impisd2, tools
         import IMP.isd2 as impisd2
-        import IMP.pmi.tools as tools
+        import IMP.pmi1.tools as tools
 
         if map_between_protein_names_and_chains is None:
             map_between_protein_names_and_chains = {}
@@ -1848,7 +1848,7 @@ class BinomialXLMSRestraint(object):
 
         global impisd2, tools, exp
         import IMP.isd2 as impisd2
-        import IMP.pmi.tools as tools
+        import IMP.pmi1.tools as tools
 
         self.setup = 0
 

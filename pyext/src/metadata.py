@@ -1,4 +1,4 @@
-"""@namespace IMP.pmi.metadata
+"""@namespace IMP.pmi1.metadata
 Classes for attaching metadata to PMI objects.
 
 @note All of these classes are deprecated; use classes from the ihm package

@@ -6,9 +6,9 @@
  *
  */
 
-#include "IMP/pmi/Symmetric.h"
+#include "IMP/pmi1/Symmetric.h"
 
-IMPPMI_BEGIN_NAMESPACE
+IMPPMI1_BEGIN_NAMESPACE
 
 FloatKey Symmetric::get_symmetric_key() {
   static FloatKey k("symmetric");
@@ -30,4 +30,4 @@ namespace {
 
 IMP_CHECK_DECORATOR(Symmetric, check_symmetric);
 
-IMPPMI_END_NAMESPACE
+IMPPMI1_END_NAMESPACE

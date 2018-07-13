@@ -4,12 +4,12 @@ import IMP
 import IMP.algebra
 import IMP.core
 import IMP.isd
-import IMP.pmi
-import IMP.pmi.restraints
+import IMP.pmi1
+import IMP.pmi1.restraints
 import IMP.test
 
 
-class DistanceRestraint(IMP.pmi.restraints.RestraintBase):
+class DistanceRestraint(IMP.pmi1.restraints.RestraintBase):
 
     def __init__(self, p1, p2, d, k, name=None, label=None, weight=1.):
         m = p1.get_model()
@@ -105,8 +105,8 @@ class Tests(IMP.test.TestCase):
 
     def test_setup_with_nuisance(self):
 
-        class GaussianRestraint(IMP.pmi.restraints._RestraintNuisanceMixin,
-                                IMP.pmi.restraints.RestraintBase):
+        class GaussianRestraint(IMP.pmi1.restraints._RestraintNuisanceMixin,
+                                IMP.pmi1.restraints.RestraintBase):
 
             def __init__(self, p, mean_val, label=None, weight=1.):
                 m = p.get_model()

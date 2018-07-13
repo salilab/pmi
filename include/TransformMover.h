@@ -1,15 +1,15 @@
 /**
- *  \file IMP/pmi/TransformMover.h
+ *  \file IMP/pmi1/TransformMover.h
  *  \brief A mover that transforms a rigid body
  *
  *  Copyright 2007-2018 IMP Inventors. All rights reserved.
  *
  */
 
-#ifndef IMPPMI_TRANSFORM_MOVER_H
-#define IMPPMI_TRANSFORM_MOVER_H
+#ifndef IMPPMI1_TRANSFORM_MOVER_H
+#define IMPPMI1_TRANSFORM_MOVER_H
 
-#include <IMP/pmi/pmi_config.h>
+#include <IMP/pmi1/pmi1_config.h>
 #include <IMP/core/MonteCarlo.h>
 #include <IMP/core/MonteCarloMover.h>
 #include <IMP/algebra/Vector3D.h>
@@ -17,14 +17,14 @@
 #include <IMP/SingletonContainer.h>
 #include <IMP/core/rigid_bodies.h>
 #include <IMP/core/XYZ.h>
-IMPPMI_BEGIN_NAMESPACE
+IMPPMI1_BEGIN_NAMESPACE
 
 //! Modify the transformation of a rigid body
 /** The transformation of a rigid body is moved in a ball of given
     size. The probability distribution is uniform over the ball.
     \see MonteCarlo
  */
-class IMPPMIEXPORT TransformMover : public IMP::core::MonteCarloMover {
+class IMPPMI1EXPORT TransformMover : public IMP::core::MonteCarloMover {
   algebra::Transformation3D last_transformation_;
   Float max_translation_;
   Float max_angle_;
@@ -125,6 +125,6 @@ pis_.push_back(pi);
   IMP_OBJECT_METHODS(TransformMover);
 };
 
-IMPPMI_END_NAMESPACE
+IMPPMI1_END_NAMESPACE
 
-#endif /* IMPPMI_TRANSFORM_MOVER_H */
+#endif /* IMPPMI1_TRANSFORM_MOVER_H */

@@ -1,4 +1,4 @@
-"""@namespace IMP.pmi.restraints.em2d
+"""@namespace IMP.pmi1.restraints.em2d
 Restraints for handling electron microscopy images.
 """
 
@@ -7,7 +7,7 @@ import IMP
 import IMP.core
 import IMP.algebra
 import IMP.atom
-import IMP.pmi.tools
+import IMP.pmi1.tools
 import ihm.location
 import ihm.dataset
 
@@ -79,7 +79,7 @@ class ElectronMicroscopy2D(object):
             particles = IMP.atom.Selection(hier,resolution=resolution).get_selected_particles()
         elif hier is None and representation is not None:
             self.m = representation.prot.get_model()
-            particles = IMP.pmi.tools.select(
+            particles = IMP.pmi1.tools.select(
                 representation,
                 resolution=resolution)
         else:
@@ -105,7 +105,7 @@ class ElectronMicroscopy2D(object):
         self.label = label
 
     def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.m, self.rs)
+        IMP.pmi1.tools.add_restraint_to_model(self.m, self.rs)
 
     def get_restraint(self):
         return self.rs
@@ -178,7 +178,7 @@ class ElectronMicroscopy2D_FFT(object):
             particles = IMP.atom.Selection(hier,resolution=resolution).get_selected_particles()
         elif hier is None and representation is not None:
             self.m = representation.prot.get_model()
-            particles = IMP.pmi.tools.select(
+            particles = IMP.pmi1.tools.select(
                 representation,
                 resolution=resolution)
         else:
@@ -225,7 +225,7 @@ class ElectronMicroscopy2D_FFT(object):
         self.label = label
 
     def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.m, self.rs)
+        IMP.pmi1.tools.add_restraint_to_model(self.m, self.rs)
 
     def get_restraint(self):
         return self.rs

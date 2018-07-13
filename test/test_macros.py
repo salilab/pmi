@@ -1,6 +1,6 @@
 from __future__ import print_function
 import IMP.test
-import IMP.pmi.macros
+import IMP.pmi1.macros
 
 class Tests(IMP.test.TestCase):
     def test_rmf_restraints(self):
@@ -11,14 +11,14 @@ class Tests(IMP.test.TestCase):
             get_restraint = lambda self: self.r
         m = IMP.Model()
         for ur in ([], None):
-            rs = IMP.pmi.macros._RMFRestraints(m, ur)
+            rs = IMP.pmi1.macros._RMFRestraints(m, ur)
             self.assertFalse(rs)
             self.assertEqual(len(rs), 0)
 
         r1 = IMP.RestraintSet(m)
-        IMP.pmi.tools.add_restraint_to_model(m, r1, add_to_rmf=True)
+        IMP.pmi1.tools.add_restraint_to_model(m, r1, add_to_rmf=True)
 
-        rs = IMP.pmi.macros._RMFRestraints(m, [MockPMIRestraint(42),
+        rs = IMP.pmi1.macros._RMFRestraints(m, [MockPMIRestraint(42),
                                                MockPMIRestraint(99)])
         self.assertTrue(rs)
         self.assertEqual(len(rs), 3)

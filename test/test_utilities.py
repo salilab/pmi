@@ -2,7 +2,7 @@ from __future__ import print_function
 import IMP
 import IMP.test
 import IMP.core
-import IMP.pmi
+import IMP.pmi1
 import random
 
 class Tests(IMP.test.TestCase):
@@ -37,7 +37,7 @@ class Tests(IMP.test.TestCase):
         d2.set_coordinates((10,0,0))
         d2.set_radius(2.0)
 
-        dist=IMP.pmi.get_bipartite_minimum_sphere_distance([d1],[d2])
+        dist=IMP.pmi1.get_bipartite_minimum_sphere_distance([d1],[d2])
         self.assertEqual(dist,7.0)
 
     def test_two_composites(self):
@@ -58,7 +58,7 @@ class Tests(IMP.test.TestCase):
             d.set_radius(10.0*random.random())
             xyzrs2.append(d)
 
-        dist=IMP.pmi.get_bipartite_minimum_sphere_distance(xyzrs1,xyzrs2)
+        dist=IMP.pmi1.get_bipartite_minimum_sphere_distance(xyzrs1,xyzrs2)
         self.assertAlmostEqual(dist,
                                self.python_version_min_distance(xyzrs1,xyzrs2),
                                delta=1e-5)
@@ -99,7 +99,7 @@ class Tests(IMP.test.TestCase):
             ps4.append(d)
 
         particlestemps=[ps1,ps2,ps3,ps4]
-        dist_array=IMP.pmi.get_list_of_bipartite_minimum_sphere_distance(particlestemps)
+        dist_array=IMP.pmi1.get_list_of_bipartite_minimum_sphere_distance(particlestemps)
         python_dist_array=self.python_version_array_of_distances(particlestemps)
         for n,dist in enumerate(dist_array):
             self.assertAlmostEqual(dist,python_dist_array[n],delta=0.00001)

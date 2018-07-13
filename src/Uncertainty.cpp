@@ -6,9 +6,9 @@
  *
  */
 
-#include "IMP/pmi/Uncertainty.h"
+#include "IMP/pmi1/Uncertainty.h"
 
-IMPPMI_BEGIN_NAMESPACE
+IMPPMI1_BEGIN_NAMESPACE
 
 FloatKey Uncertainty::get_uncertainty_key() {
   static FloatKey k("Uncertainty");
@@ -30,4 +30,4 @@ namespace {
 
 IMP_CHECK_DECORATOR(Uncertainty, check_Uncertainty);
 
-IMPPMI_END_NAMESPACE
+IMPPMI1_END_NAMESPACE

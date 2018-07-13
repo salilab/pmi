@@ -1,10 +1,10 @@
 import IMP
 import IMP.test
-import IMP.pmi.samplers
-import IMP.pmi.representation
-import IMP.pmi.restraints.basic
-import IMP.pmi.macros
-import IMP.pmi.output
+import IMP.pmi1.samplers
+import IMP.pmi1.representation
+import IMP.pmi1.restraints.basic
+import IMP.pmi1.macros
+import IMP.pmi1.output
 import RMF
 import glob
 import time
@@ -14,7 +14,7 @@ class Tests(IMP.test.TestCase):
 
     def test_serial(self):
         """Test the _SerialReplicaExchange class"""
-        s = IMP.pmi.samplers._SerialReplicaExchange()
+        s = IMP.pmi1.samplers._SerialReplicaExchange()
         self.assertEqual(s.get_number_of_replicas(), 1)
         ts = s.create_temperatures(100., 200., 45)
         self.assertEqual(len(ts), 1)
@@ -33,13 +33,13 @@ class Tests(IMP.test.TestCase):
         import shutil
         import itertools
         m=IMP.Model()
-        r=IMP.pmi.representation.Representation(m)
+        r=IMP.pmi1.representation.Representation(m)
         r.create_component("A")
         r.add_component_beads("A",[(1,1),(2,2)])
         ps=IMP.atom.get_leaves(r.prot)
-        dr=IMP.pmi.restraints.basic.DistanceRestraint(r,(1,1,"A"),(2,2,"A"),10,10)
+        dr=IMP.pmi1.restraints.basic.DistanceRestraint(r,(1,1,"A"),(2,2,"A"),10,10)
         dr.add_to_model()
-        rex=IMP.pmi.macros.ReplicaExchange0(m,
+        rex=IMP.pmi1.macros.ReplicaExchange0(m,
                       r,
                       monte_carlo_sample_objects=[r],
                       output_objects=[r,dr],
@@ -100,7 +100,7 @@ class Tests(IMP.test.TestCase):
         score_temp_dict={}
         avtemps_replicas=[]
         for f in rex_out_files:
-            o=IMP.pmi.output.ProcessOutput(f)
+            o=IMP.pmi1.output.ProcessOutput(f)
             d=o.get_fields([temp_key,maxtf_key,mintf_key,
                          ssr_key,score_key])
             temps=[float(f) for f in d[temp_key]]
@@ -132,7 +132,7 @@ class Tests(IMP.test.TestCase):
         rex_score_key="SimplifiedModel_Total_Score_None"
         rmf_file_key="rmf_file"
         rmf_file_index="rmf_frame_index"
-        o=IMP.pmi.output.ProcessOutput(rex_out_file)
+        o=IMP.pmi1.output.ProcessOutput(rex_out_file)
         d=o.get_fields([dist_key,
                             mc_temp_key,
                             mc_nframe_key,
@@ -170,13 +170,13 @@ class Tests(IMP.test.TestCase):
         import shutil
         import itertools
         m=IMP.Model()
-        r=IMP.pmi.representation.Representation(m)
+        r=IMP.pmi1.representation.Representation(m)
         r.create_component("A")
         r.add_component_beads("A",[(1,1),(2,2)])
         ps=IMP.atom.get_leaves(r.prot)
-        dr=IMP.pmi.restraints.basic.DistanceRestraint(r,(1,1,"A"),(2,2,"A"),10,10)
+        dr=IMP.pmi1.restraints.basic.DistanceRestraint(r,(1,1,"A"),(2,2,"A"),10,10)
         dr.add_to_model()
-        rex=IMP.pmi.macros.ReplicaExchange0(m,
+        rex=IMP.pmi1.macros.ReplicaExchange0(m,
                       r,
                       monte_carlo_sample_objects=[r],
                       output_objects=None,
@@ -238,7 +238,7 @@ class Tests(IMP.test.TestCase):
         score_temp_dict={}
         avtemps_replicas=[]
         for f in rex_out_files:
-            o=IMP.pmi.output.ProcessOutput(f)
+            o=IMP.pmi1.output.ProcessOutput(f)
             d=o.get_fields([temp_key,maxtf_key,mintf_key,
                          ssr_key,score_key])
             temps=[float(f) for f in d[temp_key]]
@@ -270,7 +270,7 @@ class Tests(IMP.test.TestCase):
         rex_score_key="SimplifiedModel_Total_Score_None"
         rmf_file_key="rmf_file"
         rmf_file_index="rmf_frame_index"
-        o=IMP.pmi.output.ProcessOutput(rex_out_file)
+        o=IMP.pmi1.output.ProcessOutput(rex_out_file)
         d=o.get_fields([dist_key,
                             mc_temp_key,
                             mc_nframe_key,

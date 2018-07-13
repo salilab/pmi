@@ -1,5 +1,5 @@
 /**
- *  \file IMP/pmi/CompositeRestraint.h
+ *  \file IMP/pmi1/CompositeRestraint.h
  *  \brief A restraint for ambiguous cross-linking MS data and multiple
  *         state approach.
  *
@@ -7,20 +7,20 @@
  *
  */
 
-#ifndef IMPPMI_COMPOSITE_RESTRAINT_H
-#define IMPPMI_COMPOSITE_RESTRAINT_H
-#include "pmi_config.h"
+#ifndef IMPPMI1_COMPOSITE_RESTRAINT_H
+#define IMPPMI1_COMPOSITE_RESTRAINT_H
+#include "pmi1_config.h"
 #include <IMP/Restraint.h>
 #include <IMP/Particle.h>
 #include <IMP/tuple_macros.h>
 //#include <IMP/container/CloseBipartitePairContainer.h>
 
-IMPPMI_BEGIN_NAMESPACE
+IMPPMI1_BEGIN_NAMESPACE
 //! A restraint for ambiguous cross-linking MS data and multiple state approach.
 /** It marginalizes the false positive rate and depends on the expected fpr and
     an uncertainty parameter beta.
  */
-class IMPPMIEXPORT CompositeRestraint : public Restraint
+class IMPPMI1EXPORT CompositeRestraint : public Restraint
 {
     //particle indexes in the composite
     Vector<ParticleIndexes> pis_;
@@ -103,6 +103,6 @@ public:
 
 };
 
-IMPPMI_END_NAMESPACE
+IMPPMI1_END_NAMESPACE
 
-#endif  /* IMPPMI_COMPOSITE_RESTRAINT_H */
+#endif  /* IMPPMI1_COMPOSITE_RESTRAINT_H */

@@ -1,7 +1,7 @@
 from __future__ import print_function
-import IMP.pmi
-import IMP.pmi.io
-import IMP.pmi.analysis
+import IMP.pmi1
+import IMP.pmi1.io
+import IMP.pmi1.analysis
 import IMP.test
 import IMP.rmf
 import RMF
@@ -21,11 +21,11 @@ class Tests(IMP.test.TestCase):
 
     def test_save_best_models(self):
         """Test function to collect top models into a single RMF file"""
-        IMP.pmi.io.save_best_models(self.model,'./',self.stat_files,
+        IMP.pmi1.io.save_best_models(self.model,'./',self.stat_files,
                                     number_of_best_scoring_models=3,
                                     score_key=self.score_key,
                                     feature_keys=self.feature_keys)
-        po = IMP.pmi.output.ProcessOutput('top_3.out')
+        po = IMP.pmi1.output.ProcessOutput('top_3.out')
         fields = po.get_fields([self.score_key])
         self.assertEqual(len(fields[self.score_key]),3)
         self.assertEqual(float(fields[self.score_key][0]),301.048975729)
@@ -39,7 +39,7 @@ class Tests(IMP.test.TestCase):
 
         for i in range(3):
             IMP.rmf.load_frame(rh,RMF.FrameID(i))
-            psdict = IMP.pmi.analysis.get_particles_at_resolution_one(prots[0])
+            psdict = IMP.pmi1.analysis.get_particles_at_resolution_one(prots[0])
             coord = IMP.core.XYZ(psdict['med2'][0]).get_coordinates()
             print(coord)
             self.assertLess(IMP.algebra.get_distance(coord,
@@ -49,7 +49,7 @@ class Tests(IMP.test.TestCase):
 
 
     def test_get_best_models(self):
-        results = IMP.pmi.io.get_best_models(self.stat_files,
+        results = IMP.pmi1.io.get_best_models(self.stat_files,
                                              self.score_key,
                                              self.feature_keys,
                                              prefiltervalue=305.0)
@@ -62,7 +62,7 @@ class Tests(IMP.test.TestCase):
             self.assertEqual(len(l),8)
 
     def test_read_coordinates_of_rmfs(self):
-        results = IMP.pmi.io.get_best_models(self.stat_files,
+        results = IMP.pmi1.io.get_best_models(self.stat_files,
                                              self.score_key,
                                              self.feature_keys,
                                              prefiltervalue=305.0)
@@ -74,7 +74,7 @@ class Tests(IMP.test.TestCase):
                          range(len(score_list)),
                          range(len(score_list)))
         rmsdc={'med2':'med2'}
-        got_coords = IMP.pmi.io.read_coordinates_of_rmfs(self.model,
+        got_coords = IMP.pmi1.io.read_coordinates_of_rmfs(self.model,
                                                          rmf_tuples,
                                                          alignment_components=None,
                                                          rmsd_calculation_components=rmsdc)

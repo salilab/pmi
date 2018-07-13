@@ -1,5 +1,5 @@
 /**
- *  \file pmi/SigmoidRestraintSphere.h
+ *  \file pmi1/SigmoidRestraintSphere.h
  *  \brief A sigmoid shaped restraint between
  *  residues. To be used with
  *  cross-linking mass-spectrometry data.
@@ -8,11 +8,11 @@
  *
  */
 
-#include <IMP/pmi/SigmoidRestraintSphere.h>
+#include <IMP/pmi1/SigmoidRestraintSphere.h>
 #include <IMP/core/XYZR.h>
 
 
-IMPPMI_BEGIN_NAMESPACE
+IMPPMI1_BEGIN_NAMESPACE
 
 SigmoidRestraintSphere::SigmoidRestraintSphere(IMP::Model *m, 
                           IMP::ParticleIndexAdaptor p1,
@@ -54,4 +54,4 @@ ModelObjectsTemp  SigmoidRestraintSphere::do_get_inputs() const
   return ret;
 }
 
-IMPPMI_END_NAMESPACE
+IMPPMI1_END_NAMESPACE

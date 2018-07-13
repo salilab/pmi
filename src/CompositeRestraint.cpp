@@ -1,5 +1,5 @@
 /**
- *  \file pmi/CompositeRestraint.h
+ *  \file pmi1/CompositeRestraint.h
  *  \brief A sigmoid shaped restraint between
  *  residues with discrete classifier
  *  and ambiguous assignment. To be used with
@@ -9,13 +9,13 @@
  *
  */
 
-#include <IMP/pmi/CompositeRestraint.h>
+#include <IMP/pmi1/CompositeRestraint.h>
 #include <IMP/core/XYZR.h>
 #include <math.h>
 #include <limits.h>
 
 
-IMPPMI_BEGIN_NAMESPACE
+IMPPMI1_BEGIN_NAMESPACE
 
 CompositeRestraint::CompositeRestraint(Model *m,
                           ParticleIndexesAdaptor handle_particle_indexes,
@@ -148,4 +148,4 @@ ModelObjectsTemp  CompositeRestraint::do_get_inputs() const
   return ret;
 }
 
-IMPPMI_END_NAMESPACE
+IMPPMI1_END_NAMESPACE

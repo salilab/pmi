@@ -3,17 +3,17 @@ import IMP
 import IMP.test
 import IMP.core
 import os
-import IMP.pmi.representation
-import IMP.pmi.restraints.crosslinking
-import IMP.pmi.samplers
-import IMP.pmi.output
+import IMP.pmi1.representation
+import IMP.pmi1.restraints.crosslinking
+import IMP.pmi1.samplers
+import IMP.pmi1.output
 
 class Tests(IMP.test.TestCase):
     def test_ambiguous(self):
         representations = []
 
         m = IMP.Model()
-        r = IMP.pmi.representation.Representation(m)
+        r = IMP.pmi1.representation.Representation(m)
 
         r.create_component("particle1", color=0.1)
         p11 = r.add_component_beads("particle1", [(1, 10)])
@@ -24,7 +24,7 @@ class Tests(IMP.test.TestCase):
 
         representations.append(r)
 
-        r = IMP.pmi.representation.Representation(m)
+        r = IMP.pmi1.representation.Representation(m)
 
         representations[0].floppy_bodies.pop(0)
         representations[0].floppy_bodies.pop(0)
@@ -47,7 +47,7 @@ class Tests(IMP.test.TestCase):
         particle1 particle3 1 2 1 1 '''
 
         with IMP.allow_deprecated():
-            xl = IMP.pmi.restraints.crosslinking.ISDCrossLinkMS(representations,
+            xl = IMP.pmi1.restraints.crosslinking.ISDCrossLinkMS(representations,
                                                                 restraints,
                                                                 length=21.0,
                                                                 slope=0.0,
@@ -70,19 +70,19 @@ class Tests(IMP.test.TestCase):
         print(xyz11.get_coordinates())
 
         xl.add_to_model()
-        rset = IMP.pmi.tools.get_restraint_set(m)
+        rset = IMP.pmi1.tools.get_restraint_set(m)
         self.assertAlmostEqual(rset.evaluate(False), -2.197418, delta=1e-2)
 
         print(xyz11.get_coordinates())
 
-        mc = IMP.pmi.samplers.MonteCarlo(m, representations, 1.0)
+        mc = IMP.pmi1.samplers.MonteCarlo(m, representations, 1.0)
         mc.set_simulated_annealing(min_temp=1.0,
                                    max_temp=2.0,
                                    min_temp_time=200,
                                    max_temp_time=50)
 
 
-        o = IMP.pmi.output.Output()
+        o = IMP.pmi1.output.Output()
         o.init_stat2("modeling.stat", [mc, xl] + representations)
 
         for i in range(0, 100):
@@ -91,7 +91,7 @@ class Tests(IMP.test.TestCase):
             if i % 100 == 0:
                 print(i)
 
-        po = IMP.pmi.output.ProcessOutput("modeling.stat")
+        po = IMP.pmi1.output.ProcessOutput("modeling.stat")
 
         print(po.get_keys())
         self.assertEqual(len(po.get_keys()), 15)

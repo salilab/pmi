@@ -5,7 +5,7 @@ import IMP
 import IMP.algebra
 import IMP.atom
 import IMP.core
-import IMP.pmi.restraints.stereochemistry
+import IMP.pmi1.restraints.stereochemistry
 import IMP.test
 
 
@@ -35,7 +35,7 @@ class Tests(IMP.test.TestCase):
         m = IMP.Model()
         rb1, ps1 = _create_rigid_body(m)
         rb2, ps2 = _create_rigid_body(m)
-        r = IMP.pmi.restraints.stereochemistry.PlaneDihedralRestraint(
+        r = IMP.pmi1.restraints.stereochemistry.PlaneDihedralRestraint(
                 [ps1, ps2], angle=0., k=1.)
         for i in range(100):
             angle = random.uniform(-math.pi, math.pi)
@@ -52,7 +52,7 @@ class Tests(IMP.test.TestCase):
 
         for i in range(10):
             target_angle = random.uniform(-math.pi, math.pi)
-            r = IMP.pmi.restraints.stereochemistry.PlaneDihedralRestraint(
+            r = IMP.pmi1.restraints.stereochemistry.PlaneDihedralRestraint(
                     [ps1, ps2], angle=target_angle * 180 / math.pi, k=1.)
             sf = IMP.core.RestraintsScoringFunction(r.rs)
 
@@ -75,7 +75,7 @@ class Tests(IMP.test.TestCase):
         rbs, pss = zip(*[_create_rigid_body(m) for i in range(5)])
 
         target_angle = math.pi / 2.
-        r = IMP.pmi.restraints.stereochemistry.PlaneDihedralRestraint(
+        r = IMP.pmi1.restraints.stereochemistry.PlaneDihedralRestraint(
                 pss, angle=target_angle * 180 / math.pi, k=1.)
         sf = IMP.core.RestraintsScoringFunction(r.rs)
 

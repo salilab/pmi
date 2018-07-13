@@ -1,26 +1,26 @@
 /**
- *  \file IMP/pmi/Symmetric.h
+ *  \file IMP/pmi1/Symmetric.h
  *  \brief A decorator for symmetric particles 
  *
  *  Copyright 2007-2018 IMP Inventors. All rights reserved.
  */
 
-#ifndef IMPPMI_SYMMETRIC_H
-#define IMPPMI_SYMMETRIC_H
+#ifndef IMPPMI1_SYMMETRIC_H
+#define IMPPMI1_SYMMETRIC_H
 
-#include <IMP/pmi/pmi_config.h>
+#include <IMP/pmi1/pmi1_config.h>
 
 #include <IMP/PairContainer.h>
 #include <IMP/SingletonContainer.h>
 #include <IMP/Decorator.h>
 #include <IMP/decorator_macros.h>
 
-IMPPMI_BEGIN_NAMESPACE
+IMPPMI1_BEGIN_NAMESPACE
 
 //! Add symmetric attribute to a particle
 /** False means the particle is reference or non symmetric.
  */
-class IMPPMIEXPORT Symmetric : public Decorator {
+class IMPPMI1EXPORT Symmetric : public Decorator {
   static void do_setup_particle(Model *m, ParticleIndex pi, Float symmetric) {
     m->add_attribute(get_symmetric_key(), pi, symmetric);
   }
@@ -46,6 +46,6 @@ class IMPPMIEXPORT Symmetric : public Decorator {
   static FloatKey get_symmetric_key();
 };
 
-IMPPMI_END_NAMESPACE
+IMPPMI1_END_NAMESPACE
 
-#endif /* IMPPMI_SYMMETRIC_H */
+#endif /* IMPPMI1_SYMMETRIC_H */

@@ -1,27 +1,27 @@
 /**
- *  \file IMP/pmi/Resolution.h
+ *  \file IMP/pmi1/Resolution.h
  *  \brief A decorator for particles with resolution
  *
  *  Copyright 2007-2018 IMP Inventors. All rights reserved.
  */
 
-#ifndef IMPPMI_RESOLUTION_H
-#define IMPPMI_RESOLUTION_H
+#ifndef IMPPMI1_RESOLUTION_H
+#define IMPPMI1_RESOLUTION_H
 
-#include <IMP/pmi/pmi_config.h>
+#include <IMP/pmi1/pmi1_config.h>
 
 #include <IMP/PairContainer.h>
 #include <IMP/SingletonContainer.h>
 #include <IMP/Decorator.h>
 #include <IMP/decorator_macros.h>
 
-IMPPMI_BEGIN_NAMESPACE
+IMPPMI1_BEGIN_NAMESPACE
 
 //! Add resolution to a particle
 /** The resolution of the particle is assumed to be in number of residues
     (see \ref pmi_resolution).
  */
-class IMPPMIEXPORT Resolution : public Decorator {
+class IMPPMI1EXPORT Resolution : public Decorator {
   static void do_setup_particle(Model *m, ParticleIndex pi, double resolution) {
     m->add_attribute(get_resolution_key(), pi, resolution);
   }
@@ -47,6 +47,6 @@ class IMPPMIEXPORT Resolution : public Decorator {
   static FloatKey get_resolution_key();
 };
 
-IMPPMI_END_NAMESPACE
+IMPPMI1_END_NAMESPACE
 
-#endif /* IMPPMI_RESOLUTION_H */
+#endif /* IMPPMI1_RESOLUTION_H */

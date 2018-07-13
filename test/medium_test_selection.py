@@ -1,7 +1,7 @@
 import IMP
 import IMP.test
-import IMP.pmi.representation as representation
-import IMP.pmi.tools as tools
+import IMP.pmi1.representation as representation
+import IMP.pmi1.tools as tools
 
 class Tests(IMP.test.TestCase):
 
@@ -12,9 +12,9 @@ class Tests(IMP.test.TestCase):
         chains = "CDEF"
         colors = [0.,0.1,0.5,1.0]
         beadsize = 20
-        fastids = IMP.pmi.tools.get_ids_from_fasta_file(fastafile)
+        fastids = IMP.pmi1.tools.get_ids_from_fasta_file(fastafile)
 
-        r = IMP.pmi.representation.Representation(m)
+        r = IMP.pmi1.representation.Representation(m)
         hierarchies = {}
         for n in range(len(components)):
             r.create_component(components[n], color=colors[n])
@@ -42,14 +42,14 @@ class Tests(IMP.test.TestCase):
         ("Rpb3","nter"):3}
 
         for name in ["Rpb3","Rpb4","Rpb5","Rpb6"]:
-            self.assertRaises(ValueError, IMP.pmi.tools.get_terminal_residue,
+            self.assertRaises(ValueError, IMP.pmi1.tools.get_terminal_residue,
                               rcomplex, rcomplex.hier_dict[name],
                               terminus="notCotN", resolution=1)
-            cter=IMP.pmi.tools.get_terminal_residue(rcomplex, rcomplex.hier_dict[name], terminus="C", resolution=1)
+            cter=IMP.pmi1.tools.get_terminal_residue(rcomplex, rcomplex.hier_dict[name], terminus="C", resolution=1)
             self.assertEqual(results[(name,"cter")],IMP.atom.Residue(cter).get_index())
-            nter=IMP.pmi.tools.get_terminal_residue(rcomplex, rcomplex.hier_dict[name], terminus="N", resolution=1)
+            nter=IMP.pmi1.tools.get_terminal_residue(rcomplex, rcomplex.hier_dict[name], terminus="N", resolution=1)
             self.assertEqual(results[(name,"nter")],IMP.atom.Residue(nter).get_index())
-            pos = IMP.pmi.tools.get_terminal_residue_position(
+            pos = IMP.pmi1.tools.get_terminal_residue_position(
                           rcomplex, rcomplex.hier_dict[name], terminus="N",
                           resolution=1)
             self.assertIsInstance(pos, IMP.algebra.Vector3D)
@@ -64,7 +64,7 @@ class Tests(IMP.test.TestCase):
         ("Rpb3","nter"):(IMP.atom.Fragment,list(range(1, 3)))}
 
         for name in ["Rpb3","Rpb4","Rpb5","Rpb6"]:
-            all=IMP.pmi.tools.select_by_tuple(rcomplex,name,resolution=1)
+            all=IMP.pmi1.tools.select_by_tuple(rcomplex,name,resolution=1)
             nter=all[0]
             cter=all[-1]
             result=results[(name,"nter")]

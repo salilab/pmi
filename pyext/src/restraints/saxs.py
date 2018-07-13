@@ -1,4 +1,4 @@
-"""@namespace IMP.pmi.restraints.saxs
+"""@namespace IMP.pmi1.restraints.saxs
 Restraints for handling small angle x-ray (SAXS) data.
 """
 
@@ -9,12 +9,12 @@ import IMP.core
 import IMP.algebra
 import IMP.atom
 import IMP.container
-import IMP.pmi.tools
-import IMP.pmi.restraints
+import IMP.pmi1.tools
+import IMP.pmi1.restraints
 import IMP.saxs
 
 
-class SAXSRestraint(IMP.pmi.restraints.RestraintBase):
+class SAXSRestraint(IMP.pmi1.restraints.RestraintBase):
 
     """Basic SAXS restraint."""
 
@@ -43,7 +43,7 @@ class SAXSRestraint(IMP.pmi.restraints.RestraintBase):
                         with the reduced representations, so could be improved.
         """
         # Get all hierarchies.
-        hiers = IMP.pmi.tools.input_adaptor(input_objects,
+        hiers = IMP.pmi1.tools.input_adaptor(input_objects,
                                             flatten=True)
         model = list(hiers)[0].get_model()
         super(SAXSRestraint, self).__init__(model, label=label, weight=weight)
@@ -90,7 +90,7 @@ class SAXSRestraint(IMP.pmi.restraints.RestraintBase):
         self.rs.add_restraint(self.restraint)
 
 
-class SAXSISDRestraint(IMP.pmi.restraints.RestraintBase):
+class SAXSISDRestraint(IMP.pmi1.restraints.RestraintBase):
 
     """Basic SAXS restraint using ISD."""
 
@@ -110,30 +110,30 @@ class SAXSISDRestraint(IMP.pmi.restraints.RestraintBase):
         self.taumaxtrans = 0.05
         self.prof = IMP.saxs.Profile(profile)
 
-        self.atoms = IMP.pmi.tools.select(
+        self.atoms = IMP.pmi1.tools.select(
             representation,
             resolution=resolution)
 
         # gamma nuisance
-        self.gamma = IMP.pmi.tools.SetupNuisance(
+        self.gamma = IMP.pmi1.tools.SetupNuisance(
             self.model, 1., 0., None, False).get_particle()
 
         # sigma nuisance
-        self.sigma = IMP.pmi.tools.SetupNuisance(self.model, 10.0, 0., None, False
+        self.sigma = IMP.pmi1.tools.SetupNuisance(self.model, 10.0, 0., None, False
                                                  ).get_particle()
 
         # tau nuisance, optimized
-        self.tau = IMP.pmi.tools.SetupNuisance(self.model, 1., 0., None, False,
+        self.tau = IMP.pmi1.tools.SetupNuisance(self.model, 1., 0., None, False,
                                                ).get_particle()
 
         # c1 and c2, optimized
-        self.c1 = IMP.pmi.tools.SetupNuisance(self.model, 1.0, 0.95, 1.05,
+        self.c1 = IMP.pmi1.tools.SetupNuisance(self.model, 1.0, 0.95, 1.05,
                                               True).get_particle()
-        self.c2 = IMP.pmi.tools.SetupNuisance(self.model, 0.0, -2., 4.,
+        self.c2 = IMP.pmi1.tools.SetupNuisance(self.model, 0.0, -2., 4.,
                                               True).get_particle()
 
         # weight, optimized
-        self.w = IMP.pmi.tools.SetupWeight(self.model).get_particle()
+        self.w = IMP.pmi1.tools.SetupWeight(self.model).get_particle()
         IMP.isd.Weight(self.w).set_weights_are_optimized(True)
 
         # take identity covariance matrix for the start

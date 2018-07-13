@@ -2,12 +2,12 @@ from __future__ import print_function, division
 import IMP
 import IMP.test
 import IMP.core
-import IMP.pmi
-import IMP.pmi.representation
-import IMP.pmi.samplers
-import IMP.pmi.macros
-import IMP.pmi.restraints
-import IMP.pmi.restraints.stereochemistry
+import IMP.pmi1
+import IMP.pmi1.representation
+import IMP.pmi1.samplers
+import IMP.pmi1.macros
+import IMP.pmi1.restraints
+import IMP.pmi1.restraints.stereochemistry
 import IMP.container
 import IMP.algebra
 import IMP.rmf
@@ -19,7 +19,7 @@ try:
     import IMP.mpi
     rem = IMP.mpi.ReplicaExchange()
 except ImportError:
-    rem = IMP.pmi.samplers._SerialReplicaExchange()
+    rem = IMP.pmi1.samplers._SerialReplicaExchange()
 
 class Tests(IMP.test.TestCase):
     def test_xyz_particles(self):
@@ -37,7 +37,7 @@ class Tests(IMP.test.TestCase):
             ps.append(p)
             hs.append(h)
 
-        srbm = IMP.pmi.TransformMover(m, 1, 0.5)
+        srbm = IMP.pmi1.TransformMover(m, 1, 0.5)
 
         #origin point
         origin=IMP.Particle(m)
@@ -89,7 +89,7 @@ class Tests(IMP.test.TestCase):
         p=IMP.Particle(m)
         rb=IMP.core.RigidBody.setup_particle(p,ps)
 
-        srbm = IMP.pmi.TransformMover(m, 1, 0.5)
+        srbm = IMP.pmi1.TransformMover(m, 1, 0.5)
 
         #origin point
         origin=IMP.Particle(m)
@@ -147,7 +147,7 @@ class Tests(IMP.test.TestCase):
             ps.append(p)
             hs.append(h)
 
-        srbm = IMP.pmi.TransformMover(m, ps[3],ps[4], 0.0, 0.2)
+        srbm = IMP.pmi1.TransformMover(m, ps[3],ps[4], 0.0, 0.2)
 
         #origin point
         origin=IMP.Particle(m)
@@ -183,11 +183,11 @@ class Tests(IMP.test.TestCase):
     """
     def test_pmi_representation_sampling_macro1(self):
         import IMP
-        import IMP.pmi
-        import IMP.pmi.representation
-        import IMP.pmi.restraints
-        import IMP.pmi.restraints.stereochemistry
-        import IMP.pmi.macros
+        import IMP.pmi1
+        import IMP.pmi1.representation
+        import IMP.pmi1.restraints
+        import IMP.pmi1.restraints.stereochemistry
+        import IMP.pmi1.macros
 
         rbmaxtrans = 5.00
         fbmaxtrans = 3.00
@@ -197,7 +197,7 @@ class Tests(IMP.test.TestCase):
 
         # setting up topology
         m=IMP.Model()
-        simo = IMP.pmi.representation.Representation(m,upperharmonic=True,disorderedlength=True)
+        simo = IMP.pmi1.representation.Representation(m,upperharmonic=True,disorderedlength=True)
 
         pdbfile = self.get_input_file_name("1WCM.pdb")
         fastafile = self.get_input_file_name("1WCM.fasta.txt")
@@ -205,12 +205,12 @@ class Tests(IMP.test.TestCase):
         chains = "ABCD"
         colors = [0.,0.1,0.5,1.0]
         beadsize = 20
-        fastids = IMP.pmi.tools.get_ids_from_fasta_file(fastafile)
+        fastids = IMP.pmi1.tools.get_ids_from_fasta_file(fastafile)
 
         domains=[]
         for n in [2,3]:
             domains+=[(components[n],  components[n],   colors[n],  fastafile,  "1WCM:"+chains[n],   pdbfile,   chains[n],    (1,-1,0),  None, 20,       n,      [0,n],     None,   None,  None,   None)]
-        bm=IMP.pmi.macros.BuildModel1(simo)
+        bm=IMP.pmi1.macros.BuildModel1(simo)
         bm.build_model(domains,sequence_connectivity_scale=1.0)
 
         simo.set_rigid_bodies_max_rot(rbmaxrot)
@@ -220,12 +220,12 @@ class Tests(IMP.test.TestCase):
         outputobjects.append(simo)
         sampleobjects.append(simo)
 
-        ev = IMP.pmi.restraints.stereochemistry.ExcludedVolumeSphere(simo,resolution=10)
+        ev = IMP.pmi1.restraints.stereochemistry.ExcludedVolumeSphere(simo,resolution=10)
         ev.add_to_model()
         outputobjects.append(ev)
 
 
-        mc2=IMP.pmi.macros.ReplicaExchange0(m,
+        mc2=IMP.pmi1.macros.ReplicaExchange0(m,
                                     simo,
                                     monte_carlo_sample_objects=sampleobjects,
                                     output_objects=outputobjects,
@@ -261,7 +261,7 @@ class Tests(IMP.test.TestCase):
 
         # setting up topology
         m=IMP.Model()
-        simo = IMP.pmi.representation.Representation(m,upperharmonic=True,disorderedlength=True)
+        simo = IMP.pmi1.representation.Representation(m,upperharmonic=True,disorderedlength=True)
 
         pdbfile = self.get_input_file_name("1WCM.pdb")
         fastafile = self.get_input_file_name("1WCM.fasta.txt")
@@ -269,7 +269,7 @@ class Tests(IMP.test.TestCase):
         chains = "ABCD"
         colors = [0.,0.1,0.5,1.0]
         beadsize = 20
-        fastids = IMP.pmi.tools.get_ids_from_fasta_file(fastafile)
+        fastids = IMP.pmi1.tools.get_ids_from_fasta_file(fastafile)
 
 
 
@@ -279,7 +279,7 @@ class Tests(IMP.test.TestCase):
 
 
         with IMP.allow_deprecated():
-            bm=IMP.pmi.macros.BuildModel1(simo)
+            bm=IMP.pmi1.macros.BuildModel1(simo)
         bm.build_model(domains,sequence_connectivity_scale=1.0)
 
         simo.set_rigid_bodies_max_rot(rbmaxrot)
@@ -292,12 +292,12 @@ class Tests(IMP.test.TestCase):
         outputobjects.append(simo)
         sampleobjects.append(simo)
 
-        ev = IMP.pmi.restraints.stereochemistry.ExcludedVolumeSphere(simo,resolution=10)
+        ev = IMP.pmi1.restraints.stereochemistry.ExcludedVolumeSphere(simo,resolution=10)
         ev.add_to_model()
         outputobjects.append(ev)
 
 
-        mc2=IMP.pmi.macros.ReplicaExchange0(m,
+        mc2=IMP.pmi1.macros.ReplicaExchange0(m,
                                     simo,
                                     monte_carlo_sample_objects=sampleobjects,
                                     output_objects=outputobjects,
@@ -334,7 +334,7 @@ class Tests(IMP.test.TestCase):
 
         # setting up topology
         m=IMP.Model()
-        simo = IMP.pmi.representation.Representation(m,upperharmonic=True,disorderedlength=True)
+        simo = IMP.pmi1.representation.Representation(m,upperharmonic=True,disorderedlength=True)
 
         pdbfile = self.get_input_file_name("1WCM.pdb")
         fastafile = self.get_input_file_name("1WCM.fasta.txt")
@@ -342,14 +342,14 @@ class Tests(IMP.test.TestCase):
         chains = "ABCD"
         colors = [0.,0.1,0.5,1.0]
         beadsize = 20
-        fastids = IMP.pmi.tools.get_ids_from_fasta_file(fastafile)
+        fastids = IMP.pmi1.tools.get_ids_from_fasta_file(fastafile)
 
 
 
         domains=[("A",  "A.1",    0.10, fastafile,  "1WCM:A",   "BEADS",         None,    (1,50,0),       None,       1,         None,      None,     None,   None,  None,   None)]
 
         with IMP.allow_deprecated():
-            bm=IMP.pmi.macros.BuildModel1(simo)
+            bm=IMP.pmi1.macros.BuildModel1(simo)
         bm.build_model(domains,sequence_connectivity_scale=1.0)
         bm.set_main_chain_mover("A.1")
 
@@ -363,12 +363,12 @@ class Tests(IMP.test.TestCase):
         outputobjects.append(simo)
         sampleobjects.append(simo)
 
-        ev = IMP.pmi.restraints.stereochemistry.ExcludedVolumeSphere(simo,resolution=10)
+        ev = IMP.pmi1.restraints.stereochemistry.ExcludedVolumeSphere(simo,resolution=10)
         ev.add_to_model()
         outputobjects.append(ev)
 
 
-        mc2=IMP.pmi.macros.ReplicaExchange0(m,
+        mc2=IMP.pmi1.macros.ReplicaExchange0(m,
                                     simo,
                                     monte_carlo_sample_objects=sampleobjects,
                                     output_objects=outputobjects,

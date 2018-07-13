@@ -1,4 +1,4 @@
-"""@namespace IMP.pmi.restraints.stereochemistry
+"""@namespace IMP.pmi1.restraints.stereochemistry
 Restraints for keeping correct stereochemistry.
 """
 
@@ -10,8 +10,8 @@ import IMP.atom
 import IMP.container
 import IMP.isd
 import itertools
-import IMP.pmi.tools
-import IMP.pmi.representation
+import IMP.pmi1.tools
+import IMP.pmi1.representation
 from operator import itemgetter
 from math import pi,log,sqrt
 import sys
@@ -47,7 +47,7 @@ class ConnectivityRestraint(object):
         self.label = label
         self.weight = 1.0
 
-        hiers = IMP.pmi.tools.input_adaptor(objects,resolution)
+        hiers = IMP.pmi1.tools.input_adaptor(objects,resolution)
         if len(hiers)>1:
             raise Exception("ConnectivityRestraint: only pass stuff from one Molecule, please")
         hiers = hiers[0]
@@ -67,8 +67,8 @@ class ConnectivityRestraint(object):
             except:
                 end = IMP.atom.Hierarchy(h)
 
-            startres = IMP.pmi.tools.get_residue_indexes(start)[0]
-            endres = IMP.pmi.tools.get_residue_indexes(end)[-1]
+            startres = IMP.pmi1.tools.get_residue_indexes(start)[0]
+            endres = IMP.pmi1.tools.get_residue_indexes(end)[-1]
             SortedSegments.append((start, end, startres))
         SortedSegments = sorted(SortedSegments, key=itemgetter(2))
 
@@ -97,10 +97,10 @@ class ConnectivityRestraint(object):
 
             if apply_restraint:
 
-                nreslast = len(IMP.pmi.tools.get_residue_indexes(last))
-                lastresn = IMP.pmi.tools.get_residue_indexes(last)[-1]
-                nresfirst = len(IMP.pmi.tools.get_residue_indexes(first))
-                firstresn = IMP.pmi.tools.get_residue_indexes(first)[0]
+                nreslast = len(IMP.pmi1.tools.get_residue_indexes(last))
+                lastresn = IMP.pmi1.tools.get_residue_indexes(last)[-1]
+                nresfirst = len(IMP.pmi1.tools.get_residue_indexes(first))
+                firstresn = IMP.pmi1.tools.get_residue_indexes(first)[0]
 
                 residuegap = firstresn - lastresn - 1
                 if disorderedlength and (nreslast / 2 + nresfirst / 2 + residuegap) > 20.0:
@@ -137,7 +137,7 @@ class ConnectivityRestraint(object):
         return self.weight
 
     def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.m, self.rs)
+        IMP.pmi1.tools.add_restraint_to_model(self.m, self.rs)
 
     def get_restraint(self):
         return self.rs
@@ -197,13 +197,13 @@ class ExcludedVolumeSphere(object):
         bipartite = False
 
         # gather IMP hierarchies from input objects
-        hierarchies = IMP.pmi.tools.input_adaptor(included_objects,
+        hierarchies = IMP.pmi1.tools.input_adaptor(included_objects,
                                                   resolution,
                                                   flatten=True)
         included_ps = []
         if other_objects is not None:
             bipartite = True
-            other_hierarchies = IMP.pmi.tools.input_adaptor(other_objects,
+            other_hierarchies = IMP.pmi1.tools.input_adaptor(other_objects,
                                                             resolution,
                                                             flatten=True)
             other_ps = []
@@ -217,14 +217,14 @@ class ExcludedVolumeSphere(object):
             included_ps = [h.get_particle() for h in hierarchies]
             if bipartite:
                 other_ps = [h.get_particle() for h in other_hierarchies]
-        elif isinstance(representation, IMP.pmi.representation.Representation):
+        elif isinstance(representation, IMP.pmi1.representation.Representation):
             self.mdl = representation.model
-            included_ps = IMP.pmi.tools.select(
+            included_ps = IMP.pmi1.tools.select(
                 representation,
                 resolution=resolution,
                 hierarchies=hierarchies)
             if bipartite:
-                other_ps = IMP.pmi.tools.select(
+                other_ps = IMP.pmi1.tools.select(
                     representation,
                     resolution=resolution,
                     hierarchies=other_hierarchies)
@@ -267,7 +267,7 @@ class ExcludedVolumeSphere(object):
         self.label = label
 
     def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.mdl, self.rs)
+        IMP.pmi1.tools.add_restraint_to_model(self.mdl, self.rs)
 
     def get_restraint(self):
         return self.rs
@@ -326,7 +326,7 @@ class HelixRestraint(object):
         return self.weight
 
     def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.mdl, self.rs)
+        IMP.pmi1.tools.add_restraint_to_model(self.mdl, self.rs)
 
     def get_restraint(self):
         return self.rs
@@ -374,13 +374,13 @@ class ResidueBondRestraint(object):
 
         if representation is not None and selection_tuple is not None:
             self.m = representation.prot.get_model()
-            particles = IMP.pmi.tools.select_by_tuple(
+            particles = IMP.pmi1.tools.select_by_tuple(
                 representation,
                 selection_tuple,
                 resolution=1)
 
         elif objects is not None:
-            particles = IMP.pmi.tools.input_adaptor(objects,1,flatten=True)
+            particles = IMP.pmi1.tools.input_adaptor(objects,1,flatten=True)
             self.m = particles[0].get_model()
 
         self.rs = IMP.RestraintSet(self.m, "Bonds")
@@ -396,7 +396,7 @@ class ResidueBondRestraint(object):
             ts = IMP.core.HarmonicWell(
                 (distance - jitter, distance + jitter), strength)
 
-        for ps in IMP.pmi.tools.sublist_iterator(particles, 2, 2):
+        for ps in IMP.pmi1.tools.sublist_iterator(particles, 2, 2):
             pair = []
             if len(ps) != 2:
                 raise ValueError("wrong length of pair")
@@ -418,7 +418,7 @@ class ResidueBondRestraint(object):
             r.set_name(label)
 
     def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.m, self.rs)
+        IMP.pmi1.tools.add_restraint_to_model(self.m, self.rs)
 
     def get_restraint(self):
         return self.rs
@@ -452,13 +452,13 @@ class ResidueAngleRestraint(object):
 
         if representation is not None and selection_tuple is not None:
             self.m = representation.prot.get_model()
-            particles = IMP.pmi.tools.select_by_tuple(
+            particles = IMP.pmi1.tools.select_by_tuple(
                 representation,
                 selection_tuple,
                 resolution=1)
 
         elif objects is not None:
-            particles = IMP.pmi.tools.input_adaptor(objects,1,flatten=True)
+            particles = IMP.pmi1.tools.input_adaptor(objects,1,flatten=True)
             self.m = particles[0].get_model()
 
         self.rs = IMP.RestraintSet(self.m, "Angles")
@@ -471,7 +471,7 @@ class ResidueAngleRestraint(object):
              pi * anglemax / 180.0),
             strength)
 
-        for ps in IMP.pmi.tools.sublist_iterator(particles, 3, 3):
+        for ps in IMP.pmi1.tools.sublist_iterator(particles, 3, 3):
             triplet = []
             if len(ps) != 3:
                 raise ValueError("wrong length of triplet")
@@ -496,7 +496,7 @@ class ResidueAngleRestraint(object):
             r.set_name(label)
 
     def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.m, self.rs)
+        IMP.pmi1.tools.add_restraint_to_model(self.m, self.rs)
 
     def get_restraint(self):
         return self.rs
@@ -533,13 +533,13 @@ class ResidueDihedralRestraint(object):
 
         if representation is not None and selection_tuple is not None:
             self.m = representation.prot.get_model()
-            particles = IMP.pmi.tools.select_by_tuple(
+            particles = IMP.pmi1.tools.select_by_tuple(
                 representation,
                 selection_tuple,
                 resolution=1)
 
         elif objects is not None:
-            particles = IMP.pmi.tools.input_adaptor(objects,1,flatten=True)
+            particles = IMP.pmi1.tools.input_adaptor(objects,1,flatten=True)
             self.m = particles[0].get_model()
 
         self.rs = IMP.RestraintSet(self.m, "Angles")
@@ -550,7 +550,7 @@ class ResidueDihedralRestraint(object):
         if stringsequence is None:
             stringsequence = "T" * (len(particles) - 3)
 
-        for n, ps in enumerate(IMP.pmi.tools.sublist_iterator(particles, 4, 4)):
+        for n, ps in enumerate(IMP.pmi1.tools.sublist_iterator(particles, 4, 4)):
             quadruplet = []
             if len(ps) != 4:
                 raise ValueError("wrong length of quadruplet")
@@ -596,7 +596,7 @@ class ResidueDihedralRestraint(object):
             r.set_name(label)
 
     def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.m, self.rs)
+        IMP.pmi1.tools.add_restraint_to_model(self.m, self.rs)
 
     def get_restraint(self):
         return self.rs
@@ -631,7 +631,7 @@ class SecondaryStructure(object):
         # check that the secondary structure string
         # is compatible with the ssstring
 
-        self.particles = IMP.pmi.tools.select_by_tuple(
+        self.particles = IMP.pmi1.tools.select_by_tuple(
             representation,
             selection_tuple,
             resolution=1)
@@ -667,9 +667,9 @@ class SecondaryStructure(object):
         self.label = label
 
     def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.m, self.anglrs)
-        IMP.pmi.tools.add_restraint_to_model(self.m, self.dihers)
-        IMP.pmi.tools.add_restraint_to_model(self.m, self.bondrs)
+        IMP.pmi1.tools.add_restraint_to_model(self.m, self.anglrs)
+        IMP.pmi1.tools.add_restraint_to_model(self.m, self.dihers)
+        IMP.pmi1.tools.add_restraint_to_model(self.m, self.bondrs)
 
     def get_CA_force_field(self):
         bondrslist = []
@@ -875,11 +875,11 @@ class ElasticNetworkRestraint(object):
                                              copy_index=copy_index,
                                              atom_type=IMP.atom.AtomType("CA"))
                 particles+=sel.get_selected_particles()
-        elif representation is not None and type(representation)==IMP.pmi.representation.Representation:
+        elif representation is not None and type(representation)==IMP.pmi1.representation.Representation:
             self.m = representation.model
             for st in selection_tuples:
                 print('selecting with',st)
-                for p in IMP.pmi.tools.select_by_tuple(representation,st,resolution=resolution):
+                for p in IMP.pmi1.tools.select_by_tuple(representation,st,resolution=resolution):
                     if (resolution==0 and ca_only and IMP.atom.Atom(p).get_atom_type()!=IMP.atom.AtomType("CA")):
                         continue
                     else:
@@ -892,7 +892,7 @@ class ElasticNetworkRestraint(object):
         self.pairslist = []
 
         # create score
-        self.rs = IMP.pmi.create_elastic_network(particles,dist_cutoff,strength)
+        self.rs = IMP.pmi1.create_elastic_network(particles,dist_cutoff,strength)
         for r in self.rs.get_restraints():
             a1,a2 = r.get_inputs()
             self.pairslist.append(IMP.ParticlePair(a1,a2))
@@ -906,7 +906,7 @@ class ElasticNetworkRestraint(object):
             r.set_name(label)
 
     def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.m, self.rs)
+        IMP.pmi1.tools.add_restraint_to_model(self.m, self.rs)
 
     def get_restraint(self):
         return self.rs
@@ -966,7 +966,7 @@ class CharmmForceFieldRestraint(object):
             topology.apply_default_patches()
             topology.setup_hierarchy(root)
             if zone_ps is not None:
-                limit_to_ps=IMP.pmi.topology.get_particles_within_zone(
+                limit_to_ps=IMP.pmi1.topology.get_particles_within_zone(
                     root,
                     zone_ps,
                     zone_size,
@@ -995,7 +995,7 @@ class CharmmForceFieldRestraint(object):
                                                           for n in backbone_types])
                 backbone_atoms = sel.get_selected_particles()
                 #x = list(set(backbone_atoms)|set(limit_to_ps))
-                sel_ps=IMP.pmi.topology.get_particles_within_zone(
+                sel_ps=IMP.pmi1.topology.get_particles_within_zone(
                     root,
                     zone_ps,
                     zone_size,
@@ -1023,8 +1023,8 @@ class CharmmForceFieldRestraint(object):
             r.set_name(label)
 
     def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.mdl, self.bonds_rs)
-        IMP.pmi.tools.add_restraint_to_model(self.mdl, self.nonbonded_rs)
+        IMP.pmi1.tools.add_restraint_to_model(self.mdl, self.bonds_rs)
+        IMP.pmi1.tools.add_restraint_to_model(self.mdl, self.nonbonded_rs)
 
     def get_restraint(self):
         return self.rs
@@ -1069,19 +1069,19 @@ class PseudoAtomicRestraint(object):
         self.label = "None"
         self.pairslist = []
 
-        # residues=IMP.pmi.tools.select_by_tuple(representation,selection_tuple,resolution=1)
+        # residues=IMP.pmi1.tools.select_by_tuple(representation,selection_tuple,resolution=1)
         for rnum in rnums:
             ca, cb = self.get_ca_cb(
-                IMP.pmi.tools.select_by_tuple(representation,
+                IMP.pmi1.tools.select_by_tuple(representation,
                                               (rnum, rnum, 'chainA'), resolution=0))
             if not cb is None:
                 nter = False
                 cter = False
                 ca_prev, cb_prev = self.get_ca_cb(
-                    IMP.pmi.tools.select_by_tuple(representation,
+                    IMP.pmi1.tools.select_by_tuple(representation,
                                                   (rnum - 1, rnum - 1, 'chainA'), resolution=0))
                 ca_next, cb_next = self.get_ca_cb(
-                    IMP.pmi.tools.select_by_tuple(representation,
+                    IMP.pmi1.tools.select_by_tuple(representation,
                                                   (rnum + 1, rnum + 1, 'chainA'), resolution=0))
                 if ca_prev is None:
                     nter = True
@@ -1171,7 +1171,7 @@ class PseudoAtomicRestraint(object):
             r.set_name(label)
 
     def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.m, self.rs)
+        IMP.pmi1.tools.add_restraint_to_model(self.m, self.rs)
 
     def get_restraint(self):
         return self.rs
@@ -1211,7 +1211,7 @@ class SymmetryRestraint(object):
         @param ca_only Optionally select so only CAlpha particles are used
         """
 
-        refs = IMP.pmi.tools.input_adaptor(references,flatten=True)
+        refs = IMP.pmi1.tools.input_adaptor(references,flatten=True)
         self.mdl = refs[0].get_model()
         self.rs = IMP.RestraintSet(self.mdl, "Symmetry")
         self.weight = 1
@@ -1221,7 +1221,7 @@ class SymmetryRestraint(object):
 
         harmonic = IMP.core.Harmonic(0.,strength)
         for tmp_clones,trans in zip(clones_list,transforms):
-            clones = IMP.pmi.tools.input_adaptor(tmp_clones,flatten=True)
+            clones = IMP.pmi1.tools.input_adaptor(tmp_clones,flatten=True)
             if len(clones)!=len(refs):
                 raise Exception("Error: len(references)!=len(clones)")
             pair_score = IMP.core.TransformedDistancePairScore(harmonic,trans)
@@ -1240,7 +1240,7 @@ class SymmetryRestraint(object):
             r.set_name(label)
 
     def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.mdl, self.rs)
+        IMP.pmi1.tools.add_restraint_to_model(self.mdl, self.rs)
 
     def get_restraint(self):
         return self.rs
@@ -1288,8 +1288,8 @@ class FusionRestraint(object):
         """
         self.label = label
         self.weight = 1.0
-        ssn=IMP.pmi.tools.get_sorted_segments(nterminal)
-        ssc=IMP.pmi.tools.get_sorted_segments(cterminal)
+        ssn=IMP.pmi1.tools.get_sorted_segments(nterminal)
+        ssc=IMP.pmi1.tools.get_sorted_segments(cterminal)
         nter_lastres=ssn[-1][1]
         cter_firstres=ssc[0][0]
         self.m = nter_lastres.get_model()
@@ -1317,7 +1317,7 @@ class FusionRestraint(object):
         return self.weight
 
     def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.m, self.rs)
+        IMP.pmi1.tools.add_restraint_to_model(self.m, self.rs)
 
     def get_restraint(self):
         return self.rs
@@ -1339,7 +1339,7 @@ class FusionRestraint(object):
 
 
 
-class PlaneDihedralRestraint(IMP.pmi.restraints.RestraintBase):
+class PlaneDihedralRestraint(IMP.pmi1.restraints.RestraintBase):
 
     """Restrain the dihedral between planes defined by three particles.
 

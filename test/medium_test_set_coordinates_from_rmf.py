@@ -2,11 +2,11 @@ import os
 import IMP
 import IMP.test
 
-import IMP.pmi.restraints.stereochemistry
-import IMP.pmi.representation
-import IMP.pmi.tools
-import IMP.pmi.output
-import IMP.pmi.macros
+import IMP.pmi1.restraints.stereochemistry
+import IMP.pmi1.representation
+import IMP.pmi1.tools
+import IMP.pmi1.output
+import IMP.pmi1.macros
 
 class Tests(IMP.test.TestCase):
     def test_set_from_rmf(self):
@@ -24,10 +24,10 @@ class Tests(IMP.test.TestCase):
 
         beadsize = 20
 
-        fastids = IMP.pmi.tools.get_ids_from_fasta_file(fastafile)
+        fastids = IMP.pmi1.tools.get_ids_from_fasta_file(fastafile)
 
         m = IMP.Model()
-        simo = IMP.pmi.representation.Representation(m)
+        simo = IMP.pmi1.representation.Representation(m)
 
 
         simo.create_component("Rpb1", color=colors[0])
@@ -42,7 +42,7 @@ class Tests(IMP.test.TestCase):
                              resolutions=[10], missingbeadsize=beadsize)
         simo.setup_component_sequence_connectivity("Rpb2", 1)
 
-        output = IMP.pmi.output.Output()
+        output = IMP.pmi1.output.Output()
         output.init_rmf("test_set_coordinates_from_rmf.rmf3", [simo.prot])
         output.write_rmf("test_set_coordinates_from_rmf.rmf3")
         output.close_rmf("test_set_coordinates_from_rmf.rmf3")
@@ -56,7 +56,7 @@ class Tests(IMP.test.TestCase):
         pdbfile = self.get_input_file_name("1WCM.pdb")
         fastafile = self.get_input_file_name("1WCM.fasta.txt")
         m = IMP.Model()
-        simo = IMP.pmi.representation.Representation(m,upperharmonic=True,disorderedlength=False)
+        simo = IMP.pmi1.representation.Representation(m,upperharmonic=True,disorderedlength=False)
 
         domains=[("Rpb8",   "Rpb8",        0.0,   fastafile, "1WCM:I",  "BEADS", None, (1,-1),      "BEADSONLY", 20,       0,     None, 0, None, None, None),
                  ("Rpb9",   "Rpb9",        0.0,   fastafile, "1WCM:I",  "BEADS", None, (1,-1),      None, 20,              1,     None, 0, None, None, None),
@@ -64,11 +64,11 @@ class Tests(IMP.test.TestCase):
                  ("Rpb11",  "Rpb11",       0.0,   fastafile, "1WCM:K",  pdbfile, "K",  (1,-1),      None, 20,              2,     None, 0, None, None, None),
                  ("Rpb12",  "Rpb12",       0.0,   fastafile, "1WCM:L",  pdbfile, "L",  (1,-1),      True, 20,              3,     None, 2, self.get_input_file_name("gmm_Rpb12.txt"), "gmm_Rpb12.mrc", None)]
         with IMP.allow_deprecated():
-            bm=IMP.pmi.macros.BuildModel1(simo)
+            bm=IMP.pmi1.macros.BuildModel1(simo)
         bm.build_model(domains)
         simo.shuffle_configuration(100)
         simo.optimize_floppy_bodies(10, temperature=100.0)
-        o=IMP.pmi.output.Output()
+        o=IMP.pmi1.output.Output()
         o.init_rmf("test_set_from_rmf_roundtrip_1.rmf3", [simo.prot])
         o.write_rmf("test_set_from_rmf_roundtrip_1.rmf3")
 

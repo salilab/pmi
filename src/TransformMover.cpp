@@ -5,11 +5,11 @@
  *  Copyright 2007-2018 IMP Inventors. All rights reserved.
  *
  */
-#include <IMP/pmi/TransformMover.h>
+#include <IMP/pmi1/TransformMover.h>
 #include <IMP/core/XYZ.h>
 #include <IMP/random.h>
 #include <IMP/algebra/vector_generators.h>
-IMPPMI_BEGIN_NAMESPACE
+IMPPMI1_BEGIN_NAMESPACE
 
 TransformMover::TransformMover(Model *m,
                                Float max_translation, Float max_angle)
@@ -159,4 +159,4 @@ ModelObjectsTemp TransformMover::do_get_inputs() const {
   return ret;
 }
 
-IMPPMI_END_NAMESPACE
+IMPPMI1_END_NAMESPACE

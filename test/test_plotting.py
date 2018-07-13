@@ -1,5 +1,5 @@
-import IMP.pmi
-import IMP.pmi.analysis
+import IMP.pmi1
+import IMP.pmi1.analysis
 import IMP.test
 import IMP.rmf
 import sys
@@ -7,7 +7,7 @@ import sys
 class Tests(IMP.test.TestCase):
     @IMP.test.expectedFailure
     def test_graphxl(self):
-        import IMP.pmi.plotting.topology
+        import IMP.pmi1.plotting.topology
         dd={"med6":["med6"],
             "med8":["med8"],
             "med11":["med11"],
@@ -32,7 +32,7 @@ class Tests(IMP.test.TestCase):
             "med15":["med15"],
             "med16":["med16"]}
 
-        g = IMP.pmi.plotting.topology.TopologyPlot(IMP.Model(),dd,15.0)
+        g = IMP.pmi1.plotting.topology.TopologyPlot(IMP.Model(),dd,15.0)
         g.add_rmf('0.rmf3',0)
         g.make_plot('out.png')
 

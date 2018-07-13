@@ -1,11 +1,11 @@
-"""@namespace IMP.pmi.samplers
+"""@namespace IMP.pmi1.samplers
    Sampling of the system.
 """
 
 from __future__ import print_function
 import IMP
 import IMP.core
-from IMP.pmi.tools import get_restraint_set
+from IMP.pmi1.tools import get_restraint_set
 
 class _SerialReplicaExchange(object):
     """Dummy replica exchange class used in non-MPI builds.
@@ -243,7 +243,7 @@ class MonteCarlo(object):
                         mv.set_maximum_rotation(mr * 2 * accept)
                         mv.set_maximum_translation(mt * 2 * accept)
 
-                if type(mv) is IMP.pmi.TransformMover:
+                if type(mv) is IMP.pmi1.TransformMover:
                     mr=mv.get_maximum_rotation()
                     mt=mv.get_maximum_translation()
                     if 0.4 > accept or accept > 0.6:
@@ -281,13 +281,13 @@ class MonteCarlo(object):
         for rb in rbs:
             if len(rb) == 2:
                 # normal Super Rigid Body
-                srbm = IMP.pmi.TransformMover(self.model, maxtrans, maxrot)
+                srbm = IMP.pmi1.TransformMover(self.model, maxtrans, maxrot)
             elif len(rb) == 3:
                 if type(rb[2]) == tuple and type(rb[2][0]) == float \
                     and type(rb[2][1]) == float and type(rb[2][2]) == float \
                     and len(rb[2])== 3:
                     # super rigid body with 2D rotation, rb[2] is the axis
-                    srbm = IMP.pmi.TransformMover(
+                    srbm = IMP.pmi1.TransformMover(
                       self.model,
                       IMP.algebra.Vector3D(rb[2]),
                       maxtrans,
@@ -296,7 +296,7 @@ class MonteCarlo(object):
                 #    and type(rb[2][1]) == IMP.Particle and len(rb[2])== 2:
                 #    # super rigid body with bond rotation
 
-                #    srbm = IMP.pmi.TransformMover(
+                #    srbm = IMP.pmi1.TransformMover(
                 #      self.model,
                 #      rb[2][0],rb[2][1],
                 #      0, #no translation
@@ -684,8 +684,8 @@ class PyMCMover(object):
 
     def __init__(self, representation, mcchild, n_mc_steps):
 
-        # mcchild must be pmi.samplers.MonteCarlo
-        # representation must be pmi.representation
+        # mcchild must be pmi1.samplers.MonteCarlo
+        # representation must be pmi1.representation
 
         self.rbs = representation.get_rigid_bodies()
 
@@ -796,7 +796,7 @@ class PyMC(object):
         self.restraints = restraints
 
     def set_scoring_function(self, objects):
-        # objects should be pmi.restraints
+        # objects should be pmi1.restraints
         rs = IMP.RestraintSet(self.model, 1.0, 'sfo')
         for ob in objects:
             rs.add_restraint(ob.get_restraint())

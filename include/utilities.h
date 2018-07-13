@@ -1,14 +1,14 @@
 /**
- *  \file IMP/pmi/utilities.h
+ *  \file IMP/pmi1/utilities.h
  *  \brief Useful utilities
  *
  *  Copyright 2007-2018 IMP Inventors. All rights reserved.
  */
 
-#ifndef IMPPMI_UTILITIES_H
-#define IMPPMI_UTILITIES_H
+#ifndef IMPPMI1_UTILITIES_H
+#define IMPPMI1_UTILITIES_H
 
-#include <IMP/pmi/pmi_config.h>
+#include <IMP/pmi1/pmi1_config.h>
 #include <IMP/core/DistancePairScore.h>
 #include <IMP/core/DistanceRestraint.h>
 #include <IMP/core/XYZR.h>
@@ -20,7 +20,7 @@
 #include <IMP/Vector.h>
 #include <boost/lexical_cast.hpp>
 
-IMPPMI_BEGIN_NAMESPACE
+IMPPMI1_BEGIN_NAMESPACE
 
 //! Create an elastic network restraint set
 RestraintSet * create_elastic_network(const Particles &ps,
@@ -74,13 +74,13 @@ inline Floats get_list_of_bipartite_minimum_sphere_distance(const ParticlesTemps
     for (unsigned int k2 = k1+1; k2 < pss.size(); ++k2) {
        IMP::core::XYZRs xyzrs1=IMP::core::XYZRs(pss[k1]);
        IMP::core::XYZRs xyzrs2=IMP::core::XYZRs(pss[k2]);
-       double dist = IMP::pmi::get_bipartite_minimum_sphere_distance(xyzrs1,xyzrs2);
+       double dist = IMP::pmi1::get_bipartite_minimum_sphere_distance(xyzrs1,xyzrs2);
        mindistances.push_back(dist);
       }
    }
   return mindistances;
 }
 
-IMPPMI_END_NAMESPACE
+IMPPMI1_END_NAMESPACE
 
-#endif /* IMPPMI_UTILITIES_H */
+#endif /* IMPPMI1_UTILITIES_H */

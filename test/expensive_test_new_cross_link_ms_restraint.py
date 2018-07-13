@@ -4,14 +4,14 @@ import os
 import IMP.test
 import IMP.core
 import IMP.container
-import IMP.pmi
-import IMP.pmi.topology
-import IMP.pmi.io
-import IMP.pmi.io.crosslink
-import IMP.pmi.representation
-import IMP.pmi.restraints
-import IMP.pmi.restraints.crosslinking
-import IMP.pmi.macros
+import IMP.pmi1
+import IMP.pmi1.topology
+import IMP.pmi1.io
+import IMP.pmi1.io.crosslink
+import IMP.pmi1.representation
+import IMP.pmi1.restraints
+import IMP.pmi1.restraints.crosslinking
+import IMP.pmi1.macros
 from math import *
 try:
     import IMP.mpi
@@ -84,16 +84,16 @@ def log_evaluate(restraints):
 class Tests(IMP.test.TestCase):
 
     def setup_crosslinks_complex(self,representation=None,mode=None,root_hier=None):
-        cldbkc=IMP.pmi.io.crosslink.CrossLinkDataBaseKeywordsConverter()
+        cldbkc=IMP.pmi1.io.crosslink.CrossLinkDataBaseKeywordsConverter()
         cldbkc.set_protein1_key("pep1.accession")
         cldbkc.set_protein2_key("pep2.accession")
         cldbkc.set_residue1_key("pep1.xlinked_aa")
         cldbkc.set_residue2_key("pep2.xlinked_aa")
-        cldb=IMP.pmi.io.crosslink.CrossLinkDataBase(cldbkc)
-        cldb.create_set_from_file(IMP.pmi.get_data_path("polii_xlinks.csv"))
+        cldb=IMP.pmi1.io.crosslink.CrossLinkDataBase(cldbkc)
+        cldb.create_set_from_file(IMP.pmi1.get_data_path("polii_xlinks.csv"))
 
         if representation is not None:
-            xl = IMP.pmi.restraints.crosslinking.CrossLinkingMassSpectrometryRestraint(
+            xl = IMP.pmi1.restraints.crosslinking.CrossLinkingMassSpectrometryRestraint(
                 representation,
                 CrossLinkDataBase=cldb,
                 length=21.0,
@@ -101,7 +101,7 @@ class Tests(IMP.test.TestCase):
                 resolution=1.0,
                 label="XL")
         elif root_hier is not None:
-            xl = IMP.pmi.restraints.crosslinking.CrossLinkingMassSpectrometryRestraint(
+            xl = IMP.pmi1.restraints.crosslinking.CrossLinkingMassSpectrometryRestraint(
                 root_hier=root_hier,
                 CrossLinkDataBase=cldb,
                 length=21.0,
@@ -119,18 +119,18 @@ class Tests(IMP.test.TestCase):
 
     def setup_crosslinks_beads(self,representation=None,mode=None,root_hier=None):
 
-        cldbkc=IMP.pmi.io.crosslink.CrossLinkDataBaseKeywordsConverter()
+        cldbkc=IMP.pmi1.io.crosslink.CrossLinkDataBaseKeywordsConverter()
         cldbkc.set_unique_id_key("Unique ID")
         cldbkc.set_protein1_key("Protein 1")
         cldbkc.set_protein2_key("Protein 2")
         cldbkc.set_residue1_key("Residue 1")
         cldbkc.set_residue2_key("Residue 2")
         cldbkc.set_id_score_key("ID Score")
-        cldb=IMP.pmi.io.crosslink.CrossLinkDataBase(cldbkc)
+        cldb=IMP.pmi1.io.crosslink.CrossLinkDataBase(cldbkc)
         cldb.create_set_from_file(self.get_input_file_name("expensive_test_new_cross_link_ms_restraint.csv"))
 
         if representation is not None:
-            xl = IMP.pmi.restraints.crosslinking.CrossLinkingMassSpectrometryRestraint(
+            xl = IMP.pmi1.restraints.crosslinking.CrossLinkingMassSpectrometryRestraint(
                 representation,
                 CrossLinkDataBase=cldb,
                 length=21,
@@ -138,7 +138,7 @@ class Tests(IMP.test.TestCase):
                 resolution=1,
                 slope=0.01)
         elif root_hier is not None:
-            xl = IMP.pmi.restraints.crosslinking.CrossLinkingMassSpectrometryRestraint(
+            xl = IMP.pmi1.restraints.crosslinking.CrossLinkingMassSpectrometryRestraint(
                 root_hier=root_hier,
                 CrossLinkDataBase=cldb,
                 length=21,
@@ -157,9 +157,9 @@ class Tests(IMP.test.TestCase):
         chains = "ABCD"
         colors = [0.,0.1,0.5,1.0]
         beadsize = 20
-        fastids = IMP.pmi.tools.get_ids_from_fasta_file(fastafile)
+        fastids = IMP.pmi1.tools.get_ids_from_fasta_file(fastafile)
 
-        r = IMP.pmi.representation.Representation(m)
+        r = IMP.pmi1.representation.Representation(m)
         hierarchies = {}
         for n in range(len(components)):
             r.create_component(components[n], color=colors[n])
@@ -172,7 +172,7 @@ class Tests(IMP.test.TestCase):
         return r
 
     def init_representation_beads(self,m):
-        r = IMP.pmi.representation.Representation(m)
+        r = IMP.pmi1.representation.Representation(m)
         r.create_component("ProtA",color=1.0)
         r.add_component_beads("ProtA", [(1,10)],incoord=(0,0,0))
         r.add_component_beads("ProtA", [(11,20)],incoord=(10,0,0))
@@ -193,7 +193,7 @@ class Tests(IMP.test.TestCase):
                 rcomplex = self.init_representation_complex(m)
                 xlc,cldb = self.setup_crosslinks_complex(rcomplex,"single_category")
             # check all internals didn't change since last time
-            o=IMP.pmi.output.Output()
+            o=IMP.pmi1.output.Output()
             o.write_test("expensive_test_new_cross_link_ms_restraint.dat", [xlc])
 
             passed=o.test(self.get_input_file_name("expensive_test_new_cross_link_ms_restraint.dat"),
@@ -232,7 +232,7 @@ class Tests(IMP.test.TestCase):
             test_log_wrapper_score=log_evaluate(restraints)
             self.assertAlmostEqual(log_wrapper_score, test_log_wrapper_score, delta=0.00001)
             if i==0:
-                rex0 = IMP.pmi.macros.ReplicaExchange0(m,
+                rex0 = IMP.pmi1.macros.ReplicaExchange0(m,
                                                        rcomplex,
                                                        monte_carlo_sample_objects=[rcomplex],
                                                        number_of_frames=2,
@@ -265,7 +265,7 @@ class Tests(IMP.test.TestCase):
                 if i==0:
                     rbeads.shuffle_configuration(max_translation=10)
                 else:
-                    IMP.pmi.tools.shuffle_configuration(rbeads,max_translation=10)
+                    IMP.pmi1.tools.shuffle_configuration(rbeads,max_translation=10)
                 cross_link_dict={}
                 for xl in xlbeads.xl_list:
                     p0 = xl["Particle1"]
@@ -301,7 +301,7 @@ class Tests(IMP.test.TestCase):
 
                     self.assertAlmostEqual(test_prob,prob, delta=0.0001)
             if i==0:
-                rex0 = IMP.pmi.macros.ReplicaExchange0(m,
+                rex0 = IMP.pmi1.macros.ReplicaExchange0(m,
                                                        rbeads,
                                                        monte_carlo_sample_objects=[rbeads],
                                                        number_of_frames=2,

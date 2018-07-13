@@ -1,18 +1,18 @@
 import IMP
 import IMP.test
 
-import IMP.pmi.restraints.stereochemistry
-import IMP.pmi.representation
-import IMP.pmi.tools
+import IMP.pmi1.restraints.stereochemistry
+import IMP.pmi1.representation
+import IMP.pmi1.tools
 
 class Tests(IMP.test.TestCase):
     def make_representation(self):
         pdbfile = self.get_input_file_name("nonbond.pdb")
         fastafile = self.get_input_file_name("nonbond.fasta")
-        fastids = IMP.pmi.tools.get_ids_from_fasta_file(fastafile)
+        fastids = IMP.pmi1.tools.get_ids_from_fasta_file(fastafile)
 
         m = IMP.Model()
-        r = IMP.pmi.representation.Representation(m)
+        r = IMP.pmi1.representation.Representation(m)
 
         r.create_component("A", color=0.)
         r.add_component_sequence("A", fastafile, id=fastids[0])
@@ -29,17 +29,17 @@ class Tests(IMP.test.TestCase):
 
         listofexcludedpairs = []
 
-        rbr = IMP.pmi.restraints.stereochemistry.ResidueBondRestraint(r,
+        rbr = IMP.pmi1.restraints.stereochemistry.ResidueBondRestraint(r,
                                                           (1, 2, "A"))
         rbr.add_to_model()
         listofexcludedpairs += rbr.get_excluded_pairs()
 
-        ev = IMP.pmi.restraints.stereochemistry.ExcludedVolumeSphere(r,
+        ev = IMP.pmi1.restraints.stereochemistry.ExcludedVolumeSphere(r,
                                                     resolution=10.0)
         ev.add_excluded_particle_pairs(listofexcludedpairs)
         ev.add_to_model()
         sf = IMP.core.RestraintsScoringFunction(
-                                   IMP.pmi.tools.get_restraint_set(m))
+                                   IMP.pmi1.tools.get_restraint_set(m))
         sf.evaluate(False)
 
     def test_is_rigid(self):
@@ -49,11 +49,11 @@ class Tests(IMP.test.TestCase):
 
         r.set_rigid_bodies(["A"])
 
-        ev = IMP.pmi.restraints.stereochemistry.ExcludedVolumeSphere(
+        ev = IMP.pmi1.restraints.stereochemistry.ExcludedVolumeSphere(
                                   r, resolution=10.0)
         ev.add_to_model()
         sf = IMP.core.RestraintsScoringFunction(
-                                   IMP.pmi.tools.get_restraint_set(m))
+                                   IMP.pmi1.tools.get_restraint_set(m))
         sf.evaluate(False)
 
 if __name__ == '__main__':

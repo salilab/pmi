@@ -2,12 +2,12 @@ from __future__ import print_function
 import IMP
 import IMP.test
 
-import IMP.pmi.restraints.stereochemistry
-import IMP.pmi.restraints.basic
-import IMP.pmi.restraints.proteomics
-import IMP.pmi.restraints.crosslinking
-import IMP.pmi.representation
-import IMP.pmi.tools
+import IMP.pmi1.restraints.stereochemistry
+import IMP.pmi1.restraints.basic
+import IMP.pmi1.restraints.proteomics
+import IMP.pmi1.restraints.crosslinking
+import IMP.pmi1.representation
+import IMP.pmi1.tools
 try:
     import IMP.isd_emxl
     no_isd_emxl = False
@@ -19,8 +19,8 @@ class Tests(IMP.test.TestCase):
     def test_restraints(self):
         """Test PMI restraints"""
         # input parameter
-        pdbfile = IMP.pmi.get_data_path("1WCM.pdb")
-        fastafile = IMP.pmi.get_data_path("1WCM.fasta.txt")
+        pdbfile = IMP.pmi1.get_data_path("1WCM.pdb")
+        fastafile = IMP.pmi1.get_data_path("1WCM.fasta.txt")
 
         components = ["Rpb3", "Rpb3.copy", "Rpb4"]
 
@@ -30,10 +30,10 @@ class Tests(IMP.test.TestCase):
 
         beadsize = 20
 
-        fastids = IMP.pmi.tools.get_ids_from_fasta_file(fastafile)
+        fastids = IMP.pmi1.tools.get_ids_from_fasta_file(fastafile)
 
         m = IMP.Model()
-        simo = IMP.pmi.representation.Representation(m)
+        simo = IMP.pmi1.representation.Representation(m)
 
         hierarchies = {}
 
@@ -45,12 +45,12 @@ class Tests(IMP.test.TestCase):
                 resolutions=[1, 10, 100], missingbeadsize=beadsize)
             simo.setup_component_sequence_connectivity(components[n], 1)
 
-        ev1 = IMP.pmi.restraints.stereochemistry.ExcludedVolumeSphere(simo)
+        ev1 = IMP.pmi1.restraints.stereochemistry.ExcludedVolumeSphere(simo)
         ev1.add_to_model()
         print(ev1.get_output())
         print(m.evaluate(False))
 
-        ev2 = IMP.pmi.restraints.stereochemistry.ExcludedVolumeSphere(
+        ev2 = IMP.pmi1.restraints.stereochemistry.ExcludedVolumeSphere(
             simo,
             [simo.hier_dict["Rpb3"]],
             [simo.hier_dict["Rpb4"]])
@@ -58,43 +58,43 @@ class Tests(IMP.test.TestCase):
         print(ev2.get_output())
         print(m.evaluate(False))
 
-        rb = IMP.pmi.restraints.stereochemistry.ResidueBondRestraint(
+        rb = IMP.pmi1.restraints.stereochemistry.ResidueBondRestraint(
             simo, (30, 40, "Rpb3"))
         rb.add_to_model()
         print(rb.get_output())
         print(m.evaluate(False))
 
-        ra = IMP.pmi.restraints.stereochemistry.ResidueAngleRestraint(
+        ra = IMP.pmi1.restraints.stereochemistry.ResidueAngleRestraint(
             simo, (30, 40, "Rpb3"))
         ra.add_to_model()
         print(ra.get_output())
         print(m.evaluate(False))
 
-        rd = IMP.pmi.restraints.stereochemistry.ResidueDihedralRestraint(
+        rd = IMP.pmi1.restraints.stereochemistry.ResidueDihedralRestraint(
             simo, (30, 40, "Rpb3"))
         rd.add_to_model()
         print(ra.get_output())
         print(m.evaluate(False))
 
         if not no_isd_emxl:
-            ss = IMP.pmi.restraints.stereochemistry.SecondaryStructure(
+            ss = IMP.pmi1.restraints.stereochemistry.SecondaryStructure(
                 simo, (30, 40, "Rpb3"), "HHHHHHHHHHH")
             ss.add_to_model()
             print(ss.get_output())
             print(m.evaluate(False))
 
-        eb1 = IMP.pmi.restraints.basic.ExternalBarrier(simo, 50)
+        eb1 = IMP.pmi1.restraints.basic.ExternalBarrier(simo, 50)
         eb1.add_to_model()
         print(eb1.get_output())
         print(m.evaluate(False))
 
-        cr1 = IMP.pmi.restraints.proteomics.ConnectivityRestraint(
+        cr1 = IMP.pmi1.restraints.proteomics.ConnectivityRestraint(
             simo, [(1, 100, "Rpb3"), (1, 100, "Rpb4")], resolution=100)
         cr1.add_to_model()
         print(cr1.get_output())
         print(m.evaluate(False))
 
-        cr2 = IMP.pmi.restraints.proteomics.CompositeRestraint(
+        cr2 = IMP.pmi1.restraints.proteomics.CompositeRestraint(
             simo, [(1, 100, "Rpb3"), (200, 300, "Rpb3")],
             [[(1, 100, "Rpb4")], [(200, 500, "Rpb4")]], resolution=100)
         cr2.add_to_model()
@@ -105,7 +105,7 @@ class Tests(IMP.test.TestCase):
         Rpb3 Rpb4 100 150
         Rpb4 Rpb4 50 150'''
 
-        cr2 = IMP.pmi.restraints.proteomics.AmbiguousCompositeRestraint(
+        cr2 = IMP.pmi1.restraints.proteomics.AmbiguousCompositeRestraint(
             simo,
             restraints,
             resolution=1)
@@ -118,7 +118,7 @@ class Tests(IMP.test.TestCase):
         Rpb3 Rpb4 100 150 0.5
         Rpb4 Rpb4 50 150 0.7'''
 
-        pm = IMP.pmi.restraints.proteomics.SimplifiedPEMAP(
+        pm = IMP.pmi1.restraints.proteomics.SimplifiedPEMAP(
             simo,
             restraints,
             20,
@@ -133,7 +133,7 @@ class Tests(IMP.test.TestCase):
         Rpb3 Rpb4 100 150
         Rpb4 Rpb4 50 150 '''
 
-        xl1 = IMP.pmi.restraints.crosslinking.ConnectivityCrossLinkMS(
+        xl1 = IMP.pmi1.restraints.crosslinking.ConnectivityCrossLinkMS(
             simo,
             restraints,
             20,
@@ -147,7 +147,7 @@ class Tests(IMP.test.TestCase):
         Rpb3 Rpb4 100 150
         Rpb4 Rpb4 50 150 '''
 
-        xl2 = IMP.pmi.restraints.crosslinking.SimplifiedCrossLinkMS(
+        xl2 = IMP.pmi1.restraints.crosslinking.SimplifiedCrossLinkMS(
             simo,
             restraints,
             25,
@@ -161,7 +161,7 @@ class Tests(IMP.test.TestCase):
         Rpb3 Rpb4 100 150
         Rpb4 Rpb4 50 150 '''
 
-        xl3 = IMP.pmi.restraints.crosslinking.SigmoidalCrossLinkMS(
+        xl3 = IMP.pmi1.restraints.crosslinking.SigmoidalCrossLinkMS(
             simo,
             restraints,
             25,
@@ -177,7 +177,7 @@ class Tests(IMP.test.TestCase):
         Rpb3 Rpb4 100 150 1
         Rpb4 Rpb4 50 150 1'''
 
-        xl4 = IMP.pmi.restraints.crosslinking.ISDCrossLinkMS(
+        xl4 = IMP.pmi1.restraints.crosslinking.ISDCrossLinkMS(
             simo,
             restraints,
             25,
@@ -190,7 +190,7 @@ class Tests(IMP.test.TestCase):
         100 Rpb3 150 Rpb4 0.5 epsilon1
         50 Rpb4 150 Rpb4  0.7 epsilon2'''
 
-        xl5 = IMP.pmi.restraints.crosslinking.CysteineCrossLinkRestraint(
+        xl5 = IMP.pmi1.restraints.crosslinking.CysteineCrossLinkRestraint(
             [simo],
             restraints)
         xl5.add_to_model()

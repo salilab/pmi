@@ -12,7 +12,7 @@ class Tests(IMP.test.TestCase):
             import IMP.em2d
         except:
             self.skipTest("No EM2D module")
-        import IMP.pmi.restraints.em2d
+        import IMP.pmi1.restraints.em2d
 
 if __name__ == '__main__':
     IMP.test.main()

@@ -1,8 +1,7 @@
 \brief Legacy PMI1 module to to represent, score, sample and analyze models.
 
 [![Build Status](https://travis-ci.org/salilab/pmi.svg?branch=legacy-pmi1)](https://travis-ci.org/salilab/pmi)
-[![codecov](https://codecov.io/gh/salilab/pmi/branch/legacy-pmi1/graph/badge.svg)](https://codecov.io/gh/salilab/pmi)
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/bcced071b3f541449d723a774ea09026)](https://www.codacy.com/app/salilab/pmi?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=salilab/pmi&amp;utm_campaign=Badge_Grade)
+[![codecov](https://codecov.io/gh/salilab/pmi/branch/legacy-pmi1/graph/badge.svg)](https://codecov.io/gh/salilab/pmi/branch/legacy-pmi1)
 
 This module contains an older version of the PMI module (PMI1)
 to support legacy published applications. It is no longer under active

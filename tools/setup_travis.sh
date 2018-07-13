@@ -31,18 +31,18 @@ conda create --yes -q -n python${python_version} -c salilab python=${python_vers
 source activate python${python_version}
 pip install coverage
 
-# Replace PMI in IMP with that from git
+# Replace PMI1 in IMP with that from git
 IMP_PATH=$(echo "import IMP, sys, os; sys.stdout.write(os.path.dirname(IMP.__file__))" | python)
 cd ${IMP_PATH}
-mv pmi pmi.orig
-cp -sr ${pmi_dir}/pyext/src pmi
-cp pmi.orig/__init__.py pmi.orig/_version_check.py pmi/
+mv pmi1 pmi1.orig
+cp -sr ${pmi_dir}/pyext/src pmi1
+cp pmi1.orig/__init__.py pmi1.orig/_version_check.py pmi1/
 
-# Also replace PMI examples, since some tests use data from them
-EXAMPLE_PATH=$(echo "import IMP.pmi, sys; sys.stdout.write(IMP.pmi.get_example_path('..'))" | python)
+# Also replace PMI1 examples, since some tests use data from them
+EXAMPLE_PATH=$(echo "import IMP.pmi1, sys; sys.stdout.write(IMP.pmi1.get_example_path('..'))" | python)
 cd ${EXAMPLE_PATH}
-mv pmi pmi.orig
-cp -sr ${pmi_dir}/examples pmi
+mv pmi1 pmi1.orig
+cp -sr ${pmi_dir}/examples pmi1
 
 # IMP tests use sys.argv[0] to determine their location, which won't work if
 # we use nosetests, so add a workaround

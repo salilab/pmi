@@ -1,3 +1,12 @@
+%pythoncode %{
+
+IMP.deprecated_module('2.10', __name__,
+        "This module is provided to support legacy published applications "
+        "of IMP - it is no longer developed and should not be used for "
+        "new systems. Use the IMP.pmi module instead.")
+
+%}
+
 IMP_SWIG_OBJECT(IMP::pmi1, CompositeRestraint, CompositeRestraints);
 IMP_SWIG_DECORATOR(IMP::pmi1, Uncertainty, Uncertainties);
 IMP_SWIG_DECORATOR(IMP::pmi1, Resolution, Resolutions);
@@ -6,13 +15,3 @@ IMP_SWIG_OBJECT(IMP::pmi1, SigmoidRestraintSphere, SigmoidRestraintSpheres);
 IMP_SWIG_OBJECT(IMP::pmi1, TransformMover, TransformMovers);
 IMP_SWIG_OBJECT(IMP::pmi1, MembraneRestraint, MembraneRestraints);
 IMP_SWIG_OBJECT(IMP::pmi1, InternalCoordinatesConstraint, InternalCoordinatesConstraints);
-
-%include "IMP/pmi1/MembraneRestraint.h"
-%include "IMP/pmi1/CompositeRestraint.h"
-%include "IMP/pmi1/Uncertainty.h"
-%include "IMP/pmi1/Resolution.h"
-%include "IMP/pmi1/Symmetric.h"
-%include "IMP/pmi1/SigmoidRestraintSphere.h"
-%include "IMP/pmi1/TransformMover.h"
-%include "IMP/pmi1/utilities.h"
-%include "IMP/pmi1/InternalCoordinatesConstraint.h"

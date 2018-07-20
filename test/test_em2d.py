@@ -12,7 +12,8 @@ class Tests(IMP.test.TestCase):
             import IMP.em2d
         except:
             self.skipTest("No EM2D module")
-        import IMP.pmi1.restraints.em2d
+        with IMP.allow_deprecated():
+            import IMP.pmi1.restraints.em2d
 
 if __name__ == '__main__':
     IMP.test.main()

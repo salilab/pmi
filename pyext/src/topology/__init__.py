@@ -1,10 +1,10 @@
 """@namespace IMP.pmi.topology
-Set of python classes to create a multi-state, multi-resolution IMP hierarchy.
+ of python classes to create a multi-state, multi-resolution IMP hierarchy.
 * Start by creating a System with `model = IMP.Model(); s = IMP.pmi.topology.System(model)`. The System will store all the states.
-* Then call System.create_state(). You can easily create a multistate system by calling this function multiples times.
+* Then call System.create_state(). You can easily create a multistate system by calling this function multiple times.
 * For each State, call State.create_molecule() to add a Molecule (a uniquely named polymer). This function returns the Molecule object which can be passed to various PMI functions.
 * Some useful functions to help you set up your Molecules:
- * Access the sequence residues with slicing (Molecule[a:b]) or functions like Molecule.get_atomic_residues() and Molecule.get_non_atomic_residues(). These functions all return python sets for easy set arithmetic using & (and), | (or), - (difference)
+ * Access the sequence residues with slicing (Molecule[a:b]) or functions like Molecule.get_atomic_residues() and Molecule.get_non_atomic_residues(). These functions all return Python sets for easy set arithmetic using & (and), | (or), - (difference)
  * Molecule.add_structure() to add structural information from a PDB file.
  * Molecule.add_representation() to create a representation unit - here you can choose bead resolutions as well as alternate representations like densities or ideal helices.
  * Molecule.create_clone() lets you set up a molecule with identical representations, just a different chain ID. Use Molecule.create_copy() if you want a molecule with the same sequence but that allows custom representations.
@@ -924,7 +924,7 @@ def fasta_pdb_alignments(fasta_sequences,pdb_sequences,show=False):
     @param pdb_sequences IMP.pmi.topology.PDBSequences object
     @param show boolean default False, if True prints the alignments.
     The input objects should be generated using map_name dictionaries such that fasta_id
-    and pdb_chain_id are mapping to the same protein name. It needs Biopython.
+    and pdb_chain_id are mapping to the same protein name. It needs BioPython.
     Returns a dictionary of offsets, organized by peptide range (group):
     example: offsets={"ProtA":{(1,10):1,(20,30):10}}'''
     from Bio import pairwise2

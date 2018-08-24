@@ -39,7 +39,7 @@ cp -sr ${pmi_dir}/pyext/src pmi1
 cp pmi1.orig/__init__.py pmi1.orig/_version_check.py pmi1/
 
 # Also replace PMI1 examples, since some tests use data from them
-EXAMPLE_PATH=$(echo "import IMP.pmi1, sys; sys.stdout.write(IMP.pmi1.get_example_path('..'))" | python)
+EXAMPLE_PATH=$(echo "import IMP.pmi1, sys; sys.stdout.write(IMP.pmi1.get_example_path('..'))" | python | tail -1)
 cd ${EXAMPLE_PATH}
 mv pmi1 pmi1.orig
 cp -sr ${pmi_dir}/examples pmi1

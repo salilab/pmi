@@ -840,6 +840,32 @@ class Tests(IMP.test.TestCase):
         built_sequence = [IMP.atom.Residue(p).get_residue_type() for p in ps]
         self.assertEqual(expect_sequence, built_sequence)
 
+    def test_ideal_helix_non_contiguous(self):
+        """Test handling of non-contiguous range for build_ideal_helix"""
+        model = IMP.Model()
+        s = IMP.pmi.topology.System(model)
+        st1 = s.create_state()
+        m1 = st1.create_molecule("Prot1", sequence='A' *25)
+        m1.add_representation(m1[0:10] | m1[11:20],
+                              resolutions=[10],
+                              ideal_helix=True)
+        self.assertRaises(ValueError, s.build)
+
+    def test_ideal_helix_already_structure(self):
+        """build_ideal_helix() should fail if a residue is structured"""
+        model = IMP.Model()
+        s = IMP.pmi.topology.System(model)
+        st1 = s.create_state()
+        seqs = IMP.pmi.topology.Sequences(
+                              self.get_input_file_name('seqs.fasta'))
+        m1 = st1.create_molecule("Prot1", sequence=seqs["Protein_1"])
+        atomic_res = m1.add_structure(self.get_input_file_name('prot.pdb'),
+                                      chain_id='A',res_range=(55,63),offset=-54)
+        m1.add_representation(m1[0:10] | m1[11:20],
+                              resolutions=[10],
+                              ideal_helix=True)
+        self.assertRaises(ValueError, s.build)
+
     def test_ideal_helix(self):
         """Test you can build an ideal helix"""
         try:

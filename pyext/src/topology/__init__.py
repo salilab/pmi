@@ -41,10 +41,11 @@ def _build_ideal_helix(model, residues, coord_finder):
     # this function creates a CAlpha helix structure (which can be used for coarsening)
     for n, tempres in enumerate(residues):
         if tempres.get_has_structure():
-            raise Exception("You tried to build ideal_helix for a residue "
-                            "that already has structure:",tempres)
-        if n>0 and (not tempres.get_index()==prev_idx+1):
-            raise Exception("Passed non-contiguous segment to build_ideal_helix for",tempres.get_molecule())
+            raise ValueError("You tried to build ideal_helix for a residue "
+                             "that already has structure: %s" % tempres)
+        if n > 0 and tempres.get_index() != prev_idx + 1:
+            raise ValueError("Passed non-contiguous segment to "
+                      "build_ideal_helix for %s" % tempres.get_molecule())
 
         # New residue particle will replace the TempResidue's existing (empty) hierarchy
         rp = IMP.Particle(model)

@@ -203,31 +203,29 @@ class State(_SystemBase):
         are the list of all copies of that molecule in setup order"""
         return self.molecules
 
-    def get_molecule(self,name,copy_num=0):
+    def get_molecule(self, name, copy_num=0):
         """Access a molecule by name and copy number
         @param name The molecule name used during setup
         @param copy_num The copy number based on input order.
         Default: 0. Set to 'all' to get all copies
         """
         if name not in self.molecules:
-            raise Exception("get_molecule() could not find molname",name)
-        if copy_num=='all':
+            raise KeyError("Could not find molname %s" % name)
+        if copy_num == 'all':
             return self.molecules[name]
         else:
-            if copy_num>len(self.molecules[name])-1:
-                raise Exception("get_molecule() copy number is too high:",copy_num)
             return self.molecules[name][copy_num]
 
-    def create_molecule(self,name,sequence='',chain_id='',is_nucleic=None):
+    def create_molecule(self, name, sequence='', chain_id='', is_nucleic=None):
         """Create a new Molecule within this State
-        @param name                the name of the molecule (string) it must not
-                                   be already used
+        @param name                the name of the molecule (string);
+                                   it must not be already used
         @param sequence            sequence (string)
         @param chain_id            Chain id to assign to this molecule
         """
         # check whether the molecule name is already assigned
         if name in self.molecules:
-            raise Exception('Cannot use a molecule name already used')
+            raise ValueError('Cannot use a molecule name already used')
 
         mol = Molecule(self,name,sequence,chain_id,copy_num=0,is_nucleic=is_nucleic)
         self.molecules[name] = [mol]
@@ -241,8 +239,6 @@ class State(_SystemBase):
 
     def _register_copy(self,molecule):
         molname = molecule.get_hierarchy().get_name()
-        if molname not in self.molecules:
-            raise Exception("Trying to add a copy when the original doesn't exist!")
         self.molecules[molname].append(molecule)
 
     def build(self,**kwargs):
@@ -318,7 +314,7 @@ class Molecule(_SystemBase):
         elif isinstance(val,slice):
             return IMP.pmi.tools.OrderedSet(self.residues[val])
         else:
-            print("ERROR: range ends must be int or str. Stride must be int.")
+            raise TypeError("Indexes must be int or str")
 
     def get_hierarchy(self):
         """Return the IMP Hierarchy corresponding to this Molecule"""
@@ -344,7 +340,8 @@ class Molecule(_SystemBase):
         elif isinstance(a,str) and isinstance(b,str) and isinstance(stride,int):
             return IMP.pmi.tools.OrderedSet(self.residues[int(a)-1:int(b):stride])
         else:
-            print("ERROR: range ends must be int or str. Stride must be int.")
+            raise TypeError("Range ends must be int or str. "
+                            "Stride must be int.")
 
     def get_residues(self):
         """ Return all modeled TempResidues as a set"""
@@ -411,7 +408,7 @@ class Molecule(_SystemBase):
         \note If you are adding structure without a FASTA file, set soft_check to True
         """
         if self.mol_to_clone is not None:
-            raise Exception('You cannot call add_structure() for a clone')
+            raise ValueError('You cannot call add_structure() for a clone')
 
         self.pdb_fn = pdb_fn
 
@@ -503,8 +500,8 @@ class Molecule(_SystemBase):
 
         # can't customize clones
         if self.mol_to_clone is not None:
-            raise Exception('You cannot call add_representation() for a clone.'
-                            'Maybe use a copy instead')
+            raise ValueError('You cannot call add_representation() for a clone.'
+                             ' Maybe use a copy instead.')
 
         # format input
         if residues is None:

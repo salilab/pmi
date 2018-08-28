@@ -166,6 +166,8 @@ class DistanceRestraint(IMP.pmi.restraints.RestraintBase):
                                        particles2[0]))
 
 
+@IMP.deprecated_object(2.10,
+        "If you use this class please let the PMI developers know.")
 class TorqueRestraint(IMP.Restraint):
     import math
     def __init__(self, m, objects, resolution, angular_tolerance,label='None'):

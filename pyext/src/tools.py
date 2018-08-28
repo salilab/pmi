@@ -149,29 +149,6 @@ class SetupSurface(object):
         return self.surface
 
 
-@IMP.deprecated_object(2.8,
-        "If you use this class please let the PMI developers know.")
-class ParticleToSampleFilter(object):
-    def __init__(self, sampled_objects):
-        self.sampled_objects=sampled_objects
-        self.filters=[]
-
-    def add_filter(self,filter_string):
-        self.filters.append(filter_string)
-
-    def get_particles_to_sample(self):
-        particles_to_sample={}
-        for so in self.sampled_objects:
-            ps_dict=so.get_particles_to_sample()
-            for key in ps_dict:
-                for f in self.filters:
-                    if f in key:
-                        if key not in particles_to_sample:
-                            particles_to_sample[key]=ps_dict[key]
-                        else:
-                            particles_to_sample[key]+=ps_dict[key]
-        return particles_to_sample
-
 class ParticleToSampleList(object):
 
     def __init__(self, label="None"):

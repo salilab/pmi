@@ -2331,6 +2331,8 @@ def color2rgb(colorname):
          'yellow': (1.0, 1.0, 0.0)}
     return d[colorname]
 
+@IMP.deprecated_object(2.10,
+        "If you use this class please let the PMI developers know.")
 class Colors(object):
     def __init__(self):
         self.colors={

@@ -38,6 +38,25 @@ class Tests(IMP.test.TestCase):
         r = IMP.atom.get_by_type(hier, IMP.atom.RESIDUE_TYPE)[1]
         self.assertEqual(c[r], 'Nup84')
 
+    def test_hier_system_mapping(self):
+        """Test mapping from Hierarchy back to System"""
+        m = IMP.Model()
+        s = IMP.pmi.topology.System(m)
+        po = DummyPO(None)
+        s.add_protocol_output(po)
+        state = s.create_state()
+        hier = s.build()
+
+        # Check mapping from Hierarchy back to System
+        self.assertEqual(IMP.pmi.tools._get_system_for_hier(hier), s)
+        self.assertEqual(IMP.pmi.tools._get_system_for_hier(None), None)
+        # Check mapping from Hierarchy to ProtocolOutput
+        pos = list(IMP.pmi.tools._all_protocol_outputs([], hier))
+        # Should be a list of (ProtocolOuput, State) tuples
+        self.assertEqual(len(pos), 1)
+        self.assertEqual(len(pos[0]), 2)
+        self.assertEqual(pos[0][0], po)
+
     def test_entity(self):
         """Test EntityDump with PMI2-style init"""
         m = IMP.Model()

@@ -30,6 +30,7 @@ from . import system_tools
 from bisect import bisect_left
 from math import pi,cos,sin
 from operator import itemgetter
+import weakref
 
 def _build_ideal_helix(model, residues, coord_finder):
     """Creates an ideal helix from the specified residue range
@@ -119,6 +120,7 @@ class System(_SystemBase):
         # the root hierarchy node
         self.hier=self._create_hierarchy()
         self.hier.set_name(name)
+        self.hier._pmi2_system = weakref.ref(self)
 
     def get_states(self):
         return self.states

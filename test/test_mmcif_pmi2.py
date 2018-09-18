@@ -24,6 +24,20 @@ class Tests(IMP.test.TestCase):
         d = ihm.dumper._StructAsymDumper()
         d.finalize(system)
 
+    def test_component_mapper(self):
+        """Test ComponentMapper with PMI2 topology"""
+        m = IMP.Model()
+        s = IMP.pmi.topology.System(m)
+        po = DummyPO(None)
+        s.add_protocol_output(po)
+        state = s.create_state()
+        nup84 = state.create_molecule("Nup84", "MELS", "A")
+        nup84.add_representation(resolutions=[1])
+        hier = s.build()
+        c = IMP.pmi.mmcif._ComponentMapper(hier)
+        r = IMP.atom.get_by_type(hier, IMP.atom.RESIDUE_TYPE)[1]
+        self.assertEqual(c[r], 'Nup84')
+
     def test_entity(self):
         """Test EntityDump with PMI2-style init"""
         m = IMP.Model()

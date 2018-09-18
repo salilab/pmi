@@ -67,8 +67,13 @@ class _ComponentMapper(object):
         self.o._init_dictchain(self.name, self.prot, multichar_chain=True)
 
     def __getitem__(self, p):
-        protname, is_a_bead = self.o.get_prot_name_from_particle(self.name, p)
-        return protname
+        if self.o.use_pmi2:
+            # todo: handle copy numbers correctly for PMI2
+            return IMP.atom.get_molecule_name(p)
+        else:
+            protname, is_a_bead = self.o.get_prot_name_from_particle(
+                                                             self.name, p)
+            return protname
 
 
 class _AsymMapper(object):

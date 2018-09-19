@@ -89,7 +89,7 @@ class Tests(IMP.test.TestCase):
         s.add_protocol_output(po)
         po.flush(format='BCIF')
         self.assertEqual(fh.data[b'dataBlocks'][0][b'categories'][0][b'name'],
-                         '_entry')
+                         b'_entry')
 
     def test_entity(self):
         """Test EntityDump with PMI2-style init"""

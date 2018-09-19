@@ -1244,9 +1244,12 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
                     if hasattr(r, 'add_fits_from_model_statfile'):
                         r.add_fits_from_model_statfile(m)
 
-    def flush(self):
+    def flush(self, format='mmCIF'):
+        """Write out all information to the file.
+           Information can be written in any format supported by
+           the ihm library (typically this is 'mmCIF' or 'BCIF')."""
         self.finalize()
-        ihm.dumper.write(self.fh, [self.system])
+        ihm.dumper.write(self.fh, [self.system], format)
 
     def finalize(self):
         """Do any final processing on the class hierarchy.

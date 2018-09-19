@@ -11,6 +11,16 @@ if sys.version_info[0] >= 3:
 else:
     from io import BytesIO as StringIO
 
+class MockMsgPack(object):
+    @staticmethod
+    def pack(data, fh):
+        fh.data = data
+
+
+class MockFh(object):
+    pass
+
+
 class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
     def flush(self):
         pass
@@ -56,6 +66,30 @@ class Tests(IMP.test.TestCase):
         self.assertEqual(len(pos), 1)
         self.assertEqual(len(pos[0]), 2)
         self.assertEqual(pos[0][0], po)
+
+    def test_finalize_flush_mmcif(self):
+        """Test ProtocolOutput.finalize() and .flush() with mmCIF output"""
+        m = IMP.Model()
+        s = IMP.pmi.topology.System(m)
+        fh = StringIO()
+        po = IMP.pmi.mmcif.ProtocolOutput(fh)
+        s.add_protocol_output(po)
+        po.flush()
+        self.assertEqual(fh.getvalue().split('\n')[:4],
+                         ['data_model', '_entry.id model',
+                          '_struct.entry_id model', '_struct.title .'])
+
+    def test_finalize_flush_bcif(self):
+        """Test ProtocolOutput.finalize() and .flush() with BinaryCIF output"""
+        m = IMP.Model()
+        s = IMP.pmi.topology.System(m)
+        fh = MockFh()
+        sys.modules['msgpack'] = MockMsgPack
+        po = IMP.pmi.mmcif.ProtocolOutput(fh)
+        s.add_protocol_output(po)
+        po.flush(format='BCIF')
+        self.assertEqual(fh.data[b'dataBlocks'][0][b'categories'][0][b'name'],
+                         '_entry')
 
     def test_entity(self):
         """Test EntityDump with PMI2-style init"""

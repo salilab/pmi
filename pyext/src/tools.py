@@ -41,7 +41,7 @@ def _all_protocol_outputs(representations, root_hier):
                 for p in state._protocol_output:
                     yield p
     else:
-        for p in representation[0]._protocol_output:
+        for p in representations[0]._protocol_output:
             yield p
 
 def _add_pmi_provenance(p):

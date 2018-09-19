@@ -558,7 +558,7 @@ class ReplicaExchange0(object):
             if self.vars["replica_exchange_swap"]:
                 rex.swap_temp(i, score)
         for p, state in IMP.pmi.tools._all_protocol_outputs(
-                            self.representation,
+                            [self.representation],
                             self.root_hier if self.pmi2 else None):
             p.add_replica_exchange(state, self)
 

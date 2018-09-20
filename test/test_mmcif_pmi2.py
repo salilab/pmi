@@ -46,7 +46,7 @@ class Tests(IMP.test.TestCase):
         hier = s.build()
         c = IMP.pmi.mmcif._ComponentMapper(hier)
         r = IMP.atom.get_by_type(hier, IMP.atom.RESIDUE_TYPE)[1]
-        self.assertEqual(c[r], 'Nup84')
+        self.assertEqual(c[r], 'Nup84.0')
 
     def test_hier_system_mapping(self):
         """Test mapping from Hierarchy back to System"""

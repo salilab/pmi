@@ -310,7 +310,7 @@ class _CrossLinkRestraint(ihm.restraint.CrossLinkRestraint):
     def _set_psi_sigma(self, model):
         old_values = []
         # Do nothing if given a different state than the restraint applies to
-        if model.m != self.pmi_restraint.m:
+        if model.m != self.pmi_restraint.model:
             return
         for resolution in self.pmi_restraint.sigma_dictionary:
             statname = 'ISDCrossLinkMS_Sigma_%s_%s' % (resolution, self.label)

@@ -98,7 +98,7 @@ class _AsymMapper(object):
                 rngs.append(asym(rinds[0], rinds[-1]))
             else:
                 raise ValueError("Unsupported particle type %s" % str(p))
-        return ihm.restraint.PolyResidueFeature(rngs)
+        return ihm.restraint.ResidueFeature(rngs)
 
 
 class _AllSoftware(object):

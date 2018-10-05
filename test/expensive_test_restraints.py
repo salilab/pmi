@@ -19,8 +19,8 @@ class Tests(IMP.test.TestCase):
     def test_restraints(self):
         """Test PMI restraints"""
         # input parameter
-        pdbfile = IMP.pmi.get_data_path("1WCM.pdb")
-        fastafile = IMP.pmi.get_data_path("1WCM.fasta.txt")
+        pdbfile = self.get_input_file_name("1WCM.pdb")
+        fastafile = self.get_input_file_name("1WCM.fasta.txt")
 
         components = ["Rpb3", "Rpb3.copy", "Rpb4"]
 

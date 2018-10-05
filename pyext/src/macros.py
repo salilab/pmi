@@ -809,7 +809,8 @@ creating super rigid body with max_trans %s max_rot %s " \
                 self.dof.create_main_chain_mover(all_res)
         return self.root_hier,self.dof
 
-@IMP.deprecated_object("2.5", "Use BuildSystem instead")
+@IMP.pmi.deprecated_pmi1_object("2.5",
+                                "use IMP.pmi.macros.BuildSystem instead")
 class BuildModel(object):
     """A macro to build a Representation based on a Topology and lists of movers
     DEPRECATED - Use BuildSystem instead.

@@ -59,7 +59,8 @@ class Tests(IMP.test.TestCase):
             self.skipTest("no matplotlib module")
         cldb=self.init_crosslink_db()
         self.init_representation_complex()
-        xlt=IMP.pmi.io.xltable.XLTable(35)
+        with IMP.allow_deprecated():
+            xlt=IMP.pmi.io.xltable.XLTable(35)
         prots = ["Rpb1","Rpb2","Rpb3","Rpb4"]
         chains = "ABCD"
         for n,prot in enumerate(prots):

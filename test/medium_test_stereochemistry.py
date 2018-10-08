@@ -154,7 +154,8 @@ class Tests(IMP.test.TestCase):
         fastids = IMP.pmi.tools.get_ids_from_fasta_file(fastafile)
 
         m = IMP.Model()
-        simo = IMP.pmi.representation.Representation(m)
+        with IMP.allow_deprecated():
+            simo = IMP.pmi.representation.Representation(m)
 
         simo.create_component(comps[0], color=colors[0])
         simo.add_component_sequence(comps[0], fastafile, id=fastids[0])

@@ -33,7 +33,8 @@ class Tests(IMP.test.TestCase):
         import shutil
         import itertools
         m=IMP.Model()
-        r=IMP.pmi.representation.Representation(m)
+        with IMP.allow_deprecated():
+            r=IMP.pmi.representation.Representation(m)
         r.create_component("A")
         r.add_component_beads("A",[(1,1),(2,2)])
         ps=IMP.atom.get_leaves(r.prot)
@@ -170,7 +171,8 @@ class Tests(IMP.test.TestCase):
         import shutil
         import itertools
         m=IMP.Model()
-        r=IMP.pmi.representation.Representation(m)
+        with IMP.allow_deprecated():
+            r=IMP.pmi.representation.Representation(m)
         r.create_component("A")
         r.add_component_beads("A",[(1,1),(2,2)])
         ps=IMP.atom.get_leaves(r.prot)

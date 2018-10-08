@@ -27,7 +27,8 @@ class Tests(IMP.test.TestCase):
 
 
         m = IMP.Model()
-        simo = IMP.pmi.representation.Representation(m)
+        with IMP.allow_deprecated():
+            simo = IMP.pmi.representation.Representation(m)
 
 
         simo.create_component("Rpb1", color=colors[0])

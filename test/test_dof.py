@@ -151,6 +151,8 @@ class Tests(IMP.test.TestCase):
         mdl = IMP.Model()
         s,molecule = self.init_topology1(mdl)
         dof = IMP.pmi.dof.DegreesOfFreedom(mdl)
+        # Test do-nothing if no rigid parts were passed
+        self.assertEqual(dof.create_rigid_body([], [], name='test RB'), [])
         rb_movers,rb = dof.create_rigid_body(molecule,
                                              nonrigid_parts = molecule.get_non_atomic_residues(),
                                              name="test RB")
@@ -549,7 +551,7 @@ class Tests(IMP.test.TestCase):
             c3 = inverse_sym_trans*IMP.core.XYZ(p3).get_coordinates()
             for i in range(3):
                 self.assertAlmostEqual(c1[i],c3[i])
-        
+
         #srb = dof.create_super_rigid_body([m1,m2])   # should be OK
         #srb = dof.create_super_rigid_body([m3,m4])   # should raise exception
 

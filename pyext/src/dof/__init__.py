@@ -103,10 +103,10 @@ class DegreesOfFreedom(object):
                                                 resolution,
                                                 flatten=True)
 
-            model=hiers[0].get_model()
             if not hiers:
                 print("WARNING: No hierarchies were passed to create_rigid_body()")
                 return []
+            model=hiers[0].get_model()
 
             #we need to use the following constructor because the IMP.core.create_rigid_body seems
             #to construct an arbitrary reference frame, which will be different for all copies.

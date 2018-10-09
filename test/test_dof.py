@@ -156,6 +156,8 @@ class Tests(IMP.test.TestCase):
         rb_movers,rb = dof.create_rigid_body(molecule,
                                              nonrigid_parts = molecule.get_non_atomic_residues(),
                                              name="test RB")
+        self.assertEqual(rb.get_name(), "test RB")
+        self.assertEqual(rb_movers[0].get_name(), "test RB")
         mvs = dof.get_movers()
         self.assertEqual(len(rb_movers),4)
         all_members = rb.get_member_indexes()
@@ -597,12 +599,16 @@ class Tests(IMP.test.TestCase):
         em_rb.set_coordinates_are_optimized(False)
 
         dof = IMP.pmi.dof.DegreesOfFreedom(mdl)
-        dof.create_rigid_body(em_rb)
+        movers, rb = dof.create_rigid_body(em_rb)
+        # Check assigning of names to existing rigid bodies
+        self.assertEqual(movers[0].get_name(), 'created rigid body')
+        movers, rb = dof.create_rigid_body(em_rb, name='foo')
+        self.assertEqual(movers[0].get_name(), 'foo')
 
         self.assertTrue(em_rb in dof.get_rigid_bodies())
-        self.assertEqual(len(dof.get_rigid_bodies()), 1)
+        self.assertEqual(len(dof.get_rigid_bodies()), 2)
         self.assertTrue(em_rb.get_coordinates_are_optimized())
-        self.assertEqual(len(dof.get_movers()), 1)
+        self.assertEqual(len(dof.get_movers()), 2)
 
     def test_rex_multistate(self):
         """Test you can do multi-state replica exchange"""

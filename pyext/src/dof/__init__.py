@@ -115,7 +115,7 @@ class DegreesOfFreedom(object):
             print("WARNING: Rigid Body Already Setup")
             rb = rigid_parts
             model=rb.get_model()
-            if name is not None:
+            if name is None:
                 name = rb.get_name()
             hiers= [IMP.atom.get_leaves(IMP.atom.Hierarchy(m.get_particle(i)))[0] for i in rb.get_member_particle_indexes()]
         else:

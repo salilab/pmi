@@ -260,6 +260,9 @@ class Tests(IMP.test.TestCase):
         mdl = IMP.Model()
         s,mols = self.init_topology3(mdl)
         dof = IMP.pmi.dof.DegreesOfFreedom(mdl)
+        # Nonrigid parts must be part of the rigid parts
+        self.assertRaises(ValueError, dof.create_rigid_body,
+                          mols[0], nonrigid_parts=mols[1])
         mvs,rb = dof.create_rigid_body([mols[0][:4],mols[1][:]],
                                     nonrigid_parts=mols[0][2:4])
         self.assertEqual(len(mvs),3)

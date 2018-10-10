@@ -79,6 +79,23 @@ class DegreesOfFreedom(object):
     def mdl(self):
         return self.model
 
+    def _get_nonrigid_hiers(self, nonrigid_parts, rigid_hiers, resolution):
+        """Get Hierarchy objects for nonrigid parts. Make sure that they are
+           a subset of the rigid body Hierarchies."""
+        if not nonrigid_parts:
+            return
+        nr_hiers = IMP.pmi.tools.input_adaptor(nonrigid_parts, resolution,
+                                               flatten=True)
+        if nr_hiers:
+            rb_idxs = set(h.get_particle_index() for h in rigid_hiers)
+            for h in nr_hiers:
+                p = h.get_particle()
+                if p.get_index() not in rb_idxs:
+                    raise ValueError(
+                                "You tried to create nonrigid members from "
+                                "particles that aren't in the RigidBody!")
+        return nr_hiers
+
     def create_rigid_body(self,
                           rigid_parts,
                           nonrigid_parts=None,
@@ -127,6 +144,12 @@ class DegreesOfFreedom(object):
             if not hiers:
                 print("WARNING: No hierarchies were passed to create_rigid_body()")
                 return []
+
+        # Need to do this before rigid body is set up so that we leave the
+        # system in a consistent state if a sanity check fails
+        nr_hiers = self._get_nonrigid_hiers(nonrigid_parts, hiers, resolution)
+
+        if type(rigid_parts) is not IMP.core.RigidBody:
             model=hiers[0].get_model()
 
             #we need to use the following constructor because the IMP.core.create_rigid_body seems
@@ -156,31 +179,22 @@ class DegreesOfFreedom(object):
         for h in hiers:
             self.movers_particles_map[rb_mover]+=IMP.atom.get_leaves(h)
         ### setup nonrigid parts
-        if nonrigid_parts:
-            nr_hiers = IMP.pmi.tools.input_adaptor(nonrigid_parts,
-                                                   resolution,
-                                                   flatten=True)
-            if nr_hiers:
-                floatkeys = [IMP.FloatKey(4), IMP.FloatKey(5), IMP.FloatKey(6)]
-                rb_idxs = set(rb.get_member_indexes())
-                for h in nr_hiers:
-                    self.flexible_beads.append(h)
-                    p = h.get_particle()
-                    if not p.get_index() in rb_idxs:
-                        raise Exception("You tried to create nonrigid members from "
-                                         "particles that aren't in the RigidBody!")
-
-                    rb.set_is_rigid_member(p.get_index(),False)
-                    for fk in floatkeys:
-                        p.set_is_optimized(fk,True)
-                    fbmv=IMP.core.BallMover(p.get_model(), p,
-                                            IMP.FloatKeys(floatkeys),
-                                            nonrigid_max_trans)
-                    self.fb_movers.append(fbmv)
-                    self.movers_particles_map[fbmv]=IMP.atom.get_leaves(h)
-                    self.movers_xyz_map[fbmv]=IMP.atom.get_leaves(h)
-                    fbmv.set_was_used(True)
-                    rb_movers.append(fbmv)
+        if nr_hiers:
+            floatkeys = [IMP.FloatKey(4), IMP.FloatKey(5), IMP.FloatKey(6)]
+            for h in nr_hiers:
+                self.flexible_beads.append(h)
+                p = h.get_particle()
+                rb.set_is_rigid_member(p.get_index(),False)
+                for fk in floatkeys:
+                    p.set_is_optimized(fk,True)
+                fbmv=IMP.core.BallMover(p.get_model(), p,
+                                        IMP.FloatKeys(floatkeys),
+                                        nonrigid_max_trans)
+                self.fb_movers.append(fbmv)
+                self.movers_particles_map[fbmv]=IMP.atom.get_leaves(h)
+                self.movers_xyz_map[fbmv]=IMP.atom.get_leaves(h)
+                fbmv.set_was_used(True)
+                rb_movers.append(fbmv)
 
         self.movers += rb_movers # probably need to store more info
         self._rb2mov[rb] = rb_movers #dictionary relating rb to movers

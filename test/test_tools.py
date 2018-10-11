@@ -376,6 +376,17 @@ class Tests(IMP.test.TestCase):
         densities = IMP.pmi.tools.get_densities(IMP.atom.get_leaves(hier))
         self.assertEqual(densities,densities_test)
 
+    def test_input_adaptor_warn_slices(self):
+        """Test that input adaptor warn_about_slices behavior"""
+        mdl = IMP.Model()
+        s = IMP.pmi.topology.System(mdl)
+        st1 = s.create_state()
+
+        m1 = st1.create_molecule("Prot1", sequence='ACGH')
+        m1.add_representation(m1[:],resolutions=[10])
+        hier = s.build()
+        t = IMP.pmi.tools.input_adaptor(m1[0:2], pmi_resolution=1)
+
     def test_input_adaptor_pmi(self):
         """Test that input adaptor correctly performs selection"""
         mdl = IMP.Model()

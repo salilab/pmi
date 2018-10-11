@@ -1635,10 +1635,11 @@ def input_adaptor(stuff,
     @param pmi_resolution For selecting, only does it if you pass PMI objects. Set it to "all"
           if you want all resolutions!
     @param flatten Set to True if you just want all hierarchies in one list.
-    @param warn_about_slices Print a warning if you are requesting only part of a bead.
-           Sometimes you just don't care!
-    \note since this relies on IMP::atom::Selection, this will not return any objects if they weren't built!
-    But there should be no problem if you request unbuilt residues, they should be ignored.
+    @param warn_about_slices Print a warning if you are requesting only part
+           of a bead. Sometimes you just don't care!
+    @note since this relies on IMP::atom::Selection, this will not return
+          any objects if they weren't built! But there should be no problem
+          if you request unbuilt residues - they should be ignored.
     """
 
     if stuff is None:
@@ -1693,7 +1694,7 @@ def input_adaptor(stuff,
         elif is_molecule:
             for molecule in stuff:
                 indexes_per_mol[molecule] += [r.get_index() for r in molecule.get_residues()]
-        elif is_temp_residue:
+        else: # is_temp_residue
             for tempres in stuff:
                 indexes_per_mol[tempres.get_molecule()].append(tempres.get_index())
         for mol in indexes_per_mol:
@@ -1715,7 +1716,6 @@ def input_adaptor(stuff,
                     if IMP.atom.Fragment.get_is_setup(p):
                         fset = set(IMP.atom.Fragment(p).get_residue_indexes())
                         if not fset <= rset:
-                            print('BAD')
                             minset = min(fset)
                             maxset = max(fset)
                             found = fset&rset

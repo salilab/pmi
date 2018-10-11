@@ -49,5 +49,17 @@ class Tests(IMP.test.TestCase):
         os.unlink('top_2.rmf3')
         os.unlink('top_2.out')
 
+    def test_get_trajectory_models(self):
+        """Test get_trajectory_models()"""
+        m = IMP.Model()
+        stat_files = [self.get_input_file_name('ministat.out')]
+        score_key = "SimplifiedModel_Total_Score_None"
+
+        (rmfs, rmf_frames, scores) = IMP.pmi.io.get_trajectory_models(
+                                            stat_files, score_key=score_key)
+        self.assertEqual(len(rmfs), 3)
+        self.assertEqual(rmf_frames, [0,0,0])
+        self.assertEqual([int(x) for x in scores], [10, 20, 999])
+
 if __name__ == '__main__':
     IMP.test.main()

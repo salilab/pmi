@@ -903,6 +903,39 @@ class Tests(IMP.test.TestCase):
         self.assertRaises(KeyError, s.pop)
         self.assertEqual(len(s), 0)
 
+    def test_ordered_default_dict_none(self):
+        """Test OrderedDefaultDict class with None"""
+        self.assertRaises(TypeError, IMP.pmi.tools.OrderedDefaultDict, 42.0)
+        d = IMP.pmi.tools.OrderedDefaultDict(None)
+        self.assertNotIn('a', d)
+        d['a'] = 'b'
+        self.assertIn('a', d)
+        self.assertEqual(d['a'], 'b')
+        self.assertRaises(KeyError, lambda x: x['b'], d)
+        d['6'] = None
+        d['4'] = None
+        d['3'] = None
+        # Keys should be ordered
+        self.assertEqual(list(d.keys()), ['a', '6', '4', '3'])
+
+    def test_ordered_default_dict_list(self):
+        """Test OrderedDefaultDict class with list"""
+        d = IMP.pmi.tools.OrderedDefaultDict(list)
+        self.assertNotIn('a', d)
+        d['a'] = 'b'
+        self.assertIn('a', d)
+        self.assertEqual(d['a'], 'b')
+        self.assertNotIn('b', d)
+        # Test default value
+        self.assertEqual(d['b'], [])
+        cls, args, n1, n2, items = d.__reduce__()
+        self.assertEqual(list(items), [('a', 'b'), ('b', [])])
+        d['6'] = None
+        d['4'] = None
+        d['3'] = None
+        # Keys should be ordered
+        self.assertEqual(list(d.keys()), ['a', 'b', '6', '4', '3'])
+
 
 if __name__ == '__main__':
     IMP.test.main()

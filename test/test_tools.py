@@ -876,6 +876,33 @@ class Tests(IMP.test.TestCase):
         self.assertEqual([int(x) for x in cc.rgb('0114C8')], [1,20,200])
         self.assertEqual([int(x) for x in cc.rgb('0114c8')], [1,20,200])
 
+    def test_ordered_set(self):
+        """Test OrderedSet class"""
+        s = IMP.pmi.tools.OrderedSet((8,1,2,10,1,8))
+        self.assertEqual(list(s), [8, 1, 2, 10])
+        self.assertEqual(len(s), 4)
+        self.assertIn(8, s)
+        self.assertNotIn(80, s)
+        s.add(4)
+        self.assertIn(4, s)
+        self.assertEqual(len(s), 5)
+        self.assertEqual(list(s), [8, 1, 2, 10, 4])
+        s.add(8)
+        self.assertEqual(len(s), 5)
+        s.discard(8)
+        self.assertEqual(len(s), 4)
+        s.discard(8)
+        self.assertEqual(len(s), 4)
+        self.assertEqual(list(reversed(s)), [4, 10, 2, 1])
+        self.assertEqual(s, IMP.pmi.tools.OrderedSet((1,2,10,4)))
+        self.assertNotEqual(s, IMP.pmi.tools.OrderedSet((1,2,4,10)))
+        self.assertEqual(s.pop(False), 1)
+        self.assertEqual(s.pop(True), 4)
+        self.assertEqual(s.pop(), 10)
+        self.assertEqual(s.pop(), 2)
+        self.assertRaises(KeyError, s.pop)
+        self.assertEqual(len(s), 0)
+
 
 if __name__ == '__main__':
     IMP.test.main()

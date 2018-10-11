@@ -867,6 +867,15 @@ class Tests(IMP.test.TestCase):
         self.assertEqual(IMP.pmi.tools.flatten_list(inp),
                          ['a', 'b', 'c', 'd', 'e'])
 
+    def test_color_change(self):
+        """Test ColorChange class"""
+        cc = IMP.pmi.tools.ColorChange()
+        self.assertEqual(cc.triplet((1,20,200), 'x'), '0114c8')
+        self.assertEqual(cc.triplet((1,20,200)), '0114c8')
+        self.assertEqual(cc.triplet((1,20,200), 'X'), '0114C8')
+        self.assertEqual([int(x) for x in cc.rgb('0114C8')], [1,20,200])
+        self.assertEqual([int(x) for x in cc.rgb('0114c8')], [1,20,200])
+
 
 if __name__ == '__main__':
     IMP.test.main()

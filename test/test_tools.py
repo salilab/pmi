@@ -16,7 +16,40 @@ import IMP.pmi.restraints.crosslinking
 import IMP.pmi.macros
 import RMF
 import IMP.rmf
+import sys
 from math import *
+
+class MockCommunicator(object):
+    def __init__(self, numproc, rank):
+        self.size, self.rank = numproc, rank
+        # Data in transit from rank x to rank y; key is (x,y), value is data
+        self.sent_data = {}
+
+    def Get_rank(self):
+        return self.rank
+
+    def Barrier(self):
+        pass
+
+    def send(self, data, dest, tag):
+        k = (self.rank, dest)
+        if k not in self.sent_data:
+            self.sent_data[k] = []
+        self.sent_data[k].append(data)
+
+    def recv(self, source, tag):
+        return self.sent_data[(source, self.rank)].pop(0)
+
+
+class MockMPI(object):
+    def __init__(self, numproc, rank):
+        self.COMM_WORLD = MockCommunicator(numproc, rank)
+
+
+class MockMPI4Py(object):
+    def __init__(self, numproc, rank):
+        self.MPI = MockMPI(numproc, rank)
+
 
 class Tests(IMP.test.TestCase):
 
@@ -733,6 +766,75 @@ class Tests(IMP.test.TestCase):
 
         rs = IMP.pmi.tools.get_restraint_set(m, rmf=True)
         self.assertEqual(rs.get_number_of_restraints(), 1)
+
+    def test_scatter_and_gather_no_mpi_list_rank_0(self):
+        """Test scatter_and_gather of lists without using MPI, rank==0"""
+        mpi4py = MockMPI4Py(3, 0)
+        sys.modules['mpi4py'] = mpi4py
+        try:
+            # Simulate data from the other two processes
+            mpi4py.MPI.COMM_WORLD.sent_data[1, 0] = [[1,2]]
+            mpi4py.MPI.COMM_WORLD.sent_data[2, 0] = [[3,4]]
+            data = IMP.pmi.tools.scatter_and_gather([9,10])
+            self.assertEqual(data, [9,10,1,2,3,4])
+            self.assertEqual(mpi4py.MPI.COMM_WORLD.sent_data[0, 1], [data])
+            self.assertEqual(mpi4py.MPI.COMM_WORLD.sent_data[0, 2], [data])
+        finally:
+            del sys.modules['mpi4py']
+
+    def test_scatter_and_gather_no_mpi_bad_type_rank_0(self):
+        """Test scatter_and_gather of unsupported type without using MPI"""
+        mpi4py = MockMPI4Py(3, 0)
+        sys.modules['mpi4py'] = mpi4py
+        try:
+            # Simulate data from the other two processes
+            mpi4py.MPI.COMM_WORLD.sent_data[1, 0] = [[1,2]]
+            mpi4py.MPI.COMM_WORLD.sent_data[2, 0] = [[3,4]]
+            self.assertRaises(TypeError, IMP.pmi.tools.scatter_and_gather, 42.0)
+        finally:
+            del sys.modules['mpi4py']
+
+    def test_scatter_and_gather_no_mpi_dict_rank_0(self):
+        """Test scatter_and_gather of dicts without using MPI, rank==0"""
+        mpi4py = MockMPI4Py(3, 0)
+        sys.modules['mpi4py'] = mpi4py
+        try:
+            # Simulate data from the other two processes
+            mpi4py.MPI.COMM_WORLD.sent_data[1, 0] = [{'a':'b'}]
+            mpi4py.MPI.COMM_WORLD.sent_data[2, 0] = [{'c':'d'}]
+            data = IMP.pmi.tools.scatter_and_gather({'e':'f'})
+            self.assertEqual(data, {'a':'b', 'c':'d', 'e':'f'})
+            self.assertEqual(mpi4py.MPI.COMM_WORLD.sent_data[0, 1], [data])
+            self.assertEqual(mpi4py.MPI.COMM_WORLD.sent_data[0, 2], [data])
+        finally:
+            del sys.modules['mpi4py']
+
+    def test_scatter_and_gather_no_mpi_list_rank_1(self):
+        """Test scatter_and_gather of lists without using MPI, rank!=0"""
+        mpi4py = MockMPI4Py(3, 1)
+        sys.modules['mpi4py'] = mpi4py
+        try:
+            # Simulate data from rank==0
+            mpi4py.MPI.COMM_WORLD.sent_data[0, 1] = [[9,10,1,2,3,4]]
+            data = IMP.pmi.tools.scatter_and_gather([1,2])
+            self.assertEqual(data, [9,10,1,2,3,4])
+            self.assertEqual(mpi4py.MPI.COMM_WORLD.sent_data[1, 0], [[1,2]])
+        finally:
+            del sys.modules['mpi4py']
+
+    def test_scatter_and_gather_mpi(self):
+        """Test scatter_and_gather using MPI"""
+        try:
+            from mpi4py import MPI
+        except ImportError:
+            self.skipTest("No MPI support")
+        comm = MPI.COMM_WORLD
+        numproc = comm.size
+        rank = comm.Get_rank()
+        data = IMP.pmi.tools.scatter_and_gather([rank])
+        self.assertEqual(data, list(range(numproc)))
+        data = IMP.pmi.tools.scatter_and_gather({rank:'x'})
+        self.assertEqual(data, dict.fromkeys(range(numproc), 'x'))
 
 
 if __name__ == '__main__':

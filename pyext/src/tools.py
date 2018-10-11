@@ -1757,25 +1757,24 @@ def get_sorted_segments(mol):
     from operator import itemgetter
     hiers=IMP.pmi.tools.input_adaptor(mol)
     if len(hiers)>1:
-        raise Exception("IMP.pmi.tools.get_sorted_segments: only pass stuff from one Molecule, please")
+        raise ValueError("only pass stuff from one Molecule, please")
     hiers = hiers[0]
-    SortedSegments = []
+    segs = []
     for h in hiers:
         try:
             start = IMP.atom.Hierarchy(h).get_children()[0]
-        except:
+        except IndexError:
             start = IMP.atom.Hierarchy(h)
 
         try:
             end = IMP.atom.Hierarchy(h).get_children()[-1]
-        except:
+        except IndexError:
             end = IMP.atom.Hierarchy(h)
 
         startres = IMP.pmi.tools.get_residue_indexes(start)[0]
         endres = IMP.pmi.tools.get_residue_indexes(end)[-1]
-        SortedSegments.append((start, end, startres))
-    SortedSegments = sorted(SortedSegments, key=itemgetter(2))
-    return SortedSegments
+        segs.append((start, end, startres))
+    return sorted(segs, key=itemgetter(2))
 
 def display_bonds(mol):
     """Decorate the sequence-consecutive particles from a PMI2 molecule with a bond,

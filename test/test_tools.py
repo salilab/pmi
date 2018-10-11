@@ -376,6 +376,25 @@ class Tests(IMP.test.TestCase):
         densities = IMP.pmi.tools.get_densities(IMP.atom.get_leaves(hier))
         self.assertEqual(densities,densities_test)
 
+    def test_get_sorted_segments(self):
+        """Test get_sorted_segments()"""
+        mdl = IMP.Model()
+        s = IMP.pmi.topology.System(mdl)
+        st1 = s.create_state()
+
+        m1 = st1.create_molecule("Prot1", sequence='ACGHAC')
+        m1.add_representation(m1[:],resolutions=[1])
+        m2 = st1.create_molecule("Prot2", sequence='ACGHAC')
+        m2.add_representation(m2[:],resolutions=[10])
+        hier = s.build()
+        self.assertRaises(ValueError, IMP.pmi.tools.get_sorted_segments,
+                          [m1[1:2], m2[:]])
+        s = IMP.pmi.tools.get_sorted_segments([m1[1:2], m1[3:5]])
+        s = [(x[0].get_name(), x[1].get_name(), x[2]) for x in s]
+        self.assertEqual(s, [('2_bead', '2_bead', 2),
+                             ('4_bead', '4_bead', 4),
+                             ('5_bead', '5_bead', 5)])
+
     def test_input_adaptor_warn_slices(self):
         """Test that input adaptor warn_about_slices behavior"""
         mdl = IMP.Model()

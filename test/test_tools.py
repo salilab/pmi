@@ -614,6 +614,7 @@ class Tests(IMP.test.TestCase):
         self.assertEqual([IMP.atom.get_leaves(root)],hs)
 
     def test_Segments(self):
+        self.assertRaises(TypeError, IMP.pmi.tools.Segments, 42.0)
         s=IMP.pmi.tools.Segments(1)
         self.assertEqual(s.segs,[[1]])
         s=IMP.pmi.tools.Segments([1])
@@ -627,6 +628,7 @@ class Tests(IMP.test.TestCase):
         s=IMP.pmi.tools.Segments([1,2,3,5])
         self.assertEqual(s.segs,[[1,2,3],[5]])
         s.add(6)
+        self.assertRaises(TypeError, s.add, 42.0)
         self.assertEqual(s.segs,[[1,2,3],[5,6]])
         s.add(0)
         self.assertEqual(s.segs,[[0,1,2,3],[5,6]])
@@ -644,6 +646,14 @@ class Tests(IMP.test.TestCase):
         self.assertEqual(s.segs,[[-4,-3],[0,1],[3,4],[6]])
         s.add(-1)
         self.assertEqual(s.segs,[[-4,-3],[-1,0,1],[3,4],[6]])
+        s.remove(-4)
+        self.assertEqual(s.segs,[[-3],[-1,0,1],[3,4],[6]])
+        s.remove(1)
+        self.assertEqual(s.segs,[[-3],[-1,0],[3,4],[6]])
+        s.remove(6)
+        self.assertEqual(s.segs,[[-3],[-1,0],[3,4]])
+        self.assertEqual(s.get_flatten(), [-3,-1,0,3,4])
+        self.assertEqual(repr(s), '[-3--3,-1-0,3-4]')
 
     def assertEqualUnordered(self, a, b):
         """Compare two unordered lists; i.e. each list must have the

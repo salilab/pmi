@@ -1232,6 +1232,8 @@ class Segments(object):
             self.segs=[[index[0]]]
             for i in index[1:]:
                 self.add(i)
+        else:
+            raise TypeError("index must be an int or list of ints")
 
     def add(self,index):
         '''index can be a integer or a list of integers '''
@@ -1264,6 +1266,8 @@ class Segments(object):
         elif type(index) is list:
             for i in index:
                 self.add(i)
+        else:
+            raise TypeError("index must be an int or list of ints")
 
     def remove(self,index):
         '''index can be a integer'''

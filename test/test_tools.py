@@ -851,6 +851,12 @@ class Tests(IMP.test.TestCase):
         self.assertEqual(list(out),
                          [['a'], ['a', 'b'], ['b'], ['b', 'c'], ['c']])
 
+    def test_flatten_list(self):
+        """Test flatten_list()"""
+        inp = [['a', 'b', 'c'], ['d', 'e']]
+        self.assertEqual(IMP.pmi.tools.flatten_list(inp),
+                         ['a', 'b', 'c', 'd', 'e'])
+
 
 if __name__ == '__main__':
     IMP.test.main()

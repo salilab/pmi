@@ -2,6 +2,7 @@ import IMP
 import IMP.test
 import IMP.pmi
 import IMP.pmi.io
+import os
 
 class Tests(IMP.test.TestCase):
 
@@ -27,6 +28,26 @@ class Tests(IMP.test.TestCase):
         self.assertEqual(len(sses['helix']),121)
         self.assertEqual(len(sses['beta']),18)
         self.assertEqual(len(sses['loop']),183)
+
+    def test_save_best_models(self):
+        """Test save_best_models()"""
+        m = IMP.Model()
+        stat_files = [self.get_input_file_name('ministat.out')]
+        feature_keys = ['ISDCrossLinkMS_Distance_interrb']
+        score_key = "SimplifiedModel_Total_Score_None"
+
+        IMP.pmi.io.save_best_models(m, './', stat_files,
+                                    number_of_best_scoring_models=2,
+                                    score_key=score_key,
+                                    feature_keys=feature_keys)
+        # This makes a (deprecated) v1 statfile
+        with IMP.allow_deprecated():
+            po = IMP.pmi.output.ProcessOutput('top_2.out')
+        fields = po.get_fields([score_key])
+        self.assertEqual(len(fields[score_key]), 2)
+        self.assertAlmostEqual(float(fields[score_key][0]), 10.0, delta=0.1)
+        os.unlink('top_2.rmf3')
+        os.unlink('top_2.out')
 
 if __name__ == '__main__':
     IMP.test.main()

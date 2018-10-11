@@ -1606,7 +1606,11 @@ class OrderedDefaultDict(OrderedDict):
 
     def __reduce__(self):  # optional, for pickle support
         args = (self.default_factory,) if self.default_factory else ()
-        return self.__class__, args, None, None, self.iteritems()
+        if sys.version_info[0] >= 3:
+            return self.__class__, args, None, None, self.items()
+        else:
+            return self.__class__, args, None, None, self.iteritems()
+
 
 # -------------- PMI2 Tools --------------- #
 

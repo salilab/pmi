@@ -836,6 +836,21 @@ class Tests(IMP.test.TestCase):
         data = IMP.pmi.tools.scatter_and_gather({rank:'x'})
         self.assertEqual(data, dict.fromkeys(range(numproc), 'x'))
 
+    def test_sublist_iterator(self):
+        """Test sublist_iterator()"""
+        inp = ['a', 'b', 'c']
+        out = IMP.pmi.tools.sublist_iterator(inp)
+        self.assertEqual(list(out),
+                         [['a'], ['a', 'b'], ['a', 'b', 'c'],
+                          ['b'], ['b', 'c'], ['c']])
+
+        out = IMP.pmi.tools.sublist_iterator(inp, lmin=2)
+        self.assertEqual(list(out), [['a', 'b'], ['a', 'b', 'c'], ['b', 'c']])
+
+        out = IMP.pmi.tools.sublist_iterator(inp, lmax=2)
+        self.assertEqual(list(out),
+                         [['a'], ['a', 'b'], ['b'], ['b', 'c'], ['c']])
+
 
 if __name__ == '__main__':
     IMP.test.main()

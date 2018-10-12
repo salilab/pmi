@@ -567,6 +567,8 @@ def get_bead_sizes(model,rmf_tuple,rmsd_calculation_components=None,state_number
 
     return rmsd_bead_size_dict
 
+@IMP.deprecated_object(2.10,
+        "If you use this class please let the PMI developers know.")
 class RMSDOutput(object):
     """A helper output based on dist to initial coordinates"""
     def __init__(self,ps,label,init_coords=None):

@@ -1,10 +1,10 @@
 import IMP
 import IMP.benchmark
-import IMP.pmi.samplers
-import IMP.pmi.representation
-import IMP.pmi.restraints.basic
-import IMP.pmi.macros
-import IMP.pmi.output
+import IMP.pmi1.samplers
+import IMP.pmi1.representation
+import IMP.pmi1.restraints.basic
+import IMP.pmi1.macros
+import IMP.pmi1.output
 import time
 import sys
 import shutil
@@ -21,16 +21,16 @@ sys.stdout = DummyFile()
 PMI 1.0 representation. Creates two particles and
 an harmonic distance restraints between them"""
 m=IMP.Model()
-r=IMP.pmi.representation.Representation(m)
+r=IMP.pmi1.representation.Representation(m)
 r.create_component("A")
 r.add_component_beads("A",[(1,1),(2,2)])
 ps=IMP.atom.get_leaves(r.prot)
-dr=IMP.pmi.restraints.basic.DistanceRestraint(r,(1,1,"A"),(2,2,"A"),10,10)
+dr=IMP.pmi1.restraints.basic.DistanceRestraint(r,(1,1,"A"),(2,2,"A"),10,10)
 dr.add_to_model()
 
 start_time = time.clock()
 
-rex=IMP.pmi.macros.ReplicaExchange0(m,
+rex=IMP.pmi1.macros.ReplicaExchange0(m,
                 r,
                 monte_carlo_sample_objects=[r],
                 output_objects=[r,dr],

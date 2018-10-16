@@ -778,10 +778,7 @@ class ProcessOutput(object):
         self.isstat2 = False
         self.isrmf = False
 
-        # open the file
-        if not self.filename is None:
-            f = open(self.filename, "r")
-        else:
+        if self.filename is None:
             raise ValueError("No file name provided. Use -h for help")
 
         try:
@@ -794,6 +791,7 @@ class ProcessOutput(object):
             del rh
 
         except IOError:
+            f = open(self.filename, "r")
             # try with an ascii stat file
             # get the keys from the first line
             for line in f.readlines():
@@ -1208,16 +1206,16 @@ class StatHierarchyHandler(RMFHierarchyHandler):
             import cPickle as pickle
         except ImportError:
             import pickle
-        fl=open(filename,'wb')
-        pickle.dump(self.data,fl)
+        with open(filename, 'wb') as fl:
+            pickle.dump(self.data, fl)
 
     def load_data(self,filename='data.pkl'):
         try:
             import cPickle as pickle
         except ImportError:
             import pickle
-        fl=open(filename,'rb')
-        data_structure=pickle.load(fl)
+        with open(filename, 'rb') as fl:
+            data_structure=pickle.load(fl)
         #first check that it is a list
         if not type(data_structure) is list:
             raise TypeError("%filename should contain a list of IMP.pmi.output.DataEntry or IMP.pmi.output.Cluster" % filename)

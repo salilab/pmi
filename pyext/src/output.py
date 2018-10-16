@@ -1162,7 +1162,7 @@ class StatHierarchyHandler(RMFHierarchyHandler):
             '''alternatively read the ascii stat files'''
             try:
                 scores,rmf_files,rmf_frame_indexes,features = self.get_info_from_stat_file(stat_file, self.score_threshold)
-            except KeyError:
+            except (KeyError, SyntaxError):
                 # in this case check that is it an rmf file, probably without stat stored in
                 try:
                     # let's see if that is an rmf file

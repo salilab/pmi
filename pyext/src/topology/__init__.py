@@ -1136,7 +1136,7 @@ class TopologyReader(object):
       be treated as RNA or DNA, add an ',RNA' or ',DNA' suffix. For example,
       a `fasta_id` of 'myseq,RNA' will read the sequence 'myseq' from the
       FASTA file and treat it as RNA.
-    - `pdb_fn`: Name of PDB file with coordinates (if available).
+    - `pdb_fn`: Name of PDB or mmCIF file with coordinates (if available).
        If left empty, will set up as BEADS (you can also specify "BEADS")
        Can also write "IDEAL_HELIX".
     - `chain`: Chain ID of this domain in the PDB file.

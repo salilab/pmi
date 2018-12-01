@@ -921,7 +921,10 @@ class PDBSequences(object):
         return self.model
 
     def read_sequences(self,pdb_fn,name_map):
-        t = IMP.atom.read_pdb(pdb_fn, self.model, IMP.atom.ATOMPDBSelector())
+        read_file = IMP.atom.read_pdb
+        if pdb_fn.endswith('.cif'):
+            read_file = IMP.atom.read_mmcif
+        t = read_file(pdb_fn, self.model, IMP.atom.ATOMPDBSelector())
         cs=IMP.atom.get_by_type(t,IMP.atom.CHAIN_TYPE)
         for c in cs:
             id=IMP.atom.Chain(c).get_id()

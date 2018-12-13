@@ -1,8 +1,8 @@
 ## \example pmi/membrane.py
 """
 This script shows how to simulate an a protein using a
-Membrane restraint. This example show 3 ideal helices 
-that have different segments inside the membrane 
+Membrane restraint. This example show 3 ideal helices
+that have different segments inside the membrane
 """
 
 import IMP
@@ -45,7 +45,7 @@ for mol in mols:
 ##############################
 # Connectivity
 ##############################
-output_objects = []  
+output_objects = []
 sample_objects = []
 rmf_restraints = []
 

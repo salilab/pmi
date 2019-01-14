@@ -178,77 +178,7 @@ class Tests(IMP.test.TestCase):
             IMP.rmf.save_frame(rh)
 
         del rh
-        #os.unlink("test_transform_mover_xyz_rotamer.rmf3")
 
-    """
-    def test_pmi_representation_sampling_macro1(self):
-        import IMP
-        import IMP.pmi
-        import IMP.pmi.representation
-        import IMP.pmi.restraints
-        import IMP.pmi.restraints.stereochemistry
-        import IMP.pmi.macros
-
-        rbmaxtrans = 5.00
-        fbmaxtrans = 3.00
-        rbmaxrot=0.05
-        outputobjects = []
-        sampleobjects = []
-
-        # setting up topology
-        m=IMP.Model()
-        simo = IMP.pmi.representation.Representation(m,upperharmonic=True,disorderedlength=True)
-
-        pdbfile = self.get_input_file_name("1WCM.pdb")
-        fastafile = self.get_input_file_name("1WCM.fasta.txt")
-        components = ["Rpb1","Rpb2","Rpb3","Rpb4","Rpb5"]
-        chains = "ABCD"
-        colors = [0.,0.1,0.5,1.0]
-        beadsize = 20
-        fastids = IMP.pmi.tools.get_ids_from_fasta_file(fastafile)
-
-        domains=[]
-        for n in [2,3]:
-            domains+=[(components[n],  components[n],   colors[n],  fastafile,  "1WCM:"+chains[n],   pdbfile,   chains[n],    (1,-1,0),  None, 20,       n,      [0,n],     None,   None,  None,   None)]
-        bm=IMP.pmi.macros.BuildModel1(simo)
-        bm.build_model(domains,sequence_connectivity_scale=1.0)
-
-        simo.set_rigid_bodies_max_rot(rbmaxrot)
-        simo.set_floppy_bodies_max_trans(fbmaxtrans)
-        simo.set_rigid_bodies_max_trans(rbmaxtrans)
-
-        outputobjects.append(simo)
-        sampleobjects.append(simo)
-
-        ev = IMP.pmi.restraints.stereochemistry.ExcludedVolumeSphere(simo,resolution=10)
-        ev.add_to_model()
-        outputobjects.append(ev)
-
-
-        mc2=IMP.pmi.macros.ReplicaExchange0(m,
-                                    simo,
-                                    monte_carlo_sample_objects=sampleobjects,
-                                    output_objects=outputobjects,
-                                    monte_carlo_temperature=1.0,
-                                    replica_exchange_minimum_temperature=1.0,
-                                    replica_exchange_maximum_temperature=2.5,
-                                    number_of_best_scoring_models=0,
-                                    monte_carlo_steps=10,
-                                    number_of_frames=1000,
-                                    write_initial_rmf=True,
-                                    initial_rmf_name_suffix="initial",
-                                    stat_file_name_suffix="stat",
-                                    best_pdb_name_suffix="model",
-                                    do_clean_first=True,
-                                    do_create_directories=True,
-                                    global_output_directory="test_transform_mover_output_1",
-                                    rmf_dir="rmfs/",
-                                    best_pdb_dir="pdbs/",
-                                    replica_stat_file_suffix="stat_replica",
-                                    replica_exchange_object=rem)
-        mc2.execute_macro()
-        #shutil.rmtree("test_transform_mover_output_1")
-    """
     def test_pmi_representation_sampling_macro1_helix(self):
 
         rbmaxtrans = 3.00

@@ -574,11 +574,6 @@ class TotalScoreOutput(object):
         self.model = model
         self.rs = IMP.pmi.tools.get_restraint_set(self.model)
 
-    @property
-    @IMP.deprecated_method("2.10", "Model should be accessed with `.model`.")
-    def mdl(self):
-        return self.model
-
     def get_output(self):
         score = self.rs.evaluate(False)
         output = {}

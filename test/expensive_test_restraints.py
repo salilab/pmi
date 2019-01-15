@@ -123,15 +123,6 @@ class Tests(IMP.test.TestCase):
         Rpb3 Rpb4 100 150
         Rpb4 Rpb4 50 150 '''
 
-        xl1 = IMP.pmi.restraints.crosslinking.ConnectivityCrossLinkMS(
-            simo,
-            restraints,
-            20,
-            1,
-            resolution=1)
-        xl1.add_to_model()
-        print(xl1.get_output())
-
         restraints = '''#
         Rpb3 Rpb4 100 150
         Rpb4 Rpb4 50 150 '''

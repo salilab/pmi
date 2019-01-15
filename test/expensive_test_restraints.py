@@ -123,23 +123,6 @@ class Tests(IMP.test.TestCase):
         Rpb3 Rpb4 100 150
         Rpb4 Rpb4 50 150 '''
 
-        restraints = '''#
-        Rpb3 Rpb4 100 150
-        Rpb4 Rpb4 50 150 '''
-
-        xl2 = IMP.pmi.restraints.crosslinking.SimplifiedCrossLinkMS(
-            simo,
-            restraints,
-            25,
-            1,
-            resolution=1)
-        xl2.add_to_model()
-        print(xl2.get_output())
-
-        restraints = '''#
-        Rpb3 Rpb4 100 150
-        Rpb4 Rpb4 50 150 '''
-
         xl3 = IMP.pmi.restraints.crosslinking.SigmoidalCrossLinkMS(
             simo,
             restraints,

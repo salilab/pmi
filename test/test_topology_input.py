@@ -39,18 +39,14 @@ class Tests(IMP.test.TestCase):
         t = IMP.pmi.topology.TopologyReader(topology_file)
         self.assertEqual(list(t.molecules.keys()),
                          ['Prot1', 'Prot2', 'Prot3', 'Prot4', 'Prot5'])
-        c1 = t.get_components()
-        with IMP.allow_deprecated():
-            # Test deprecated interface
-            c2 = t.component_list
-        for c in (c1, c2):
-            self.assertEqual(len(c),9)
-            self.assertEqual(c[0].molname,"Prot1")
-            self.assertEqual(c[1].molname,"Prot1")
-            self.assertEqual(c[1].copyname,"1")
-            self.assertEqual(c[2].get_unique_name(),"Prot2..0")
-            self.assertEqual(c[3].get_unique_name(),"Prot2..1")
-            self.assertEqual(c[5].get_unique_name(),"Prot2.1.1")
+        c = t.get_components()
+        self.assertEqual(len(c),9)
+        self.assertEqual(c[0].molname,"Prot1")
+        self.assertEqual(c[1].molname,"Prot1")
+        self.assertEqual(c[1].copyname,"1")
+        self.assertEqual(c[2].get_unique_name(),"Prot2..0")
+        self.assertEqual(c[3].get_unique_name(),"Prot2..1")
+        self.assertEqual(c[5].get_unique_name(),"Prot2.1.1")
 
     def test_round_trip(self):
         """Test reading and writing"""

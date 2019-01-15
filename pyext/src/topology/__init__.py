@@ -1160,12 +1160,6 @@ class TopologyReader(object):
         self.gmm_dir = gmm_dir
         self._components = self.read(topology_file)
 
-    # Preserve old self.component_list for backwards compatibility
-    @IMP.deprecated_method("2.7",
-                       "Use 'get_components()' instead of 'component_list'.")
-    def __get_component_list(self): return self._components
-    component_list = property(__get_component_list)
-
     def write_topology_file(self,outfile):
         with open(outfile, "w") as f:
             f.write("|molecule_name|color|fasta_fn|fasta_id|pdb_fn|chain|"

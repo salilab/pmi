@@ -7,11 +7,15 @@ python:
 cache:
   pip: true
 install:
-  - tools/setup_travis.sh $HOME/miniconda $TRAVIS_PYTHON_VERSION
-  - source $HOME/miniconda/bin/activate python$TRAVIS_PYTHON_VERSION
+  - source tools/setup_travis.sh $HOME/miniconda $TRAVIS_PYTHON_VERSION
   - python -V
   - export IMP_TMP_DIR=/tmp
+  - rm -f ${CONDA_PREFIX}/lib/libimp_pmi.so*
 script:
-  - test/nosetests --with-coverage --cover-branches -e 'probabilistic' test/test_*.py test/medium_test_*.py > /dev/null
+  - mkdir build
+  - cd build
+  - cmake .. -DIMP_DIR=${CONDA_PREFIX}/lib/cmake/IMP
+  - make
+  - ./setup_environment.sh ../test/nosetests --with-coverage --cover-branches -e 'probabilistic' ../test/test_*.py ../test/medium_test_*.py test/*/*.py > /dev/null
 after_script:
   - bash <(curl -s https://codecov.io/bash)

@@ -14,7 +14,7 @@ install:
 script:
   - mkdir build
   - cd build
-  - cmake .. -DIMP_DIR=${CONDA_PREFIX}/lib/cmake/IMP
+  - cmake .. -DIMP_DIR=${CONDA_PREFIX}/lib/cmake/IMP -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage"
   - make
   - ./setup_environment.sh ../test/nosetests --with-coverage --cover-branches -e 'probabilistic' ../test/test_*.py ../test/medium_test_*.py test/*/*.py > /dev/null
 after_script:

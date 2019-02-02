@@ -3,6 +3,7 @@
 ~.orig
 *~
 .*.sw?
-CMakeLists.txt
+*/CMakeLists.txt
+ModuleBuild.cmake
 CMakeModules
 Files.cmake

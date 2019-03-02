@@ -840,11 +840,12 @@ class Sequences(object):
         return x in self.sequences
     def __getitem__(self,key):
         if type(key) is int:
+            allseqs = list(self.sequences.keys())
             try:
-                allseqs = list(self.sequences.keys())
                 return self.sequences[allseqs[key]]
-            except:
-                raise Exception("You tried to access sequence num",key,"but there's only",len(self.sequences.keys()))
+            except IndexError:
+                raise IndexError("You tried to access sequence number %d "
+                                 "but there's only %d" % (key, len(allseqs)))
         else:
             return self.sequences[key]
     def __iter__(self):

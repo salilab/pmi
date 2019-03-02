@@ -14,7 +14,7 @@ class Tests(IMP.test.TestCase):
         self.assertNotIn('1WCM:X', s)
         self.assertEqual(s['1WCM:A'], 'MVGQQYSS')
         self.assertEqual(s[0], 'MVGQQYSS')
-        self.assertRaises(Exception, lambda x: x[4], s)
+        self.assertRaises(IndexError, lambda x: x[4], s)
         # exercise __repr__
         x = repr(s)
 
@@ -43,7 +43,6 @@ class Tests(IMP.test.TestCase):
         s = IMP.pmi.topology.Sequences(fname)
         self.assertEqual(len(s), 0)
         os.unlink(fname)
-
 
 
 if __name__ == '__main__':

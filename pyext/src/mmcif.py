@@ -507,6 +507,11 @@ class _ReplicaExchangeProtocolStep(ihm.protocol.Step):
             method = 'Replica exchange monte carlo'
         else:
             method = 'Replica exchange molecular dynamics'
+        self.monte_carlo_temperature = rex.vars['monte_carlo_temperature']
+        self.replica_exchange_minimum_temperature = \
+                         rex.vars['replica_exchange_minimum_temperature']
+        self.replica_exchange_maximum_temperature = \
+                         rex.vars['replica_exchange_maximum_temperature']
         super(_ReplicaExchangeProtocolStep, self).__init__(
                 assembly=state.modeled_assembly,
                 dataset_group=None, # filled in by add_step()
@@ -514,6 +519,29 @@ class _ReplicaExchangeProtocolStep(ihm.protocol.Step):
                 num_models_begin=None, # filled in by add_step()
                 num_models_end=rex.vars["number_of_frames"],
                 multi_scale=True, multi_state=False, ordered=False)
+
+
+class _ReplicaExchangeProtocolDumper(ihm.dumper.Dumper):
+    """Write IMP-specific information about replica exchange to mmCIF.
+       Note that IDs will have already been assigned by python-ihm's
+       standard modeling protocol dumper."""
+    def dump(self, system, writer):
+        with writer.loop("_imp_replica_exchange_protocol",
+                         ["protocol_id", "step_id", "monte_carlo_temperature",
+                          "replica_exchange_minimum_temperature",
+                          "replica_exchange_maximum_temperature"]) as l:
+            for p in system._all_protocols():
+                for s in p.steps:
+                    if isinstance(s, _ReplicaExchangeProtocolStep):
+                        self._dump_step(p, s, l)
+
+    def _dump_step(self, p, s, l):
+        l.write(protocol_id=p._id, step_id=s._id,
+                monte_carlo_temperature=s.monte_carlo_temperature,
+                replica_exchange_minimum_temperature= \
+                         s.replica_exchange_minimum_temperature,
+                replica_exchange_maximum_temperature= \
+                         s.replica_exchange_maximum_temperature)
 
 
 class _SimpleProtocolStep(ihm.protocol.Step):
@@ -1267,7 +1295,8 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
            Information can be written in any format supported by
            the ihm library (typically this is 'mmCIF' or 'BCIF')."""
         self.finalize()
-        ihm.dumper.write(self.fh, [self.system], format)
+        ihm.dumper.write(self.fh, [self.system], format,
+                         dumpers=[_ReplicaExchangeProtocolDumper])
 
     def finalize(self):
         """Do any final processing on the class hierarchy.

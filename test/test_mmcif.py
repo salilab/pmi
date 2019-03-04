@@ -756,6 +756,46 @@ Sampling 'Replica exchange monte carlo' 1000 1000 YES NO NO 1 .
 #
 """)
 
+    def test_rex_protocol_dumper(self):
+        """Test IMP-specific replica exchange dumper output"""
+        m = IMP.Model()
+        s = IMP.pmi.topology.System(m)
+        po = DummyPO(None)
+        s.add_protocol_output(po)
+        state = s.create_state()
+        nup84 = state.create_molecule("Nup84", "MELS", "A")
+        nup84.add_structure(self.get_input_file_name('test.nup84.pdb'), 'A')
+        nup84.add_representation(resolutions=[1])
+        hier = s.build()
+        dof = IMP.pmi.dof.DegreesOfFreedom(m)
+        dof.create_rigid_body(nup84)
+
+        mc1 = IMP.pmi.macros.ReplicaExchange0(m, root_hier=hier,
+                                 monte_carlo_sample_objects=dof.get_movers(),
+                                 output_objects=[],
+                                 test_mode=True,
+                                 monte_carlo_temperature=42.0,
+                                 replica_exchange_minimum_temperature=100.,
+                                 replica_exchange_maximum_temperature=200.)
+        mc1.execute_macro()
+        fh = StringIO()
+        w = ihm.format.CifWriter(fh)
+        self.assign_entity_asym_ids(po.system)
+        ihm.dumper._ProtocolDumper().finalize(po.system) # assign step IDs
+        d = IMP.pmi.mmcif._ReplicaExchangeProtocolDumper()
+        d.dump(po.system, w)
+        out = fh.getvalue()
+        self.assertEqual(out, """#
+loop_
+_imp_replica_exchange_protocol.protocol_id
+_imp_replica_exchange_protocol.step_id
+_imp_replica_exchange_protocol.monte_carlo_temperature
+_imp_replica_exchange_protocol.replica_exchange_minimum_temperature
+_imp_replica_exchange_protocol.replica_exchange_maximum_temperature
+1 1 42.000 100.000 200.000
+#
+""")
+
     def test_add_simple_dynamics(self):
         """Test add_simple_dynamics()"""
         po = DummyPO(None)

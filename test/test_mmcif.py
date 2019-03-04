@@ -259,21 +259,21 @@ _ihm_multi_state_modeling.details
     def test_component_mapper(self):
         """Test ComponentMapper class"""
         m = IMP.Model()
-        with IMP.allow_deprecated():
-            simo = IMP.pmi.representation.Representation(m)
-        simo.create_component("Nup84", True)
-        simo.add_component_sequence("Nup84",
-                                    self.get_input_file_name("test.fasta"))
-        simo.create_component("Nup85", True)
-        simo.add_component_sequence("Nup85",
-                                    self.get_input_file_name("test.fasta"))
-        h1 = simo.add_component_beads("Nup84", [(1,2), (3,4)])
-        h2 = simo.add_component_beads("Nup85", [(1,2), (3,4)])
-        mapper = IMP.pmi.mmcif._ComponentMapper(simo.prot)
-        self.assertEqual(mapper[h1[0]], 'Nup84')
-        self.assertEqual(mapper[h1[1]], 'Nup84')
-        self.assertEqual(mapper[h2[0]], 'Nup85')
-        self.assertEqual(mapper[h2[1]], 'Nup85')
+        s = IMP.pmi.topology.System(m)
+        st1 = s.create_state()
+        nup84 = st1.create_molecule("Nup84", "MELS", "X")
+        nup84.add_representation(resolutions=[1])
+        nup85 = st1.create_molecule("Nup85", "SELM", "Y")
+        nup85.add_representation(resolutions=[1])
+        hier = s.build()
+
+        mapper = IMP.pmi.mmcif._ComponentMapper(hier)
+        h1 = IMP.atom.get_by_type(nup84.hier, IMP.atom.RESIDUE_TYPE)
+        h2 = IMP.atom.get_by_type(nup85.hier, IMP.atom.RESIDUE_TYPE)
+        self.assertEqual(mapper[h1[0]], 'Nup84.0')
+        self.assertEqual(mapper[h1[1]], 'Nup84.0')
+        self.assertEqual(mapper[h2[0]], 'Nup85.0')
+        self.assertEqual(mapper[h2[1]], 'Nup85.0')
 
     def test_cif_entities(self):
         """Test _EntityMapper class"""

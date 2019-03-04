@@ -223,38 +223,37 @@ _ihm_multi_state_modeling.details
         """Test AsymIDMapper class"""
         m = IMP.Model()
         po = DummyPO(None)
-        with IMP.allow_deprecated():
-            simo = IMP.pmi.representation.Representation(m)
-        simo.add_protocol_output(po)
-        simo.create_component("Nup84", True)
-        simo.add_component_sequence("Nup84",
-                                    self.get_input_file_name("test.fasta"))
-        simo.create_component("Nup85", True)
-        simo.add_component_sequence("Nup85",
-                                    self.get_input_file_name("test.fasta"))
-        h1 = simo.add_component_beads("Nup84", [(1,2), (3,4)])
-        h2 = simo.add_component_beads("Nup85", [(1,2), (3,4)])
+        s = IMP.pmi.topology.System(m)
+        s.add_protocol_output(po)
+        st1 = s.create_state()
+        nup84 = st1.create_molecule("Nup84", "MELS", "X")
+        nup84.add_representation(resolutions=[1])
+        nup85 = st1.create_molecule("Nup85", "SELM", "Y")
+        nup85.add_representation(resolutions=[1])
+
+        st2 = s.create_state()
+        nup85_2 = st2.create_molecule("Nup85", "SELM", "Z")
+        nup85_2.add_representation(resolutions=[1])
+
+        hier = s.build()
 
         self.assertEqual(len(po.system.asym_units), 2)
         po.system.asym_units[0]._id = 'A'
         po.system.asym_units[1]._id = 'B'
 
-        mapper = IMP.pmi.mmcif._AsymMapper(po, simo.prot)
+        mapper = IMP.pmi.mmcif._AsymMapper(po, st1.hier)
+        h1 = IMP.atom.get_by_type(nup84.hier, IMP.atom.RESIDUE_TYPE)
+        h2 = IMP.atom.get_by_type(nup85.hier, IMP.atom.RESIDUE_TYPE)
         self.assertEqual(mapper[h1[0]]._id, 'A')
         self.assertEqual(mapper[h1[1]]._id, 'A')
         self.assertEqual(mapper[h2[0]]._id, 'B')
         self.assertEqual(mapper[h2[1]]._id, 'B')
+
         # Check handling of multiple states
-        with IMP.allow_deprecated():
-            simo2 = IMP.pmi.representation.Representation(m)
-        simo2.add_protocol_output(po)
-        simo2.create_component("Nup85", True)
-        simo2.add_component_sequence("Nup85",
-                                     self.get_input_file_name("test.fasta"))
-        h1 = simo2.add_component_beads("Nup85", [(1,2), (3,4)])
-        mapper = IMP.pmi.mmcif._AsymMapper(po, simo2.prot)
+        mapper = IMP.pmi.mmcif._AsymMapper(po, st2.hier)
         # First chain, but ID isn't "A" since it gets the same chain ID
-        # as the component in the first state (simo)
+        # as the component in the first state (nup85)
+        h1 = IMP.atom.get_by_type(nup85_2.hier, IMP.atom.RESIDUE_TYPE)
         self.assertEqual(mapper[h1[0]]._id, 'B')
 
     def test_component_mapper(self):

@@ -350,8 +350,7 @@ _ihm_multi_state_modeling.details
         assembly._id = 42
         s1 = ihm.representation.ResidueSegment(asym1, True, 'sphere')
         s2 = ihm.representation.ResidueSegment(asym2, True, 'sphere')
-        with IMP.allow_deprecated():
-            representation = ihm.representation.Representation([s1, s2])
+        representation = ihm.representation.Representation([s1, s2])
         representation._id = 99
         protocol = ihm.protocol.Protocol()
         protocol._id = 93

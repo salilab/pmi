@@ -2,6 +2,8 @@ from __future__ import print_function
 import IMP.test
 import IMP.pmi.representation
 import IMP.pmi.mmcif
+import IMP.pmi.dof
+import IMP.pmi.topology
 import IMP.pmi.macros
 import sys
 import os
@@ -696,26 +698,25 @@ _ihm_starting_model_coord.ordinal_id
     def test_protocol_dumper(self):
         """Test ModelProtocolDumper output"""
         m = IMP.Model()
-        with IMP.allow_deprecated():
-            simo = IMP.pmi.representation.Representation(m)
+        s = IMP.pmi.topology.System(m)
         po = DummyPO(None)
-        simo.add_protocol_output(po)
-        # Need Repository in order to handle PDB file datasets
-        simo.add_metadata(ihm.location.Repository(doi='foo', root='.'))
-        simo.create_component("Nup84", True)
-        simo.add_component_sequence("Nup84",
-                                    self.get_input_file_name("test.fasta"))
-        nup84 = simo.autobuild_model("Nup84",
-                                     self.get_input_file_name("test.nup84.pdb"),
-                                     "A")
-        mc1 = IMP.pmi.macros.ReplicaExchange0(m, simo,
-                                 monte_carlo_sample_objects=[simo],
-                                 output_objects=[simo],
+        s.add_protocol_output(po)
+        state = s.create_state()
+        nup84 = state.create_molecule("Nup84", "MELS", "A")
+        nup84.add_structure(self.get_input_file_name('test.nup84.pdb'), 'A')
+        nup84.add_representation(resolutions=[1])
+        hier = s.build()
+        dof = IMP.pmi.dof.DegreesOfFreedom(m)
+        dof.create_rigid_body(nup84)
+
+        mc1 = IMP.pmi.macros.ReplicaExchange0(m, root_hier=hier,
+                                 monte_carlo_sample_objects=dof.get_movers(),
+                                 output_objects=[],
                                  test_mode=True)
         mc1.execute_macro()
-        mc2 = IMP.pmi.macros.ReplicaExchange0(m, simo,
-                                 monte_carlo_sample_objects=[simo],
-                                 output_objects=[simo],
+        mc2 = IMP.pmi.macros.ReplicaExchange0(m, root_hier=hier,
+                                 monte_carlo_sample_objects=dof.get_movers(),
+                                 output_objects=[],
                                  test_mode=True)
         mc2.execute_macro()
         fh = StringIO()
@@ -746,10 +747,12 @@ _ihm_modeling_protocol.multi_state_flag
 _ihm_modeling_protocol.ordered_flag
 _ihm_modeling_protocol.software_id
 _ihm_modeling_protocol.script_file_id
-1 1 1 1 1 'All known components & All components modeled by IMP' . Sampling
-'Replica exchange monte carlo' 0 1000 YES NO NO 1 .
-2 1 2 1 1 'All known components & All components modeled by IMP' . Sampling
-'Replica exchange monte carlo' 1000 1000 YES NO NO 1 .
+1 1 1 1 1
+'All known components & All components modeled by IMP in state State_0' .
+Sampling 'Replica exchange monte carlo' 0 1000 YES NO NO 1 .
+2 1 2 1 1
+'All known components & All components modeled by IMP in state State_0' .
+Sampling 'Replica exchange monte carlo' 1000 1000 YES NO NO 1 .
 #
 """)
 

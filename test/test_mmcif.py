@@ -401,20 +401,20 @@ _ihm_sphere_obj_site.model_id
     def test_model_dumper_atom(self):
         """Test ModelDumper atom_site output"""
         m = IMP.Model()
-        with IMP.allow_deprecated():
-            simo = IMP.pmi.representation.Representation(m)
+        s = IMP.pmi.topology.System(m)
         po = DummyPO(None)
-        simo.add_protocol_output(po)
-        state = simo._protocol_output[0][1]
-        simo.create_component("Nup84", True)
-        simo.add_component_sequence("Nup84",
-                                    self.get_input_file_name("test.fasta"))
-        nup84 = simo.autobuild_model("Nup84",
-                                     self.get_input_file_name("test.nup84.pdb"),
-                                     "A", resolutions=[0])
+        s.add_protocol_output(po)
+        state = s.create_state()
+        nup84 = state.create_molecule("Nup84", "MELS", "A")
+        nup84.add_structure(self.get_input_file_name('test.nup84.pdb'), 'A')
+        # Make atomic representation for residues 1-2, beads for 3-4
+        nup84.add_representation(nup84.get_atomic_residues(), resolutions=[0])
+        nup84.add_representation(nup84.get_non_atomic_residues(),
+                                 resolutions=[10])
+        hier = s.build()
 
         d = ihm.dumper._ModelDumper()
-        asym = po.asym_units['Nup84']
+        asym = po.asym_units['Nup84.0']
         assembly = ihm.Assembly([asym])
         assembly._id = 42
         s1 = ihm.representation.AtomicSegment(asym(1,2), True)
@@ -425,8 +425,8 @@ _ihm_sphere_obj_site.model_id
         protocol = ihm.protocol.Protocol()
         protocol._id = 93
         group = ihm.model.ModelGroup(name="all models")
-        state.append(group)
-        model = IMP.pmi.mmcif._Model(simo.prot, po, protocol, assembly,
+        po.system.state_groups[0][0].append(group)
+        model = IMP.pmi.mmcif._Model(hier, po, protocol, assembly,
                                      representation)
         group.append(model)
         self.assertEqual(model.get_rmsf('Nup84', (1,)), None)
@@ -489,20 +489,19 @@ _ihm_sphere_obj_site.model_id
     def test_model_dumper_sphere_rmsf(self):
         """Test ModelDumper sphere_obj output with RMSF"""
         m = IMP.Model()
-        with IMP.allow_deprecated():
-            simo = IMP.pmi.representation.Representation(m)
+        s = IMP.pmi.topology.System(m)
         po = DummyPO(None)
-        simo.add_protocol_output(po)
-        state = simo._protocol_output[0][1]
-        simo.create_component("Nup84", True)
-        simo.add_component_sequence("Nup84",
-                                    self.get_input_file_name("test.fasta"))
-        nup84 = simo.autobuild_model("Nup84",
-                                     self.get_input_file_name("test.nup84.pdb"),
-                                     "A")
+        s.add_protocol_output(po)
+        state = s.create_state()
+        nup84 = state.create_molecule("Nup84", "MELS", "A")
+        nup84.add_structure(self.get_input_file_name('test.nup84.pdb'), 'A')
+        nup84.add_representation(nup84.get_atomic_residues(), resolutions=[1])
+        nup84.add_representation(nup84.get_non_atomic_residues(),
+                                 resolutions=[10])
+        hier = s.build()
 
         d = ihm.dumper._ModelDumper()
-        asym = po.asym_units['Nup84']
+        asym = po.asym_units['Nup84.0']
         assembly = ihm.Assembly([asym])
         assembly._id = 42
         s = ihm.representation.FeatureSegment(asym, True, 'sphere', count=3)
@@ -511,15 +510,15 @@ _ihm_sphere_obj_site.model_id
         protocol = ihm.protocol.Protocol()
         protocol._id = 93
         group = ihm.model.ModelGroup(name='all models')
-        state.append(group)
-        model = IMP.pmi.mmcif._Model(simo.prot, po, protocol, assembly,
+        po.system.state_groups[0][0].append(group)
+        model = IMP.pmi.mmcif._Model(hier, po, protocol, assembly,
                                      representation)
         group.append(model)
         model.name = 'foo'
         model.parse_rmsf_file(self.get_input_file_name('test.nup84.rmsf'),
-                              'Nup84')
-        self.assertAlmostEqual(model.get_rmsf('Nup84', (1,)), 4.5, delta=1e-4)
-        self.assertRaises(ValueError, model.get_rmsf, 'Nup84', (1,2))
+                              'Nup84.0')
+        self.assertAlmostEqual(model.get_rmsf('Nup84.0', (1,)), 4.5, delta=1e-4)
+        self.assertRaises(ValueError, model.get_rmsf, 'Nup84.0', (1,2))
         self.assign_entity_asym_ids(po.system)
         fh = StringIO()
         w = ihm.format.CifWriter(fh)

@@ -32,6 +32,7 @@ import itertools
 import ihm.location
 import ihm.dataset
 import ihm.dumper
+import ihm.reader
 import ihm.metadata
 import ihm.startmodel
 import ihm.model
@@ -542,6 +543,26 @@ class _ReplicaExchangeProtocolDumper(ihm.dumper.Dumper):
                          s.replica_exchange_minimum_temperature,
                 replica_exchange_maximum_temperature= \
                          s.replica_exchange_maximum_temperature)
+
+
+class _ReplicaExchangeProtocolHandler(ihm.reader.Handler):
+    category = '_imp_replica_exchange_protocol'
+
+    """Read IMP-specific information about replica exchange from mmCIF."""
+    def __call__(self, protocol_id, step_id, monte_carlo_temperature,
+                 replica_exchange_minimum_temperature,
+                 replica_exchange_maximum_temperature):
+        p = self.sysr.protocols.get_by_id(protocol_id)
+        # todo: match step_id properly (don't assume contiguous)
+        s = p.steps[int(step_id)-1]
+        # Upgrade from plain ihm Step to IMP subclass
+        s.__class__ = _ReplicaExchangeProtocolStep
+        s.monte_carlo_temperature = \
+                 ihm.reader._get_float(monte_carlo_temperature)
+        s.replica_exchange_minimum_temperature = \
+                 ihm.reader._get_float(replica_exchange_minimum_temperature)
+        s.replica_exchange_maximum_temperature = \
+                 ihm.reader._get_float(replica_exchange_maximum_temperature)
 
 
 class _SimpleProtocolStep(ihm.protocol.Step):
@@ -1603,3 +1624,11 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
 
     _metadata = property(lambda self:
                          itertools.chain.from_iterable(self._each_metadata))
+
+
+def read(fh, model_class=ihm.model.Model, format='mmCIF', handlers=[]):
+    """Read data from the mmCIF file handle `fh`.
+       This is a simple wrapper around `ihm.reader.read()`, which also
+       reads PMI-specific information from the mmCIF or BinaryCIF file."""
+    return ihm.reader.read(fh, model_class=model_class, format=format,
+                           handlers=[_ReplicaExchangeProtocolHandler]+handlers)

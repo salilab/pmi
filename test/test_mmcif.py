@@ -2066,5 +2066,46 @@ _ihm_model_representation.model_object_count
         state = po._add_state(r)
         self.assertEqual(state.get_postfixed_name('foo'), 'foo')
 
+    def test_read(self):
+        """Test read function"""
+        fh = StringIO("""
+loop_
+_ihm_modeling_protocol.ordinal_id
+_ihm_modeling_protocol.protocol_id
+_ihm_modeling_protocol.step_id
+_ihm_modeling_protocol.struct_assembly_id
+_ihm_modeling_protocol.dataset_group_id
+_ihm_modeling_protocol.struct_assembly_description
+_ihm_modeling_protocol.protocol_name
+_ihm_modeling_protocol.step_name
+_ihm_modeling_protocol.step_method
+_ihm_modeling_protocol.num_models_begin
+_ihm_modeling_protocol.num_models_end
+_ihm_modeling_protocol.multi_scale_flag
+_ihm_modeling_protocol.multi_state_flag
+_ihm_modeling_protocol.ordered_flag
+_ihm_modeling_protocol.software_id
+_ihm_modeling_protocol.script_file_id
+1 1 1 1 1 . Prot1 Sampling 'Monte Carlo' 0 500 YES NO NO . .
+#
+loop_
+_imp_replica_exchange_protocol.protocol_id
+_imp_replica_exchange_protocol.step_id
+_imp_replica_exchange_protocol.monte_carlo_temperature
+_imp_replica_exchange_protocol.replica_exchange_minimum_temperature
+_imp_replica_exchange_protocol.replica_exchange_maximum_temperature
+1 1 1.000 2.000 3.000
+""")
+        s, = IMP.pmi.mmcif.read(fh)
+        p1, = s.orphan_protocols
+        step = p1.steps[0]
+        self.assertIsInstance(step, IMP.pmi.mmcif._ReplicaExchangeProtocolStep)
+        self.assertAlmostEqual(step.monte_carlo_temperature, 1., delta=1e-4)
+        self.assertAlmostEqual(step.replica_exchange_minimum_temperature,
+                               2., delta=1e-4)
+        self.assertAlmostEqual(step.replica_exchange_maximum_temperature,
+                               3., delta=1e-4)
+
+
 if __name__ == '__main__':
     IMP.test.main()

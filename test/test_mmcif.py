@@ -1,6 +1,7 @@
 from __future__ import print_function
 import IMP.test
 import IMP.pmi.representation
+import IMP.pmi.restraints.em
 import IMP.pmi.mmcif
 import IMP.pmi.dof
 import IMP.pmi.topology
@@ -2104,6 +2105,40 @@ _imp_replica_exchange_protocol.replica_exchange_maximum_temperature
                                2., delta=1e-4)
         self.assertAlmostEqual(step.replica_exchange_maximum_temperature,
                                3., delta=1e-4)
+
+    def test_gaussian_em_restraint(self):
+        """Test adding GaussianEMRestraint"""
+        m = IMP.Model()
+        po = DummyPO(EmptyObject())
+        s = IMP.pmi.topology.System(m)
+        s.add_protocol_output(po)
+        st1 = s.create_state()
+        m1 = st1.create_molecule("Prot1",sequence="QEALVVKDLL")
+        atomic_res = m1.add_structure(self.get_input_file_name('prot.pdb'),
+                                      chain_id='A', res_range=(55,63),
+                                      offset=-54)
+        fname = self.get_input_file_name("test_gmm.txt")
+        m1.add_representation(atomic_res,resolutions=[1,10],
+                              density_residues_per_component=2,
+                              density_voxel_size=3.0,
+                              density_prefix=fname[:-4])
+        hier = s.build()
+        densities = IMP.atom.Selection(hier,
+               representation_type=IMP.atom.DENSITIES).get_selected_particles()
+        self.assertEqual(len(densities), 4)
+        gem = IMP.pmi.restraints.em.GaussianEMRestraint(densities,
+                     target_fn=self.get_input_file_name('prot_gmm.mrc.1.txt'))
+        gem.add_to_model()
+
+        em3d, = po.system.restraints
+        self.assertEqual(em3d.number_of_gaussians, 1)
+        d = em3d.dataset
+        self.assertEqual(d.location.path,
+                         self.get_input_file_name('prot_gmm.mrc.1.txt'))
+        self.assertEqual(len(d.parents), 1)
+        d = d.parents[0]
+        self.assertEqual(d.location.path,
+                         self.get_input_file_name('prot_gmm.mrc'))
 
 
 if __name__ == '__main__':

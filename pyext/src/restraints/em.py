@@ -126,10 +126,10 @@ class GaussianEMRestraint(object):
                 ms=IMP.atom.Mass(p).get_mass()
                 IMP.atom.Mass(p).set_mass(ms*scale)
 
-        if representation:
-            for p, state in representation._protocol_output:
-                p.add_em3d_restraint(state, self.target_ps, self.densities,
-                                     self)
+        for p, state in IMP.pmi.tools._all_protocol_outputs([representation],
+                                                            densities[0]):
+            p.add_em3d_restraint(state, self.target_ps, self.densities,
+                                 self)
 
         # setup model GMM
         self.model_ps = []

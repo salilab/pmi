@@ -558,11 +558,11 @@ class _ReplicaExchangeProtocolHandler(ihm.reader.Handler):
         # Upgrade from plain ihm Step to IMP subclass
         s.__class__ = _ReplicaExchangeProtocolStep
         s.monte_carlo_temperature = \
-                 ihm.reader._get_float(monte_carlo_temperature)
+                 self.get_float(monte_carlo_temperature)
         s.replica_exchange_minimum_temperature = \
-                 ihm.reader._get_float(replica_exchange_minimum_temperature)
+                 self.get_float(replica_exchange_minimum_temperature)
         s.replica_exchange_maximum_temperature = \
-                 ihm.reader._get_float(replica_exchange_maximum_temperature)
+                 self.get_float(replica_exchange_maximum_temperature)
 
 
 class _SimpleProtocolStep(ihm.protocol.Step):

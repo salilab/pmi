@@ -833,6 +833,9 @@ class _AllStartingModels(object):
                 self.simo.system.locations.append(t.alignment_file)
             if t.dataset:
                 self.simo._add_dataset(t.dataset)
+        source = r['entity_source'].get(f.chain)
+        if source:
+            f.asym_unit.entity.source = source
         pmi_offset = f.asym_unit.entity.pmi_offset
         m = _StartingModel(
                     asym_unit=f.asym_unit.asym.pmi_range(f.start + f.offset,

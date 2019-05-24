@@ -191,12 +191,12 @@ class MembraneRestraint(IMP.test.TestCase):
 
         p_inside = mr.get_particles_inside()
         self.assertEqual(len(p_inside), 20)
-        
+
         p_above = mr.get_particles_above()
         self.assertEqual(len(p_above), 10)
-        
+
         p_below = mr.get_particles_below()
         self.assertEqual(len(p_below), 10)
-         
+
 if __name__ == '__main__':
     IMP.test.main()

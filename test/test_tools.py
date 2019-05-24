@@ -9,7 +9,6 @@ import IMP.pmi.topology
 import IMP.pmi.dof
 import IMP.pmi.io
 import IMP.pmi.io.crosslink
-import IMP.pmi.representation
 import IMP.pmi.restraints
 import IMP.pmi.restraints.em
 import IMP.pmi.restraints.crosslinking

@@ -217,7 +217,8 @@ def build_representation(parent, rep, coord_finder):
         elif type(rep.color) is IMP.display.Color:
             color = rep.color
         else:
-            raise Exception("Color must be float or (r,g,b) tuple")
+            raise Exception("Color must be Chimera color name, a hex "
+                            "string, a float or (r,g,b) tuple")
     else:
         color = None
 

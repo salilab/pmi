@@ -134,38 +134,6 @@ _ihm_multi_state_modeling.details
 #
 """)
 
-    def test_file_dataset(self):
-        """Test get/set_file_dataset methods"""
-        # Note that a ProtocolOutput can combine file datasets from multiple
-        # Representation objects
-        po = DummyPO(EmptyObject())
-
-        m1 = IMP.Model()
-        with IMP.allow_deprecated():
-            r1 = IMP.pmi.representation.Representation(m1)
-        l1 = ihm.location.InputFileLocation(repo='foo', path='baz')
-        d1 = ihm.dataset.EM2DClassDataset(l1)
-        r1.add_protocol_output(po)
-        r1.set_file_dataset('foo', d1)
-
-        m2 = IMP.Model()
-        with IMP.allow_deprecated():
-            r2 = IMP.pmi.representation.Representation(m2)
-        l2 = ihm.location.InputFileLocation(repo='bar', path='baz')
-        d2 = ihm.dataset.EM2DClassDataset(l2)
-        r2.add_protocol_output(po)
-        r2.set_file_dataset('bar', d2)
-
-        self.assertEqual(r1.get_file_dataset('foo'), d1)
-        self.assertEqual(r2.get_file_dataset('bar'), d2)
-        self.assertEqual(po.get_file_dataset('foo'), d1)
-        self.assertEqual(po.get_file_dataset('bar'), d2)
-        self.assertEqual(r1._file_dataset, {os.path.abspath('foo'): d1})
-        self.assertEqual(r2._file_dataset, {os.path.abspath('bar'): d2})
-        self.assertEqual(r1.get_file_dataset('foobar'), None)
-        self.assertEqual(r2.get_file_dataset('foobar'), None)
-        self.assertEqual(po.get_file_dataset('foobar'), None)
-
     def test_create_component_repeat(self):
         """Test repeated calls to create_component()"""
         po = DummyPO(EmptyObject())

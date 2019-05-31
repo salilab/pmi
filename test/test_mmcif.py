@@ -542,32 +542,27 @@ _ihm_sphere_obj_site.model_id
         """Test StartingModelDumper"""
         m = IMP.Model()
         po = DummyPO(None)
-        with IMP.allow_deprecated():
-            simo = IMP.pmi.representation.Representation(m)
-        simo.add_protocol_output(po)
-        simo.create_component("Nup84", True)
-        simo.add_component_sequence("Nup84",
-                                    self.get_input_file_name("test.fasta"))
-        nup84 = simo.autobuild_model("Nup84",
-                                     self.get_input_file_name("test.nup84.pdb"),
-                                     "A")
+        s = IMP.pmi.topology.System(m)
+        s.add_protocol_output(po)
+        st1 = s.create_state()
+
+        nup84_1 = st1.create_molecule("Nup84", "MELS", "A")
+        nup84_1.add_structure(self.get_input_file_name('test.nup84.pdb'), 'A')
+        nup84_1.add_representation(resolutions=[1])
 
         # Test multiple states: components that are the same in both states
         # (Nup84) should not be duplicated in the mmCIF output
-        with IMP.allow_deprecated():
-            simo2 = IMP.pmi.representation.Representation(m)
-        simo2.add_protocol_output(po)
-        simo2.create_component("Nup84", True)
-        simo2.add_component_sequence("Nup84",
-                                     self.get_input_file_name("test.fasta"))
-        simo2.autobuild_model("Nup84",
-                              self.get_input_file_name("test.nup84.pdb"), "A")
-        simo2.create_component("Nup85", True)
-        simo2.add_component_sequence("Nup85",
-                                     self.get_input_file_name("test.fasta"))
-        simo2.autobuild_model("Nup85",
-                              self.get_input_file_name("test.nup85.pdb"), "A",
-                              resrange=(8,9),offset=-7)
+        st2 = s.create_state()
+
+        nup84_2 = st2.create_molecule("Nup84", "MELS", "A")
+        nup84_2.add_structure(self.get_input_file_name('test.nup84.pdb'), 'A')
+        nup84_2.add_representation(resolutions=[1])
+
+        nup85 = st2.create_molecule("Nup85", "SELM", "B")
+        nup85.add_structure(self.get_input_file_name('test.nup85.pdb'), 'A',
+                            res_range=(8,9), offset=-7)
+        nup85.add_representation(resolutions=[1])
+        hier = s.build()
 
         self.assign_entity_asym_ids(po.system)
 

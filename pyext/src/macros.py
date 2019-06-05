@@ -21,7 +21,9 @@ from collections import defaultdict
 import numpy as np
 import string
 import itertools
+import warnings
 import math
+import warnings
 
 class _RMFRestraints(object):
     """All restraints that are written out to the RMF file"""
@@ -775,9 +777,10 @@ max_rot %s non_rigid_max_trans %s" \
             for dname, domain in self._domains[nstate].items():
                 if dname not in domains_in_rbs:
                     if domain.pdb_file != "BEADS":
-                        print("WARNING> Making %s flexible. This may "
-                              "distort the structure; consider making it rigid"
-                              % dname)
+                        warnings.warn(
+                              "Making %s flexible. This may distort the "
+                              "structure; consider making it rigid" % dname,
+                              IMP.pmi.StructureWarning)
                     self.dof.create_flexible_beads(
                             self._domain_res[nstate][dname][1],
                             max_trans=max_bead_trans)
@@ -857,7 +860,9 @@ class AnalysisReplicaExchange0(object):
         for rd in merge_directories:
             stat_files = glob.glob(os.path.join(rd,stat_dir,"stat.*.out"))
             if len(stat_files)==0:
-                print("WARNING: no stat files found in",os.path.join(rd,stat_dir))
+                warnings.warn("no stat files found in %s"
+                              % os.path.join(rd, stat_dir),
+                              IMP.pmi.MissingFileWarning)
             self.stat_files += stat_files
 
     def add_protocol_output(self, p):
@@ -1037,11 +1042,15 @@ class AnalysisReplicaExchange0(object):
             if score_key not in po.get_keys():
                 if 'Total_Score' in po.get_keys():
                     score_key = 'Total_Score'
-                    print("WARNING: Using 'Total_Score' instead of "
-                          "'SimplifiedModel_Total_Score_None' for the score key")
+                    warnings.warn(
+                        "Using 'Total_Score' instead of "
+                        "'SimplifiedModel_Total_Score_None' for the score key",
+                        IMP.pmi.ParameterWarning)
             for k in [orig_score_key,score_key,rmf_file_key,rmf_file_frame_key]:
                 if k in feature_keys:
-                    print("WARNING: no need to pass " +k+" to feature_keys.")
+                    warnings.warn(
+                            "no need to pass " + k + " to feature_keys.",
+                            IMP.pmi.ParameterWarning)
                     feature_keys.remove(k)
 
             best_models = IMP.pmi.io.get_best_models(my_stat_files,

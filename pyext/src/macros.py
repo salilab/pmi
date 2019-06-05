@@ -771,12 +771,16 @@ max_rot %s non_rigid_max_trans %s" \
                                            max_rot=max_rb_rot,
                                            nonrigid_max_trans=max_bead_trans)
 
-            # if you have any BEAD domains not in an RB, set them as flexible beads
-            for dname in self._domains[nstate]:
-                domain = self._domains[nstate][dname]
-                if domain.pdb_file=="BEADS" and dname not in domains_in_rbs:
+            # if you have any domains not in an RB, set them as flexible beads
+            for dname, domain in self._domains[nstate].items():
+                if dname not in domains_in_rbs:
+                    if domain.pdb_file != "BEADS":
+                        print("WARNING> Making %s flexible. This may "
+                              "distort the structure; consider making it rigid"
+                              % dname)
                     self.dof.create_flexible_beads(
-                        self._domain_res[nstate][dname][1],max_trans=max_bead_trans)
+                            self._domain_res[nstate][dname][1],
+                            max_trans=max_bead_trans)
 
             # add super rigid bodies
             for srblist in srbs:

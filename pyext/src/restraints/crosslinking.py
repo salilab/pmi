@@ -2215,7 +2215,7 @@ class CysteineCrossLinkRestraint(object):
         # population particle
         self.weight = IMP.pmi1.tools.SetupWeight(
             self.m,
-            weightissampled).get_particle(
+            isoptimized=False).get_particle(
         )
 
         # read the file
@@ -2356,6 +2356,10 @@ class CysteineCrossLinkRestraint(object):
                 self.rs.add_restraint(ccl)
                 ccl.set_name("CysteineCrossLink_" + str(resid1)
                              + "_" + chain1 + ":" + str(resid2) + "_" + chain2)
+
+        IMP.isd.Weight(
+            self.weight.get_particle()
+        ).set_weights_are_optimized(weightissampled)
 
     def set_label(self, label):
         self.label = label

@@ -131,7 +131,7 @@ class SetupWeight(object):
     def __init__(self, m, isoptimized=True):
         pw = IMP.Particle(m)
         self.weight = IMP.isd.Weight.setup_particle(pw)
-        self.weight.set_weights_are_optimized(True)
+        self.weight.set_weights_are_optimized(isoptimized)
 
     def get_particle(self):
         return self.weight

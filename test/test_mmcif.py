@@ -1861,19 +1861,15 @@ _ihm_starting_model_seq_dif.details
     def test_model_repr_dump(self):
         """Test ModelRepresentationDumper"""
         m = IMP.Model()
-        with IMP.allow_deprecated():
-            simo = IMP.pmi.representation.Representation(m)
+        s = IMP.pmi.topology.System(m)
         po = DummyPO(None)
-        simo.add_protocol_output(po)
-        po.exclude_coordinates('Nup84', (3,4))
-        simo.create_component("Nup84", True)
-        simo.add_component_sequence("Nup84",
-                                    self.get_input_file_name("test.fasta"))
-        nup84 = simo.autobuild_model("Nup84",
-                                     self.get_input_file_name("test.nup84.pdb"),
-                                     "A")
-        simo.create_transformed_component("Nup84.2", "Nup84",
-                IMP.algebra.Transformation3D(IMP.algebra.Vector3D(1,2,3)))
+        s.add_protocol_output(po)
+        state = s.create_state()
+        nup84 = state.create_molecule("Nup84", "ME", "A")
+        nup84.add_structure(self.get_input_file_name('test.nup84.pdb'), 'A')
+        nup84.add_representation(nup84, resolutions=[1])
+        hier = s.build()
+
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
         self.assign_entity_asym_ids(po.system)
@@ -1884,7 +1880,7 @@ _ihm_starting_model_seq_dif.details
         d.finalize(po.system)
         d.dump(po.system, w)
         r, = po.system.orphan_representations
-        self.assertEqual([f.asym_unit.seq_id_range for f in r], [(1,2), (1,2)])
+        self.assertEqual([f.asym_unit.seq_id_range for f in r], [(1,2)])
         out = fh.getvalue()
         self.assertEqual(out, """#
 loop_
@@ -1907,7 +1903,6 @@ _ihm_model_representation_details.model_mode
 _ihm_model_representation_details.model_granularity
 _ihm_model_representation_details.model_object_count
 1 1 1 Nup84 A 1 sphere 1 flexible by-residue .
-2 1 1 Nup84 B 1 sphere 1 flexible by-residue .
 #
 """)
 

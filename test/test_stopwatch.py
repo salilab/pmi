@@ -15,7 +15,7 @@ def mocked_object(parent, objname, replacement):
 
 def get_times(outkey, *args, **kwargs):
     """Get a sequence of times by calling Stopwatch repeatedly. Ensure that
-       times are reliable by overridding time.clock() to always return whole
+       times are reliable by overriding time.clock() to always return whole
        seconds."""
     class MockClock(object):
         count = 0

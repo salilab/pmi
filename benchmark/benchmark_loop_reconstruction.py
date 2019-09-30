@@ -7,6 +7,10 @@ import IMP.benchmark
 import time
 import sys
 import os
+try:
+    from time import process_time  # needs python 3.3 or later
+except ImportError:
+    from time import clock as process_time
 
 import IMP.pmi1.restraints.stereochemistry
 import IMP.pmi1.representation as representation
@@ -120,7 +124,7 @@ mc = samplers.MonteCarlo(m, [r], 1.0)
 log_objects.append(mc)
 
 
-start_time = time.clock()
+start_time = process_time()
 # In debug mode things are way too slow to actually run MC
 if IMP.get_check_level() < IMP.USAGE_AND_INTERNAL:
     o = output.Output()
@@ -139,7 +143,7 @@ if IMP.get_check_level() < IMP.USAGE_AND_INTERNAL:
     o.close_rmf("conformations.rmf3")
 
 sys.stdout = old_stdout
-IMP.benchmark.report("pmi loop", time.clock() - start_time, 3*10+5)
+IMP.benchmark.report("pmi loop", process_time() - start_time, 3*10+5)
 
 if IMP.get_check_level() < IMP.USAGE_AND_INTERNAL:
     for output in ["conformations.pdb", "conformations.rmf3", "modeling.stat"]:

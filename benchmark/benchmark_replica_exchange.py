@@ -8,6 +8,10 @@ import IMP.pmi1.output
 import time
 import sys
 import shutil
+try:
+    from time import process_time  # needs python 3.3 or later
+except ImportError:
+    from time import clock as process_time
 
 IMP.setup_from_argv(sys.argv, "Replica exchange benchmark.")
 IMP.set_log_level(IMP.SILENT)
@@ -28,7 +32,7 @@ ps=IMP.atom.get_leaves(r.prot)
 dr=IMP.pmi1.restraints.basic.DistanceRestraint(r,(1,1,"A"),(2,2,"A"),10,10)
 dr.add_to_model()
 
-start_time = time.clock()
+start_time = process_time()
 
 rex=IMP.pmi1.macros.ReplicaExchange0(m,
                 r,
@@ -67,4 +71,4 @@ nreplicas=rex.replica_exchange_object.get_number_of_replicas()
 temperatures=rex.replica_exchange_object.get_my_parameter("temp")
 
 sys.stdout = old_stdout
-IMP.benchmark.report("replica "+str(my_index), time.clock() - start_time, 8.5)
+IMP.benchmark.report("replica "+str(my_index), process_time() - start_time, 8.5)

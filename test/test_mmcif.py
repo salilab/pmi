@@ -1,6 +1,5 @@
 from __future__ import print_function
 import IMP.test
-import IMP.pmi.representation
 import IMP.pmi.restraints.em
 import IMP.pmi.mmcif
 import IMP.pmi.dof
@@ -1721,15 +1720,14 @@ _ihm_3dem_restraint.cross_correlation_coefficient
         """Test StartingModelDumper.dump_atoms with residue type mismatch"""
         m = IMP.Model()
         po = DummyPO(None)
-        with IMP.allow_deprecated():
-            simo = IMP.pmi.representation.Representation(m)
-        simo.add_protocol_output(po)
-        simo.create_component("Nup84", True)
-        simo.add_component_sequence("Nup84",
-                                    self.get_input_file_name("test.fasta"))
-        nup84 = simo.autobuild_model("Nup84",
-                                     self.get_input_file_name("test.nup84.pdb"),
-                                     "A")
+        s = IMP.pmi.topology.System(m)
+        s.add_protocol_output(po)
+        st1 = s.create_state()
+        nup84 = st1.create_molecule("Nup84", "MELS", "X")
+        nup84.add_structure(self.get_input_file_name('test.nup84.pdb'), 'A')
+        nup84.add_representation(resolutions=[1])
+        hier = s.build()
+
         # Create sequence mismatch
         po.system.entities[0].sequence = po.system.entities[0].sequence[1:]
         self.assign_entity_asym_ids(po.system)

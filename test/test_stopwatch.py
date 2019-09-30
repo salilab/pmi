@@ -22,7 +22,7 @@ def get_times(outkey, *args, **kwargs):
         def __call__(self):
             self.count += 1
             return self.count
-    with mocked_object(time, 'clock', MockClock()):
+    with mocked_object(IMP.pmi1.tools, 'process_time', MockClock()):
         s = IMP.pmi1.tools.Stopwatch(*args, **kwargs)
         return [s.get_output()[outkey] for _ in range(4)]
 

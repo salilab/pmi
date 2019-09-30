@@ -1479,24 +1479,23 @@ _ihm_geometric_object_distance_restraint.dataset_list_id
         class MockObject(object):
             pass
         m = IMP.Model()
-        with IMP.allow_deprecated():
-            simo = IMP.pmi.representation.Representation(m)
+        s = IMP.pmi.topology.System(m)
         po = DummyPO(None)
-        simo.add_protocol_output(po)
-        state = simo._protocol_output[0][1]
+        s.add_protocol_output(po)
+        state = s.create_state()
+        nup84 = state.create_molecule("Nup84", "MELS", "A")
+        nup84.add_structure(self.get_input_file_name('test.nup84.pdb'), 'A')
+        nup84.add_representation(nup84, resolutions=[1])
+        hier = s.build()
+        po_state = po._last_state
 
-        simo.create_component("Nup84", True)
-        simo.add_component_sequence("Nup84",
-                                    self.get_input_file_name("test.fasta"))
-        nup84 = simo.autobuild_model("Nup84",
-                                     self.get_input_file_name("test.nup84.pdb"),
-                                     "A")
-        residues = IMP.pmi.tools.select_by_tuple(simo, "Nup84", resolution=1)
+        residues = IMP.atom.Selection(hier, molecule='Nup84',
+                                      resolution=1).get_selected_particles()
         nterm = residues[:1]
         pmi_r = MockObject()
         pmi_r.dataset = None
         method = getattr(po, method_name)
-        method(state, nterm, tor_R=4.0, tor_r=1.0, tor_th=0.1, sigma=2.0,
+        method(po_state, nterm, tor_R=4.0, tor_r=1.0, tor_th=0.1, sigma=2.0,
                pmi_restraint=pmi_r)
         self.assign_entity_asym_ids(po.system)
         d = ihm.dumper._GeometricObjectDumper()

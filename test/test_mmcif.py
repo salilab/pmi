@@ -1013,10 +1013,15 @@ All kmeans_weight_500_2/cluster.0/ centroid index 49
         class DummyRex(object):
             _number_of_clusters = 1
         m = IMP.Model()
-        with IMP.allow_deprecated():
-            simo = IMP.pmi.representation.Representation(m)
+        s = IMP.pmi.topology.System(m)
+        st = s.create_state()
+        nup84 = st.create_molecule("Nup84", "MELS", "X")
+        nup84.add_representation(resolutions=[1])
         po = DummyPO(None)
-        simo.add_protocol_output(po)
+        s.add_protocol_output(po)
+        po_state = st._protocol_output[0][1]
+        hier = s.build()
+
         with IMP.test.temporary_directory() as tmpdir:
             rex = DummyRex()
             rex._outputdir = tmpdir
@@ -1028,9 +1033,8 @@ All kmeans_weight_500_2/cluster.0/ centroid index 49
                 fh.write("{'modelnum': 1}\n")
             prot = DummyProtocolStep()
             prot.num_models_end = 10
-            po.all_protocols.add_step(prot, po._last_state)
-            po.add_replica_exchange_analysis(simo._protocol_output[0][1],
-                                             rex, {})
+            po.all_protocols.add_step(prot, po_state)
+            po.add_replica_exchange_analysis(po_state, rex, {})
 
     def test_ensemble_dumper(self):
         """Test dumping of simple ensembles"""

@@ -676,20 +676,6 @@ _ihm_starting_model_coord.ordinal_id
 #
 """)
 
-    def get_dumper_sources(self, pdbname):
-        m = IMP.Model()
-        with IMP.allow_deprecated():
-            simo = IMP.pmi.representation.Representation(m)
-        po = DummyPO(None)
-        simo.add_protocol_output(po)
-        state = simo._protocol_output[0][1]
-        chain = 'A'
-        fragment = IMP.pmi.mmcif._PDBFragment(state, "mypdb", 1, 10, 0,
-                                              pdbname, chain, None)
-        model = IMP.pmi.mmcif._StartingModel(fragment)
-        sources = po.starting_model_dump.get_sources(model, pdbname, chain)
-        return m, model, sources
-
     def test_protocol_dumper(self):
         """Test ModelProtocolDumper output"""
         m = IMP.Model()

@@ -42,9 +42,7 @@ class ProtocolOutput(object):
        Unlike simple output of model coordinates, a complete
        protocol includes the input data used, details on the restraints,
        sampling, and clustering, as well as output models.
-       Use via IMP.pmi.representation.Representation.add_protocol_output()
-       (for PMI 1) or
-       IMP.pmi.topology.System.add_protocol_output() (for PMI 2).
+       Use via IMP.pmi.topology.System.add_protocol_output().
 
        @see IMP.pmi.mmcif.ProtocolOutput for a concrete subclass that outputs
             mmCIF files.

@@ -28,8 +28,7 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
     is inferred using Bayes theory of probability
     @note Wraps an IMP::isd::CrossLinkMSRestraint
     """
-    def __init__(self, representation=None,
-                 root_hier=None,
+    def __init__(self, root_hier,
                  CrossLinkDataBase=None,
                  length=10.0,
                  resolution=None,
@@ -39,8 +38,6 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
                  attributes_for_label=None,
                  weight=1.):
         """Constructor.
-        @param representation DEPRECATED The IMP.pmi.representation.Representation
-                object that contain the molecular system
         @param root_hier The canonical hierarchy containing all the states
         @param CrossLinkDataBase The IMP.pmi.io.crosslink.CrossLinkDataBase
                 object that contains the cross-link dataset
@@ -58,19 +55,7 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
         @param weight Weight of restraint
         """
 
-        use_pmi2 = True
-        if representation is not None:
-            use_pmi2 = False
-            if type(representation) != list:
-                representations = [representation]
-            else:
-                representations = representation
-            model = representations[0].prot.get_model()
-        elif root_hier is not None:
-            representations = []
-            model = root_hier.get_model()
-        else:
-            raise Exception("You must pass either representation or root_hier")
+        model = root_hier.get_model()
 
         super(CrossLinkingMassSpectrometryRestraint, self).__init__(
             model, weight=weight, label=label)
@@ -109,39 +94,38 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
 
         xl_groups = [p.get_cross_link_group(self)
                      for p, state in IMP.pmi.tools._all_protocol_outputs(
-                                             representations, root_hier)]
+                                             None, root_hier)]
 
-        # if PMI2, first add all the molecule copies as clones to the database
-        if use_pmi2:
-            copies_to_add = defaultdict(int)
-            print('gathering copies')
-            for xlid in self.CrossLinkDataBase.xlid_iterator():
-                for xl in self.CrossLinkDataBase[xlid]:
-                    r1 = xl[self.CrossLinkDataBase.residue1_key]
-                    c1 = xl[self.CrossLinkDataBase.protein1_key]
-                    r2 = xl[self.CrossLinkDataBase.residue2_key]
-                    c2 = xl[self.CrossLinkDataBase.protein2_key]
-                    for c,r in ((c1,r1),(c2,r2)):
-                        if c in copies_to_add:
-                            continue
-                        sel = IMP.atom.Selection(root_hier,
-                                                 state_index=0,
-                                                 molecule=c,
-                                                 residue_index=r,
-                                                 resolution=resolution).get_selected_particles()
-                        if len(sel)>0:
-                            copies_to_add[c] = len(sel)-1
-            print(copies_to_add)
-            for molname in copies_to_add:
-                if copies_to_add[molname]==0:
-                    continue
-                fo1 = IMP.pmi.io.crosslink.FilterOperator(self.CrossLinkDataBase.protein1_key,operator.eq,molname)
-                self.CrossLinkDataBase.set_value(self.CrossLinkDataBase.protein1_key,molname+'.0',fo1)
-                fo2 = IMP.pmi.io.crosslink.FilterOperator(self.CrossLinkDataBase.protein2_key,operator.eq,molname)
-                self.CrossLinkDataBase.set_value(self.CrossLinkDataBase.protein2_key,molname+'.0',fo2)
-                for ncopy in range(copies_to_add[molname]):
-                    self.CrossLinkDataBase.clone_protein('%s.0'%molname,'%s.%i'%(molname,ncopy+1))
-            print('done pmi2 prelims')
+        # first add all the molecule copies as clones to the database
+        copies_to_add = defaultdict(int)
+        print('gathering copies')
+        for xlid in self.CrossLinkDataBase.xlid_iterator():
+            for xl in self.CrossLinkDataBase[xlid]:
+                r1 = xl[self.CrossLinkDataBase.residue1_key]
+                c1 = xl[self.CrossLinkDataBase.protein1_key]
+                r2 = xl[self.CrossLinkDataBase.residue2_key]
+                c2 = xl[self.CrossLinkDataBase.protein2_key]
+                for c,r in ((c1,r1),(c2,r2)):
+                    if c in copies_to_add:
+                        continue
+                    sel = IMP.atom.Selection(root_hier,
+                                             state_index=0,
+                                             molecule=c,
+                                             residue_index=r,
+                                             resolution=resolution).get_selected_particles()
+                    if len(sel)>0:
+                        copies_to_add[c] = len(sel)-1
+        print(copies_to_add)
+        for molname in copies_to_add:
+            if copies_to_add[molname]==0:
+                continue
+            fo1 = IMP.pmi.io.crosslink.FilterOperator(self.CrossLinkDataBase.protein1_key,operator.eq,molname)
+            self.CrossLinkDataBase.set_value(self.CrossLinkDataBase.protein1_key,molname+'.0',fo1)
+            fo2 = IMP.pmi.io.crosslink.FilterOperator(self.CrossLinkDataBase.protein2_key,operator.eq,molname)
+            self.CrossLinkDataBase.set_value(self.CrossLinkDataBase.protein2_key,molname+'.0',fo2)
+            for ncopy in range(copies_to_add[molname]):
+                self.CrossLinkDataBase.clone_protein('%s.0'%molname,'%s.%i'%(molname,ncopy+1))
+        print('done pmi2 prelims')
 
         for xlid in self.CrossLinkDataBase.xlid_iterator():
             new_contribution=True
@@ -157,55 +141,39 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
                                                             group), group)
                           for p, group in
                                  zip(IMP.pmi.tools._all_protocol_outputs(
-                                             representations, root_hier),
+                                             None, root_hier),
                                      xl_groups)]
 
-                if use_pmi2:
-                    iterlist = range(len(IMP.atom.get_by_type(root_hier,IMP.atom.STATE_TYPE)))
-                else:
-                    iterlist = representations
+                iterlist = range(len(IMP.atom.get_by_type(root_hier,
+                                                          IMP.atom.STATE_TYPE)))
                 for nstate, r in enumerate(iterlist):
                     # loop over every state
                     xl[self.CrossLinkDataBase.state_key]=nstate
                     xl[self.CrossLinkDataBase.data_set_name_key]=self.label
 
-                    if use_pmi2:
-                        name1 = c1
-                        name2 = c2
-                        copy1 = 0
-                        copy2 = 0
-                        if '.' in c1:
-                            name1,copy1 = c1.split('.')
-                        if '.' in c2:
-                            name2,copy2 = c2.split('.')
-                        ps1 = IMP.atom.Selection(root_hier,
-                                                 state_index=nstate,
-                                                 molecule=name1,
-                                                 copy_index=int(copy1),
-                                                 residue_index=r1,
-                                                 resolution=resolution).get_selected_particles()
-                        ps2 = IMP.atom.Selection(root_hier,
-                                                 state_index=nstate,
-                                                 molecule=name2,
-                                                 copy_index=int(copy2),
-                                                 residue_index=r2,
-                                                 resolution=resolution).get_selected_particles()
+                    name1 = c1
+                    name2 = c2
+                    copy1 = 0
+                    copy2 = 0
+                    if '.' in c1:
+                        name1,copy1 = c1.split('.')
+                    if '.' in c2:
+                        name2,copy2 = c2.split('.')
+                    ps1 = IMP.atom.Selection(root_hier,
+                                             state_index=nstate,
+                                             molecule=name1,
+                                             copy_index=int(copy1),
+                                             residue_index=r1,
+                                             resolution=resolution).get_selected_particles()
+                    ps2 = IMP.atom.Selection(root_hier,
+                                             state_index=nstate,
+                                             molecule=name2,
+                                             copy_index=int(copy2),
+                                             residue_index=r2,
+                                             resolution=resolution).get_selected_particles()
 
-                        ps1 = [IMP.atom.Hierarchy(p) for p in ps1]
-                        ps2 = [IMP.atom.Hierarchy(p) for p in ps2]
-                    else:
-                        ps1 = IMP.pmi.tools.select(
-                             r,
-                             resolution=resolution,
-                             name=c1,
-                             name_is_ambiguous=False,
-                             residue=r1)
-                        ps2 = IMP.pmi.tools.select(
-                             r,
-                             resolution=resolution,
-                             name=c2,
-                             name_is_ambiguous=False,
-                             residue=r2)
+                    ps1 = [IMP.atom.Hierarchy(p) for p in ps1]
+                    ps2 = [IMP.atom.Hierarchy(p) for p in ps2]
 
                     if len(ps1) > 1:
                         raise ValueError("residue %d of chain %s selects multiple particles %s" % (r1, c1, str(ps1)))
@@ -291,7 +259,7 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
                     print("CrossLinkingMassSpectrometryRestraint: between particles %s and %s" % (p1.get_name(), p2.get_name()))
                     print("==========================================\n")
                     for p, ex_xl in zip(IMP.pmi.tools._all_protocol_outputs(
-                                                representations, root_hier),
+                                                None, root_hier),
                                         ex_xls):
                         p[0].add_cross_link(p[1], ex_xl[0], p1, p2, length,
                                             sigma1, sigma2, psi, ex_xl[1])

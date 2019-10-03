@@ -631,6 +631,7 @@ class Output(object):
             else:
                 print("%s from old objects (file %s) not in new objects"
                       % (str(k), str(name)), file=sys.stderr)
+        flstat.close()
         return passed
 
     def get_environment_variables(self):

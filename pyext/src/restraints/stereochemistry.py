@@ -402,7 +402,7 @@ class ResidueBondRestraint(object):
                 raise ValueError("wrong length of pair")
             for p in ps:
                 if not IMP.atom.Residue.get_is_setup(p):
-                    raise TypeError("not a residue")
+                    raise TypeError("%s is not a residue" % p)
                 else:
                     pair.append(p)
             print("ResidueBondRestraint: adding a restraint between %s %s" % (pair[0].get_name(), pair[1].get_name()))
@@ -477,7 +477,7 @@ class ResidueAngleRestraint(object):
                 raise ValueError("wrong length of triplet")
             for p in ps:
                 if not IMP.atom.Residue.get_is_setup(p):
-                    raise TypeError("not a residue")
+                    raise TypeError("%s is not a residue" % p)
                 else:
                     triplet.append(p)
             print("ResidueAngleRestraint: adding a restraint between %s %s %s" % (triplet[0].get_name(), triplet[1].get_name(), triplet[2].get_name()))
@@ -556,7 +556,7 @@ class ResidueDihedralRestraint(object):
                 raise ValueError("wrong length of quadruplet")
             for p in ps:
                 if not IMP.atom.Residue.get_is_setup(p):
-                    raise TypeError("not a residue")
+                    raise TypeError("%s is not a residue" % p)
                 else:
                     quadruplet.append(p)
             dihedraltype = stringsequence[n]

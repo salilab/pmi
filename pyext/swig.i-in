@@ -2,7 +2,6 @@ IMP_SWIG_OBJECT(IMP::pmi, CompositeRestraint, CompositeRestraints);
 IMP_SWIG_DECORATOR(IMP::pmi, Uncertainty, Uncertainties);
 IMP_SWIG_DECORATOR(IMP::pmi, Resolution, Resolutions);
 IMP_SWIG_DECORATOR(IMP::pmi, Symmetric, Symmetrics);
-IMP_SWIG_OBJECT(IMP::pmi, SigmoidRestraintSphere, SigmoidRestraintSpheres);
 IMP_SWIG_OBJECT(IMP::pmi, TransformMover, TransformMovers);
 IMP_SWIG_OBJECT(IMP::pmi, MembraneRestraint, MembraneRestraints);
 IMP_SWIG_OBJECT(IMP::pmi, InternalCoordinatesConstraint, InternalCoordinatesConstraints);
@@ -29,7 +28,6 @@ class MissingFileWarning(UserWarning):
 %include "IMP/pmi/Uncertainty.h"
 %include "IMP/pmi/Resolution.h"
 %include "IMP/pmi/Symmetric.h"
-%include "IMP/pmi/SigmoidRestraintSphere.h"
 %include "IMP/pmi/TransformMover.h"
 %include "IMP/pmi/utilities.h"
 %include "IMP/pmi/InternalCoordinatesConstraint.h"

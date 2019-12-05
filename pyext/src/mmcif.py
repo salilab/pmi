@@ -1270,9 +1270,10 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
         self._all_components[name] = None
         if modeled:
             state.all_modeled_components.append(name)
-            if new_comp:
+            if asym_name not in self.asym_units:
                 # assign asym once we get sequence
                 self.asym_units[asym_name] = None
+            if new_comp:
                 self.all_modeled_components.append(name)
 
     def add_component_sequence(self, state, name, seq, asym_name=None):

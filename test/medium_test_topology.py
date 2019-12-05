@@ -361,21 +361,27 @@ class Tests(IMP.test.TestCase):
         # test without name map
         seqs0 = IMP.pmi.topology.Sequences(
             self.get_input_file_name('seqs.fasta'))
-        self.assertEqual(len(seqs0), 3)
+        self.assertEqual(len(seqs0), 5)
         self.assertEqual(seqs0['Protein_1'], 'QEALVVKDLL')
         self.assertEqual(seqs0['Protein_2'], 'PEEDILKYVSYTL')
         self.assertEqual(seqs0['Protein_3'], 'QEALVVKDLL')
+        self.assertEqual(seqs0['RNA1'], 'ACGU')
+        self.assertEqual(seqs0['DNA1'], 'ACGT')
 
         # test with name map
         seqs = IMP.pmi.topology.Sequences(
             self.get_input_file_name('seqs.fasta'),
             name_map={'Protein_1': 'Prot1',
                       'Protein_2': 'Prot2',
-                      'Protein_3': 'Prot3'})
-        self.assertEqual(len(seqs), 3)
+                      'Protein_3': 'Prot3',
+                      'RNA1': 'RNA',
+                      'DNA1': 'DNA'})
+        self.assertEqual(len(seqs), 5)
         self.assertEqual(seqs['Prot1'], 'QEALVVKDLL')
         self.assertEqual(seqs['Prot2'], 'PEEDILKYVSYTL')
         self.assertEqual(seqs['Prot3'], 'QEALVVKDLL')
+        self.assertEqual(seqs['RNA'], 'ACGU')
+        self.assertEqual(seqs['DNA'], 'ACGT')
 
     def test_system_base_build(self):
         """Test SystemBase.build()"""

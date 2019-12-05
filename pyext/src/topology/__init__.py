@@ -562,7 +562,7 @@ class Molecule(_SystemBase):
                Format options: tuple (r,g,b) with values 0 to 1;
                float (from 0 to 1, a map from Blue to Green to Red);
                a [Chimera name](https://www.cgl.ucsf.edu/chimera/docs/UsersGuide/colortables.html);
-               a hex RGB string (e.g. "0xff0000");
+               a hex RGB string (e.g. "#ff0000");
                an IMP.display.Color object
         @note You cannot call add_representation multiple times for the
               same residues.

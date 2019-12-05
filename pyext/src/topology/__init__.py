@@ -1557,7 +1557,10 @@ class _Component(object):
         color=self.color
         if isinstance(color, list):
             color=','.join([str(x) for x in color])
-        a= '|'+'|'.join([name,color,self._orig_fasta_file,self.fasta_id,
+        fastaid = self.fasta_id
+        if self.fasta_flag:
+            fastaid += "," + self.fasta_flag
+        a= '|'+'|'.join([name,color,self._orig_fasta_file,fastaid,
                          self._orig_pdb_input,chain,self._l2s(list(res_range)),
                              str(self.pdb_offset),str(self.bead_size),
                              str(self.em_residues_per_gaussian),

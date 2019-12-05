@@ -693,7 +693,8 @@ class Molecule(_SystemBase):
                 po.create_component(state, name, True,
                                     asym_name=self._name_with_copy)
                 po.add_component_sequence(state, name, self.sequence,
-                                          asym_name=self._name_with_copy)
+                                          asym_name=self._name_with_copy,
+                                          alphabet=self.alphabet)
             # if requested, clone structure and representations BEFORE building original
             if self.mol_to_clone is not None:
                 for nr,r in enumerate(self.mol_to_clone.residues):

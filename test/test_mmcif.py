@@ -255,6 +255,30 @@ _ihm_multi_state_model_group_link.model_group_id
         h1 = IMP.atom.get_by_type(nup85_2.hier, IMP.atom.RESIDUE_TYPE)
         self.assertEqual(mapper[h1[0]]._id, 'B')
 
+    def test_rna_dna(self):
+        """Test handling of RNA/DNA sequences"""
+        m = IMP.Model()
+        po = DummyPO(None)
+        s = IMP.pmi.topology.System(m)
+        s.add_protocol_output(po)
+        st1 = s.create_state()
+        rna = st1.create_molecule("RNA1", "ACGU", "A",
+                                  alphabet=IMP.pmi.alphabets.rna)
+        rna.add_representation(resolutions=[1])
+        dna = st1.create_molecule("DNA1", "ACGT", "B",
+                                  alphabet=IMP.pmi.alphabets.dna)
+        dna.add_representation(resolutions=[1])
+
+        hier = s.build()
+        self.assertEqual(len(po.system.entities), 2)
+        self.assertEqual(len(po.system.entities[0].sequence), 4)
+        for r in po.system.entities[0].sequence:
+            self.assertIsInstance(r, ihm.RNAChemComp)
+        self.assertEqual(len(po.system.entities[1].sequence), 4)
+        for r in po.system.entities[1].sequence:
+            self.assertIsInstance(r, ihm.DNAChemComp)
+        self.assertEqual(len(po.system.asym_units), 2)
+
     def test_component_mapper(self):
         """Test ComponentMapper class"""
         m = IMP.Model()
@@ -278,9 +302,11 @@ _ihm_multi_state_model_group_link.model_group_id
         """Test _EntityMapper class"""
         system = ihm.System()
         c = IMP.pmi.mmcif._EntityMapper(system)
-        c.add('foo', 'MELS', 0)
-        c.add('bar', 'SELM', 0)
-        c.add('foo_2', 'MELS', 0)
+        c.add('foo', 'MELS', 0, alphabet=None)
+        c.add('bar', 'SELM', 0, alphabet=IMP.pmi.alphabets.amino_acid)
+        c.add('foo_2', 'MELS', 0, alphabet=None)
+        self.assertRaises(TypeError, c.add, 'baz', 'MELSXX', 0,
+                          alphabet='garbage')
         self.assertEqual(len(system.entities), 2)
         self.assertIs(c['foo'], c['foo_2'])
         self.assertIsNot(c['foo'], c['bar'])

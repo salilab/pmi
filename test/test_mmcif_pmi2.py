@@ -22,8 +22,7 @@ class MockFh(object):
 
 
 class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
-    def flush(self):
-        pass
+    pass
 
 class Tests(IMP.test.TestCase):
 
@@ -86,27 +85,29 @@ class Tests(IMP.test.TestCase):
         self.assertEqual(len(pos[0]), 2)
         self.assertEqual(pos[0][0], po)
 
-    def test_finalize_flush_mmcif(self):
-        """Test ProtocolOutput.finalize() and .flush() with mmCIF output"""
+    def test_finalize_write_mmcif(self):
+        """Test ProtocolOutput.finalize() and mmCIF output"""
         m = IMP.Model()
         s = IMP.pmi.topology.System(m)
-        fh = StringIO()
-        po = IMP.pmi.mmcif.ProtocolOutput(fh)
+        po = IMP.pmi.mmcif.ProtocolOutput()
         s.add_protocol_output(po)
-        po.flush()
+        po.finalize()
+        fh = StringIO()
+        ihm.dumper.write(fh, [po.system])
         self.assertEqual(fh.getvalue().split('\n')[:4],
                          ['data_model', '_entry.id model',
                           '_struct.entry_id model', '_struct.title .'])
 
-    def test_finalize_flush_bcif(self):
-        """Test ProtocolOutput.finalize() and .flush() with BinaryCIF output"""
+    def test_finalize_write_bcif(self):
+        """Test ProtocolOutput.finalize() and BinaryCIF output"""
         m = IMP.Model()
         s = IMP.pmi.topology.System(m)
-        fh = MockFh()
         sys.modules['msgpack'] = MockMsgPack
-        po = IMP.pmi.mmcif.ProtocolOutput(fh)
+        po = IMP.pmi.mmcif.ProtocolOutput()
         s.add_protocol_output(po)
-        po.flush(format='BCIF')
+        po.finalize()
+        fh = MockFh()
+        ihm.dumper.write(fh, [po.system], format='BCIF')
         self.assertEqual(fh.data[b'dataBlocks'][0][b'categories'][0][b'name'],
                          b'_entry')
 

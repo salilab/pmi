@@ -21,9 +21,6 @@ class MockFh(object):
     pass
 
 
-class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
-    pass
-
 class Tests(IMP.test.TestCase):
 
     def assign_entity_asym_ids(self, system):
@@ -42,7 +39,7 @@ class Tests(IMP.test.TestCase):
         """Test ComponentMapper with PMI2 topology"""
         m = IMP.Model()
         s = IMP.pmi.topology.System(m)
-        po = DummyPO(None)
+        po = IMP.pmi.mmcif.ProtocolOutput()
         s.add_protocol_output(po)
         state = s.create_state()
         nup84 = state.create_molecule("Nup84", "MELS", "A")
@@ -56,7 +53,7 @@ class Tests(IMP.test.TestCase):
         """Test mapping from Hierarchy back to System"""
         m = IMP.Model()
         s = IMP.pmi.topology.System(m)
-        po = DummyPO(None)
+        po = IMP.pmi.mmcif.ProtocolOutput()
         s.add_protocol_output(po)
         state = s.create_state()
         nup84 = state.create_molecule("Nup84", "MELS", "A")
@@ -115,7 +112,7 @@ class Tests(IMP.test.TestCase):
         """Test EntityDump with PMI2-style init"""
         m = IMP.Model()
         s = IMP.pmi.topology.System(m)
-        po = DummyPO(None)
+        po = IMP.pmi.mmcif.ProtocolOutput()
         s.add_protocol_output(po)
         state = s.create_state()
         nup84 = state.create_molecule("Nup84", "MELS", "A")
@@ -144,7 +141,7 @@ _entity.details
         """Test ModelRepresentationDumper with PMI2-style init"""
         m = IMP.Model()
         s = IMP.pmi.topology.System(m)
-        po = DummyPO(None)
+        po = IMP.pmi.mmcif.ProtocolOutput()
         s.add_protocol_output(po)
         state = s.create_state()
         nup84 = state.create_molecule("Nup84", "MELS", "A")

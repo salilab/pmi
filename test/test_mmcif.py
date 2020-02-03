@@ -29,9 +29,6 @@ class DummyRepr(object):
 class EmptyObject(object):
     state = DummyState()
 
-class DummyPO(IMP.pmi.mmcif.ProtocolOutput):
-    pass
-
 def get_all_models_group(simo, po):
     state = simo._protocol_output[0][1]
     return state.add_model_group(ihm.model.ModelGroup(name="All models"))
@@ -91,7 +88,7 @@ class Tests(IMP.test.TestCase):
 
     def test_single_state(self):
         """Test with a single state"""
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         po._add_state(DummyRepr(None, None))
         d = ihm.dumper._MultiStateDumper()
         fh = StringIO()
@@ -101,7 +98,7 @@ class Tests(IMP.test.TestCase):
 
     def test_multi_state(self):
         """Test with multiple states"""
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         r1 = DummyRepr(None, None)
         state1 = po._add_state(r1)
         state1.add_model_group(ihm.model.ModelGroup(name="Group 1"))
@@ -139,7 +136,7 @@ _ihm_multi_state_model_group_link.model_group_id
 
     def test_create_component_repeat(self):
         """Test repeated calls to create_component()"""
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         state = po._add_state(EmptyObject())
         po.create_component(state, "foo", True)
         po.add_component_sequence(state, "foo", "CCC")
@@ -156,7 +153,7 @@ _ihm_multi_state_model_group_link.model_group_id
     def test_asym_units_pmi1(self):
         """Test assigning asym units and entities, PMI1 style"""
         # In PMI1 multiple copies have different component names
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         state1 = po._add_state(EmptyObject())
         state2 = po._add_state(EmptyObject())
         for state, c, seq in ((state1, "foo", "AAA"), (state1, "bar", "AAA"),
@@ -179,7 +176,7 @@ _ihm_multi_state_model_group_link.model_group_id
         """Test assigning asym units and entities, PMI2 style"""
         # In PMI2 multiple copies have the same component name, different asym
         # names
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         state1 = po._add_state(EmptyObject())
         state2 = po._add_state(EmptyObject())
         for state, c, asym, seq in ((state1, "foo", "foo.1", "AAA"),
@@ -205,7 +202,7 @@ _ihm_multi_state_model_group_link.model_group_id
         m = IMP.Model()
         simo = IMP.pmi.topology.System(m)
         st = simo.create_state()
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         simo.add_protocol_output(po)
         po.add_component_sequence(po._last_state, 'foo.1@12', 'ACGT')
         po.add_component_sequence(po._last_state, 'bar', 'ACGT')
@@ -220,7 +217,7 @@ _ihm_multi_state_model_group_link.model_group_id
     def test_asym_id_mapper(self):
         """Test AsymIDMapper class"""
         m = IMP.Model()
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         s = IMP.pmi.topology.System(m)
         s.add_protocol_output(po)
         st1 = s.create_state()
@@ -257,7 +254,7 @@ _ihm_multi_state_model_group_link.model_group_id
     def test_rna_dna(self):
         """Test handling of RNA/DNA sequences"""
         m = IMP.Model()
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         s = IMP.pmi.topology.System(m)
         s.add_protocol_output(po)
         st1 = s.create_state()
@@ -351,7 +348,7 @@ _ihm_multi_state_model_group_link.model_group_id
     def test_model_dumper_sphere(self):
         """Test ModelDumper sphere_obj output"""
         m = IMP.Model()
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         s = IMP.pmi.topology.System(m)
         s.add_protocol_output(po)
         st1 = s.create_state()
@@ -430,7 +427,7 @@ _ihm_sphere_obj_site.model_id
         """Test ModelDumper atom_site output"""
         m = IMP.Model()
         s = IMP.pmi.topology.System(m)
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         s.add_protocol_output(po)
         state = s.create_state()
         nup84 = state.create_molecule("Nup84", "MELS", "A")
@@ -529,7 +526,7 @@ _ihm_sphere_obj_site.model_id
         """Test ModelDumper sphere_obj output with RMSF"""
         m = IMP.Model()
         s = IMP.pmi.topology.System(m)
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         s.add_protocol_output(po)
         state = s.create_state()
         nup84 = state.create_molecule("Nup84", "MELS", "A")
@@ -626,7 +623,7 @@ _ihm_sphere_obj_site.model_id
     def test_starting_model_dumper(self):
         """Test StartingModelDumper"""
         m = IMP.Model()
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         s = IMP.pmi.topology.System(m)
         s.add_protocol_output(po)
         st1 = s.create_state()
@@ -732,7 +729,7 @@ _ihm_starting_model_coord.ordinal_id
         """Test ModelProtocolDumper output"""
         m = IMP.Model()
         s = IMP.pmi.topology.System(m)
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         s.add_protocol_output(po)
         state = s.create_state()
         nup84 = state.create_molecule("Nup84", "MELS", "A")
@@ -798,7 +795,7 @@ _ihm_modeling_protocol_details.description
         """Test IMP-specific replica exchange dumper output"""
         m = IMP.Model()
         s = IMP.pmi.topology.System(m)
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         s.add_protocol_output(po)
         state = s.create_state()
         nup84 = state.create_molecule("Nup84", "MELS", "A")
@@ -836,7 +833,7 @@ _imp_replica_exchange_protocol.replica_exchange_maximum_temperature
 
     def test_add_simple_dynamics(self):
         """Test add_simple_dynamics()"""
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         po._add_state(EmptyObject())
         po._add_simple_dynamics(100, "Brownian dynamics")
 
@@ -844,7 +841,7 @@ _imp_replica_exchange_protocol.replica_exchange_maximum_temperature
         """Test add_simple_postprocessing"""
         class DummyProtocolStep(object):
             pass
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         po._add_state(DummyRepr(None, None))
         p = DummyProtocolStep()
         p.num_models_end = 10
@@ -901,7 +898,7 @@ _ihm_modeling_post_process.details
         """Test add_no_postprocessing"""
         class DummyProtocolStep(object):
             pass
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         po._add_state(DummyRepr(None, None))
         p = DummyProtocolStep()
         p.num_models_end = 10
@@ -943,7 +940,7 @@ _ihm_modeling_post_process.details
         """Test add_simple_ensemble"""
         m = IMP.Model()
         s = IMP.pmi.topology.System(m)
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         s.add_protocol_output(po)
         st1 = s.create_state()
         nup84 = st1.create_molecule("Nup84", "MELS", "X")
@@ -1037,7 +1034,7 @@ _ihm_modeling_post_process.details
             e.load_localization_density(None, 'noden', [], comp_to_asym)
             self.assertEqual(len(e.densities), 0)
             # Density that does exist
-            po = DummyPO()
+            po = IMP.pmi.mmcif.ProtocolOutput()
             r = DummyRepr('dummy', 'none')
             state = po._add_state(r)
             e.load_localization_density(state, 'Nup84', ['Nup84'], comp_to_asym)
@@ -1072,7 +1069,7 @@ All kmeans_weight_500_2/cluster.0/ centroid index 49
         st = s.create_state()
         nup84 = st.create_molecule("Nup84", "MELS", "X")
         nup84.add_representation(resolutions=[1])
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         s.add_protocol_output(po)
         po_state = st._protocol_output[0][1]
         hier = s.build()
@@ -1097,7 +1094,7 @@ All kmeans_weight_500_2/cluster.0/ centroid index 49
             pass
         m = IMP.Model()
         s = IMP.pmi.topology.System(m)
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         s.add_protocol_output(po)
         st1 = s.create_state()
 
@@ -1142,7 +1139,7 @@ _ihm_ensemble_info.details
 
         m = IMP.Model()
         s = IMP.pmi.topology.System(m)
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         s.add_protocol_output(po)
         st1 = s.create_state()
         nup84 = st1.create_molecule("Nup84", "MELS", "X")
@@ -1186,7 +1183,7 @@ _ihm_localization_density_files.entity_poly_segment_id
             label = 'foo'
         m = IMP.Model()
         s = IMP.pmi.topology.System(m)
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         s.add_protocol_output(po)
         state = s.create_state()
         po_state = state._protocol_output[0][1]
@@ -1282,7 +1279,7 @@ _ihm_cross_link_restraint.pseudo_site_flag
         """Test add_em2d_restraint method"""
         m = IMP.Model()
         s = IMP.pmi.topology.System(m)
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         s.add_protocol_output(po)
         st1 = s.create_state()
         state = st1._protocol_output[0][1]
@@ -1432,7 +1429,7 @@ _ihm_geometric_object_axis.transformation_id
             pass
         m = IMP.Model()
         s = IMP.pmi.topology.System(m)
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         s.add_protocol_output(po)
         state = s.create_state()
         nup84 = state.create_molecule("Nup84", "MELS", "A")
@@ -1514,7 +1511,7 @@ _ihm_geometric_object_distance_restraint.dataset_list_id
 
     def test_get_membrane(self):
         """Test _get_membrane() method"""
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         m1 = po._get_membrane(1.0, 2.0, 3.0)
         m2 = po._get_membrane(1.000001, 2.0, 3.0)
         m3 = po._get_membrane(2.0, 2.0, 3.0)
@@ -1540,7 +1537,7 @@ _ihm_geometric_object_distance_restraint.dataset_list_id
             pass
         m = IMP.Model()
         s = IMP.pmi.topology.System(m)
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         s.add_protocol_output(po)
         state = s.create_state()
         nup84 = state.create_molecule("Nup84", "MELS", "A")
@@ -1672,7 +1669,7 @@ _ihm_geometric_object_distance_restraint.dataset_list_id
             pass
         m = IMP.Model()
         s = IMP.pmi.topology.System(m)
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         s.add_protocol_output(po)
         st1 = s.create_state()
         state = st1._protocol_output[0][1]
@@ -1716,7 +1713,7 @@ _ihm_sas_restraint.details
         """Test add_em3d_restraint method"""
         m = IMP.Model()
         s = IMP.pmi.topology.System(m)
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         s.add_protocol_output(po)
         st1 = s.create_state()
         state = st1._protocol_output[0][1]
@@ -1776,7 +1773,7 @@ _ihm_3dem_restraint.cross_correlation_coefficient
     def test_dump_atoms_restype_mismatch(self):
         """Test StartingModelDumper.dump_atoms with residue type mismatch"""
         m = IMP.Model()
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         s = IMP.pmi.topology.System(m)
         s.add_protocol_output(po)
         st1 = s.create_state()
@@ -1921,7 +1918,7 @@ _ihm_starting_model_seq_dif.details
         """Test ModelRepresentationDumper"""
         m = IMP.Model()
         s = IMP.pmi.topology.System(m)
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         s.add_protocol_output(po)
         state = s.create_state()
         nup84 = state.create_molecule("Nup84", "ME", "A")
@@ -1970,7 +1967,7 @@ _ihm_model_representation_details.description
         """Test ModelRepresentationDumper with rigid bodies"""
         m = IMP.Model()
         s = IMP.pmi.topology.System(m)
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         s.add_protocol_output(po)
         state = s.create_state()
         nup84 = state.create_molecule("Nup84", "MELS", "A")
@@ -2042,7 +2039,7 @@ _ihm_model_representation_details.description
 
     def test_state_prefix(self):
         """Test _State.get_prefixed_name()"""
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         r = DummyRepr('short', 'long')
         state = po._add_state(r)
         self.assertEqual(state.get_prefixed_name('foo'), 'short foo')
@@ -2054,7 +2051,7 @@ _ihm_model_representation_details.description
 
     def test_state_postfix(self):
         """Test _State.get_postfixed_name()"""
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         r = DummyRepr('short', 'long')
         state = po._add_state(r)
         self.assertEqual(state.get_postfixed_name('foo'), 'foo in state short')
@@ -2135,7 +2132,7 @@ _imp_replica_exchange_protocol.replica_exchange_maximum_temperature
     def test_gaussian_em_restraint(self):
         """Test adding GaussianEMRestraint"""
         m = IMP.Model()
-        po = DummyPO()
+        po = IMP.pmi.mmcif.ProtocolOutput()
         s = IMP.pmi.topology.System(m)
         s.add_protocol_output(po)
         st1 = s.create_state()

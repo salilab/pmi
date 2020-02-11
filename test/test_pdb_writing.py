@@ -36,7 +36,8 @@ class Tests(IMP.test.TestCase):
         molB.add_representation(aresB,[10])
         molB.add_representation(molB[:]-aresB,20)
 
-        molC = molB.create_copy(chain_id='C')
+        # Multi-character chain ID
+        molC = molB.create_copy(chain_id='CA')
         aresC = molC.add_structure(pdb_file,chain_id='B',soft_check=True)
         molC.add_representation(aresC,[1,10])
         molC.add_representation(molC[:]-aresC,2)
@@ -79,7 +80,7 @@ class Tests(IMP.test.TestCase):
 
         with open('test_pdb_writing.cif') as fh:
             s, = ihm.reader.read(fh)
-        self.assertEqual([x.id for x in s.asym_units], [' ', ' 1', 'A', 'A1', 'B', 'C'])
+        self.assertEqual([x.id for x in s.asym_units], [' ', ' 1', 'A', 'A1', 'B', 'CA'])
 
         for i in range(10):
             os.unlink('test_pdb_writing.'+str(i)+'.cif')
@@ -117,26 +118,26 @@ ATOM     14  CA  SER A   8     119.165  25.590 -40.036  1.00  2.61           C
 ATOM     15  CA  BEA B   2      70.427  58.819  51.717  1.00  3.50           C
 ATOM     16  CA  BEA B   4      68.799  58.791  50.131  1.00  3.69           C
 ATOM     17  CA  BEA B   7      68.584  58.274  48.425  1.00  4.76           C
-ATOM     18  CA  BEA C   2      70.427  58.819  51.717  1.00  3.50           C
-ATOM     19  CA  ASP C   3      70.427  58.819  51.717  1.00  2.87           C
-ATOM     20  CA  GLU C   4      68.584  58.274  48.425  1.00  3.00           C
-ATOM     21  CA  BEA C   6      68.584  58.274  48.425  1.00  3.50           C
-ATOM     22  CA  BEA C   8      68.584  58.274  48.425  1.00  3.50           C
-ATOM     23  CA  THR C   9      68.584  58.274  48.425  1.00  2.80           C
-ATOM     24  CA  MET     1     114.370  27.980 -26.088  1.00  3.07           C
-ATOM     25  CA  VAL     2     114.370  27.980 -26.088  1.00  2.89           C
-ATOM     26  CA  GLY     3     111.506  26.368 -28.075  1.00  2.27           C
-ATOM     27  CA  GLN     4     113.468  23.113 -28.639  1.00  3.01           C
-ATOM     28  CA  GLN     5     113.808  21.534 -32.168  1.00  3.01           C
-ATOM     29  CA  TYR     6     116.743  22.770 -34.259  1.00  3.32           C
-ATOM     30  CA  SER     7     116.626  25.161 -37.229  1.00  2.61           C
-ATOM     31  CA  SER     8     119.165  25.590 -40.036  1.00  2.61           C
-ATOM     32  CA  BEA A   2      70.427  58.819  51.717  1.00  3.50           C
-ATOM     33  CA  ASP A   3      70.427  58.819  51.717  1.00  2.87           C
-ATOM     34  CA  GLU A   4      68.584  58.274  48.425  1.00  3.00           C
-ATOM     35  CA  BEA A   6      68.584  58.274  48.425  1.00  3.50           C
-ATOM     36  CA  BEA A   8      68.584  58.274  48.425  1.00  3.50           C
-ATOM     37  CA  THR A   9      68.584  58.274  48.425  1.00  2.80           C
+ATOM     18  CA  MET     1     114.370  27.980 -26.088  1.00  3.07           C
+ATOM     19  CA  VAL     2     114.370  27.980 -26.088  1.00  2.89           C
+ATOM     20  CA  GLY     3     111.506  26.368 -28.075  1.00  2.27           C
+ATOM     21  CA  GLN     4     113.468  23.113 -28.639  1.00  3.01           C
+ATOM     22  CA  GLN     5     113.808  21.534 -32.168  1.00  3.01           C
+ATOM     23  CA  TYR     6     116.743  22.770 -34.259  1.00  3.32           C
+ATOM     24  CA  SER     7     116.626  25.161 -37.229  1.00  2.61           C
+ATOM     25  CA  SER     8     119.165  25.590 -40.036  1.00  2.61           C
+ATOM     26  CA  BEA A   2      70.427  58.819  51.717  1.00  3.50           C
+ATOM     27  CA  ASP A   3      70.427  58.819  51.717  1.00  2.87           C
+ATOM     28  CA  GLU A   4      68.584  58.274  48.425  1.00  3.00           C
+ATOM     29  CA  BEA A   6      68.584  58.274  48.425  1.00  3.50           C
+ATOM     30  CA  BEA A   8      68.584  58.274  48.425  1.00  3.50           C
+ATOM     31  CA  THR A   9      68.584  58.274  48.425  1.00  2.80           C
+ATOM     32  CA  BEA C   2      70.427  58.819  51.717  1.00  3.50           C
+ATOM     33  CA  ASP C   3      70.427  58.819  51.717  1.00  2.87           C
+ATOM     34  CA  GLU C   4      68.584  58.274  48.425  1.00  3.00           C
+ATOM     35  CA  BEA C   6      68.584  58.274  48.425  1.00  3.50           C
+ATOM     36  CA  BEA C   8      68.584  58.274  48.425  1.00  3.50           C
+ATOM     37  CA  THR C   9      68.584  58.274  48.425  1.00  2.80           C
 ENDMDL'''.split("\n")
 
         with open("test_pdb_writing.pdb") as f:

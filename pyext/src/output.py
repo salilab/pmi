@@ -160,6 +160,7 @@ class Output(object):
     """
     def __init__(self, ascii=True,atomistic=False):
         self.dictionary_pdbs = {}
+        self._pdb_mmcif = {}
         self.dictionary_rmfs = {}
         self.dictionary_stats = {}
         self.dictionary_stats2 = {}
@@ -207,15 +208,17 @@ class Output(object):
             for n, i in enumerate(self.dictionary_pdbs[name].get_children()):
                 self.dictchain[name][i.get_name()] = chainids[n]
 
-    def init_pdb(self, name, prot):
+    def init_pdb(self, name, prot, mmcif=False):
         """Init PDB Writing.
         @param name The PDB filename
         @param prot The hierarchy to write to this pdb file
+        @param mmcif If True, write PDBs in mmCIF format
         @note if the PDB name is 'System' then will use Selection to get molecules
         """
         flpdb = open(name, 'w')
         flpdb.close()
         self.dictionary_pdbs[name] = prot
+        self._pdb_mmcif[name] = mmcif
         self._init_dictchain(name, prot)
 
     def write_psf(self,filename,name):
@@ -265,8 +268,7 @@ class Output(object):
     def write_pdb(self,name,
                   appendmode=True,
                   translate_to_geometric_center=False,
-                  write_all_residues_per_bead=False,
-                  mmcif=False):
+                  write_all_residues_per_bead=False):
 
         (particle_infos_for_pdb,
          geometric_center) = self.get_particle_infos_for_pdb_writing(name)
@@ -276,7 +278,7 @@ class Output(object):
 
         filemode = 'a' if appendmode else 'w'
         with open(name, filemode) as flpdb:
-            if mmcif:
+            if self._pdb_mmcif[name]:
                 _write_mmcif_internal(flpdb, particle_infos_for_pdb,
                                       geometric_center,
                                       write_all_residues_per_bead,
@@ -405,7 +407,7 @@ class Output(object):
 
     def write_pdbs(self, appendmode=True, mmcif=False):
         for pdb in self.dictionary_pdbs.keys():
-            self.write_pdb(pdb, appendmode, mmcif=mmcif)
+            self.write_pdb(pdb, appendmode)
 
     def init_pdb_best_scoring(self,
                               suffix,
@@ -415,6 +417,7 @@ class Output(object):
         # save only the nbestscoring conformations
         # create as many pdbs as needed
 
+        self._pdb_best_scoring_mmcif = mmcif
         fileext = '.cif' if mmcif else '.pdb'
         self.suffixes.append(suffix)
         self.replica_exchange = replica_exchange
@@ -438,13 +441,15 @@ class Output(object):
             flpdb = open(name, 'w')
             flpdb.close()
             self.dictionary_pdbs[name] = prot
+            self._pdb_mmcif[name] = mmcif
             self._init_dictchain(name, prot)
 
-    def write_pdb_best_scoring(self, score, mmcif=False):
-        fileext = '.cif' if mmcif else '.pdb'
+    def write_pdb_best_scoring(self, score):
         if self.nbestscoring is None:
             print("Output.write_pdb_best_scoring: init_pdb_best_scoring not run")
 
+        mmcif = self._pdb_best_scoring_mmcif
+        fileext = '.cif' if mmcif else '.pdb'
         # update the score list
         if self.replica_exchange:
             # read the self.best_score_list from the file
@@ -464,7 +469,7 @@ class Output(object):
                         os.unlink(newname)
                     os.rename(oldname, newname)
                 filetoadd = suffix + "." + str(index) + fileext
-                self.write_pdb(filetoadd, appendmode=False, mmcif=mmcif)
+                self.write_pdb(filetoadd, appendmode=False)
 
         else:
             if score < self.best_score_list[-1]:
@@ -481,7 +486,7 @@ class Output(object):
                         "." + str(self.nbestscoring) + fileext
                     os.remove(filenametoremove)
                     filetoadd = suffix + "." + str(index) + fileext
-                    self.write_pdb(filetoadd, appendmode=False, mmcif=mmcif)
+                    self.write_pdb(filetoadd, appendmode=False)
 
         if self.replica_exchange:
             # write the self.best_score_list to the file

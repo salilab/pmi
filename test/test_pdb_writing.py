@@ -69,14 +69,14 @@ class Tests(IMP.test.TestCase):
 
         # write PDB and check it's ok
         output = IMP.pmi.output.Output(atomistic=True)
-        output.init_pdb("test_pdb_writing.cif", root_hier)
-        output.write_pdbs(mmcif=True)
+        output.init_pdb("test_pdb_writing.cif", root_hier, mmcif=True)
+        output.write_pdbs()
         print('init best scoring')
         output.init_pdb_best_scoring("test_pdb_writing", root_hier, 10, mmcif=True)
         print('scoring')
         for i in range(20):
             score = -float(i)
-            output.write_pdb_best_scoring(score, mmcif=True)
+            output.write_pdb_best_scoring(score)
 
         with open('test_pdb_writing.cif') as fh:
             s, = ihm.reader.read(fh)

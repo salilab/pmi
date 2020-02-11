@@ -6,6 +6,7 @@ import IMP.pmi.output
 import IMP.pmi.topology
 import IMP.pmi.dof
 import IMP.pmi.macros
+import ihm.reader
 import os,shutil
 
 try:
@@ -16,8 +17,7 @@ except ImportError:
 
 class Tests(IMP.test.TestCase):
 
-    def test_pdb_pmi2(self):
-        """Test PDB writing in PMI2"""
+    def _make_test_model(self):
         mdl = IMP.Model()
         pdb_file = self.get_input_file_name("mini.pdb")
         fasta_file = self.get_input_file_name("mini.fasta")
@@ -60,6 +60,34 @@ class Tests(IMP.test.TestCase):
         molA4.add_representation(molA4[:]-aresA4,20)
 
         root_hier = s.build()
+        return mdl, root_hier
+
+    def test_pdb_mmcif(self):
+        """Test PDB writing with mmcif=True"""
+        mdl, root_hier = self._make_test_model()
+
+        # write PDB and check it's ok
+        output = IMP.pmi.output.Output(atomistic=True)
+        output.init_pdb("test_pdb_writing.cif", root_hier)
+        output.write_pdbs(mmcif=True)
+        print('init best scoring')
+        output.init_pdb_best_scoring("test_pdb_writing", root_hier, 10, mmcif=True)
+        print('scoring')
+        for i in range(20):
+            score = -float(i)
+            output.write_pdb_best_scoring(score, mmcif=True)
+
+        with open('test_pdb_writing.cif') as fh:
+            s, = ihm.reader.read(fh)
+        self.assertEqual([x.id for x in s.asym_units], [' ', ' 1', 'A', 'A1', 'B', 'C'])
+
+        for i in range(10):
+            os.unlink('test_pdb_writing.'+str(i)+'.cif')
+        os.unlink('test_pdb_writing.cif')
+
+    def test_pdb_pmi2(self):
+        """Test PDB writing in PMI2"""
+        mdl, root_hier = self._make_test_model()
 
         # write PDB and check it's ok
         output = IMP.pmi.output.Output(atomistic=True)

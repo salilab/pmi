@@ -18,6 +18,7 @@ import operator
 import itertools
 import warnings
 import string
+import ihm.format
 try:
     import cPickle as pickle
 except ImportError:
@@ -77,6 +78,79 @@ def _disambiguate_chain(chid, seen_chains):
                 return new_chid
     seen_chains.add(chid)
     return chid
+
+
+def _write_pdb_internal(flpdb, particle_infos_for_pdb, geometric_center,
+                        write_all_residues_per_bead):
+    for n,tupl in enumerate(particle_infos_for_pdb):
+        (xyz, atom_type, residue_type,
+         chain_id, residue_index, all_indexes, radius) = tupl
+        if atom_type is None:
+            atom_type = IMP.atom.AT_CA
+        if write_all_residues_per_bead and all_indexes is not None:
+            for residue_number in all_indexes:
+                flpdb.write(
+                    IMP.atom.get_pdb_string((xyz[0] - geometric_center[0],
+                                             xyz[1] - geometric_center[1],
+                                             xyz[2] - geometric_center[2]),
+                                            n+1, atom_type, residue_type,
+                                            chain_id[:1], residue_number, ' ',
+                                            1.00, radius))
+        else:
+            flpdb.write(
+                IMP.atom.get_pdb_string((xyz[0] - geometric_center[0],
+                                         xyz[1] - geometric_center[1],
+                                         xyz[2] - geometric_center[2]),
+                                        n+1, atom_type, residue_type,
+                                        chain_id[:1], residue_index, ' ',
+                                        1.00, radius))
+    flpdb.write("ENDMDL\n")
+
+
+def _write_mmcif_internal(flpdb, particle_infos_for_pdb, geometric_center,
+                          write_all_residues_per_bead, chains):
+    writer = ihm.format.CifWriter(flpdb)
+    writer.start_block('model')
+    with writer.category("_entry") as l:
+        l.write(id='model')
+
+    with writer.loop("_struct_asym", ["id", "entity_id", "details"]) as l:
+        for chid in sorted(chains.values()):
+        # todo: add entity information
+            l.write(id=chid)
+
+    with writer.loop("_atom_site",
+                     ["group_PDB", "type_symbol", "label_atom_id",
+                      "label_comp_id", "label_asym_id", "auth_seq_id",
+                      "Cartn_x", "Cartn_y", "Cartn_z", "pdbx_pdb_model_num",
+                      "id"]) as l:
+        ordinal = 1
+        for n,tupl in enumerate(particle_infos_for_pdb):
+            (xyz, atom_type, residue_type,
+             chain_id, residue_index, all_indexes, radius) = tupl
+            if atom_type is None:
+                atom_type = IMP.atom.AT_CA
+            c = xyz - geometric_center
+            if write_all_residues_per_bead and all_indexes is not None:
+                for residue_number in all_indexes:
+                    l.write(group_PDB='ATOM',
+                            type_symbol='C',
+                            label_atom_id=atom_type.get_string(),
+                            label_comp_id=residue_type.get_string(),
+                            label_asym_id=chain_id,
+                            auth_seq_id=residue_index, Cartn_x=c[0],
+                            Cartn_y=c[1], Cartn_z=c[2], id=ordinal,
+                            pdbx_pdb_model_num=1)
+                    ordinal += 1
+            else:
+                l.write(group_PDB='ATOM', type_symbol='C',
+                        label_atom_id=atom_type.get_string(),
+                        label_comp_id=residue_type.get_string(),
+                        label_asym_id=chain_id,
+                        auth_seq_id=residue_index, Cartn_x=c[0],
+                        Cartn_y=c[1], Cartn_z=c[2], id=ordinal,
+                        pdbx_pdb_model_num=1)
+                ordinal += 1
 
 
 class Output(object):
@@ -191,11 +265,8 @@ class Output(object):
     def write_pdb(self,name,
                   appendmode=True,
                   translate_to_geometric_center=False,
-                  write_all_residues_per_bead=False):
-        if appendmode:
-            flpdb = open(name, 'a')
-        else:
-            flpdb = open(name, 'w')
+                  write_all_residues_per_bead=False,
+                  mmcif=False):
 
         (particle_infos_for_pdb,
          geometric_center) = self.get_particle_infos_for_pdb_writing(name)
@@ -203,28 +274,17 @@ class Output(object):
         if not translate_to_geometric_center:
             geometric_center = (0, 0, 0)
 
-        for n,tupl in enumerate(particle_infos_for_pdb):
-            (xyz, atom_type, residue_type,
-             chain_id, residue_index, all_indexes, radius) = tupl
-            if atom_type is None:
-                atom_type = IMP.atom.AT_CA
-            if ( (write_all_residues_per_bead) and (all_indexes is not None) ):
-                for residue_number in all_indexes:
-                    flpdb.write(IMP.atom.get_pdb_string((xyz[0] - geometric_center[0],
-                                                        xyz[1] - geometric_center[1],
-                                                        xyz[2] - geometric_center[2]),
-                                                        n+1, atom_type, residue_type,
-                                                        chain_id, residue_number,' ',1.00,radius))
+        filemode = 'a' if appendmode else 'w'
+        with open(name, filemode) as flpdb:
+            if mmcif:
+                _write_mmcif_internal(flpdb, particle_infos_for_pdb,
+                                      geometric_center,
+                                      write_all_residues_per_bead,
+                                      self.dictchain[name])
             else:
-                flpdb.write(IMP.atom.get_pdb_string((xyz[0] - geometric_center[0],
-                                                    xyz[1] - geometric_center[1],
-                                                    xyz[2] - geometric_center[2]),
-                                                    n+1, atom_type, residue_type,
-                                                    chain_id[:1], residue_index,' ',1.00,radius))
-        flpdb.write("ENDMDL\n")
-        flpdb.close()
-
-        del particle_infos_for_pdb
+                _write_pdb_internal(flpdb, particle_infos_for_pdb,
+                                    geometric_center,
+                                    write_all_residues_per_bead)
 
     def get_prot_name_from_particle(self, name, p):
         """Get the protein name from the particle.
@@ -343,18 +403,19 @@ class Output(object):
         return (particle_infos_for_pdb, geometric_center)
 
 
-    def write_pdbs(self, appendmode=True):
+    def write_pdbs(self, appendmode=True, mmcif=False):
         for pdb in self.dictionary_pdbs.keys():
-            self.write_pdb(pdb, appendmode)
+            self.write_pdb(pdb, appendmode, mmcif=mmcif)
 
     def init_pdb_best_scoring(self,
                               suffix,
                               prot,
                               nbestscoring,
-                              replica_exchange=False):
+                              replica_exchange=False, mmcif=False):
         # save only the nbestscoring conformations
         # create as many pdbs as needed
 
+        fileext = '.cif' if mmcif else '.pdb'
         self.suffixes.append(suffix)
         self.replica_exchange = replica_exchange
         if not self.replica_exchange:
@@ -373,13 +434,14 @@ class Output(object):
 
         self.nbestscoring = nbestscoring
         for i in range(self.nbestscoring):
-            name = suffix + "." + str(i) + ".pdb"
+            name = suffix + "." + str(i) + fileext
             flpdb = open(name, 'w')
             flpdb.close()
             self.dictionary_pdbs[name] = prot
             self._init_dictchain(name, prot)
 
-    def write_pdb_best_scoring(self, score):
+    def write_pdb_best_scoring(self, score, mmcif=False):
+        fileext = '.cif' if mmcif else '.pdb'
         if self.nbestscoring is None:
             print("Output.write_pdb_best_scoring: init_pdb_best_scoring not run")
 
@@ -395,14 +457,14 @@ class Output(object):
             index = self.best_score_list.index(score)
             for suffix in self.suffixes:
                 for i in range(len(self.best_score_list) - 2, index - 1, -1):
-                    oldname = suffix + "." + str(i) + ".pdb"
-                    newname = suffix + "." + str(i + 1) + ".pdb"
+                    oldname = suffix + "." + str(i) + fileext
+                    newname = suffix + "." + str(i + 1) + fileext
                     # rename on Windows fails if newname already exists
                     if os.path.exists(newname):
                         os.unlink(newname)
                     os.rename(oldname, newname)
-                filetoadd = suffix + "." + str(index) + ".pdb"
-                self.write_pdb(filetoadd, appendmode=False)
+                filetoadd = suffix + "." + str(index) + fileext
+                self.write_pdb(filetoadd, appendmode=False, mmcif=mmcif)
 
         else:
             if score < self.best_score_list[-1]:
@@ -412,14 +474,14 @@ class Output(object):
                 index = self.best_score_list.index(score)
                 for suffix in self.suffixes:
                     for i in range(len(self.best_score_list) - 1, index - 1, -1):
-                        oldname = suffix + "." + str(i) + ".pdb"
-                        newname = suffix + "." + str(i + 1) + ".pdb"
+                        oldname = suffix + "." + str(i) + fileext
+                        newname = suffix + "." + str(i + 1) + fileext
                         os.rename(oldname, newname)
                     filenametoremove = suffix + \
-                        "." + str(self.nbestscoring) + ".pdb"
+                        "." + str(self.nbestscoring) + fileext
                     os.remove(filenametoremove)
-                    filetoadd = suffix + "." + str(index) + ".pdb"
-                    self.write_pdb(filetoadd, appendmode=False)
+                    filetoadd = suffix + "." + str(index) + fileext
+                    self.write_pdb(filetoadd, appendmode=False, mmcif=mmcif)
 
         if self.replica_exchange:
             # write the self.best_score_list to the file

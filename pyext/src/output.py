@@ -19,6 +19,7 @@ import itertools
 import warnings
 import string
 import ihm.format
+import collections
 try:
     import cPickle as pickle
 except ImportError:
@@ -107,27 +108,63 @@ def _write_pdb_internal(flpdb, particle_infos_for_pdb, geometric_center,
     flpdb.write("ENDMDL\n")
 
 
+_Entity = collections.namedtuple('_Entity', ('id', 'seq'))
+_ChainInfo = collections.namedtuple('_ChainInfo', ('entity', 'name'))
+
+
+def _get_chain_info(chains, root_hier):
+    chain_info = {}
+    entities = {}
+    all_entities = []
+    for mol in IMP.atom.get_by_type(root_hier, IMP.atom.MOLECULE_TYPE):
+        molname = IMP.pmi.get_molecule_name_and_copy(mol)
+        chain_id = chains[molname]
+        chain = IMP.atom.Chain(mol)
+        seq = chain.get_sequence()
+        if seq not in entities:
+            entities[seq] = e = _Entity(id=len(entities)+1, seq=seq)
+            all_entities.append(e)
+        entity = entities[seq]
+        info = _ChainInfo(entity=entity, name=molname)
+        chain_info[chain_id] = info
+    return chain_info, all_entities
+
+
 def _write_mmcif_internal(flpdb, particle_infos_for_pdb, geometric_center,
-                          write_all_residues_per_bead, chains):
+                          write_all_residues_per_bead, chains, root_hier):
+    # get dict with keys=chain IDs, values=chain info
+    chain_info, entities = _get_chain_info(chains, root_hier)
+
     writer = ihm.format.CifWriter(flpdb)
     writer.start_block('model')
     with writer.category("_entry") as l:
         l.write(id='model')
 
+    with writer.loop("_entity", ["id"]) as l:
+        for e in entities:
+            l.write(id=e.id)
+
+    with writer.loop("_entity_poly",
+                     ["entity_id", "pdbx_seq_one_letter_code"]) as l:
+        for e in entities:
+            l.write(entity_id=e.id, pdbx_seq_one_letter_code=e.seq)
+
     with writer.loop("_struct_asym", ["id", "entity_id", "details"]) as l:
         for chid in sorted(chains.values()):
-        # todo: add entity information
-            l.write(id=chid)
+            ci = chain_info[chid]
+            l.write(id=chid, entity_id=ci.entity.id, details=ci.name)
 
     with writer.loop("_atom_site",
                      ["group_PDB", "type_symbol", "label_atom_id",
                       "label_comp_id", "label_asym_id", "auth_seq_id",
-                      "Cartn_x", "Cartn_y", "Cartn_z", "pdbx_pdb_model_num",
+                      "Cartn_x", "Cartn_y", "Cartn_z", "label_entity_id",
+                      "pdbx_pdb_model_num",
                       "id"]) as l:
         ordinal = 1
         for n,tupl in enumerate(particle_infos_for_pdb):
             (xyz, atom_type, residue_type,
              chain_id, residue_index, all_indexes, radius) = tupl
+            ci = chain_info[chain_id]
             if atom_type is None:
                 atom_type = IMP.atom.AT_CA
             c = xyz - geometric_center
@@ -140,7 +177,8 @@ def _write_mmcif_internal(flpdb, particle_infos_for_pdb, geometric_center,
                             label_asym_id=chain_id,
                             auth_seq_id=residue_index, Cartn_x=c[0],
                             Cartn_y=c[1], Cartn_z=c[2], id=ordinal,
-                            pdbx_pdb_model_num=1)
+                            pdbx_pdb_model_num=1,
+                            label_entity_id=ci.entity.id)
                     ordinal += 1
             else:
                 l.write(group_PDB='ATOM', type_symbol='C',
@@ -149,7 +187,8 @@ def _write_mmcif_internal(flpdb, particle_infos_for_pdb, geometric_center,
                         label_asym_id=chain_id,
                         auth_seq_id=residue_index, Cartn_x=c[0],
                         Cartn_y=c[1], Cartn_z=c[2], id=ordinal,
-                        pdbx_pdb_model_num=1)
+                        pdbx_pdb_model_num=1,
+                        label_entity_id=ci.entity.id)
                 ordinal += 1
 
 
@@ -282,7 +321,8 @@ class Output(object):
                 _write_mmcif_internal(flpdb, particle_infos_for_pdb,
                                       geometric_center,
                                       write_all_residues_per_bead,
-                                      self.dictchain[name])
+                                      self.dictchain[name],
+                                      self.dictionary_pdbs[name])
             else:
                 _write_pdb_internal(flpdb, particle_infos_for_pdb,
                                     geometric_center,

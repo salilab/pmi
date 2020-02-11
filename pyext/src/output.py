@@ -15,6 +15,8 @@ import ast
 import RMF
 import numpy as np
 import operator
+import itertools
+import warnings
 import string
 try:
     import cPickle as pickle
@@ -57,6 +59,26 @@ def _flatten(seq):
         else:
             yield elt
 
+
+def _disambiguate_chain(chid, seen_chains):
+    """Make sure that the chain ID is unique; warn and correct if it isn't"""
+    # Handle null chain IDs
+    if chid == '\0':
+        chid = ' '
+
+    if chid in seen_chains:
+        warnings.warn("Duplicate chain ID '%s' encountered" % chid,
+                      IMP.pmi.StructureWarning)
+
+        for suffix in itertools.count(1):
+            new_chid = chid + "%d" % suffix
+            if new_chid not in seen_chains:
+                seen_chains.add(new_chid)
+                return new_chid
+    seen_chains.add(chid)
+    return chid
+
+
 class Output(object):
     """Class for easy writing of PDBs, RMFs, and stat files
 
@@ -96,13 +118,15 @@ class Output(object):
     def _init_dictchain(self, name, prot, multichar_chain=False):
         self.dictchain[name] = {}
         self.use_pmi2 = False
+        seen_chains = set()
 
         # attempt to find PMI objects.
         if IMP.pmi.get_is_canonical(prot):
             self.use_pmi2 = True
             self.atomistic = True #detects automatically
             for n,mol in enumerate(IMP.atom.get_by_type(prot,IMP.atom.MOLECULE_TYPE)):
-                chid = IMP.atom.Chain(mol).get_id()
+                chid = _disambiguate_chain(IMP.atom.Chain(mol).get_id(),
+                                           seen_chains)
                 self.dictchain[name][IMP.pmi.get_molecule_name_and_copy(mol)] = chid
         else:
             chainids = self.multi_chainids if multichar_chain else self.chainids
@@ -196,7 +220,7 @@ class Output(object):
                                                     xyz[1] - geometric_center[1],
                                                     xyz[2] - geometric_center[2]),
                                                     n+1, atom_type, residue_type,
-                                                    chain_id, residue_index,' ',1.00,radius))
+                                                    chain_id[:1], residue_index,' ',1.00,radius))
         flpdb.write("ENDMDL\n")
         flpdb.close()
 

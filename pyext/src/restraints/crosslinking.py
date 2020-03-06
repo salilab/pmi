@@ -32,6 +32,21 @@ class _LinearRestraintSet(IMP.RestraintSet):
         ri.add_float("length", self.length)
         ri.add_float("slope", self.slope)
         ri.add_filename("filename", self.filename)
+        self._sorted_psi_keys = sorted(self.psi_dictionary.keys())
+        self._sorted_sigma_keys = sorted(self.sigma_dictionary.keys())
+        ri.add_strings("psi_keys", self._sorted_psi_keys)
+        ri.add_strings("sigma_keys", self._sorted_sigma_keys)
+        return ri
+
+    def get_dynamic_info(self):
+        ri = IMP.RestraintInfo()
+        # Note this requires get_static_info to have been previously called
+        ri.add_floats("psi_values",
+                      [self.psi_dictionary[p][0].get_scale()
+                       for p in self._sorted_psi_keys])
+        ri.add_floats("sigma_values",
+                      [self.sigma_dictionary[p][0].get_scale()
+                       for p in self._sorted_sigma_keys])
         return ri
 
 
@@ -105,6 +120,8 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
         self.sigma_is_sampled = True
         self.psi_dictionary={}
         self.sigma_dictionary={}
+        self.rslin.psi_dictionary = self.psi_dictionary
+        self.rslin.sigma_dictionary = self.sigma_dictionary
         self.xl_list=[]
         self.outputlevel = "low"
 

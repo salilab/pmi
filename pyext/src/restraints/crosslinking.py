@@ -29,13 +29,17 @@ class _LinearRestraintSet(IMP.RestraintSet):
         # Add custom metadata to the container, for RMF
         ri = IMP.RestraintInfo()
         ri.add_string("type", "IMP.pmi.CrossLinkingMassSpectrometryRestraint")
-        ri.add_float("length", self.length)
+        ri.add_float("linker_length", self.length)
         ri.add_float("slope", self.slope)
         ri.add_filename("filename", self.filename)
         self._sorted_psi_keys = sorted(self.psi_dictionary.keys())
         self._sorted_sigma_keys = sorted(self.sigma_dictionary.keys())
         ri.add_strings("psi_keys", self._sorted_psi_keys)
         ri.add_strings("sigma_keys", self._sorted_sigma_keys)
+        if self.linker:
+            ri.add_string("linker_auth_name", self.linker.auth_name)
+            if self.linker.smiles:
+                ri.add_string("linker_smiles", self.linker.smiles)
         return ri
 
     def get_dynamic_info(self):
@@ -64,6 +68,7 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
                  label=None,
                  filelabel="None",
                  attributes_for_label=None,
+                 linker=None,
                  weight=1.):
         """Constructor.
         @param root_hier The canonical hierarchy containing all the states
@@ -81,6 +86,11 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
                 cross-links will be labeled using this text
         @param attributes_for_label
         @param weight Weight of restraint
+        @param linker description of the chemistry of the linker itself, as
+               an ihm.ChemDescriptor object
+               (see https://python-ihm.readthedocs.io/en/latest/main.html#ihm.ChemDescriptor).
+               Common cross-linkers can be found in the `ihm.cross_linkers`
+               module.
         """
 
         model = root_hier.get_model()
@@ -110,6 +120,7 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
         self.rslin.filename = self.CrossLinkDataBase.name
         self.rslin.length = length
         self.rslin.slope = slope
+        self.rslin.linker = linker
 
         # dummy linear restraint used for Chimera display
         self.linear = IMP.core.Linear(0, 0.0)

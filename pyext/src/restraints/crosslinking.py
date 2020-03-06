@@ -22,6 +22,19 @@ import ihm.location
 import ihm.dataset
 import warnings
 
+class _LinearRestraintSet(IMP.RestraintSet):
+    """Container for restraints shown in the RMF file and in Chimera"""
+
+    def get_static_info(self):
+        # Add custom metadata to the container, for RMF
+        ri = IMP.RestraintInfo()
+        ri.add_string("type", "IMP.pmi.CrossLinkingMassSpectrometryRestraint")
+        ri.add_float("length", self.length)
+        ri.add_float("slope", self.slope)
+        ri.add_filename("filename", self.filename)
+        return ri
+
+
 class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
     """Setup cross-link distance restraints from mass spectrometry data.
     The noise in the data and the structural uncertainty of cross-linked amino-acids
@@ -76,7 +89,12 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
         self.rs.set_name(self.rs.get_name() + "_Data")
         self.rspsi = self._create_restraint_set("PriorPsi")
         self.rssig = self._create_restraint_set("PriorSig")
-        self.rslin = self._create_restraint_set("Linear")
+        self.rslin = self._create_restraint_set("Linear",
+                                                cls=_LinearRestraintSet)
+        # Add custom metadata (will be saved in RMF output)
+        self.rslin.filename = self.CrossLinkDataBase.name
+        self.rslin.length = length
+        self.rslin.slope = slope
 
         # dummy linear restraint used for Chimera display
         self.linear = IMP.core.Linear(0, 0.0)

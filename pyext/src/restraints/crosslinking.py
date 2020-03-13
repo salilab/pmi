@@ -111,6 +111,7 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
         exdb = open("excluded." + filelabel + ".xl.db", "w")
         midb = open("missing." + filelabel + ".xl.db", "w")
 
+        self.linker = linker
         self.rs.set_name(self.rs.get_name() + "_Data")
         self.rspsi = self._create_restraint_set("PriorPsi")
         self.rssig = self._create_restraint_set("PriorSig")

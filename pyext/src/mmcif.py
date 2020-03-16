@@ -316,7 +316,7 @@ class _CrossLinkRestraint(ihm.restraint.CrossLinkRestraint):
     @classmethod
     def _get_chem_descriptor(cls, label):
         # Map commonly-used subtypes to more standard labels
-        label = self._label_map.get(label, label)
+        label = cls._label_map.get(label, label)
         if label not in cls._descriptor_map:
             # If label is not a standard linker type, make a new chemical
             # descriptor containing just the name. We don't know the chemistry

@@ -564,6 +564,7 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
         self.def_aa_tuple = linkable_aa
         self.fasta_seq = fasta_seq      #type: IMP.pmi.topology.Sequences
         self.dataset = None
+        self.name = None
         self._update()
 
     def _update(self):

@@ -31,7 +31,7 @@ class _LinearRestraintSet(IMP.RestraintSet):
         ri.add_string("type", "IMP.pmi.CrossLinkingMassSpectrometryRestraint")
         ri.add_float("linker_length", self.length)
         ri.add_float("slope", self.slope)
-        ri.add_filename("filename", self.filename)
+        ri.add_filename("filename", self.filename or "")
         self._sorted_psi_keys = sorted(self.psi_dictionary.keys())
         self._sorted_sigma_keys = sorted(self.sigma_dictionary.keys())
         ri.add_strings("psi_keys", self._sorted_psi_keys)

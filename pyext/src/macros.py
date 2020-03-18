@@ -804,7 +804,8 @@ class BuildModel(object):
 
     def autobuild(self,simo,comname,pdbname,chain,resrange,include_res0=False,
                   beadsize=5,color=0.0,offset=0):
-        if pdbname is not None and pdbname is not "IDEAL_HELIX" and pdbname is not "BEADS" :
+        if (pdbname is not None and pdbname != "IDEAL_HELIX"
+            and pdbname != "BEADS"):
             if include_res0:
                 outhier=simo.autobuild_model(comname,
                                  pdbname=pdbname,
@@ -825,14 +826,14 @@ class BuildModel(object):
                                  missingbeadsize=beadsize)
 
 
-        elif pdbname is not None and pdbname is "IDEAL_HELIX" and pdbname is not "BEADS" :
+        elif pdbname == "IDEAL_HELIX":
             outhier=simo.add_component_ideal_helix(comname,
                                                 resolutions=[1,10],
                                                 resrange=resrange,
                                                 color=color,
                                                 show=False)
 
-        elif pdbname is not None and pdbname is not "IDEAL_HELIX" and pdbname is "BEADS" :
+        elif pdbname == "BEADS":
             outhier=simo.add_component_necklace(comname,resrange[0],resrange[1],beadsize,color=color)
 
         else:
@@ -920,8 +921,8 @@ class BuildModel1(object):
 
 
             if not read_em_files is None:
-                if em_txt_file_name is " ": em_txt_file_name=self.gmm_models_directory+"/"+hier_name+".txt"
-                if em_mrc_file_name is " ": em_mrc_file_name=self.gmm_models_directory+"/"+hier_name+".mrc"
+                if em_txt_file_name == " ": em_txt_file_name=self.gmm_models_directory+"/"+hier_name+".txt"
+                if em_mrc_file_name == " ": em_mrc_file_name=self.gmm_models_directory+"/"+hier_name+".mrc"
 
 
                 dens_hier,beads=self.create_density(self.simo,comp_name,outhier,em_txt_file_name,em_mrc_file_name,em_num_components,read_em_files)
@@ -1120,7 +1121,8 @@ class BuildModel1(object):
 
     def autobuild(self,simo,comname,pdbname,chain,resrange,read=True,beadsize=5,color=0.0,offset=0):
 
-        if pdbname is not None and pdbname is not "IDEAL_HELIX" and pdbname is not "BEADS" and pdbname is not "DENSITY" :
+        if (pdbname is not None and pdbname != "IDEAL_HELIX"
+            and pdbname != "BEADS" and pdbname != "DENSITY"):
             if resrange[-1]==-1: resrange=(resrange[0],len(simo.sequence_dict[comname]))
             if read==False:
                 outhier=simo.autobuild_model(comname,
@@ -1141,20 +1143,20 @@ class BuildModel1(object):
                                  color=color,
                                  missingbeadsize=beadsize)
 
-        elif pdbname is not None and pdbname is "IDEAL_HELIX" and pdbname is not "BEADS" and pdbname is not "DENSITY" :
+        elif pdbname == "IDEAL_HELIX":
             outhier=simo.add_component_ideal_helix(comname,
                                                 resolutions=[1,10],
                                                 resrange=resrange,
                                                 color=color,
                                                 show=False)
 
-        elif pdbname is not None and pdbname is not "IDEAL_HELIX" and pdbname is "BEADS" and pdbname is not "DENSITY" :
+        elif pdbname == "BEADS":
             seq_len=resrange[1]
             if resrange[1]==-1:
                 seq_len=len(simo.sequence_dict[comname])
             outhier=simo.add_component_necklace(comname,resrange[0],seq_len,beadsize,color=color)
 
-        elif pdbname is not None and pdbname is not "IDEAL_HELIX" and pdbname is not "BEADS" and pdbname is "DENSITY" :
+        elif pdbname == "DENSITY":
             outhier=[]
 
         else:

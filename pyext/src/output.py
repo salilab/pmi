@@ -1694,9 +1694,8 @@ def plot_fields(fields, output, framemin=None, framemax=None):
 
 def plot_field_histogram(
     name, values_lists, valuename=None, bins=40, colors=None, format="png",
-        reference_xline=None, yplotrange=None, xplotrange=None,normalized=True,
-        leg_names=None):
-
+    reference_xline=None, yplotrange=None, xplotrange=None, normalized=True,
+    leg_names=None):
     '''Plot a list of histograms from a value list.
     @param name the name of the plot
     @param value_lists the list of list of values eg: [[...],[...],[...]]
@@ -1754,7 +1753,6 @@ def plot_field_histogram(
             linewidth=1)
 
     plt.savefig(name + "." + format, dpi=150, transparent=True)
-    plt.show()
 
 
 def plot_fields_box_plots(name, values, positions, frequencies=None,

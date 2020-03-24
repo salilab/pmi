@@ -1727,7 +1727,7 @@ def plot_field_histogram(
             [float(y) for y in values],
             bins=bins,
             color=col,
-            normed=normalized,histtype='step',lw=4,
+            density=normalized,histtype='step',lw=4,
             label=label)
 
     # plt.title(name,size="xx-large")

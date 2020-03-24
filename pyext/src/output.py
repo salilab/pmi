@@ -1656,7 +1656,10 @@ class CrossLinkIdentifierDatabase(object):
         with open(filename, 'rb') as handle:
             self.clidb=pickle.load(handle)
 
-def plot_fields(fields, framemin=None, framemax=None):
+def plot_fields(fields, output, framemin=None, framemax=None):
+    """Plot the given fields and save a figure as `output`.
+       The fields generally are extracted from a stat file
+       using ProcessOutput.get_fields()."""
     import matplotlib as mpl
     mpl.use('Agg')
     import matplotlib.pyplot as plt
@@ -1686,7 +1689,7 @@ def plot_fields(fields, framemin=None, framemax=None):
 
     # Tweak spacing between subplots to prevent labels from overlapping
     plt.subplots_adjust(hspace=0.3)
-    plt.show()
+    plt.savefig(output)
 
 
 def plot_field_histogram(

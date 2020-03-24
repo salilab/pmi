@@ -1664,7 +1664,7 @@ def plot_fields(fields, framemin=None, framemax=None):
     plt.rc('lines', linewidth=4)
     fig, axs = plt.subplots(nrows=len(fields))
     fig.set_size_inches(10.5, 5.5 * len(fields))
-    plt.rc('axes', color_cycle=['r'])
+    plt.rc('axes')
 
     n = 0
     for key in fields:

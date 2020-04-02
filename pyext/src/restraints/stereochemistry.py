@@ -249,7 +249,7 @@ class ExcludedVolumeSphere(object):
         self.label = label
 
     def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.mdl, self.rs)
+        IMP.pmi.tools.add_restraint_to_model(self.mdl, self.rs, add_to_rmf=True)
 
     def get_restraint(self):
         return self.rs

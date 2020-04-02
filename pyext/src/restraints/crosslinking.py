@@ -1,5 +1,5 @@
 """@namespace IMP.pmi.restraints.crosslinking
-Restraints for handling crosslinking data.
+Restraints for handling cross-linking data.
 """
 
 from __future__ import print_function
@@ -254,7 +254,7 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
                         continue
 
                     if new_contribution:
-                        print("generating a new crosslink restraint")
+                        print("generating a new cross-link restraint")
                         new_contribution=False
                         dr = IMP.isd.CrossLinkMSRestraint(
                             self.model,
@@ -335,7 +335,7 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
                     indb.write(str(xl) + "\n")
 
         if len(self.xl_list) == 0:
-            raise SystemError("CrossLinkingMassSpectrometryRestraint: no crosslink was constructed")
+            raise SystemError("CrossLinkingMassSpectrometryRestraint: no cross-link was constructed")
         self.xl_restraints = restraints
         lw = IMP.isd.LogWrapper(restraints,1.0)
         self.rs.add_restraint(lw)
@@ -540,7 +540,7 @@ class AtomicCrossLinkMSRestraint(IMP.pmi.restraints.RestraintBase):
                  filelabel=None,
                  weight=1.):
         """Constructor.
-        Automatically creates one "sigma" per crosslinked residue and one "psis" per pair.
+        Automatically creates one "sigma" per cross-linked residue and one "psis" per pair.
         Other nuisance options are available.
         @note Will return an error if the data+extra_sel don't specify two particles per XL pair.
         @param root_hier  The root hierarchy on which you'll do selection
@@ -857,7 +857,7 @@ class AtomicCrossLinkMSRestraint(IMP.pmi.restraints.RestraintBase):
                         coarsen=False,
                         limit_to_chains=None,
                         exclude_chains=''):
-        """Create CMM files, one for each state, of all crosslinks.
+        """Create CMM files, one for each state, of all cross-links.
         will draw in GREEN if non-violated in all states (or if only one state)
         will draw in PURPLE if non-violated only in a subset of states (draws nothing elsewhere)
         will draw in RED in ALL states if all violated

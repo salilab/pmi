@@ -378,8 +378,9 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
         sigmamin = 0.01
         sigmamax = 100.0
         sigmatrans = 0.5
-        sigma = IMP.pmi.tools.SetupNuisance(self.model, sigmainit,
-                                                 sigmaminnuis, sigmamaxnuis, self.sigma_is_sampled).get_particle()
+        sigma = IMP.pmi.tools.SetupNuisance(
+            self.model, sigmainit, sigmaminnuis, sigmamaxnuis,
+            self.sigma_is_sampled, name=name).get_particle()
         self.sigma_dictionary[name] = (
             sigma,
             sigmatrans,
@@ -405,9 +406,9 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
         psimin = 0.01
         psimax = 0.49
         psitrans = 0.1
-        psi = IMP.pmi.tools.SetupNuisance(self.model, psiinit,
-                                               psiminnuis, psimaxnuis,
-                                               self.psi_is_sampled).get_particle()
+        psi = IMP.pmi.tools.SetupNuisance(
+            self.model, psiinit, psiminnuis, psimaxnuis,
+            self.psi_is_sampled, name=name).get_particle()
         self.psi_dictionary[name] = (
             psi,
             psitrans,

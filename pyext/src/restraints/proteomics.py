@@ -476,13 +476,7 @@ class SetupConnectivityNetworkRestraint(object):
     Resolution=Yes
     '''
 
-    def __init__(
-        self,
-        representation=None,
-        objects=None,
-        kappa=10.0,
-        resolution=1.0,
-            label="None"):
+    def __init__(self, objects, kappa=10.0, resolution=1.0, label="None"):
 
         self.weight = 1.0
         self.kappa = kappa
@@ -492,19 +486,11 @@ class SetupConnectivityNetworkRestraint(object):
 
         hiers=[]
 
-        if representation is None:
-            print(objects)
-            for obj in objects:
-                hiers.append(IMP.pmi.tools.input_adaptor(obj,
+        for obj in objects:
+            hiers.append(IMP.pmi.tools.input_adaptor(obj,
                                                 resolution,
                                                 flatten=True))
             self.m=hiers[0][0].get_model()
-        else:
-            self.m = representation.m
-            for s in objects:
-                hiers.append(IMP.pmi.tools.select_by_tuple(representation, s,
-                                                          resolution=resolution,
-                                                          name_is_ambiguous=False))
 
         #particles=[h.get_particle() for h in hiers]
         cr = ConnectivityNetworkRestraint(self.m)

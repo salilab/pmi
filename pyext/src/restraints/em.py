@@ -375,6 +375,8 @@ class GaussianEMRestraint(object):
 
 #-------------------------------------------
 
+@IMP.deprecated_object("2.13",
+        "If you use this class please let the PMI developers know.")
 class CrossCorrelationRestraint(object):
     """Fit particles to an EM map. This creates a simulate density map and updates them every eval.
     @note Wraps an em::FitRestraint
@@ -450,6 +452,7 @@ class CrossCorrelationRestraint(object):
 
 #-------------------------------------------
 
+@IMP.deprecated_object("2.13", "Use IMP.pmi.restraints.em2d instead")
 class ElectronMicroscopy2D(object):
 
     def __init__(

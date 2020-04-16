@@ -53,7 +53,7 @@ class ElectronMicroscopy2D(object):
             d = ihm.dataset.EM2DClassDataset(l)
             self.datasets.append(d)
 
-        for p, state in IMP.pmi.tools._all_protocol_outputs(None, hier):
+        for p, state in IMP.pmi.tools._all_protocol_outputs(hier):
             for i in range(len(self.datasets)):
                 p.add_em2d_restraint(state, self, i, resolution, pixel_size,
                                      image_resolution, projection_number,

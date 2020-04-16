@@ -124,7 +124,7 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
 
         xl_groups = [p.get_cross_link_group(self)
                      for p, state in IMP.pmi.tools._all_protocol_outputs(
-                                             None, root_hier)]
+                                             root_hier)]
 
         # first add all the molecule copies as clones to the database
         copies_to_add = defaultdict(int)
@@ -180,7 +180,7 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
                                    r1, name1, r2, name2, group), group)
                           for p, group in
                                  zip(IMP.pmi.tools._all_protocol_outputs(
-                                             None, root_hier),
+                                             root_hier),
                                      xl_groups)]
 
                 iterlist = range(len(IMP.atom.get_by_type(root_hier,
@@ -290,7 +290,7 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
                     print("CrossLinkingMassSpectrometryRestraint: between particles %s and %s" % (p1.get_name(), p2.get_name()))
                     print("==========================================\n")
                     for p, ex_xl in zip(IMP.pmi.tools._all_protocol_outputs(
-                                                None, root_hier),
+                                                root_hier),
                                         ex_xls):
                         p[0].add_cross_link(p[1], ex_xl[0], p1, p2, length,
                                             sigma1, sigma2, psi, ex_xl[1])

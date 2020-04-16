@@ -155,14 +155,12 @@ class ReplicaExchange0(object):
         """
         self.model = model
         self.vars = {}
-        self.pmi2 = False
 
         ### add check hierarchy is multistate
         self.output_objects = output_objects
         self.rmf_output_objects=rmf_output_objects
         if (isinstance(root_hier, IMP.atom.Hierarchy)
                 and root_hier.get_name() == 'System'):
-            self.pmi2 = True
             if self.output_objects is not None:
                 self.output_objects.append(IMP.pmi.io.TotalScoreOutput(self.model))
             if self.rmf_output_objects is not None:
@@ -251,10 +249,7 @@ class ReplicaExchange0(object):
 
     def _add_provenance(self, sampler_md, sampler_mc):
         """Record details about the sampling in the IMP Hierarchies"""
-        if not self.is_multi_state or self.pmi2:
-            output_hierarchies = [self.root_hier]
-        else:
-            output_hierarchies = self.root_hiers
+        output_hierarchies = [self.root_hier]
 
         iterations = 0
         if sampler_md:
@@ -435,20 +430,12 @@ class ReplicaExchange0(object):
 # ---------------------------------------------
 
         if self.em_object_for_rmf is not None:
-            if not self.is_multi_state or self.pmi2:
-                output_hierarchies = [
-                    self.root_hier,
-                    self.em_object_for_rmf.get_density_as_hierarchy(
-                    )]
-            else:
-                output_hierarchies = self.root_hiers
-                output_hierarchies.append(
-                    self.em_object_for_rmf.get_density_as_hierarchy())
+            output_hierarchies = [
+                self.root_hier,
+                self.em_object_for_rmf.get_density_as_hierarchy(
+                )]
         else:
-            if not self.is_multi_state or self.pmi2:
-                output_hierarchies = [self.root_hier]
-            else:
-                output_hierarchies = self.root_hiers
+            output_hierarchies = [self.root_hier]
 
 #----------------------------------------------
         if not self.test_mode:

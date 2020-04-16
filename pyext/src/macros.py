@@ -60,9 +60,7 @@ class ReplicaExchange0(object):
     Produces trajectory RMF files, best PDB structures,
     and output stat files.
     """
-    def __init__(self, model,
-                 representation=None,
-                 root_hier=None,
+    def __init__(self, model, root_hier,
                  sample_objects=None, # DEPRECATED
                  monte_carlo_sample_objects=None,
                  molecular_dynamics_sample_objects=None,
@@ -102,10 +100,8 @@ class ReplicaExchange0(object):
                  replica_exchange_object=None,
                  test_mode=False):
         """Constructor.
-           @param model                    The IMP model
-           @param representation PMI.representation.Representation object
-                  (or list of them, for multi-state modeling)
-           @param root_hier Instead of passing Representation, pass the System hierarchy
+           @param model The IMP model
+           @param root_hier Top-level (System)hierarchy
            @param monte_carlo_sample_objects Objects for MC sampling; a list of
                   structural components (generally the representation) that will
                   be moved and restraints with parameters that need to
@@ -164,18 +160,8 @@ class ReplicaExchange0(object):
         ### add check hierarchy is multistate
         self.output_objects = output_objects
         self.rmf_output_objects=rmf_output_objects
-        self.representation = representation
-        if representation:
-            if isinstance(representation, list):
-                self.is_multi_state = True
-                self.root_hiers = [r.prot for r in representation]
-                self.vars["number_of_states"] = len(representation)
-            else:
-                self.is_multi_state = False
-                self.root_hier = representation.prot
-                self.vars["number_of_states"] = 1
-        elif root_hier and isinstance(root_hier, IMP.atom.Hierarchy) \
-             and root_hier.get_name() == 'System':
+        if (isinstance(root_hier, IMP.atom.Hierarchy)
+                and root_hier.get_name() == 'System'):
             self.pmi2 = True
             if self.output_objects is not None:
                 self.output_objects.append(IMP.pmi.io.TotalScoreOutput(self.model))
@@ -191,7 +177,7 @@ class ReplicaExchange0(object):
                 self.root_hier = root_hier
                 self.is_multi_state = False
         else:
-            raise Exception("Must provide representation or System hierarchy (root_hier)")
+            raise TypeError("Must provide System hierarchy (root_hier)")
 
         self._rmf_restraints = _RMFRestraints(model, crosslink_restraints)
         self.em_object_for_rmf = em_object_for_rmf
@@ -561,8 +547,7 @@ class ReplicaExchange0(object):
             if self.vars["replica_exchange_swap"]:
                 rex.swap_temp(i, score)
         for p, state in IMP.pmi.tools._all_protocol_outputs(
-                            [self.representation],
-                            self.root_hier if self.pmi2 else None):
+                None, self.root_hier):
             p.add_replica_exchange(state, self)
 
         if not self.test_mode:

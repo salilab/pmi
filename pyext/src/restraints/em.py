@@ -38,8 +38,7 @@ class GaussianEMRestraint(object):
                  scale_target_to_mass=False,
                  weight=1.0,
                  target_is_rigid_body=False,
-                 local=False,
-                 representation=None):
+                 local=False):
         """Constructor.
         @param densities The Gaussian-decorated particles to be restrained
         @param target_fn GMM file of the target density map
@@ -104,7 +103,7 @@ class GaussianEMRestraint(object):
         print('will scale target mass by', target_mass_scale)
 
         if target_fn != '':
-            self._set_dataset(target_fn, representation)
+            self._set_dataset(target_fn)
             self.target_ps = []
             IMP.isd.gmm_tools.decorate_gmm_from_text(
                 target_fn,
@@ -125,8 +124,7 @@ class GaussianEMRestraint(object):
                 ms=IMP.atom.Mass(p).get_mass()
                 IMP.atom.Mass(p).set_mass(ms*scale)
 
-        for p, state in IMP.pmi.tools._all_protocol_outputs([representation],
-                                                            densities[0]):
+        for p, state in IMP.pmi.tools._all_protocol_outputs(None, densities[0]):
             p.add_em3d_restraint(state, self.target_ps, self.densities,
                                  self)
 
@@ -182,7 +180,7 @@ class GaussianEMRestraint(object):
         self.rs.add_restraint(self.gaussianEM_restraint)
         self.set_weight(weight)
 
-    def _set_dataset(self, target_fn, representation):
+    def _set_dataset(self, target_fn):
         """Set the dataset to point to the input file"""
         p = IMP.pmi.mmcif.GMMParser()
         self.dataset = p.parse_file(target_fn)['dataset']

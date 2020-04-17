@@ -249,8 +249,6 @@ class ReplicaExchange0(object):
 
     def _add_provenance(self, sampler_md, sampler_mc):
         """Record details about the sampling in the IMP Hierarchies"""
-        output_hierarchies = [self.root_hier]
-
         iterations = 0
         if sampler_md:
             method = "Molecular Dynamics"
@@ -263,15 +261,14 @@ class ReplicaExchange0(object):
             return
         iterations *= self.vars["num_sample_rounds"]
 
-        for h in output_hierarchies:
-            pi = self.model.add_particle("sampling")
-            p = IMP.core.SampleProvenance.setup_particle(
-                    self.model, pi, method, self.vars["number_of_frames"],
-                    iterations)
-            p.set_number_of_replicas(
-                    self.replica_exchange_object.get_number_of_replicas())
-            IMP.pmi.tools._add_pmi_provenance(h)
-            IMP.core.add_provenance(self.model, h, p)
+        pi = self.model.add_particle("sampling")
+        p = IMP.core.SampleProvenance.setup_particle(
+                self.model, pi, method, self.vars["number_of_frames"],
+                iterations)
+        p.set_number_of_replicas(
+                self.replica_exchange_object.get_number_of_replicas())
+        IMP.pmi.tools._add_pmi_provenance(self.root_hier)
+        IMP.core.add_provenance(self.model, self.root_hier, p)
 
     def execute_macro(self):
         temp_index_factor = 100000.0

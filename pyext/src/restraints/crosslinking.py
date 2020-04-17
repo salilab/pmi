@@ -1206,7 +1206,10 @@ class CysteineCrossLinkRestraint(object):
                         p1 += p
                     else:
                         failed = True
-                        print("\033[93m CysteineCrossLink: missing representation for residue %d of chain %s \033[0m" % (resid1 + t, chain1))
+                        warnings.warn(
+                            "CysteineCrossLink: missing representation for "
+                            "residue %d of chain %s" % (resid1 + t, chain1),
+                            IMP.pmi.StructureWarning)
 
                     p = IMP.atom.Selection(root_hier, resolution=1,
                                            molecule=chain2, copy_index=0,
@@ -1216,7 +1219,10 @@ class CysteineCrossLinkRestraint(object):
                         p2 += p
                     else:
                         failed = True
-                        print("\033[93m CysteineCrossLink: missing representation for residue %d of chain %s \033[0m" % (resid2 + t, chain2))
+                        warnings.warn(
+                            "CysteineCrossLink: missing representation for "
+                            "residue %d of chain %s" % (resid2 + t, chain2),
+                            IMP.pmi.StructureWarning)
 
             if not self.cbeta:
                 if (p1 is not None and p2 is not None):

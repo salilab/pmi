@@ -94,13 +94,17 @@ class ElectronMicroscopy2D(object):
         self.rs.set_weight(self.weight)
 
     def get_output(self):
+        print("point 1")
         output = {}
         score = self.weight*self.rs.unprotected_evaluate(None)
+        print("point 2")
         output["_TotalScore"] = str(score)
         output["ElectronMicroscopy2D_" + self.label] = str(score)
+        print("point 3")
         # For each image, get the transformation that places the
         # model on the image, and its cross correlation coefficient
         for i in range(self._num_images):
+            print("point 4", i)
             prefix = 'ElectronMicroscopy2D_%s_Image%d' % (self.label, i+1)
             ccc = self._em2d_restraint.get_cross_correlation_coefficient(i)
             output[prefix + '_CCC'] = str(ccc)
@@ -111,6 +115,7 @@ class ElectronMicroscopy2D(object):
                 output[prefix + '_Rotation%d' % j] = str(r[j])
             for j in range(3):
                 output[prefix + '_Translation%d' % j] = str(t[j])
+        print("point 5")
         return output
 
 class ElectronMicroscopy2D_FFT(object):

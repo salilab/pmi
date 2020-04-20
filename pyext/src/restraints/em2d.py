@@ -16,9 +16,9 @@ class ElectronMicroscopy2D(object):
     Compares how well the principal components of the segmented class
     average fit to the principal components of the particles.
     """
-    def __init__(self, hier, images=None, pixel_size=None,
-                 image_resolution=None, projection_number=None,
-                 micrographs_number=None, resolution=None, n_components=1):
+    def __init__(self, hier, images, pixel_size, image_resolution,
+                 projection_number, resolution, micrographs_number=None,
+                 n_components=1):
         """Constructor.
         @param hier The root hierarchy for applying the restraint
         @param images 2D class average filenames in PGM text format
@@ -28,23 +28,15 @@ class ElectronMicroscopy2D(object):
         @param projection_number Number of projections of the model
                to generate and fit to images. The lower the number, the
                faster the evaluation, but the lower the accuracy
-        @param micrographs_number Number of micrograph particles that
-               were used to generate the class averages, if known
         @param resolution Which level of
                [model representation](@ref pmi_resolution) to use in the fit
+        @param micrographs_number Number of micrograph particles that
+               were used to generate the class averages, if known
         @param n_components Number of the largest components to be
                considered for the EM image
         """
 
         import IMP.em2d
-
-        # check input
-        if images is None:
-            raise Exception("Must pass images")
-        if pixel_size is None:
-            raise Exception("Must pass pixel size")
-        if image_resolution is None:
-            raise Exception("must pass image resolution")
 
         self.datasets = []
         for image in images:
@@ -94,17 +86,13 @@ class ElectronMicroscopy2D(object):
         self.rs.set_weight(self.weight)
 
     def get_output(self):
-        print("point 1")
         output = {}
         score = self.weight*self.rs.unprotected_evaluate(None)
-        print("point 2")
         output["_TotalScore"] = str(score)
         output["ElectronMicroscopy2D_" + self.label] = str(score)
-        print("point 3")
         # For each image, get the transformation that places the
         # model on the image, and its cross correlation coefficient
         for i in range(self._num_images):
-            print("point 4", i)
             prefix = 'ElectronMicroscopy2D_%s_Image%d' % (self.label, i+1)
             ccc = self._em2d_restraint.get_cross_correlation_coefficient(i)
             output[prefix + '_CCC'] = str(ccc)
@@ -115,7 +103,6 @@ class ElectronMicroscopy2D(object):
                 output[prefix + '_Rotation%d' % j] = str(r[j])
             for j in range(3):
                 output[prefix + '_Translation%d' % j] = str(t[j])
-        print("point 5")
         return output
 
 class ElectronMicroscopy2D_FFT(object):

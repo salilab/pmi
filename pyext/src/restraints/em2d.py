@@ -60,7 +60,7 @@ class ElectronMicroscopy2D(object):
         self.label = "None"
 
         # read PGM FORMAT images
-        # format conversion recommendataion - first run "e2proc2d.py $FILE ${NEW_FILE}.pgm"
+        # format conversion recommendation - first run "e2proc2d.py $FILE ${NEW_FILE}.pgm"
         # then, run "convert ${NEW_FILE}.pgm -compress none ${NEW_FILE2}.pgm"
         if (n_components >= 2) :    # Number of the largest components to be considered for the EM image
             em2d = IMP.em2d.PCAFitRestraint(

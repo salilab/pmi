@@ -185,6 +185,9 @@ class ReplicaExchange0(object):
         self.monte_carlo_sample_objects = monte_carlo_sample_objects
         self.vars["self_adaptive"]=self_adaptive
         if sample_objects is not None:
+            IMP.handle_use_deprecated(
+                "sample_objects is deprecated; use monte_carlo_sample_objects "
+                "(or molecular_dynamics_sample_objects) instead")
             self.monte_carlo_sample_objects+=sample_objects
         self.molecular_dynamics_sample_objects=molecular_dynamics_sample_objects
         self.replica_exchange_object = replica_exchange_object

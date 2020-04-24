@@ -45,6 +45,8 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
     is inferred using Bayes theory of probability
     @note Wraps an IMP::isd::CrossLinkMSRestraint
     """
+    _include_in_rmf = True
+
     def __init__(self, root_hier,
                  CrossLinkDataBase=None,
                  length=10.0,

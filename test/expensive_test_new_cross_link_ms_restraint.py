@@ -95,7 +95,7 @@ class Tests(IMP.test.TestCase):
         if representation is not None:
             xl = IMP.pmi.restraints.crosslinking.CrossLinkingMassSpectrometryRestraint(
                 representation,
-                CrossLinkDataBase=cldb,
+                database=cldb,
                 length=21.0,
                 slope=0.0,
                 resolution=1.0,
@@ -103,7 +103,7 @@ class Tests(IMP.test.TestCase):
         elif root_hier is not None:
             xl = IMP.pmi.restraints.crosslinking.CrossLinkingMassSpectrometryRestraint(
                 root_hier=root_hier,
-                CrossLinkDataBase=cldb,
+                database=cldb,
                 length=21.0,
                 slope=0.0,
                 resolution=1.0,
@@ -132,7 +132,7 @@ class Tests(IMP.test.TestCase):
         if representation is not None:
             xl = IMP.pmi.restraints.crosslinking.CrossLinkingMassSpectrometryRestraint(
                 representation,
-                CrossLinkDataBase=cldb,
+                database=cldb,
                 length=21,
                 label="XL",
                 resolution=1,
@@ -140,7 +140,7 @@ class Tests(IMP.test.TestCase):
         elif root_hier is not None:
             xl = IMP.pmi.restraints.crosslinking.CrossLinkingMassSpectrometryRestraint(
                 root_hier=root_hier,
-                CrossLinkDataBase=cldb,
+                database=cldb,
                 length=21,
                 label="XL",
                 resolution=1,

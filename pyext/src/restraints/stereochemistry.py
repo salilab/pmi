@@ -5,16 +5,12 @@ Restraints for keeping correct stereochemistry.
 from __future__ import print_function
 import IMP
 import IMP.core
-import IMP.algebra
 import IMP.atom
 import IMP.container
 import IMP.isd
-import itertools
 import IMP.pmi.tools
 from operator import itemgetter
 from math import pi,log,sqrt
-import sys
-
 
 
 class ConnectivityRestraint(object):

@@ -14,8 +14,8 @@ from math import pi,log,sqrt
 
 
 class ConnectivityRestraint(object):
-    """ This class creates a restraint between consecutive TempResidue objects OR an entire
-    PMI MOlecule object. """
+    """Create a restraint between consecutive TempResidue objects
+       or an entire PMI Molecule object."""
 
     def __init__(self,
                  objects,

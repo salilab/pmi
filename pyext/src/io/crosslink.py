@@ -905,27 +905,19 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
         '''
         pass
 
-    def append_database(self,CrossLinkDataBase2):
-        '''
-        This function append one cross-link dataset to another. Unique ids will be renamed to avoid
-        conflicts.
-        '''
-        name1=self.get_name()
-        name2=CrossLinkDataBase2.get_name()
-        if name1 == name2:
-            name1=id(self)
-            name2=id(CrossLinkDataBase2)
-            self.set_name(name1)
-            CrossLinkDataBase2.set_name(name2)
-
-        #rename first database:
-        new_data_base={}
+    def append_database(self, db):
+        """Append cross-link dataset to this one."""
+        new_data_base = {}
         for k in self.data_base:
-            new_data_base[k]=self.data_base[k]
-        for k in CrossLinkDataBase2.data_base:
-            new_data_base[k]=CrossLinkDataBase2.data_base[k]
-        self.data_base=new_data_base
+            new_data_base[k] = self.data_base[k]
+        for k in db.data_base:
+            new_data_base[k]  = db.data_base[k]
+        self.data_base = new_data_base
         self._update()
+
+    def __iadd__(self, db):
+        self.append_database(db)
+        return self
 
     def set_value(self,key,new_value,FilterOperator=None):
         '''

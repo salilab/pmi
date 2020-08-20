@@ -419,10 +419,17 @@ class Tests(IMP.test.TestCase):
         pass
 
     def test_append_cldbkc(self):
+        """Test CrossLinkDatabase.append_database()"""
         cldb1=self.setup_cldb("xl_dataset_test.dat")
         cldb2=self.setup_cldb("xl_dataset_test_2.dat")
         cldb1.append_database(cldb2)
-        pass
+        self.assertEqual(len(cldb1.data_base), 10)
+
+        # Test operator
+        cldb3=self.setup_cldb("xl_dataset_test.dat")
+        cldb4=self.setup_cldb("xl_dataset_test_2.dat")
+        cldb3 += cldb4
+        self.assertEqual(cldb1.data_base, cldb3.data_base)
 
     def test_set_value(self):
         import operator

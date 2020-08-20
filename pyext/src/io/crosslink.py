@@ -919,21 +919,21 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
         self.append_database(db)
         return self
 
-    def set_value(self,key,new_value,FilterOperator=None):
+    def set_value(self, key, new_value, filter_operator=None):
         '''
         This function changes the value for a given key in the database
         For instance one can change the name of a protein
         @param key: the key in the database that must be changed
         @param new_value: the new value of the key
-        @param FilterOperator: optional FilterOperator to change the value to
+        @param filter_operator: optional FilterOperator to change the value to
                                a subset of the database
 
         example: `cldb1.set_value(cldb1.protein1_key,'FFF',FO(cldb.protein1_key,operator.eq,"AAA"))`
         '''
 
         for xl in self:
-            if FilterOperator is not None:
-                if FilterOperator.evaluate(xl):
+            if filter_operator is not None:
+                if filter_operator.evaluate(xl):
                     xl[key]=new_value
             else:
                 xl[key]=new_value

@@ -344,6 +344,12 @@ class Tests(IMP.test.TestCase):
         nentry=len([xl for xl in cldb if (xl[cldb.protein1_key]=="AAA")])
         self.assertEqual(len(cldb1),nentry)
 
+    def test_filter_score(self):
+        """Test CrossLinkDatabase.filter_score()"""
+        cldb = self.setup_cldb("xl_dataset_test.dat")
+        cldb1 = cldb.filter_score(10)
+        self.assertEqual(len(cldb1), 5)
+
     def test_clone_protein(self):
         cldb=self.setup_cldb("xl_dataset_test.dat")
         expected_crosslinks=[]

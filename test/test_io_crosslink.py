@@ -416,7 +416,9 @@ class Tests(IMP.test.TestCase):
         pass
 
     def test_merge_cldbkc(self):
-        pass
+        """Test CrossLinkDatabase.merge()"""
+        cldb1=self.setup_cldb("xl_dataset_test.dat")
+        self.assertRaises(NotImplementedError, cldb1.merge, None, None)
 
     def test_append_cldbkc(self):
         """Test CrossLinkDatabase.append_database()"""

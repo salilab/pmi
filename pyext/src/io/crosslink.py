@@ -903,7 +903,7 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
         cross-link UniqueIDS, the cross-links will be appended under the same UniqueID slots
         with different SubIDs
         '''
-        pass
+        raise NotImplementedError()
 
     def append_database(self, db):
         """Append cross-link dataset to this one."""

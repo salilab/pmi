@@ -43,7 +43,62 @@ class Tests(IMP.test.TestCase):
         r = MockRepresentation(None)
         self.assertIsNone(_get_color_for_representation(r))
 
+    def test_get_structure_pdb(self):
+        """Test get_structure given a single-model PDB"""
+        m = IMP.Model()
+        rs = IMP.pmi.topology.system_tools.get_structure(
+                m, self.get_input_file_name('mini.pdb'), 'A', [4, 5])
+        self.assertEqual(len(rs), 2)
 
+        # Empty residue range
+        rs = IMP.pmi.topology.system_tools.get_structure(
+                m, self.get_input_file_name('mini.pdb'), 'A')
+        self.assertEqual(len(rs), 7)
+
+        rs = IMP.pmi.topology.system_tools.get_structure(
+                m, self.get_input_file_name('mini.pdb'), 'A', [6, 'END'])
+        self.assertEqual(len(rs), 3)
+
+        rs = IMP.pmi.topology.system_tools.get_structure(
+                m, self.get_input_file_name('mini.pdb'), 'A', [4, 5],
+                ca_only=True)
+        self.assertEqual(len(rs), 2)
+
+        # Invalid range
+        with self.assertWarns(IMP.pmi.StructureWarning):
+            rs = IMP.pmi.topology.system_tools.get_structure(
+                   m, self.get_input_file_name('mini.pdb'), 'A', [40, 50])
+            self.assertEqual(len(rs), 0)
+
+    def test_get_structure_mmcif(self):
+        """Test get_structure given a single-model mmCIF"""
+        m = IMP.Model()
+        rs = IMP.pmi.topology.system_tools.get_structure(
+                m, self.get_input_file_name('mini.cif'), 'A', [4, 5])
+        self.assertEqual(len(rs), 2)
+
+        rs = IMP.pmi.topology.system_tools.get_structure(
+                m, self.get_input_file_name('mini.cif'), 'A', [4, 5],
+                ca_only=True)
+        self.assertEqual(len(rs), 2)
+
+        with self.assertWarns(IMP.pmi.StructureWarning):
+            rs = IMP.pmi.topology.system_tools.get_structure(
+                   m, self.get_input_file_name('mini.cif'), 'A', [40, 50])
+            self.assertEqual(len(rs), 0)
+
+    def test_get_structure_multi_pdb(self):
+        """Test get_structure given a multi-model PDB"""
+        m = IMP.Model()
+        rs = IMP.pmi.topology.system_tools.get_structure(
+                m, self.get_input_file_name('multi.pdb'), 'A', [56, 57],
+                model_num=1)
+        self.assertEqual(len(rs), 2)
+
+        self.assertRaises(IndexError,
+                IMP.pmi.topology.system_tools.get_structure,
+                m, self.get_input_file_name('multi.pdb'), 'A', [56, 57],
+                model_num=2)
 
 if __name__ == '__main__':
     IMP.test.main()

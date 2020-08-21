@@ -100,5 +100,23 @@ class Tests(IMP.test.TestCase):
                 m, self.get_input_file_name('multi.pdb'), 'A', [56, 57],
                 model_num=2)
 
+    def test_build_ca_centers_dna(self):
+        """Test build_ca_centers() run on DNA"""
+        m = IMP.Model()
+        s = IMP.pmi.topology.System(m)
+        st1 = s.create_state()
+        mol = st1.create_molecule("mol", sequence="ACGTG", chain_id='A',
+                alphabet=IMP.pmi.alphabets.dna)
+        atomic_res = mol.add_structure(
+                self.get_input_file_name('dna.pdb'), chain_id='A')
+        mol.add_representation(mol.get_atomic_residues(),resolutions=[1])
+        hier = s.build()
+        r, = IMP.atom.get_leaves(hier)
+
+        # No volumes for DNA; radius should be that of ALA
+        self.assertTrue(IMP.core.XYZR.get_is_setup(r))
+        self.assertAlmostEqual(IMP.core.XYZR(r).get_radius(), 2.51577,
+                delta=0.01)
+
 if __name__ == '__main__':
     IMP.test.main()

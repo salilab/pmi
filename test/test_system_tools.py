@@ -5,6 +5,13 @@ from IMP.pmi.topology.system_tools import _get_color_for_representation
 
 class Tests(IMP.test.TestCase):
 
+    # assertWarns needs Python 3.3; replace with a noop on older Pythons
+    if not hasattr(IMP.test.TestCase, 'assertWarns'):
+        import contextlib
+        @contextlib.contextmanager
+        def assertWarns(self, warncls):
+            yield None
+
     def test_get_color_for_representation(self):
         """Test _get_color_for_representation()"""
         class MockRepresentation(object):

@@ -1169,7 +1169,7 @@ class TopologyReader(object):
        The second item in the pair can be END to select the last residue in the
        PDB chain.
     - `pdb_offset`: Offset to sync PDB residue numbering with FASTA numbering.
-      For example, an offset of 10 would match the first residue in the
+      For example, an offset of -10 would match the first residue in the
       FASTA file (which is always numbered sequentially starting from 1) with
       residue 11 in the PDB file.
     - `bead_size`: The size (in residues) of beads used to model areas not

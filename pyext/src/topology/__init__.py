@@ -1145,7 +1145,10 @@ class TopologyReader(object):
 
     These are the fields you can enter:
     - `component_name`: Name of the component (chain). Serves as the parent
-      hierarchy for this structure.
+      hierarchy for this structure. Multiple copies of the same component
+      can be created by appending a copy number after a period; if none is
+      specified, a copy number of 0 is assumed (e.g. Rpb2.1 is the second copy
+      of Rpb2 or Rpb2.0).
     - `color`: The color used in the output RMF file. Uses
       [Chimera names](https://www.cgl.ucsf.edu/chimera/docs/UsersGuide/colortables.html),
       (e.g. "red"), or R,G,B values as three comma-separated floating point

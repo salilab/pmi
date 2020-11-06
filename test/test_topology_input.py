@@ -160,7 +160,8 @@ class Tests(IMP.test.TestCase):
 
         expected_rbs = [['Prot1.1.0','Prot1..0'],
                         ['Prot2..0','Prot2..1','Prot2.1.0','Prot2.1.1'],
-                        ['Prot4..0', 'Prot5..0']]
+                        ['Prot4..0', 'Prot5..0'],
+                        ['DNA1..0'], ['RNA1..0']]
         expected_srbs = [['Prot1.1.0','Prot1..0','Prot2..0','Prot2..1',
                           'Prot2.1.0','Prot2.1.1','Prot4..0','Prot3..0', 'Prot5..0'],
                          ['Prot1.1.0','Prot1..0','Prot3..0']]
@@ -253,7 +254,7 @@ class Tests(IMP.test.TestCase):
         # check rigid bodies
         rbs = dof.get_rigid_bodies()
         fbs = dof.get_flexible_beads()
-        self.assertEqual(len(rbs),3)
+        self.assertEqual(len(rbs),5)
         #                         Prot1x2 Prot3
         self.assertEqual(len(fbs), 4   +  2)
 

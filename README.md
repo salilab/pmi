@@ -1,6 +1,6 @@
 \brief Legacy PMI1 module to represent, score, sample and analyze models.
 
-[![Build Status](https://travis-ci.org/salilab/pmi.svg?branch=legacy-pmi1)](https://travis-ci.org/salilab/pmi)
+[![Build Status](https://travis-ci.com/salilab/pmi.svg?branch=legacy-pmi1)](https://travis-ci.com/salilab/pmi)
 [![codecov](https://codecov.io/gh/salilab/pmi/branch/legacy-pmi1/graph/badge.svg)](https://codecov.io/gh/salilab/pmi/branch/legacy-pmi1)
 
 This module contains an older version of the PMI module (PMI1)

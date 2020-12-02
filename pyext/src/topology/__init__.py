@@ -1139,8 +1139,8 @@ class TopologyReader(object):
     @endcode
 
     These are the fields you can enter:
-    - `component_name`: Name of the component (chain). Serves as the parent
-      hierarchy for this structure. Multiple copies of the same component
+    - `molecule_name`: Name of the molecule (chain). Serves as the parent
+      hierarchy for this structure. Multiple copies of the same molecule
       can be created by appending a copy number after a period; if none is
       specified, a copy number of 0 is assumed (e.g. Rpb2.1 is the second copy
       of Rpb2 or Rpb2.0).

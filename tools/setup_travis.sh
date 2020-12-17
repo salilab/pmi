@@ -31,9 +31,6 @@ conda create --yes -q -n python${python_version} -c salilab python=${python_vers
 source activate python${python_version}
 pip install coverage
 
-source ${CONDA_PREFIX}/etc/conda/activate.d/activate-gcc_linux-64.sh
-source ${CONDA_PREFIX}/etc/conda/activate.d/activate-gxx_linux-64.sh
-
 # IMP tests use sys.argv[0] to determine their location, which won't work if
 # we use nosetests, so add a workaround
 ln -sf $(which nosetests) ${cur_dir}/test/

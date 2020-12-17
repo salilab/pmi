@@ -27,7 +27,7 @@ jobs:
       run: |
         export IMP_TMP_DIR=/tmp
         source ~/conda/bin/activate python${{ matrix.python-version }}
-        rm -f ${CONDA_PREFIX}/lib/libimp_pmi.so* ${CONDA_PREFIX}/lib/_IMP_pmi.so ${CONDA_PREFIX}/lib/IMP/pmi
+        rm -f ${CONDA_PREFIX}/lib/libimp_pmi.so* ${CONDA_PREFIX}/lib/_IMP_pmi.so
         # Use same C/C++ compiler as conda
         source ${CONDA_PREFIX}/etc/conda/activate.d/activate-gcc_linux-64.sh
         source ${CONDA_PREFIX}/etc/conda/activate.d/activate-gxx_linux-64.sh
@@ -35,5 +35,5 @@ jobs:
         if test "${{ matrix.python-version }}" = "2.7" ; then PY2=on; else PY2=off; fi
         cmake .. -DIMP_DIR=${CONDA_PREFIX}/lib/cmake/IMP -DUSE_PYTHON2=${PY2} -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage"
         make
-        ./setup_environment.sh ../test/nosetests --with-coverage --cover-branches -e 'probabilistic' ../test/test_*.py ../test/medium_test_*.py test/*/*.py > /dev/null
+        ./setup_environment.sh ../test/nosetests --with-coverage --cover-branches --cover-xml -e 'probabilistic' ../test/test_*.py ../test/medium_test_*.py test/*/*.py > /dev/null
     - uses: codecov/codecov-action@v1

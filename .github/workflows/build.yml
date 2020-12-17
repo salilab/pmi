@@ -35,5 +35,5 @@ jobs:
         if test "${{ matrix.python-version }}" = "2.7" ; then PY2=on; else PY2=off; fi
         cmake .. -DIMP_DIR=${CONDA_PREFIX}/lib/cmake/IMP -DUSE_PYTHON2=${PY2} -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage"
         make
-        ./setup_environment.sh ../test/nosetests --with-coverage --cover-branches --cover-xml -e 'probabilistic' ../test/test_*.py ../test/medium_test_*.py test/*/*.py > /dev/null
+        ./setup_environment.sh py.test --cov=.. --cov-branch --cov-report=xml -v ../test/test_*.py ../test/medium_test_*.py test/*/*.py
     - uses: codecov/codecov-action@v1

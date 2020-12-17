@@ -27,13 +27,9 @@ fi
 bash miniconda.sh -b -p ${conda_dir}
 export PATH=${conda_dir}/bin:$PATH
 conda update --yes -q conda
-conda create --yes -q -n python${python_version} -c salilab python=${python_version} pip scipy matplotlib nose imp-nightly gxx_linux-64 eigen swig cmake
+conda create --yes -q -n python${python_version} -c salilab python=${python_version} pip scipy matplotlib imp-nightly gxx_linux-64 eigen swig cmake
 source activate python${python_version}
-pip install coverage
-
-# IMP tests use sys.argv[0] to determine their location, which won't work if
-# we use nosetests, so add a workaround
-ln -sf $(which nosetests) ${cur_dir}/test/
+pip install pytest-cov coverage
 
 cd ${cur_dir}
 

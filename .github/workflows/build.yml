@@ -27,7 +27,7 @@ jobs:
       run: |
         export IMP_TMP_DIR=/tmp
         source ~/conda/bin/activate python${{ matrix.python-version }}
-        rm -f ${CONDA_PREFIX}/lib/libimp_pmi.so* ${CONDA_PREFIX}/lib/_IMP_pmi.so
+        rm -f ${CONDA_PREFIX}/lib/libimp_pmi.so* ${CONDA_PREFIX}/lib/_IMP_pmi.so ${CONDA_PREFIX}/lib/IMP/pmi
         # Use same C/C++ compiler as conda
         source ${CONDA_PREFIX}/etc/conda/activate.d/activate-gcc_linux-64.sh
         source ${CONDA_PREFIX}/etc/conda/activate.d/activate-gxx_linux-64.sh

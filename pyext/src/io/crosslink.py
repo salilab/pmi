@@ -993,7 +993,81 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
             if protein_to_rename == "both" or protein_to_rename == "protein2":
                 fo2=FilterOperator(self.protein2_key,operator.eq,old_name)
                 self.set_value(self.protein2_key,new_name,fo2)
+                
+    def align_sequence(self,alignfile):
+        """
+        This function parses an alignment file obtained previously, to map crosslink
+        residues onto the sequence of a homolog proteins. It is useful if you want to map
+        the crosslinks on a known, homolog structure without building a comparative model.
+        The txt file of the alignment should be structured with repeating blocks, as follows:
+        
+        >NAME_CROSSLINKED_PROTEIN
+        >NAME_HOMOLOG_PROTEIN_WITH_KNOWN_STRUCTURE
+        one-letter code sequence for cross-linked protein (one line)
+        one-letter code sequence for homolog protein with known structure (one line)
+        """
+        
+        f=open(alignfile,'r')
+        def _assign_residues(seq1,seq2):
+            d={}
+            resinds1=[]
+            nres=0
+            contiguousgap=0
+            for r1 in seq1:
+                if r1!="-":
+                    nres+=1
+                    resinds1.append(nres)
+                else:
+                    resinds1.append(None)
 
+
+            resinds2=[None for i in resinds1]
+            nres=0
+            lastresind=1
+            for pos,r2 in enumerate(seq2):
+                if r2!="-":
+                    nres+=1
+                    resinds2[pos]=nres
+                    lastresind=nres
+                    if contiguousgap>1:
+                        for i in range(pos-int(contiguousgap/2),pos):
+                            resinds2[i]=nres
+                    contiguousgap=0
+                    
+                else:
+                    contiguousgap+=1
+                    resinds2[pos]=lastresind
+            
+            #print(list(zip(seq1, resinds1)))
+            #print(list(zip(seq2, resinds2)))
+            for n,r in enumerate(resinds1):
+                if r is not None:
+                    d[r]=resinds2[n]
+            return d         
+                        
+        
+        aa=True
+        with open(alignfile,'r') as f:
+            while aa:
+                aa=f.readline()
+                bb=f.readline()
+                cc=f.readline()
+                dd=f.readline()
+                protname=aa.replace(">","").replace("\n","")
+                seq1=cc.replace(",","").replace("\n","")
+                seq2=dd.replace(",","").replace("\n","")
+                d=_assign_residues(seq1,seq2)
+                
+                fo11=FilterOperator(self.protein1_key,operator.eq,protname)
+                fo12=FilterOperator(self.protein2_key,operator.eq,protname)
+                
+                for xl in self:
+                    if fo11.evaluate(xl):
+                        xl[self.residue1_key]=d[xl[self.residue1_key]]
+                    if fo12.evaluate(xl):
+                        xl[self.residue2_key]=d[xl[self.residue2_key]]
+                
+                
     def classify_crosslinks_by_score(self,number_of_classes):
         '''
         This function creates as many classes as in the input (number_of_classes: integer)

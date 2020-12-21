@@ -22,11 +22,12 @@ jobs:
         submodules: true
     - name: Setup conda and dependencies
       run: |
-        tools/setup_travis.sh ~/conda ${{ matrix.python-version }}
+        tools/setup_travis.sh ${{ matrix.python-version }}
     - name: Test
       run: |
         export IMP_TMP_DIR=/tmp
-        source ~/conda/bin/activate python${{ matrix.python-version }}
+        eval "$(conda shell.bash hook)"
+        conda activate python${{ matrix.python-version }}
         rm -f ${CONDA_PREFIX}/lib/libimp_pmi.so* ${CONDA_PREFIX}/lib/_IMP_pmi.so
         # Use same C/C++ compiler as conda
         source ${CONDA_PREFIX}/etc/conda/activate.d/activate-gcc_linux-64.sh

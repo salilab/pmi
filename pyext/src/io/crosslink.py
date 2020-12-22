@@ -998,7 +998,7 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
         """
         This function parses an alignment file obtained previously, to map crosslink
         residues onto the sequence of a homolog proteins. It is useful if you want to map
-        the crosslinks on a known, homolog structure without building a comparative model.
+        the crosslinks onto a known, homolog structure without building a comparative model.
         The txt file of the alignment should be structured with repeating blocks, as follows:
         
         >NAME_CROSSLINKED_PROTEIN
@@ -1043,10 +1043,11 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
             for n,r in enumerate(resinds1):
                 if r is not None:
                     d[r]=resinds2[n]
-            return d         
-                        
-        
+            return d  
+            
         aa=True
+        sequences1={}
+        sequences2={}
         with open(alignfile,'r') as f:
             while aa:
                 aa=f.readline()
@@ -1056,6 +1057,29 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
                 protname=aa.replace(">","").replace("\n","")
                 seq1=cc.replace(",","").replace("\n","")
                 seq2=dd.replace(",","").replace("\n","")
+                
+                n1=0
+                n2=0
+                tmpl1=[]
+                tmpl2=[]
+                for i in range(len(seq1)):
+                    if seq1[i]!="-": 
+                        n1+=1
+                        c1=n1
+                    else:
+                        c1=None
+                    if seq2[i]!="-": 
+                        n2+=1
+                        c2=n2
+                    else:
+                        c2=None                    
+                
+                    tmpl1.append([i,c1,seq1[i]])
+                    tmpl2.append([i,c2,seq2[i]])
+                sequences1[protname]=tmpl1
+                sequences2[protname]=tmpl2
+                
+                
                 d=_assign_residues(seq1,seq2)
                 
                 fo11=FilterOperator(self.protein1_key,operator.eq,protname)
@@ -1063,9 +1087,28 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
                 
                 for xl in self:
                     if fo11.evaluate(xl):
+                        t=[item for item in sequences1[protname] if item[1] == xl[self.residue1_key]][0]
+                        sequences1[protname][t[0]]=[t[0],t[1],'\033[91m'+t[2]+'\033[0m']
+                        t=[item for item in sequences2[protname] if item[1] == d[xl[self.residue1_key]]][0]
+                        sequences2[protname][t[0]]=[t[0],t[1],'\033[91m'+t[2]+'\033[0m'] 
+                    
                         xl[self.residue1_key]=d[xl[self.residue1_key]]
+                                
                     if fo12.evaluate(xl):
+
+                        t=[item for item in sequences1[protname] if item[1] == xl[self.residue2_key]][0]
+                        sequences1[protname][t[0]]=[t[0],t[1],'\033[91m'+t[2]+'\033[0m']
+                        t=[item for item in sequences2[protname] if item[1] == d[xl[self.residue2_key]]][0]
+                        sequences2[protname][t[0]]=[t[0],t[1],'\033[91m'+t[2]+'\033[0m']
+                        
                         xl[self.residue2_key]=d[xl[self.residue2_key]]
+                
+                print("")
+                print(aa.replace("\n",""))
+                print("".join([t[2] for t in sequences1[protname]]))
+                print(bb.replace("\n",""))
+                print("".join([t[2] for t in sequences2[protname]]))            
+                
                 
                 
     def classify_crosslinks_by_score(self,number_of_classes):

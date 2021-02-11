@@ -473,7 +473,8 @@ class DegreesOfFreedom(object):
 
         lsc = IMP.container.ListSingletonContainer(
             self.model,
-            [p.get_particle().get_index() for p in clones_rbs+clones_beads])
+            [bead.get_particle().get_index()
+             for bead in clones_rbs+clones_beads])
         c = IMP.container.SingletonsConstraint(sm, None, lsc)
         self.model.add_score_state(c)
         print('Created symmetry restraint for', len(ref_rbs),

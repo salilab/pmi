@@ -357,6 +357,7 @@ def build_representation(parent, rep, coord_finder, rephandler):
             name_all += '...'
         name_count += 1
         segp = IMP.Particle(model, name)
+        IMP.atom.Fragment.setup_particle(segp, res_nums)
         if not single_node:
             this_representation = IMP.atom.Representation.setup_particle(
                 segp, primary_resolution)

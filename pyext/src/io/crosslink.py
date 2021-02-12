@@ -1155,9 +1155,9 @@ class CrossLinkDataBase(_CrossLinkDataBaseStandardKeys):
 
                 print("")
                 print(aa.replace("\n", ""))
-                print("".join([t[2] for t in sequences1[protname]]))
+                print("".join([seq[2] for seq in sequences1[protname]]))
                 print(bb.replace("\n", ""))
-                print("".join([t[2] for t in sequences2[protname]]))
+                print("".join([seq[2] for seq in sequences2[protname]]))
 
     def classify_crosslinks_by_score(self, number_of_classes):
         '''

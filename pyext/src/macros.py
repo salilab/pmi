@@ -1673,6 +1673,8 @@ class AnalysisReplicaExchange(object):
                 self.compute_cluster_center(c0)
             if c1.center_index is None:
                 self.compute_cluster_center(c1)
+            _ = self.stath0[c0.center_index]
+            _ = self.stath1[c1.center_index]
             rmsd, molecular_assignment = self.rmsd()
             if rmsd <= rmsd_cutoff:
                 if c1 in self.clusters:
@@ -1788,6 +1790,8 @@ class AnalysisReplicaExchange(object):
         member_distance = defaultdict(float)
 
         for n0, n1 in itertools.combinations(cluster.members, 2):
+            _ = self.stath0[n0]
+            _ = self.stath1[n1]
             rmsd, _ = self.rmsd()
             member_distance[n0] += rmsd
 
@@ -1809,9 +1813,11 @@ class AnalysisReplicaExchange(object):
         if rmf_name is None:
             rmf_name = prefix+'/'+str(cluster.cluster_id)+".rmf3"
 
+        _ = self.stath1[cluster.members[0]]
         self.model.update()
         o.init_rmf(rmf_name, [self.stath1])
         for n1 in cluster.members:
+            _ = self.stath1[n1]
             self.model.update()
             self.apply_molecular_assignments(n1)
             if self.alignment:
@@ -1834,6 +1840,7 @@ class AnalysisReplicaExchange(object):
             d0 = self.stath0[selected]
             rm = []
             for n1 in remaining:
+                _ = self.stath1[n1]
                 if self.alignment:
                     self.align()
                 d, _ = self.rmsd()
@@ -1868,9 +1875,11 @@ class AnalysisReplicaExchange(object):
             members1 = cluster.members
 
         for n0 in members1:
+            _ = self.stath0[n0]
             for n1 in cluster.members:
                 if n0 != n1:
                     npairs += 1
+                    _ = self.stath1[n1]
                     self.apply_molecular_assignments(n1)
                     tmp_rmsd, _ = self.rmsd()
                     rmsd += tmp_rmsd
@@ -1889,7 +1898,9 @@ class AnalysisReplicaExchange(object):
         npairs = 0
         rmsd = 0.0
         for cn0, n0 in enumerate(cluster1.members):
+            _ = self.stath0[n0]
             for cn1, n1 in enumerate(cluster2.members):
+                _ = self.stath1[n1]
                 tmp_rmsd, _ = self.rmsd()
                 if verbose:
                     print("--- rmsd between structure %s and structure "
@@ -1988,6 +1999,7 @@ class AnalysisReplicaExchange(object):
 
         for n1 in cluster.members[::step]:
             print("density "+str(n1))
+            _ = self.stath1[n1]
             self.apply_molecular_assignments(n1)
             if self.alignment:
                 self.align()
@@ -2038,6 +2050,7 @@ class AnalysisReplicaExchange(object):
 
         for ncl, n1 in enumerate(cluster.members):
             print(ncl)
+            _ = self.stath1[n1]
             coord_dict = IMP.pmi.tools.OrderedDict()
             for mol in mols:
                 rindexes = mol.get_residue_indexes()
@@ -2345,6 +2358,8 @@ class AnalysisReplicaExchange(object):
         for c0, c1 in filter(lambda x: len(x[0].members) > 1,
                              itertools.combinations(self.clusters, 2)):
             n0, n1 = [c.members[0] for c in (c0, c1)]
+            _ = self.stath0[n0]
+            _ = self.stath1[n1]
             rmsd, _ = self.rmsd()
             if (rmsd < 2*rmsd_cutoff and
                     self.have_close_members(c0, c1, rmsd_cutoff, metric)):
@@ -2364,6 +2379,8 @@ class AnalysisReplicaExchange(object):
         print("check close members for clusters " + str(c0.cluster_id) +
               " and " + str(c1.cluster_id))
         for n0, n1 in itertools.product(c0.members[1:], c1.members):
+            _ = self.stath0[n0]
+            _ = self.stath1[n1]
             rmsd, _ = self.rmsd(metric=metric)
             if rmsd < rmsd_cutoff:
                 return True
@@ -2471,21 +2488,21 @@ class AnalysisReplicaExchange(object):
                first cluster) or Relative (cluster center of the current
                cluster)
         """
-        # todo: this function appears to do nothing
         if reference == "Absolute":
-            d0 = self.stath0[0]
+            _ = self.stath0[0]
         elif reference == "Relative":
             if cluster.center_index:
                 n0 = cluster.center_index
             else:
                 n0 = cluster.members[0]
-            d0 = self.stath0[n0]   # noqa: F841
+            _ = self.stath0[n0]
 
     def apply_molecular_assignments(self, n1):
         """
         compute the molecular assignemnts between multiple copies
         of the same sequence. It changes the Copy index of Molecules
         """
+        _ = self.stath1[n1]
         _, molecular_assignment = self.rmsd()
         for (m0, c0), (m1, c1) in molecular_assignment.items():
             mol0 = self.molcopydict0[m0][c0]
@@ -2498,6 +2515,7 @@ class AnalysisReplicaExchange(object):
         """
         Undo the Copy index assignment
         """
+        _ = self.stath1[n1]
         _, molecular_assignment = self.rmsd()
         for (m0, c0), (m1, c1) in molecular_assignment.items():
             mol0 = self.molcopydict0[m0][c0]

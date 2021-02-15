@@ -1336,8 +1336,6 @@ def shuffle_configuration(objects,
                 rb_idxs = set(rb.get_member_particle_indexes()) - \
                           collision_excluded_idxs
                 other_idxs = all_idxs - rb_idxs
-                if not other_idxs:
-                    continue
 
             # iterate, trying to avoid collisions
             niter = 0
@@ -1366,7 +1364,7 @@ def shuffle_configuration(objects,
                 IMP.core.transform(rb, transformation)
 
                 # check collisions
-                if avoidcollision_rb:
+                if avoidcollision_rb and other_idxs:
                     mdl.update()
                     npairs = len(gcpf.get_close_pairs(mdl,
                                                       list(other_idxs),

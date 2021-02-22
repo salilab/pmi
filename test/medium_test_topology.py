@@ -191,7 +191,7 @@ class MultiscaleTopologyTest(IMP.test.TestCase):
 
         mol_beads_3 = mol[:] - mol.get_represented()
         # when we print the results, there are big inconsistencies
-        # with the expected behaviour. We expect that the sixth column is indentical to the fifth and the second;
+        # with the expected behaviour. We expect that the sixth column is identical to the fifth and the second;
         # and we expect that the first is equal to the first. But this is not obtained :-)
         # The results are not intuitive at this stage, we think that mol has changed after build,
         # and mol.get_represented() is not changed correspondigly.

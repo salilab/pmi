@@ -161,6 +161,21 @@ class Tests(IMP.test.TestCase):
             self.assertTrue(1000.0 <coor_fb[1]< 1200.0)
             self.assertTrue(1000.0 <coor_fb[2]< 1200.0)
 
+    def test_shuffle_box_gaussian_beads(self):
+        """Test shuffling Gaussian-decorated beads with bounding box"""
+        mdl = IMP.Model()
+        s = IMP.pmi.topology.System(mdl)
+        seqs = IMP.pmi.topology.Sequences(
+            self.get_input_file_name('chainA.fasta'))
+        st1 = s.create_state()
+        mol = st1.create_molecule(
+            "GCP2_YEAST", sequence=seqs["GCP2_YEAST"][:10], chain_id='A')
+        mol.add_representation(mol.get_non_atomic_residues(), resolutions=[10],
+                               setup_particles_as_densities=True)
+        hier = s.build()
+
+        IMP.pmi.tools.shuffle_configuration(
+            hier, bounding_box=((1000, 1000, 1000), (1200, 1200, 1200)))
 
     def test_shuffle_deep(self):
         """Test moving rbs, fbs"""

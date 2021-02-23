@@ -22,11 +22,8 @@ except ImportError:
     from time import clock as process_time
 import RMF
 import IMP.rmf
-from collections import defaultdict
-try:
-    from collections import OrderedDict
-except ImportError:
-    from IMP.pmi1._compat_collections import OrderedDict
+from collections import defaultdict, OrderedDict
+
 
 def _add_pmi_provenance(p):
     """Tag the given particle as being created by the current version of PMI."""

@@ -19,7 +19,7 @@ IMPPMI1_BEGIN_NAMESPACE
 
 //! Add resolution to a particle
 /** The resolution of the particle is assumed to be in number of residues
-    (see \ref pmi_resolution).
+    (see \ref pmi1_resolution).
  */
 class IMPPMI1EXPORT Resolution : public Decorator {
   static void do_setup_particle(Model *m, ParticleIndex pi, double resolution) {

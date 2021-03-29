@@ -1,4 +1,4 @@
-PMI changelog {#pmi_changelog}
+PMI changelog {#pmi1_changelog}
 =============
 
 *News May 7 2016 - update 2*

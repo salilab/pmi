@@ -1,4 +1,4 @@
-Resolution in PMI {#pmi_resolution}
+Resolution in PMI {#pmi1_resolution}
 =================
 
 Very generally, the _representation_ of a system is defined by all the

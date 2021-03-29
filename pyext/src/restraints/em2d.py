@@ -38,7 +38,7 @@ class ElectronMicroscopy2D(object):
         @param micrographs_number Number of micrograph particles that
                were used to generate the class averages, if known
         @param resolution Which level of
-               [model representation](@ref pmi_resolution) to use in the fit
+               [model representation](@ref pmi1_resolution) to use in the fit
         @param n_components Number of the largest components to be
                considered for the EM image
         @param hier The root hierarchy for applying the restraint
@@ -154,7 +154,7 @@ class ElectronMicroscopy2D_FFT(object):
         @param projection_number Number of projections of the model (coarse registration) to
                estimate the registration parameters
         @param resolution Which level of
-               [model representation](@ref pmi_resolution) to use in the fit
+               [model representation](@ref pmi1_resolution) to use in the fit
         @param n_components Number of the largest components to be
                considered for the EM image
         @param hier The root hierarchy for applying the restraint

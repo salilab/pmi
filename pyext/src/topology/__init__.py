@@ -267,7 +267,7 @@ class State(_SystemBase):
             raise ValueError('Cannot use a molecule name already used')
 
         # check for something that looks like a copy number
-        if re.search('\.\d+$', name):
+        if re.search(r'\.\d+$', name):
             warnings.warn(
                 "It is recommended not to end the molecule name with "
                 ".(number) as it may be confused with the copy number "

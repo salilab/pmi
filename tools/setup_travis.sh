@@ -13,8 +13,8 @@ temp_dir=$(mktemp -d)
 
 cd ${temp_dir}
 
-conda update --yes -q conda
-conda create --yes -q -n python${python_version} -c salilab python=${python_version} pip scipy matplotlib imp-nightly gxx_linux-64 eigen swig cmake
+conda config --remove channels defaults  # get conda-forge, not main, packages
+conda create --yes -q -n python${python_version} -c salilab -c conda-forge python=${python_version} pip scipy matplotlib imp-nightly gxx_linux-64 eigen swig cmake
 eval "$(conda shell.bash hook)"
 conda activate python${python_version}
 pip install pytest-cov coverage pytest-flake8

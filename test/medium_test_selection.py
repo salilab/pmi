@@ -71,12 +71,16 @@ class Tests(IMP.test.TestCase):
             if result[0] is IMP.atom.Residue:
                 self.assertEqual(result[1],IMP.atom.Residue(nter).get_index())
             if result[0] is IMP.atom.Fragment:
-                self.assertEqual(result[1],IMP.atom.Fragment(nter).get_residue_indexes())
+                self.assertEqual(
+                    result[1],
+                    list(IMP.atom.Fragment(nter).get_residue_indexes()))
             result=results[(name,"cter")]
             if result[0] is IMP.atom.Residue:
                 self.assertEqual(result[1],IMP.atom.Residue(cter).get_index())
             if result[0] is IMP.atom.Fragment:
-                self.assertEqual(result[1],IMP.atom.Fragment(cter).get_residue_indexes())
+                self.assertEqual(
+                    result[1],
+                    list(IMP.atom.Fragment(cter).get_residue_indexes()))
 
     def test_selection(self):
         """Test selection"""

@@ -1071,7 +1071,7 @@ class BuildModel1(object):
         res_ind=[]
         for pb in pdbbits+helixbits:
             for p in IMP.core.get_leaves(pb):
-                res_ind+=IMP.pmi1.tools.get_residue_indexes(p)
+                res_ind.extend(IMP.pmi1.tools.get_residue_indexes(p))
 
         number_of_residues=len(set(res_ind))
         outhier=[]

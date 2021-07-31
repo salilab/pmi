@@ -1087,7 +1087,7 @@ def get_residue_indexes(hier):
 
 
 def sort_by_residues(particles):
-    particles_residues = [(p, IMP.pmi1.tools.get_residue_indexes(p))
+    particles_residues = [(p, list(IMP.pmi1.tools.get_residue_indexes(p)))
                           for p in particles]
     sorted_particles_residues = sorted(
         particles_residues,

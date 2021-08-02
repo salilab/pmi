@@ -2290,7 +2290,7 @@ class BinomialXLMSRestraint(object):
             output["CrossLinkMS_Psi_" +
                    str(psiindex) + "_" + self.label] = str(self.psi_dictionary[psiindex][0].get_scale())
         '''
-        for n in range(self.weight.get_number_of_states()):
+        for n in range(self.weight.get_number_of_weights()):
            output["CrossLinkMS_weights_"+str(n)+"_"+self.label]=str(self.weight.get_weight(n))
         '''
         return output

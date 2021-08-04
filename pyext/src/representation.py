@@ -1439,7 +1439,8 @@ class Representation(object):
                 ps.append(p)
             if IMP.core.Gaussian.get_is_setup(p):
                 # remove the densities particles out of the calculation
-                hierarchies_excluded_from_collision_indexes += IMP.get_indexes([p])
+                hierarchies_excluded_from_collision_indexes.extend(
+                    IMP.get_indexes([p]))
         allparticleindexes = IMP.get_indexes(ps)
 
         if bounding_box is not None:
@@ -1449,7 +1450,8 @@ class Representation(object):
             bb = IMP.algebra.BoundingBox3D(lb, ub)
 
         for h in hierarchies_excluded_from_collision:
-            hierarchies_excluded_from_collision_indexes += IMP.get_indexes(IMP.atom.get_leaves(h))
+            hierarchies_excluded_from_collision_indexes.extend(
+                IMP.get_indexes(IMP.atom.get_leaves(h)))
 
 
         allparticleindexes = list(

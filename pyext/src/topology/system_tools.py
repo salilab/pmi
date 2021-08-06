@@ -13,6 +13,7 @@ import warnings
 # (HETATM records) so add it here
 _AT_HET_CA = IMP.atom.AtomType("HET: CA ")
 
+
 def resnums2str(res):
     """Take iterable of TempResidues and return compatified string"""
     if len(res) == 0:

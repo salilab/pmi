@@ -178,8 +178,9 @@ def build_ca_centers(model, residues):
         elif len(cp) == 1:
             central_atom = cp[0]
         else:
-            raise("build_ca_centers: weird selection (no Ca, no "
-                  "nucleotide P or ambiguous selection found)")
+            raise ValueError(
+                "build_ca_centers: weird selection (no CA, no "
+                "nucleotide P or ambiguous selection found)")
         radius = IMP.algebra.get_ball_radius_from_volume_3d(vol)
         shape = IMP.algebra.Sphere3D(
             IMP.core.XYZ(central_atom).get_coordinates(), radius)

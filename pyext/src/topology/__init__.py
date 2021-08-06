@@ -929,7 +929,7 @@ class _FindCloseStructure(object):
                 xyz = IMP.core.XYZ(p[0]).get_coordinates()
                 self.coords.append([idx, xyz])
             else:
-                raise("_FindCloseStructure: wrong selection")
+                raise ValueError("_FindCloseStructure: wrong selection")
 
         self.coords.sort(key=itemgetter(0))
 

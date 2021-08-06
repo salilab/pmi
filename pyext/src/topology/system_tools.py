@@ -9,6 +9,9 @@ from math import pi
 import os
 import warnings
 
+# IMP doesn't statically define an atom type for CA atoms in modified residues
+# (HETATM records) so add it here
+_AT_HET_CA = IMP.atom.AtomType("HET: CA ")
 
 def resnums2str(res):
     """Take iterable of TempResidues and return compatified string"""
@@ -40,7 +43,10 @@ def _select_ca_or_p(hiers, **kwargs):
         # detected nucleotides. Selecting phosphorous instead of CA
         return ps
     else:
-        sel = IMP.atom.Selection(hiers, atom_type=IMP.atom.AT_CA, **kwargs)
+        # Also select CA atoms in modified residues (such as MSE)
+        sel = IMP.atom.Selection(hiers, atom_type=IMP.atom.AT_CA, **kwargs) \
+            | IMP.atom.Selection(hiers, residue_type=IMP.atom.MSE,
+                                 atom_type=_AT_HET_CA, **kwargs)
         return sel.get_selected_particles()
 
 
@@ -169,7 +175,8 @@ def build_ca_centers(model, residues):
         except Exception:
             mass = IMP.atom.get_mass(IMP.atom.ResidueType("ALA"))
         calpha = IMP.atom.Selection(
-            residue, atom_type=IMP.atom.AT_CA).get_selected_particles()
+            residue,
+            atom_types=[IMP.atom.AT_CA, _AT_HET_CA]).get_selected_particles()
         cp = IMP.atom.Selection(
             residue, atom_type=IMP.atom.AT_P).get_selected_particles()
 

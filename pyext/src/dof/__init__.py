@@ -177,7 +177,7 @@ class DegreesOfFreedom(object):
             self.movers_particles_map[rb_mover] += IMP.atom.get_leaves(h)
         # setup nonrigid parts
         if nr_hiers:
-            floatkeys = [IMP.FloatKey(4), IMP.FloatKey(5), IMP.FloatKey(6)]
+            floatkeys = IMP.core.RigidBodyMember.get_internal_coordinate_keys()
             for h in nr_hiers:
                 self.flexible_beads.append(h)
                 p = h.get_particle()
@@ -381,9 +381,6 @@ class DegreesOfFreedom(object):
                or a list/set (of list/set) of them.
                Must be uniform input, however. No mixing object types.
         """
-        vxkey = IMP.FloatKey('vx')
-        vykey = IMP.FloatKey('vy')
-        vzkey = IMP.FloatKey('vz')
         hiers = IMP.pmi.tools.input_adaptor(hspec, flatten=True)
         model = hiers[0].get_model()
         all_ps = []
@@ -392,9 +389,7 @@ class DegreesOfFreedom(object):
                 p = h.get_particle()
                 pxyz = IMP.core.XYZ(model, p.get_index())
                 pxyz.set_coordinates_are_optimized(True)
-                model.add_attribute(vxkey, p.get_index(), 0.0)
-                model.add_attribute(vykey, p.get_index(), 0.0)
-                model.add_attribute(vzkey, p.get_index(), 0.0)
+                IMP.atom.LinearVelocity.setup_particle(p, [0., 0., 0.])
                 all_ps.append(p)
         return all_ps
 

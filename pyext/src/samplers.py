@@ -314,7 +314,8 @@ class MonteCarlo(object):
             # check is that is a rigid body member:
             if IMP.core.NonRigidMember.get_is_setup(fb):
                 # if so force the particles to move anyway
-                floatkeys = [IMP.FloatKey(4), IMP.FloatKey(5), IMP.FloatKey(6)]
+                floatkeys = \
+                    IMP.core.RigidBodyMember.get_internal_coordinate_keys()
                 for fk in floatkeys:
                     fb.set_is_optimized(fk, True)
                 mvs.append(

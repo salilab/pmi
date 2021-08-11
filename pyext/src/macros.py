@@ -804,7 +804,8 @@ class BuildSystem(object):
                                            nonrigid_parts=bead_res,
                                            max_trans=max_rb_trans,
                                            max_rot=max_rb_rot,
-                                           nonrigid_max_trans=max_bead_trans)
+                                           nonrigid_max_trans=max_bead_trans,
+                                           name="RigidBody %s" % dname)
 
             # if you have any domains not in an RB, set them as flexible beads
             for dname, domain in self._domains[nstate].items():

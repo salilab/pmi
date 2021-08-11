@@ -299,6 +299,7 @@ class DegreesOfFreedom(object):
         else:
             srbm = IMP.pmi.TransformMover(
                 hiers[0][0].get_model(), axis[0], axis[1], max_trans, max_rot)
+        srbm.set_name("Super rigid body transform mover")
         srbm.set_was_used(True)
         super_rigid_rbs, super_rigid_xyzs \
             = IMP.pmi.tools.get_rbs_and_beads(hiers)

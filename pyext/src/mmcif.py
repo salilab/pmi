@@ -122,6 +122,11 @@ class _AllSoftware(object):
         # Only recent versions of python-ihm support adding citations for
         # software
         if hasattr(imp, 'citation'):
+            if sys.version_info[0] > 2:
+                # Don't include UTF8 characters in source; it confuses Python 2
+                javi = 'Vel\u00e1zquez-Muriel J'
+            else:
+                javi = 'Velazquez-Muriel J'
             imp.citation = ihm.Citation(
                 pmid='22272186',
                 title='Putting the pieces together: integrative modeling '
@@ -129,8 +134,7 @@ class _AllSoftware(object):
                       'macromolecular assemblies',
                 journal='PLoS Biol', volume=10, page_range='e1001244',
                 year=2012,
-                authors=['Russel D', 'Lasker K', 'Webb B',
-                         'Velázquez-Muriel J', 'Tjioe E',
+                authors=['Russel D', 'Lasker K', 'Webb B', javi, 'Tjioe E',
                          'Schneidman-Duhovny D', 'Peterson B', 'Sali A'],
                 doi='10.1371/journal.pbio.1001244')
             pmi.citation = ihm.Citation(

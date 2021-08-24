@@ -106,41 +106,81 @@ class _AllSoftware(object):
     def __init__(self, system):
         self.system = system
         self.modeller_used = self.phyre2_used = False
-        self.system.software.extend([
-           ihm.Software(
-                 name="Integrative Modeling Platform (IMP)",
-                 version=IMP.__version__,
-                 classification="integrative model building",
-                 description="integrative model building",
-                 location='https://integrativemodeling.org'),
-           ihm.Software(
-                name="IMP PMI module",
-                version=IMP.pmi1.__version__,
-                classification="integrative model building",
-                description="integrative model building",
-                location='https://integrativemodeling.org')])
+        imp = ihm.Software(
+            name="Integrative Modeling Platform (IMP)",
+            version=IMP.__version__,
+            classification="integrative model building",
+            description="integrative model building",
+            location='https://integrativemodeling.org')
+        pmi = ihm.Software(
+            name="IMP PMI module",
+            version=IMP.pmi1.__version__,
+            classification="integrative model building",
+            description="integrative model building",
+            location='https://integrativemodeling.org')
+        self.system.software.extend([imp, pmi])
+        # Only recent versions of python-ihm support adding citations for
+        # software
+        if hasattr(imp, 'citation'):
+            imp.citation = ihm.Citation(
+                pmid='22272186',
+                title='Putting the pieces together: integrative modeling '
+                      'platform software for structure determination of '
+                      'macromolecular assemblies',
+                journal='PLoS Biol', volume=10, page_range='e1001244',
+                year=2012,
+                authors=['Russel D', 'Lasker K', 'Webb B',
+                         'Velázquez-Muriel J', 'Tjioe E',
+                         'Schneidman-Duhovny D', 'Peterson B', 'Sali A'],
+                doi='10.1371/journal.pbio.1001244')
+            pmi.citation = ihm.Citation(
+                pmid='31396911',
+                title='Modeling Biological Complexes Using Integrative '
+                      'Modeling Platform.',
+                journal='Methods Mol Biol', volume=2022, page_range=(353, 377),
+                year=2019,
+                authors=['Saltzberg D', 'Greenberg CH', 'Viswanath S',
+                         'Chemmama I', 'Webb B', 'Pellarin R', 'Echeverria I',
+                         'Sali A'],
+                doi='10.1007/978-1-4939-9608-7_15')
 
     def set_modeller_used(self, version, date):
         if self.modeller_used:
             return
         self.modeller_used = True
-        self.system.software.append(ihm.Software(
-                    name='MODELLER', classification='comparative modeling',
-                    description='Comparative modeling by satisfaction '
-                                'of spatial restraints, build ' + date,
-                    location='https://salilab.org/modeller/',
-                    version=version))
+        s = ihm.Software(
+            name='MODELLER', classification='comparative modeling',
+            description='Comparative modeling by satisfaction '
+                        'of spatial restraints, build ' + date,
+            location='https://salilab.org/modeller/', version=version)
+        self.system.software.append(s)
+        if hasattr(s, 'citation'):
+            s.citation = ihm.Citation(
+                pmid='8254673',
+                title='Comparative protein modelling by satisfaction of '
+                      'spatial restraints.',
+                journal='J Mol Biol', volume=234, page_range=(779, 815),
+                year=1993, authors=['Sali A', 'Blundell TL'],
+                doi='10.1006/jmbi.1993.1626')
 
     def set_phyre2_used(self):
         if self.phyre2_used:
             return
         self.phyre2_used = True
-        self.system.software.append(ihm.Software(
-                   name='Phyre2', classification='protein homology modeling',
-                   description='Protein Homology/analogY Recognition '
-                               'Engine V 2.0',
-                   version='2.0',
-                   location='http://www.sbg.bio.ic.ac.uk/~phyre2/'))
+        s = ihm.Software(
+            name='Phyre2', classification='protein homology modeling',
+            description='Protein Homology/analogY Recognition Engine V 2.0',
+            version='2.0', location='http://www.sbg.bio.ic.ac.uk/~phyre2/')
+        if hasattr(s, 'citation'):
+            s.citation = ihm.Citation(
+                pmid='25950237',
+                title='The Phyre2 web portal for protein modeling, '
+                      'prediction and analysis.',
+                journal='Nat Protoc', volume=10, page_range=(845, 858),
+                authors=['Kelley LA', 'Mezulis S', 'Yates CM', 'Wass MN',
+                         'Sternberg MJ'],
+                year=2015, doi='10.1038/nprot.2015.053')
+        self.system.software.append(s)
 
 def _get_fragment_is_rigid(fragment):
     """Determine whether a fragment is modeled rigidly"""

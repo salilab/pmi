@@ -2,7 +2,10 @@
    Utility classes and functions for IO.
 """
 
-import collections
+try:
+    from collections.abc import MutableSet  # needs Python 3.3 or later
+except ImportError:
+    from collections import MutableSet
 import csv
 
 def get_db_from_csv(csvfilename):
@@ -12,7 +15,7 @@ def get_db_from_csv(csvfilename):
         outputlist.append(l)
     return outputlist
 
-class OrderedSet(collections.MutableSet):
+class OrderedSet(MutableSet):
     def __init__(self, iterable=None):
         self.end = end = []
         end += [None, end, end]         # sentinel node for doubly linked list

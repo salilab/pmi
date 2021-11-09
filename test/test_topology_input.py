@@ -120,6 +120,21 @@ class Tests(IMP.test.TestCase):
                       str(w.message))
         self.assertIs(w.category, IMP.pmi.StructureWarning)
 
+    def test_custom_chain_ids(self):
+        """Check that custom chain IDs can be given to BuildSystem"""
+        mdl = IMP.Model()
+        tfile = self.get_input_file_name('topology_flexible.txt')
+        input_dir = os.path.dirname(tfile)
+        t = IMP.pmi.topology.TopologyReader(tfile,
+                                            pdb_dir=input_dir,
+                                            fasta_dir=input_dir,
+                                            gmm_dir=input_dir)
+        bs = IMP.pmi.macros.BuildSystem(mdl)
+        bs.add_state(t, chain_ids='0123456789')
+        root_hier, dof = bs.execute_macro()
+        chains = IMP.atom.get_by_type(root_hier, IMP.atom.CHAIN_TYPE)
+        self.assertEqual([IMP.atom.Chain(c).get_id() for c in chains], ['0'])
+
     def test_keep_chain_id(self):
         """Check that keep_chain_id works"""
         mdl = IMP.Model()

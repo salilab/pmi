@@ -3,6 +3,7 @@ import IMP.pmi
 import IMP.pmi.topology
 import IMP.pmi.macros
 import os
+import string
 import warnings
 import IMP.test
 import IMP.rmf
@@ -141,6 +142,24 @@ class Tests(IMP.test.TestCase):
         w, = cw
         self.assertIn("No PDBs specified for Prot3,", str(w.message))
         self.assertIs(w.category, IMP.pmi.ParameterWarning)
+
+    def test_multi_char_chain(self):
+        """Check that multi-char chain IDs work"""
+        mdl = IMP.Model()
+        tfile = self.get_input_file_name('topology_multi_char_chain.txt')
+        input_dir = os.path.dirname(tfile)
+        t = IMP.pmi.topology.TopologyReader(tfile,
+                                            pdb_dir=input_dir,
+                                            fasta_dir=input_dir,
+                                            gmm_dir=input_dir)
+        bs = IMP.pmi.macros.BuildSystem(mdl)
+        bs.add_state(t)
+        root_hier, dof = bs.execute_macro()
+        chains = IMP.atom.get_by_type(root_hier, IMP.atom.CHAIN_TYPE)
+        self.assertEqual([IMP.atom.Chain(c).get_id() for c in chains],
+                         list(string.ascii_uppercase)
+                         + ['A'+x for x in string.ascii_uppercase]
+                         + ['B'+x for x in string.ascii_uppercase[:17]])
 
     def test_draw_molecular_composition(self):
         try:

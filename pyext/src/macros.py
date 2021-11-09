@@ -18,7 +18,6 @@ import glob
 from operator import itemgetter
 from collections import defaultdict
 import numpy as np
-import string
 import itertools
 import warnings
 import math
@@ -628,7 +627,7 @@ class BuildSystem(object):
         # key is unique name, value is (atomic res, nonatomicres)
         these_domain_res = {}
         these_domains = {}       # key is unique name, value is _Component
-        chain_ids = string.ascii_uppercase+string.ascii_lowercase+'0123456789'
+        chain_ids = IMP.pmi.output._ChainIDs()
         numchain = 0
 
         # setup representation

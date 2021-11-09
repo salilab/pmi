@@ -161,6 +161,25 @@ class Tests(IMP.test.TestCase):
                          + ['A'+x for x in string.ascii_uppercase]
                          + ['B'+x for x in string.ascii_uppercase[:17]])
 
+        # Make sure chains in struct_asym are in the right order
+        output = IMP.pmi.output.Output()
+        output.init_pdb("test_multi_char.cif", root_hier, mmcif=True)
+        output.write_pdb("test_multi_char.cif")
+        asym = []
+        with open('test_multi_char.cif') as fh:
+            for line in fh:
+                if line.startswith('_struct_asym.details'):
+                    break
+            for line in fh:
+                if line.startswith('#'):
+                    break
+                asym.append(line.split()[0])
+        self.assertEqual(asym,
+                         list(string.ascii_uppercase)
+                         + ['A'+x for x in string.ascii_uppercase]
+                         + ['B'+x for x in string.ascii_uppercase[:17]])
+        os.unlink('test_multi_char.cif')
+
     def test_draw_molecular_composition(self):
         try:
             import matplotlib

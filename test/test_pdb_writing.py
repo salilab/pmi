@@ -80,7 +80,8 @@ class Tests(IMP.test.TestCase):
 
         with open('test_pdb_writing.cif') as fh:
             s, = ihm.reader.read(fh)
-        self.assertEqual([x.id for x in s.asym_units], [' ', ' 1', 'A', 'A1', 'B', 'CA'])
+        self.assertEqual([x.id for x in s.asym_units],
+                         [' ', ' 1', 'A', 'B', 'A1', 'CA'])
 
         for i in range(10):
             os.unlink('test_pdb_writing.'+str(i)+'.cif')

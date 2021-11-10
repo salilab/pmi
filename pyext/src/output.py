@@ -153,7 +153,7 @@ def _write_mmcif_internal(flpdb, particle_infos_for_pdb, geometric_center,
 
     with writer.loop("_struct_asym", ["id", "entity_id", "details"]) as lp:
         # Longer chain IDs (e.g. AA) should always come after shorter (e.g. Z)
-        for chid in sorted(chains.values(), key=lambda x: (len(x), x)):
+        for chid in sorted(chains.values(), key=lambda x: (len(x.strip()), x)):
             ci = chain_info[chid]
             lp.write(id=chid, entity_id=ci.entity.id, details=ci.name)
 

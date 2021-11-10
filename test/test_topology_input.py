@@ -176,6 +176,12 @@ class Tests(IMP.test.TestCase):
                          + ['A'+x for x in string.ascii_uppercase]
                          + ['B'+x for x in string.ascii_uppercase[:17]])
 
+        # Cannot output PDB since we have multi-char chains
+        output = IMP.pmi.output.Output()
+        self.assertRaises(ValueError, output.init_pdb,
+                          "test_multi_char.pdb", root_hier)
+        os.unlink('test_multi_char.pdb')
+
         # Make sure chains in struct_asym are in the right order
         output = IMP.pmi.output.Output()
         output.init_pdb("test_multi_char.cif", root_hier, mmcif=True)

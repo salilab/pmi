@@ -1253,7 +1253,7 @@ class GetContactMap(object):
             residue_indexes = []
             for p in particles_dictionary[name]:
                 print(p.get_name())
-                residue_indexes += IMP.pmi1.tools.get_residue_indexes(p)
+                residue_indexes.extend(IMP.pmi1.tools.get_residue_indexes(p))
 
             if len(residue_indexes) != 0:
                 self.protnames.append(name)

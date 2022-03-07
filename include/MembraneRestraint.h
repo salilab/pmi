@@ -42,9 +42,8 @@ public:
   double get_score_below(double z, double z_slope_center_lower) const;
   double get_score_inside(double z, double z_slope_center_lower,
                       double z_slope_center_upper) const;
-  virtual double unprotected_evaluate(DerivativeAccumulator *) const
-      IMP_OVERRIDE;
-  virtual IMP::ModelObjectsTemp do_get_inputs() const IMP_OVERRIDE;
+  virtual double unprotected_evaluate(DerivativeAccumulator *) const override;
+  virtual IMP::ModelObjectsTemp do_get_inputs() const override;
   IMP_OBJECT_METHODS(MembraneRestraint);
 };
 

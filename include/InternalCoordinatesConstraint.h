@@ -34,12 +34,11 @@ class IMPPMI1EXPORT InternalCoordinatesConstraint : public SingletonModifier {
   InternalCoordinatesConstraint();
 
   // note, Doxygen wants a semicolon at the end of macro lines
-  virtual void apply_index(Model *m, ParticleIndex p) const
-      IMP_OVERRIDE;
+  virtual void apply_index(Model *m, ParticleIndex p) const override;
   virtual ModelObjectsTemp do_get_inputs(
-      Model *m, const ParticleIndexes &pis) const IMP_OVERRIDE;
+      Model *m, const ParticleIndexes &pis) const override;
   virtual ModelObjectsTemp do_get_outputs(
-      Model *m, const ParticleIndexes &pis) const IMP_OVERRIDE;
+      Model *m, const ParticleIndexes &pis) const override;
   IMP_SINGLETON_MODIFIER_METHODS(InternalCoordinatesConstraint);
   IMP_OBJECT_METHODS(InternalCoordinatesConstraint);
 };

@@ -476,7 +476,8 @@ class Output(object):
             self.write_pdb(pdb, appendmode)
 
     def init_pdb_best_scoring(self, prefix, prot, nbestscoring,
-                              replica_exchange=False, mmcif=False):
+                              replica_exchange=False, mmcif=False,
+                              best_score_file='best.scores.rex.py'):
         """Prepare for writing best-scoring PDBs (or mmCIFs) for a
            sampling run.
 
@@ -487,6 +488,8 @@ class Output(object):
                   replica exchange run.
            @param mmcif If True, output models in mmCIF format. If False
                   (the default) output in legacy PDB format.
+           @param best_score_file The filename to use for replica
+                  exchange scores.
         """
 
         self._pdb_best_scoring_mmcif = mmcif
@@ -501,7 +504,7 @@ class Output(object):
         else:
             # otherwise the replicas must communicate
             # through a common file to know what are the best scores
-            self.best_score_file_name = "best.scores.rex.py"
+            self.best_score_file_name = best_score_file
             self.best_score_list = []
             with open(self.best_score_file_name, "w") as best_score_file:
                 best_score_file.write(

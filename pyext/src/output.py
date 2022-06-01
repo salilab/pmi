@@ -475,13 +475,19 @@ class Output(object):
         for pdb in self.dictionary_pdbs.keys():
             self.write_pdb(pdb, appendmode)
 
-    def init_pdb_best_scoring(self,
-                              prefix,
-                              prot,
-                              nbestscoring,
+    def init_pdb_best_scoring(self, prefix, prot, nbestscoring,
                               replica_exchange=False, mmcif=False):
-        # save only the nbestscoring conformations
-        # create as many pdbs as needed
+        """Prepare for writing best-scoring PDBs (or mmCIFs) for a
+           sampling run.
+
+           @param prefix Initial part of each PDB filename (e.g. 'model').
+           @param prot The top-level Hierarchy to output.
+           @param nbestscoring The number of best-scoring files to output.
+           @param replica_exchange Whether to combine best scores from a
+                  replica exchange run.
+           @param mmcif If True, output models in mmCIF format. If False
+                  (the default) output in legacy PDB format.
+        """
 
         self._pdb_best_scoring_mmcif = mmcif
         fileext = '.cif' if mmcif else '.pdb'

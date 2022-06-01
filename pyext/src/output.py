@@ -530,7 +530,8 @@ class Output(object):
         if self.replica_exchange:
             # read the self.best_score_list from the file
             with open(self.best_score_file_name) as fh:
-                exec(fh.read())
+                self.best_score_list = ast.literal_eval(
+                    fh.read().split('=')[1])
 
         if len(self.best_score_list) < self.nbestscoring:
             self.best_score_list.append(score)

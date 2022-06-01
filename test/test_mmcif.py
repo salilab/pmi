@@ -782,11 +782,12 @@ _ihm_modeling_protocol_details.num_models_end
 _ihm_modeling_protocol_details.multi_scale_flag
 _ihm_modeling_protocol_details.multi_state_flag
 _ihm_modeling_protocol_details.ordered_flag
+_ihm_modeling_protocol_details.ensemble_flag
 _ihm_modeling_protocol_details.software_id
 _ihm_modeling_protocol_details.script_file_id
 _ihm_modeling_protocol_details.description
-1 1 1 2 1 Sampling 'Replica exchange monte carlo' 0 1000 YES NO NO . . .
-2 1 2 2 1 Sampling 'Replica exchange monte carlo' 1000 1000 YES NO NO . . .
+1 1 1 2 1 Sampling 'Replica exchange monte carlo' 0 1000 YES NO NO YES . . .
+2 1 2 2 1 Sampling 'Replica exchange monte carlo' 1000 1000 YES NO NO YES . . .
 #
 """)
 

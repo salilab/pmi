@@ -972,7 +972,7 @@ _ihm_modeling_post_process.details
             for i in range(d._number_of_clusters):
                 subdir = Path(tmpdir) / ('cluster.%d' % i)
                 subdir.mkdir()
-                with (subdir / 'stat.out').open('w') as fh:
+                with open(str(subdir / 'stat.out'), 'w') as fh:
                     # 1 model for first cluster, 2 for second cluster
                     for line in range(i + 1):
                         fh.write('#\n')
@@ -1010,14 +1010,14 @@ _ihm_modeling_post_process.details
             subdir = Path(tmpdir) / 'cluster.0'
             subdir.mkdir()
             # Two models
-            with (subdir / 'stat.out').open('w') as fh:
+            with open(str(subdir / 'stat.out'), 'w') as fh:
                 fh.write("{'modelnum': 0}\n")
                 fh.write("{'modelnum': 1}\n")
             # Mock localization density file
-            with (subdir / 'Nup84.mrc').open('w') as fh:
+            with open(str(subdir / 'Nup84.mrc'), 'w') as fh:
                 pass
             # Mock RMSF file
-            with (subdir / 'rmsf.Nup84.dat').open('w') as fh:
+            with open(str(subdir / 'rmsf.Nup84.dat'), 'w') as fh:
                 pass
             pp = IMP.pmi.mmcif._ReplicaExchangeAnalysisPostProcess(d, 45)
             mg = DummyGroup()
@@ -1058,7 +1058,7 @@ _ihm_modeling_post_process.details
             self.assertEqual(e._get_precision(), ihm.unknown)
             self.assertEqual(e.precision, ihm.unknown)
             # Make precision available
-            with (Path(tmpdir) / 'precision.0.0.out').open('w') as fh:
+            with open(str(Path(tmpdir) / 'precision.0.0.out'), 'w') as fh:
                 fh.write("""
 All kmeans_weight_500_2/cluster.0/ average centroid distance 24.3744728893
 All kmeans_weight_500_2/cluster.0/ centroid index 49
@@ -1093,7 +1093,7 @@ All kmeans_weight_500_2/cluster.0/ centroid index 49
             subdir = Path(tmpdir) / 'cluster.0'
             subdir.mkdir()
             # Two models
-            with (subdir / 'stat.out').open('w') as fh:
+            with open(str(subdir / 'stat.out'), 'w') as fh:
                 fh.write("{'modelnum': 0}\n")
                 fh.write("{'modelnum': 1}\n")
             prot = DummyProtocolStep()

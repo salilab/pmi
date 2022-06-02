@@ -765,7 +765,7 @@ class _Model(ihm.model.Model):
 
     def parse_rmsf_file(self, fname, component):
         self.rmsf[component] = rmsf = {}
-        with fname.open() as fh:
+        with open(str(fname)) as fh:
             for line in fh:
                 resnum, blocknum, val = line.split()
                 rmsf[int(resnum)] = (int(blocknum), float(val))
@@ -960,7 +960,7 @@ class _ReplicaExchangeAnalysisEnsemble(ihm.model.Ensemble):
     num_models_deposited = None  # Override base class property
 
     def __init__(self, pp, cluster_num, model_group, num_deposit):
-        with pp.get_stat_file(cluster_num).open() as fh:
+        with open(str(pp.get_stat_file(cluster_num))) as fh:
             num_models = len(fh.readlines())
         super(_ReplicaExchangeAnalysisEnsemble, self).__init__(
                 num_models=num_models,
@@ -1005,7 +1005,7 @@ class _ReplicaExchangeAnalysisEnsemble(ihm.model.Ensemble):
     def load_all_models(self, simo, state):
         stat_fname = self.post_process.get_stat_file(self.cluster_num)
         model_num = 0
-        with stat_fname.open() as fh:
+        with open(str(stat_fname)) as fh:
             stats = ast.literal_eval(fh.readline())
             # Correct path
             rmf_file = stat_fname.parent / ("%d.rmf3" % model_num)
@@ -1032,7 +1032,7 @@ class _ReplicaExchangeAnalysisEnsemble(ihm.model.Ensemble):
         r = re.compile(
             r'All .*/cluster.%d/ average centroid distance ([\d\.]+)'
             % self.cluster_num)
-        with precfile.open() as fh:
+        with open(str(precfile)) as fh:
             for line in fh:
                 m = r.match(line)
                 if m:

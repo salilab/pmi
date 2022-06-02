@@ -29,7 +29,7 @@ import os
 try:
     from pathlib import Path
 except ImportError:  # Use bundled pathlib on Python 2 without pathlib
-    from IMP._compat_pathlib import Path
+    from IMP._compat_pathlib import Path  # noqa: F401
 import weakref
 import ihm.location
 import ihm.dataset

@@ -940,7 +940,7 @@ class _ReplicaExchangeAnalysisPostProcess(ihm.analysis.ClusterStep):
         self.rex = rex
         num_models_end = 0
         for fname in self.get_all_stat_files():
-            with open(fname) as fh:
+            with open(str(fname)) as fh:
                 num_models_end += len(fh.readlines())
         super(_ReplicaExchangeAnalysisPostProcess, self).__init__(
                 feature='RMSD', num_models_begin=num_models_begin,

@@ -14,6 +14,10 @@ import IMP.rmf
 import IMP.isd
 import IMP.pmi.dof
 import os
+try:
+    from pathlib import Path
+except ImportError:  # Use bundled pathlib on Python 2 without pathlib
+    from IMP._compat_pathlib import Path
 import glob
 from operator import itemgetter
 from collections import defaultdict
@@ -1080,7 +1084,7 @@ class AnalysisReplicaExchange0(object):
         """
         # Track provenance information to be added to each output model
         prov = []
-        self._outputdir = os.path.abspath(outputdir)
+        self._outputdir = Path(outputdir).absolute()
         self._number_of_clusters = number_of_clusters
         for p, state in self._protocol_output:
             p.add_replica_exchange_analysis(state, self, density_custom_ranges)

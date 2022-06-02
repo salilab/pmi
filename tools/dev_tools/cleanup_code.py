@@ -1,22 +1,23 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """Use clang-format and autopep8 when available to clean up the listed source
    files."""
 
 from __future__ import print_function
-import glob
 from optparse import OptionParser
 import subprocess
-import fnmatch
 import os
 import sys
 import multiprocessing
 try:
-    from queue import Queue # python3
+    from queue import Queue  # python3
 except ImportError:
-    from Queue import Queue # python2
+    from Queue import Queue  # python2
 from threading import Thread
-import distutils.spawn
+try:
+    from shutil import which  # python3.3 or later
+except ImportError:
+    from distutils.spawn import find_executable as which
 
 sys.path.append(os.path.split(sys.argv[0]))
 import python_tools
@@ -24,21 +25,23 @@ from python_tools.reindent import Reindenter
 
 
 parser = OptionParser(usage="%prog [options] [FILENAME ...]",
-               description="""Reformat the given C++ and Python files
+                      description="""Reformat the given C++ and Python files
 (using the clang-format tool if available and
 reindent.py, respectively). If the --all option is given, reformat all such
 files under the current directory.
 
 If the autopep8 tool is also available, it can be used instead of reindent.py
 by giving the -a option. autopep8 is much more aggressive than reindent.py
-and will fix other issues, such as use of old-style Python syntax. 
+and will fix other issues, such as use of old-style Python syntax.
 """)
 parser.add_option("-c", "--clang-format", dest="clang_format",
                   default="auto", metavar="EXE",
                   help="The clang-format command.")
 parser.add_option("-a", dest="use_ap", action="store_true", default=False,
-                  help="Use autopep8 rather than reindent.py for Python files.")
-parser.add_option("--all", dest="all_files", action="store_true", default=False,
+                  help="Use autopep8 rather than reindent.py for "
+                       "Python files.")
+parser.add_option("--all", dest="all_files", action="store_true",
+                  default=False,
                   help="Reformat all files under current directory")
 parser.add_option("--autopep8", dest="autopep8",
                   default="auto", metavar="EXE",
@@ -60,13 +63,13 @@ if not args and not options.all_files:
 if options.clang_format == "auto":
     options.clang_format = None
     for name in ["clang-format-3.4", "clang-format"]:
-        if distutils.spawn.find_executable(name):
+        if which(name):
             options.clang_format = name
             break
 if options.autopep8 == "auto":
     options.autopep8 = None
     for name in ["autopep8"]:
-        if distutils.spawn.find_executable(name):
+        if which(name):
             options.autopep8 = name
             break
 
@@ -92,7 +95,6 @@ class _Worker(Thread):
                 func(*args, **kargs)
             except Exception as e:
                 print(e)
-                error = str(e)
             self.tasks.task_done()
 
 
@@ -110,7 +112,7 @@ class ThreadPool:
 
     def add_task(self, func, *args, **kargs):
         """Add a task to the queue"""
-        #func(*args, **kargs)
+        # func(*args, **kargs)
         self.tasks.put((func, args, kargs))
 
     def wait_completion(self):
@@ -121,7 +123,6 @@ class ThreadPool:
 
 def _do_get_files(glb, cur):
     matches = []
-    dirs = []
     for n in os.listdir(cur):
         if n in exclude:
             continue
@@ -208,6 +209,7 @@ def main():
         for f in _get_files(".h") + _get_files(".cpp"):
             tp.add_task(clean_cpp, f)
     tp.wait_completion()
+
 
 if __name__ == '__main__':
     main()

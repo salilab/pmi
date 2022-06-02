@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys
 import os.path
@@ -13,7 +13,8 @@ dev_tools_path = os.path.join("tools", "dev_tools")
 opt = OptionParser()
 opt.add_option("-g", "--global",
                action="store_true", dest="glob", default=False,
-               help="Set global git settings instead of repo settings [default]")
+               help="Set global git settings instead of repo "
+                    "settings [default]")
 
 (options, args) = opt.parse_args()
 
@@ -39,7 +40,11 @@ else:
         out = os.path.join(hdir, os.path.split(f)[1])
         if os.path.exists(out):
             os.unlink(out)
-        shutil.copy2(f, out)
+        with open(f) as fin:
+            with open(out, 'w') as fout:
+                for line in fin:
+                    fout.write(line.replace('@PYTHON@', sys.executable))
+        os.chmod(out, 0o755)
     shutil.copy2(os.path.join(dev_tools_path, "check_standards.py"), hdir)
     out_tools = os.path.join(hdir, "python_tools")
     if os.path.exists(out_tools):
@@ -81,4 +86,4 @@ if "autosetuprebase = always" not in config_contents:
     os.system(git_config + " branch.autosetuprebase always")
 # hard to check for
 os.system(git_config + " branch.develop.rebase true")
-os.system(git_config + " branch.master.rebase true")
+os.system(git_config + " branch.main.rebase true")

@@ -1,13 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """Build Files.cmake listing source files for each src, test, examples,
    benchmark directory in the subtree."""
 
 import sys
-import glob
 import os
 import os.path
-import difflib
 
 sys.path.append(os.path.split(sys.argv[0])[0])
 import python_tools
@@ -41,13 +39,14 @@ def make_files(d):
 
 def search_start(d):
     for cd in [o for o in os.listdir(d) if os.path.isdir(os.path.join(d, o))]:
-        if cd.startswith("."):
+        if cd.startswith(".") or cd == 'components':
             continue
         cp = os.path.join(d, cd)
         if cd in ["bin", "src", "test", "examples", "benchmark", "utility"]:
             make_files(cp)
         elif not cp.endswith('gitflow'):
             search_start(cp)
+
 
 if __name__ == '__main__':
     search_start(".")

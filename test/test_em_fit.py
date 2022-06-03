@@ -30,15 +30,15 @@ class TestPMI(IMP.test.TestCase):
         m = IMP.Model()
         simo = IMP.pmi1.representation.Representation(m,upperharmonic=True,disorderedlength=False)
 
-        fastadirectory = self.get_input_file_name("mediator/")
-        pdbdirectory=self.get_input_file_name("mediator/")
-        gmmdirectory=self.get_input_file_name("mediator/")
+        fastadirectory = self.get_input_file_name("mediator")
+        pdbdirectory=self.get_input_file_name("mediator")
+        gmmdirectory=self.get_input_file_name("mediator")
         midpdb="cr_mid_fullmed10.pdb"
 
         # compname  hier_name    color         fastafile              fastaid          pdbname      chain    resrange      read    "BEADS"ize rigid_body super_rigid_body emnum_components emtxtfilename  emmrcfilename chain of super rigid bodies
 
-        domains_middle= [("med4",  "med4_1",    0.10,  fastadirectory+"med4.fasta",  "med4",   pdbdirectory+midpdb,   "D",    (1,131,0),    True,       20,      1,         [19,1,2],     2,   gmmdirectory+"med4_1.txt",  gmmdirectory+"med4_1.mrc",   [0]),
-                         ("med4",  "med4_2",    0.10,  fastadirectory+"med4.fasta",  "med4",   "BEADS",               None,   (132,284,0),  True,       20,      2,         [19,1,2],     0,   None,  None,   [0])]
+        domains_middle= [("med4",  "med4_1",    0.10,  fastadirectory+"/med4.fasta",  "med4",   pdbdirectory+'/'+midpdb,   "D",    (1,131,0),    True,       20,      1,         [19,1,2],     2,   gmmdirectory+"/med4_1.txt",  gmmdirectory+"/med4_1.mrc",   [0]),
+                         ("med4",  "med4_2",    0.10,  fastadirectory+"/med4.fasta",  "med4",   "BEADS",               None,   (132,284,0),  True,       20,      2,         [19,1,2],     0,   None,  None,   [0])]
 
         domains=domains_middle
 
@@ -66,7 +66,7 @@ class TestPMI(IMP.test.TestCase):
         middle_mass=sum((IMP.atom.Mass(p).get_mass() for h in resdensities_middle for p in IMP.atom.get_leaves(h)))
         gemh = IMP.pmi1.restraints.em.GaussianEMRestraint(
             resdensities_middle,
-            gmmdirectory+'target_gmm.txt',
+            gmmdirectory+'/target_gmm.txt',
             target_mass_scale=middle_mass,
             slope=0.000001,
             target_radii_scale=3.0)

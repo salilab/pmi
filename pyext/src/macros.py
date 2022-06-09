@@ -94,6 +94,7 @@ class ReplicaExchange0(object):
                  initial_rmf_name_suffix="initial",
                  stat_file_name_suffix="stat",
                  best_pdb_name_suffix="model",
+                 mmcif=False,
                  do_clean_first=True,
                  do_create_directories=True,
                  global_output_directory="./",
@@ -242,6 +243,7 @@ class ReplicaExchange0(object):
         self.vars["write_initial_rmf"] = write_initial_rmf
         self.vars["initial_rmf_name_suffix"] = initial_rmf_name_suffix
         self.vars["best_pdb_name_suffix"] = best_pdb_name_suffix
+        self.vars["mmcif"] = mmcif
         self.vars["stat_file_name_suffix"] = stat_file_name_suffix
         self.vars["do_clean_first"] = do_clean_first
         self.vars["do_create_directories"] = do_create_directories
@@ -440,11 +442,13 @@ class ReplicaExchange0(object):
                         self.root_hier,
                         self.vars["number_of_best_scoring_models"],
                         replica_exchange=True,
+                        mmcif=self.vars['mmcif'],
                         best_score_file=globaldir + "best.scores.rex.py")
+                    pdbext = ".0.cif" if self.vars['mmcif'] else ".0.pdb"
                     output.write_psf(
                         pdb_dir + "/" + "model.psf",
                         pdb_dir + "/" +
-                        self.vars["best_pdb_name_suffix"] + ".0.pdb")
+                        self.vars["best_pdb_name_suffix"] + pdbext)
             else:
                 if self.vars["number_of_best_scoring_models"] > 0:
                     for n in range(self.vars["number_of_states"]):
@@ -454,11 +458,13 @@ class ReplicaExchange0(object):
                             self.root_hiers[n],
                             self.vars["number_of_best_scoring_models"],
                             replica_exchange=True,
+                            mmcif=self.vars['mmcif'],
                             best_score_file=globaldir + "best.scores.rex.py")
+                        pdbext = ".0.cif" if self.vars['mmcif'] else ".0.pdb"
                         output.write_psf(
                             pdb_dir + "/" + str(n) + "/" + "model.psf",
                             pdb_dir + "/" + str(n) + "/" +
-                            self.vars["best_pdb_name_suffix"] + ".0.pdb")
+                            self.vars["best_pdb_name_suffix"] + pdbext)
 # ---------------------------------------------
 
         if self.em_object_for_rmf is not None:

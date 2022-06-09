@@ -140,8 +140,14 @@ class ReplicaExchange0(object):
            @param replica_exchange_swap Boolean, enable disable temperature
                   swap (Default=True)
            @param num_sample_rounds        Number of rounds of MC/MD per cycle
-           @param number_of_best_scoring_models Number of top-scoring PDB
-                  models to keep around for analysis
+           @param number_of_best_scoring_models Number of top-scoring PDB/mmCIF
+                  models to keep around for analysis.
+           @param mmcif If True, write best scoring models in mmCIF format;
+                  if False (the default), write in legacy PDB format.
+           @param best_pdb_dir The directory under `global_output_directory`
+                  where best-scoring PDB/mmCIF files are written.
+           @param best_pdb_name_suffix Part of the file name for best-scoring
+                  PDB/mmCIF files.
            @param monte_carlo_steps        Number of MC steps per round
            @param self_adaptive     self adaptive scheme for Monte Carlo movers
            @param molecular_dynamics_steps  Number of MD steps per round

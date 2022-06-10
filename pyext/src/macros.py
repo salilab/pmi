@@ -109,13 +109,11 @@ class ReplicaExchange0(object):
         """Constructor.
            @param model The IMP model
            @param root_hier Top-level (System)hierarchy
-           @param monte_carlo_sample_objects Objects for MC sampling; a list of
-                  structural components (generally the representation) that
-                  will be moved and restraints with parameters that need to
-                  be sampled.
-                  For PMI2: just pass flat list of movers
-           @param molecular_dynamics_sample_objects Objects for MD sampling
-                  For PMI2: just pass flat list of particles
+           @param monte_carlo_sample_objects Objects for MC sampling, which
+                  should generally be a simple list of Mover objects, e.g.
+                  from DegreesOfFreedom.get_movers().
+           @param molecular_dynamics_sample_objects Objects for MD sampling,
+                  which should generally be a simple list of particles.
            @param output_objects A list of structural objects and restraints
                   that will be included in output (ie, statistics "stat"
                   files). Any object that provides a get_output() method

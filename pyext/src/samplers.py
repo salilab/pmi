@@ -87,7 +87,7 @@ class MonteCarlo(object):
         try:
             objects[0].get_particles_to_sample()
             gather_objects = True
-        except:  # noqa: E722
+        except AttributeError:
             self.mvs = objects
 
         if gather_objects:

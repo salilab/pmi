@@ -58,7 +58,7 @@ class MonteCarlo(object):
                  score_moved=False):
         """Setup Monte Carlo sampling
         @param model         The IMP Model
-        @param objects       What to sample. Use flat list of particles
+        @param objects       What to sample (a list of Movers)
         @param temp The MC temperature
         @param filterbyname Not used
         @param score_moved   If True, attempt to speed up sampling by
@@ -91,6 +91,9 @@ class MonteCarlo(object):
             self.mvs = objects
 
         if gather_objects:
+            IMP.handle_use_deprecated(
+                "Pass Movers to MonteCarlo(), not objects that implement "
+                "get_particles_to_sample()")
             for ob in objects:
                 pts = ob.get_particles_to_sample()
                 for k in pts.keys():

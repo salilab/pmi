@@ -59,7 +59,7 @@ class _RMFRestraints(object):
             raise IndexError("Out of range")
 
 
-class ReplicaExchange0(object):
+class ReplicaExchange(object):
     """A macro to help setup and run replica exchange.
     Supports Monte Carlo and molecular dynamics.
     Produces trajectory RMF files, best PDB structures,
@@ -565,6 +565,11 @@ class ReplicaExchange0(object):
         if not self.test_mode:
             print("closing production rmf files")
             output.close_rmf(rmfname)
+
+
+@IMP.deprecated_object("2.18", "Use ReplicaExchange instead")
+class ReplicaExchange0(ReplicaExchange):
+    pass
 
 
 class BuildSystem(object):

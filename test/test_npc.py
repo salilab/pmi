@@ -3,6 +3,7 @@ import IMP.test
 import IMP.pmi.topology
 import IMP.pmi.restraints.npc
 
+
 class Tests(IMP.test.TestCase):
 
     def make_representation(self):
@@ -126,7 +127,7 @@ class Tests(IMP.test.TestCase):
         """Test MembraneSurfaceLocationRestraint"""
         m, root_hier = self.make_representation()
         r = IMP.pmi.restraints.npc.MembraneSurfaceLocationRestraint(
-            hier=root_hier, protein=(1,1,"Nup84"), label='Test',
+            hier=root_hier, protein=(1, 1, "Nup84"), label='Test',
             tor_R=50., tor_r=30.)
         r.add_to_model()
         out = r.get_output()
@@ -138,7 +139,7 @@ class Tests(IMP.test.TestCase):
         """Test MembraneSurfaceLocationConditionalRestraint"""
         m, root_hier = self.make_representation()
         r = IMP.pmi.restraints.npc.MembraneSurfaceLocationConditionalRestraint(
-            hier=root_hier, protein1=(1,1,"Nup84"), protein2=(2,2,"Nup84"),
+            hier=root_hier, protein1=(1, 1, "Nup84"), protein2=(2, 2, "Nup84"),
             label='Test', tor_R=55., tor_r=30.)
         r.add_to_model()
         out = r.get_output()
@@ -157,7 +158,7 @@ class Tests(IMP.test.TestCase):
         xyz.set_coordinate(2, 0.)
 
         r = IMP.pmi.restraints.npc.MembraneExclusionRestraint(
-            hier=root_hier, protein=(1,1,"Nup84"), label='Test',
+            hier=root_hier, protein=(1, 1, "Nup84"), label='Test',
             tor_R=30., tor_r=10.)
         r.add_to_model()
         out = r.get_output()

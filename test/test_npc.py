@@ -122,6 +122,49 @@ class Tests(IMP.test.TestCase):
             float(out['YAxialPositionUpperRestraint_Score_Test']),
             5.51, delta=1e-2)
 
+    def test_membrane_surface_restraint(self):
+        """Test MembraneSurfaceLocationRestraint"""
+        m, root_hier = self.make_representation()
+        r = IMP.pmi.restraints.npc.MembraneSurfaceLocationRestraint(
+            hier=root_hier, protein=(1,1,"Nup84"), label='Test',
+            tor_R=50., tor_r=30.)
+        r.add_to_model()
+        out = r.get_output()
+        self.assertAlmostEqual(
+            float(out['MembraneSurfaceLocationRestraint_Score_Test']),
+            8646.77, delta=1e-2)
+
+    def test_membrane_surface_cond_restraint(self):
+        """Test MembraneSurfaceLocationConditionalRestraint"""
+        m, root_hier = self.make_representation()
+        r = IMP.pmi.restraints.npc.MembraneSurfaceLocationConditionalRestraint(
+            hier=root_hier, protein1=(1,1,"Nup84"), protein2=(2,2,"Nup84"),
+            label='Test', tor_R=55., tor_r=30.)
+        r.add_to_model()
+        out = r.get_output()
+        s = out['MembraneSurfaceLocationConditionalRestraint_Score_Test']
+        self.assertAlmostEqual(float(s), 9584.33, delta=1e-2)
+
+    def test_membrane_exclusion_restraint(self):
+        """Test MembraneExclusionRestraint"""
+        m, root_hier = self.make_representation()
+        # Set z=0 for C terminus
+        s = IMP.atom.Selection(
+            root_hier, molecule='Nup84',
+            residue_index=1).get_selected_particles()[0]
+        self.assertTrue(IMP.core.XYZ.get_is_setup(s))
+        xyz = IMP.core.XYZ(s)
+        xyz.set_coordinate(2, 0.)
+
+        r = IMP.pmi.restraints.npc.MembraneExclusionRestraint(
+            hier=root_hier, protein=(1,1,"Nup84"), label='Test',
+            tor_R=30., tor_r=10.)
+        r.add_to_model()
+        out = r.get_output()
+        self.assertAlmostEqual(
+            float(out['MembraneExclusionRestraint_Score_Test']),
+            2661.07, delta=1e-2)
+
 
 if __name__ == '__main__':
     IMP.test.main()

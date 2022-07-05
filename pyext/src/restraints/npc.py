@@ -6,32 +6,23 @@ class XYRadialPositionRestraint(object):
     """Create XYRadial Position Restraint
     """
     def __init__(self,
-                 representation = None,
-                 protein = None,
+                 representation,
+                 protein,
                  lower_bound = 0.0,
                  upper_bound = 0.0,
                  consider_radius = False,
                  sigma = 1.0,
-                 term = 'C',
-                 hier = None):
+                 term = 'C'):
         """Constructor
         @param representation representation
         """
 
-        # PMI1/2 selection
-        if representation is None and hier is not None:
-            self.m = hier.get_model()
-        elif hier is None and representation is not None:
-            self.m = representation.prot.get_model()
-        else:
-            raise Exception("XYRadialPositionRestraint: must pass hier or representation")
-
+        self.m = representation.prot.get_model()
         self.rs = IMP.RestraintSet(self.m, 'XYRadialPositionRestraint')
         self.weight=1.0
         self.label = "None"
 
         xyr = IMP.npc.XYRadialPositionRestraint(self.m, lower_bound, upper_bound, consider_radius, sigma)
-        #terminal_residue = IMP.pmi1.tools.get_terminal_residue(representation, representation.hier_dict[protein], terminus="C")
         residues = IMP.pmi1.tools.select_by_tuple(representation, protein, resolution=1)
         if (term == 'C'):
             terminal = residues[-1]
@@ -82,30 +73,21 @@ class XYRadialPositionLowerRestraint(object):
     """Create XYRadial Position Lower restraints
     """
     def __init__(self,
-                 representation = None,
-                 protein = None,
+                 representation,
+                 protein,
                  lower_bound = 0.0,
                  consider_radius = False,
-                 sigma = 1.0,
-                 hier = None):
+                 sigma = 1.0):
         """Constructor
         @param representation representation
         """
 
-        # PMI1/2 selection
-        if representation is None and hier is not None:
-            self.m = hier.get_model()
-        elif hier is None and representation is not None:
-            self.m = representation.prot.get_model()
-        else:
-            raise Exception("XYRadialPositionLowerRestraint: must pass hier or representation")
-
+        self.m = representation.prot.get_model()
         self.rs = IMP.RestraintSet(self.m, 'XYRadialPositionLowerRestraint')
         self.weight=1.0
         self.label = "None"
 
         xyr = IMP.npc.XYRadialPositionLowerRestraint(self.m, lower_bound, consider_radius, sigma)
-        #terminal_residue = IMP.pmi1.tools.get_terminal_residue(representation, representation.hier_dict[protein], terminus="C")
         residues = IMP.pmi1.tools.select_by_tuple(representation, protein, resolution=1)
         cterminal = residues[-1]        #nterminal = residues[0]
         #print (cterminal, type(cterminal))
@@ -141,30 +123,21 @@ class XYRadialPositionUpperRestraint(object):
     """Create XYRadial Position Upper restraints
     """
     def __init__(self,
-                 representation = None,
-                 protein = None,
+                 representation,
+                 protein,
                  upper_bound = 0.0,
                  consider_radius = False,
-                 sigma = 1.0,
-                 hier = None):
+                 sigma = 1.0):
         """Constructor
         @param representation representation
         """
 
-        # PMI1/2 selection
-        if representation is None and hier is not None:
-            self.m = hier.get_model()
-        elif hier is None and representation is not None:
-            self.m = representation.prot.get_model()
-        else:
-            raise Exception("XYRadialPositionUpperRestraint: must pass hier or representation")
-
+        self.m = representation.prot.get_model()
         self.rs = IMP.RestraintSet(self.m, 'XYRadialPositionUpperRestraint')
         self.weight=1.0
         self.label = "None"
 
         xyr = IMP.npc.XYRadialPositionUpperRestraint(self.m, upper_bound, consider_radius, sigma)
-        #terminal_residue = IMP.pmi1.tools.get_terminal_residue(representation, representation.hier_dict[protein], terminus="C")
         residues = IMP.pmi1.tools.select_by_tuple(representation, protein, resolution=1)
         cterminal = residues[-1]        #nterminal = residues[0]
         #print (cterminal, type(cterminal))
@@ -201,32 +174,23 @@ class ZAxialPositionRestraint(object):
     """Create Z-Axial Position restraints
     """
     def __init__(self,
-                 representation = None,
-                 protein = None,
+                 representation,
+                 protein,
                  lower_bound = 0.0,
                  upper_bound = 0.0,
                  consider_radius = False,
                  sigma = 1.0,
-                 term = 'C',
-                 hier = None):
+                 term = 'C'):
         """Constructor
         @param representation representation
         """
 
-        # PMI1/2 selection
-        if representation is None and hier is not None:
-            self.m = hier.get_model()
-        elif hier is None and representation is not None:
-            self.m = representation.prot.get_model()
-        else:
-            raise Exception("ZAxialPositionRestraint: must pass hier or representation")
-
+        self.m = representation.prot.get_model()
         self.rs = IMP.RestraintSet(self.m, 'ZAxialPositionRestraint')
         self.weight=1.0
         self.label = "None"
 
         zax = IMP.npc.ZAxialPositionRestraint(self.m, lower_bound, upper_bound, consider_radius, sigma)
-        #terminal_residue = IMP.pmi1.tools.get_terminal_residue(representation, representation.hier_dict[protein], terminus="C")
         residues = IMP.pmi1.tools.select_by_tuple(representation, protein, resolution=1)
         if term == 'C':
             residues = residues[-1:]
@@ -271,30 +235,21 @@ class ZAxialPositionLowerRestraint(object):
     """Create Z-Axial Position Lower restraints
     """
     def __init__(self,
-                 representation = None,
-                 protein = None,
+                 representation,
+                 protein,
                  lower_bound = 0.0,
                  consider_radius = False,
-                 sigma = 1.0,
-                 hier = None):
+                 sigma = 1.0):
         """Constructor
         @param representation representation
         """
 
-        # PMI1/2 selection
-        if representation is None and hier is not None:
-            self.m = hier.get_model()
-        elif hier is None and representation is not None:
-            self.m = representation.prot.get_model()
-        else:
-            raise Exception("ZAxialPositionLowerRestraint: must pass hier or representation")
-
+        self.m = representation.prot.get_model()
         self.rs = IMP.RestraintSet(self.m, 'ZAxialPositionLowerRestraint')
         self.weight=1.0
         self.label = "None"
 
         zax = IMP.npc.ZAxialPositionLowerRestraint(self.m, lower_bound, consider_radius, sigma)
-        #terminal_residue = IMP.pmi1.tools.get_terminal_residue(representation, representation.hier_dict[protein], terminus="C")
         residues = IMP.pmi1.tools.select_by_tuple(representation, protein, resolution=1)
         cterminal = residues[-1]        #nterminal = residues[0]
         #print (cterminal, type(cterminal))
@@ -330,30 +285,21 @@ class ZAxialPositionUpperRestraint(object):
     """Create Z-Axial Position Upper restraints
     """
     def __init__(self,
-                 representation = None,
-                 protein = None,
+                 representation,
+                 protein,
                  upper_bound = 0.0,
                  consider_radius = False,
-                 sigma = 1.0,
-                 hier = None):
+                 sigma = 1.0):
         """Constructor
         @param representation representation
         """
 
-        # PMI1/2 selection
-        if representation is None and hier is not None:
-            self.m = hier.get_model()
-        elif hier is None and representation is not None:
-            self.m = representation.prot.get_model()
-        else:
-            raise Exception("ZAxialPositionUpperRestraint: must pass hier or representation")
-
+        self.m = representation.prot.get_model()
         self.rs = IMP.RestraintSet(self.m, 'ZAxialPositionUpperRestraint')
         self.weight=1.0
         self.label = "None"
 
         zax = IMP.npc.ZAxialPositionUpperRestraint(self.m, upper_bound, consider_radius, sigma)
-        #terminal_residue = IMP.pmi1.tools.get_terminal_residue(representation, representation.hier_dict[protein], terminus="C")
         residues = IMP.pmi1.tools.select_by_tuple(representation, protein, resolution=1)
         cterminal = residues[-1]        #nterminal = residues[0]
         #print (cterminal, type(cterminal))
@@ -390,32 +336,23 @@ class YAxialPositionRestraint(object):
     """Create Y-Axial Position restraints
     """
     def __init__(self,
-                 representation = None,
-                 protein = None,
+                 representation,
+                 protein,
                  lower_bound = 0.0,
                  upper_bound = 0.0,
                  consider_radius = False,
                  sigma = 1.0,
-                 term = 'C',
-                 hier = None):
+                 term = 'C'):
         """Constructor
         @param representation representation
         """
 
-        # PMI1/2 selection
-        if representation is None and hier is not None:
-            self.m = hier.get_model()
-        elif hier is None and representation is not None:
-            self.m = representation.prot.get_model()
-        else:
-            raise Exception("YAxialPositionRestraint: must pass hier or representation")
-
+        self.m = representation.prot.get_model()
         self.rs = IMP.RestraintSet(self.m, 'YAxialPositionRestraint')
         self.weight=1.0
         self.label = "None"
 
         yax = IMP.npc.YAxialPositionRestraint(self.m, lower_bound, upper_bound, consider_radius, sigma)
-        #terminal_residue = IMP.pmi1.tools.get_terminal_residue(representation, representation.hier_dict[protein], terminus="C")
         residues = IMP.pmi1.tools.select_by_tuple(representation, protein, resolution=1)
         if (term == 'C'):
             terminal = residues[-1]
@@ -466,30 +403,21 @@ class YAxialPositionLowerRestraint(object):
     """Create Y-Axial Position Lower restraints
     """
     def __init__(self,
-                 representation = None,
-                 protein = None,
+                 representation,
+                 protein,
                  lower_bound = 0.0,
                  consider_radius = False,
-                 sigma = 1.0,
-                 hier = None):
+                 sigma = 1.0):
         """Constructor
         @param representation representation
         """
 
-        # PMI1/2 selection
-        if representation is None and hier is not None:
-            self.m = hier.get_model()
-        elif hier is None and representation is not None:
-            self.m = representation.prot.get_model()
-        else:
-            raise Exception("YAxialPositionLowerRestraint: must pass hier or representation")
-
+        self.m = representation.prot.get_model()
         self.rs = IMP.RestraintSet(self.m, 'YAxialPositionLowerRestraint')
         self.weight=1.0
         self.label = "None"
 
         yax = IMP.npc.YAxialPositionLowerRestraint(self.m, lower_bound, consider_radius, sigma)
-        #terminal_residue = IMP.pmi1.tools.get_terminal_residue(representation, representation.hier_dict[protein], terminus="C")
         residues = IMP.pmi1.tools.select_by_tuple(representation, protein, resolution=1)
         cterminal = residues[-1]        #nterminal = residues[0]
         #print (cterminal, type(cterminal))
@@ -525,30 +453,21 @@ class YAxialPositionUpperRestraint(object):
     """Create Y-Axial Position Upper restraints
     """
     def __init__(self,
-                 representation = None,
-                 protein = None,
+                 representation,
+                 protein,
                  upper_bound = 0.0,
                  consider_radius = False,
-                 sigma = 1.0,
-                 hier = None):
+                 sigma = 1.0):
         """Constructor
         @param representation representation
         """
 
-        # PMI1/2 selection
-        if representation is None and hier is not None:
-            self.m = hier.get_model()
-        elif hier is None and representation is not None:
-            self.m = representation.prot.get_model()
-        else:
-            raise Exception("YAxialPositionUpperRestraint: must pass hier or representation")
-
+        self.m = representation.prot.get_model()
         self.rs = IMP.RestraintSet(self.m, 'YAxialPositionUpperRestraint')
         self.weight=1.0
         self.label = "None"
 
         yax = IMP.npc.YAxialPositionUpperRestraint(self.m, upper_bound, consider_radius, sigma)
-        #terminal_residue = IMP.pmi1.tools.get_terminal_residue(representation, representation.hier_dict[protein], terminus="C")
         residues = IMP.pmi1.tools.select_by_tuple(representation, protein, resolution=1)
         cterminal = residues[-1]        #nterminal = residues[0]
         #print (cterminal, type(cterminal))
@@ -585,26 +504,18 @@ class MembraneSurfaceLocationRestraint(object):
     """Create Membrane Surface Location Restraint
     """
     def __init__(self,
-                 representation = None,
-                 protein = None,
+                 representation,
+                 protein,
                  tor_R = 540.0,
                  tor_r = 127.5,
                  tor_th = 45.0,
                  sigma = 0.2,
-                 resolution = 1,
-                 hier = None):
+                 resolution = 1):
         """Constructor
         @param representation representation
         """
 
-        # PMI1/2 selection
-        if representation is None and hier is not None:
-            self.m = hier.get_model()
-        elif hier is None and representation is not None:
-            self.m = representation.prot.get_model()
-        else:
-            raise Exception("MembraneSurfaceLocationRestraint: must pass hier or representation")
-
+        self.m = representation.prot.get_model()
         self.rs = IMP.RestraintSet(self.m, 'MembraneSurfaceLocationRestraint')
         self.weight=1.0
         self.label = "None"
@@ -654,27 +565,19 @@ class MembraneSurfaceLocationConditionalRestraint(object):
        It returns a minimum penalty score from two potential ALPS motifs.
     """
     def __init__(self,
-                 representation = None,
-                 protein1 = None,
-                 protein2 = None,
+                 representation,
+                 protein1,
+                 protein2,
                  tor_R = 540.0,
                  tor_r = 127.5,
                  tor_th = 45.0,
                  sigma = 0.2,
-                 resolution = 1,
-                 hier = None):
+                 resolution = 1):
         """Constructor
         @param representation representation
         """
 
-        # PMI1/2 selection
-        if representation is None and hier is not None:
-            self.m = hier.get_model()
-        elif hier is None and representation is not None:
-            self.m = representation.prot.get_model()
-        else:
-            raise Exception("MembraneSurfaceLocationConditionalRestraint: must pass hier or representation")
-
+        self.m = representation.prot.get_model()
         self.rs = IMP.RestraintSet(self.m, 'MembraneSurfaceLocationConditionalRestraint')
         self.weight=1.0
         self.label = "None"
@@ -728,26 +631,18 @@ class MembraneExclusionRestraint(object):
     """Create Membrane Exclusion Restraint
     """
     def __init__(self,
-                 representation = None,
-                 protein = None,
+                 representation,
+                 protein,
                  tor_R = 540.0,
                  tor_r = 127.5,
                  tor_th = 45.0,
                  sigma = 0.2,
-                 resolution = 1,
-                 hier = None):
+                 resolution = 1):
         """Constructor
         @param representation representation
         """
 
-        # PMI1/2 selection
-        if representation is None and hier is not None:
-            self.m = hier.get_model()
-        elif hier is None and representation is not None:
-            self.m = representation.prot.get_model()
-        else:
-            raise Exception("MembraneExclusionRestraint: must pass hier or representation")
-
+        self.m = representation.prot.get_model()
         self.rs = IMP.RestraintSet(self.m, 'MembraneExclusionRestraint')
         self.weight=1.0
         self.label = "None"

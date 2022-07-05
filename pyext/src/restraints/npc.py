@@ -1,33 +1,23 @@
 import IMP.npc
 
 
-class XYRadialPositionRestraint(object):
+class XYRadialPositionRestraint(IMP.pmi.restraints.RestraintBase):
     """Create XYRadial Position Restraint
     """
-    def __init__(self, representation=None, protein=None, lower_bound=0.0,
-                 upper_bound=0.0, consider_radius=False, sigma=1.0, term='C',
-                 hier=None):
+    def __init__(self, hier, protein, lower_bound=0.0, upper_bound=0.0,
+                 consider_radius=False, sigma=1.0, term='C', label=None,
+                 weight=1.0):
         """Constructor
         @param representation representation
         """
 
-        # PMI1/2 selection
-        if representation is None and hier is not None:
-            self.m = hier.get_model()
-        elif hier is None and representation is not None:
-            self.m = representation.prot.get_model()
-        else:
-            raise Exception(
-                "XYRadialPositionRestraint: must pass hier or representation")
-
-        self.rs = IMP.RestraintSet(self.m, 'XYRadialPositionRestraint')
-        self.weight = 1.0
-        self.label = "None"
+        super(XYRadialPositionRestraint, self).__init__(
+            hier.get_model(), label=label, weight=weight)
 
         xyr = IMP.npc.XYRadialPositionRestraint(
-            self.m, lower_bound, upper_bound, consider_radius, sigma)
-        residues = IMP.pmi.tools.select_by_tuple(
-            representation, protein, resolution=1)
+            self.model, lower_bound, upper_bound, consider_radius, sigma)
+        residues = IMP.pmi.tools.select_by_tuple_2(
+            hier, protein, resolution=1)
         if term == 'C':
             terminal = residues[-1]
             # print (terminal, type(terminal))
@@ -41,30 +31,6 @@ class XYRadialPositionRestraint(object):
                 # print (residue, type(residue))
                 xyr.add_particle(residue)
         self.rs.add_restraint(xyr)
-
-    def set_label(self, label):
-        self.label = label
-
-    def add_to_model(self):
-        IMP.pmi.tools.add_restraint_to_model(self.m, self.rs)
-
-    def get_restraint(self):
-        return self.rs
-
-    def set_weight(self, weight):
-        self.weight = weight
-        self.rs.set_weight(self.weight)
-
-    def get_output(self):
-        self.m.update()
-        output = {}
-        score = self.weight * self.rs.unprotected_evaluate(None)
-        output["_TotalScore"] = str(score)
-        output["XYRadialPositionRestraint_" + self.label] = str(score)
-        return output
-
-    def evaluate(self):
-        return self.weight * self.rs.unprotected_evaluate(None)
 
 
 class XYRadialPositionLowerRestraint(object):

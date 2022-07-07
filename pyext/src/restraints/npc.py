@@ -44,6 +44,12 @@ class XYRadialPositionRestraint(IMP.pmi.restraints.RestraintBase):
             for residue in residues:
                 # print (residue, type(residue))
                 xyr.add_particle(residue)
+
+        self.dataset = None
+        for p, state in IMP.pmi.tools._all_protocol_outputs(hier):
+            p.add_xyradial_restraint(state, residues, lower_bound,
+                                     upper_bound, sigma, self)
+
         self.rs.add_restraint(xyr)
 
 
@@ -117,6 +123,12 @@ class ZAxialPositionRestraint(IMP.pmi.restraints.RestraintBase):
             for residue in residues:
                 # print (residue, type(residue))
                 zax.add_particle(residue)
+
+        self.dataset = None
+        for p, state in IMP.pmi.tools._all_protocol_outputs(hier):
+            p.add_zaxial_restraint(state, residues, lower_bound,
+                                   upper_bound, sigma, self)
+
         self.rs.add_restraint(zax)
 
 
@@ -190,6 +202,12 @@ class YAxialPositionRestraint(IMP.pmi.restraints.RestraintBase):
             for residue in residues:
                 # print (residue, type(residue))
                 yax.add_particle(residue)
+
+        self.dataset = None
+        for p, state in IMP.pmi.tools._all_protocol_outputs(hier):
+            p.add_yaxial_restraint(state, residues, lower_bound,
+                                   upper_bound, sigma, self)
+
         self.rs.add_restraint(yax)
 
 
@@ -254,6 +272,12 @@ class MembraneSurfaceLocationRestraint(IMP.pmi.restraints.RestraintBase):
         for residue in residues:
             # print (residue, type(residue))
             msl.add_particle(residue)
+
+        self.dataset = None
+        for p, state in IMP.pmi.tools._all_protocol_outputs(hier):
+            p.add_membrane_surface_location_restraint(
+                state, residues, tor_R, tor_r, tor_th, sigma, self)
+
         self.rs.add_restraint(msl)
 
 
@@ -287,6 +311,14 @@ class MembraneSurfaceLocationConditionalRestraint(
         for residue in residues2:
             # print (residue, type(residue))
             msl.add_particle2(residue)
+
+        # Approximate as two membrane restraints
+        self.dataset = None
+        for p, state in IMP.pmi.tools._all_protocol_outputs(hier):
+            for residues in residues1, residues2:
+                p.add_membrane_surface_location_restraint(
+                    state, residues, tor_R, tor_r, tor_th, sigma, self)
+
         self.rs.add_restraint(msl)
 
 
@@ -308,4 +340,10 @@ class MembraneExclusionRestraint(IMP.pmi.restraints.RestraintBase):
             hier, protein, resolution=resolution)
         for residue in residues:
             mex.add_particle(residue)
+
+        self.dataset = None
+        for p, state in IMP.pmi.tools._all_protocol_outputs(hier):
+            p.add_membrane_exclusion_restraint(
+                state, residues, tor_R, tor_r, tor_th, sigma, self)
+
         self.rs.add_restraint(mex)

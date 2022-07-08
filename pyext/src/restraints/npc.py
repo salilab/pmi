@@ -1,3 +1,18 @@
+"""@namespace IMP.pmi1.restraints.npc
+Specialized restraints for modeling the Nuclear Pore Complex.
+
+These restraints have been used to model the Nuclear Pore Complex (NPC)
+but may be useful for other applications too. They model the NPC as lying
+in the xy plane, centered at the origin. (Transport through the pore
+corresponds to movement along the z axis.) The surface of the nuclear
+membrane is represented as the surface of a half torus, also lying in
+the xy plane and centered at the origin. Individual proteins
+(or parts of proteins, such as the N- or C- termini) are then localized to
+different regions of the complex (e.g. near the membrane or pore, or on
+the nuclear or cytoplasmic side) by simple restraints on ther Cartesian
+coordinates.
+"""
+
 import IMP.npc
 import IMP.pmi1.tools
 

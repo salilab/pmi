@@ -1,9 +1,9 @@
 ## \example pmi/protein_residue_binding.py
 """
-This script shows how to simulate residue–protein 
+This script shows how to simulate residue–protein
 binding contacts inferred from mutagenesis studies.
-This example shows protein A binding to protein B 
-through a set of residues predicted to be required 
+This example shows protein A binding to protein B
+through a set of residues predicted to be required
 for binding in mutagensis studies.
 """
 
@@ -21,6 +21,8 @@ import IMP.pmi.restraints.basic
 import tempfile
 import os
 import sys
+
+IMP.setup_from_argv(sys.argv, "Simulate residue–protein binding contacts")
 
 topology = '''
 |molecule_name|color|fasta_fn|fasta_id|pdb_fn|chain|residue_range|pdb_offset|bead_size|em_residues_per_gaussian|rigid_body|super_rigid_body|chain_of_super_rigid_bodies|
@@ -78,9 +80,7 @@ eb.add_to_model()
 # ################# PROTEIN-RESIDUE PROXIMITY ################
 
 br = IMP.pmi.restraints.basic.ResidueProteinProximityRestraint(
-    hier,
-    selection  = ('Rpb7',38, 44, 'Rpb4'),
-    label = 'B38_44') 
+    hier, selection=('Rpb7', 38, 44, 'Rpb4'), label='B38_44')
 
 br.add_to_model()
 br.set_weight(5.0)
@@ -89,13 +89,13 @@ br.get_output()
 
 # ##################### SAMPLING #######################
 
-# Fix rigid-body 
+# Fix rigid-body
 
-part_p1=IMP.atom.Selection(hier,
-                           molecule="Rpb4").get_selected_particles()
+part_p1 = IMP.atom.Selection(hier,
+                             molecule="Rpb4").get_selected_particles()
 
-xyzs, rbs=dof.disable_movers(part_p1,
-                                mover_types=[IMP.core.RigidBodyMover])
+xyzs, rbs = dof.disable_movers(part_p1,
+                               mover_types=[IMP.core.RigidBodyMover])
 
 
 # mix it up so it looks cool
@@ -104,7 +104,7 @@ IMP.pmi.tools.shuffle_configuration(hier)
 # Quickly move all flexible beads into place
 dof.optimize_flexible_beads(100)
 
-rex = IMP.pmi.macros.ReplicaExchange0(
+rex = IMP.pmi.macros.ReplicaExchange(
     mdl,
     root_hier=hier,
     monte_carlo_sample_objects=dof.get_movers(),
@@ -112,7 +112,7 @@ rex = IMP.pmi.macros.ReplicaExchange0(
     output_objects=output_objects,
     monte_carlo_steps=10,
     number_of_best_scoring_models=0,
-    number_of_frames=5000)
+    number_of_frames=500)
 rex.execute_macro()
 
 os.remove(tf.name)

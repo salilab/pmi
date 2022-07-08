@@ -18,7 +18,6 @@ import IMP.pmi.macros
 import IMP.pmi.restraints
 import IMP.pmi.restraints.stereochemistry
 import IMP.pmi.restraints.basic
-import IMP.pmi.restraints.residue_proximity_restraint
 import tempfile
 import os
 import sys
@@ -78,7 +77,7 @@ eb.add_to_model()
 
 # ################# PROTEIN-RESIDUE PROXIMITY ################
 
-br = IMP.pmi.restraints.residue_proximity_restraint.ResidueProteinProximityRestraint(
+br = IMP.pmi.restraints.basic.ResidueProteinProximityRestraint(
     hier,
     selection  = ('Rpb7',38, 44, 'Rpb4'),
     label = 'B38_44') 

@@ -4,7 +4,7 @@ import IMP.test
 import IMP.core
 import IMP.pmi
 import IMP.pmi.restraints
-import IMP.pmi.restraints.residue_proximity_restraint
+import IMP.pmi.restraints.basic
 import math
 
 class Tests(IMP.test.TestCase):
@@ -42,7 +42,7 @@ class Tests(IMP.test.TestCase):
             IMP.core.transform(IMP.core.XYZ(fb), trans)
 
         xi = 0.01
-        br_rest = IMP.pmi.restraints.residue_proximity_restraint.ResidueProteinProximityRestraint(root_hier,
+        br_rest = IMP.pmi.restraints.basic.ResidueProteinProximityRestraint(root_hier,
                                                                                                   selection  = ('ProtA',1,1,'ProtB'))
         br_rest.add_to_model()
         mdl.update()
@@ -64,7 +64,7 @@ class Tests(IMP.test.TestCase):
         for fb in IMP.core.get_leaves(pB.get_hierarchy()):
             IMP.core.transform(IMP.core.XYZ(fb), trans)
 
-        br_rest = IMP.pmi.restraints.residue_proximity_restraint.ResidueProteinProximityRestraint(root_hier,
+        br_rest = IMP.pmi.restraints.basic.ResidueProteinProximityRestraint(root_hier,
                                                                                                   selection  = ('ProtA',1,2,'ProtB'))
         br_rest.add_to_model()
         mdl.update()
@@ -93,7 +93,7 @@ class Tests(IMP.test.TestCase):
         for fb in IMP.core.get_leaves(pB.get_hierarchy()):
             IMP.core.transform(IMP.core.XYZ(fb), trans)
 
-        br_rest = IMP.pmi.restraints.residue_proximity_restraint.ResidueProteinProximityRestraint(root_hier,
+        br_rest = IMP.pmi.restraints.basic.ResidueProteinProximityRestraint(root_hier,
                                                                                                   selection  = ('ProtA',1,2,'ProtB'))
         br_rest.add_to_model()
         mdl.update()
@@ -122,7 +122,7 @@ class Tests(IMP.test.TestCase):
         for fb in IMP.core.get_leaves(pB.get_hierarchy()):
             IMP.core.transform(IMP.core.XYZ(fb), trans)
 
-        br_rest = IMP.pmi.restraints.residue_proximity_restraint.ResidueProteinProximityRestraint(root_hier,
+        br_rest = IMP.pmi.restraints.basic.ResidueProteinProximityRestraint(root_hier,
                                                                                                   selection  = ('ProtA',1,2,'ProtB'))
         br_rest.add_to_model()
         mdl.update()
@@ -144,7 +144,7 @@ class Tests(IMP.test.TestCase):
         for fb in IMP.core.get_leaves(pB.get_hierarchy()):
             IMP.core.transform(IMP.core.XYZ(fb), trans)
 
-        br_rest = IMP.pmi.restraints.residue_proximity_restraint.ResidueProteinProximityRestraint(root_hier,
+        br_rest = IMP.pmi.restraints.basic.ResidueProteinProximityRestraint(root_hier,
                                                                                                   selection  = ('ProtA',1,2,'ProtB'))
         br_rest.add_to_model()
         mdl.update()

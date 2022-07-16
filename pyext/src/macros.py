@@ -1108,7 +1108,6 @@ class AnalysisReplicaExchange0(object):
                 self.stat_files, self.number_of_processes)[self.rank]
 
             # read ahead to check if you need the PMI2 score key instead
-            po = IMP.pmi.output.ProcessOutput(my_stat_files[0])
             for k in (score_key, rmf_file_key, rmf_file_frame_key):
                 if k in feature_keys:
                     warnings.warn(

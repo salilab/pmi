@@ -341,6 +341,9 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
         self.xl_restraints = restraints
         lw = IMP.isd.LogWrapper(restraints, 1.0)
         self.rs.add_restraint(lw)
+        indb.close()
+        exdb.close()
+        midb.close()
 
     def __set_dataset(self, ds):
         self.database.dataset = ds

@@ -27,21 +27,21 @@ class _DataRestraintSet(IMP.RestraintSet):
         # Add custom metadata to the container, for RMF
         ri = IMP.RestraintInfo()
         ri.add_string("type", "IMP.pmi.CrossLinkingMassSpectrometryRestraint")
-        ri.add_float("linker_length", self.length)
+        ri.add_float("linker length", self.length)
         ri.add_float("slope", self.slope)
         ri.add_filename("filename", self.filename or "")
         if self.linker:
-            ri.add_string("linker_auth_name", self.linker.auth_name)
+            ri.add_string("linker author name", self.linker.auth_name)
 
             def add_linker_opt(sname, val):
                 if val:
                     ri.add_string(sname, val)
-            add_linker_opt("linker_chemical_name", self.linker.chemical_name)
-            add_linker_opt("linker_smiles", self.linker.smiles)
-            add_linker_opt("linker_smiles_canonical",
+            add_linker_opt("linker chemical name", self.linker.chemical_name)
+            add_linker_opt("linker smiles", self.linker.smiles)
+            add_linker_opt("linker smiles canonical",
                            self.linker.smiles_canonical)
-            add_linker_opt("linker_inchi", self.linker.inchi)
-            add_linker_opt("linker_inchi_key", self.linker.inchi_key)
+            add_linker_opt("linker inchi", self.linker.inchi)
+            add_linker_opt("linker inchi key", self.linker.inchi_key)
         return ri
 
 

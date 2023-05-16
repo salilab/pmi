@@ -104,12 +104,10 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
 
         self.linker = linker
         if linker is None:
-            warnings.warn(
-                "No linker chemistry specified; this will be guessed from the "
-                "label (%s). It is recommended to specify a linker as an "
+            raise ValueError(
+                "No linker chemistry specified. A linker must be given, as an "
                 "ihm.ChemDescriptor object (see the "
-                "CrossLinkingMassSpectrometryRestraint documentation)."
-                % label, IMP.pmi.ParameterWarning)
+                "CrossLinkingMassSpectrometryRestraint documentation).")
         self.rs.set_name(self.rs.get_name() + "_Data")
         self.rspsi = self._create_restraint_set("PriorPsi")
         self.rssig = self._create_restraint_set("PriorSig")

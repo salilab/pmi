@@ -112,7 +112,7 @@ class Tests(IMP.test.TestCase):
             length=21.0,
             slope=0.0,
             resolution=1.0,
-            label="XL")
+            label="XL", linker=ihm.cross_linkers.dss)
         xl.add_to_model()
         psi=xl.psi_dictionary["PSI"][0]
         psi.set_scale(0.05)

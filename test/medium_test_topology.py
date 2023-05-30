@@ -698,6 +698,8 @@ class Tests(IMP.test.TestCase):
         chain=m1.chain
         self.assertEqual(chain.get_sequence(),seqs["Protein_1"])
         self.assertEqual(chain.get_id(),"A")
+        self.assertEqual(chain.get_chain_type(), IMP.atom.Protein)
+        self.assertEqual(chain.get_chain_type(), IMP.atom.LPolypeptide)
 
         #test PMIMoleculeHierarchy
         mol=m1.hier

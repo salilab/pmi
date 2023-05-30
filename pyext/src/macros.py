@@ -182,7 +182,7 @@ class ReplicaExchange(object):
         self.output_objects = output_objects
         self.rmf_output_objects = rmf_output_objects
         if (isinstance(root_hier, IMP.atom.Hierarchy)
-                and root_hier.get_name() == 'System'):
+                and not root_hier.get_parent()):
             if self.output_objects is not None:
                 self.output_objects.append(
                     IMP.pmi.io.TotalScoreOutput(self.model))

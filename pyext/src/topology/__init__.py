@@ -154,7 +154,7 @@ class _OurWeakRef(object):
 class System(_SystemBase):
     """Represent the root node of the global IMP.atom.Hierarchy."""
 
-    _all_systems = set()
+    _all_systems = weakref.WeakSet()
 
     def __init__(self, model=None, name="System"):
         """Constructor.
@@ -168,16 +168,12 @@ class System(_SystemBase):
         self.states = []
         self.built = False
 
-        System._all_systems.add(weakref.ref(self))
+        System._all_systems.add(self)
 
         # the root hierarchy node
         self.hier = self._create_hierarchy()
         self.hier.set_name(name)
         self.hier._pmi2_system = _OurWeakRef(self)
-
-    def __del__(self):
-        System._all_systems = set(x for x in System._all_systems
-                                  if x() not in (None, self))
 
     def get_states(self):
         """Get a list of all State objects in this system"""

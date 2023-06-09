@@ -46,9 +46,8 @@ def _get_system_for_hier(hier):
                 return h
         # Otherwise (maybe we got a new Python wrapper around the same C++
         # object), try all extant systems
-        for ws in IMP.pmi.topology.System._all_systems:
-            s = ws()
-            if s and s.hier == hier:
+        for s in IMP.pmi.topology.System._all_systems:
+            if s.hier == hier:
                 return s
         # Try the next level up in the hierarchy
         hier = hier.get_parent()

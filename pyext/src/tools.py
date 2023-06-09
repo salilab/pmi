@@ -41,7 +41,9 @@ def _get_system_for_hier(hier):
     while hier:
         # See if we labeled the Python object directly with the System
         if hasattr(hier, '_pmi2_system'):
-            return hier._pmi2_system()
+            h = hier._pmi2_system()
+            if h:
+                return h
         # Otherwise (maybe we got a new Python wrapper around the same C++
         # object), try all extant systems
         for ws in IMP.pmi.topology.System._all_systems:

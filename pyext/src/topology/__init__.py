@@ -133,6 +133,24 @@ class _SystemBase(object):
         pass
 
 
+class _OurWeakRef(object):
+    """A simple wrapper around weakref.ref which can be pickled.
+       Note that we throw the reference away at pickle time. It should
+       be able to be reconstructed from System._all_systems anyway."""
+
+    def __init__(self, system):
+        self._ref = weakref.ref(system)
+
+    def __call__(self):
+        return self._ref()
+
+    def __getstate__(self):
+        return None
+
+    def __setstate__(self, d):
+        self._ref = weakref.ref(None)
+
+
 class System(_SystemBase):
     """Represent the root node of the global IMP.atom.Hierarchy."""
 
@@ -155,7 +173,7 @@ class System(_SystemBase):
         # the root hierarchy node
         self.hier = self._create_hierarchy()
         self.hier.set_name(name)
-        self.hier._pmi2_system = weakref.ref(self)
+        self.hier._pmi2_system = _OurWeakRef(self)
 
     def __del__(self):
         System._all_systems = set(x for x in System._all_systems

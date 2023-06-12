@@ -17,6 +17,8 @@
 #include <IMP/SingletonContainer.h>
 #include <IMP/core/rigid_bodies.h>
 #include <IMP/core/XYZ.h>
+#include <cereal/access.hpp>
+#include <cereal/types/base_class.hpp>
 
 IMPPMI_BEGIN_NAMESPACE
 
@@ -43,6 +45,15 @@ class IMPPMIEXPORT TransformMover : public IMP::core::MonteCarloMover {
   unsigned int called_;
   unsigned int not_accepted_;
   unsigned int constr_;
+
+  friend class cereal::access;
+  template<class Archive> void serialize(Archive &ar) {
+    ar(cereal::base_class<core::MonteCarloMover>(this),
+       last_transformation_, max_translation_, max_angle_, p1i_, p2i_,
+       pixyzs_, pirbs_, pis_, t_, c_, rbts_, xyzs_, axis_, tt_, called_,
+       not_accepted_, constr_);
+  }
+  IMP_OBJECT_SERIALIZE_DECL(TransformMover);
 
   IMP::algebra::Vector3D get_center(){
     Float x=0;
@@ -84,6 +95,8 @@ class IMPPMIEXPORT TransformMover : public IMP::core::MonteCarloMover {
   TransformMover(Model *m, IMP::ParticleIndexAdaptor p1i,
                  IMP::ParticleIndexAdaptor p2i,
                  Float max_translation, Float max_rotation);
+
+  TransformMover() {}
 
   void add_xyz_particle(IMP::ParticleIndexAdaptor pi) {
     if (core::RigidBody::get_is_setup(get_model(), pi)) {

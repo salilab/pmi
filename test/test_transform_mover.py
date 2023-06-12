@@ -13,6 +13,7 @@ import IMP.rmf
 import RMF
 import shutil
 import os
+import pickle
 
 # initialize Replica Exchange class
 try:
@@ -242,6 +243,52 @@ class Tests(IMP.test.TestCase):
             replica_exchange_object=rem)
         mc2.execute_macro()
         shutil.rmtree("test_transform_mover_output_2")
+
+    def make_system(sel):
+        m = IMP.Model()
+        ps = []
+        hs = []
+        for i in range(10):
+            p = IMP.Particle(m)
+            h = IMP.atom.Hierarchy.setup_particle(p)
+            d = IMP.core.XYZR.setup_particle(p)
+            IMP.atom.Mass.setup_particle(p, 1.0)
+            d.set_coordinates(IMP.algebra.get_random_vector_in(
+                                    IMP.algebra.Sphere3D((0, 0, 0), 10)))
+            d.set_radius(1)
+            ps.append(p)
+            hs.append(h)
+        return m, ps, hs
+
+    def test_pickle(self):
+        """Test (un-)pickle of TransformMover"""
+        m, ps, hs = self.make_system()
+        mvr = IMP.pmi.TransformMover(m, 1, 0.5)
+        mvr.set_maximum_translation(4.0)
+        mvr.set_name("foo")
+        for p in ps:
+            mvr.add_xyz_particle(IMP.core.XYZ(p))
+        dump = pickle.dumps(mvr)
+
+        newmvr = pickle.loads(dump)
+        self.assertEqual(newmvr.get_name(), "foo")
+        self.assertAlmostEqual(newmvr.get_maximum_translation(),
+                               4.0, delta=0.1)
+
+    def test_pickle_polymorphic(self):
+        """Test (un-)pickle of TransformMover via polymorphic pointer"""
+        m, ps, hs = self.make_system()
+        mvr = IMP.pmi.TransformMover(m, 1, 0.5)
+        mvr.set_maximum_translation(4.0)
+        mvr.set_name("foo")
+        for p in ps:
+            mvr.add_xyz_particle(IMP.core.XYZ(p))
+        sm = IMP.core.SerialMover([mvr])
+        dump = pickle.dumps(sm)
+
+        newsm = pickle.loads(dump)
+        newmvr, = newsm.get_movers()
+        self.assertEqual(newmvr.get_name(), "foo")
 
 
 if __name__ == '__main__':

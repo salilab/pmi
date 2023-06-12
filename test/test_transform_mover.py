@@ -12,6 +12,7 @@ import IMP.algebra
 import IMP.rmf
 import RMF
 import shutil
+import os
 
 # initialize Replica Exchange class
 try:
@@ -69,7 +70,7 @@ class Tests(IMP.test.TestCase):
             IMP.rmf.save_frame(rh)
 
         del rh
-        #os.unlink("test_transform_mover_xyz.rmf3")
+        os.unlink("test_transform_mover_xyz.rmf3")
 
 
     def test_rigid_body_particles(self):
@@ -121,7 +122,7 @@ class Tests(IMP.test.TestCase):
             mc.optimize(1)
             IMP.rmf.save_frame(rh)
         del rh
-        #os.unlink("test_transform_mover_rigid_body.rmf3")
+        os.unlink("test_transform_mover_rigid_body.rmf3")
 
 
     def test_xyz_particles_rotamer(self):
@@ -179,6 +180,7 @@ class Tests(IMP.test.TestCase):
             IMP.rmf.save_frame(rh)
 
         del rh
+        os.unlink("test_transform_mover_xyz_rotamer.rmf3")
 
     def test_pmi_representation_sampling_macro1_helix(self):
 
@@ -239,7 +241,7 @@ class Tests(IMP.test.TestCase):
             replica_stat_file_suffix="stat_replica",
             replica_exchange_object=rem)
         mc2.execute_macro()
-        #shutil.rmtree("test_transform_mover_output_2")
+        shutil.rmtree("test_transform_mover_output_2")
 
 
 if __name__ == '__main__':

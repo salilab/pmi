@@ -1337,7 +1337,7 @@ class MapCrossLinkDataBaseOnStructure(object):
         self.array_to_id={}
         self.id_to_array={}
 
-        print("computing distances fro all crosslinks and all structures")
+        print("computing distances for all crosslinks and all structures")
         for i in self.prots[::10]:
             self.compute_distances()
             for key,xl in enumerate(self.CrossLinkDataBase):

@@ -127,7 +127,7 @@ class Sequences(object):
 
 
 class TopologyReader(object):
-    """Automatically setup Sytem and Degrees of Freedom with a formatted text file.
+    """Automatically setup System and Degrees of Freedom with a formatted text file.
     The file is read in and each part of the topology is stored as a
     ComponentTopology object for input into IMP::pmi1::macros::BuildSystem.
     The topology file should be in a simple pipe-delimited format:

@@ -102,7 +102,7 @@ class Representation(object):
         self._non_modeled_components = {}
 
         # this flag uses either harmonic (False) or upperharmonic (True)
-        # in the intra-pair connectivity restraint. Harmonic is used whe you want to
+        # in the intra-pair connectivity restraint. Harmonic is used when you want to
         # remove the intra-ev term from energy calculations, e.g.:
         # upperharmonic=False
         # ip=self.get_connected_intra_pairs()
@@ -1428,7 +1428,7 @@ class Representation(object):
             hierarchies_excluded_from_collision = []
 
         if len(self.rigid_bodies) == 0:
-            print("shuffle_configuration: rigid bodies were not intialized")
+            print("shuffle_configuration: rigid bodies were not initialized")
 
         gcpf = IMP.core.GridClosePairsFinder()
         gcpf.set_distance(cutoff)

@@ -100,7 +100,7 @@ if result.soft_match:
 # print the queried fields
 if not result.fields is None:
     field_list = []
-    # check whether the fields exist and convert them to best maching existing
+    # check whether the fields exist and convert them to best matching existing
     # field names
     for field in result.fields:
         found_entries = difflib.get_close_matches(
@@ -168,7 +168,7 @@ if not result.single_column_field is None:
     f.close()
 
 if (not result.search_field is None) and (not result.search_value is None):
-    # check whether the fields exist and convert them to best maching existing
+    # check whether the fields exist and convert them to best matching existing
     # field names
     found_entries = difflib.get_close_matches(
         result.search_field,
@@ -203,7 +203,7 @@ if (not result.search_field is None) and (not result.search_value is None):
     f.close()
 
 if not result.print_raw_number is None:
-    # check whether the fields exist and convert them to best maching existing
+    # check whether the fields exist and convert them to best matching existing
     # field names
     f = open(result.filename, "r")
     line_number = 0

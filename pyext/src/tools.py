@@ -1648,12 +1648,12 @@ def input_adaptor(stuff,
     else:
         stuff = [stuff]
 
-    # check that it is a hierarchy homogenously:
+    # check that it is a hierarchy homogeneously:
     try:
         is_hierarchy=all(IMP.atom.Hierarchy.get_is_setup(s) for s in stuff)
     except NotImplementedError:
         is_hierarchy=False
-    # get the other types homogenously
+    # get the other types homogeneously
     is_system=False
     is_state=False
     is_molecule=False
@@ -2016,7 +2016,7 @@ def shuffle_configuration(objects,
     else:
         raise Exception("Could not find any particles in the hierarchy")
     if len(rigid_bodies) == 0:
-        print("shuffle_configuration: rigid bodies were not intialized")
+        print("shuffle_configuration: rigid bodies were not initialized")
 
     ### gather all particles
     gcpf = IMP.core.GridClosePairsFinder()

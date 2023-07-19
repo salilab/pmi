@@ -202,7 +202,7 @@ class MultipleStates(object):
                                               segment[1] + 1)))
                 for p in s.get_selected_particles():
                     if IMP.core.RigidMember.get_is_setup(p):
-                        print("MultipleStates: one particle was not destroied because it was a RigidMember.")
+                        print("MultipleStates: one particle was not destroyed because it was a RigidMember.")
                     else:
                         # destroy the residue and the associated atom
                         a = IMP.atom.Atom(p)
@@ -354,7 +354,7 @@ class MultipleStates(object):
             for p in IMP.atom.get_leaves(prot):
                 if p not in pstokeep:
                     if IMP.core.RigidMember.get_is_setup(p):
-                        print("MultipleStates: one particle was not destroied because it was a RigidMember.")
+                        print("MultipleStates: one particle was not destroyed because it was a RigidMember.")
                     else:
                         # destroy the residue and the associated atom
                         a = IMP.atom.Atom(p).get_parent()
@@ -584,7 +584,7 @@ class MultipleStates(object):
         if the pdbs are given a individual strings, it will read the
         pdbs and give the chain name as specified in the pdb
         If it s a tuple like (filename,chainname) it will read
-        the pdb and assing a name chainname
+        the pdb and assign a name chainname
         to the chain"""
 
         # create an empty hierarchy
@@ -673,7 +673,7 @@ class MultipleStates(object):
         "shuffle configuration, used to restart the optimization"
         "it only works if rigid bodies were initialized"
         if len(self.rigid_bodies) == 0:
-            print("MultipleStates: rigid bodies were not intialized")
+            print("MultipleStates: rigid bodies were not initialized")
         hbbl = bounding_box_length / 2
         for rbl in self.rigid_bodies:
             for rb in rbl:
@@ -708,10 +708,10 @@ class MultipleStates(object):
         # calculate DRMSD matrix
 
         if len(self.xyzmodellist) == 0:
-            print("MultipleStates: hierarchies were not intialized")
+            print("MultipleStates: hierarchies were not initialized")
 
         if len(self.xyzreflist) == 0:
-            print("MultipleStates: reference hierarchies were not intialized")
+            print("MultipleStates: reference hierarchies were not initialized")
 
         drmsd = {}
         for i in range(len(self.xyzreflist)):
@@ -1233,7 +1233,7 @@ class CrossLinkMS(object):
         # this map is used in the new cross-link file reader
         #{"Nsp1":"A","Nup82":"B"} etc.
         self.mbpnc = map_between_protein_names_and_chains
-        # check whther the file was initialized
+        # check whether the file was initialized
 
     #-------------------------------
     def get_crosslinker_dict(self, typeofprofile="gofr"):
@@ -1930,7 +1930,7 @@ class BinomialXLMSRestraint(object):
         # this map is used in the new cross-link file reader
         #{"Nsp1":"A","Nup82":"B"} etc.
         self.mbpnc = map_between_protein_names_and_chains
-        # check whther the file was initialized
+        # check whether the file was initialized
 
     def create_psi(self, index, value):
         if value is None:
@@ -2407,7 +2407,7 @@ class CrossLinkMSSimple(object):
 
             # part1=[]
             # part2=[]
-            # this list contain the list of simmetric pairs to avoid
+            # this list contain the list of symmetric pairs to avoid
             # duplications
 
             # this is the map between particle pairs and the restraints (there
@@ -2422,7 +2422,7 @@ class CrossLinkMSSimple(object):
                 print("WARNING> residue %d of chain %s and residue %d of chain %s belong to the same rigid body" % (r1, c1, r2, c2))
                 continue
 
-                # this list contain the list of simmetric pairs to avoid
+                # this list contain the list of symmetric pairs to avoid
                 # duplications
             if (p1, p2, crosslinker) in addedd_pairs_list:
                 print("WARNING> pair %d %s %d %s already there" % (r1, c1, r2, c2))

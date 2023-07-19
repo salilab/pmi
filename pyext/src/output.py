@@ -406,7 +406,7 @@ class Output(object):
         This function initialize an RMF file
 
         @param name          the name of the RMF file
-        @param hierarchies   the hiearchies to be included (it is a list)
+        @param hierarchies   the hierarchies to be included (it is a list)
         @param rs            optional, the restraint sets (it is a list)
         @param geometries    optional, the geometries (it is a list)
         @param listofobjects optional, the list of objects for the stat (it is a list)

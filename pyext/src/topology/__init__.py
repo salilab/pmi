@@ -770,7 +770,7 @@ class Molecule(_SystemBase):
         # unify formatting for extra breaks
         breaks = []
         for b in bead_extra_breaks:
-            if type(b) == str:
+            if isinstance(b, str):
                 breaks.append(int(b)-1)
             else:
                 breaks.append(b)
@@ -1233,7 +1233,8 @@ class TempResidue(object):
                 self.pdb_index, self.internal_index)
 
     def __eq__(self, other):
-        return type(other) == type(self) and self.__key() == other.__key()
+        return (type(other) == type(self)  # noqa: E721
+                and self.__key() == other.__key())
 
     def __hash__(self):
         return hash(self.__key())

@@ -479,7 +479,6 @@ def read_coordinates_of_rmfs(model,
         # getting the particles
         part_dict = IMP.pmi.analysis.get_particles_at_resolution_one(prot)
         all_particles = [pp for key in part_dict for pp in part_dict[key]]
-        all_ps_set = set(all_particles)
         model_coordinate_dict = {}
         template_coordinate_dict = {}
         rmsd_coordinate_dict = {}

@@ -1033,7 +1033,7 @@ class ProcessOutput(object):
                 # "get_every" and "filterout" not enforced for RMF
                 statistics.passed_get_every += 1
                 statistics.passed_filterout += 1
-                IMP.rmf.load_frame(rh, RMF.FrameID(i))
+                rh.set_current_frame(RMF.FrameID(i))
                 if filtertuple is not None:
                     keytobefiltered = filtertuple[0]
                     relationship = filtertuple[1]

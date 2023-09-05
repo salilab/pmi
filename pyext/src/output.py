@@ -357,7 +357,7 @@ class Output(object):
         # highest resolution have highest priority
         resindexes_dict = {}
 
-        # this dictionary dill contain the sequence of tuples needed to
+        # this dictionary will contain the sequence of tuples needed to
         # write the pdb
         particle_infos_for_pdb = []
 

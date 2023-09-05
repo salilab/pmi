@@ -364,12 +364,13 @@ class Output(object):
         geometric_center = [0, 0, 0]
         atom_count = 0
 
-        # select highest resolution
-        sel = IMP.atom.Selection(self.dictionary_pdbs[name], resolution=0)
-        ps = sel.get_selected_particles()
-        # If the hierarchy is empty, it itself is returned; don't use it
-        if len(ps) == 1 and ps[0] == self.dictionary_pdbs[name]:
+        # select highest resolution, if hierarchy is non-empty
+        if (not IMP.core.XYZR.get_is_setup(self.dictionary_pdbs[name])
+                and self.dictionary_pdbs[name].get_number_of_children() == 0):
             ps = []
+        else:
+            sel = IMP.atom.Selection(self.dictionary_pdbs[name], resolution=0)
+            ps = sel.get_selected_particles()
 
         for n, p in enumerate(ps):
             protname, is_a_bead = self.get_prot_name_from_particle(name, p)

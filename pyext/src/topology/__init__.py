@@ -997,13 +997,23 @@ class _FindCloseStructure(object):
 class Sequences(object):
     """A dictionary-like wrapper for reading and storing sequence data.
        Keys are FASTA sequence names, and each value a string of one-letter
-       codes."""
+       codes.
+
+       The FASTA header may contain multiple fields split by pipe (|)
+       characters. If so, the FASTA sequence name is the first field and
+       the second field (if present) is the UniProt accession.
+       For example, ">cop9|Q13098" yields a FASTA sequence name of "cop9"
+       and UniProt accession of "Q13098".
+    """
     def __init__(self, fasta_fn, name_map=None):
         """Read a FASTA file and extract all the requested sequences
         @param fasta_fn sequence file
         @param name_map dictionary mapping the FASTA name to final stored name
         """
+        # Mapping from sequence name to primary sequence
         self.sequences = IMP.pmi.tools.OrderedDict()
+        # Mapping from sequence name to UniProt accession, if available
+        self.uniprot = {}
         self.read_sequences(fasta_fn, name_map)
 
     def __len__(self):
@@ -1040,13 +1050,17 @@ class Sequences(object):
                 if line.startswith('>'):
                     if seq is not None:
                         self.sequences[code] = seq.strip('*')
-                    code = line.rstrip()[1:]
+                    spl = line[1:].split('|')
+                    code = spl[0].strip()
                     if name_map is not None:
                         try:
                             code = name_map[code]
                         except KeyError:
                             pass
                     seq = ''
+                    if len(spl) >= 2:
+                        up_accession = spl[1].strip()
+                        self.uniprot[code] = up_accession
                 else:
                     line = line.rstrip()
                     if line:  # Skip blank lines

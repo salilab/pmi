@@ -314,7 +314,8 @@ class Representation(object):
 
         # get the initial and end residues of the pdb
         t = IMP.atom.read_pdb(pdbname, self.model,
-                              IMP.atom.AndPDBSelector(IMP.atom.ChainPDBSelector(chain), IMP.atom.CAlphaPDBSelector()))
+                              IMP.atom.ChainPDBSelector([chain])
+                              & IMP.atom.CAlphaPDBSelector())
 
         # find start and end indexes
 
@@ -440,9 +441,7 @@ class Representation(object):
                 IMP.atom.CBetaPDBSelector())
             sel = IMP.atom.AndPDBSelector(cacbsel, sel)
         if type(chain) == str:
-            sel = IMP.atom.AndPDBSelector(
-                IMP.atom.ChainPDBSelector(chain),
-                sel)
+            sel = IMP.atom.ChainPDBSelector([chain]) & sel
             t = IMP.atom.read_pdb(pdbname, self.model, sel)
 
             # get the first and last residue

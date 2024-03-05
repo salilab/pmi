@@ -27,6 +27,8 @@ import itertools
 import warnings
 import math
 
+import pickle
+import RMF
 
 class _MockMPIValues(object):
     """Replace samplers.MPI_values when in test mode"""

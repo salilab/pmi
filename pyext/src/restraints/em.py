@@ -20,23 +20,27 @@ class GaussianEMRestraint(object):
     (also represented with a set of Gaussians)
     @note This class wraps an isd::GaussianEMRestraint
     """
-    def __init__(self, densities,
-                 target_fn='',
-                 target_ps=[],
-                 cutoff_dist_model_model=0.0,
-                 cutoff_dist_model_data=0.0,
-                 target_mass_scale=1.0,
-                 target_mass=None,
-                 target_radii_scale=3.0,
-                 model_radii_scale=1.0,
-                 slope=0.0,
-                 spherical_gaussians=False,
-                 close_pair_container=None,
-                 backbone_slope=False,
-                 scale_target_to_mass=False,
-                 weight=1.0,
-                 target_is_rigid_body=False,
-                 local=False):
+
+    def __init__(
+        self,
+        densities,
+        target_fn="",
+        target_ps=[],
+        cutoff_dist_model_model=0.0,
+        cutoff_dist_model_data=0.0,
+        target_mass_scale=1.0,
+        target_mass=None,
+        target_radii_scale=3.0,
+        model_radii_scale=1.0,
+        slope=0.0,
+        spherical_gaussians=False,
+        close_pair_container=None,
+        backbone_slope=False,
+        scale_target_to_mass=False,
+        weight=1.0,
+        target_is_rigid_body=False,
+        local=False,
+    ):
         """Constructor.
         @param densities The Gaussian-decorated particles to be restrained
         @param target_fn GMM file of the target density map
@@ -95,37 +99,43 @@ class GaussianEMRestraint(object):
         self.m = self.densities[0].get_model()
 
         if scale_target_to_mass:
+
             def hierarchy_mass(h):
                 leaves = IMP.atom.get_leaves(h)
                 return sum(IMP.atom.Mass(p).get_mass() for p in leaves)
-            target_mass = sum(hierarchy_mass(h) for h in densities)
-            print('will set target mass to', target_mass)
-        print('will scale target mass by', target_mass_scale)
 
-        if target_fn != '':
+            target_mass = sum(hierarchy_mass(h) for h in densities)
+            print("will set target mass to", target_mass)
+        print("will scale target mass by", target_mass_scale)
+
+        if target_fn != "":
             self._set_dataset(target_fn)
             self.target_ps = []
             IMP.isd.gmm_tools.decorate_gmm_from_text(
-                target_fn, self.target_ps, self.m,
+                target_fn,
+                self.target_ps,
+                self.m,
                 radius_scale=target_radii_scale,
-                mass_scale=target_mass_scale)
+                mass_scale=target_mass_scale,
+            )
         elif target_ps != []:
             self.target_ps = target_ps
         else:
-            print('Gaussian EM restraint: must provide target density file '
-                  'or properly set up target densities')
+            print(
+                "Gaussian EM restraint: must provide target density file "
+                "or properly set up target densities"
+            )
             return
 
         if target_mass:
             tmass = sum([IMP.atom.Mass(p).get_mass() for p in self.target_ps])
-            scale = target_mass/tmass
+            scale = target_mass / tmass
             for p in self.target_ps:
                 ms = IMP.atom.Mass(p).get_mass()
-                IMP.atom.Mass(p).set_mass(ms*scale)
+                IMP.atom.Mass(p).set_mass(ms * scale)
 
         for p, state in IMP.pmi.tools._all_protocol_outputs(densities[0]):
-            p.add_em3d_restraint(state, self.target_ps, self.densities,
-                                 self)
+            p.add_em3d_restraint(state, self.target_ps, self.densities, self)
 
         # setup model GMM
         self.model_ps = []
@@ -133,8 +143,9 @@ class GaussianEMRestraint(object):
             self.model_ps += [k.get_particle() for k in IMP.atom.get_leaves(h)]
         if model_radii_scale != 1.0:
             for p in self.model_ps:
-                rmax = sqrt(max(IMP.core.Gaussian(p).get_variances())) * \
-                    model_radii_scale
+                rmax = (
+                    sqrt(max(IMP.core.Gaussian(p).get_variances())) * model_radii_scale
+                )
                 if not IMP.core.XYZR.get_is_setup(p):
                     IMP.core.XYZR.setup_particle(p, rmax)
                 else:
@@ -147,16 +158,22 @@ class GaussianEMRestraint(object):
 
         # sigma particle
         self.sigmaglobal = IMP.pmi.tools.SetupNuisance(
-            self.m, self.sigmainit, self.sigmamin, self.sigmamax,
-            self.sigmaissampled).get_particle()
+            self.m, self.sigmainit, self.sigmamin, self.sigmamax, self.sigmaissampled
+        ).get_particle()
 
         # create restraint
-        print('target num particles', len(self.target_ps),
-              'total weight', sum(IMP.atom.Mass(p).get_mass()
-                                  for p in self.target_ps))
-        print('model num particles', len(self.model_ps),
-              'total weight', sum(IMP.atom.Mass(p).get_mass()
-                                  for p in self.model_ps))
+        print(
+            "target num particles",
+            len(self.target_ps),
+            "total weight",
+            sum(IMP.atom.Mass(p).get_mass() for p in self.target_ps),
+        )
+        print(
+            "model num particles",
+            len(self.model_ps),
+            "total weight",
+            sum(IMP.atom.Mass(p).get_mass() for p in self.model_ps),
+        )
 
         update_model = not spherical_gaussians
         self.gaussianEM_restraint = IMP.isd.GaussianEMRestraint(
@@ -167,19 +184,22 @@ class GaussianEMRestraint(object):
             cutoff_dist_model_model,
             cutoff_dist_model_data,
             slope,
-            update_model, backbone_slope, local)
-        if target_fn != '':
+            update_model,
+            backbone_slope,
+            local,
+        )
+        if target_fn != "":
             self.gaussianEM_restraint.set_density_filename(target_fn)
 
-        print('done EM setup')
-        self.rs = IMP.RestraintSet(self.m, 'GaussianEMRestraint')
+        print("done EM setup")
+        self.rs = IMP.RestraintSet(self.m, "GaussianEMRestraint")
         self.rs.add_restraint(self.gaussianEM_restraint)
         self.set_weight(weight)
 
     def _set_dataset(self, target_fn):
         """Set the dataset to point to the input file"""
         p = IMP.pmi.mmcif.GMMParser()
-        self.dataset = p.parse_file(target_fn)['dataset']
+        self.dataset = p.parse_file(target_fn)["dataset"]
 
     def center_target_density_on_model(self):
         target_com = IMP.algebra.Vector3D(0, 0, 0)
@@ -190,7 +210,7 @@ class GaussianEMRestraint(object):
             target_com += pos * mass
             target_mass += mass
         target_com /= target_mass
-        print('target com', target_com)
+        print("target com", target_com)
         model_com = IMP.algebra.Vector3D(0, 0, 0)
         model_mass = 0.0
         for p in self.model_ps:
@@ -199,19 +219,19 @@ class GaussianEMRestraint(object):
             model_com += pos * mass
             model_mass += mass
         model_com /= model_mass
-        print('model com', model_com)
+        print("model com", model_com)
 
         v = target_com - model_com
-        print('translating with', -v)
+        print("translating with", -v)
         transformation = IMP.algebra.Transformation3D(IMP.algebra.Vector3D(-v))
         for p in self.target_ps:
             IMP.core.transform(IMP.core.RigidBody(p), transformation)
         # IMP.pmi.tools.translate_hierarchies(self.densities,v)
 
     def get_center_of_mass(self, target=True):
-        '''Returns the geometric center of the GMM particles
+        """Returns the geometric center of the GMM particles
         @param target = True - returns target map gmm COM
-        @param target = False - returns model gmm COM'''
+        @param target = False - returns model gmm COM"""
         com = IMP.algebra.Vector3D(0, 0, 0)
         total_mass = 0.0
         if target:
@@ -228,11 +248,11 @@ class GaussianEMRestraint(object):
 
     def center_target_density_on_origin(self):
         target_com = self.get_center_of_mass()
-        print('target com', target_com)
+        print("target com", target_com)
         model_com = IMP.algebra.Vector3D(0, 0, 0)
-        print('model com', model_com)
+        print("model com", model_com)
         v = target_com - model_com
-        print('translating with', -v)
+        print("translating with", -v)
         transformation = IMP.algebra.Transformation3D(IMP.algebra.Vector3D(-v))
         for p in self.target_ps:
             IMP.core.transform(IMP.core.RigidBody(p), transformation)
@@ -241,11 +261,11 @@ class GaussianEMRestraint(object):
     def center_model_on_target_density(self, input_object):
         hier = input_object.get_hierarchy()
         target_com = self.get_center_of_mass()
-        print('target com', target_com)
+        print("target com", target_com)
         model_com = self.get_center_of_mass(target=False)
-        print('model com', model_com)
+        print("model com", model_com)
         v = target_com - model_com
-        print('translating with', v)
+        print("translating with", v)
         transformation = IMP.algebra.Transformation3D(IMP.algebra.Vector3D(v))
 
         rigid_bodies = set()
@@ -266,11 +286,11 @@ class GaussianEMRestraint(object):
 
     def center_on_target_density(self):
         target_com = self.get_center_of_mass()
-        print('target com', target_com)
+        print("target com", target_com)
         model_com = self.get_center_of_mass(target=False)
-        print('model com', model_com)
+        print("model com", model_com)
         v = target_com - model_com
-        print('translating with', v)
+        print("translating with", v)
         transformation = IMP.algebra.Transformation3D(IMP.algebra.Vector3D(v))
 
         rigid_bodies = set()
@@ -302,34 +322,33 @@ class GaussianEMRestraint(object):
     def get_particles_to_sample(self):
         ps = {}
         if self.sigmaissampled:
-            ps["Nuisances_GaussianEMRestraint_sigma_" +
-                self.label] = ([self.sigmaglobal], self.sigmamaxtrans)
+            ps["Nuisances_GaussianEMRestraint_sigma_" + self.label] = (
+                [self.sigmaglobal],
+                self.sigmamaxtrans,
+            )
         if self.rb:
-            ps["Rigid_Bodies_GaussianEMRestraint"] = (
-                [self.rb],
-                4,
-                0.03)
+            ps["Rigid_Bodies_GaussianEMRestraint"] = ([self.rb], 4, 0.03)
         return ps
 
     def get_rigid_body(self):
         if self.rb is None:
-            raise Exception("No rigid body created for GMM particles. Ensure "
-                            "target_is_rigid_body is set to True")
+            raise Exception(
+                "No rigid body created for GMM particles. Ensure "
+                "target_is_rigid_body is set to True"
+            )
         return self.rb
 
     def get_density_as_hierarchy(self):
         if self.em_root_hier is None:
-            self.em_root_hier = IMP.atom.Copy.setup_particle(
-                IMP.Particle(self.m), 0)
-            self.em_root_hier.set_name("GaussianEMRestraint_density_"
-                                       + self.label)
+            self.em_root_hier = IMP.atom.Copy.setup_particle(IMP.Particle(self.m), 0)
+            self.em_root_hier.set_name("GaussianEMRestraint_density_" + self.label)
             for p in self.target_ps:
                 self.em_root_hier.add_child(p)
         return self.em_root_hier
 
     def add_target_density_to_hierarchy(self, inp):
-        ''' Can add a target GMM to a Hierarchy.
-        For PMI2 a state object may also be passed'''
+        """Can add a target GMM to a Hierarchy.
+        For PMI2 a state object may also be passed"""
         if type(inp) is IMP.pmi.topology.State:
             inp.get_hierarchy().add_child(self.get_density_as_hierarchy())
         elif type(inp) is IMP.atom.Hierarchy:
@@ -337,7 +356,9 @@ class GaussianEMRestraint(object):
         else:
             raise Exception(
                 "Can only add a density to a PMI State object or "
-                "IMP.atom.Hierarchy. You passed a", type(inp))
+                "IMP.atom.Hierarchy. You passed a",
+                type(inp),
+            )
 
     def get_restraint(self):
         return self.rs
@@ -351,18 +372,22 @@ class GaussianEMRestraint(object):
         ccc = self.gaussianEM_restraint.get_cross_correlation_coefficient()
 
         output["_TotalScore"] = str(score)
-        output["GaussianEMRestraint_" +
-               self.label] = str(score)
+        output["GaussianEMRestraint_" + self.label] = str(score)
         output["GaussianEMRestraint_%s_CCC" % self.label] = ccc
-        output["GaussianEMRestraint_sigma_" +
-               self.label] = str(self.sigmaglobal.get_scale())
+        output["GaussianEMRestraint_sigma_" + self.label] = str(
+            self.sigmaglobal.get_scale()
+        )
         return output
+
+    def get_likelihood(self):
+        likelihood = self.gaussianEM_restraint.get_probability()
+        return likelihood
 
     def evaluate(self):
         return self.weight * self.rs.unprotected_evaluate(None)
 
     def write_target_gmm_to_mrc(self, fileout=None, voxel_size=5.0):
-        '''Writes target GMM file to MRC'''
+        """Writes target GMM file to MRC"""
         if fileout is None:
             fileout = "Gaussian_map_" + self.label + ".mrc"
         IMP.isd.gmm_tools.write_gmm_to_map(self.target_ps, fileout, voxel_size)

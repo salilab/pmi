@@ -155,7 +155,7 @@ class _RestraintNuisanceMixin(object):
         @param max_trans Maximum move to apply to nuisance
         @param name Name of particle
         @param is_sampled Nuisance is a sampled particle
-        \see IMP.pmi1.tools.SetupNuisance
+        @see IMP.pmi1.tools.SetupNuisance
         """
         nuis = IMP.pmi1.tools.SetupNuisance(
             self.model, init_val, min_val, max_val,

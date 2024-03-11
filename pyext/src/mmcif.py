@@ -935,8 +935,9 @@ class _ReplicaExchangeAnalysisEnsemble(ihm.model.Ensemble):
         if not os.path.exists(precfile):
             return ihm.unknown
         # Fail if the precision.x.x.out file doesn't match the cluster
-        r = re.compile('All .*/cluster.%d/ average centroid distance ([\d\.]+)'
-                       % self.cluster_num)
+        r = re.compile(
+            r'All .*/cluster.%d/ average centroid distance ([\d\.]+)'
+            % self.cluster_num)
         with open(precfile) as fh:
             for line in fh:
                 m = r.match(line)

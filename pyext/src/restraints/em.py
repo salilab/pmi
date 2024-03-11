@@ -195,7 +195,7 @@ class GaussianEMRestraint(object):
                                       "Model (GMM)")
         self.dataset = ihm.dataset.EMDensityDataset(l)
         # If the GMM was derived from an MRC file that exists, add that too
-        m = re.match('(.*\.mrc)\..*\.txt$', target_fn)
+        m = re.match(r'(.*\.mrc)\..*\.txt$', target_fn)
         if m and os.path.exists(m.group(1)):
             l = ihm.location.InputFileLocation(path=m.group(1),
                      details='Original MRC file from which the GMM was derived')

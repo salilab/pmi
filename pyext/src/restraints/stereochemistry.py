@@ -520,7 +520,7 @@ class ResidueDihedralRestraint(object):
     """Add dihedral restraints between quadruplet of consecutive
     residues/beads to enforce the stereochemistry.
     Give as input a string of "C" and "T", meaning cys (0+-40) or trans (180+-40)
-    dihedral. The length of the string must be \#residue-3.
+    dihedral. The length of the string must be (number of residues)-3.
     Without the string, the dihedral will be assumed trans.
     """
     def __init__(

@@ -29,6 +29,7 @@ import math
 import pickle
 import RMF
 
+
 class _MockMPIValues(object):
     """Replace samplers.MPI_values when in test mode"""
     def get_percentile(self, name):
@@ -430,7 +431,8 @@ class ReplicaExchange(object):
             print("Setting up stat file")
             output = IMP.pmi.output.Output(atomistic=self.vars["atomistic"])
             low_temp_stat_file = globaldir + \
-                self.vars["stat_file_name_suffix"] + "." + str(myindex) + ".out"
+                self.vars["stat_file_name_suffix"] + "." + \
+                str(myindex) + ".out"
 
         # Ensure model is updated before saving init files
         if not self.test_mode:
@@ -450,42 +452,43 @@ class ReplicaExchange(object):
         if not self.test_mode and not self.nest:
             print("Setting up replica stat file")
             replica_stat_file = globaldir + \
-                self.vars["replica_stat_file_suffix"] + "." + str(myindex) + ".out"
+                self.vars["replica_stat_file_suffix"] + "." + \
+                str(myindex) + ".out"
             if not self.test_mode:
-                output.init_stat2(replica_stat_file, [rex], extralabels=["score"])
+                output.init_stat2(replica_stat_file, [rex],
+                                extralabels=["score"])
 
-            if not self.test_mode:
-                print("Setting up best pdb files")
-                if not self.is_multi_state:
-                    if self.vars["number_of_best_scoring_models"] > 0:
+            print("Setting up best pdb files")
+            if not self.is_multi_state:
+                if self.vars["number_of_best_scoring_models"] > 0:
+                    output.init_pdb_best_scoring(
+                        pdb_dir + "/" + self.vars["best_pdb_name_suffix"],
+                        self.root_hier,
+                        self.vars["number_of_best_scoring_models"],
+                        replica_exchange=True,
+                        mmcif=self.vars['mmcif'],
+                        best_score_file=globaldir + "best.scores.rex.py")
+                    pdbext = ".0.cif" if self.vars['mmcif'] else ".0.pdb"
+                    output.write_psf(
+                        pdb_dir + "/" + "model.psf",
+                        pdb_dir + "/" +
+                        self.vars["best_pdb_name_suffix"] + pdbext)
+            else:
+                if self.vars["number_of_best_scoring_models"] > 0:
+                    for n in range(self.vars["number_of_states"]):
                         output.init_pdb_best_scoring(
-                            pdb_dir + "/" + self.vars["best_pdb_name_suffix"],
-                            self.root_hier,
+                            pdb_dir + "/" + str(n) + "/" +
+                            self.vars["best_pdb_name_suffix"],
+                            self.root_hiers[n],
                             self.vars["number_of_best_scoring_models"],
                             replica_exchange=True,
                             mmcif=self.vars['mmcif'],
                             best_score_file=globaldir + "best.scores.rex.py")
                         pdbext = ".0.cif" if self.vars['mmcif'] else ".0.pdb"
                         output.write_psf(
-                            pdb_dir + "/" + "model.psf",
-                            pdb_dir + "/" +
+                            pdb_dir + "/" + str(n) + "/" + "model.psf",
+                            pdb_dir + "/" + str(n) + "/" +
                             self.vars["best_pdb_name_suffix"] + pdbext)
-                else:
-                    if self.vars["number_of_best_scoring_models"] > 0:
-                        for n in range(self.vars["number_of_states"]):
-                            output.init_pdb_best_scoring(
-                                pdb_dir + "/" + str(n) + "/" +
-                                self.vars["best_pdb_name_suffix"],
-                                self.root_hiers[n],
-                                self.vars["number_of_best_scoring_models"],
-                                replica_exchange=True,
-                                mmcif=self.vars['mmcif'],
-                                best_score_file=globaldir + "best.scores.rex.py")
-                            pdbext = ".0.cif" if self.vars['mmcif'] else ".0.pdb"
-                            output.write_psf(
-                                pdb_dir + "/" + str(n) + "/" + "model.psf",
-                                pdb_dir + "/" + str(n) + "/" +
-                                self.vars["best_pdb_name_suffix"] + pdbext)
 # ---------------------------------------------
 
         if self.em_object_for_rmf is not None:
@@ -573,16 +576,14 @@ class ReplicaExchange(object):
             if save_frame:
                 print("--- frame %s score %s " % (str(i), str(score)))
 
-                if self.nest and not math.isnan(score):
-                    likelihood_for_sample = 1
-                    for rstrnt in self.nestor_restraints:
-                        likelihood_for_sample = (
-                            likelihood_for_sample * rstrnt.get_likelihood()
-                        )
-                    sampled_likelihoods.append(likelihood_for_sample)
-
-                if self.nest and math.isnan(score):
-                    sampled_likelihoods.append(math.nan)
+                if self.nest:
+                    if math.isnan(score):
+                        sampled_likelihoods.append(math.nan)
+                    else:
+                        likelihood_for_sample = 1
+                        for rstrnt in self.nestor_restraints:
+                            likelihood_for_sample *= rstrnt.get_likelihood()
+                        sampled_likelihoods.append(likelihood_for_sample)
 
                 if not self.test_mode and not self.nest:
                     if i % self.vars["nframes_write_coordinates"] == 0:
@@ -607,21 +608,20 @@ class ReplicaExchange(object):
 
         if self.nest and len(sampled_likelihoods) > 0:
             with open(
-                "likelihoods_"+ \
+                "likelihoods_" + \
                 str(self.replica_exchange_object.get_my_index()),"wb") as lif:
                 pickle.dump(sampled_likelihoods, lif)
 
-            nestor_rmf_fname = str(self.nestor_rmf_fname)+ '_'+\
-                str(self.replica_exchange_object.get_my_index())+'.rmf3'
+            nestor_rmf_fname = str(self.nestor_rmf_fname) + '_' + \
+                str(self.replica_exchange_object.get_my_index()) +'.rmf3'
 
-            if nestor_rmf_fname not in os.listdir(os.getcwd()):
-                self.rmf_h = RMF.create_rmf_file(nestor_rmf_fname)
-                IMP.rmf.add_hierarchy(self.rmf_h, self.root_hier)
-            else:
-                try:
-                    IMP.rmf.save_frame(self.rmf_h)
-                except:
-                    pass
+            self.rmf_h = RMF.create_rmf_file(nestor_rmf_fname)
+            IMP.rmf.add_hierarchy(self.rmf_h, self.root_hier)
+            try:
+                IMP.rmf.save_frame(self.rmf_h)
+            except Exception as e:
+                print(e)
+                pass
 
         for p, state in IMP.pmi.tools._all_protocol_outputs(self.root_hier):
             p.add_replica_exchange(state, self)

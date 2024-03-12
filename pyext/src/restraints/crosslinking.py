@@ -456,7 +456,7 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
         return output
 
     def get_likelihood(self):
-        """Get the likelihood value for the restraint"""
+        """Get the unweighted likelihood of the restraint"""
         likelihood = 1
         for restraint in self.xl_restraints:
             likelihood *= restraint.get_probability()

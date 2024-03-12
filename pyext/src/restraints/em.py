@@ -359,7 +359,7 @@ class GaussianEMRestraint(object):
         return output
 
     def get_likelihood(self):
-        """Get likelihood value for the restraint"""
+        """Get the unweighted likelihood of the restraint"""
         likelihood = self.gaussianEM_restraint.get_probability()
         return likelihood
 

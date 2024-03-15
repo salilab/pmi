@@ -456,7 +456,7 @@ class ReplicaExchange(object):
                 str(myindex) + ".out"
             if not self.test_mode:
                 output.init_stat2(replica_stat_file, [rex],
-                                extralabels=["score"])
+                                  extralabels=["score"])
 
             print("Setting up best pdb files")
             if not self.is_multi_state:
@@ -607,13 +607,13 @@ class ReplicaExchange(object):
                 rex.swap_temp(i, score)
 
         if self.nest and len(sampled_likelihoods) > 0:
-            with open(
-                "likelihoods_" + \
-                str(self.replica_exchange_object.get_my_index()),"wb") as lif:
+            with open("likelihoods_"
+                      + str(self.replica_exchange_object.get_my_index()),
+                      "wb") as lif:
                 pickle.dump(sampled_likelihoods, lif)
 
             nestor_rmf_fname = str(self.nestor_rmf_fname) + '_' + \
-                str(self.replica_exchange_object.get_my_index()) +'.rmf3'
+                str(self.replica_exchange_object.get_my_index()) + '.rmf3'
 
             self.rmf_h = RMF.create_rmf_file(nestor_rmf_fname)
             IMP.rmf.add_hierarchy(self.rmf_h, self.root_hier)

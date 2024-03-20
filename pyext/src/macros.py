@@ -27,7 +27,6 @@ import warnings
 import math
 
 import pickle
-import RMF
 
 
 class _MockMPIValues(object):

@@ -2,7 +2,6 @@
    Classes for writing output files and processing them.
 """
 
-from __future__ import print_function, division
 import IMP
 import IMP.atom
 import IMP.core

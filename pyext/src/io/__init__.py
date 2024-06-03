@@ -2,7 +2,6 @@
    Utility classes and functions for reading and storing PMI files
 """
 
-from __future__ import print_function
 import IMP
 import IMP.algebra
 import IMP.atom

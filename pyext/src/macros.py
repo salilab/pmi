@@ -2,7 +2,6 @@
 Protocols for sampling structures and analyzing them.
 """
 
-from __future__ import print_function, division
 import IMP
 import IMP.pmi.tools
 import IMP.pmi.samplers

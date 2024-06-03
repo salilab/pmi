@@ -9,7 +9,6 @@
    generated models and metadata are collected and output as mmCIF.
 """
 
-from __future__ import print_function
 import copy
 import RMF
 import IMP.core
@@ -138,11 +137,7 @@ class _AllSoftware(object):
         # Only recent versions of python-ihm support adding citations for
         # software
         if hasattr(self.imp, 'citation'):
-            if sys.version_info[0] > 2:
-                # Don't include UTF8 characters in source; it confuses Python 2
-                javi = 'Vel\u00e1zquez-Muriel J'
-            else:
-                javi = 'Velazquez-Muriel J'
+            javi = 'Vel\u00e1zquez-Muriel J'
             self.imp.citation = ihm.Citation(
                 pmid='22272186',
                 title='Putting the pieces together: integrative modeling '

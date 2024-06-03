@@ -26,10 +26,7 @@ import re
 import ast
 import sys
 import os
-try:
-    from pathlib import Path
-except ImportError:  # Use bundled pathlib on Python 2 without pathlib
-    from IMP._compat_pathlib import Path  # noqa: F401
+from pathlib import Path
 import weakref
 import ihm.location
 import ihm.dataset

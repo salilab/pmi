@@ -14,10 +14,7 @@ import IMP.rmf
 import IMP.isd
 import IMP.pmi.dof
 import os
-try:
-    from pathlib import Path
-except ImportError:  # Use bundled pathlib on Python 2 without pathlib
-    from IMP._compat_pathlib import Path
+from pathlib import Path
 import glob
 from operator import itemgetter
 from collections import defaultdict

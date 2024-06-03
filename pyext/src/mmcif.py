@@ -25,7 +25,6 @@ import re
 import ast
 import sys
 import os
-from pathlib import Path
 import weakref
 import ihm.location
 import ihm.dataset

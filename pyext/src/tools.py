@@ -12,7 +12,6 @@ import IMP.pmi.topology
 from collections.abc import MutableSet
 import itertools
 import math
-import sys
 import ast
 from time import process_time
 import RMF

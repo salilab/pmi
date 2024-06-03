@@ -17,7 +17,6 @@ import RMF
 import IMP.display
 import operator
 import math
-import sys
 import ihm.location
 import ihm.dataset
 from collections import defaultdict

@@ -1813,10 +1813,7 @@ class AnalysisReplicaExchange(object):
         Save the clusters into a pickle file
         @param filename string
         """
-        try:
-            import cPickle as pickle
-        except ImportError:
-            import pickle
+        import pickle
         fl = open(filename, 'wb')
         pickle.dump(self.clusters, fl)
 
@@ -1827,10 +1824,7 @@ class AnalysisReplicaExchange(object):
         @param append bool (Default=False), if True. append the clusters
                to the ones currently present
         """
-        try:
-            import cPickle as pickle
-        except ImportError:
-            import pickle
+        import pickle
         fl = open(filename, 'rb')
         self.clean_clusters()
         if append:

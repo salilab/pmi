@@ -19,10 +19,7 @@ import warnings
 import string
 import ihm.format
 import collections
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
+import pickle
 
 
 class _ChainIDs(object):

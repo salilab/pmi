@@ -43,7 +43,6 @@ class _RMFRestraints(object):
 
     def __bool__(self):
         return len(self) > 0
-    __nonzero__ = __bool__  # Python 2 compatibility
 
     def __getitem__(self, i):
         class FakePMIWrapper(object):

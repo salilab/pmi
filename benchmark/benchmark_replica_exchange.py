@@ -9,10 +9,7 @@ import IMP.pmi.output
 import time
 import sys
 import shutil
-try:
-    from time import process_time  # needs python 3.3 or later
-except ImportError:
-    from time import clock as process_time
+from time import process_time
 
 
 IMP.setup_from_argv(sys.argv, "Replica exchange benchmark.")

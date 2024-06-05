@@ -15,7 +15,7 @@ from time import process_time
 IMP.setup_from_argv(sys.argv, "Replica exchange benchmark.")
 IMP.set_log_level(IMP.SILENT)
 old_stdout = sys.stdout
-class DummyFile(object):
+class DummyFile:
     def flush(self):
         pass
     def write(self, txt):

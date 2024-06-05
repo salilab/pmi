@@ -23,7 +23,7 @@ IMP.set_log_level(IMP.SILENT)
 # Redirect chatty PMI output so we can see benchmark output
 old_stdout = sys.stdout
 
-class DummyFile(object):
+class DummyFile:
     def flush(self):
         pass
     def write(self, txt):

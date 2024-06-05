@@ -12,7 +12,7 @@ import IMP.pmi
 import IMP.pmi.tools
 
 
-class RestraintBase(object):
+class RestraintBase:
     _include_in_rmf = False
 
     """Base class for PMI restraints, which wrap `IMP.Restraint`(s)."""
@@ -129,7 +129,7 @@ class RestraintBase(object):
         return rs
 
 
-class _RestraintNuisanceMixin(object):
+class _RestraintNuisanceMixin:
 
     """Mix-in to add nuisance particle creation functionality to restraint.
 
@@ -178,7 +178,7 @@ class _RestraintNuisanceMixin(object):
         return output
 
 
-class _NuisancesBase(object):
+class _NuisancesBase:
 
     """This base class is used to provide nuisance setup and interface
     for the ISD cross-link restraints"""

@@ -417,7 +417,7 @@ class ResidueDihedralRestraint(IMP.pmi.restraints.RestraintBase):
                 IMP.ParticlePair(quadruplet[3], quadruplet[0]))
 
 
-class ElasticNetworkRestraint(object):
+class ElasticNetworkRestraint:
     """Add harmonic restraints between all pairs
     """
     def __init__(self, hierarchy, selection_tuples=None, resolution=1,
@@ -492,7 +492,7 @@ class ElasticNetworkRestraint(object):
         return output
 
 
-class CharmmForceFieldRestraint(object):
+class CharmmForceFieldRestraint:
     """ Enable CHARMM force field """
     def __init__(self, root, ff_temp=300.0, zone_ps=None, zone_size=10.0,
                  enable_nonbonded=True, enable_bonded=True,
@@ -602,7 +602,7 @@ class CharmmForceFieldRestraint(object):
         return output
 
 
-class PseudoAtomicRestraint(object):
+class PseudoAtomicRestraint:
     """Add bonds and improper dihedral restraints for the CBs
     """
     def __init__(
@@ -748,7 +748,7 @@ class PseudoAtomicRestraint(object):
         return output
 
 
-class SymmetryRestraint(object):
+class SymmetryRestraint:
     """Create harmonic restraints between the reference and (transformed)
        clones.
 
@@ -824,7 +824,7 @@ class SymmetryRestraint(object):
         return output
 
 
-class FusionRestraint(object):
+class FusionRestraint:
     """Creates a restraint between the termini two polypeptides, to simulate
        the sequence connectivity."""
     def __init__(self, nterminal, cterminal, scale=1.0, disorderedlength=False,

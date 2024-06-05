@@ -755,7 +755,7 @@ class AtomicCrossLinkMSRestraint(IMP.pmi.restraints.RestraintBase):
         """ create dummy harmonic restraints for each XL but don't add to model
         Makes it easy to see each contribution to each XL in RMF
         """
-        class MyGetRestraint(object):
+        class MyGetRestraint:
             def __init__(self, rs):
                 self.rs = rs
 
@@ -1072,7 +1072,7 @@ class AtomicCrossLinkMSRestraint(IMP.pmi.restraints.RestraintBase):
         return output
 
 
-class CysteineCrossLinkRestraint(object):
+class CysteineCrossLinkRestraint:
     def __init__(self, root_hier, filename, cbeta=False,
                  betatuple=(0.03, 0.1),
                  disttuple=(0.0, 25.0, 1000),
@@ -1352,7 +1352,7 @@ class CysteineCrossLinkRestraint(object):
         return output
 
 
-class DisulfideCrossLinkRestraint(object):
+class DisulfideCrossLinkRestraint:
     def __init__(self, representation_or_hier,
                  selection_tuple1,
                  selection_tuple2,

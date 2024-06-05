@@ -2105,7 +2105,7 @@ _ihm_model_representation_details.description
         """Test get_dumpers() and  ProtocolOutput.flush()"""
         class MockSystem(ihm.System):
             def __init__(self):
-                super(MockSystem, self).__init__()
+                super().__init__()
                 self.actions = []
 
         fh = StringIO()

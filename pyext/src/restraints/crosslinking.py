@@ -57,7 +57,7 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
 
         model = root_hier.get_model()
 
-        super(CrossLinkingMassSpectrometryRestraint, self).__init__(
+        super().__init__(
             model, weight=weight, label=label,
             restraint_set_class=IMP.pmi.CrossLinkRestraintSet)
 
@@ -425,8 +425,7 @@ class CrossLinkingMassSpectrometryRestraint(IMP.pmi.restraints.RestraintBase):
     def get_output(self):
         """Get the output of the restraint to be used by the IMP.pmi.output
            object"""
-        output = super(CrossLinkingMassSpectrometryRestraint,
-                       self).get_output()
+        output = super().get_output()
 
         for xl in self.xl_list:
 
@@ -557,7 +556,7 @@ class AtomicCrossLinkMSRestraint(IMP.pmi.restraints.RestraintBase):
         # basic params
         self.root = root_hier
         rname = "AtomicXLRestraint"
-        super(AtomicCrossLinkMSRestraint, self).__init__(
+        super().__init__(
             self.root.get_model(), name="AtomicXLRestraint", label=label,
             weight=weight)
         self.xldb = xldb
@@ -1049,7 +1048,7 @@ class AtomicCrossLinkMSRestraint(IMP.pmi.restraints.RestraintBase):
             print(s["low_dist"])
 
     def get_output(self):
-        output = super(AtomicCrossLinkMSRestraint, self).get_output()
+        output = super().get_output()
 
         #   HACK to make it easier to see the few sigmas
         # output["AtomicXLRestraint_sigma"] = self.sigma.get_scale()

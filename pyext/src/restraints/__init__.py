@@ -138,7 +138,7 @@ class _RestraintNuisanceMixin(object):
     """
 
     def __init__(self, *args, **kwargs):
-        super(_RestraintNuisanceMixin, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.sampled_nuisances = {}
         self.nuisances = {}
 
@@ -165,14 +165,14 @@ class _RestraintNuisanceMixin(object):
 
     def get_particles_to_sample(self):
         """Get any created particles which should be sampled."""
-        ps = super(_RestraintNuisanceMixin, self).get_particles_to_sample()
+        ps = super().get_particles_to_sample()
         for name, (nuis, max_trans) in self.sampled_nuisances.items():
             ps["Nuisances_" + name + self._label_suffix] = ([nuis], max_trans)
         return ps
 
     def get_output(self):
         """Get outputs to write to stat files."""
-        output = super(_RestraintNuisanceMixin, self).get_output()
+        output = super().get_output()
         for nuis_name, nuis in self.nuisances.items():
             output[nuis_name + self._label_suffix] = str(nuis.get_scale())
         return output

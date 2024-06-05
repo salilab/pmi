@@ -211,9 +211,9 @@ class _PDBFragment(ihm.representation.ResidueSegment):
     def __init__(self, state, component, start, end, pdb_offset,
                  pdbname, chain, hier, asym_unit):
         # start, end are PMI residue indexes (not IHM)
-        super(_PDBFragment, self).__init__(
-                   asym_unit=asym_unit.pmi_range(start, end),
-                   rigid=None, primitive='sphere')
+        super().__init__(
+            asym_unit=asym_unit.pmi_range(start, end),
+            rigid=None, primitive='sphere')
         self.component, self.start, self.end, self.offset, self.pdbname \
             = component, start, end, pdb_offset, pdbname
         self.state, self.chain, self.hier = state, chain, hier
@@ -233,7 +233,7 @@ class _BeadsFragment(ihm.representation.FeatureSegment):
     chain = None
 
     def __init__(self, state, component, start, end, count, hier, asym_unit):
-        super(_BeadsFragment, self).__init__(
+        super().__init__(
             asym_unit=asym_unit(start, end), rigid=None, primitive='sphere',
             count=count)
         self.state, self.component, self.hier = state, component, hier
@@ -352,9 +352,9 @@ class _CrossLinkRestraint(ihm.restraint.CrossLinkRestraint):
         linker = getattr(self.pmi_restraint, 'linker', None)
         label = self.pmi_restraint.label
         self.label = label
-        super(_CrossLinkRestraint, self).__init__(
-                dataset=self.pmi_restraint.dataset,
-                linker=linker or self._get_chem_descriptor(label))
+        super().__init__(
+            dataset=self.pmi_restraint.dataset,
+            linker=linker or self._get_chem_descriptor(label))
 
     @classmethod
     def _get_chem_descriptor(cls, label):
@@ -444,7 +444,7 @@ class _EM2DRestraint(ihm.restraint.EM2DRestraint):
                  pixel_size, image_resolution, projection_number,
                  micrographs_number):
         self.pmi_restraint, self.image_number = pmi_restraint, image_number
-        super(_EM2DRestraint, self).__init__(
+        super().__init__(
             dataset=pmi_restraint.datasets[image_number],
             assembly=state.modeled_assembly,
             segment=False, number_raw_micrographs=micrographs_number,
@@ -498,11 +498,11 @@ class _EM3DRestraint(ihm.restraint.EM3DRestraint):
 
     def __init__(self, simo, state, pmi_restraint, target_ps, densities):
         self.pmi_restraint = pmi_restraint
-        super(_EM3DRestraint, self).__init__(
-                dataset=pmi_restraint.dataset,
-                assembly=self._get_assembly(densities, simo, state),
-                fitting_method='Gaussian mixture models',
-                number_of_gaussians=len(target_ps))
+        super().__init__(
+            dataset=pmi_restraint.dataset,
+            assembly=self._get_assembly(densities, simo, state),
+            fitting_method='Gaussian mixture models',
+            number_of_gaussians=len(target_ps))
 
     # Have our dataset point to that in the original PMI restraint
     def __set_dataset(self, val):
@@ -539,11 +539,11 @@ class _GeometricRestraint(ihm.restraint.GeometricRestraint):
     def __init__(self, simo, state, pmi_restraint, geometric_object,
                  feature, distance, sigma):
         self.pmi_restraint = pmi_restraint
-        super(_GeometricRestraint, self).__init__(
-                dataset=pmi_restraint.dataset,
-                geometric_object=geometric_object, feature=feature,
-                distance=distance, harmonic_force_constant=1. / sigma,
-                restrain_all=True)
+        super().__init__(
+            dataset=pmi_restraint.dataset,
+            geometric_object=geometric_object, feature=feature,
+            distance=distance, harmonic_force_constant=1. / sigma,
+            restrain_all=True)
 
     # Have our dataset point to that in the original PMI restraint
     def __set_dataset(self, val):
@@ -563,7 +563,7 @@ class _ReplicaExchangeProtocolStep(ihm.protocol.Step):
             rex.vars['replica_exchange_minimum_temperature']
         self.replica_exchange_maximum_temperature = \
             rex.vars['replica_exchange_maximum_temperature']
-        super(_ReplicaExchangeProtocolStep, self).__init__(
+        super().__init__(
             assembly=state.modeled_assembly,
             dataset_group=None,  # filled in by add_step()
             method=method, name='Sampling',
@@ -617,14 +617,14 @@ class _ReplicaExchangeProtocolHandler(ihm.reader.Handler):
 
 class _SimpleProtocolStep(ihm.protocol.Step):
     def __init__(self, state, num_models_end, method):
-        super(_SimpleProtocolStep, self).__init__(
-                assembly=state.modeled_assembly,
-                dataset_group=None,  # filled in by add_step()
-                method=method, name='Sampling',
-                num_models_begin=None,  # filled in by add_step()
-                num_models_end=num_models_end,
-                multi_scale=True, multi_state=False, ordered=False,
-                ensemble=True)
+        super().__init__(
+            assembly=state.modeled_assembly,
+            dataset_group=None,  # filled in by add_step()
+            method=method, name='Sampling',
+            num_models_begin=None,  # filled in by add_step()
+            num_models_end=num_models_end,
+            multi_scale=True, multi_state=False, ordered=False,
+            ensemble=True)
 
 
 class _Chain(object):
@@ -682,8 +682,8 @@ class _Excluder(object):
 
 class _Model(ihm.model.Model):
     def __init__(self, prot, simo, protocol, assembly, representation):
-        super(_Model, self).__init__(assembly=assembly, protocol=protocol,
-                                     representation=representation)
+        super().__init__(assembly=assembly, protocol=protocol,
+                         representation=representation)
         self.simo = weakref.proxy(simo)
         # Transformation from IMP coordinates into mmCIF coordinate system.
         # Normally we pass through coordinates unchanged, but in some cases
@@ -933,9 +933,9 @@ class _ReplicaExchangeAnalysisPostProcess(ihm.analysis.ClusterStep):
         for fname in self.get_all_stat_files():
             with open(str(fname)) as fh:
                 num_models_end += len(fh.readlines())
-        super(_ReplicaExchangeAnalysisPostProcess, self).__init__(
-                feature='RMSD', num_models_begin=num_models_begin,
-                num_models_end=num_models_end)
+        super().__init__(
+            feature='RMSD', num_models_begin=num_models_begin,
+            num_models_end=num_models_end)
 
     def get_stat_file(self, cluster_num):
         return self.rex._outputdir / ("cluster.%d" % cluster_num) / 'stat.out'
@@ -953,11 +953,11 @@ class _ReplicaExchangeAnalysisEnsemble(ihm.model.Ensemble):
     def __init__(self, pp, cluster_num, model_group, num_deposit):
         with open(str(pp.get_stat_file(cluster_num))) as fh:
             num_models = len(fh.readlines())
-        super(_ReplicaExchangeAnalysisEnsemble, self).__init__(
-                num_models=num_models,
-                model_group=model_group, post_process=pp,
-                clustering_feature=pp.feature,
-                name=model_group.name)
+        super().__init__(
+            num_models=num_models,
+            model_group=model_group, post_process=pp,
+            clustering_feature=pp.feature,
+            name=model_group.name)
         self.cluster_num = cluster_num
         self.num_models_deposited = num_deposit
 
@@ -1040,7 +1040,7 @@ class _SimpleEnsemble(ihm.model.Ensemble):
 
     def __init__(self, pp, model_group, num_models, drmsd,
                  num_models_deposited, ensemble_file):
-        super(_SimpleEnsemble, self).__init__(
+        super().__init__(
             model_group=model_group, post_process=pp, num_models=num_models,
             file=ensemble_file, precision=drmsd, name=model_group.name,
             clustering_feature='dRMSD')
@@ -1063,7 +1063,7 @@ class _EntityMapper(dict):
        entities. Multiple components may map to the same entity if they
        share sequence."""
     def __init__(self, system):
-        super(_EntityMapper, self).__init__()
+        super().__init__()
         self._sequence_dict = {}
         self._entities = []
         self.system = system
@@ -1132,7 +1132,7 @@ class _State(ihm.model.State):
             self._pmi_state = weakref.ref(pmi_object)
         # Preserve PMI state name
         old_name = self.name
-        super(_State, self).__init__(experiment_type='Fraction of bulk')
+        super().__init__(experiment_type='Fraction of bulk')
         self.name = old_name
 
         # The assembly of all components modeled by IMP in this state.
@@ -1194,7 +1194,7 @@ class Entity(ihm.Entity):
         # Offset between PMI numbering and IHM; <pmi_#> = <ihm_#> + pmi_offset
         # (pmi_offset is also the number of N-terminal gaps in the FASTA file)
         self.pmi_offset = pmi_offset
-        super(Entity, self).__init__(sequence, *args, **keys)
+        super().__init__(sequence, *args, **keys)
 
     def pmi_residue(self, res_id):
         """Return a single IHM residue indexed using PMI numbering"""
@@ -1215,8 +1215,8 @@ class AsymUnit(ihm.AsymUnit):
        the FASTA file has one or more N-terminal gaps"""
 
     def __init__(self, entity, *args, **keys):
-        super(AsymUnit, self).__init__(
-                entity, auth_seq_id_map=entity.pmi_offset, *args, **keys)
+        super().__init__(
+            entity, auth_seq_id_map=entity.pmi_offset, *args, **keys)
 
     def pmi_residue(self, res_id):
         """Return a single IHM residue indexed using PMI numbering"""

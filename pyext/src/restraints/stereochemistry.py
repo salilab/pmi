@@ -48,7 +48,7 @@ class ConnectivityRestraint(IMP.pmi.restraints.RestraintBase):
                             "one Molecule, please")
         hiers = hiers[0]
         m = list(hiers)[0].get_model()
-        super(ConnectivityRestraint, self).__init__(m, label=label)
+        super().__init__(m, label=label)
 
         self.kappa = 10  # spring constant used for the harmonic restraints
         SortedSegments = []
@@ -189,7 +189,7 @@ class ExcludedVolumeSphere(IMP.pmi.restraints.RestraintBase):
         if hierarchies is None:
             raise Exception("Must at least pass included objects")
         mdl = hierarchies[0].get_model()
-        super(ExcludedVolumeSphere, self).__init__(mdl, label=label)
+        super().__init__(mdl, label=label)
 
         included_ps = [h.get_particle() for h in hierarchies]
         if bipartite:
@@ -241,7 +241,7 @@ class HelixRestraint(IMP.pmi.restraints.RestraintBase):
         @param weight
         """
         m = hierarchy.get_model()
-        super(HelixRestraint, self).__init__(m, weight=weight)
+        super().__init__(m, weight=weight)
         start = selection_tuple[0]
         stop = selection_tuple[1]
         mol = selection_tuple[2]
@@ -282,7 +282,7 @@ class ResidueBondRestraint(IMP.pmi.restraints.RestraintBase):
 
         particles = IMP.pmi.tools.input_adaptor(objects, 1, flatten=True)
         m = particles[0].get_model()
-        super(ResidueBondRestraint, self).__init__(m)
+        super().__init__(m)
 
         self.pairslist = []
 
@@ -320,7 +320,7 @@ class ResidueAngleRestraint(IMP.pmi.restraints.RestraintBase):
 
         particles = IMP.pmi.tools.input_adaptor(objects, 1, flatten=True)
         m = particles[0].get_model()
-        super(ResidueAngleRestraint, self).__init__(m)
+        super().__init__(m)
 
         self.pairslist = []
 
@@ -364,7 +364,7 @@ class ResidueDihedralRestraint(IMP.pmi.restraints.RestraintBase):
 
         particles = IMP.pmi.tools.input_adaptor(objects, 1, flatten=True)
         m = particles[0].get_model()
-        super(ResidueDihedralRestraint, self).__init__(m)
+        super().__init__(m)
 
         self.pairslist = []
 
@@ -924,8 +924,7 @@ class PlaneDihedralRestraint(IMP.pmi.restraints.RestraintBase):
               parallel for proper behavior
         """
         model = particle_triplets[0][0].get_model()
-        super(PlaneDihedralRestraint, self).__init__(model, label=label,
-                                                     weight=weight)
+        super().__init__(model, label=label, weight=weight)
 
         angle = math.pi * angle / 180.
         ds = IMP.core.Cosine(.5 * k, 1, -angle)

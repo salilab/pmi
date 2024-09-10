@@ -1372,7 +1372,9 @@ class TopologyReader:
       fields split by pipe (|) characters. If so, the FASTA sequence name is
       the first field and the second field (if present) is the UniProt
       accession. For example, ">cop9|Q13098" yields a FASTA sequence name
-      of "cop9" and UniProt accession of "Q13098".
+      of "cop9" and UniProt accession of "Q13098". If such an accession is
+      present, it is added to the generated structure (and ultimately
+      recorded in any output RMF file).
     - `pdb_fn`: Name of PDB or mmCIF file with coordinates (if available).
        If left empty, will set up as BEADS (you can also specify "BEADS")
        Can also write "IDEAL_HELIX".

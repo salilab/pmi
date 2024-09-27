@@ -1795,6 +1795,6 @@ def _trim_unrep_termini(entity, asyms, representations):
                         model = seg.starting_model
                         seg_range = model.asym_unit.seq_id_range
                         model.asym_unit.seq_id_range = \
-                                (seg_range[0] - pmi_offset,
-                                 seg_range[1] - pmi_offset)
+                            (seg_range[0] - pmi_offset,
+                             seg_range[1] - pmi_offset)
                         model.offset = model.offset - pmi_offset

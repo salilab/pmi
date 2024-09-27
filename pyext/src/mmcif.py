@@ -1184,14 +1184,21 @@ class _State(ihm.model.State):
 
 
 class Entity(ihm.Entity):
-    """A single entity in the system.
+    """A single entity in the system. This contains information (such as
+       database identifiers) specific to a particular sequence rather than
+       a copy (for example, when modeling a homodimer, two AsymUnits will
+       point to the same Entity).
+
        This functions identically to the base ihm.Entity class, but it
        allows identifying residues by either the PMI numbering scheme
        (which is always contiguous starting at 1, covering the entire
        sequence in the FASTA files, or the IHM scheme (seq_id, which also
        starts at 1, but which only covers the modeled subset of the full
        sequence, with non-modeled N-terminal or C-terminal residues
-       removed)."""
+       removed). The actual offset (which is the integer to be added to the
+       IHM numbering to get PMI numbering, or equivalently the number of
+       not-represented N-terminal residues in the PMI sequence) is
+       available in the `pmi_offset` member."""
     def __init__(self, sequence, pmi_offset, *args, **keys):
         # Offset between PMI numbering and IHM; <pmi_#> = <ihm_#> + pmi_offset
         # (pmi_offset is also the number of N-terminal gaps in the FASTA file)
@@ -1209,14 +1216,22 @@ class Entity(ihm.Entity):
 
 
 class AsymUnit(ihm.AsymUnit):
-    """A single asymmetric unit in the system.
+    """A single asymmetric unit in the system. This roughly corresponds to
+       a single PMI subunit (sequence, copy, or clone).
+
        This functions identically to the base ihm.AsymUnit class, but it
        allows identifying residues by either the PMI numbering scheme
        (which is always contiguous starting at 1, covering the entire
        sequence in the FASTA files, or the IHM scheme (seq_id, which also
        starts at 1, but which only covers the modeled subset of the full
        sequence, with non-modeled N-terminal or C-terminal residues
-       removed)."""
+       removed).
+
+       The `entity` member of this class points to an Entity object, which
+       contains information (such as database identifiers) specific to
+       a particular sequence rather than a copy (for example, when modeling
+       a homodimer, two AsymUnits will point to the same Entity).
+       """
 
     def __init__(self, entity, *args, **keys):
         super().__init__(
@@ -1247,7 +1262,14 @@ class ProtocolOutput(IMP.pmi.output.ProtocolOutput):
     [python-ihm API](https://python-ihm.readthedocs.io/en/latest/dumper.html#ihm.dumper.write)
     to write out files in mmCIF or BinaryCIF format.
 
-    See also get_handlers(), get_dumpers().
+    Each PMI subunit will be mapped to an IHM AsymUnit class which contains the
+    subset of the sequence that was represented. Use the `asym_units` dict to
+    get this object given a PMI subunit name. Each unique sequence will be
+    mapped to an IHM Entity class (for example when modeling a homodimer
+    there will be two AsymUnits which both point to the same Entity). Use
+    the `entities` dict to get this object from a PMI subunit name.
+
+    See also Entity, AsymUnit, get_handlers(), get_dumpers().
     """  # noqa: E501
     def __init__(self):
         # Ultimately, collect data in an ihm.System object

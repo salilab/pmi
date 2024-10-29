@@ -1049,6 +1049,8 @@ All kmeans_weight_500_2/cluster.0/ centroid index 49
         """Test dumping of simple ensembles"""
         class DummyPostProcess(object):
             pass
+        class DummyModel:
+            pass
         m = IMP.Model()
         simo = IMP.pmi1.representation.Representation(m)
         po = DummyPO(None)
@@ -1058,8 +1060,12 @@ All kmeans_weight_500_2/cluster.0/ centroid index 49
         pp._id = 99
         e1 = po._add_simple_ensemble(pp, 'Ensemble 1', 5, 0.1, 1,
                                      {}, None)
+        # Work around python-ihm 1.7 not handling IDs of empty model
+        # groups properly
+        e1.model_group.append(DummyModel())
         e2 = po._add_simple_ensemble(pp, 'Ensemble 2', 5, 0.1, 1,
                                      {}, None)
+        e2.model_group.append(DummyModel())
         loc = ihm.location.InputFileLocation(repo='foo', path='bar')
         po.set_ensemble_file(1, loc)
         loc._id = 42

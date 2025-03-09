@@ -1508,12 +1508,12 @@ class MapCrossLinkDataBaseOnStructure:
     def compute_distances(self):
         data = []
         sorted_ids = None
-        sorted_group_ids = sorted(list(self.CrossLinkDataBase.data_base.keys()))
+        sorted_group_ids = sorted(self.CrossLinkDataBase.data_base.keys())
         for group in sorted_group_ids:
             group_dists = []
             for xl in self.CrossLinkDataBase.data_base[group]:
                 if not sorted_ids:
-                    sorted_ids = sorted(list(xl.keys()))
+                    sorted_ids = sorted(xl.keys())
                     data.append(
                         sorted_ids
                         + ["UniqueID", "Distance", "MinAmbiguousDistance"])
@@ -1600,7 +1600,7 @@ class MapCrossLinkDataBaseOnStructure:
                  results_sorted[0][4]))
 
     def save_rmf_snapshot(self, filename, color_id=None):
-        sorted_group_ids = sorted(list(self.CrossLinkDataBase.data_base.keys()))
+        sorted_group_ids = sorted(self.CrossLinkDataBase.data_base.keys())
         list_of_pairs = []
         color_scores = []
         for group in sorted_group_ids:
@@ -1821,7 +1821,8 @@ class CrossLinkDataBaseFromStructure:
                 self.reactivity_dictionary[(pra[0], pra[2])]
             new_xl["Reactivity_Residue2"] = \
                 self.reactivity_dictionary[(pra[1], pra[3])]
-            new_xl["Reactivity"] = new_xl["Reactivity_Residue1"]+new_xl["Reactivity_Residue2"]                
+            new_xl["Reactivity"] = \
+                new_xl["Reactivity_Residue1"] + new_xl["Reactivity_Residue2"]
             if noisy:
                 new_xl["Score"] = np.random.beta(1.0, self.beta_false)
             else:
@@ -1858,8 +1859,8 @@ class CrossLinkDataBaseFromStructure:
         if distance is None:
             # get a random pair
             while True:
-                protein1, residue1 = choice(list(self.protein_residue_dict.keys()))
-                protein2, residue2 = choice(list(self.protein_residue_dict.keys()))
+                protein1, residue1 = choice(self.protein_residue_dict.keys())
+                protein2, residue2 = choice(self.protein_residue_dict.keys())
                 index1 = self.protein_residue_dict[(protein1, residue1)]
                 index2 = self.protein_residue_dict[(protein2, residue2)]
                 particle_distance = IMP.core.get_distance(

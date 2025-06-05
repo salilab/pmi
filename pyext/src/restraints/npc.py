@@ -70,9 +70,13 @@ class XYRadialPositionLowerRestraint(IMP.pmi.restraints.RestraintBase):
             self.model, lower_bound, consider_radius, sigma)
         residues = IMP.pmi.tools.select_by_tuple_2(
             hier, protein, resolution=1)
-        cterminal = residues[-1]
-
-        xyr.add_particle(cterminal)
+        
+        #cterminal = residues[-1] #This is OLD line. This considers only cterminal residue
+        #xyr.add_particle(cterminal) #This is OLD line. This considers only cterminal residue
+        
+        for residue in residues:
+            xyr.add_particle(residue)
+        
         self.rs.add_restraint(xyr)
 
 
@@ -92,9 +96,12 @@ class XYRadialPositionUpperRestraint(IMP.pmi.restraints.RestraintBase):
             self.model, upper_bound, consider_radius, sigma)
         residues = IMP.pmi.tools.select_by_tuple_2(
             hier, protein, resolution=1)
-        cterminal = residues[-1]
+        
+        #cterminal = residues[-1]  #This is OLD line. This considers only cterminal residue
+        #xyr.add_particle(cterminal)  #This is OLD line. This considers only cterminal residue
 
-        xyr.add_particle(cterminal)
+        for residue in residues:
+            xyr.add_particle(residue)
         self.rs.add_restraint(xyr)
 
 
@@ -152,9 +159,12 @@ class ZAxialPositionLowerRestraint(IMP.pmi.restraints.RestraintBase):
             self.model, lower_bound, consider_radius, sigma)
         residues = IMP.pmi.tools.select_by_tuple_2(
             hier, protein, resolution=1)
-        cterminal = residues[-1]
+        
+        #cterminal = residues[-1]   #This is OLD line. This considers only cterminal residue
+        #zax.add_particle(cterminal)   #This is OLD line. This considers only cterminal residue
+        for residue in residues:
+            zax.add_particle(residue)
 
-        zax.add_particle(cterminal)
         self.rs.add_restraint(zax)
 
 
@@ -174,9 +184,12 @@ class ZAxialPositionUpperRestraint(IMP.pmi.restraints.RestraintBase):
             self.model, upper_bound, consider_radius, sigma)
         residues = IMP.pmi.tools.select_by_tuple_2(
             hier, protein, resolution=1)
-        cterminal = residues[-1]
+        
+        #cterminal = residues[-1]   #This is OLD line. This considers only cterminal residue
+        #zax.add_particle(cterminal)   #This is OLD line. This considers only cterminal residue
+        for residue in residues:
+            zax.add_particle(residue)
 
-        zax.add_particle(cterminal)
         self.rs.add_restraint(zax)
 
 
@@ -234,9 +247,12 @@ class YAxialPositionLowerRestraint(IMP.pmi.restraints.RestraintBase):
             self.model, lower_bound, consider_radius, sigma)
         residues = IMP.pmi.tools.select_by_tuple_2(
             hier, protein, resolution=1)
-        cterminal = residues[-1]
 
-        yax.add_particle(cterminal)
+        #cterminal = residues[-1]   #This is OLD line. This considers only cterminal residue
+        #yax.add_particle(cterminal)   #This is OLD line. This considers only cterminal residue
+        for residue in residues:
+            yax.add_particle(residue)
+
         self.rs.add_restraint(yax)
 
 
@@ -256,9 +272,12 @@ class YAxialPositionUpperRestraint(IMP.pmi.restraints.RestraintBase):
             self.model, upper_bound, consider_radius, sigma)
         residues = IMP.pmi.tools.select_by_tuple_2(
             hier, protein, resolution=1)
-        cterminal = residues[-1]
 
-        yax.add_particle(cterminal)
+        #cterminal = residues[-1]   #This is OLD line. This considers only cterminal residue
+        #yax.add_particle(cterminal)   #This is OLD line. This considers only cterminal residue
+        for residue in residues:
+            yax.add_particle(residue)
+
         self.rs.add_restraint(yax)
 
 

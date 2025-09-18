@@ -106,7 +106,7 @@ class ReplicaExchange:
                  atomistic=False,
                  replica_exchange_object=None,
                  test_mode=False,
-                 score_moved=True,
+                 score_moved=False,
                  use_nestor=False,
                  nestor_restraints=None,
                  nestor_rmf_fname_prefix="nested",):
@@ -171,9 +171,9 @@ class ReplicaExchange:
                   output.
            @param test_mode Set to True to avoid writing any files, just test
                   one frame.
-           @param score_moved  If True (the default), attempt to speed up
+           @param score_moved   If True, attempt to speed up Monte Carlo
                   sampling by caching scoring function terms on particles
-                  that didn't move. If False, always score the entire system.
+                  that didn't move.
            @param use_nestor   If True, follows the Nested Sampling workflow
                   of the NestOR module and skips writing stat files and
                   replica stat files.

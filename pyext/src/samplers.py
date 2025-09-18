@@ -54,14 +54,15 @@ class MonteCarlo:
         isd_available = False
 
     def __init__(self, model, objects=None, temp=1.0, filterbyname=None,
-                 score_moved=False):
+                 score_moved=True):
         """Setup Monte Carlo sampling
         @param model         The IMP Model
         @param objects       What to sample (a list of Movers)
         @param temp The MC temperature
         @param filterbyname Not used
-        @param score_moved   If True, attempt to speed up sampling by
-               caching scoring function terms on particles that didn't move
+        @param score_moved   If True (the default), attempt to speed up
+               sampling by caching scoring function terms on particles
+               that didn't move. If False, always score the entire system.
         """
         self.losp = [
             "Rigid_Bodies",

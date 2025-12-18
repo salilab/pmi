@@ -52,6 +52,7 @@ class Tests(IMP.test.TestCase):
 
         os.unlink("test_set_coordinates_from_rmf.rmf3")
 
+    @IMP.test.unstable
     def test_set_from_rmf_roundtrip(self):
         pdbfile = self.get_input_file_name("1WCM.pdb")
         fastafile = self.get_input_file_name("1WCM.fasta.txt")

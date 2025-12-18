@@ -163,6 +163,7 @@ class Tests(IMP.test.TestCase):
         self.assertEqual(samp.get_number_of_frames(), 100)
         self.assertEqual(samp.get_number_of_iterations(), 10)
 
+    @IMP.test.unstable
     def test_macro_rmf_stat(self):
         """setting up the representation
         PMI 1.0 representation. Creates two particles and

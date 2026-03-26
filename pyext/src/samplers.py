@@ -147,8 +147,7 @@ class MonteCarlo:
 
         # apply simulated annealing protocol
         if self.simulated_annealing:
-            self.temp = self.temp_simulated_annealing()
-            self.mc.set_kt(self.temp)
+            self.set_kt(self.temp_simulated_annealing())
 
         # apply self adaptive protocol
         if self.selfadaptive:
@@ -386,8 +385,7 @@ class MolecularDynamics:
         # apply simulated annealing protocol
         self.nframe += 1
         if self.simulated_annealing:
-            self.temp = self.temp_simulated_annealing()
-            self.set_kt(self.temp)
+            self.set_kt(self.temp_simulated_annealing())
         return self.md.optimize(nsteps)
 
     def get_output(self):

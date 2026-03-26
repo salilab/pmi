@@ -336,7 +336,7 @@ class MolecularDynamics(_SamplerBase):
         @param gamma Viscosity parameter
         @param maximum_time_step MD max time step
         """
-        super().__init__()
+        super().__init__(model)
 
         # check if using PMI1 objects dictionary, or just list of particles
         try:

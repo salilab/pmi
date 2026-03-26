@@ -143,7 +143,7 @@ class MonteCarlo:
 
     def optimize(self, nstep):
         self.nframe += 1
-        self.mc.optimize(nstep * self.get_number_of_movers())
+        score = self.mc.optimize(nstep * self.get_number_of_movers())
 
         # apply simulated annealing protocol
         if self.simulated_annealing:
@@ -196,6 +196,7 @@ class MonteCarlo:
                     mr = mv.get_radius()
                     if 0.4 > accept or accept > 0.6:
                         mv.set_radius(mr * 2 * accept)
+        return score
 
     def get_nuisance_movers(self, nuisances, maxstep):
         mvs = []
@@ -387,7 +388,7 @@ class MolecularDynamics:
         if self.simulated_annealing:
             self.temp = self.temp_simulated_annealing()
             self.set_kt(self.temp)
-        self.md.optimize(nsteps)
+        return self.md.optimize(nsteps)
 
     def get_output(self):
         output = {}

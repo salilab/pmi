@@ -547,14 +547,23 @@ class ReplicaExchange:
             if self.test_mode:
                 score = 0.
             else:
+                score = None
                 for nr in range(self.vars["num_sample_rounds"]):
                     if sampler_md is not None:
-                        sampler_md.optimize(
+                        score = sampler_md.optimize(
                                   self.vars["molecular_dynamics_steps"])
                     if sampler_mc is not None:
-                        sampler_mc.optimize(self.vars["monte_carlo_steps"])
-                score = IMP.pmi.tools.get_restraint_set(
-                    self.model).evaluate(False)
+                        score = sampler_mc.optimize(
+                            self.vars["monte_carlo_steps"])
+                if score is None:
+                    score = IMP.pmi.tools.get_restraint_set(
+                        self.model).evaluate(False)
+                elif IMP.get_check_level() >= IMP.USAGE_AND_INTERNAL:
+                    # Final score from samplers should match the current
+                    # score of the Model
+                    check_score = IMP.pmi.tools.get_restraint_set(
+                        self.model).evaluate(False)
+                    assert abs(score - check_score) < 1e-4
                 mpivs.set_value("score", score)
             if not self.nest:
                 output.set_output_entry("score", score)

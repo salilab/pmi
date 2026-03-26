@@ -43,7 +43,31 @@ class _SerialReplicaExchange:
         self.was_used = was_used
 
 
-class MonteCarlo:
+class _SamplerBase:
+    def __init__(self, model):
+        self.model = model
+        # that is -1 because mc/md has not yet run
+        self.nframe = -1
+        self.simulated_annealing = False
+
+    def set_simulated_annealing(self, min_temp, max_temp, min_temp_time,
+                                max_temp_time):
+        self.simulated_annealing = True
+        self.tempmin = min_temp
+        self.tempmax = max_temp
+        self.timemin = min_temp_time
+        self.timemax = max_temp_time
+
+    def temp_simulated_annealing(self):
+        if self.nframe % (self.timemin + self.timemax) < self.timemin:
+            value = 0.0
+        else:
+            value = 1.0
+        temp = self.tempmin + (self.tempmax - self.tempmin) * value
+        return temp
+
+
+class MonteCarlo(_SamplerBase):
     """Sample using Monte Carlo"""
 
     # check that isd is installed
@@ -63,6 +87,7 @@ class MonteCarlo:
         @param score_moved   If True, attempt to speed up sampling by
                caching scoring function terms on particles that didn't move
         """
+        super().__init__(model)
         self.losp = [
             "Rigid_Bodies",
             "Floppy_Bodies",
@@ -70,15 +95,11 @@ class MonteCarlo:
             "X_coord",
             "Weights"
             "Surfaces"]
-        self.simulated_annealing = False
         self.selfadaptive = False
-        # that is -1 because mc has not yet run
-        self.nframe = -1
         self.temp = temp
         self.mvs = []
         self.mvslabels = []
         self.label = "None"
-        self.model = model
         self.movers_data = {}
 
         self.mvs = objects
@@ -106,18 +127,6 @@ class MonteCarlo:
             rs.add_restraint(ob.get_restraint())
         sf = IMP.core.RestraintsScoringFunction([rs])
         self.mc.set_scoring_function(sf)
-
-    def set_simulated_annealing(
-        self,
-        min_temp,
-        max_temp,
-        min_temp_time,
-            max_temp_time):
-        self.simulated_annealing = True
-        self.tempmin = min_temp
-        self.tempmax = max_temp
-        self.timemin = min_temp_time
-        self.timemax = max_temp_time
 
     def set_self_adaptive(self, isselfadaptive=True):
         self.selfadaptive = isselfadaptive
@@ -286,14 +295,6 @@ class MonteCarlo:
                                              refprob))
         return mvs
 
-    def temp_simulated_annealing(self):
-        if self.nframe % (self.timemin + self.timemax) < self.timemin:
-            value = 0.0
-        else:
-            value = 1.0
-        temp = self.tempmin + (self.tempmax - self.tempmin) * value
-        return temp
-
     def set_label(self, label):
         self.label = label
 
@@ -323,7 +324,7 @@ class MonteCarlo:
         return output
 
 
-class MolecularDynamics:
+class MolecularDynamics(_SamplerBase):
     """Sample using molecular dynamics"""
 
     def __init__(self, model, objects, kt, gamma=0.01, maximum_time_step=1.0,
@@ -335,7 +336,7 @@ class MolecularDynamics:
         @param gamma Viscosity parameter
         @param maximum_time_step MD max time step
         """
-        self.model = model
+        super().__init__()
 
         # check if using PMI1 objects dictionary, or just list of particles
         try:
@@ -354,29 +355,11 @@ class MolecularDynamics:
         else:
             self.md.set_scoring_function(get_restraint_set(self.model))
         self.md.add_optimizer_state(self.ltstate)
-        self.simulated_annealing = False
-        self.nframe = -1
 
     def set_kt(self, kt):
         temp = kt/0.0019872041
         self.ltstate.set_temperature(temp)
         self.md.assign_velocities(temp)
-
-    def set_simulated_annealing(self, min_temp, max_temp, min_temp_time,
-                                max_temp_time):
-        self.simulated_annealing = True
-        self.tempmin = min_temp
-        self.tempmax = max_temp
-        self.timemin = min_temp_time
-        self.timemax = max_temp_time
-
-    def temp_simulated_annealing(self):
-        if self.nframe % (self.timemin + self.timemax) < self.timemin:
-            value = 0.0
-        else:
-            value = 1.0
-        temp = self.tempmin + (self.tempmax - self.tempmin) * value
-        return temp
 
     def set_gamma(self, gamma):
         self.ltstate.set_gamma(gamma)

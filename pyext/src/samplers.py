@@ -78,7 +78,7 @@ class MonteCarlo(_SamplerBase):
         isd_available = False
 
     def __init__(self, model, objects=None, temp=1.0, filterbyname=None,
-                 score_moved=False):
+                 score_moved=False, use_jax=False):
         """Setup Monte Carlo sampling
         @param model         The IMP Model
         @param objects       What to sample (a list of Movers)
@@ -86,6 +86,9 @@ class MonteCarlo(_SamplerBase):
         @param filterbyname Not used
         @param score_moved   If True, attempt to speed up sampling by
                caching scoring function terms on particles that didn't move
+        @param use_jax If set to True, sample the scoring function using
+               JAX instead of IMP's internal C++ implementation (requires
+               that all PMI restraints used have a JAX implementation).
         """
         super().__init__(model)
         self.losp = [
@@ -101,6 +104,9 @@ class MonteCarlo(_SamplerBase):
         self.mvslabels = []
         self.label = "None"
         self.movers_data = {}
+        self.use_jax = use_jax
+        self._jax_optimizer = None
+        self._jax_state = None
 
         self.mvs = objects
 
@@ -117,6 +123,8 @@ class MonteCarlo(_SamplerBase):
     def set_kt(self, temp):
         self.temp = temp
         self.mc.set_kt(temp)
+        if self._jax_state is not None:
+            self._jax_state.temperature = temp
 
     def get_mc(self):
         return self.mc
@@ -152,7 +160,15 @@ class MonteCarlo(_SamplerBase):
 
     def optimize(self, nstep):
         self.nframe += 1
-        score = self.mc.optimize(nstep * self.get_number_of_movers())
+        if self.use_jax:
+            if self._jax_optimizer is None:
+                self._jax_optimizer = self.mc._get_jax_optimizer(
+                    nstep * self.get_number_of_movers())
+                self._jax_state = self._jax_optimizer.get_initial_state()
+            score, self._jax_state = self._jax_optimizer.optimize(
+                self._jax_state)
+        else:
+            score = self.mc.optimize(nstep * self.get_number_of_movers())
 
         # apply simulated annealing protocol
         if self.simulated_annealing:
@@ -160,6 +176,9 @@ class MonteCarlo(_SamplerBase):
 
         # apply self adaptive protocol
         if self.selfadaptive:
+            if self.use_jax:
+                raise NotImplementedError(
+                    "Adaptive protocol is not yet implemented for JAX")
             for i, mv in enumerate(self.mvs):
 
                 mvacc = mv.get_number_of_accepted()
@@ -328,15 +347,20 @@ class MolecularDynamics(_SamplerBase):
     """Sample using molecular dynamics"""
 
     def __init__(self, model, objects, kt, gamma=0.01, maximum_time_step=1.0,
-                 sf=None):
+                 sf=None, use_jax=False):
         """Setup MD
         @param model The IMP Model
         @param objects What to sample. Use flat list of particles
         @param kt Temperature
         @param gamma Viscosity parameter
         @param maximum_time_step MD max time step
+        @param use_jax If set to True, sample the scoring function using
+               JAX instead of IMP's internal C++ implementation (requires
+               that all PMI restraints used have a JAX implementation).
         """
         super().__init__(model)
+        if use_jax:
+            raise NotImplementedError("JAX currently only supported for MC")
 
         # check if using PMI1 objects dictionary, or just list of particles
         try:

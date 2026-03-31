@@ -354,7 +354,7 @@ class ReplicaExchange:
                 self.model, self.molecular_dynamics_sample_objects,
                 self.vars["monte_carlo_temperature"],
                 maximum_time_step=self.molecular_dynamics_max_time_step,
-                use_jax=use_jax)
+                use_jax=self.use_jax)
             if self.vars["simulated_annealing"]:
                 tmin = self.vars["simulated_annealing_minimum_temperature"]
                 tmax = self.vars["simulated_annealing_maximum_temperature"]

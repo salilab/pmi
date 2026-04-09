@@ -919,14 +919,8 @@ class Output:
             else:
                 output.update({stat2_inverse[k]: "None"})
 
-        if appendmode:
-            writeflag = 'a'
-        else:
-            writeflag = 'w'
-
-        flstat = open(name, writeflag)
-        flstat.write("%s \n" % output)
-        flstat.close()
+        with open(name, 'a' if appendmode else 'w') as flstat:
+            flstat.write("%s \n" % output)
 
     def write_stats2(self):
         for stat in self.dictionary_stats2.keys():

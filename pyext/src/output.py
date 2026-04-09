@@ -817,6 +817,14 @@ class Output:
 
     def init_stat2(self, name, listofobjects, extralabels=None,
                    listofsummedobjects=None):
+        """Write the header for a stat file in v2 format.
+           Lines can then be written to the stat file by calling write_stat2()
+           with the same file name.
+
+           @param name The file name to write to.
+           @param listofobjects PMI objects that will be reported in the file.
+                  Each object must implement the get_output() method.
+        """
         # this is a new stat file that should be less
         # space greedy!
         # listofsummedobjects must be in the form
@@ -880,6 +888,11 @@ class Output:
             extralabels)
 
     def write_stat2(self, name, appendmode=True):
+        """Write a single line to a stat file previously created
+           with init_stat2().
+
+           @param name The file name to write to.
+        """
         output = {}
         (listofobjects, stat2_inverse, listofsummedobjects,
          extralabels) = self.dictionary_stats2[name]

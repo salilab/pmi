@@ -664,6 +664,7 @@ class Output:
         for rmfinfo in self.dictionary_rmfs.keys():
             self.write_rmf(rmfinfo[0])
 
+    @IMP.deprecated_method("2.25", "Use init_stat2() instead")
     def init_stat(self, name, listofobjects):
         if self.ascii:
             flstat = open(name, 'w')
@@ -683,6 +684,7 @@ class Output:
     def set_output_entry(self, key, value):
         self.initoutput.update({key: value})
 
+    @IMP.deprecated_method("2.25", "Use write_stat2() instead")
     def write_stat(self, name, appendmode=True):
         output = self.initoutput
         for obj in self.dictionary_stats[name]:
@@ -705,6 +707,7 @@ class Output:
             pickle.dump(output, flstat, 2)
             flstat.close()
 
+    @IMP.deprecated_method("2.25", "Use write_stats2() instead")
     def write_stats(self):
         for stat in self.dictionary_stats.keys():
             self.write_stat(stat)

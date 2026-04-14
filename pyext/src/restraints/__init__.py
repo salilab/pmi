@@ -10,6 +10,7 @@ PMI restraints generally wrap IMP restraints. Typical features in PMI restraints
 import IMP
 import IMP.pmi
 import IMP.pmi.tools
+from IMP.pmi.tools import RestraintStatScorer
 
 
 class RestraintBase:
@@ -105,16 +106,12 @@ class RestraintBase:
 
     def get_output(self):
         """Get outputs to write to stat files."""
-        output = {}
-        score = self.evaluate()
-        output["_TotalScore"] = str(score)
-
+        scorer = RestraintStatScorer("_TotalScore", self, self.rs)
         suffix = "_Score" + self._label_suffix
-        for rs in self.restraint_sets:
-            out_name = rs.get_name() + suffix
-            output[out_name] = str(
-                self.weight * rs.unprotected_evaluate(None))
-        return output
+        scorers = [RestraintStatScorer(rs.get_name() + suffix, self, rs)
+                   for rs in self.restraint_sets] + [scorer]
+
+        return lambda jm: {s.name: str(s(jm)) for s in scorers}
 
     def _create_restraint_set(self, name=None, cls=IMP.RestraintSet):
         """Create ``IMP.RestraintSet``."""

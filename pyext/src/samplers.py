@@ -149,19 +149,6 @@ class MonteCarlo(_SamplerBase):
     def set_self_adaptive(self, isselfadaptive=True):
         self.selfadaptive = isselfadaptive
 
-    def get_nuisance_movers_parameters(self):
-        '''
-        Return a dictionary with the mover parameters for nuisance parameters
-        '''
-        output = {}
-        for i in range(self.get_number_of_movers()):
-            mv = self.smv.get_mover(i)
-            name = mv.get_name()
-            if "Nuisances" in name:
-                stepsize = IMP.core.NormalMover.get_from(mv).get_sigma()
-                output[name] = stepsize
-        return output
-
     def get_number_of_movers(self):
         return len(self.smv.get_movers())
 
@@ -230,95 +217,6 @@ class MonteCarlo(_SamplerBase):
                     if 0.4 > accept or accept > 0.6:
                         mv.set_radius(mr * 2 * accept)
         return score
-
-    def get_nuisance_movers(self, nuisances, maxstep):
-        mvs = []
-        for nuisance in nuisances:
-            print(nuisance, maxstep)
-            mvs.append(
-                IMP.core.NormalMover([nuisance],
-                                     IMP.FloatKeys([IMP.FloatKey("nuisance")]),
-                                     maxstep))
-        return mvs
-
-    def get_rigid_body_movers(self, rbs, maxtrans, maxrot):
-        mvs = []
-        for rb in rbs:
-            mvs.append(IMP.core.RigidBodyMover(rb.get_model(), rb,
-                                               maxtrans, maxrot))
-        return mvs
-
-    def get_super_rigid_body_movers(self, rbs, maxtrans, maxrot):
-        mvs = []
-        for rb in rbs:
-            if len(rb) == 2:
-                # normal Super Rigid Body
-                srbm = IMP.pmi.TransformMover(self.model, maxtrans, maxrot)
-            elif len(rb) == 3:
-                if isinstance(rb[2], tuple) and len(rb[2]) == 3 \
-                        and isinstance(rb[2][0], float) \
-                        and isinstance(rb[2][1], float) \
-                        and isinstance(rb[2][2], float):
-                    # super rigid body with 2D rotation, rb[2] is the axis
-                    srbm = IMP.pmi.TransformMover(
-                        self.model, IMP.algebra.Vector3D(rb[2]), maxtrans,
-                        maxrot)
-                else:
-                    print(
-                        "Setting up a super rigid body with wrong parameters")
-                    raise
-
-            for xyz in rb[0]:
-                srbm.add_xyz_particle(xyz)
-            for rb in rb[1]:
-                srbm.add_rigid_body_particle(rb)
-            mvs.append(srbm)
-        return mvs
-
-    def get_floppy_body_movers(self, fbs, maxtrans):
-        mvs = []
-        for fb in fbs:
-            # check is that is a rigid body member:
-            if IMP.core.NonRigidMember.get_is_setup(fb):
-                # if so force the particles to move anyway
-                floatkeys = \
-                    IMP.core.RigidBodyMember.get_internal_coordinate_keys()
-                for fk in floatkeys:
-                    fb.set_is_optimized(fk, True)
-                mvs.append(
-                    IMP.core.BallMover(fb.get_model(), fb,
-                                       IMP.FloatKeys(floatkeys),
-                                       maxtrans))
-            else:
-                # otherwise use the normal ball mover
-                mvs.append(IMP.core.BallMover(fb.get_model(), fb, maxtrans))
-        return mvs
-
-    def get_X_movers(self, fbs, maxtrans):
-        mvs = []
-        Xfloatkey = IMP.core.XYZ.get_xyz_keys()[0]
-        for fb in fbs:
-            # check is that is a rigid body member:
-            if IMP.core.NonRigidMember.get_is_setup(fb):
-                raise ValueError("particle is part of a rigid body")
-            else:
-                # otherwise use the normal ball mover
-                mvs.append(IMP.core.NormalMover([fb], [Xfloatkey], maxtrans))
-        return mvs
-
-    def get_weight_movers(self, weights, maxstep):
-        mvs = []
-        for weight in weights:
-            if weight.get_number_of_weights() > 1:
-                mvs.append(IMP.isd.WeightMover(weight, maxstep))
-        return mvs
-
-    def get_surface_movers(self, surfaces, maxtrans, maxrot, refprob):
-        mvs = []
-        for surface in surfaces:
-            mvs.append(IMP.core.SurfaceMover(surface, maxtrans, maxrot,
-                                             refprob))
-        return mvs
 
     def set_label(self, label):
         self.label = label

@@ -169,54 +169,59 @@ class MonteCarlo(_SamplerBase):
 
         # apply self adaptive protocol
         if self.selfadaptive:
-            if self.use_jax:
-                raise NotImplementedError(
-                    "Adaptive protocol is not yet implemented for JAX")
-            for i, mv in enumerate(self.mvs):
-
-                mvacc = mv.get_number_of_accepted()
-                mvprp = mv.get_number_of_proposed()
-                if mv not in self.movers_data:
-                    accept = float(mvacc) / float(mvprp)
-                    self.movers_data[mv] = (mvacc, mvprp)
-                else:
-                    oldmvacc, oldmvprp = self.movers_data[mv]
-                    accept = float(mvacc-oldmvacc) / float(mvprp-oldmvprp)
-                    self.movers_data[mv] = (mvacc, mvprp)
-                if accept < 0.05:
-                    accept = 0.05
-                if accept > 1.0:
-                    accept = 1.0
-
-                if isinstance(mv, IMP.core.NormalMover):
-                    stepsize = mv.get_sigma()
-                    if 0.4 > accept or accept > 0.6:
-                        mv.set_sigma(stepsize * 2 * accept)
-
-                if isinstance(mv, IMP.isd.WeightMover):
-                    stepsize = mv.get_radius()
-                    if 0.4 > accept or accept > 0.6:
-                        mv.set_radius(stepsize * 2 * accept)
-
-                if isinstance(mv, IMP.core.RigidBodyMover):
-                    mr = mv.get_maximum_rotation()
-                    mt = mv.get_maximum_translation()
-                    if 0.4 > accept or accept > 0.6:
-                        mv.set_maximum_rotation(mr * 2 * accept)
-                        mv.set_maximum_translation(mt * 2 * accept)
-
-                if isinstance(mv, IMP.pmi.TransformMover):
-                    mr = mv.get_maximum_rotation()
-                    mt = mv.get_maximum_translation()
-                    if 0.4 > accept or accept > 0.6:
-                        mv.set_maximum_rotation(mr * 2 * accept)
-                        mv.set_maximum_translation(mt * 2 * accept)
-
-                if isinstance(mv, IMP.core.BallMover):
-                    mr = mv.get_radius()
-                    if 0.4 > accept or accept > 0.6:
-                        mv.set_radius(mr * 2 * accept)
+            self.apply_self_adaptive()
         return score
+
+    def apply_self_adaptive(self):
+        """Modify parameters of individual movers to try to keep acceptance
+           rate around 50%"""
+        if self.use_jax:
+            raise NotImplementedError(
+                "Adaptive protocol is not yet implemented for JAX")
+        for i, mv in enumerate(self.mvs):
+
+            mvacc = mv.get_number_of_accepted()
+            mvprp = mv.get_number_of_proposed()
+            if mv not in self.movers_data:
+                accept = float(mvacc) / float(mvprp)
+                self.movers_data[mv] = (mvacc, mvprp)
+            else:
+                oldmvacc, oldmvprp = self.movers_data[mv]
+                accept = float(mvacc-oldmvacc) / float(mvprp-oldmvprp)
+                self.movers_data[mv] = (mvacc, mvprp)
+            if accept < 0.05:
+                accept = 0.05
+            if accept > 1.0:
+                accept = 1.0
+
+            if isinstance(mv, IMP.core.NormalMover):
+                stepsize = mv.get_sigma()
+                if 0.4 > accept or accept > 0.6:
+                    mv.set_sigma(stepsize * 2 * accept)
+
+            if isinstance(mv, IMP.isd.WeightMover):
+                stepsize = mv.get_radius()
+                if 0.4 > accept or accept > 0.6:
+                    mv.set_radius(stepsize * 2 * accept)
+
+            if isinstance(mv, IMP.core.RigidBodyMover):
+                mr = mv.get_maximum_rotation()
+                mt = mv.get_maximum_translation()
+                if 0.4 > accept or accept > 0.6:
+                    mv.set_maximum_rotation(mr * 2 * accept)
+                    mv.set_maximum_translation(mt * 2 * accept)
+
+            if isinstance(mv, IMP.pmi.TransformMover):
+                mr = mv.get_maximum_rotation()
+                mt = mv.get_maximum_translation()
+                if 0.4 > accept or accept > 0.6:
+                    mv.set_maximum_rotation(mr * 2 * accept)
+                    mv.set_maximum_translation(mt * 2 * accept)
+
+            if isinstance(mv, IMP.core.BallMover):
+                mr = mv.get_radius()
+                if 0.4 > accept or accept > 0.6:
+                    mv.set_radius(mr * 2 * accept)
 
     def set_label(self, label):
         self.label = label

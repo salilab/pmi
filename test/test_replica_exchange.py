@@ -141,6 +141,36 @@ class Tests(IMP.test.TestCase):
             test_mode=True, save_coordinates_mode="25th_score")
         rex.execute_macro()
 
+    def test_adaptive(self):
+        """Test ReplicaExchange with self-adaptive sampling"""
+        m = IMP.Model()
+        s = IMP.pmi.topology.System(m)
+        st1 = s.create_state()
+        nup84 = st1.create_molecule("Nup84", "MELS", "X")
+        nup84.add_structure(self.get_input_file_name("test.nup84.pdb"), "A")
+        nup84.add_representation(resolutions=[1])
+
+        hier = s.build()
+
+        dof = IMP.pmi.dof.DegreesOfFreedom(nup84)
+        dof.create_flexible_beads(nup84, max_trans=1.0, resolution=1)
+
+        dr1 = IMP.pmi.restraints.basic.DistanceRestraint(
+            root_hier=hier, tuple_selection1=(2,2,"Nup84"),
+            tuple_selection2=(3,3,"Nup84"), distancemin=10, distancemax=10)
+        dr1.add_to_model()
+
+        rex = IMP.pmi.macros.ReplicaExchange(
+            m, root_hier=hier, monte_carlo_steps=100, number_of_frames=1,
+            output_objects=[dr1],
+            monte_carlo_sample_objects=dof.get_movers(),
+            number_of_best_scoring_models=0,
+            monte_carlo_temperature=0.0,
+            self_adaptive=True,
+            global_output_directory='test_adaptive/')
+        rex.execute_macro()
+        shutil.rmtree('test_adaptive')
+
     @IMP.test.skipIf(jax is None, "No JAX support")
     def test_jax(self):
         """Test ReplicaExchange using JAX"""

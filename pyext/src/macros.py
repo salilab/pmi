@@ -319,6 +319,49 @@ class ReplicaExchange:
         IMP.pmi.tools._add_pmi_provenance(self.root_hier)
         IMP.core.add_provenance(self.model, self.root_hier, p)
 
+    def _setup_mc_sampler(self):
+        sampler_mc = IMP.pmi.samplers.MonteCarlo(
+            self.model, self.monte_carlo_sample_objects,
+            self.vars["monte_carlo_temperature"],
+            score_moved=self.score_moved,
+            use_jax=self.use_jax)
+        if self.vars["simulated_annealing"]:
+            tmin = self.vars["simulated_annealing_minimum_temperature"]
+            tmax = self.vars["simulated_annealing_maximum_temperature"]
+            nfmin = self.vars[
+                "simulated_annealing_minimum_temperature_nframes"]
+            nfmax = self.vars[
+                "simulated_annealing_maximum_temperature_nframes"]
+            sampler_mc.set_simulated_annealing(tmin, tmax, nfmin, nfmax)
+        if self.vars["self_adaptive"]:
+            sampler_mc.set_self_adaptive(
+                isselfadaptive=self.vars["self_adaptive"])
+        if self.output_objects is not None:
+            self.output_objects.append(sampler_mc)
+        if self.rmf_output_objects is not None:
+            self.rmf_output_objects.append(sampler_mc)
+        return sampler_mc
+
+    def _setup_md_sampler(self):
+        sampler_md = IMP.pmi.samplers.MolecularDynamics(
+            self.model, self.molecular_dynamics_sample_objects,
+            self.vars["monte_carlo_temperature"],
+            maximum_time_step=self.molecular_dynamics_max_time_step,
+            use_jax=self.use_jax)
+        if self.vars["simulated_annealing"]:
+            tmin = self.vars["simulated_annealing_minimum_temperature"]
+            tmax = self.vars["simulated_annealing_maximum_temperature"]
+            nfmin = self.vars[
+                "simulated_annealing_minimum_temperature_nframes"]
+            nfmax = self.vars[
+                "simulated_annealing_maximum_temperature_nframes"]
+            sampler_md.set_simulated_annealing(tmin, tmax, nfmin, nfmax)
+        if self.output_objects is not None:
+            self.output_objects.append(sampler_md)
+        if self.rmf_output_objects is not None:
+            self.rmf_output_objects.append(sampler_md)
+        return sampler_md
+
     def execute_macro(self):
         temp_index_factor = 100000.0
         samplers = []
@@ -326,47 +369,12 @@ class ReplicaExchange:
         sampler_md = None
         if self.monte_carlo_sample_objects is not None:
             print("Setting up MonteCarlo")
-            sampler_mc = IMP.pmi.samplers.MonteCarlo(
-                self.model, self.monte_carlo_sample_objects,
-                self.vars["monte_carlo_temperature"],
-                score_moved=self.score_moved,
-                use_jax=self.use_jax)
-            if self.vars["simulated_annealing"]:
-                tmin = self.vars["simulated_annealing_minimum_temperature"]
-                tmax = self.vars["simulated_annealing_maximum_temperature"]
-                nfmin = self.vars[
-                    "simulated_annealing_minimum_temperature_nframes"]
-                nfmax = self.vars[
-                    "simulated_annealing_maximum_temperature_nframes"]
-                sampler_mc.set_simulated_annealing(tmin, tmax, nfmin, nfmax)
-            if self.vars["self_adaptive"]:
-                sampler_mc.set_self_adaptive(
-                    isselfadaptive=self.vars["self_adaptive"])
-            if self.output_objects is not None:
-                self.output_objects.append(sampler_mc)
-            if self.rmf_output_objects is not None:
-                self.rmf_output_objects.append(sampler_mc)
+            sampler_mc = self._setup_mc_sampler()
             samplers.append(sampler_mc)
 
         if self.molecular_dynamics_sample_objects is not None:
             print("Setting up MolecularDynamics")
-            sampler_md = IMP.pmi.samplers.MolecularDynamics(
-                self.model, self.molecular_dynamics_sample_objects,
-                self.vars["monte_carlo_temperature"],
-                maximum_time_step=self.molecular_dynamics_max_time_step,
-                use_jax=self.use_jax)
-            if self.vars["simulated_annealing"]:
-                tmin = self.vars["simulated_annealing_minimum_temperature"]
-                tmax = self.vars["simulated_annealing_maximum_temperature"]
-                nfmin = self.vars[
-                    "simulated_annealing_minimum_temperature_nframes"]
-                nfmax = self.vars[
-                    "simulated_annealing_maximum_temperature_nframes"]
-                sampler_md.set_simulated_annealing(tmin, tmax, nfmin, nfmax)
-            if self.output_objects is not None:
-                self.output_objects.append(sampler_md)
-            if self.rmf_output_objects is not None:
-                self.rmf_output_objects.append(sampler_md)
+            sampler_md = self._setup_md_sampler()
             samplers.append(sampler_md)
 # -------------------------------------------------------------------------
 

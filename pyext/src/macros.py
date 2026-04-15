@@ -323,8 +323,9 @@ class ReplicaExchange:
         sampler_mc = IMP.pmi.samplers.MonteCarlo(
             self.model, self.monte_carlo_sample_objects,
             self.vars["monte_carlo_temperature"],
-            score_moved=self.score_moved,
-            use_jax=self.use_jax)
+            score_moved=self.score_moved)
+        if self.use_jax:
+            sampler_mc.set_use_jax(self.vars["monte_carlo_steps"])
         if self.vars["simulated_annealing"]:
             tmin = self.vars["simulated_annealing_minimum_temperature"]
             tmax = self.vars["simulated_annealing_maximum_temperature"]
@@ -346,8 +347,9 @@ class ReplicaExchange:
         sampler_md = IMP.pmi.samplers.MolecularDynamics(
             self.model, self.molecular_dynamics_sample_objects,
             self.vars["monte_carlo_temperature"],
-            maximum_time_step=self.molecular_dynamics_max_time_step,
-            use_jax=self.use_jax)
+            maximum_time_step=self.molecular_dynamics_max_time_step)
+        if self.use_jax:
+            sampler_md.set_use_jax(self.vars["molecular_dynamics_steps"])
         if self.vars["simulated_annealing"]:
             tmin = self.vars["simulated_annealing_minimum_temperature"]
             tmax = self.vars["simulated_annealing_maximum_temperature"]
@@ -361,6 +363,10 @@ class ReplicaExchange:
         if self.rmf_output_objects is not None:
             self.rmf_output_objects.append(sampler_md)
         return sampler_md
+
+    def _get_jax_model(self, sampler_mc):
+        if self.use_jax:
+            return sampler_mc.get_jax_model()
 
     def execute_macro(self):
         temp_index_factor = 100000.0
@@ -376,6 +382,7 @@ class ReplicaExchange:
             print("Setting up MolecularDynamics")
             sampler_md = self._setup_md_sampler()
             samplers.append(sampler_md)
+
 # -------------------------------------------------------------------------
 
         print("Setting up ReplicaExchange")
@@ -452,7 +459,8 @@ class ReplicaExchange:
             if self.output_objects is not None:
                 output.init_stat2(low_temp_stat_file,
                                   self.output_objects,
-                                  extralabels=["rmf_file", "rmf_frame_index"])
+                                  extralabels=["rmf_file", "rmf_frame_index"],
+                                  jax_model=self._get_jax_model(sampler_mc))
         else:
             print("Stat file writing is disabled")
 
@@ -466,7 +474,8 @@ class ReplicaExchange:
                 str(myindex) + ".out"
             if not self.test_mode:
                 output.init_stat2(replica_stat_file, [rex],
-                                  extralabels=["score"])
+                                  extralabels=["score"],
+                                  jax_model=self._get_jax_model(sampler_mc))
 
             print("Setting up best pdb files")
             if not self.is_multi_state:
@@ -627,11 +636,15 @@ class ReplicaExchange:
                         output.set_output_entry("rmf_file", rmfname)
                         output.set_output_entry("rmf_frame_index", '-1')
                     if self.output_objects is not None:
-                        output.write_stat2(low_temp_stat_file)
+                        output.write_stat2(
+                            low_temp_stat_file,
+                            jax_model=self._get_jax_model(sampler_mc))
                 ntimes_at_low_temp += 1
 
             if not self.test_mode and not self.nest:
-                output.write_stat2(replica_stat_file)
+                output.write_stat2(
+                    replica_stat_file,
+                    jax_model=self._get_jax_model(sampler_mc))
             if self.vars["replica_exchange_swap"]:
                 rex.swap_temp(i, score)
 

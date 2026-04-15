@@ -1646,7 +1646,7 @@ class RestraintStatScorer:
         if jm is not None:
             if self._jax_score is None:
                 import jax
-                ji = self._restraint._get_jax()
+                ji = self.restraint._get_jax()
                 self._jax_score = jax.jit(ji.score_func)
             return self._jax_score(jm)
         else:

@@ -816,7 +816,7 @@ class Output:
         return versions
 
     def init_stat2(self, name, listofobjects, extralabels=None,
-                   listofsummedobjects=None):
+                   listofsummedobjects=None, jax_model=None):
         """Write the header for a stat file in v2 format.
            Lines can then be written to the stat file by calling write_stat2()
            with the same file name.
@@ -861,7 +861,7 @@ class Output:
                 d = obj.get_output()
                 if callable(d):
                     callable_objects.append(d)
-                    d = d(None)
+                    d = d(jax_model)
                 else:
                     dict_objects.append(obj)
                 # remove all entries that begin with _ (private entries)
@@ -899,7 +899,7 @@ class Output:
             listofsummedobjects,
             extralabels)
 
-    def write_stat2(self, name, appendmode=True):
+    def write_stat2(self, name, appendmode=True, jax_model=None):
         """Write a single line to a stat file previously created
            with init_stat2().
 
@@ -913,7 +913,7 @@ class Output:
             for obj in dict_objects:
                 yield obj.get_output()
             for obj in callable_objects:
-                yield obj(None)
+                yield obj(jax_model)
 
         # writing objects
         for od in all_output():

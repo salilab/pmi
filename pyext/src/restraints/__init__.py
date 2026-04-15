@@ -106,6 +106,7 @@ class RestraintBase:
 
     def get_output(self):
         """Get outputs to write to stat files."""
+        self._label_is_set = True
         scorer = RestraintStatScorer("_TotalScore", self, self.rs)
         suffix = "_Score" + self._label_suffix
         scorers = [RestraintStatScorer(rs.get_name() + suffix, self, rs)
@@ -169,10 +170,13 @@ class _RestraintNuisanceMixin:
 
     def get_output(self):
         """Get outputs to write to stat files."""
-        output = super().get_output()
-        for nuis_name, nuis in self.nuisances.items():
-            output[nuis_name + self._label_suffix] = str(nuis.get_scale())
-        return output
+        super_output = super().get_output()
+        def score(jm):
+            output = super_output(jm)
+            for nuis_name, nuis in self.nuisances.items():
+                output[nuis_name + self._label_suffix] = str(nuis.get_scale())
+            return output
+        return score
 
 
 class _NuisancesBase:

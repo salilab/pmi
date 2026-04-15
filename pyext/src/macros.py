@@ -287,10 +287,8 @@ class ReplicaExchange:
         print("--- the stat.*.out and rmfs/*.rmf3 are saved only at the "
               "lowest temperature")
         print("--- variables:")
-        keys = list(self.vars.keys())
-        keys.sort()
-        for v in keys:
-            print("------", v.ljust(30), self.vars[v])
+        for k, v in sorted(self.vars.items(), key=itemgetter(0)):
+            print("------", k.ljust(30), v)
 
     def get_replica_exchange_object(self):
         return self.replica_exchange_object

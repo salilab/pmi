@@ -270,7 +270,7 @@ class ReplicaExchange:
         self.test_mode = test_mode
         self.score_moved = score_moved
         self.use_jax = use_jax
-        self.nest = use_nestor
+        self.vars["use_nestor"] = self.nest = use_nestor
         self.nestor_restraints = nestor_restraints
         self.nestor_rmf_fname = nestor_rmf_fname_prefix
 
@@ -291,7 +291,6 @@ class ReplicaExchange:
         keys.sort()
         for v in keys:
             print("------", v.ljust(30), self.vars[v])
-        print("Use nestor: ", self.nest)
 
     def get_replica_exchange_object(self):
         return self.replica_exchange_object

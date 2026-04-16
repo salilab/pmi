@@ -731,7 +731,7 @@ class Output:
         for obj in self.dictionary_stats[name]:
             try:
                 d = obj.get_test_output()
-            except:  # noqa: E722
+            except AttributeError:
                 d = obj.get_output()
             # remove all entries that begin with _ (private entries)
             dfiltered = dict((k, v) for k, v in d.items() if k[0] != "_")

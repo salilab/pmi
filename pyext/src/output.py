@@ -733,6 +733,9 @@ class Output:
                 d = obj.get_test_output()
             except AttributeError:
                 d = obj.get_output()
+                if callable(d):
+                    # Get any scores using the current IMP Model
+                    d = d(None)
             # remove all entries that begin with _ (private entries)
             dfiltered = dict((k, v) for k, v in d.items() if k[0] != "_")
             output.update(dfiltered)
@@ -748,9 +751,13 @@ class Output:
                     "get_test_output() method" % str(o))
         for obj in listofobjects:
             try:
-                output.update(obj.get_test_output())
-            except:  # noqa: E722
-                output.update(obj.get_output())
+                out = obj.get_test_output()
+            except AttributeError:
+                out = obj.get_output()
+                if callable(out):
+                    # Get any scores using the current IMP Model
+                    out = out(None)
+            output.update(out)
 
         flstat = open(name, 'r')
 

@@ -716,13 +716,11 @@ class Output:
             writeflag = 'w'
 
         if self.ascii:
-            flstat = open(name, writeflag)
-            flstat.write("%s \n" % output)
-            flstat.close()
+            with open(name, writeflag) as flstat:
+                flstat.write("%s \n" % output)
         else:
-            flstat = open(name, writeflag + 'b')
-            pickle.dump(output, flstat, 2)
-            flstat.close()
+            with open(name, writeflag + 'b') as flstat:
+                pickle.dump(output, flstat, 2)
 
     @IMP.deprecated_method("2.25", "Use write_stats2() instead")
     def write_stats(self):

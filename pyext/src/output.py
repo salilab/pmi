@@ -579,6 +579,8 @@ class Output:
             IMP.rmf.add_restraints(rh, rs)
         if geometries is not None:
             IMP.rmf.add_geometries(rh, geometries)
+        dict_objects = []
+        callable_objects = []
         if listofobjects is not None:
             cat = rh.get_category("stat")
             outputkey_rmfkey = {}
@@ -587,7 +589,14 @@ class Output:
                     raise ValueError(
                         "Output: object %s doesn't have get_output() method"
                         % str(o))
+                # get_output() can return either a dict or a callable;
+                # store these in different lists
                 output = o.get_output()
+                if callable(output):
+                    callable_objects.append(output)
+                    output = output(None)
+                else:
+                    dict_objects.append(o)
                 for outputkey in output:
                     rmftag = RMF.string_tag
                     if isinstance(output[outputkey], float):
@@ -605,7 +614,8 @@ class Output:
             outputkey_rmfkey["rmf_frame_index"] = \
                 rh.get_key(cat, "rmf_frame_index", RMF.int_tag)
 
-        self.dictionary_rmfs[name] = (rh, cat, outputkey_rmfkey, listofobjects)
+        self.dictionary_rmfs[name] = (rh, cat, outputkey_rmfkey,
+                                      dict_objects, callable_objects)
 
     def add_restraints_to_rmf(self, name, objectlist):
         for o in _flatten(objectlist):
@@ -636,9 +646,16 @@ class Output:
         IMP.rmf.save_frame(self.dictionary_rmfs[name][0])
         if self.dictionary_rmfs[name][1] is not None:
             outputkey_rmfkey = self.dictionary_rmfs[name][2]
-            listofobjects = self.dictionary_rmfs[name][3]
-            for o in listofobjects:
-                output = o.get_output()
+            dict_objects = self.dictionary_rmfs[name][3]
+            callable_objects = self.dictionary_rmfs[name][4]
+
+            def all_output():
+                for obj in dict_objects:
+                    yield obj.get_output()
+                for obj in callable_objects:
+                    yield obj(None)
+
+            for output in all_output():
                 for outputkey in output:
                     rmfkey = outputkey_rmfkey[outputkey]
                     try:

@@ -585,7 +585,7 @@ class Output:
             cat = rh.get_category("stat")
             outputkey_rmfkey = {}
             for o in listofobjects:
-                if "get_output" not in dir(o):
+                if not hasattr(o, "get_output"):
                     raise ValueError(
                         "Output: object %s doesn't have get_output() method"
                         % str(o))
@@ -692,7 +692,7 @@ class Output:
 
         # check that all objects in listofobjects have a get_output method
         for o in listofobjects:
-            if "get_output" not in dir(o):
+            if not hasattr(o, "get_output"):
                 raise ValueError(
                     "Output: object %s doesn't have get_output() method"
                     % str(o))
@@ -739,7 +739,8 @@ class Output:
         flstat = open(name, 'w')
         output = self.initoutput
         for o in listofobjects:
-            if "get_test_output" not in dir(o) and "get_output" not in dir(o):
+            if (not hasattr(o, "get_test_output")
+                    and not hasattr(o, "get_output")):
                 raise ValueError(
                     "Output: object %s doesn't have get_output() or "
                     "get_test_output() method" % str(o))
@@ -762,7 +763,8 @@ class Output:
     def test(self, name, listofobjects, tolerance=1e-5):
         output = self.initoutput
         for o in listofobjects:
-            if "get_test_output" not in dir(o) and "get_output" not in dir(o):
+            if (not hasattr(o, "get_test_output")
+                    and not hasattr(o, "get_output")):
                 raise ValueError(
                     "Output: object %s doesn't have get_output() or "
                     "get_test_output() method" % str(o))
@@ -875,7 +877,7 @@ class Output:
         dict_objects = []
         callable_objects = []
         for obj in listofobjects:
-            if "get_output" not in dir(obj):
+            if not hasattr(obj, "get_output"):
                 raise ValueError(
                     "Output: object %s doesn't have get_output() method"
                     % str(obj))
@@ -896,7 +898,7 @@ class Output:
         # check for customizable entries
         for obj in listofsummedobjects:
             for t in obj[0]:
-                if "get_output" not in dir(t):
+                if not hasattr(t, "get_output"):
                     raise ValueError(
                         "Output: object %s doesn't have get_output() method"
                         % str(t))

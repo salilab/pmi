@@ -1256,7 +1256,6 @@ class GetModelDensity:
 
     def write_mrc(self, path="./", suffix=None):
         import os
-        import errno
         for density_name in self.densities:
             self.densities[density_name].multiply(1. / self.count_models)
             if suffix is None:

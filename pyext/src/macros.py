@@ -579,7 +579,8 @@ class ReplicaExchange:
                 if score is None:
                     score = IMP.pmi.tools.get_restraint_set(
                         self.model).evaluate(False)
-                elif IMP.get_check_level() >= IMP.USAGE_AND_INTERNAL:
+                elif (IMP.get_check_level() >= IMP.USAGE_AND_INTERNAL
+                      and not self.use_jax):
                     # Final score from samplers should match the current
                     # score of the Model
                     check_score = IMP.pmi.tools.get_restraint_set(

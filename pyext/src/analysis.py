@@ -1264,12 +1264,7 @@ class GetModelDensity:
             else:
                 name = path + "/" + density_name + "." + suffix + ".mrc"
             path, file = os.path.split(name)
-            if not os.path.exists(path):
-                try:
-                    os.makedirs(path)
-                except OSError as e:
-                    if e.errno != errno.EEXIST:
-                        raise
+            os.makedirs(path, exist_ok=True)
             IMP.em.write_map(self.densities[density_name], name,
                              IMP.em.MRCReaderWriter())
 

@@ -4,7 +4,6 @@ import IMP.pmi.mmcif
 import IMP.pmi.dof
 import IMP.pmi.topology
 import IMP.pmi.macros
-import sys
 from pathlib import Path
 import ihm.format
 import ihm.location
@@ -341,6 +340,7 @@ _ihm_multi_state_model_group_link.model_group_id
         c.add('bar', 'SELM', 0, alphabet=None, uniprot='baracc')
         # Mock out UniProtSequence.from_accession
         orig = ihm.reference.UniProtSequence.from_accession
+
         def mock_from_acc(acc):
             return "mock+" + acc
         try:
@@ -1070,7 +1070,7 @@ _ihm_modeling_post_process.details
             self.assertEqual(e.clustering_feature, 'RMSD')
             self.assertEqual(e.name, 'dgroup')
             self.assertEqual(e.get_rmsf_file('Nup84'),
-                             Path(tmpdir) /  'cluster.0' / 'rmsf.Nup84.dat')
+                             Path(tmpdir) / 'cluster.0' / 'rmsf.Nup84.dat')
             # RMSF that doesn't exist
             e.load_rmsf(None, 'normsf')
             # RMSF that does exist
@@ -1145,6 +1145,7 @@ All kmeans_weight_500_2/cluster.0/ centroid index 49
         """Test dumping of simple ensembles"""
         class DummyPostProcess:
             pass
+
         class DummyModel:
             pass
         m = IMP.Model()

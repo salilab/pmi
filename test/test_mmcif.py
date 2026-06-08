@@ -1325,7 +1325,7 @@ _ihm_2dem_class_average_fitting.tr_vector[1]
 _ihm_2dem_class_average_fitting.tr_vector[2]
 _ihm_2dem_class_average_fitting.tr_vector[3]
 1 1 9 0.873 -0.406503 -0.909500 -0.086975 0.379444 -0.254653 0.889480 -0.831131
-0.328574 0.448622 304.187 219.586 0
+0.328574 0.448622 304.187 219.586 0.000
 #
 """)
 
@@ -1442,9 +1442,12 @@ _ihm_poly_residue_feature.seq_id_begin
 _ihm_poly_residue_feature.comp_id_begin
 _ihm_poly_residue_feature.seq_id_end
 _ihm_poly_residue_feature.comp_id_end
-1 1 1 A 1 MET 1 MET
-2 1 1 A 2 GLU 2 GLU
-3 1 1 A 3 LEU 4 SER
+_ihm_poly_residue_feature.interface_residue_flag
+_ihm_poly_residue_feature.residue_range_granularity
+_ihm_poly_residue_feature.rep_atom
+1 1 1 A 1 MET 1 MET NO . .
+2 1 1 A 2 GLU 2 GLU NO . .
+3 1 1 A 3 LEU 4 SER NO . .
 #
 """)
         d = ihm.dumper._GeometricRestraintDumper()
@@ -1484,13 +1487,13 @@ _ihm_geometric_object_distance_restraint.dataset_list_id
         """Test add_membrane_surface_restraint method"""
         self._check_membrane_restraint(
                    'add_membrane_surface_location_restraint',
-                   "'upper bound' 0.500 . 0")
+                   "'upper bound' 0.500 . 0.000")
 
     def test_add_membrane_exclusion_restraint(self):
         """Test add_membrane_exclusion_restraint method"""
         self._check_membrane_restraint(
                    'add_membrane_exclusion_restraint',
-                   "'lower bound' 0.500 0 .")
+                   "'lower bound' 0.500 0.000 .")
 
     def _check_membrane_restraint(self, method_name, expected_dist_rsr):
         class MockObject(object):
@@ -1545,7 +1548,7 @@ _ihm_geometric_object_transformation.tr_vector[1]
 _ihm_geometric_object_transformation.tr_vector[2]
 _ihm_geometric_object_transformation.tr_vector[3]
 1 1.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000
-1.000000 0 0 0
+1.000000 0.000 0.000 0.000
 #
 #
 loop_
@@ -1597,7 +1600,10 @@ _ihm_poly_residue_feature.seq_id_begin
 _ihm_poly_residue_feature.comp_id_begin
 _ihm_poly_residue_feature.seq_id_end
 _ihm_poly_residue_feature.comp_id_end
-1 1 1 A 1 MET 1 MET
+_ihm_poly_residue_feature.interface_residue_flag
+_ihm_poly_residue_feature.residue_range_granularity
+_ihm_poly_residue_feature.rep_atom
+1 1 1 A 1 MET 1 MET NO . .
 #
 """)
 
@@ -1903,6 +1909,7 @@ _ihm_starting_model_seq_dif.details
         d = ihm.dumper._StartingModelDumper()
         fh = StringIO()
         w = ihm.format.CifWriter(fh)
+        d.finalize(s)
         d.dump_seq_dif(s, w)
         out = fh.getvalue()
         self.assertEqual(out, """#

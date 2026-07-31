@@ -79,6 +79,42 @@ class _StatFile:
             self.rmf_objects.append(obj)
 
 
+class _RestartInfo:
+    """Parameters for writing restart files"""
+    def __init__(self, frames, restart_dir):
+        self._frames = frames
+        self._restart_dir = restart_dir
+
+    def _write_frame(self, rex, frame):
+        """Possibly write a restart file for the replica exchange run `rex`"""
+        if frame % self._frames != 0:
+            return
+        d = Path(rex.vars["global_output_directory"]) / self._restart_dir
+        d.mkdir(exist_ok=True)
+        fname = d / 'restart.pck'
+
+        r = _RestartRun(rex, frame)
+        with open(fname, 'wb') as fh:
+            pickle.dump(r, fh)
+
+
+class _RestartRun:
+    """Information about a restarted simulation (usually pickled)"""
+    def __init__(self, rex, frame):
+        # Ensure that IMP::Model is unpickled before the PMI rex macro so that
+        # model IDs are resolved correctly
+        self._pck_info = (rex.model, rex)
+        self._rstate = IMP.random_number_generator.get_state()
+        self._frame = frame
+
+    def execute_macro(self):
+        """Restart the interrupted replica exchange simulation"""
+        m, rex = self._pck_info
+        IMP.random_number_generator.set_state(self._rstate)
+        rex._restart_from_frame = self._frame
+        return rex.execute_macro()
+
+
 class ReplicaExchange:
     """A macro to help setup and run replica exchange.
     Supports Monte Carlo and molecular dynamics.
@@ -205,6 +241,8 @@ class ReplicaExchange:
         """
         self.model = model
         self.vars = {}
+        self._restart = None
+        self._restart_from_frame = 0
 
         # add check hierarchy is multistate
         if output_objects == []:
@@ -291,6 +329,19 @@ class ReplicaExchange:
         self.nestor_restraints = nestor_restraints
         self.nestor_rmf_fname = nestor_rmf_fname_prefix
 
+    def set_restart(self, frames, restart_dir="restart"):
+        """Enable restarting an interrupted simulation.
+
+           @param frames How often a restart file should be written
+                  (number of frames), or zero to not write restart files
+           @param restart_dir The directory under `global_output_directory`
+                  where restart files are written.
+        """
+        if frames == 0:
+            self._restart = None
+        else:
+            self._restart = _RestartInfo(frames, restart_dir)
+
     def add_geometries(self, geometries):
         if self.vars["geometries"] is None:
             self.vars["geometries"] = list(geometries)
@@ -337,7 +388,8 @@ class ReplicaExchange:
         sampler_mc = IMP.pmi.samplers.MonteCarlo(
             self.model, self.monte_carlo_sample_objects,
             self.vars["monte_carlo_temperature"],
-            score_moved=self.score_moved)
+            score_moved=self.score_moved,
+            start_frame=self._restart_from_frame)
         if self.use_jax:
             sampler_mc.set_use_jax(self.vars["monte_carlo_steps"])
         if self.vars["simulated_annealing"]:
@@ -357,7 +409,8 @@ class ReplicaExchange:
         sampler_md = IMP.pmi.samplers.MolecularDynamics(
             self.model, self.molecular_dynamics_sample_objects,
             self.vars["monte_carlo_temperature"],
-            maximum_time_step=self.molecular_dynamics_max_time_step)
+            maximum_time_step=self.molecular_dynamics_max_time_step,
+            start_frame=self._restart_from_frame)
         if self.use_jax:
             sampler_md.set_use_jax(self.vars["molecular_dynamics_steps"])
         if self.vars["simulated_annealing"]:
@@ -556,7 +609,9 @@ class ReplicaExchange:
             nframes = 1
 
         sampled_likelihoods = []
-        for i in range(nframes):
+        for i in range(self._restart_from_frame, nframes):
+            if self._restart:
+                self._restart._write_frame(self, i)
             if self.test_mode:
                 score = 0.
             else:

@@ -516,7 +516,8 @@ class ReplicaExchange:
                 output.init_stat2(low_temp_stat_file,
                                   stat_file.objects,
                                   extralabels=["rmf_file", "rmf_frame_index"],
-                                  jax_model=self._get_jax_model(sampler_mc))
+                                  jax_model=self._get_jax_model(sampler_mc),
+                                  append=restarted)
         else:
             print("Stat file writing is disabled")
 
@@ -531,7 +532,8 @@ class ReplicaExchange:
             if not self.test_mode:
                 output.init_stat2(replica_stat_file, [rex],
                                   extralabels=["score"],
-                                  jax_model=self._get_jax_model(sampler_mc))
+                                  jax_model=self._get_jax_model(sampler_mc),
+                                  append=restarted)
 
             print("Setting up best pdb files")
             if not self.is_multi_state:

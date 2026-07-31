@@ -84,18 +84,24 @@ class _RestartInfo:
     def __init__(self, frames, restart_dir):
         self._frames = frames
         self._restart_dir = restart_dir
+        # Number of the restart; this will be incremented every time we
+        # run execute_macro()
+        self._number = -1
 
-    def _write_frame(self, rex, frame):
+    def _write_frame(self, rex, frame, myindex):
         """Possibly write a restart file for the replica exchange run `rex`"""
         if frame % self._frames != 0:
             return
         d = Path(rex.vars["global_output_directory"]) / self._restart_dir
         d.mkdir(exist_ok=True)
-        fname = d / 'restart.pck'
+        fname = d / f'restart.{myindex}.pck'
 
         r = _RestartRun(rex, frame)
         with open(fname, 'wb') as fh:
             pickle.dump(r, fh)
+
+    restarted = property(lambda self: self._number > 0,
+                         doc="True iff this simulation has been restarted")
 
 
 class _RestartRun:
@@ -354,6 +360,8 @@ class ReplicaExchange:
         print("--- it stores the best scoring pdb models in pdbs/")
         print("--- the stat.*.out and rmfs/*.rmf3 are saved only at the "
               "lowest temperature")
+        if self._restart and self._restart.restarted:
+            print("--- this is a restart of a failed simulation")
         print("--- variables:")
         for k, v in sorted(self.vars.items(), key=itemgetter(0)):
             print("------", k.ljust(30), v)
@@ -428,6 +436,12 @@ class ReplicaExchange:
             return sampler_mc.get_jax_model()
 
     def execute_macro(self):
+        # Are we restarting a failed simulation?
+        restarted = True
+        if self._restart:
+            self._restart._number += 1
+            restarted = self._restart.restarted
+
         stat_file = _StatFile(self.output_objects, self.rmf_output_objects)
         temp_index_factor = 100000.0
         samplers = []
@@ -560,7 +574,7 @@ class ReplicaExchange:
         else:
             output_hierarchies = [self.root_hier]
 
-        if not self.test_mode and not self.nest:
+        if not self.test_mode and not self.nest and not restarted:
             print("Setting up and writing initial rmf coordinate file")
             init_suffix = globaldir + self.vars["initial_rmf_name_suffix"]
             output.init_rmf(init_suffix + "." + str(myindex) + ".rmf3",
@@ -582,7 +596,10 @@ class ReplicaExchange:
 
         if not self.test_mode and not self.nest:
             print("Setting up production rmf files")
-            rmfname = rmf_dir + "/" + str(myindex) + ".rmf3"
+            if restarted:
+                rmfname = f"{rmf_dir}/{myindex}.rs{self._restart._number}.rmf3"
+            else:
+                rmfname = rmf_dir + "/" + str(myindex) + ".rmf3"
             output.init_rmf(rmfname, output_hierarchies,
                             geometries=self.vars["geometries"],
                             listofobjects=stat_file.rmf_objects)
@@ -611,7 +628,7 @@ class ReplicaExchange:
         sampled_likelihoods = []
         for i in range(self._restart_from_frame, nframes):
             if self._restart:
-                self._restart._write_frame(self, i)
+                self._restart._write_frame(self, i, myindex)
             if self.test_mode:
                 score = 0.
             else:

@@ -437,7 +437,7 @@ class ReplicaExchange:
 
     def execute_macro(self):
         # Are we restarting a failed simulation?
-        restarted = True
+        restarted = False
         if self._restart:
             self._restart._number += 1
             restarted = self._restart.restarted

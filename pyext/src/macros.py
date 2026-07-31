@@ -62,6 +62,23 @@ class _RMFRestraints:
             raise IndexError("Out of range")
 
 
+class _StatFile:
+    """All output statistics objects to add to stat files and/or RMFs"""
+    def __init__(self, output_objects, rmf_output_objects):
+        self.objects = self.rmf_objects = None
+        # Don't modify user-provided objects; use a copy instead
+        if output_objects is not None:
+            self.objects = output_objects[:]
+        if rmf_output_objects is not None:
+            self.rmf_objects = rmf_output_objects[:]
+
+    def append(self, obj):
+        if self.objects is not None:
+            self.objects.append(obj)
+        if self.rmf_objects is not None:
+            self.rmf_objects.append(obj)
+
+
 class ReplicaExchange:
     """A macro to help setup and run replica exchange.
     Supports Monte Carlo and molecular dynamics.
@@ -334,10 +351,6 @@ class ReplicaExchange:
         if self.vars["self_adaptive"]:
             sampler_mc.set_self_adaptive(
                 isselfadaptive=self.vars["self_adaptive"])
-        if self.output_objects is not None:
-            self.output_objects.append(sampler_mc)
-        if self.rmf_output_objects is not None:
-            self.rmf_output_objects.append(sampler_mc)
         return sampler_mc
 
     def _setup_md_sampler(self):
@@ -355,10 +368,6 @@ class ReplicaExchange:
             nfmax = self.vars[
                 "simulated_annealing_maximum_temperature_nframes"]
             sampler_md.set_simulated_annealing(tmin, tmax, nfmin, nfmax)
-        if self.output_objects is not None:
-            self.output_objects.append(sampler_md)
-        if self.rmf_output_objects is not None:
-            self.rmf_output_objects.append(sampler_md)
         return sampler_md
 
     def _get_jax_model(self, sampler_mc):
@@ -366,6 +375,7 @@ class ReplicaExchange:
             return sampler_mc.get_jax_model()
 
     def execute_macro(self):
+        stat_file = _StatFile(self.output_objects, self.rmf_output_objects)
         temp_index_factor = 100000.0
         samplers = []
         sampler_mc = None
@@ -373,11 +383,13 @@ class ReplicaExchange:
         if self.monte_carlo_sample_objects is not None:
             print("Setting up MonteCarlo")
             sampler_mc = self._setup_mc_sampler()
+            stat_file.append(sampler_mc)
             samplers.append(sampler_mc)
 
         if self.molecular_dynamics_sample_objects is not None:
             print("Setting up MolecularDynamics")
             sampler_md = self._setup_md_sampler()
+            stat_file.append(sampler_md)
             samplers.append(sampler_md)
 
 # -------------------------------------------------------------------------
@@ -390,10 +402,7 @@ class ReplicaExchange:
         self.replica_exchange_object = rex.rem
 
         myindex = rex.get_my_index()
-        if self.output_objects is not None:
-            self.output_objects.append(rex)
-        if self.rmf_output_objects is not None:
-            self.rmf_output_objects.append(rex)
+        stat_file.append(rex)
         # must reset the minimum temperature due to the
         # different binary length of rem.get_my_parameter double and python
         # float
@@ -421,11 +430,7 @@ class ReplicaExchange:
 
 # -------------------------------------------------------------------------
 
-        sw = IMP.pmi.tools.Stopwatch()
-        if self.output_objects is not None:
-            self.output_objects.append(sw)
-        if self.rmf_output_objects is not None:
-            self.rmf_output_objects.append(sw)
+        stat_file.append(IMP.pmi.tools.Stopwatch())
 
         output = IMP.pmi.output.Output(atomistic=self.vars["atomistic"])
 
@@ -440,15 +445,15 @@ class ReplicaExchange:
             self.model.update()
 
         if not self.test_mode and not self.nest:
-            if self.output_objects is not None:
+            if stat_file.objects is not None:
                 output.init_stat2(low_temp_stat_file,
-                                  self.output_objects,
+                                  stat_file.objects,
                                   extralabels=["rmf_file", "rmf_frame_index"],
                                   jax_model=self._get_jax_model(sampler_mc))
         else:
             print("Stat file writing is disabled")
 
-        if self.rmf_output_objects is not None and not self.nest:
+        if stat_file.rmf_objects is not None and not self.nest:
             print("Stat info being written in the rmf file")
 
         if not self.test_mode and not self.nest:
@@ -507,7 +512,7 @@ class ReplicaExchange:
             init_suffix = globaldir + self.vars["initial_rmf_name_suffix"]
             output.init_rmf(init_suffix + "." + str(myindex) + ".rmf3",
                             output_hierarchies,
-                            listofobjects=self.rmf_output_objects)
+                            listofobjects=stat_file.rmf_objects)
             if self._rmf_restraints:
                 output.add_restraints_to_rmf(
                     init_suffix + "." + str(myindex) + ".rmf3",
@@ -527,7 +532,7 @@ class ReplicaExchange:
             rmfname = rmf_dir + "/" + str(myindex) + ".rmf3"
             output.init_rmf(rmfname, output_hierarchies,
                             geometries=self.vars["geometries"],
-                            listofobjects=self.rmf_output_objects)
+                            listofobjects=stat_file.rmf_objects)
 
             if self._rmf_restraints:
                 output.add_restraints_to_rmf(rmfname, self._rmf_restraints)
@@ -539,7 +544,7 @@ class ReplicaExchange:
 
             output.init_rmf(nestor_rmf_fname, output_hierarchies,
                             geometries=self.vars["geometries"],
-                            listofobjects=self.rmf_output_objects)
+                            listofobjects=stat_file.rmf_objects)
 
         ntimes_at_low_temp = 0
 
@@ -620,7 +625,7 @@ class ReplicaExchange:
                     else:
                         output.set_output_entry("rmf_file", rmfname)
                         output.set_output_entry("rmf_frame_index", '-1')
-                    if self.output_objects is not None:
+                    if stat_file.objects is not None:
                         output.write_stat2(
                             low_temp_stat_file,
                             jax_model=self._get_jax_model(sampler_mc))

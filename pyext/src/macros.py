@@ -120,6 +120,10 @@ class _RestartRun:
         rex._restart_from_frame = self._frame
         return rex.execute_macro()
 
+    def get_number_of_replicas(self):
+        rex = self._pck_info[1]
+        return rex.replica_exchange_object.get_number_of_replicas()
+
 
 class ReplicaExchange:
     """A macro to help setup and run replica exchange.
@@ -336,7 +340,12 @@ class ReplicaExchange:
         self.nestor_rmf_fname = nestor_rmf_fname_prefix
 
     def set_restart(self, frames, restart_dir="restart"):
-        """Enable restarting an interrupted simulation.
+        """Enable a simulation to be restarted if it is interrupted.
+
+           If enabled, restart files containing a complete description of
+           the IMP system are written periodically during the simulation.
+           If the simulation is interrupted, it can be restarted using
+           the restart_replica_exchange function, which reads these files.
 
            @param frames How often a restart file should be written
                   (number of frames), or zero to not write restart files
@@ -726,6 +735,33 @@ class ReplicaExchange:
         if not self.test_mode and not self.nest:
             print("closing production rmf files")
             output.close_rmf(rmfname)
+
+
+def restart_replica_exchange(restart_dir):
+    """Continue a failed ReplicaExchange sampling run.
+
+       @see ReplicaExchange.set_restart
+
+       @param restart_dir The directory containing the restart file(s).
+    """
+    # Make sure that we are running MPI with the same number of replicas
+    # as the original run
+    try:
+        import IMP.mpi
+        r = IMP.mpi.ReplicaExchange()
+        nproc, myindex = r.get_number_of_replicas(), r.get_my_index()
+    except ImportError:
+        # Not running with MPI; assume just one replica
+        nproc, myindex = 1, 0
+
+    with open(f'{restart_dir}/restart.{myindex}.pck', 'rb') as fh:
+        mc = pickle.load(fh)
+    old_nproc = mc.get_number_of_replicas()
+    if old_nproc != nproc:
+        raise ValueError(
+            f"Mismatch trying to read restart files: the original run used "
+            f"{old_nproc} replicas and this run has {nproc}")
+    return mc.execute_macro()
 
 
 class BuildSystem:

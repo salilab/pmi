@@ -649,7 +649,7 @@ class ReplicaExchange:
 
         sampled_likelihoods = []
         for i in range(self._restart_from_frame, nframes):
-            if self._restart:
+            if self._restart and i != self._restart_from_frame:
                 self._restart._write_frame(self, i, myindex)
             if self.test_mode:
                 score = 0.

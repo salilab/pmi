@@ -92,6 +92,7 @@ class _RestartInfo:
         """Possibly write a restart file for the replica exchange run `rex`"""
         if frame % self._frames != 0:
             return
+        print(f'--- writing restart file at frame {frame}')
         d = Path(rex.vars["global_output_directory"]) / self._restart_dir
         d.mkdir(exist_ok=True)
         fname = d / f'restart.{myindex}.pck'

@@ -921,9 +921,9 @@ class Output:
         # Open in binary mode because we only care about line endings, not
         # encoding; this might be a little faster
         with open(name, "rb+") as flstat:
-            header = flstat.readline()
+            _ = flstat.readline()
             for _ in range(nline):
-                line = flstat.readline()
+                _ = flstat.readline()
             flstat.truncate(flstat.tell())
 
     def write_stat2(self, name, appendmode=True, jax_model=None):

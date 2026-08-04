@@ -88,7 +88,7 @@ class _RestartInfo:
         # run execute_macro()
         self._number = -1
 
-    def _write_frame(self, rex, frame, myindex):
+    def _write_frame(self, rex, frame, myindex, rex_stats):
         """Possibly write a restart file for the replica exchange run `rex`"""
         if frame % self._frames != 0:
             return
@@ -97,7 +97,7 @@ class _RestartInfo:
         d.mkdir(exist_ok=True)
         fname = d / f'restart.{myindex}.pck'
 
-        r = _RestartRun(rex, frame)
+        r = _RestartRun(rex, frame, rex_stats)
         with open(fname, 'wb') as fh:
             pickle.dump(r, fh)
 
@@ -107,18 +107,20 @@ class _RestartInfo:
 
 class _RestartRun:
     """Information about a restarted simulation (usually pickled)"""
-    def __init__(self, rex, frame):
+    def __init__(self, rex, frame, rex_stats):
         # Ensure that IMP::Model is unpickled before the PMI rex macro so that
         # model IDs are resolved correctly
         self._pck_info = (rex.model, rex)
         self._rstate = IMP.random_number_generator.get_state()
         self._frame = frame
+        self._rex_stats = rex_stats
 
     def execute_macro(self):
         """Restart the interrupted replica exchange simulation"""
         m, rex = self._pck_info
         IMP.random_number_generator.set_state(self._rstate)
         rex._restart_from_frame = self._frame
+        rex._rex_stats = self._rex_stats
         return rex.execute_macro()
 
     def get_number_of_replicas(self):
@@ -477,6 +479,10 @@ class ReplicaExchange:
             self.vars["replica_exchange_maximum_temperature"], samplers,
             replica_exchange_object=self.replica_exchange_object)
         self.replica_exchange_object = rex.rem
+        if restarted:
+            # Restore replica exchange stats from restart
+            rex.stats = self._rex_stats
+            del self._rex_stats
 
         myindex = rex.get_my_index()
         stat_file.append(rex)
@@ -650,7 +656,7 @@ class ReplicaExchange:
         sampled_likelihoods = []
         for i in range(self._restart_from_frame, nframes):
             if self._restart and i != self._restart_from_frame:
-                self._restart._write_frame(self, i, myindex)
+                self._restart._write_frame(self, i, myindex, rex.stats)
             if self.test_mode:
                 score = 0.
             else:

@@ -346,6 +346,32 @@ class ConjugateGradients:
         return output
 
 
+class _ReplicaExchangeStats:
+    """Statistics for replica exchange.
+       This is in a separate class so that we can pickle it easily for
+       restarts"""
+    def __init__(self):
+        self.nattempts = 0
+        self.nmintemp = 0
+        self.nmaxtemp = 0
+        self.nsuccess = 0
+
+    def get_output(self):
+        output = {}
+        if self.nattempts != 0:
+            output["ReplicaExchange_SwapSuccessRatio"] = str(
+                float(self.nsuccess) / self.nattempts)
+            output["ReplicaExchange_MinTempFrequency"] = str(
+                float(self.nmintemp) / self.nattempts)
+            output["ReplicaExchange_MaxTempFrequency"] = str(
+                float(self.nmaxtemp) / self.nattempts)
+        else:
+            output["ReplicaExchange_SwapSuccessRatio"] = str(0)
+            output["ReplicaExchange_MinTempFrequency"] = str(0)
+            output["ReplicaExchange_MaxTempFrequency"] = str(0)
+        return output
+
+
 class ReplicaExchange:
     """Sample using replica exchange"""
 
@@ -398,10 +424,8 @@ class ReplicaExchange:
         self.rem.set_my_parameter("temp", [self.temperatures[myindex]])
         for so in self.samplerobjects:
             so.set_kt(self.temperatures[myindex])
-        self.nattempts = 0
-        self.nmintemp = 0
-        self.nmaxtemp = 0
-        self.nsuccess = 0
+        # Acceptance, etc. statistics
+        self.stats = _ReplicaExchangeStats()
 
     def get_temperatures(self):
         return self.temperatures
@@ -420,10 +444,10 @@ class ReplicaExchange:
         mytemp = self.rem.get_my_parameter("temp")[0]
 
         if mytemp == self.TEMPMIN_:
-            self.nmintemp += 1
+            self.stats.nmintemp += 1
 
         if mytemp == self.TEMPMAX_:
-            self.nmaxtemp += 1
+            self.stats.nmaxtemp += 1
 
         # score divided by kbt
         myscore = score / mytemp
@@ -437,26 +461,15 @@ class ReplicaExchange:
         # try exchange
         flag = self.rem.do_exchange(myscore, fscore, findex)
 
-        self.nattempts += 1
+        self.stats.nattempts += 1
         # if accepted, change temperature
         if (flag):
             for so in self.samplerobjects:
                 so.set_kt(ftemp)
-            self.nsuccess += 1
+            self.stats.nsuccess += 1
 
     def get_output(self):
-        output = {}
-        if self.nattempts != 0:
-            output["ReplicaExchange_SwapSuccessRatio"] = str(
-                float(self.nsuccess) / self.nattempts)
-            output["ReplicaExchange_MinTempFrequency"] = str(
-                float(self.nmintemp) / self.nattempts)
-            output["ReplicaExchange_MaxTempFrequency"] = str(
-                float(self.nmaxtemp) / self.nattempts)
-        else:
-            output["ReplicaExchange_SwapSuccessRatio"] = str(0)
-            output["ReplicaExchange_MinTempFrequency"] = str(0)
-            output["ReplicaExchange_MaxTempFrequency"] = str(0)
+        output = self.stats.get_output()
         output["ReplicaExchange_CurrentTemp"] = str(self.get_my_temp())
         return output
 

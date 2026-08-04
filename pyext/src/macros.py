@@ -527,6 +527,13 @@ class ReplicaExchange:
                                   extralabels=["rmf_file", "rmf_frame_index"],
                                   jax_model=self._get_jax_model(sampler_mc),
                                   append=restarted)
+                # todo: also truncate outputs from MD?
+                if restarted and sampler_mc:
+                    nline = output._count_stat2_nframe(
+                        low_temp_stat_file, 'MonteCarlo_Nframe',
+                        self._restart_from_frame)
+                    if nline is not None:
+                        output._truncate_stat2_nline(low_temp_stat_file, nline)
         else:
             print("Stat file writing is disabled")
 
@@ -543,6 +550,9 @@ class ReplicaExchange:
                                   extralabels=["score"],
                                   jax_model=self._get_jax_model(sampler_mc),
                                   append=restarted)
+                if restarted:
+                    output._truncate_stat2_nline(
+                        replica_stat_file, self._restart_from_frame)
 
             print("Setting up best pdb files")
             if not self.is_multi_state:

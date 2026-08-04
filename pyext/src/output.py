@@ -898,6 +898,34 @@ class Output:
             raise ValueError(
                 f"stat file {name} header does not match append data")
 
+    def _count_stat2_nframe(self, name, nframe_key, nframe):
+        """Count the number of stat file lines up to the given frame"""
+        with open(name, "r") as flstat:
+            header = flstat.readline()
+            d = ast.literal_eval(header)
+            keymap = {v: k for (k, v) in d.items() if isinstance(k, int)}
+            nframe_key = keymap[nframe_key]
+            nline = 0
+            while True:
+                line = flstat.readline()
+                nline += 1
+                if not line:
+                    return None
+                nframe_file = int(ast.literal_eval(line)[nframe_key])
+                if nframe_file >= nframe:
+                    return nline - 1
+
+    def _truncate_stat2_nline(self, name, nline):
+        """Truncate the given stat file to have exactly `nline` non-header
+           lines"""
+        # Open in binary mode because we only care about line endings, not
+        # encoding; this might be a little faster
+        with open(name, "rb+") as flstat:
+            header = flstat.readline()
+            for _ in range(nline):
+                line = flstat.readline()
+            flstat.truncate(flstat.tell())
+
     def write_stat2(self, name, appendmode=True, jax_model=None):
         """Write a single line to a stat file previously created
            with init_stat2().

@@ -320,9 +320,10 @@ class Tests(IMP.test.TestCase):
         rex.set_restart(2)
         _run_rex_and_stop_at_frame(rex, 5)
 
-        # First simulation should cover frames 0-3,
-        # first restart frames 4-7, second restart frames 8-9:
-        IMP.pmi.macros.restart_replica_exchange('test_two_restart/restart')
+        # First simulation should cover frames 0-1,
+        # first restart frames 2-7, second restart frames 8-9:
+        IMP.pmi.macros.restart_replica_exchange('test_two_restart/restart',
+                                                prev=True)
         IMP.pmi.macros.restart_replica_exchange('test_two_restart/restart')
         self._compare_stat('test_full/stat.0.out',
                            'test_two_restart/stat.0.out', two=True)
@@ -359,12 +360,12 @@ class Tests(IMP.test.TestCase):
                         self.assertEqual(frame_rst, i - 7)
                 else:
                     # Similar for double-restarted simulation
-                    if i < 4:
+                    if i < 2:
                         self.assertTrue(rmf_rst.endswith('0.rmf3'))
                         self.assertEqual(frame_rst, i)
                     elif i < 8:
                         self.assertTrue(rmf_rst.endswith('0.rs1.rmf3'))
-                        self.assertEqual(frame_rst, i - 4)
+                        self.assertEqual(frame_rst, i - 2)
                     else:
                         self.assertTrue(rmf_rst.endswith('0.rs2.rmf3'))
                         self.assertEqual(frame_rst, i - 8)

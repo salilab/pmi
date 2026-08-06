@@ -777,12 +777,15 @@ class ReplicaExchange:
             output.close_rmf(rmfname)
 
 
-def restart_replica_exchange(restart_dir):
+def restart_replica_exchange(restart_dir, prev=False):
     """Continue a failed ReplicaExchange sampling run.
 
        @see ReplicaExchange.set_restart
 
        @param restart_dir The directory containing the restart file(s).
+       @param prev If True, use the previous restart
+              (e.g. `restart.0.prev.pck`) rather than the most recent
+              restart (e.g. `restart.0.pck`)
     """
     # Make sure that we are running MPI with the same number of replicas
     # as the original run
@@ -794,7 +797,8 @@ def restart_replica_exchange(restart_dir):
         # Not running with MPI; assume just one replica
         nproc, myindex = 1, 0
 
-    with open(f'{restart_dir}/restart.{myindex}.pck', 'rb') as fh:
+    ext = 'prev.pck' if prev else 'pck'
+    with open(f'{restart_dir}/restart.{myindex}.{ext}', 'rb') as fh:
         mc = pickle.load(fh)
     old_nproc = mc.get_number_of_replicas()
     if old_nproc != nproc:

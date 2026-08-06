@@ -233,13 +233,17 @@ class Tests(IMP.test.TestCase):
         dr1.add_to_model()
 
         rex = IMP.pmi.macros.ReplicaExchange(
-            m, root_hier=hier, monte_carlo_steps=100, number_of_frames=1,
+            m, root_hier=hier, monte_carlo_steps=100, number_of_frames=10,
             output_objects=[dr1],
             monte_carlo_sample_objects=dof.get_movers(),
             number_of_best_scoring_models=0,
             monte_carlo_temperature=0.0,
             self_adaptive=True,
             global_output_directory='test_adaptive/')
+        # Test writing restart files too
+        rex.set_restart(6)
+        rex.execute_macro()
+        # Make sure that we can run execute_macro() more than once
         rex.execute_macro()
         shutil.rmtree('test_adaptive')
 

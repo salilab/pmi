@@ -85,8 +85,8 @@ class _RestartInfo:
         self._frames = frames
         self._restart_dir = restart_dir
         # Number of the restart; this will be incremented every time we
-        # run execute_macro()
-        self._number = -1
+        # run _RestartRun.execute_macro()
+        self._number = 0
 
     def _write_frame(self, rex, frame, myindex, rex_stats):
         """Possibly write a restart file for the replica exchange run `rex`"""
@@ -119,6 +119,7 @@ class _RestartRun:
         """Restart the interrupted replica exchange simulation"""
         m, rex = self._pck_info
         IMP.random_number_generator.set_state(self._rstate)
+        rex._restart._number += 1
         rex._restart_from_frame = self._frame
         rex._rex_stats = self._rex_stats
         return rex.execute_macro()
@@ -449,10 +450,7 @@ class ReplicaExchange:
 
     def execute_macro(self):
         # Are we restarting a failed simulation?
-        restarted = False
-        if self._restart:
-            self._restart._number += 1
-            restarted = self._restart.restarted
+        restarted = self._restart.restarted if self._restart else False
 
         stat_file = _StatFile(self.output_objects, self.rmf_output_objects)
         temp_index_factor = 100000.0

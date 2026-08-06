@@ -372,9 +372,18 @@ class ReplicaExchange:
         """Enable a simulation to be restarted if it is interrupted.
 
            If enabled, restart files containing a complete description of
-           the IMP system are written periodically during the simulation.
-           If the simulation is interrupted, it can be restarted using
-           the restart_replica_exchange function, which reads these files.
+           the IMP system are written periodically during the simulation,
+           one per replica. If the simulation is interrupted, it can be
+           restarted using the restart_replica_exchange function, which
+           reads these files. Files for the previous restart are also kept
+           (with a .prev.pck extension) in case the most recent restart
+           is corrupted.
+
+           Restart files contain IMP internal state and so will probably
+           not work with a different version of IMP, or on a different
+           operating system. As with all Python pickles, these files may
+           contain executable Python code and so you should not use a
+           restart file from an untrusted source.
 
            @param frames How often a restart file should be written
                   (number of frames), or zero to not write restart files

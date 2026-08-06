@@ -303,6 +303,8 @@ class Tests(IMP.test.TestCase):
         self.assertTrue(os.path.exists('test_full/rmfs/0.rmf3'))
         self.assertTrue(os.path.exists('test_single_restart/rmfs/0.rmf3'))
         self.assertTrue(os.path.exists('test_single_restart/rmfs/0.rs1.rmf3'))
+        self.assertTrue(os.path.exists(
+            'test_single_restart/restart/README.txt'))
         shutil.rmtree('test_single_restart')
 
         # Test simulation with two restarts

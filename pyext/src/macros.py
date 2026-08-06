@@ -100,10 +100,31 @@ class _RestartInfo:
         if fname.exists():
             prev = d / f'restart.{myindex}.prev.pck'
             fname.replace(prev)
+        else:
+            self._write_readme(d / 'README.txt')
 
         r = _RestartRun(rex, frame, rex_stats)
         with open(fname, 'wb') as fh:
             pickle.dump(r, fh)
+
+    def _write_readme(self, fname):
+        with open(fname, 'w') as fh:
+            fh.write("""
+This directory contains files that can be used to restart an interrupted
+simulation. To do so, use the IMP.pmi.macros.restart_replica_exchange function.
+
+Restart files are Python pickles that contain the current configuration of
+the IMP model (e.g. coordinates), the scoring function, and the PMI sampler
+(e.g. Monte Carlo movers and acceptance statistics). Each replica has its own
+internal state and thus its own restart file. Files for the previous restart
+are also kept (with a .prev.pck extension) in case the most recent restart
+is corrupted.
+
+Restart files contain IMP internal state and so will probably not work with
+a different version of IMP, or on a different operating system. As with all
+Python pickles, these files may contain executable Python code and so you
+should not use a restart file from an untrusted source.
+""")
 
     restarted = property(lambda self: self._number > 0,
                          doc="True iff this simulation has been restarted")

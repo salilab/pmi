@@ -326,6 +326,10 @@ class Tests(IMP.test.TestCase):
                            'test_two_restart/stat.0.out', two=True)
         self._compare_replica_stat('test_full/stat_replica.0.out',
                                    'test_two_restart/stat_replica.0.out')
+        self.assertTrue(os.path.exists(
+            'test_two_restart/restart/restart.0.pck'))
+        self.assertTrue(os.path.exists(
+            'test_two_restart/restart/restart.0.prev.pck'))
         shutil.rmtree('test_two_restart')
 
         shutil.rmtree('test_full')

@@ -96,6 +96,10 @@ class _RestartInfo:
         d = Path(rex.vars["global_output_directory"]) / self._restart_dir
         d.mkdir(exist_ok=True)
         fname = d / f'restart.{myindex}.pck'
+        # Keep a backup of the previous restart
+        if fname.exists():
+            prev = d / f'restart.{myindex}.prev.pck'
+            fname.replace(prev)
 
         r = _RestartRun(rex, frame, rex_stats)
         with open(fname, 'wb') as fh:

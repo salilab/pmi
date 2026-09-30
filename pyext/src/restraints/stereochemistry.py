@@ -373,6 +373,23 @@ class ResidueDihedralRestraint(IMP.pmi.restraints.RestraintBase):
         if stringsequence is None:
             stringsequence = "T" * (len(particles) - 3)
 
+        cis_ts = IMP.core.HarmonicWell(
+            (math.pi * -20.0 / 180.0,
+             math.pi * 20.0 / 180.0),
+            strength)
+
+        anglemin = 180 - 70.0
+        anglemax = 180 + 70.0
+        trans_ts = IMP.core.HarmonicWell(
+            (math.pi * anglemin / 180.0,
+             math.pi * anglemax / 180.0),
+            strength)
+
+        # Use DihedralQuadScore if available for increased efficiency
+        have_quad_score = hasattr(IMP.core, 'DihedralQuadScore')
+        trans_quads = []
+        cis_quads = []
+
         for n, ps in enumerate(
                 IMP.pmi.tools.sublist_iterator(particles, 4, 4)):
             quadruplet = []
@@ -385,38 +402,44 @@ class ResidueDihedralRestraint(IMP.pmi.restraints.RestraintBase):
                     quadruplet.append(p)
             dihedraltype = stringsequence[n]
             if dihedraltype == "C":
-                anglemin = -20.0
-                anglemax = 20.0
-                ts = IMP.core.HarmonicWell(
-                    (math.pi * anglemin / 180.0,
-                     math.pi * anglemax / 180.0),
-                    strength)
+                ts = cis_ts
+                quads = cis_quads
                 print("ResidueDihedralRestraint: adding a CYS restraint "
                       "between %s %s %s %s"
                       % (quadruplet[0].get_name(), quadruplet[1].get_name(),
                          quadruplet[2].get_name(), quadruplet[3].get_name()))
-            if dihedraltype == "T":
-                anglemin = 180 - 70.0
-                anglemax = 180 + 70.0
-                ts = IMP.core.HarmonicWell(
-                    (math.pi * anglemin / 180.0,
-                     math.pi * anglemax / 180.0),
-                    strength)
+            else:
+                ts = trans_ts
+                quads = trans_quads
                 print("ResidueDihedralRestraint: adding a TRANS restraint "
                       "between %s %s %s %s"
                       % (quadruplet[0].get_name(),
                          quadruplet[1].get_name(), quadruplet[2].get_name(),
                          quadruplet[3].get_name()))
-            self.rs.add_restraint(
-                IMP.core.DihedralRestraint(self.model, ts,
-                                           quadruplet[0],
-                                           quadruplet[1],
-                                           quadruplet[2],
-                                           quadruplet[3]))
+            if have_quad_score:
+                quads.append(quadruplet)
+            else:
+                self.rs.add_restraint(
+                    IMP.core.DihedralRestraint(self.model, ts,
+                                               quadruplet[0],
+                                               quadruplet[1],
+                                               quadruplet[2],
+                                               quadruplet[3]))
             self.pairslist.append(
                 IMP.ParticlePair(quadruplet[0], quadruplet[3]))
             self.pairslist.append(
                 IMP.ParticlePair(quadruplet[3], quadruplet[0]))
+        if have_quad_score:
+            if cis_quads:
+                lqc = IMP.container.ListQuadContainer(self.model, cis_quads)
+                r = IMP.container.QuadsRestraint(
+                    IMP.core.DihedralQuadScore(cis_ts), lqc)
+                self.rs.add_restraint(r)
+            if trans_quads:
+                lqc = IMP.container.ListQuadContainer(self.model, trans_quads)
+                r = IMP.container.QuadsRestraint(
+                    IMP.core.DihedralQuadScore(trans_ts), lqc)
+                self.rs.add_restraint(r)
 
 
 class ElasticNetworkRestraint:

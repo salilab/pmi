@@ -303,10 +303,11 @@ class ResidueBondRestraint(IMP.pmi.restraints.RestraintBase):
                     pair.append(p)
             print("ResidueBondRestraint: adding a restraint between %s %s"
                   % (pair[0].get_name(), pair[1].get_name()))
-            self.rs.add_restraint(
-                IMP.core.DistanceRestraint(self.model, ts, pair[0], pair[1]))
             self.pairslist.append(IMP.ParticlePair(pair[0], pair[1]))
             self.pairslist.append(IMP.ParticlePair(pair[1], pair[0]))
+        lpc = IMP.container.ListPairContainer(self.model, self.pairslist[::2])
+        r = IMP.container.PairsRestraint(IMP.core.DistancePairScore(ts), lpc)
+        self.rs.add_restraint(r)
 
     def get_excluded_pairs(self):
         return self.pairslist
@@ -329,6 +330,7 @@ class ResidueAngleRestraint(IMP.pmi.restraints.RestraintBase):
              math.pi * anglemax / 180.0),
             strength)
 
+        triplets = []
         for ps in IMP.pmi.tools.sublist_iterator(particles, 3, 3):
             triplet = []
             if len(ps) != 3:
@@ -341,13 +343,13 @@ class ResidueAngleRestraint(IMP.pmi.restraints.RestraintBase):
             print("ResidueAngleRestraint: adding a restraint between %s %s %s"
                   % (triplet[0].get_name(), triplet[1].get_name(),
                      triplet[2].get_name()))
-            self.rs.add_restraint(
-                IMP.core.AngleRestraint(triplet[0].get_model(), ts,
-                                        triplet[0],
-                                        triplet[1],
-                                        triplet[2]))
+            triplets.append(triplet)
             self.pairslist.append(IMP.ParticlePair(triplet[0], triplet[2]))
             self.pairslist.append(IMP.ParticlePair(triplet[2], triplet[0]))
+        ltc = IMP.container.ListTripletContainer(self.model, triplets)
+        r = IMP.container.TripletsRestraint(
+            IMP.core.AngleTripletScore(ts), ltc)
+        self.rs.add_restraint(r)
 
     def get_excluded_pairs(self):
         return self.pairslist

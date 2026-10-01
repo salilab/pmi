@@ -1460,6 +1460,7 @@ def shuffle_configuration(objects,
     if return_debug:
         return debug
 
+
 # Sparse keys
 _membrane_side_key = IMP.SparseIntKey("pmi_membrane_side")
 _membrane_center_key = IMP.SparseFloatKey("pmi_membrane_center")
@@ -1476,6 +1477,7 @@ def _set_membrane_side(p, side, center):
         else:
             p.add_attribute(key, value)
 
+
 def place_in_membrane(objects):
     """Place rigid bodies with MembraneRestraints on them in the membrane
 
@@ -1491,6 +1493,7 @@ def place_in_membrane(objects):
         target = IMP.algebra.Vector3D(inside[0], inside[1], body['center'])
         _transform_body(body, IMP.algebra.Transformation3D(
             rotation, target - rotation.get_rotated(inside)))
+
 
 def shuffle_in_membrane(objects, bounding_box=((-300, -300), (300, 300)),
                         niterations=1000):
@@ -1510,9 +1513,10 @@ def shuffle_in_membrane(objects, bounding_box=((-300, -300), (300, 300)),
         inside = _get_centroid(body['inside'])
         center = IMP.algebra.Vector2D(inside[0], inside[1])
         members = list(body['rb'].get_rigid_members()) + body['beads']
-        radius = max(IMP.algebra.get_distance(
-            center, IMP.algebra.Vector2D(IMP.core.XYZ(p).get_x(),
-                                         IMP.core.XYZ(p).get_y()))
+        radius = max(
+            IMP.algebra.get_distance(
+                center, IMP.algebra.Vector2D(IMP.core.XYZ(p).get_x(),
+                                             IMP.core.XYZ(p).get_y()))
             for p in members)
         for i in range(niterations):
             xy = IMP.algebra.get_random_vector_in(bb)
@@ -1561,6 +1565,7 @@ def _get_membrane_rigid_bodies(objects):
         bodies.append(body)
     return bodies
 
+
 def _get_centroid(particles):
     return IMP.algebra.get_centroid(
         [IMP.core.XYZ(p).get_coordinates() for p in particles])
@@ -1582,8 +1587,6 @@ def _transform_body(body, transformation):
     IMP.core.transform(body['rb'], transformation)
     for p in body['beads']:
         IMP.core.transform(IMP.core.XYZ(p), transformation)
-
-
 
 
 class ColorHierarchy:

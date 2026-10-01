@@ -432,7 +432,8 @@ class MembraneRestraint(IMP.pmi.restraints.RestraintBase):
             resolution=self.resolution).get_selected_particles()
         return particles
 
-    def create_membrane_density(self, xy_size = 50, file_out='membrane_localization.mrc'):
+    def create_membrane_density(self, xy_size=50,
+                                file_out='membrane_localization.mrc'):
         """Create an MRC density file to visualize the membrane."""
         offset = 5.0 * self.thickness
         apix = 3.0
@@ -440,7 +441,8 @@ class MembraneRestraint(IMP.pmi.restraints.RestraintBase):
 
         # Create a density header of the requested size
         bbox = IMP.algebra.BoundingBox3D(
-            IMP.algebra.Vector3D(-self.center - xy_size, -self.center - xy_size,
+            IMP.algebra.Vector3D(-self.center - xy_size,
+                                 -self.center - xy_size,
                                  -self.center - offset),
             IMP.algebra.Vector3D(self.center + xy_size, self.center + xy_size,
                                  self.center + offset))

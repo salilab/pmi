@@ -169,7 +169,6 @@ class MembraneRestraint(IMP.test.TestCase):
                     r.unprotected_evaluate(None), r2.unprotected_evaluate(None),
                     delta=1e-4)
 
-
     def test_membrane_side_info(self):
         """Restrained particles record their side and the membrane center"""
         m = IMP.Model()

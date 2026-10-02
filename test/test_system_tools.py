@@ -75,9 +75,10 @@ class Tests(IMP.test.TestCase):
             self.assertEqual(len(rs), 0)
 
         # Invalid range
-        self.assertRaises(
-            ValueError, IMP.pmi.topology.system_tools.get_structure,
-            m, self.get_input_file_name('mini.pdb'), 'A', [40, 50])
+        if hasattr(IMP.atom, 'ResidueRangePDBSelector'):
+            self.assertRaises(
+                ValueError, IMP.pmi.topology.system_tools.get_structure,
+                m, self.get_input_file_name('mini.pdb'), 'A', [40, 50])
 
     def test_get_structure_mmcif(self):
         """Test get_structure given a single-model mmCIF"""
@@ -92,9 +93,10 @@ class Tests(IMP.test.TestCase):
         self.assertEqual(len(rs), 2)
 
         # Invalid range
-        self.assertRaises(
-            ValueError, IMP.pmi.topology.system_tools.get_structure,
-            m, self.get_input_file_name('mini.cif'), 'A', [40, 50])
+        if hasattr(IMP.atom, 'ResidueRangePDBSelector'):
+            self.assertRaises(
+                ValueError, IMP.pmi.topology.system_tools.get_structure,
+                m, self.get_input_file_name('mini.cif'), 'A', [40, 50])
 
     def test_get_structure_multi_pdb(self):
         """Test get_structure given a multi-model PDB"""

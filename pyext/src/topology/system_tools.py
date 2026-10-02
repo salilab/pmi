@@ -81,7 +81,6 @@ def get_structure(model, pdb_fn, chain_id, res_range=None, offset=0,
     else:
         sel = IMP.atom.get_default_pdb_selector()
 
-
     if res_range:
         if res_range[1] == "END":
             sel &= IMP.atom.ResidueRangePDBSelector(res_range[0])

@@ -228,7 +228,12 @@ class ReplicaExchange:
                   that provides a get_output() method can be used here.
            @param monte_carlo_temperature  MC temp (may need to be optimized
                   based on post-sampling analysis)
-           @param simulated_annealing If True, perform simulated annealing
+           @param simulated_annealing If True, perform simulated annealing:
+                  periodically scale every replica's temperature by
+                  simulated_annealing_maximum_temperature /
+                  simulated_annealing_minimum_temperature. Frames
+                  sampled at the scaled temperatures are not saved
+                  as lowest temperature frames.
            @param simulated_annealing_minimum_temperature Should generally be
                   the same as monte_carlo_temperature.
            @param simulated_annealing_minimum_temperature_nframes Number of
@@ -737,7 +742,10 @@ class ReplicaExchange:
             my_temp_index = int(rex.get_my_temp() * temp_index_factor)
 
             if self.vars["save_coordinates_mode"] == "lowest_temperature":
-                save_frame = (min_temp_index == my_temp_index)
+                # Don't save frames sampled at a simulated annealing
+                # temperature above the lowest temperature
+                save_frame = (min_temp_index == my_temp_index
+                              and rex.get_temperature_factor() == 1.0)
             elif self.vars["save_coordinates_mode"] == "25th_score":
                 score_perc = mpivs.get_percentile("score")
                 save_frame = (score_perc*100.0 <= 25.0)

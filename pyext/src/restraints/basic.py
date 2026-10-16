@@ -652,7 +652,7 @@ class PMFRestraint(IMP.pmi.restraints.RestraintBase):
         super().__init__(m, name="PMFRestraint", label=label, weight=weight)
 
         self.distances, self.values = self.read_table(pmf_file)
-        rmin, spacing, pmf = self.tabulate(
+        rmin, spacing, pmf = self._tabulate(
             self.distances, self.values, distance_cutoff, units, temperature)
         self.distance_cutoff = distance_cutoff
 
@@ -661,7 +661,7 @@ class PMFRestraint(IMP.pmi.restraints.RestraintBase):
         self.spline = IMP.core.OpenCubicSpline(pmf, rmin, spacing, True)
         ps = IMP.core.DistancePairScore(self.spline)
         lsc = IMP.container.ListSingletonContainer(
-            m, IMP.get_indexes(particles))
+            m, particles)
         if slack is None:
             slack = 0.1 * distance_cutoff
         self.cpc = IMP.container.ClosePairContainer(
@@ -684,27 +684,40 @@ class PMFRestraint(IMP.pmi.restraints.RestraintBase):
         """
         rows = []
         with open(filename) as fh:
-            for line in fh:
-                line = line.strip()
-                if not line or line.startswith('#'):
+            for line_num, raw in enumerate(fh, 1):
+                fields = raw.strip().replace(',', ' ').split()
+                if not fields or raw.lstrip().startswith('#'):
                     continue
-                fields = line.replace(',', ' ').split()
                 try:
-                    rows.append((float(fields[0]), float(fields[1])))
-                except (ValueError, IndexError):
-                    continue
+                    r = float(fields[0])
+                except ValueError:
+                    continue # Header or non-numeric line
+                if (len(fields) < 2):
+                    raise ValueError(f"{filename}, line {line_num}: Missing PMF value "
+                                     f"for distance {r}")
+                try:
+                    w = float(fields[1])
+                except ValueError as err:
+                    raise ValueError(
+                        f"File '{filename}', line {line_num}: Invalid PMF value "
+                        f"'{fields[1]}' for distance {r}") from err
+                if not math.isfinite(r):
+                    raise ValueError(f"File '{filename}', line {line_num}: Invalid distance '{fields[0]}'")
+                if not math.isfinite(w):
+                    raise ValueError(f"File '{filename}', line {line_num}: Invalid PMF value '{fields[1]}'")
+                rows.append((r, w))
         rows.sort()
         if len(rows) < 2:
-            raise ValueError("PMF table %s has fewer than two data rows"
-                             % filename)
-        for (r1, _), (r2, _) in zip(rows, rows[1:]):
-            if r1 == r2:
-                raise ValueError("PMF table %s has duplicate distance %g"
-                                 % (filename, r1))
+            raise ValueError(f"PMF table {filename} has fewer than two data rows")
+
+        if any(a[0] == b[0] for a, b in zip(rows, rows[1:])):
+            duplicate=next(b[0] for a, b in zip(rows, rows[1:]) if a[0] == b[0])
+            raise ValueError(f"PMF table {filename} has duplicate distance {duplicate}")
+        
         return [r for r, _ in rows], [w for _, w in rows]
 
     @classmethod
-    def tabulate(cls, distances, values, distance_cutoff, units,
+    def _tabulate(cls, distances, values, distance_cutoff, units,
                  temperature=None, spacing=None):
         """Put a PMF on an evenly spaced grid, in units of kT, shifted to
         zero at the cutoff.

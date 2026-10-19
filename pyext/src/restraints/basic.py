@@ -691,34 +691,42 @@ class PMFRestraint(IMP.pmi.restraints.RestraintBase):
                 try:
                     r = float(fields[0])
                 except ValueError:
-                    continue # Header or non-numeric line
-                if (len(fields) < 2):
-                    raise ValueError(f"{filename}, line {line_num}: Missing PMF value "
-                                     f"for distance {r}")
+                    continue  # Header or non-numeric line
+                if len(fields) < 2:
+                    raise ValueError(
+                        f"{filename}, line {line_num}: Missing PMF value "
+                        f"for distance {r}")
                 try:
                     w = float(fields[1])
                 except ValueError as err:
                     raise ValueError(
-                        f"File '{filename}', line {line_num}: Invalid PMF value "
-                        f"'{fields[1]}' for distance {r}") from err
+                        f"File '{filename}', line {line_num}: "
+                        f"Invalid PMF value '{fields[1]}' "
+                        f"for distance {r}") from err
                 if not math.isfinite(r):
-                    raise ValueError(f"File '{filename}', line {line_num}: Invalid distance '{fields[0]}'")
+                    raise ValueError(
+                        f"File '{filename}', line {line_num}: "
+                        f"Invalid distance '{fields[0]}'")
                 if not math.isfinite(w):
-                    raise ValueError(f"File '{filename}', line {line_num}: Invalid PMF value '{fields[1]}'")
+                    raise ValueError(
+                        f"File '{filename}', line {line_num}: "
+                        f"Invalid PMF value '{fields[1]}'")
                 rows.append((r, w))
         rows.sort()
         if len(rows) < 2:
-            raise ValueError(f"PMF table {filename} has fewer than two data rows")
+            raise ValueError(
+                f"PMF table {filename} has fewer than two data rows")
 
-        if any(a[0] == b[0] for a, b in zip(rows, rows[1:])):
-            duplicate=next(b[0] for a, b in zip(rows, rows[1:]) if a[0] == b[0])
-            raise ValueError(f"PMF table {filename} has duplicate distance {duplicate}")
-        
+        for a, b in zip(rows, rows[1:]):
+            if a[0] == b[0]:
+                raise ValueError(
+                    f"PMF table {filename} has duplicate distance {b[0]}")
+
         return [r for r, _ in rows], [w for _, w in rows]
 
     @classmethod
     def _tabulate(cls, distances, values, distance_cutoff, units,
-                 temperature=None, spacing=None):
+                  temperature=None, spacing=None):
         """Put a PMF on an evenly spaced grid, in units of kT, shifted to
         zero at the cutoff.
 

@@ -92,7 +92,7 @@ class Tests(IMP.test.TestCase):
         r = [0., 1., 2., 3., 4.]
         w = [4., 3., 2., 1., 0.5]
         rmin, spacing, pmf = PMFRestraint._tabulate(r, w, 2.5, 'kT',
-                                                   spacing=0.3)
+                                                    spacing=0.3)
         self.assertAlmostEqual(rmin, 0., delta=1e-12)
         self.assertAlmostEqual(rmin + spacing * (len(pmf) - 1), 2.5,
                                delta=1e-9)

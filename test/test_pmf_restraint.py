@@ -91,7 +91,7 @@ class Tests(IMP.test.TestCase):
         """Grid ends exactly on the cutoff, where the PMF is zero"""
         r = [0., 1., 2., 3., 4.]
         w = [4., 3., 2., 1., 0.5]
-        rmin, spacing, pmf = PMFRestraint.tabulate(r, w, 2.5, 'kT',
+        rmin, spacing, pmf = PMFRestraint._tabulate(r, w, 2.5, 'kT',
                                                    spacing=0.3)
         self.assertAlmostEqual(rmin, 0., delta=1e-12)
         self.assertAlmostEqual(rmin + spacing * (len(pmf) - 1), 2.5,
@@ -103,7 +103,7 @@ class Tests(IMP.test.TestCase):
     def test_tabulate_errors(self):
         """Bad cutoffs, units and missing temperature are rejected"""
         r, w = [0., 1., 2.], [1., 0., 0.]
-        tabulate = PMFRestraint.tabulate
+        tabulate = PMFRestraint._tabulate
         self.assertRaises(ValueError, tabulate, r, w, 3., 'kT')
         self.assertRaises(ValueError, tabulate, r, w, 0., 'kT')
         self.assertRaises(ValueError, tabulate, r, w, 1., 'eV')

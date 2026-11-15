@@ -1474,7 +1474,16 @@ _ihm_poly_residue_feature.rep_atom
         w = ihm.format.CifWriter(fh)
         d.dump(po.system, w)
         out = fh.getvalue()
-        self.assertEqual(out, """#
+        # Determine whether we're using a version of python-ihm that
+        # supports geometric restraint distance esds
+        if 'lower_limit_esd' in out:
+            cat = "_ihm_geometric_object_distance_restraint"
+            esd_header1 = "\n%s.distance_lower_limit_esd" % cat
+            esd_header2 = "\n%s.distance_upper_limit_esd" % cat
+            esdv = " ."
+        else:
+            esd_header1 = esd_header2 = esdv = ""
+        self.assertEqual(out, f"""#
 loop_
 _ihm_geometric_object_distance_restraint.id
 _ihm_geometric_object_distance_restraint.object_id
@@ -1482,11 +1491,11 @@ _ihm_geometric_object_distance_restraint.feature_id
 _ihm_geometric_object_distance_restraint.object_characteristic
 _ihm_geometric_object_distance_restraint.restraint_type
 _ihm_geometric_object_distance_restraint.harmonic_force_constant
-_ihm_geometric_object_distance_restraint.distance_lower_limit
-_ihm_geometric_object_distance_restraint.distance_upper_limit
+_ihm_geometric_object_distance_restraint.distance_lower_limit{esd_header1}
+_ihm_geometric_object_distance_restraint.distance_upper_limit{esd_header2}
 _ihm_geometric_object_distance_restraint.group_conditionality
 _ihm_geometric_object_distance_restraint.dataset_list_id
-1 1 1 other 'lower and upper bound' 0.500 4.000 8.000 ALL .
+1 1 1 other 'lower and upper bound' 0.500 4.000{esdv} 8.000{esdv} ALL .
 #
 """)
 
@@ -1505,13 +1514,13 @@ _ihm_geometric_object_distance_restraint.dataset_list_id
         """Test add_membrane_surface_restraint method"""
         self._check_membrane_restraint(
                    'add_membrane_surface_location_restraint',
-                   "'upper bound' 0.500 . 0.000")
+                   "'upper bound' 0.500 .ESD 0.000ESD")
 
     def test_add_membrane_exclusion_restraint(self):
         """Test add_membrane_exclusion_restraint method"""
         self._check_membrane_restraint(
                    'add_membrane_exclusion_restraint',
-                   "'lower bound' 0.500 0.000 .")
+                   "'lower bound' 0.500 0.000ESD .ESD")
 
     def _check_membrane_restraint(self, method_name, expected_dist_rsr):
         class MockObject(object):
@@ -1631,7 +1640,17 @@ _ihm_poly_residue_feature.rep_atom
         w = ihm.format.CifWriter(fh)
         d.dump(po.system, w)
         out = fh.getvalue()
-        self.assertEqual(out, """#
+        # Determine whether we're using a version of python-ihm that
+        # supports geometric restraint distance esds
+        if 'lower_limit_esd' in out:
+            cat = "_ihm_geometric_object_distance_restraint"
+            esd_header1 = "\n%s.distance_lower_limit_esd" % cat
+            esd_header2 = "\n%s.distance_upper_limit_esd" % cat
+            expected_dist_rsr = expected_dist_rsr.replace('ESD', ' .')
+        else:
+            expected_dist_rsr = expected_dist_rsr.replace('ESD', '')
+            esd_header1 = esd_header2 = ""
+        self.assertEqual(out, f"""#
 loop_
 _ihm_geometric_object_distance_restraint.id
 _ihm_geometric_object_distance_restraint.object_id
@@ -1639,13 +1658,13 @@ _ihm_geometric_object_distance_restraint.feature_id
 _ihm_geometric_object_distance_restraint.object_characteristic
 _ihm_geometric_object_distance_restraint.restraint_type
 _ihm_geometric_object_distance_restraint.harmonic_force_constant
-_ihm_geometric_object_distance_restraint.distance_lower_limit
-_ihm_geometric_object_distance_restraint.distance_upper_limit
+_ihm_geometric_object_distance_restraint.distance_lower_limit{esd_header1}
+_ihm_geometric_object_distance_restraint.distance_upper_limit{esd_header2}
 _ihm_geometric_object_distance_restraint.group_conditionality
 _ihm_geometric_object_distance_restraint.dataset_list_id
-1 1 1 other %s ALL .
+1 1 1 other {expected_dist_rsr} ALL .
 #
-""" % expected_dist_rsr)
+""")
 
     def test_sas_dumper(self):
         """Test SASDumper class"""

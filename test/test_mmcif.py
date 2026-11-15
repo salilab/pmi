@@ -915,7 +915,11 @@ _imp_replica_exchange_protocol.replica_exchange_maximum_temperature
         po.all_protocols.add_step(p, po._last_state)
         pp = po._add_simple_postprocessing(10, 90)
         self.assertEqual(pp.type, 'cluster')
-        self.assertEqual(pp.feature, 'RMSD')
+        # Newer python-ihm uses a class for feature
+        if hasattr(pp.feature, 'type'):
+            self.assertEqual(pp.feature.type, 'RMSD')
+        else:
+            self.assertEqual(pp.feature, 'RMSD')
         self.assertEqual(pp.num_models_begin, 10)
         self.assertEqual(pp.num_models_end, 90)
         po._add_simple_postprocessing(12, 90)
@@ -939,14 +943,20 @@ _imp_replica_exchange_protocol.replica_exchange_maximum_temperature
         d.finalize(po.system)
         d.dump(po.system, w)
         out = fh.getvalue()
-        self.assertEqual(out, """#
+        # Newer python-ihm adds feature_name
+        if hasattr(ihm.analysis, 'Feature'):
+            header = '\n_ihm_modeling_post_process.feature_name'
+            val = ' .'
+        else:
+            header = val = ''
+        self.assertEqual(out, f"""#
 loop_
 _ihm_modeling_post_process.id
 _ihm_modeling_post_process.protocol_id
 _ihm_modeling_post_process.analysis_id
 _ihm_modeling_post_process.step_id
 _ihm_modeling_post_process.type
-_ihm_modeling_post_process.feature
+_ihm_modeling_post_process.feature{header}
 _ihm_modeling_post_process.num_models_begin
 _ihm_modeling_post_process.num_models_end
 _ihm_modeling_post_process.struct_assembly_id
@@ -954,10 +964,10 @@ _ihm_modeling_post_process.dataset_group_id
 _ihm_modeling_post_process.software_id
 _ihm_modeling_post_process.script_file_id
 _ihm_modeling_post_process.details
-1 1 1 1 cluster RMSD 10 90 . . . . .
-2 1 1 2 cluster RMSD 12 90 . . . . .
-3 2 1 1 cluster RMSD 34 56 . . . . .
-4 3 1 1 cluster RMSD 20 80 . . . . .
+1 1 1 1 cluster RMSD{val} 10 90 . . . . .
+2 1 1 2 cluster RMSD{val} 12 90 . . . . .
+3 2 1 1 cluster RMSD{val} 34 56 . . . . .
+4 3 1 1 cluster RMSD{val} 20 80 . . . . .
 #
 """)
 
@@ -972,7 +982,11 @@ _ihm_modeling_post_process.details
         po.all_protocols.add_step(p, po._last_state)
         pp = po._add_no_postprocessing(10)
         self.assertEqual(pp.type, 'none')
-        self.assertEqual(pp.feature, 'none')
+        # Newer python-ihm uses a class for feature
+        if hasattr(pp.feature, 'type'):
+            self.assertEqual(pp.feature.type, 'none')
+        else:
+            self.assertEqual(pp.feature, 'none')
         self.assertEqual(pp.num_models_begin, 10)
         self.assertEqual(pp.num_models_end, 10)
 
@@ -984,14 +998,20 @@ _ihm_modeling_post_process.details
         d.finalize(po.system)
         d.dump(po.system, w)
         out = fh.getvalue()
-        self.assertEqual(out, """#
+        # Newer python-ihm adds feature_name
+        if hasattr(ihm.analysis, 'Feature'):
+            header = '\n_ihm_modeling_post_process.feature_name'
+            val = ' .'
+        else:
+            header = val = ''
+        self.assertEqual(out, f"""#
 loop_
 _ihm_modeling_post_process.id
 _ihm_modeling_post_process.protocol_id
 _ihm_modeling_post_process.analysis_id
 _ihm_modeling_post_process.step_id
 _ihm_modeling_post_process.type
-_ihm_modeling_post_process.feature
+_ihm_modeling_post_process.feature{header}
 _ihm_modeling_post_process.num_models_begin
 _ihm_modeling_post_process.num_models_end
 _ihm_modeling_post_process.struct_assembly_id
@@ -999,7 +1019,7 @@ _ihm_modeling_post_process.dataset_group_id
 _ihm_modeling_post_process.software_id
 _ihm_modeling_post_process.script_file_id
 _ihm_modeling_post_process.details
-1 1 1 1 none none 10 10 . . . . .
+1 1 1 1 none none{val} 10 10 . . . . .
 #
 """)
 
@@ -1591,6 +1611,16 @@ _ihm_poly_residue_feature.rep_atom
             esdv = " ."
         else:
             esd_header1 = esd_header2 = esdv = ""
+        # Determine whether we're using a version of python-ihm that
+        # supports geometric restraint details
+        r = ihm.restraint.GeometricRestraint(None, None, None, None)
+        if hasattr(r, 'details'):  # also probability
+            cat = '_ihm_geometric_object_distance_restraint'
+            prob = '%s.distance_probability\n' % cat
+            details = '\n%s.details' % cat
+            dv = ' .'
+        else:
+            prob = details = dv = ''
         self.assertEqual(out, f"""#
 loop_
 _ihm_geometric_object_distance_restraint.id
@@ -1601,10 +1631,10 @@ _ihm_geometric_object_distance_restraint.restraint_type
 _ihm_geometric_object_distance_restraint.harmonic_force_constant
 _ihm_geometric_object_distance_restraint.distance_lower_limit{esd_header1}
 _ihm_geometric_object_distance_restraint.distance_upper_limit{esd_header2}
-_ihm_geometric_object_distance_restraint.group_conditionality
-_ihm_geometric_object_distance_restraint.dataset_list_id
-1 1 1 other 'lower and upper bound' 0.500 4.000{esdv} 8.000{esdv} ALL .
-2 1 1 other 'lower and upper bound' 0.500 4.000{esdv} 8.000{esdv} ALL .
+{prob}_ihm_geometric_object_distance_restraint.group_conditionality
+_ihm_geometric_object_distance_restraint.dataset_list_id{details}
+1 1 1 other 'lower and upper bound' 0.500 4.000{esdv} 8.000{esdv}{dv} ALL .{dv}
+2 1 1 other 'lower and upper bound' 0.500 4.000{esdv} 8.000{esdv}{dv} ALL .{dv}
 #
 """)
 
@@ -1759,6 +1789,16 @@ _ihm_poly_residue_feature.rep_atom
         else:
             expected_dist_rsr = expected_dist_rsr.replace('ESD', '')
             esd_header1 = esd_header2 = ""
+        # Determine whether we're using a version of python-ihm that
+        # supports geometric restraint details
+        r = ihm.restraint.GeometricRestraint(None, None, None, None)
+        if hasattr(r, 'details'):  # also probability
+            cat = '_ihm_geometric_object_distance_restraint'
+            prob = '%s.distance_probability\n' % cat
+            details = '\n%s.details' % cat
+            dv = ' .'
+        else:
+            prob = details = dv = ''
         self.assertEqual(out, f"""#
 loop_
 _ihm_geometric_object_distance_restraint.id
@@ -1769,9 +1809,9 @@ _ihm_geometric_object_distance_restraint.restraint_type
 _ihm_geometric_object_distance_restraint.harmonic_force_constant
 _ihm_geometric_object_distance_restraint.distance_lower_limit{esd_header1}
 _ihm_geometric_object_distance_restraint.distance_upper_limit{esd_header2}
-_ihm_geometric_object_distance_restraint.group_conditionality
-_ihm_geometric_object_distance_restraint.dataset_list_id
-1 1 1 other {expected_dist_rsr} ALL .
+{prob}_ihm_geometric_object_distance_restraint.group_conditionality
+_ihm_geometric_object_distance_restraint.dataset_list_id{details}
+1 1 1 other {expected_dist_rsr}{dv} ALL .{dv}
 #
 """)
 

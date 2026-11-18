@@ -8,20 +8,50 @@ import IMP.pmi.io.crosslink
 import IMP.pmi.restraints
 import IMP.pmi.restraints.crosslinking
 from math import log, exp, pi
+import numpy as np
 
 
-def sphere_cap(r1, r2, d):
-    sc = 0.0
-    if d <= max(r1, r2) - min(r1, r2):
-        sc = min(4.0 / 3 * pi * r1 * r1 * r1,
-                      4.0 / 3 * pi * r2 * r2 * r2)
-    elif d >= r1 + r2:
-        sc = 0
-    else:
-        sc = (pi / 12 / d * (r1 + r2 - d) * (r1 + r2 - d)) * \
-             (d * d + 2 * d * r1 - 3 * r1 * r1 + 2 * d * r2 + 6 * r1 * r2 -
-              3 * r2 * r2)
-    return sc
+def lens_volume(a, b, r):
+    """Volume of the intersection of balls of radii a and b, r apart"""
+    rmin = np.minimum(a, b)
+    rs = np.where(r > 0., r, 1.)
+    mid = (pi * (a + b - r) ** 2 * (r * r + 2. * r * (a + b)
+                                     - 3. * (a - b) ** 2) / (12. * rs))
+    return np.where(r >= a + b, 0.,
+                    np.where(r <= abs(a - b), 4. / 3. * pi * rmin ** 3, mid))
+
+
+def sphere_area_within(r, d, radius):
+    """Area of the sphere of radius r, centered at the origin, that lies
+       inside the ball of the given radius centered at distance d"""
+    mid = pi * r * (radius * radius - (r - d) ** 2) / d
+    return np.where(r + d <= radius, 4. * pi * r * r,
+                    np.where((r <= d - radius) | (r >= d + radius),
+                             0., mid))
+
+
+def forward_model(dist, sigmai, sigmaj, length):
+    """Probability that two points, uniform in spheres of radii sigmai and
+       sigmaj whose centers are dist apart, are closer than length
+       (integrated over the distance s of the first point from the center
+       of the second sphere)"""
+    smax = dist + sigmai
+    points = sorted(set([0., smax] + [x for x in (abs(dist - sigmai),
+                                                  abs(sigmaj - length),
+                                                  sigmaj + length)
+                                      if 0. < x < smax]))
+    total = 0.
+    for lo, hi in zip(points[:-1], points[1:]):
+        # Composite Simpson's rule on each smooth piece
+        s = np.linspace(lo, hi, 81)
+        f = (sphere_area_within(s, dist, sigmai)
+             * lens_volume(sigmaj, length, s))
+        h = (hi - lo) / 80.
+        total += h / 3. * (f[0] + f[-1] + 4. * f[1:-1:2].sum()
+                           + 2. * f[2:-1:2].sum())
+    voli = 4.0 / 3.0 * pi * sigmai ** 3
+    volj = 4.0 / 3.0 * pi * sigmaj ** 3
+    return total / voli / volj
 
 
 def get_probability(xyz1s,xyz2s,sigma1s,sigma2s,psis,length,slope):
@@ -38,21 +68,7 @@ def get_probability(xyz1s,xyz2s,sigma1s,sigma2s,psis,length,slope):
 
         sigmai = sigma1.get_scale()
         sigmaj = sigma2.get_scale()
-        voli = 4.0 / 3.0 * pi * sigmai * sigmai * sigmai
-        volj = 4.0 / 3.0 * pi * sigmaj * sigmaj * sigmaj
-        fi = 0
-        fj = 0
-        if dist < sigmai + sigmaj:
-            xlvol = 4.0 / 3.0 * pi * (length / 2) * (length / 2) * \
-                           (length / 2)
-            fi = min(voli, xlvol)
-            fj = min(volj, xlvol)
-        else:
-            di = dist - sigmaj - length / 2
-            dj = dist - sigmai - length / 2
-            fi = sphere_cap(sigmai, length / 2, abs(di))
-            fj = sphere_cap(sigmaj, length / 2, abs(dj))
-        pofr = fi * fj / voli / volj
+        pofr = forward_model(max(dist, 0.0001), sigmai, sigmaj, length)
 
         factor = (1.0 - (psi * (1.0 - pofr) + pofr * (1 - psi))*exp(-slope*dist))
         onemprob = onemprob * factor

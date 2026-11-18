@@ -107,7 +107,7 @@ class Tests(IMP.test.TestCase):
 
         xl.add_to_model()
         rset = IMP.pmi.tools.get_restraint_set(m)
-        self.assertAlmostEqual(rset.evaluate(False), -3.03166, delta=1e-2)
+        self.assertAlmostEqual(rset.evaluate(False), -4.54834, delta=1e-2)
 
         o = IMP.pmi.output.Output()
         o.init_rmf(

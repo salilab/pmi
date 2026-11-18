@@ -52,6 +52,15 @@ class _SamplerBase:
 
     def set_simulated_annealing(self, min_temp, max_temp, min_temp_time,
                                 max_temp_time):
+        """Alternate between low and high temperatures.
+           The sampler runs for `min_temp_time` frames at its temperature,
+           then for `max_temp_time` frames at its temperature multiplied by
+           `max_temp / min_temp`, and so on. The sampler's temperature is
+           that given to its constructor or to set_kt() (e.g. the
+           replica's temperature in replica exchange).
+        """
+        if min_temp <= 0.:
+            raise ValueError("Minimum temperature must be positive")
         self.simulated_annealing = True
         self.tempmin = min_temp
         self.tempmax = max_temp
@@ -65,6 +74,15 @@ class _SamplerBase:
             value = 1.0
         temp = self.tempmin + (self.tempmax - self.tempmin) * value
         return temp
+
+    def get_simulated_annealing_factor(self):
+        """Get the factor by which simulated annealing scales the
+           sampler's temperature for the current frame (1.0 if not
+           annealing, or if no frame has been run yet)."""
+        if self.simulated_annealing and self.nframe >= 0:
+            return self.temp_simulated_annealing() / self.tempmin
+        else:
+            return 1.0
 
 
 class MonteCarlo(_SamplerBase):
@@ -133,9 +151,13 @@ class MonteCarlo(_SamplerBase):
 
     def set_kt(self, temp):
         self.temp = temp
-        self.mc.set_kt(temp)
+        self._update_kt()
+
+    def _update_kt(self):
+        kt = self.temp * self.get_simulated_annealing_factor()
+        self.mc.set_kt(kt)
         if self._jax_state is not None:
-            self._jax_state.temperature = temp
+            self._jax_state.temperature = kt
 
     def get_mc(self):
         return self.mc
@@ -158,15 +180,14 @@ class MonteCarlo(_SamplerBase):
 
     def optimize(self, nstep):
         self.nframe += 1
+        # apply simulated annealing protocol
+        if self.simulated_annealing:
+            self._update_kt()
         if self.use_jax:
             score, self._jax_state = self._jax_optimizer.optimize(
                 self._jax_state)
         else:
             score = self.mc.optimize(nstep * self.get_number_of_movers())
-
-        # apply simulated annealing protocol
-        if self.simulated_annealing:
-            self.set_kt(self.temp_simulated_annealing())
 
         # apply self adaptive protocol
         if self.selfadaptive:
@@ -276,6 +297,7 @@ class MolecularDynamics(_SamplerBase):
         except:  # noqa: E722
             to_sample = objects
 
+        self.temp = kt
         self.ltstate = IMP.atom.LangevinThermostatOptimizerState(
             self.model, to_sample, kt/0.0019872041, gamma)
         self.md = IMP.atom.MolecularDynamics(self.model)
@@ -293,7 +315,12 @@ class MolecularDynamics(_SamplerBase):
         raise NotImplementedError("JAX currently only supported for MC")
 
     def set_kt(self, kt):
-        temp = kt/0.0019872041
+        self.temp = kt
+        self._update_kt()
+
+    def _update_kt(self):
+        kt = self.temp * self.get_simulated_annealing_factor()
+        temp = kt / 0.0019872041
         self.ltstate.set_temperature(temp)
         self.md.assign_velocities(temp)
 
@@ -304,7 +331,7 @@ class MolecularDynamics(_SamplerBase):
         # apply simulated annealing protocol
         self.nframe += 1
         if self.simulated_annealing:
-            self.set_kt(self.temp_simulated_annealing())
+            self._update_kt()
         return self.md.optimize(nsteps)
 
     def get_output(self):
@@ -438,6 +465,14 @@ class ReplicaExchange:
     def get_my_index(self):
         return self.rem.get_my_index()
 
+    def get_temperature_factor(self):
+        """Get the factor by which simulated annealing currently scales
+           the temperature of every replica (1.0 if not annealing)."""
+        for so in self.samplerobjects:
+            if getattr(so, 'simulated_annealing', False):
+                return so.get_simulated_annealing_factor()
+        return 1.0
+
     def swap_temp(self, nframe, score=None):
         if score is None:
             score = self.model.evaluate(False)
@@ -451,14 +486,19 @@ class ReplicaExchange:
         if mytemp == self.TEMPMAX_:
             self.stats.nmaxtemp += 1
 
+        # Simulated annealing scales every replica's temperature by the
+        # same factor, so the frame just run was sampled at that factor
+        # times the replica temperature
+        factor = self.get_temperature_factor()
+
         # score divided by kbt
-        myscore = score / mytemp
+        myscore = score / (mytemp * factor)
 
         # get my friend index and temperature
         findex = self.rem.get_friend_index(nframe)
         ftemp = self.rem.get_friend_parameter("temp", findex)[0]
         # score divided by kbt
-        fscore = score / ftemp
+        fscore = score / (ftemp * factor)
 
         # try exchange
         flag = self.rem.do_exchange(myscore, fscore, findex)
